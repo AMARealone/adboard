@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amina — AdStack Assistant</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    }
+    /* ── Page hôte vide — seul le widget flotte ── */
+  </style>
+</head>
+<body>
+
+<script>
+var ADSTACK_CONFIG = {
+  prix_starter:        "29.900",
+  prix_starter_barre:  "45.000",
+  prix_starter_img:    "830",
+  prix_standard:       "59.900",
+  prix_standard_barre: "90.000",
+  prix_standard_img:   "624",
+  prix_scale:          "99.900",
+  prix_scale_barre:    "150.000",
+  prix_scale_img:      "520",
+  url_starter:  "https://ecomaster.mychariow.shop/prd_ljowq8/checkout",
+  url_standard: "https://ecomaster.mychariow.shop/prd_34w031/checkout",
+  url_scale:    "https://ecomaster.mychariow.shop/prd_9fi79y/checkout",
+  demo_url:     "https://thefirstquality01.systeme.io/formsdemo",
+  webhook:      "https://script.google.com/macros/s/AKfycby-Znkb9OiajxzZrriH-ve-QZERbuwgN-yBYDOMTzsaoMTGSN_bCZ6CSmZB1xn5Ou7eEQ/exec",
+  chatbot_api_key: "YOUR_API_KEY_HERE",
+  code_promo:    "CREA1",
+  remise_promo:  "10"
+};
+</script>
+
+<!-- ════ CHATBOT — Amina AdStack ════ -->
+<style>
+  #as-chat-btn {
+    position: fixed; bottom: 90px; right: 20px; z-index: 9999;
+    width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #1FB6FF 0%, #0B5CFF 100%);
+    box-shadow: 0 4px 20px rgba(31,182,255,0.55);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s; padding: 0; overflow: visible;
+  }
+  #as-chat-btn:hover { transform: scale(1.07); box-shadow: 0 6px 28px rgba(31,182,255,0.75); }
+  #as-chat-btn .as-ring {
+    position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(31,182,255,0.5);
+    animation: as-ring-pulse 2.4s ease-out infinite; pointer-events: none;
+  }
+  @keyframes as-ring-pulse { 0%{transform:scale(1);opacity:0.7} 100%{transform:scale(1.5);opacity:0} }
+  #as-question-bubble {
+    position: fixed; bottom: 164px; right: 20px; z-index: 9997;
+    background: #13131A; border: 1px solid rgba(31,182,255,0.3);
+    border-radius: 18px 18px 4px 18px;
+    padding: 10px 14px; font-size: 13px; font-weight: 600; color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5); display: none; white-space: nowrap;
+    animation: as-bubble-in 0.3s ease-out;
+  }
+  @keyframes as-bubble-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  #as-chat-bubble {
+    position: fixed; bottom: 164px; right: 20px; z-index: 9998;
+    background: #13131A; border: 1px solid rgba(31,182,255,0.22);
+    border-radius: 18px; width: 320px; height: 500px;
+    display: none; flex-direction: column; overflow: hidden;
+    box-shadow: 0 16px 56px rgba(0,0,0,0.65);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    transform-origin: bottom right;
+  }
+  #as-chat-bubble.open { display: flex; }
+  #as-chat-header {
+    background: #0D0D14; border-bottom: 1px solid rgba(31,182,255,0.12);
+    padding: 11px 13px; display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+  }
+  .as-avatar-wrap { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(31,182,255,0.4); overflow: hidden; flex-shrink: 0; background: #1a1a2e; display: flex; align-items: center; justify-content: center; }
+  .as-header-info { flex: 1; min-width: 0; }
+  .as-header-name { font-size: 13px; font-weight: 700; color: #fff; }
+  .as-header-sub  { font-size: 10px; color: #32FF7E; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+  .as-status-dot  { width: 5px; height: 5px; border-radius: 50%; background: #32FF7E; animation: as-blink 2s infinite; flex-shrink: 0; }
+  @keyframes as-blink { 0%,100%{opacity:1}50%{opacity:.35} }
+  #as-close-btn { background:none; border:none; cursor:pointer; color:#4A4D55; font-size:19px; padding:0; line-height:1; flex-shrink:0; }
+  #as-close-btn:hover { color:#fff; }
+  #as-messages { flex:1; overflow-y:auto; padding:12px 11px; display:flex; flex-direction:column; gap:9px; scrollbar-width:thin; scrollbar-color:#2A2A35 transparent; }
+  #as-messages::-webkit-scrollbar { width:3px; }
+  #as-messages::-webkit-scrollbar-thumb { background:#2A2A35; border-radius:3px; }
+  .as-msg { display:flex; gap:7px; max-width:94%; }
+  .as-msg.user { align-self:flex-end; flex-direction:row-reverse; }
+  .as-msg-bubble { padding:9px 12px; border-radius:12px; font-size:13px; line-height:1.5; }
+  .as-msg.bot  .as-msg-bubble { background:#1E1E2C; color:#C8CAD0; border-bottom-left-radius:4px; }
+  .as-msg.user .as-msg-bubble { background:linear-gradient(135deg,#1FB6FF,#0B5CFF); color:#fff; border-bottom-right-radius:4px; }
+  .as-msg-av { width:26px; height:26px; border-radius:50%; border:1.5px solid rgba(31,182,255,0.3); overflow:hidden; flex-shrink:0; margin-top:2px; background:#1a1a2e; display:flex; align-items:center; justify-content:center; }
+  .as-typing { display:flex; align-items:center; gap:4px; padding:9px 12px; }
+  .as-typing span { width:6px; height:6px; border-radius:50%; background:#3A3D45; animation:as-bounce 1.2s infinite; }
+  .as-typing span:nth-child(2){animation-delay:.2s} .as-typing span:nth-child(3){animation-delay:.4s}
+  @keyframes as-bounce { 0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)} }
+  #as-suggestions { padding:0 11px 8px; display:flex; flex-wrap:wrap; gap:6px; flex-shrink:0; }
+  .as-sugg { background:#1E1E2C; border:1px solid rgba(31,182,255,0.18); color:#1FB6FF; border-radius:20px; padding:5px 11px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; transition:background .15s; }
+  .as-sugg:hover { background:rgba(31,182,255,0.1); }
+  .as-cta-row { display:flex; flex-direction:column; gap:6px; margin-top:9px; }
+  .as-cta-offre { display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg,#1FB6FF,#0B5CFF); color:#fff; border-radius:10px; padding:9px 14px; font-size:12px; font-weight:800; cursor:pointer; border:none; font-family:inherit; width:100%; box-shadow:0 4px 14px rgba(31,182,255,0.35); }
+  .as-cta-offre:hover { opacity:.88; }
+  .as-cta-checkout { display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg,#32FF7E,#0BBF5A); color:#0A0A0E; border-radius:10px; padding:9px 14px; font-size:12px; font-weight:800; cursor:pointer; border:none; font-family:inherit; width:100%; box-shadow:0 4px 14px rgba(50,255,126,0.35); text-decoration:none; }
+  .as-cta-checkout:hover { opacity:.88; }
+  #as-input-row { padding:9px 11px; border-top:1px solid rgba(31,182,255,0.1); display:flex; gap:7px; align-items:center; background:#0D0D14; flex-shrink:0; }
+  #as-input { flex:1; background:#1C1C28; border:1px solid rgba(31,182,255,0.15); border-radius:20px; padding:8px 13px; color:#fff; font-size:16px; outline:none; font-family:inherit; resize:none; line-height:1.4; transform:translateZ(0); }
+  #as-input::placeholder { color:#3A3D45; }
+  #as-input:focus { border-color:rgba(31,182,255,0.4); }
+  #as-send-btn { width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:linear-gradient(135deg,#1FB6FF,#0B5CFF); display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; }
+  #as-send-btn:hover { transform:scale(1.08); }
+  #as-send-btn svg { width:15px; height:15px; fill:#fff; }
+  #as-send-btn:disabled { opacity:.4; cursor:not-allowed; }
+  #as-notif-badge { position:fixed; bottom:136px; right:16px; z-index:10000; background:#EF4444; color:#fff; border-radius:50%; width:18px; height:18px; font-size:10px; font-weight:800; display:none; align-items:center; justify-content:center; font-family:-apple-system,sans-serif; box-shadow:0 2px 8px rgba(239,68,68,0.5); }
+</style>
+
+<button id="as-chat-btn" onclick="asToggle()" title="Discuter avec Amina"><span class="as-ring"></span></button>
+<div id="as-notif-badge">1</div>
+<div id="as-question-bubble">Une question ? 💬</div>
+
+<div id="as-chat-bubble">
+  <div id="as-chat-header">
+    <div class="as-avatar-wrap" id="as-header-avatar"></div>
+    <div class="as-header-info">
+      <div class="as-header-name">Amina · AdStack</div>
+      <div class="as-header-sub"><span class="as-status-dot"></span>Disponible · répond en quelques secondes</div>
+    </div>
+    <button id="as-close-btn" onclick="asToggle()">✕</button>
+  </div>
+  <div id="as-messages"></div>
+  <div id="as-suggestions"></div>
+  <div id="as-input-row">
+    <textarea id="as-input" rows="1" placeholder="Écris ta question…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();asSend();}"></textarea>
+    <button id="as-send-btn" onclick="asSend()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+  </div>
+</div>
+
+<div style="display:none"><script>
+var AS_KEY = "";
+var AS_WEBHOOK = ADSTACK_CONFIG.webhook;
+var AS_CODE_PROMO = ADSTACK_CONFIG.code_promo;
+
+var AS_CHECKOUT = {
+  starter:  ADSTACK_CONFIG.url_starter,
+  standard: ADSTACK_CONFIG.url_standard,
+  scale:    ADSTACK_CONFIG.url_scale
+};
+
+var AS_SYSTEM = `
+━━━━ QUI EST ADSTACK ━━━━
+AdStack est une agence B2B spécialisée dans la production de créatives images publicitaires (static ads) pour Meta Ads (Facebook & Instagram).
+Basée à Dakar, Sénégal. On sert les e-commerçants francophones d'Afrique : Sénégal, Côte d'Ivoire, Cameroun, Bénin, Burkina Faso.
+Notre positionnement : on ne promet pas des résultats publicitaires — on promet l'excellence opérationnelle (vitesse, volume, spécialisation).
+
+━━━━ CE QU'ON FAIT ━━━━
+✅ Production de créatives images statiques (static ads) pour Meta Ads
+✅ Analyse de marché hebdomadaire avant chaque livraison :
+   - Identification de la cible idéale (démographie, douleurs, désirs)
+   - Analyse des concurrents publicitaires
+   - Veille tendances marché
+✅ Production créative : images publicitaires 4:5 (Feed Meta Ads)
+✅ Textes publicitaires : titres + descriptions prêts à coller dans Meta Ads Manager
+✅ Livraison via Google Drive + notification WhatsApp en 48h
+
+━━━━ CE QU'ON NE FAIT PAS ━━━━
+❌ Pas de gestion de comptes publicitaires (on ne gère pas les campagnes)
+❌ Pas de lancement de campagnes (on livre les créatives, tu les uploades)
+❌ Pas de vidéos publicitaires (static ads 4:5 uniquement)
+❌ Pas de shooting photo produit
+❌ Pas de format Story 9:16
+
+━━━━ LES 3 OFFRES (toutes en abonnement mensuel) ━━━━
+
+🟦 CONVERSION STARTER — 29 900 FCFA/MOIS (barré 45 000 FCFA)
+→ Pour : e-commerçant avec 1 produit qui veut un flux hebdomadaire de créatives
+→ Volume : 9 images / semaine · 36 images / mois
+→ Produits : 1 produit couvert
+→ Inclus : Analyse marché hebdo, titres & descriptions, livraison 48h
+→ Prix/image : ≈ 830 FCFA
+→ Checkout : https://ecomaster.mychariow.shop/prd_ljowq8/checkout
+
+🟦 CONVERSION PRO — 59 900 FCFA/MOIS (barré 90 000 FCFA)
+→ Pour : e-commerçant actif qui veut plus de volume et couvrir 2 produits
+→ Volume : 24 images / semaine · 96 images / mois
+→ Produits : 1 à 2 produits couverts
+→ Inclus : Analyse marché hebdo, titres & descriptions, livraison 48h
+→ Prix/image : ≈ 624 FCFA
+→ Checkout : https://ecomaster.mychariow.shop/prd_34w031/checkout
+
+🟦 CONVERSION SCALE — 99 900 FCFA/MOIS (barré 150 000 FCFA)
+→ Pour : e-commerçant multi-produits ou marque à fort volume publicitaire
+→ Volume : 48 images / semaine · 192 images / mois
+→ Produits : 1 à 4 produits couverts
+→ Inclus : Analyse marché hebdo, titres & descriptions, livraison 48h
+→ Prix/image : ≈ 520 FCFA
+→ Checkout : https://ecomaster.mychariow.shop/prd_9fi79y/checkout
+
+━━━━ TARIFICATION / IMAGE ━━━━
+Starter : ≈ 830 FCFA / image (36 images/mois)
+Pro     : ≈ 624 FCFA / image (96 images/mois)
+Scale   : ≈ 520 FCFA / image (192 images/mois)
+
+━━━━ MODES DE PAIEMENT ━━━━
+Wave · Orange Money · Moov Money · MTN MoMo · Djamo
+Paiement sécurisé via Chariow. Abonnement mensuel résiliable à tout moment.
+
+━━━━ GARANTIE ━━━━
+Satisfait ou 100% remboursé — si le client n'est pas satisfait, on retravaille ou on rembourse intégralement.
+
+━━━━ PROCESS DE LIVRAISON ━━━━
+1. Le client s'abonne en ligne via Chariow (Wave, Orange Money, etc.)
+2. Il reçoit un formulaire de brief sur son produit (5 min à remplir)
+3. AdStack fait l'analyse de marché (concurrents, cible, tendances)
+4. Production des créatives images 4:5
+5. Livraison sur Google Drive + notification WhatsApp en 48h
+6. Le cycle se répète chaque semaine
+
+━━━━ POURQUOI LES CRÉATIVES ADSTACK PERFORMENT ━━━━
+1. Analyse de marché hebdomadaire → toujours aligné avec les tendances actuelles
+2. Cible définie précisément → les images parlent aux désirs et douleurs de ta cible
+3. Volume hebdomadaire → plus de données pour l'algorithme Meta → optimisation rapide
+4. Static ads 4:5 optimisés Meta : chargement instantané même en 3G/4G
+5. Livraison 48h garantie chaque semaine
+
+━━━━ QUI TU ES ━━━━
+Tu t'appelles Amina. Tu es l'assistante commerciale d'AdStack.
+Tu parles comme une vraie personne sur WhatsApp : naturel, direct, chaleureux, efficace.
+Tu connais parfaitement les 3 offres et leurs différences.
+Tu ne proposes JAMAIS de démo. Tu ne mentionnes JAMAIS de lien de démonstration.
+Tu peux proposer un code promo CREA1 (-10%) une seule fois si hésitation.
+Si la personne est chaude (prête à s'abonner), tu lui donnes directement le lien de checkout approprié.
+
+━━━━ RÈGLES ABSOLUES ━━━━
+1. MAX 25-30 mots par message. UNE seule idée.
+2. Jamais de liste à puces ou numéros. Tu parles, tu n'écris pas un email.
+3. Jamais "Je suis une IA" ou "assistante virtuelle".
+4. Jamais de démo. Jamais de lien de démonstration.
+5. PRIX → réponds immédiatement sans demander le produit d'abord.
+6. Si la personne est prête à s'abonner → donne le lien checkout direct.
+   - 1 produit, moins de volume → Starter : https://ecomaster.mychariow.shop/prd_ljowq8/checkout
+   - Plus de volume, 1-2 produits → Pro : https://ecomaster.mychariow.shop/prd_34w031/checkout
+   - Volume max, 1-4 produits → Scale : https://ecomaster.mychariow.shop/prd_9fi79y/checkout
+7. Code promo CREA1 (-10%) : une seule fois si hésitation après CTA.
+8. Jamais deux questions dans le même message.
+
+━━━━ OBJECTIONS FRÉQUENTES ━━━━
+"Prix ?" → "29 900 FCFA/mois pour 9 images/semaine — analyse marché incluse chaque semaine. Résiliable à tout moment."
+"Trop cher" → "830 FCFA par image. Une pub Meta peut rapporter 10x ça. Et si t'es pas satisfait, c'est remboursé."
+"Ça marche ?" → "Oui — parce qu'on analyse ton marché chaque semaine avant de produire. La bonne cible + le bon angle, ça convertit."
+"C'est un abonnement ?" → "Oui, mensuel. Résiliable à tout moment, sans contrat longue durée."
+"Vous faites des vidéos ?" → "Non, on est spécialisés images 4:5. C'est là qu'on excelle."
+"C'est quoi la différence avec un freelance ?" → "Freelance : 3 visuels en 5 jours, sans stratégie. AdStack : 9 images/semaine + analyse marché chaque semaine."
+`;
+
+var asHistory   = [];
+var asOpen      = false;
+var asLoading   = false;
+var asMsgCount  = 0;
+var asSessionId = 'as_' + Date.now();
+var asPromoShown = false;
+var asHotness   = 0;
+
+var AS_AVATAR_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="26" height="26"><circle cx="30" cy="30" r="30" fill="#0B5CFF"/><ellipse cx="30" cy="16" rx="21" ry="19" fill="#1FB6FF"/><ellipse cx="12" cy="32" rx="6" ry="11" fill="#1FB6FF"/><ellipse cx="48" cy="32" rx="6" ry="11" fill="#1FB6FF"/><ellipse cx="30" cy="37" rx="15" ry="17" fill="#7B4A2D"/><ellipse cx="30" cy="23" rx="15" ry="8" fill="#1FB6FF"/><path d="M21 33 Q24 29 27 33" stroke="#1A0800" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M33 33 Q36 29 39 33" stroke="#1A0800" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M29 38 Q30 40 31 38" stroke="#5C2E10" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M24 43 Q30 49 36 43" stroke="#5C2E10" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+
+function asInjectAvatars() {
+  var ha = document.getElementById('as-header-avatar');
+  if (ha) ha.innerHTML = AS_AVATAR_SVG;
+  var btn = document.getElementById('as-chat-btn');
+  if (btn) {
+    var ring = btn.querySelector('.as-ring');
+    btn.innerHTML = '';
+    if (ring) btn.appendChild(ring);
+    var tmp = document.createElement('div');
+    tmp.innerHTML = AS_AVATAR_SVG.replace('width="26" height="26"', 'width="44" height="44"');
+    btn.appendChild(tmp.firstChild);
+  }
+}
+
+function asToggle() {
+  asOpen = !asOpen;
+  var bubble = document.getElementById('as-chat-bubble');
+  var qBubble = document.getElementById('as-question-bubble');
+  if (asOpen) {
+    bubble.style.display = 'flex';
+    if (qBubble) qBubble.style.display = 'none';
+    document.getElementById('as-notif-badge').style.display = 'none';
+    if (asHistory.length === 0) asInit();
+  } else { bubble.style.display = 'none'; }
+}
+
+function asInit() {
+  asAppendMsg('bot', "Salut 👋 Je suis Amina, votre conseillère AdStack. Je suis encore en cours de configuration 🛠️ — bientôt je pourrai répondre à toutes tes questions sur nos offres, ton produit, ou comment se passe la collaboration. En attendant, explore la plateforme et nos tarifs !");
+  setTimeout(asShowSuggestions, 400);
+}
+
+function asShowSuggestions() {
+  var el = document.getElementById('as-suggestions');
+  el.innerHTML = '';
+  ["C'est quoi AdStack ?", "Le prix ?", "Ça marche vraiment ?", "Quelle offre pour moi ?"].forEach(function(s) {
+    var btn = document.createElement('button');
+    btn.className = 'as-sugg'; btn.textContent = s;
+    btn.onclick = function(){ el.innerHTML=''; asSubmit(s); };
+    el.appendChild(btn);
+  });
+}
+
+function asDetectHotness(text) {
+  var hot = /je (veux|prends|m.abonne|paie|vais|suis intéressé)|c.est bon|je fonce|ok je|on y va|comment (je paie|m.abonner|passer|acheter)/i;
+  var medium = /intéressant|pas mal|pourquoi pas|j.hésite|je réfléchis|peut-être/i;
+  if (hot.test(text)) asHotness += 3;
+  else if (medium.test(text)) asHotness += 1;
+}
+
+function asGetCheckoutForContext() {
+  var allMsgs = asHistory.map(function(m){ return m.content; }).join(' ').toLowerCase();
+  var mentionsScale = /\bscale\b|4 produit|48 image|99[.\s]?900|99900/i.test(allMsgs);
+  var mentionsPro   = /\bpro\b|24 image|2 produit|59[.\s]?900|59900/i.test(allMsgs);
+  if (mentionsScale && !mentionsPro) return {url: AS_CHECKOUT.scale, name: 'Conversion Scale'};
+  if (mentionsPro && !mentionsScale) return {url: AS_CHECKOUT.standard, name: 'Conversion Pro'};
+  return {url: AS_CHECKOUT.starter, name: 'Conversion Starter'};
+}
+
+function asAppendMsg(role, text, showOffre, showCheckout, showPromo) {
+  var msgs = document.getElementById('as-messages');
+  var wrap = document.createElement('div'); wrap.className = 'as-msg ' + role;
+  if (role === 'bot') { var av = document.createElement('div'); av.className = 'as-msg-av'; av.innerHTML = AS_AVATAR_SVG; wrap.appendChild(av); }
+  var bubble = document.createElement('div'); bubble.className = 'as-msg-bubble'; bubble.textContent = text;
+  if (showOffre || showCheckout || showPromo) {
+    var ctaRow = document.createElement('div'); ctaRow.className = 'as-cta-row';
+    if (showOffre) { var btnO = document.createElement('button'); btnO.className = 'as-cta-offre'; btnO.innerHTML = '📦 Voir les offres'; btnO.onclick = function() { asToggle(); var el = document.getElementById('nos-offres'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }; ctaRow.appendChild(btnO); }
+    if (showCheckout) { var co = asGetCheckoutForContext(); var btnC = document.createElement('a'); btnC.className = 'as-cta-checkout'; btnC.href = co.url; btnC.target = '_blank'; btnC.innerHTML = '💳 S\'abonner — ' + co.name; ctaRow.appendChild(btnC); }
+    if (showPromo && !asPromoShown) { asPromoShown = true; var promoDiv = document.createElement('div'); promoDiv.style.cssText = 'background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:9px 14px;text-align:center;'; promoDiv.innerHTML = '<div style="font-size:10px;font-weight:700;color:#FFD700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Code promo</div><div style="font-size:18px;font-weight:900;color:#FFD700;letter-spacing:3px;">' + AS_CODE_PROMO + '</div><div style="font-size:11px;color:#9EA1A8;margin-top:3px;">−10% sur ton abonnement</div>'; ctaRow.appendChild(promoDiv); }
+    bubble.appendChild(ctaRow);
+  }
+  wrap.appendChild(bubble); msgs.appendChild(wrap); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function asShowTyping() {
+  var msgs = document.getElementById('as-messages');
+  var el = document.createElement('div'); el.className = 'as-msg bot'; el.id = 'as-typing';
+  var av = document.createElement('div'); av.className = 'as-msg-av'; av.innerHTML = AS_AVATAR_SVG;
+  var b = document.createElement('div'); b.className = 'as-msg-bubble';
+  var t = document.createElement('div'); t.className = 'as-typing'; t.innerHTML = '<span></span><span></span><span></span>';
+  b.appendChild(t); el.appendChild(av); el.appendChild(b); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight;
+}
+function asRemoveTyping() { var el=document.getElementById('as-typing'); if(el) el.remove(); }
+
+function asSend() {
+  var inp = document.getElementById('as-input'); var text = inp.value.trim();
+  if (!text || asLoading) return; inp.value = ''; inp.style.height = ''; asSubmit(text);
+}
+
+async function asSubmit(text) {
+  if (!text || asLoading) return;
+  document.getElementById('as-suggestions').innerHTML = '';
+  asAppendMsg('user', text);
+  asMsgCount++;
+  asLoading = true;
+  document.getElementById('as-send-btn').disabled = true;
+  asShowTyping();
+  setTimeout(function() {
+    asRemoveTyping();
+    asAppendMsg('bot', "Désolée, je suis encore en cours de configuration 🛠️ Je serai bientôt disponible pour répondre à toutes tes questions sur les offres, le fonctionnement de l'agence, ou ton projet. En attendant, jette un œil à nos offres en bas à droite — ou demande directement une démo gratuite !", true, false, false);
+    asLoading = false; document.getElementById('as-send-btn').disabled = false;
+  }, 1200);
+}
+
+function asSendData(trigger) {
+  if (!AS_WEBHOOK || asHistory.length === 0) return;
+  var payload = { session: asSessionId, trigger: trigger, timestamp: new Date().toISOString(), totalMessages: asMsgCount, hotness: asHotness, promoShown: asPromoShown, allMessages: asHistory.map(function(m){ return m.role+': '+m.content; }).join(' || ') };
+  fetch(AS_WEBHOOK, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).catch(function(){});
+}
+
+window.addEventListener('beforeunload', function() { if (asMsgCount > 0) asSendData('exit'); });
+
+(function init() {
+  asInjectAvatars();
+  setTimeout(function() { if (!asOpen) document.getElementById('as-notif-badge').style.display = 'flex'; }, 4000);
+  setTimeout(function() { if (!asOpen) { var qb = document.getElementById('as-question-bubble'); qb.style.display = 'block'; setTimeout(function() { qb.style.display = 'none'; }, 30000); } }, 30000);
+  var inp = document.getElementById('as-input');
+  if (inp) { inp.addEventListener('input', function() { this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 80) + 'px'; }); }
+})();
+</script></div>
+
+</body>
+</html>

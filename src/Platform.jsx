@@ -1,0 +1,1184 @@
+import { useState, useEffect, useRef } from "react";
+
+const C = {
+  bg:'#0B0F1A',    sidebar:'#070A12',    card:'#141D30',
+  border:'rgba(255,255,255,0.11)',        borderM:'rgba(255,255,255,0.22)',
+  red:'#2D7FF9',   redS:'rgba(45,127,249,0.11)', redM:'rgba(45,127,249,0.22)',
+  white:'#FFFFFF', whiteS:'rgba(255,255,255,0.09)',
+  gray:'#9CA0B5',  grayS:'rgba(255,255,255,0.07)',
+  text:'#E8EDF8',  sec:'#8A90B2',        muted:'#50587A',
+};
+
+const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
+
+const PLAN_QUANTITY = { 'Conversion Starter':9, 'Conversion Pro':18, 'Conversion Scale':36 };
+
+const ANGLES = [];
+
+const CREA = [];
+
+const INITIAL_PRODUCTS = [];
+
+
+const NAV = [
+  {id:'produits',icon:'box',label:'Mes Produits'},
+  {id:'galerie',icon:'grid',label:'Galerie Créatives'},
+  {id:'copies',icon:'document',label:'Ad Copies'},
+  {id:'marche',icon:'chart',label:'Données Marché'},
+  {id:'tarifs',icon:'tag',label:'Nos Tarifs'},
+];
+
+const cs = (extra={}) => ({background:C.card, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:'0 2px 14px rgba(0,0,0,0.45)', ...extra});
+
+const MOBILE_BREAKPOINT = 768;
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= MOBILE_BREAKPOINT);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  return isMobile;
+};
+
+
+const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
+  const filled = name==='sparkle' || name==='bolt';
+  const paths = {
+    grid: <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
+    document: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></>,
+    chart: <><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></>,
+    sparkle: <path d="M12 2l1.8 5.6L19.5 9.5l-5.7 1.9L12 17l-1.8-5.6L4.5 9.5l5.7-1.9z"/>,
+    tag: <><path d="M20.59 13.41L13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="6.5" cy="6.5" r="1"/></>,
+    lock: <><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></>,
+    search: <><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></>,
+    calendar: <><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="9" x2="21" y2="9"/></>,
+    download: <><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></>,
+    x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
+    check: <polyline points="20 6 9 17 4 12"/>,
+    bulb: <><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/></>,
+    person: <><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></>,
+    image: <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></>,
+    clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></>,
+    card: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
+    phone: <><rect x="6" y="2" width="12" height="20" rx="2"/><line x1="10" y1="19" x2="14" y2="19"/></>,
+    arrow: <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>,
+    bolt: <polygon points="13 2 3 14 11 14 11 22 21 10 13 10 13 2"/>,
+    box: <><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></>,
+    plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    upload: <><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></>,
+    pencil: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
+    menu: <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></>,
+    eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+  };
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled?color:'none'} stroke={filled?'none':color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+      {paths[name]}
+    </svg>
+  );
+};
+
+const Tag = ({ch, color='red'}) => {
+  const m = {
+    red:{bg:C.redS,c:C.red,b:'rgba(45,127,249,0.2)'},
+    gray:{bg:'rgba(255,255,255,0.05)',c:C.sec,b:C.border},
+    white:{bg:'rgba(255,255,255,0.08)',c:C.text,b:'rgba(255,255,255,0.16)'},
+  };
+  const t = m[color]||m.red;
+  return <span style={{padding:'2px 8px',borderRadius:4,fontSize:10,fontWeight:700,letterSpacing:'0.4px',background:t.bg,color:t.c,border:`1px solid ${t.b}`}}>{ch}</span>;
+};
+
+const LockOverlay = () => (
+  <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,backdropFilter:'blur(6px)',background:'rgba(11,15,26,0.90)',borderRadius:10,zIndex:10,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10}}>
+    <Icon name="lock" size={26} color={C.sec}/>
+    <div style={{fontSize:13,fontWeight:700,color:C.text}}>Réservé aux abonnés</div>
+    <div style={{fontSize:11,color:C.sec,textAlign:'center',maxWidth:200,lineHeight:1.5}}>Abonnez-vous pour accéder à toutes vos données</div>
+    <button style={{marginTop:6,padding:'9px 22px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6}}>
+      Voir les offres <Icon name="arrow" size={13} color="#fff"/>
+    </button>
+  </div>
+);
+
+const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen}) => {
+  const showCollapsed = collapsed && !isMobile;
+
+  const navClick = (id) => {
+    set(id);
+    if (isMobile) setMobileOpen(false);
+  };
+
+  const asideStyle = isMobile
+    ? {
+        position:'fixed',top:0,left:0,height:'100%',zIndex:500,
+        width: mobileOpen ? 'min(80vw,272px)' : 52,
+        background:C.sidebar,
+        borderRight:`1px solid ${C.border}`,
+        display:'flex',flexDirection:'column',overflow:'hidden',
+        transition:'width 0.22s cubic-bezier(.4,0,.2,1)',
+        boxShadow: mobileOpen ? '8px 0 30px rgba(0,0,0,0.5)' : '2px 0 12px rgba(0,0,0,0.3)'
+      }
+    : {width:showCollapsed?64:222,flexShrink:0,background:C.sidebar,borderRight:`1px solid ${C.border}`,display:'flex',flexDirection:'column',overflow:'hidden',transition:'width 0.2s ease',boxShadow:'4px 0 28px rgba(0,0,0,0.5)'};
+
+  return (
+  <aside style={asideStyle}>
+    <div style={{padding:'12px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:9,minHeight:52}}>
+      {(showCollapsed || (isMobile && !mobileOpen)) ? (
+        /* Mode icônes seulement : bouton ☰ centré à la place du logo */
+        <button
+          onClick={() => isMobile ? setMobileOpen(true) : setCollapsed(false)}
+          title="Ouvrir le menu"
+          style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto'}}
+        >
+          <Icon name="menu" size={15} color={C.sec}/>
+        </button>
+      ) : (
+        /* Mode étendu : logo + titre + bouton fermer */
+        <>
+          <div style={{width:28,height:28,borderRadius:7,background:`linear-gradient(135deg,${C.red},#0B3D91)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>A</div>
+          <div style={{overflow:'hidden',flex:1}}>
+            <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1,whiteSpace:'nowrap'}}>AdStack</div>
+            <div style={{fontSize:9,color:C.sec,letterSpacing:'1px',textTransform:'uppercase',whiteSpace:'nowrap'}}>Espace Client</div>
+          </div>
+          <button
+            onClick={() => isMobile ? setMobileOpen(false) : setCollapsed(true)}
+            title={isMobile ? 'Fermer' : 'Réduire'}
+            style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}
+          >
+            <Icon name={isMobile ? 'x' : 'menu'} size={13} color={C.sec}/>
+          </button>
+        </>
+      )}
+    </div>
+
+    <div style={{padding:showCollapsed?'12px 0':'12px 16px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:showCollapsed?'center':'flex-start',gap:10}}>
+      <div style={{width:32,height:32,borderRadius:8,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:C.muted}}>
+        <Icon name="box" size={14} color={C.muted}/>
+      </div>
+      {!showCollapsed && (
+        <div style={{overflow:'hidden'}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.sec,whiteSpace:'nowrap'}}>Mon espace</div>
+          <div style={{fontSize:10,color:C.muted}}>Non connecté</div>
+        </div>
+      )}
+    </div>
+
+    <nav style={{flex:1,padding:'10px',overflow:'auto'}}>
+      {NAV.map(n => (
+        <button key={n.id} onClick={() => navClick(n.id)} title={(showCollapsed || (isMobile && !mobileOpen)) ? n.label : undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:(showCollapsed || (isMobile && !mobileOpen))?'center':'flex-start',gap:(showCollapsed || (isMobile && !mobileOpen))?0:10,padding:(showCollapsed || (isMobile && !mobileOpen))?'10px 0':'9px 10px',borderRadius:7,border:'none',cursor:'pointer',background:active===n.id?C.redS:'transparent',color:active===n.id?C.red:C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',borderLeft:active===n.id?`2px solid ${C.red}`:'2px solid transparent',transition:'all 0.15s',textAlign:'left',marginBottom:1,whiteSpace:'nowrap'}}>
+          <Icon name={n.icon} size={14} color={active===n.id?C.red:C.sec}/>
+          {!(showCollapsed || (isMobile && !mobileOpen)) && n.label}
+        </button>
+      ))}
+    </nav>
+
+    <div style={{padding:showCollapsed?'12px 0':'12px 14px',borderTop:`1px solid ${C.border}`}}>
+      <button onClick={() => { if(!isDemo) set('demo'); setDemo(!isDemo); }} title={showCollapsed||(isMobile&&!mobileOpen)?(isDemo?'Mode Démo actif':'VOIR DEMO'):undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:isDemo?C.redS:'rgba(255,255,255,0.07)',border:`1px solid ${isDemo?'rgba(45,127,249,0.28)':C.border}`,color:isDemo?C.red:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
+        {isDemo
+          ? (<><Icon name="bolt" size={12} color={C.red}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'Mode Démo actif'}</>)
+          : (<><Icon name="image" size={12} color={C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}</>)}
+      </button>
+      {!showCollapsed && !(isMobile && !mobileOpen) && (
+        <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
+          <div style={{fontSize:11,color:C.red,fontWeight:700,marginBottom:2}}>Conversion Starter</div>
+          <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>9 images / semaine · Données marché</div>
+          <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>34 900 <span style={{fontSize:10,color:C.sec,fontWeight:400}}>FCFA/mois</span></div>
+          <button onClick={() => set('tarifs')}
+            style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.red,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+            Commencer <Icon name="arrow" size={11} color="#fff"/>
+          </button>
+        </div>
+      )}
+    </div>
+  </aside>
+  );
+};
+
+const EMPTY_PRODUCT = {
+  nom:'', pricing:'', promo:'', lien:'', utilite:'', cible:'', pays:'', notes:'',
+  couleur1:'#2D7FF9', couleur2:'#FFFFFF', photo:null, logo:null, deliveries:[], marche:null,
+};
+
+// Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
+const Field = ({label, k, required, textarea, placeholder, type='text', form, setForm, errors, C}) => {
+  const err = errors?.[k];
+  const common = {
+    value: form[k] || '',
+    onChange: e => setForm(f=>({...f,[k]:e.target.value})),
+    placeholder: placeholder || '',
+    style:{
+      width:'100%', padding:'10px 12px', borderRadius:7,
+      background:'rgba(255,255,255,0.07)',
+      border:`1px solid ${err?C.red:C.border}`,
+      color:C.text,
+      fontSize:16, // 16px minimum pour éviter le zoom iOS
+      fontFamily:'inherit', outline:'none', resize:'vertical',
+      touchAction:'manipulation', // désactive le double-tap zoom
+      WebkitAppearance:'none',
+    },
+  };
+  return (
+    <div>
+      <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:6,display:'block'}}>
+        {label}{required && <span style={{color:C.red}}> *</span>}
+      </label>
+      {textarea ? <textarea rows={2} {...common}/> : <input type={type} {...common}/>}
+    </div>
+  );
+};
+
+const Produits = ({products, setProducts}) => {
+  const isMobile = useIsMobile();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(EMPTY_PRODUCT);
+  const [errors, setErrors] = useState({});
+  const [brief, setBrief] = useState(null);
+  const [briefCopied, setBriefCopied] = useState(false);
+  const photoRef = useRef(null);
+
+  const openNew = () => { setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); };
+  const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); };
+
+  const handleFile = (e, fieldKey) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setForm(f => ({...f, [fieldKey]: reader.result}));
+    reader.readAsDataURL(file);
+  };
+
+  const validate = () => {
+    const req = ['nom','pricing','utilite','cible','pays','photo'];
+    const e = {};
+    req.forEach(k => { if (!form[k]) e[k] = true; });
+    return e;
+  };
+
+  const submit = () => {
+    const e = validate();
+    if (Object.keys(e).length) { setErrors(e); return; }
+    if (editingId) {
+      setProducts(prev => prev.map(p => p.id===editingId ? {...form, id:editingId} : p));
+    } else {
+      setProducts(prev => [...prev, {...form, id: Date.now()}]);
+    }
+    setShowForm(false);
+  };
+
+  const requestCreatives = (p) => {
+    const qty = 9;
+    setBrief({
+      client: "",
+      plan: "",
+      quantite_demandee: qty,
+      date_demande: new Date().toISOString().slice(0,10),
+      produit: {
+        nom: p.nom,
+        pricing: p.pricing,
+        offre_promo: p.promo || null,
+        lien_page_produit: p.lien || null,
+        utilite_principale: p.utilite,
+        cible_principale: p.cible,
+        pays_de_vente: p.pays,
+        couleurs_principales: [p.couleur1, p.couleur2],
+        photo: p.photo ? '[fichier image joint]' : null,
+        logo: p.logo ? '[fichier logo joint]' : null,
+        contexte_additionnel: p.notes || null,
+      },
+    });
+    setBriefCopied(false);
+  };
+
+  const copyBrief = () => {
+    navigator.clipboard?.writeText(JSON.stringify(brief, null, 2)).then(() => {
+      setBriefCopied(true);
+      setTimeout(() => setBriefCopied(false), 2200);
+    });
+  };
+
+  // Field est défini au niveau module (au-dessus de Produits)
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18,flexWrap:'wrap',gap:10}}>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
+          <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
+        </div>
+        <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+          <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
+        </button>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
+        {products.map(p => (
+          <div key={p.id} style={cs({overflow:'hidden',display:'flex',flexDirection:'column'})}>
+            <div style={{aspectRatio:'4/5',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              {!p.photo && <Icon name="box" size={32} color={C.muted}/>}
+              {p.logo && (
+                <div style={{position:'absolute',bottom:8,left:8,width:32,height:32,borderRadius:6,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:4}}>
+                  <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                </div>
+              )}
+              <button onClick={() => openEdit(p)} style={{position:'absolute',top:8,right:8,width:28,height:28,borderRadius:7,border:'none',background:'rgba(7,8,12,0.7)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Icon name="pencil" size={13} color="#fff"/>
+              </button>
+              {p.promo && (
+                <div style={{position:'absolute',top:8,left:8}}>
+                  <Tag ch={p.promo} color="red"/>
+                </div>
+              )}
+            </div>
+            <div style={{padding:'12px 14px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
+              <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
+              <div style={{fontSize:12,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
+              <div style={{fontSize:10,color:C.sec,lineHeight:1.5,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.utilite}</div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:2}}>
+                {p.pays ? <Tag ch={p.pays} color="gray"/> : <span/>}
+                <div style={{display:'flex',gap:4}}>
+                  <span style={{width:12,height:12,borderRadius:'50%',background:p.couleur1,border:`1px solid ${C.border}`}}/>
+                  <span style={{width:12,height:12,borderRadius:'50%',background:p.couleur2,border:`1px solid ${C.border}`}}/>
+                </div>
+              </div>
+            </div>
+            <div style={{padding:'0 14px 14px'}}>
+              <button onClick={() => requestCreatives(p)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px',borderRadius:7,border:'1px solid rgba(45,127,249,0.2)',background:C.redS,color:C.red,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+                <Icon name="sparkle" size={13} color={C.red}/> Demander mes créatives
+              </button>
+            </div>
+          </div>
+        ))}
+
+        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:240,borderRadius:10,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.sec,fontFamily:'inherit',transition:'border-color 0.15s'}}
+          onMouseEnter={e=>e.currentTarget.style.borderColor=C.borderM}
+          onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}
+        >
+          <Icon name="plus" size={22}/>
+          <span style={{fontSize:12,fontWeight:600}}>Ajouter un produit</span>
+        </button>
+      </div>
+
+      {showForm && (
+        <div onClick={() => setShowForm(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:560,maxHeight:'88vh',overflow:'auto',borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'24px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
+              <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Icon name="x" size={14}/>
+              </button>
+            </div>
+
+            <div style={{marginBottom:16}}>
+              <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:6,display:'block'}}>Photo du produit<span style={{color:C.red}}> *</span></label>
+              <input ref={photoRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e,'photo')}/>
+              <div onClick={()=>photoRef.current?.click()} style={{aspectRatio:'4/5',maxWidth:180,borderRadius:8,border:`1px dashed ${errors.photo?C.red:C.border}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+                {!form.photo && <Icon name="upload" size={22} color={C.sec}/>}
+              </div>
+            </div>
+
+            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+              <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense"form={form} setForm={setForm} errors={errors} C={C}/>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
+                <Field label="Pricing (prix actuel)" k="pricing" required placeholder="Ex : 12 900 FCFA"form={form} setForm={setForm} errors={errors} C={C}/>
+                <Field label="Offre promotionnelle en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin"form={form} setForm={setForm} errors={errors} C={C}/>
+              </div>
+              <Field label="Lien de la page produit" k="lien" placeholder="https://..."form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Utilité principale" k="utilite" required textarea placeholder="À quoi sert ce produit, quel problème il résout..."form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Cible principale" k="cible" required textarea placeholder="Qui achète ce produit (âge, profil, besoin)..."form={form} setForm={setForm} errors={errors} C={C}/>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
+                <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal"form={form} setForm={setForm} errors={errors} C={C}/>
+                <div>
+                  <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:6,display:'block'}}>Couleurs principales</label>
+                  <div style={{display:'flex',gap:8}}>
+                    <input type="color" value={form.couleur1} onChange={e=>setForm(f=>({...f,couleur1:e.target.value}))} style={{width:'100%',height:38,borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',padding:2}}/>
+                    <input type="color" value={form.couleur2} onChange={e=>setForm(f=>({...f,couleur2:e.target.value}))} style={{width:'100%',height:38,borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',padding:2}}/>
+                  </div>
+                </div>
+              </div>
+              <Field label="Contexte additionnel" k="notes" textarea placeholder="Tout autre détail utile pour la création (ton, contraintes, mentions légales...)"form={form} setForm={setForm} errors={errors} C={C}/>
+            </div>
+
+            {Object.keys(errors).length>0 && (
+              <div style={{marginTop:14,padding:'10px 14px',borderRadius:8,background:C.redS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.red}}>
+                Merci de renseigner les champs marqués d'un astérisque.
+              </div>
+            )}
+
+            <button onClick={submit} style={{width:'100%',marginTop:18,padding:'12px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+              <Icon name="check" size={14} color="#fff"/> {editingId ? 'Enregistrer les modifications' : 'Créer le produit'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {brief && (
+        <div onClick={() => setBrief(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:480,maxHeight:'85vh',overflow:'auto',borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+              <div>
+                <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:0}}>Brief créatives envoyé</h2>
+                <p style={{fontSize:11,color:C.sec,marginTop:3}}>{brief.quantite_demandee} créatives seront générées pour ce produit</p>
+              </div>
+              <button onClick={() => setBrief(null)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <Icon name="x" size={14}/>
+              </button>
+            </div>
+            <pre style={{fontSize:10.5,color:C.sec,background:'rgba(255,255,255,0.055)',border:`1px solid ${C.border}`,borderRadius:8,padding:'12px',overflow:'auto',lineHeight:1.6,whiteSpace:'pre-wrap',fontFamily:"'DM Mono',monospace"}}>
+              {JSON.stringify(brief, null, 2)}
+            </pre>
+            <button onClick={copyBrief} style={{width:'100%',marginTop:12,padding:'10px',borderRadius:8,border:`1px solid ${briefCopied?'rgba(45,127,249,0.3)':C.borderM}`,background:briefCopied?C.redS:'rgba(255,255,255,0.05)',color:briefCopied?C.red:C.text,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,transition:'all 0.2s'}}>
+              {briefCopied ? (<><Icon name="check" size={13}/> Brief copié</>) : 'Copier le brief'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Galerie = ({products, isDemo, setSection}) => {
+  const [query, setQuery] = useState('');
+  const [filterMode, setFilterMode] = useState('tous');
+  const [activeChip, setActiveChip] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+
+  const weeks = ['S1','S2','S3','S4','S5'];
+
+  const filtered = CREA.filter(c => {
+    if (selectedProduct && c.productId !== selectedProduct) return false;
+    const q = query.trim().toLowerCase();
+    if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q)) return false;
+    if (filterMode==='angle' && activeChip && c.angle!==activeChip) return false;
+    if (filterMode==='date' && activeChip && c.week!==activeChip) return false;
+    return true;
+  });
+
+  const chips = filterMode==='angle' ? ANGLES : filterMode==='date' ? weeks : [];
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18}}>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Galerie Créatives</h1>
+          <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Vos visuels produits</p>
+        </div>
+        <Tag ch={`${filtered.length} créatives`} color="gray"/>
+      </div>
+
+      {/* Product filter strip */}
+      {products.length > 0 && (
+        <div style={{display:'flex',gap:8,marginBottom:16,overflowX:'auto',paddingBottom:2}}>
+          <button
+            onClick={() => setSelectedProduct(null)}
+            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,border:`1px solid ${!selectedProduct ? C.red : C.border}`,background:!selectedProduct ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:!selectedProduct ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
+          >Tous</button>
+          {products.map(p => (
+            <button key={p.id}
+              onClick={() => setSelectedProduct(selectedProduct === p.id ? null : p.id)}
+              style={{display:'flex',alignItems:'center',gap:7,padding:'5px 12px 5px 7px',borderRadius:20,border:`1px solid ${selectedProduct===p.id ? C.red : C.border}`,background:selectedProduct===p.id ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:selectedProduct===p.id ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
+            >
+              <div style={{width:20,height:20,borderRadius:4,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.08)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                {!p.photo && <Icon name="box" size={10} color={C.sec}/>}
+              </div>
+              <span style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:130}}>{p.nom}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div style={{position:'relative',marginBottom:14}}>
+        <div style={{position:'absolute',left:13,top:0,bottom:0,display:'flex',alignItems:'center',color:C.sec,pointerEvents:'none'}}>
+          <Icon name="search" size={15}/>
+        </div>
+        <input
+          value={query} onChange={e=>setQuery(e.target.value)}
+          placeholder="Rechercher par angle, semaine..."
+          style={{width:'100%',padding:'11px 14px 11px 38px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none',transition:'border-color 0.15s'}}
+          onFocus={e=>e.target.style.borderColor=C.borderM}
+          onBlur={e=>e.target.style.borderColor=C.border}
+        />
+      </div>
+
+      <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18}}>
+        {[['tous','Tous','grid'],['date','Date','calendar'],['angle','Angle','tag']].map(([id,label,icon]) => (
+          <button key={id} onClick={() => {setFilterMode(id); setActiveChip(null);}}
+            style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.red:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
+            <Icon name={icon} size={13}/> {label}
+          </button>
+        ))}
+      </div>
+
+      {filterMode!=='tous' && (
+        <div style={{display:'flex',gap:6,marginBottom:18,flexWrap:'wrap'}}>
+          {chips.map(ch => (
+            <button key={ch} onClick={() => setActiveChip(activeChip===ch?null:ch)}
+              style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${activeChip===ch?C.borderM:C.border}`,cursor:'pointer',background:activeChip===ch?'rgba(255,255,255,0.09)':'transparent',color:activeChip===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
+              {filterMode==='date' ? `Semaine ${ch.replace('S','')}` : ch}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
+        {filtered.map(c => (
+          <div key={c.id} className="gallery-item" onClick={() => setSelected(c)}
+            style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:`linear-gradient(160deg,${c.g1},${c.g2})`}}
+          >
+            <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))'}}>
+              <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.angle}</div>
+              <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Semaine {c.week.replace('S','')}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filtered.length===0 && query && (
+        <div style={{textAlign:'center',padding:'60px 0',color:C.sec,fontSize:12}}>Aucune créative trouvée pour cette recherche</div>
+      )}
+
+      {CREA.length===0 && !query && (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
+          <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name="grid" size={26} color={C.red}/>
+          </div>
+          <div>
+            <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos créatives apparaîtront ici</div>
+            <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
+              Dès que votre agence aura produit vos visuels Meta Ads, vous les retrouverez ici — triés par angle, par semaine, prêts à télécharger et à publier.
+            </div>
+          </div>
+          <button onClick={() => setSection && setSection('tarifs')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+            Découvrir nos offres <Icon name="arrow" size={12} color="#fff"/>
+          </button>
+        </div>
+      )}
+
+      {isDemo && (
+        <div style={{position:'relative',marginTop:14,height:72}}>
+          <div style={{height:'100%',background:C.card,borderRadius:10}}/>
+          <LockOverlay/>
+        </div>
+      )}
+
+      {selected && (
+        <div onClick={() => setSelected(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:320,borderRadius:14,overflow:'hidden',background:C.card,border:`1px solid ${C.borderM}`}}>
+            <div style={{aspectRatio:'4/5',background:`linear-gradient(160deg,${selected.g1},${selected.g2})`}}/>
+            <div style={{padding:'14px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:700,color:C.text}}>{selected.angle}</div>
+                <div style={{fontSize:11,color:C.sec}}>Semaine {selected.week.replace('S','')}</div>
+              </div>
+              <button style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Icon name="download" size={15}/>
+              </button>
+            </div>
+          </div>
+          <button onClick={() => setSelected(null)} style={{position:'absolute',top:24,right:24,width:38,height:38,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name="x" size={16} color="#fff"/>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const Copies = ({products, setSection}) => {
+  const isMobile = useIsMobile();
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [copied, setCopied] = useState(null);
+  const angleRefs = useRef({});
+
+  const copy = (text, id) => {
+    navigator.clipboard?.writeText(text).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2200); });
+  };
+
+  const allAngles = selected
+    ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date})))
+    : [];
+
+  const filtered = products.filter(p => p.nom.toLowerCase().includes(query.toLowerCase()));
+
+  const pick = (p) => { setSelected(p); setQuery(''); };
+
+  const scrollTo = (num) => { angleRefs.current[num]?.scrollIntoView({behavior:'smooth', block:'start'}); };
+
+  return (
+    <div>
+      <div style={{marginBottom:18}}>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Ad Copies</h1>
+        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Hooks et textes classés par angle · Copiez directement dans Meta Ads Manager</p>
+      </div>
+
+      {!selected ? (
+        <>
+          {/* Search */}
+          <div style={{position:'relative',maxWidth:480,marginBottom:20}}>
+            <div style={{position:'absolute',left:13,top:0,bottom:0,display:'flex',alignItems:'center',pointerEvents:'none'}}>
+              <Icon name="search" size={15} color={C.sec}/>
+            </div>
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Rechercher un produit..."
+              style={{width:'100%',padding:'12px 14px 12px 38px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none',transition:'border-color 0.15s'}}
+            />
+          </div>
+
+          {/* Product card grid */}
+          {products.length === 0
+            ? <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
+                <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <Icon name="document" size={26} color={C.red}/>
+                </div>
+                <div>
+                  <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos ad copies arriveront ici</div>
+                  <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
+                    Hooks accrocheurs et descriptions optimisées Meta Ads, classés par angle. Copiez-collez directement dans votre Ads Manager pour gagner du temps.
+                  </div>
+                </div>
+                <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+                  Ajouter un produit <Icon name="arrow" size={12} color="#fff"/>
+                </button>
+              </div>
+            : filtered.length === 0 && query
+            ? <div style={{textAlign:'center',padding:'32px 0'}}>
+                <Icon name="search" size={26} color={C.muted}/>
+                <div style={{fontSize:12,color:C.sec,marginTop:10}}>Aucun résultat pour "{query}"</div>
+              </div>
+            : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(2,1fr)',gap:10}}>
+                {filtered.map(p => {
+                  const total = (p.deliveries||[]).reduce((n,d)=>n+d.angles.length,0);
+                  return (
+                    <button key={p.id} onClick={()=>pick(p)}
+                      style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,border:`1px solid ${C.border}`,background:C.card,cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.15s',width:'100%'}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.borderM;e.currentTarget.style.background='rgba(255,255,255,0.05)';}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.card;}}
+                    >
+                      <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                        {!p.photo && <Icon name="box" size={20} color={C.sec}/>}
+                      </div>
+                      <div style={{flex:1,overflow:'hidden'}}>
+                        <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
+                        <div style={{fontSize:11,color:C.sec,marginTop:3}}>{p.pays||'—'} · {total} angle{total!==1?'s':''} livré{total!==1?'s':''}</div>
+                      </div>
+                      {total>0 ? <Tag ch={`${total} A`} color="white"/> : <Tag ch="En attente" color="gray"/>}
+                    </button>
+                  );
+                })}
+              </div>
+          }
+        </>
+      ) : (
+        <div>
+          {/* Product banner */}
+          <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,background:'rgba(45,127,249,0.10)',border:'1px solid rgba(45,127,249,0.28)',marginBottom:20}}>
+            <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:selected.photo?`url(${selected.photo}) center/cover`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+              {!selected.photo && <Icon name="box" size={20} color={C.sec}/>}
+            </div>
+            <div style={{flex:1,overflow:'hidden'}}>
+              <div style={{fontSize:14,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selected.nom}</div>
+              <div style={{fontSize:11,color:C.sec,marginTop:2,display:'flex',gap:8,flexWrap:'wrap'}}>
+                <span>{selected.pricing}</span><span>·</span>
+                <span>{selected.pays||'—'}</span><span>·</span>
+                <span>{allAngles.length} angle{allAngles.length!==1?'s':''} livré{allAngles.length!==1?'s':''}</span>
+              </div>
+            </div>
+            <button onClick={()=>setSelected(null)}
+              style={{width:30,height:30,borderRadius:7,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 0.15s'}}
+              onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.1)'}
+              onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.05)'}
+            ><Icon name="x" size={13}/></button>
+          </div>
+
+          {allAngles.length === 0 ? (
+            <div style={{textAlign:'center',padding:'40px',color:C.sec}}>
+              <Icon name="clock" size={28} color={C.muted}/>
+              <div style={{fontSize:13,fontWeight:600,color:C.text,marginTop:12}}>Aucun Ad Copy livré pour le moment</div>
+              <div style={{fontSize:11,marginTop:6}}>Vos Ad Copies apparaîtront ici après la première livraison AdStack</div>
+            </div>
+          ) : (
+            <>
+              {/* Jump to angle chips */}
+              <div style={{marginBottom:22}}>
+                <div style={{fontSize:10,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:8}}>Aller à l'angle</div>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {allAngles.map(a => (
+                    <button key={a.numero} onClick={()=>scrollTo(a.numero)} title={`Angle ${a.numero} · ${a.nom}`}
+                      style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.red;e.currentTarget.style.background=C.redS;e.currentTarget.style.color=C.red;}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
+                    >A{a.numero}</button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Deliveries + Angles */}
+              {(selected.deliveries||[]).map(delivery => (
+                <div key={delivery.semaine} style={{marginBottom:28}}>
+                  <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
+                    <div style={{height:1,flex:1,background:C.border}}/>
+                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,flexShrink:0}}>
+                      <Icon name="clock" size={11} color={C.sec}/>
+                      <span style={{fontSize:11,color:C.sec,fontWeight:600,whiteSpace:'nowrap'}}>Semaine {delivery.semaine} · {delivery.date}</span>
+                    </div>
+                    <div style={{height:1,flex:1,background:C.border}}/>
+                  </div>
+
+                  <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                    {delivery.angles.map(angle => (
+                      <div key={angle.numero} ref={el=>{angleRefs.current[angle.numero]=el;}} style={cs({padding:'20px',scrollMarginTop:16})}>
+                        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:18}}>
+                          <div style={{width:30,height:30,borderRadius:8,background:C.redS,border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                            <span style={{fontSize:11,fontWeight:800,color:C.red}}>A{angle.numero}</span>
+                          </div>
+                          <div style={{fontSize:14,fontWeight:700,color:C.text}}>{angle.nom}</div>
+                        </div>
+
+                        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
+                          <div>
+                            <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:10}}>5 Hooks</div>
+                            {angle.hooks.map((hook,i) => (
+                              <div key={i} style={cs({padding:'10px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,marginBottom:7})}>
+                                <div style={{fontSize:12,color:C.text,lineHeight:1.45,flex:1}}>{hook}</div>
+                                <button onClick={()=>copy(hook,`h-${angle.numero}-${i}`)}
+                                  style={{flexShrink:0,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`h-${angle.numero}-${i}`?C.redS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`h-${angle.numero}-${i}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`h-${angle.numero}-${i}`?C.red:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
+                                  {copied===`h-${angle.numero}-${i}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier'}
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <div>
+                            <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:10}}>Corps AIDA</div>
+                            <div style={cs({padding:'14px',position:'relative'})}>
+                              <pre style={{fontSize:12,color:C.text,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.body}</pre>
+                              <button onClick={()=>copy(angle.body,`body-${angle.numero}`)}
+                                style={{position:'absolute',top:10,right:10,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.redS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.red:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
+                                {copied===`body-${angle.numero}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier tout'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+
+const Marche = ({products, isDemo, setSection}) => {
+  const isMobile = useIsMobile();
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState(null);
+
+  const filtered = products.filter(p => p.nom.toLowerCase().includes(query.toLowerCase()));
+  const pick = (p) => { setSelected(p); setQuery(''); };
+  const m = selected?.marche;
+
+  return (
+  <div>
+    <div style={{marginBottom:18}}>
+      <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Données Marché</h1>
+      <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Data collectée et applicable à vos campagnes</p>
+    </div>
+
+    {!selected ? (
+      <>
+        {/* Search */}
+        <div style={{position:'relative',maxWidth:480,marginBottom:20}}>
+          <div style={{position:'absolute',left:13,top:0,bottom:0,display:'flex',alignItems:'center',pointerEvents:'none'}}>
+            <Icon name="search" size={15} color={C.sec}/>
+          </div>
+          <input
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Rechercher un produit..."
+            style={{width:'100%',padding:'12px 14px 12px 38px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none',transition:'border-color 0.15s'}}
+          />
+        </div>
+
+        {/* Product card grid */}
+        {products.length === 0
+          ? <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
+              <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                <Icon name="chart" size={26} color={C.red}/>
+              </div>
+              <div>
+                <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos données marché apparaîtront ici</div>
+                <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
+                  Analyse de la concurrence, tendances actuelles, persona cible et ciblage Meta Ads optimisé pour chacun de vos produits — mis à jour chaque semaine.
+                </div>
+              </div>
+              <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+                Ajouter un produit <Icon name="arrow" size={12} color="#fff"/>
+              </button>
+            </div>
+          : filtered.length === 0 && query
+          ? <div style={{textAlign:'center',padding:'32px 0'}}>
+              <Icon name="search" size={26} color={C.muted}/>
+              <div style={{fontSize:12,color:C.sec,marginTop:10}}>Aucun résultat pour "{query}"</div>
+            </div>
+          : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(2,1fr)',gap:10}}>
+              {filtered.map(p => (
+                <button key={p.id} onClick={() => pick(p)}
+                  style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,border:`1px solid ${C.border}`,background:C.card,cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.15s',width:'100%'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.borderM;e.currentTarget.style.background='rgba(255,255,255,0.05)';}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.card;}}
+                >
+                  <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                    {!p.photo && <Icon name="box" size={20} color={C.sec}/>}
+                  </div>
+                  <div style={{flex:1,overflow:'hidden'}}>
+                    <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
+                    <div style={{fontSize:11,color:C.sec,marginTop:3}}>{p.pays||'—'} · {p.marche ? 'Données disponibles' : 'En attente'}</div>
+                  </div>
+                  {p.marche ? <Tag ch="Data" color="white"/> : <Tag ch="En attente" color="gray"/>}
+                </button>
+              ))}
+            </div>
+        }
+      </>
+    ) : (
+      <div>
+        {/* Product banner — same pattern as Ad Copies */}
+        <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,background:'rgba(45,127,249,0.10)',border:'1px solid rgba(45,127,249,0.28)',marginBottom:20}}>
+          <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:selected.photo?`url(${selected.photo}) center/cover`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+            {!selected.photo && <Icon name="box" size={20} color={C.sec}/>}
+          </div>
+          <div style={{flex:1,overflow:'hidden'}}>
+            <div style={{fontSize:14,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selected.nom}</div>
+            <div style={{fontSize:11,color:C.sec,marginTop:2,display:'flex',gap:8,flexWrap:'wrap'}}>
+              <span>{selected.pricing}</span><span>·</span>
+              <span>{selected.pays||'—'}</span><span>·</span>
+              <span>{m ? 'Données marché disponibles' : "En attente d'analyse"}</span>
+            </div>
+          </div>
+          <button onClick={() => setSelected(null)}
+            style={{width:30,height:30,borderRadius:7,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 0.15s'}}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.1)'}
+            onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.05)'}
+          ><Icon name="x" size={13}/></button>
+        </div>
+
+        {!m ? (
+          <div style={{textAlign:'center',padding:'40px',color:C.sec}}>
+            <Icon name="clock" size={28} color={C.muted}/>
+            <div style={{fontSize:13,fontWeight:600,color:C.text,marginTop:12}}>Aucune donnée marché disponible pour le moment</div>
+            <div style={{fontSize:11,marginTop:6}}>Vos données apparaîtront ici après la première analyse AdStack</div>
+          </div>
+        ) : (
+          <>
+            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12,marginBottom:12}}>
+              <div style={cs({padding:'18px'})}>
+                <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:12}}>Persona Principal</div>
+                <div style={{display:'flex',gap:12,marginBottom:14}}>
+                  <div style={{width:44,height:44,borderRadius:10,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    <Icon name="person" size={20} color={C.text}/>
+                  </div>
+                  <div>
+                    <div style={{fontSize:14,fontWeight:700,color:C.text}}>{m.persona.nom}</div>
+                    <div style={{fontSize:11,color:C.sec}}>{m.persona.role}</div>
+                    <div style={{fontSize:10,color:C.sec,marginTop:1}}>{m.persona.revenu}</div>
+                  </div>
+                </div>
+                <div style={{fontSize:12,color:C.sec,lineHeight:1.6,padding:'10px 12px',background:'rgba(255,255,255,0.055)',borderRadius:8,border:`1px solid ${C.border}`,marginBottom:12,fontStyle:'italic'}}>
+                  {m.persona.quote}
+                </div>
+                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  {m.persona.platforms.map(pl => <Tag key={pl} ch={pl} color="gray"/>)}
+                </div>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                {m.stats.map(stat => (
+                  <div key={stat.l} style={cs({padding:'13px 16px'})}>
+                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>{stat.l}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:stat.c==='red'?C.red:C.text,marginTop:4}}>{stat.v}</div>
+                    <div style={{fontSize:10,color:C.sec}}>{stat.s}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={cs({padding:'18px',position:'relative'})}>
+              <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:14}}>Insights applicables</div>
+              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:10}}>
+                {m.insights.map((ins,idx) => (
+                  <div key={idx} style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.055)',border:`1px solid ${C.border}`,display:'flex',gap:11,alignItems:'flex-start'}}>
+                    <div style={{flexShrink:0,marginTop:1,color:C.sec}}><Icon name={ins.icon} size={16}/></div>
+                    <span style={{fontSize:11,color:C.sec,lineHeight:1.55}}>{ins.t}</span>
+                  </div>
+                ))}
+              </div>
+              {isDemo && <LockOverlay/>}
+            </div>
+          </>
+        )}
+      </div>
+    )}
+  </div>
+  );
+};
+
+
+const Chatbot = () => (
+  <iframe
+    src="/adstack-chatbot.html"
+    style={{position:"fixed",bottom:0,right:0,width:420,height:640,border:"none",background:"transparent",zIndex:9999,maxWidth:"100vw",maxHeight:"100vh"}}
+    title="Chatbot Amina"
+  />
+);
+
+const PLANS = [
+  {
+    id:'starter', name:'Conversion Starter',
+    price:'34 900', priceBarre:'50 000', prixImg:'969', discount:30,
+    color:C.gray, best:false,
+    current: false,
+    features:[
+      '9 Images Publicitaires Livrées / Semaine',
+      '1 Produit / Semaine',
+      'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
+      'Titres et Descriptions à mettre dans la Campagne',
+      'Livraison en 48h chaque semaine',
+    ],
+  },
+  {
+    id:'pro', name:'Conversion Pro',
+    price:'64 900', priceBarre:'100 000', prixImg:'901', discount:35,
+    color:C.red, best:true,
+    current: false,
+    features:[
+      '18 Images Publicitaires Livrées / Semaine',
+      '1 à 2 Produits / Semaine',
+      'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
+      'Titres et Descriptions à mettre dans la Campagne',
+      'Assistant IA dispo 7j/7',
+      'Livraison en 48h chaque semaine',
+    ],
+  },
+  {
+    id:'scale', name:'Conversion Scale',
+    price:'104 900', priceBarre:'200 000', prixImg:'728', discount:48,
+    color:C.white, best:false,
+    current: false,
+    features:[
+      '36 Images Publicitaires Livrées / Semaine',
+      '1 à 4 Produits / Semaine',
+      'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
+      'Titres et Descriptions à mettre dans la Campagne',
+      'Assistant IA dispo 7j/7',
+      'Livraison en 48h chaque semaine',
+    ],
+  },
+];
+
+const Tarifs = () => {
+  const isMobile = useIsMobile();
+  const onCta = () => window.open('https://thefirstquality01.systeme.io/nosoffres','_blank');
+
+  return (
+    <div>
+      <div style={{marginBottom:8}}>
+        <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'5px 14px',borderRadius:20,background:C.redS,border:'1px solid rgba(45,127,249,0.22)',marginBottom:14}}>
+          <span style={{width:6,height:6,borderRadius:'50%',background:C.red,display:'inline-block'}}/>
+          <span style={{fontSize:10,color:C.red,fontWeight:800,letterSpacing:'1.5px'}}>TÉLÉCHARGE · PUBLIE · VENDS 2X PLUS</span>
+        </div>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Nos Tarifs</h1>
+        <p style={{fontSize:13,color:C.sec,marginTop:3}}>Sans engagement · Paiement par mobile money, carte bancaire</p>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20,marginTop:18}}>
+        {PLANS.map(p => (
+          <div key={p.id}
+            style={{
+              background: p.best
+                ? 'linear-gradient(180deg,rgba(45,127,249,0.09),rgba(45,127,249,0.03))'
+                : C.card,
+              border:`1px solid ${p.current?'rgba(255,255,255,0.22)':p.best?'rgba(45,127,249,0.32)':C.border}`,
+              borderRadius:12, padding:'22px', display:'flex', flexDirection:'column',
+              position:'relative', transition:'transform 0.2s, box-shadow 0.2s',
+            }}
+            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow=`0 12px 28px rgba(0,0,0,0.3)`;}}
+            onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none';}}
+          >
+            {p.current && (
+              <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:C.white,color:C.bg,fontSize:9,fontWeight:800,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
+                VOTRE ABONNEMENT
+              </div>
+            )}
+            {p.best && !p.current && (
+              <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:C.red,color:'#fff',fontSize:9,fontWeight:800,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
+                RECOMMANDÉ
+              </div>
+            )}
+
+            <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:p.current||p.best?8:0,marginBottom:10,letterSpacing:'0.3px'}}>{p.name}</div>
+
+            <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
+              {p.priceBarre} FCFA
+            </div>
+
+            <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
+              <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{p.price}</span>
+              <span style={{fontSize:11,color:C.sec}}>FCFA / mois</span>
+            </div>
+
+            <div style={{
+              display:'inline-flex',alignItems:'center',gap:5,
+              padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',
+              background:`${p.color}18`,border:`1px solid ${p.color}38`,
+            }}>
+              <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{p.prixImg} FCFA</span>
+              <span style={{fontSize:10,color:C.sec}}>/ image</span>
+            </div>
+
+            <div style={{height:1,background:C.border,marginBottom:16}}/>
+
+            <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:10}}>
+              {p.features.map((f,j) => (
+                <div key={j} style={{display:'flex',alignItems:'flex-start',gap:9}}>
+                  <span style={{flexShrink:0,marginTop:1,color:p.color}}><Icon name="check" size={13}/></span>
+                  <div style={{fontSize:12,color:C.sec,lineHeight:1.4}}>{f}</div>
+                </div>
+              ))}
+            </div>
+
+            <button onClick={onCta} style={{
+              width:'100%', padding:'11px', borderRadius:8, fontFamily:'inherit',
+              border:`1px solid ${p.current?'rgba(255,255,255,0.2)':p.best?'transparent':C.borderM}`,
+              background: p.current ? 'rgba(255,255,255,0.08)' : p.best ? C.red : 'rgba(255,255,255,0.05)',
+              color: p.current ? C.text : p.best ? '#fff' : C.sec,
+              fontWeight:700, fontSize:12, cursor:'pointer', transition:'all 0.2s',
+              display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+            }}
+              onMouseEnter={e=>{if(!p.current&&!p.best){e.currentTarget.style.background='rgba(255,255,255,0.09)';e.currentTarget.style.color=C.text;}}}
+              onMouseLeave={e=>{if(!p.current&&!p.best){e.currentTarget.style.background='rgba(255,255,255,0.05)';e.currentTarget.style.color=C.sec;}}}
+            >
+              {p.current
+                ? (<><Icon name="check" size={13}/> Abonnement actif</>)
+                : p.best
+                  ? (<>Upgrader maintenant <Icon name="arrow" size={13} color="#fff"/></>)
+                  : 'Choisir ce plan'}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── Vue Démo : charge la mindmap dans un iframe ──────────────────────────────
+const DemoPreview = ({slug}) => {
+  if (!slug) return (
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:16,padding:40,textAlign:'center'}}>
+      <Icon name="eye" size={48} color={C.muted}/>
+      <div style={{fontSize:18,fontWeight:700,color:C.text}}>Aucune démo à afficher</div>
+      <div style={{fontSize:13,color:C.sec,maxWidth:400}}>
+        Lorsque votre agence génère une démonstration pour votre marque, elle apparaîtra ici avec l'analyse de marché, le persona cible et les créatives Meta Ads.
+      </div>
+    </div>
+  );
+  return (
+    <iframe
+      src={`/demo/${slug}.html`}
+      style={{width:'100%',height:'100%',border:'none',display:'block'}}
+      title="Démo AdStack"
+      allow="fullscreen"
+    />
+  );
+};
+
+export default function Platform() {
+  const [section, _setSection] = useState(() => {
+    try { return localStorage.getItem('adstack_section') || 'produits'; } catch(e) { return 'produits'; }
+  });
+  const setSection = (s) => {
+    _setSection(s);
+    try { localStorage.setItem('adstack_section', s); } catch(e) {}
+  };
+  const [isDemo, setIsDemo] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [products, setProducts] = useState(INITIAL_PRODUCTS);
+  const [demoSlug, setDemoSlug] = useState(null);
+  const isMobile = useIsMobile();
+
+  // Fix zoom iOS : tous les inputs/textareas à 16px minimum
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.id = 'ios-zoom-fix';
+    style.textContent = 'input,textarea,select{font-size:max(16px,1em)!important;touch-action:manipulation;}';
+    if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
+    return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
+  }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('demo');
+    if (slug) {
+      setDemoSlug(slug);
+      setSection('demo');
+      setIsDemo(true);
+      // Stocker dans localStorage pour que le prospect retrouve sa démo
+      localStorage.setItem('adstack_demo_slug', slug);
+    } else {
+      // Vérifier si un slug est stocké
+      const saved = localStorage.getItem('adstack_demo_slug');
+      if (saved) setDemoSlug(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    const s = document.createElement('style');
+    s.textContent = `
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      ::-webkit-scrollbar { width: 3px; height: 3px; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.16); border-radius: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      @keyframes blink { 0%,60%,100%{ opacity:.3; transform:scale(1); } 30%{ opacity:1; transform:scale(1.25); } }
+      .gallery-item { position: relative; transition: outline-color 0.15s; outline: 1px solid transparent; outline-offset: 0; }
+      .gallery-overlay { opacity: 0; transition: opacity 0.15s; }
+      .gallery-item:hover .gallery-overlay { opacity: 1; }
+      .gallery-item:hover { outline-color: rgba(255,255,255,0.32); }
+    `;
+    document.head.appendChild(s);
+  }, []);
+
+  const views = {
+    demo: <DemoPreview slug={demoSlug}/>,
+    produits: <Produits products={products} setProducts={setProducts}/>,
+    galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
+    copies: <Copies products={products} setSection={setSection}/>,
+    marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
+    tarifs: <Tarifs/>,
+  };
+
+  return (
+    <>
+    <div style={{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden',background:C.bg,fontFamily:"'Outfit',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
+
+
+      <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
+        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}/>
+
+        {isMobile && mobileOpen && (
+          <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
+        )}
+
+        <main style={{flex:1,overflow:'auto',padding:isMobile?'16px':'28px 30px',marginLeft:isMobile?52:0,transition:'margin-left 0.22s cubic-bezier(.4,0,.2,1)'}}>
+          {views[section]}
+        </main>
+      </div>
+    </div>
+    <Chatbot />
+    </>
+  );
+}
