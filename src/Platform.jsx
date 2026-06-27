@@ -206,14 +206,13 @@ const Field = ({label, k, required, textarea, placeholder, type='text', form, se
     onChange: e => setForm(f=>({...f,[k]:e.target.value})),
     placeholder: placeholder || '',
     style:{
-      width:'100%', padding:'10px 12px', borderRadius:7,
+      width:'100%', padding:'8px 10px', borderRadius:7,
       background:'rgba(255,255,255,0.07)',
       border:`1px solid ${err?C.red:C.border}`,
       color:C.text,
-      fontSize:16, // 16px minimum pour éviter le zoom iOS
+      fontSize:13,
       fontFamily:'inherit', outline:'none', resize:'vertical',
-      touchAction:'manipulation', // désactive le double-tap zoom
-      WebkitAppearance:'none',
+      WebkitAppearance:'none', WebkitTextSizeAdjust:'100%',
     },
   };
   return (
@@ -359,8 +358,8 @@ const Produits = ({products, setProducts}) => {
       </div>
 
       {showForm && (
-        <div onClick={() => setShowForm(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:300,display:'flex',alignItems:isMobile?'flex-end':'center',justifyContent:'center',padding:isMobile?0:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:560,maxHeight:isMobile?'92vh':'88vh',overflow:'auto',borderRadius:isMobile?'16px 16px 0 0':14,background:C.card,border:`1px solid ${C.borderM}`,padding:isMobile?'20px 16px 32px':'24px'}}>
+        <div onClick={() => setShowForm(false)} style={{position:'fixed',top:0,bottom:0,left:isMobile?52:0,right:0,background:'rgba(0,0,0,0.75)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:460,maxHeight:'82vh',overflow:'auto',borderRadius:12,background:C.card,border:`1px solid ${C.borderM}`,padding:'16px 16px 20px',boxShadow:'0 24px 64px rgba(0,0,0,0.6)'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
               <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
               <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -368,15 +367,18 @@ const Produits = ({products, setProducts}) => {
               </button>
             </div>
 
-            <div style={{marginBottom:16}}>
-              <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:6,display:'block'}}>Photo du produit<span style={{color:C.red}}> *</span></label>
+            <div style={{marginBottom:12,display:'flex',alignItems:'center',gap:12}}>
               <input ref={photoRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e,'photo')}/>
-              <div onClick={()=>photoRef.current?.click()} style={{aspectRatio:'4/5',maxWidth:180,borderRadius:8,border:`1px dashed ${errors.photo?C.red:C.border}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-                {!form.photo && <Icon name="upload" size={22} color={C.sec}/>}
+              <div onClick={()=>photoRef.current?.click()} style={{width:72,height:72,flexShrink:0,borderRadius:10,border:`2px dashed ${errors.photo?C.red:C.border}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+                {!form.photo && <Icon name="upload" size={18} color={C.sec}/>}
+              </div>
+              <div>
+                <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:3}}>Photo du produit<span style={{color:C.red}}> *</span></div>
+                <div style={{fontSize:11,color:C.sec}}>Cliquez pour uploader</div>
               </div>
             </div>
 
-            <div style={{display:'flex',flexDirection:'column',gap:12}}>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
               <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense"form={form} setForm={setForm} errors={errors} C={C}/>
               <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
                 <Field label="Pricing (prix actuel)" k="pricing" required placeholder="Ex : 12 900 FCFA"form={form} setForm={setForm} errors={errors} C={C}/>
@@ -1135,7 +1137,7 @@ export default function Platform() {
   useEffect(() => {
     const style = document.createElement('style');
     style.id = 'ios-zoom-fix';
-    style.textContent = 'input,textarea,select{font-size:max(16px,1em)!important;touch-action:manipulation;}';
+    style.textContent = 'input,textarea,select{touch-action:manipulation;}'; // iOS zoom: géré directement dans Field
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
