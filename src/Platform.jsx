@@ -359,8 +359,8 @@ const Produits = ({products, setProducts}) => {
       </div>
 
       {showForm && (
-        <div onClick={() => setShowForm(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:560,maxHeight:'88vh',overflow:'auto',borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'24px'}}>
+        <div onClick={() => setShowForm(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:300,display:'flex',alignItems:isMobile?'flex-end':'center',justifyContent:'center',padding:isMobile?0:20}}>
+          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:560,maxHeight:isMobile?'92vh':'88vh',overflow:'auto',borderRadius:isMobile?'16px 16px 0 0':14,background:C.card,border:`1px solid ${C.borderM}`,padding:isMobile?'20px 16px 32px':'24px'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
               <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
               <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -1192,7 +1192,7 @@ export default function Platform() {
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
         )}
 
-        <main style={{flex:1,overflow:'auto',padding:isMobile?'16px':'28px 30px',marginLeft:isMobile?52:0,transition:'margin-left 0.22s cubic-bezier(.4,0,.2,1)'}}>
+        <main style={{flex:1,overflow:section==='demo'?'hidden':'auto',padding:section==='demo'?0:isMobile?'16px':'28px 30px',marginLeft:isMobile?52:0,transition:'margin-left 0.22s cubic-bezier(.4,0,.2,1)'}}>
           {views[section]}
         </main>
       </div>
