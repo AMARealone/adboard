@@ -403,7 +403,7 @@ const sbSub = {
   }
 };
 
-// Calcule les crédits disponibles dynamiquement
+// Calcule les images publicitaires disponibles dynamiquement
 function computeCredits(sub, allBriefs) {
   if (!sub || !sub.active) return { total: 0, used: 0, available: 0 };
   const started = new Date(sub.started_at);
@@ -431,7 +431,7 @@ const sbSubs = {
   }
 };
 
-// Calcule les crédits disponibles dynamiquement
+// Calcule les images publicitaires disponibles dynamiquement
 function calcCredits(subscription, briefs) {
   if (!subscription || !subscription.active) return { earned: 0, used: 0, available: 0, plan: null };
   const now = Date.now();
@@ -449,59 +449,64 @@ const PLAN_COLORS = { starter: '#8A90B2', pro: '#2D7FF9', scale: '#22C55E' };
 
 // ── Modal demande de créatives ─────────────────────────────────────────────
 const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
-  const [qty, setQty] = React.useState(9);
-  const maxQty = Math.min(credits.available, 999); // pas de cap théorique
-  // Options en multiples de 9 jusqu'au solde max
-  const options = [];
-  for (let q = 9; q <= maxQty; q += 9) options.push(q);
+  const [qty, setQty] = useState(9);
+  const max = credits.available;
+  const canIncrease = qty + 9 <= max;
+  const canDecrease = qty > 9;
 
   return (
-    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'28px 24px',maxWidth:400,width:'100%',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.6)'}}>
+
+        {/* Header */}
         <div style={{marginBottom:20}}>
-          <h3 style={{fontSize:16,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Demander des créatives</h3>
+          <h3 style={{fontSize:16,fontWeight:700,color:C.text,margin:'0 0 3px'}}>Demander des visuels</h3>
           <p style={{fontSize:12,color:C.sec,margin:0}}>Pour <strong style={{color:C.text}}>{product.nom}</strong></p>
         </div>
 
-        <div style={{background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',borderRadius:10,padding:'12px 14px',marginBottom:20,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div>
-            <div style={{fontSize:10,color:C.sec,fontWeight:600,textTransform:'uppercase',letterSpacing:.8}}>Crédits disponibles</div>
-            <div style={{fontSize:22,fontWeight:800,color:C.red}}>{credits.available} <span style={{fontSize:12,fontWeight:400,color:C.sec}}>créatives</span></div>
+        {/* Jauge dispo */}
+        <div style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 16px',marginBottom:24}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:8}}>
+            <span style={{fontSize:11,color:C.sec,fontWeight:600}}>Images publicitaires disponibles</span>
+            <span style={{fontSize:18,fontWeight:800,color:max>0?C.red:C.muted}}>{max}</span>
           </div>
-          <div style={{textAlign:'right'}}>
-            <div style={{fontSize:10,color:C.sec}}>Accumulés</div>
-            <div style={{fontSize:12,color:C.sec}}>{credits.earned} gagnés − {credits.used} utilisés</div>
+          <div style={{height:4,borderRadius:2,background:'rgba(255,255,255,0.08)'}}>
+            <div style={{height:'100%',borderRadius:2,background:max>0?C.red:'rgba(255,255,255,0.15)',width:`${Math.min(100,(qty/max)*100)}%`,transition:'width .2s'}}/>
           </div>
+          <div style={{fontSize:10,color:C.muted,marginTop:5}}>{qty} sélectionnée{qty>1?'s':''} sur {max} disponibles</div>
         </div>
 
-        <div style={{marginBottom:20}}>
-          <label style={{fontSize:11,color:C.sec,fontWeight:600,display:'block',marginBottom:10}}>Nombre de créatives à demander</label>
-          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            {options.map(o => (
-              <button key={o} onClick={()=>setQty(o)} style={{padding:'8px 14px',borderRadius:8,border:`1px solid ${qty===o?C.red:C.border}`,background:qty===o?C.redS:'transparent',color:qty===o?C.red:C.sec,fontWeight:qty===o?700:400,fontSize:12,cursor:'pointer',fontFamily:'inherit',transition:'all .15s'}}>
-                {o}
-              </button>
-            ))}
+        {/* Compteur +/- */}
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:12}}>Nombre de visuels à recevoir</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:20}}>
+            <button onClick={()=>canDecrease&&setQty(q=>q-9)} style={{width:42,height:42,borderRadius:10,border:`1px solid ${canDecrease?C.border:'rgba(255,255,255,0.05)'}`,background:canDecrease?'rgba(255,255,255,0.07)':'rgba(255,255,255,0.02)',color:canDecrease?C.text:C.muted,fontSize:22,cursor:canDecrease?'pointer':'not-allowed',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
+            <div style={{textAlign:'center',minWidth:80}}>
+              <div style={{fontSize:36,fontWeight:800,color:C.text,lineHeight:1}}>{qty}</div>
+              <div style={{fontSize:11,color:C.sec,marginTop:3}}>visuels</div>
+            </div>
+            <button onClick={()=>canIncrease&&setQty(q=>q+9)} style={{width:42,height:42,borderRadius:10,border:`1px solid ${canIncrease?C.red:'rgba(255,255,255,0.05)'}`,background:canIncrease?C.redS:'rgba(255,255,255,0.02)',color:canIncrease?C.red:C.muted,fontSize:22,cursor:canIncrease?'pointer':'not-allowed',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
           </div>
-          {maxQty === 0 && (
-            <div style={{fontSize:11,color:'#E55050',marginTop:8}}>Aucun crédit disponible.</div>
-          )}
+          <div style={{textAlign:'center',marginTop:10,fontSize:10,color:C.muted}}>minimum 9 · par multiples de 9</div>
         </div>
 
-        <div style={{fontSize:11,color:C.muted,marginBottom:20,padding:'10px 12px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`}}>
-          ⏱ Vous pouvez annuler cette demande dans les <strong style={{color:C.text}}>12 heures</strong> suivant la confirmation. Au-delà, la production démarre.
+        {/* Note */}
+        <div style={{fontSize:11,color:C.muted,marginBottom:20,padding:'9px 12px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`}}>
+          ⏱ Annulation possible dans les <strong style={{color:C.sec}}>12 heures</strong> suivant la confirmation.
         </div>
 
+        {/* Boutons */}
         <div style={{display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:'11px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
-          <button onClick={()=>onConfirm(qty)} disabled={maxQty===0} style={{flex:2,padding:'11px',borderRadius:9,border:'none',background:maxQty===0?'rgba(255,255,255,0.05)':C.red,color:maxQty===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:maxQty===0?'not-allowed':'pointer',fontFamily:'inherit'}}>
-            Confirmer — {qty} créatives
+          <button onClick={()=>max>0&&onConfirm(qty)} disabled={max===0} style={{flex:2,padding:'11px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':C.red,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:'inherit'}}>
+            {max===0 ? 'Aucun visuel disponible' : `Confirmer · ${qty} visuels`}
           </button>
         </div>
       </div>
     </div>
   );
 };
+
 
 // ── Modal de connexion Google ──────────────────────────────────────────────
 const LoginModal = ({onClose, C}) => (
@@ -519,7 +524,7 @@ const LoginModal = ({onClose, C}) => (
   </div>
 );
 
-const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, onAskCreatives}) => {
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits={available:0,used:0,earned:0}, onAskCreatives}) => {
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [requestModal, setRequestModal] = useState(null); // { product }
@@ -638,6 +643,27 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
   return (
     <div>
+      {/* ── Jauge images publicitaires ── */}
+      {subscription?.active && (
+        <div style={{marginBottom:18,padding:'14px 16px',borderRadius:10,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+          <div style={{flex:1,minWidth:160}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
+              <span style={{fontSize:11,color:C.sec,fontWeight:600}}>Images publicitaires disponibles</span>
+              <span style={{fontSize:16,fontWeight:800,color:credits.available>0?C.red:C.muted}}>{credits.available}</span>
+            </div>
+            <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
+              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8FFF)`:'rgba(255,255,255,0.1)',width:credits.available===0?'100%':`${Math.min(100,(credits.available/credits.earned)*100)}%`,transition:'width .4s'}}/>
+            </div>
+            <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.earned} accumulées au total</div>
+          </div>
+          {credits.available === 0 && (
+            <div style={{fontSize:11,color:C.muted,padding:'6px 12px',borderRadius:7,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+              Nouvelles images disponibles semaine prochaine
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18,flexWrap:'wrap',gap:10}}>
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
@@ -711,7 +737,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 return (
                   <button onClick={() => onAskCreatives ? onAskCreatives(p) : requestCreatives(p)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px',borderRadius:7,border:'1px solid rgba(45,127,249,0.2)',background:C.redS,color:C.red,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
                     <Icon name="sparkle" size={13} color={C.red}/> Demander mes créatives
-                    {credits.available > 9 && <span style={{fontSize:10,opacity:.7}}>({credits.available} crédits)</span>}
+                    {credits.available > 9 && <span style={{fontSize:10,opacity:.7}}>({credits.available} images pub)</span>}
                   </button>
                 );
               })()}
@@ -1660,7 +1686,7 @@ export default function Platform() {
 
   const views = {
     demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} onAskCreatives={(p)=>{ if(!user){setShowLogin(true);return;} if(!subscription?.active){setSection('tarifs');return;} setCreativesTarget(p); }}/>,
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onAskCreatives={(p)=>{ if(!user){setShowLogin(true);return;} if(!subscription?.active){setSection('tarifs');return;} setCreativesTarget(p); }}/>,
     galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
