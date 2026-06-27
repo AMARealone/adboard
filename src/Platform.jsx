@@ -1,5 +1,53 @@
 import { useState, useEffect, useRef } from "react";
 
+// ── Supabase Auth ──────────────────────────────────────────────────────────
+const SUPABASE_URL = 'https://mifljhsusidgzelnswma.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
+
+// Supabase Auth helpers (sans SDK — fetch natif)
+const sbAuth = {
+  signInWithGoogle: () => {
+    const redirectTo = encodeURIComponent(window.location.origin + '/adboard');
+    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+  },
+  signOut: async () => {
+    const session = JSON.parse(localStorage.getItem('sb_session') || 'null');
+    if (session?.access_token) {
+      await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+        method:'POST', headers:{ Authorization:`Bearer ${session.access_token}`, apikey: SUPABASE_ANON }
+      }).catch(()=>{});
+    }
+    localStorage.removeItem('sb_session');
+    localStorage.removeItem('sb_user');
+  },
+  getSession: () => {
+    try { return JSON.parse(localStorage.getItem('sb_session') || 'null'); } catch(e){ return null; }
+  },
+  getUser: () => {
+    try { return JSON.parse(localStorage.getItem('sb_user') || 'null'); } catch(e){ return null; }
+  },
+  // Extrait et stocke la session depuis le hash URL (#access_token=...) après callback OAuth
+  handleCallback: () => {
+    const hash = window.location.hash;
+    if (!hash.includes('access_token')) return false;
+    const params = new URLSearchParams(hash.replace('#',''));
+    const session = {
+      access_token: params.get('access_token'),
+      refresh_token: params.get('refresh_token'),
+      expires_at: Date.now() + (parseInt(params.get('expires_in') || '3600') * 1000),
+    };
+    // Fetch user info
+    fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers:{ Authorization:`Bearer ${session.access_token}`, apikey: SUPABASE_ANON }
+    }).then(r=>r.json()).then(user => {
+      localStorage.setItem('sb_session', JSON.stringify(session));
+      localStorage.setItem('sb_user', JSON.stringify(user));
+      window.location.replace('/adboard');
+    }).catch(()=>{ window.location.replace('/adboard'); });
+    return true;
+  }
+};
+
 const C = {
   bg:'#0B0F1A',    sidebar:'#070A12',    card:'#141D30',
   border:'rgba(255,255,255,0.11)',        borderM:'rgba(255,255,255,0.22)',
@@ -99,7 +147,7 @@ const LockOverlay = () => (
   </div>
 );
 
-const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen}) => {
+const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA')}) => {
   const showCollapsed = collapsed && !isMobile;
 
   const navClick = (id) => {
@@ -151,14 +199,23 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
     </div>
 
     <div style={{padding:showCollapsed?'12px 0':'12px 16px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:showCollapsed?'center':'flex-start',gap:10}}>
-      <div style={{width:32,height:32,borderRadius:8,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:C.muted}}>
-        <Icon name="box" size={14} color={C.muted}/>
-      </div>
-      {!showCollapsed && (
-        <div style={{overflow:'hidden'}}>
-          <div style={{fontSize:12,fontWeight:600,color:C.sec,whiteSpace:'nowrap'}}>Mon espace</div>
-          <div style={{fontSize:10,color:C.muted}}>Non connecté</div>
+      {user?.user_metadata?.avatar_url
+        ? <img src={user.user_metadata.avatar_url} style={{width:32,height:32,borderRadius:8,flexShrink:0,objectFit:'cover',border:`1px solid ${C.border}`}}/>
+        : <div style={{width:32,height:32,borderRadius:8,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,color:C.sec,fontWeight:700}}>
+            {user ? (user.user_metadata?.full_name||user.email||'?')[0].toUpperCase() : <Icon name="box" size={14} color={C.muted}/>}
+          </div>
+      }
+      {!showCollapsed && !(isMobile && !mobileOpen) && (
+        <div style={{overflow:'hidden',flex:1}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user ? (user.user_metadata?.full_name || user.email) : 'Mon espace'}</div>
+          <div style={{fontSize:10,color:user?C.red:C.muted}}>{user ? 'Connecté' : 'Non connecté'}</div>
         </div>
+      )}
+      {!showCollapsed && !(isMobile && !mobileOpen) && user && (
+        <button onClick={()=>{ sbAuth.signOut(); setUser(null); }} title="Se déconnecter"
+          style={{width:24,height:24,borderRadius:6,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon name="x" size={11} color={C.sec}/>
+        </button>
       )}
     </div>
 
@@ -181,7 +238,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
           <div style={{fontSize:11,color:C.red,fontWeight:700,marginBottom:2}}>Conversion Starter</div>
           <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>9 images / semaine · Données marché</div>
-          <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>34 900 <span style={{fontSize:10,color:C.sec,fontWeight:400}}>FCFA/mois</span></div>
+          <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(34900)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
           <button onClick={() => set('tarifs')}
             style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.red,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
             Commencer <Icon name="arrow" size={11} color="#fff"/>
@@ -195,7 +252,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
 
 const EMPTY_PRODUCT = {
   nom:'', pricing:'', promo:'', lien:'', utilite:'', cible:'', pays:'', notes:'',
-  couleur1:'#2D7FF9', couleur2:'#FFFFFF', photo:null, logo:null, deliveries:[], marche:null,
+  couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, deliveries:[], marche:null,
 };
 
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
@@ -225,7 +282,23 @@ const Field = ({label, k, required, textarea, placeholder, type='text', form, se
   );
 };
 
-const Produits = ({products, setProducts}) => {
+// ── Modal de connexion Google ──────────────────────────────────────────────
+const LoginModal = ({onClose, C}) => (
+  <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
+    <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'32px 28px',maxWidth:380,width:'100%',textAlign:'center',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.6)'}}>
+      <div style={{width:52,height:52,borderRadius:14,background:`linear-gradient(135deg,#2D7FF9,#0B3D91)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:800,color:'#fff',margin:'0 auto 16px'}}>A</div>
+      <h2 style={{fontSize:18,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Connectez-vous pour continuer</h2>
+      <p style={{fontSize:13,color:C.sec,lineHeight:1.5,margin:'0 0 24px'}}>Votre catalogue produits sera sauvegardé et accessible depuis n'importe quel appareil.</p>
+      <button onClick={sbAuth.signInWithGoogle} style={{width:'100%',padding:'12px 16px',borderRadius:10,border:`1px solid ${C.border}`,background:'#fff',color:'#1a1a1a',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:10,marginBottom:12}}>
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Continuer avec Google
+      </button>
+      <button onClick={onClose} style={{width:'100%',padding:'10px',borderRadius:10,border:'none',background:'transparent',color:C.sec,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
+    </div>
+  </div>
+);
+
+const Produits = ({products, setProducts, user, onNeedLogin}) => {
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -235,7 +308,7 @@ const Produits = ({products, setProducts}) => {
   const [briefCopied, setBriefCopied] = useState(false);
   const photoRef = useRef(null);
 
-  const openNew = () => { setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); };
+  const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); };
   const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); };
 
   const handleFile = (e, fieldKey) => {
@@ -279,7 +352,7 @@ const Produits = ({products, setProducts}) => {
         utilite_principale: p.utilite,
         cible_principale: p.cible,
         pays_de_vente: p.pays,
-        couleurs_principales: [p.couleur1, p.couleur2],
+        couleurs_principales: [p.couleur1, p.couleur2, p.couleur3].filter(Boolean),
         photo: p.photo ? '[fichier image joint]' : null,
         logo: p.logo ? '[fichier logo joint]' : null,
         contexte_additionnel: p.notes || null,
@@ -335,8 +408,9 @@ const Produits = ({products, setProducts}) => {
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:2}}>
                 {p.pays ? <Tag ch={p.pays} color="gray"/> : <span/>}
                 <div style={{display:'flex',gap:4}}>
-                  <span style={{width:12,height:12,borderRadius:'50%',background:p.couleur1,border:`1px solid ${C.border}`}}/>
-                  <span style={{width:12,height:12,borderRadius:'50%',background:p.couleur2,border:`1px solid ${C.border}`}}/>
+                  {[p.couleur1,p.couleur2,p.couleur3].filter(Boolean).map((col,i)=>(
+                    <span key={i} style={{width:12,height:12,borderRadius:'50%',background:col,border:`1px solid ${C.border}`}}/>
+                  ))}
                 </div>
               </div>
             </div>
@@ -379,25 +453,33 @@ const Produits = ({products, setProducts}) => {
             </div>
 
             <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense"form={form} setForm={setForm} errors={errors} C={C}/>
-              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
-                <Field label="Pricing (prix actuel)" k="pricing" required placeholder="Ex : 12 900 FCFA"form={form} setForm={setForm} errors={errors} C={C}/>
-                <Field label="Offre promotionnelle en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin"form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                <Field label="Prix actuel" k="pricing" required placeholder="Ex : 12 900" form={form} setForm={setForm} errors={errors} C={C}/>
+                <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal" form={form} setForm={setForm} errors={errors} C={C}/>
               </div>
-              <Field label="Lien de la page produit" k="lien" placeholder="https://..."form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Utilité principale" k="utilite" required textarea placeholder="À quoi sert ce produit, quel problème il résout..."form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Cible principale" k="cible" required textarea placeholder="Qui achète ce produit (âge, profil, besoin)..."form={form} setForm={setForm} errors={errors} C={C}/>
-              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
-                <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal"form={form} setForm={setForm} errors={errors} C={C}/>
-                <div>
-                  <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:6,display:'block'}}>Couleurs principales</label>
-                  <div style={{display:'flex',gap:8}}>
-                    <input type="color" value={form.couleur1} onChange={e=>setForm(f=>({...f,couleur1:e.target.value}))} style={{width:'100%',height:38,borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',padding:2}}/>
-                    <input type="color" value={form.couleur2} onChange={e=>setForm(f=>({...f,couleur2:e.target.value}))} style={{width:'100%',height:38,borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',padding:2}}/>
+              <Field label="Lien de la page produit" k="lien" placeholder="https://..." form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Offre promo en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Cible principale" k="cible" textarea placeholder="Femme +25ans Dakar, Teint métisse..." form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Utilité principale" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
+              <div>
+                  <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque <span style={{fontWeight:400,opacity:.6}}>(pour vos visuels Meta Ads · optionnel)</span></label>
+                  <div style={{fontSize:10,color:C.muted,marginBottom:8}}>Ces couleurs seront utilisées dans vos créatives publicitaires</div>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                    {[1,2,3].map(n => {
+                      const key = `couleur${n}`;
+                      return form[key]
+                        ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)'}}>
+                            <input type="color" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:28,height:28,borderRadius:5,border:'none',cursor:'pointer',padding:0,background:'none'}}/>
+                            <span style={{fontSize:10,color:C.sec,fontFamily:'monospace'}}>{form[key].toUpperCase()}</span>
+                            <button onClick={()=>setForm(f=>({...f,[key]:''}))} style={{width:14,height:14,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.15)',color:C.sec,fontSize:9,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+                          </div>
+                        : <button key={n} onClick={()=>setForm(f=>({...f,[key]:'#1E3A8A'}))} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:7,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:11,fontFamily:'inherit'}}>
+                            <span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter
+                          </button>;
+                    })}
                   </div>
                 </div>
-              </div>
-              <Field label="Contexte additionnel" k="notes" textarea placeholder="Tout autre détail utile pour la création (ton, contraintes, mentions légales...)"form={form} setForm={setForm} errors={errors} C={C}/>
             </div>
 
             {Object.keys(errors).length>0 && (
@@ -961,7 +1043,7 @@ const Chatbot = () => {
 const PLANS = [
   {
     id:'starter', name:'Conversion Starter',
-    price:'34 900', priceBarre:'50 000', prixImg:'969', discount:30,
+    price:34900, priceBarre:50000, prixImg:969, discount:30,
     color:C.gray, best:false,
     current: false,
     features:[
@@ -974,7 +1056,7 @@ const PLANS = [
   },
   {
     id:'pro', name:'Conversion Pro',
-    price:'64 900', priceBarre:'100 000', prixImg:'901', discount:35,
+    price:64900, priceBarre:100000, prixImg:901, discount:35,
     color:C.red, best:true,
     current: false,
     features:[
@@ -988,7 +1070,7 @@ const PLANS = [
   },
   {
     id:'scale', name:'Conversion Scale',
-    price:'104 900', priceBarre:'200 000', prixImg:'728', discount:48,
+    price:104900, priceBarre:200000, prixImg:728, discount:48,
     color:C.white, best:false,
     current: false,
     features:[
@@ -1002,7 +1084,7 @@ const PLANS = [
   },
 ];
 
-const Tarifs = () => {
+const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA')}) => {
   const isMobile = useIsMobile();
   const onCta = () => window.open('https://thefirstquality01.systeme.io/nosoffres','_blank');
 
@@ -1045,11 +1127,11 @@ const Tarifs = () => {
             <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:p.current||p.best?8:0,marginBottom:10,letterSpacing:'0.3px'}}>{p.name}</div>
 
             <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
-              {p.priceBarre} FCFA
+              {convertPrice(p.priceBarre)}
             </div>
 
             <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
-              <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{p.price}</span>
+              <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(p.price)}</span>
               <span style={{fontSize:11,color:C.sec}}>FCFA / mois</span>
             </div>
 
@@ -1058,7 +1140,7 @@ const Tarifs = () => {
               padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',
               background:`${p.color}18`,border:`1px solid ${p.color}38`,
             }}>
-              <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{p.prixImg} FCFA</span>
+              <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{convertPrice(p.prixImg)}</span>
               <span style={{fontSize:10,color:C.sec}}>/ image</span>
             </div>
 
@@ -1133,7 +1215,43 @@ export default function Platform() {
   const [demoSlug, setDemoSlug] = useState(null);
   const isMobile = useIsMobile();
 
-  // Fix zoom iOS : tous les inputs/textareas à 16px minimum
+  // ── Auth state ──
+  const [user, setUser] = useState(() => sbAuth.getUser());
+  const [showLogin, setShowLogin] = useState(false);
+
+  useEffect(() => {
+    // Gérer le callback OAuth (hash URL après redirection Google)
+    if (window.location.hash.includes('access_token')) {
+      sbAuth.handleCallback();
+      return;
+    }
+    setUser(sbAuth.getUser());
+  }, []);
+  const [priceCtx, setPriceCtx] = useState({ currency: 'XOF', rate: 1, ready: false });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+        const currency = (geo.currency || 'XOF').toUpperCase();
+        if (currency === 'XOF') { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); return; }
+        const rates = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json').then(r => r.json());
+        const rate = rates.xof?.[currency.toLowerCase()];
+        if (!rate) { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); return; }
+        setPriceCtx({ currency, rate, ready: true });
+      } catch(e) { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); }
+    })();
+  }, []);
+
+  const convertPrice = (fcfa) => {
+    const { currency, rate, ready } = priceCtx;
+    if (!ready || currency === 'XOF') return fcfa.toLocaleString('fr-FR') + ' FCFA';
+    const NO_DECIMALS = ['XOF','XAF','GNF','KMF','DJF','RWF','BIF','UGX','TZS','MGA','JPY','KRW','VND','CLP','PYG','IDR','MMK'];
+    const hasDecimals = !NO_DECIMALS.includes(currency);
+    const decimals = hasDecimals ? 2 : 0;
+    const raw = fcfa * rate;
+    return new Intl.NumberFormat(undefined, { style:'currency', currency, minimumFractionDigits:decimals, maximumFractionDigits:decimals }).format(raw);
+  };
   useEffect(() => {
     const style = document.createElement('style');
     style.id = 'ios-zoom-fix';
@@ -1175,11 +1293,11 @@ export default function Platform() {
 
   const views = {
     demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts}/>,
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)}/>,
     galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
-    tarifs: <Tarifs/>,
+    tarifs: <Tarifs convertPrice={convertPrice}/>,
   };
 
   return (
@@ -1188,7 +1306,7 @@ export default function Platform() {
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
-        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen}/>
+        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser}/>
 
         {isMobile && mobileOpen && (
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
@@ -1200,6 +1318,7 @@ export default function Platform() {
       </div>
     </div>
     <Chatbot />
+    {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C}/>}
     </>
   );
 }
