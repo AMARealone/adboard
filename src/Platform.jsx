@@ -296,6 +296,62 @@ const Field = ({label, k, required, textarea, placeholder, type='text', form, se
   );
 };
 
+// ── Supabase Products API ──────────────────────────────────────────────────
+const sbProducts = {
+  async load(session) {
+    if (!session?.access_token) return [];
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=created_at.asc`, {
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` }
+    });
+    if (!r.ok) return [];
+    const rows = await r.json();
+    return rows.map(p => ({ ...p, photo: p.photo_url }));
+  },
+  async save(session, product) {
+    if (!session?.access_token) return null;
+    const body = {
+      nom: product.nom, pricing: product.pricing, promo: product.promo,
+      lien: product.lien, utilite: product.utilite, cible: product.cible,
+      pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
+      couleur3: product.couleur3||'', photo_url: product.photo||null,
+    };
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return { ...rows[0], photo: rows[0].photo_url };
+  },
+  async update(session, id, product) {
+    if (!session?.access_token) return false;
+    const body = {
+      nom: product.nom, pricing: product.pricing, promo: product.promo,
+      lien: product.lien, utilite: product.utilite, cible: product.cible,
+      pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
+      couleur3: product.couleur3||'', photo_url: product.photo||null,
+      updated_at: new Date().toISOString(),
+    };
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    return r.ok;
+  },
+  async delete(session, id) {
+    if (!session?.access_token) return false;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` }
+    });
+    return r.ok;
+  }
+};
+
 // ── Modal de connexion Google ──────────────────────────────────────────────
 const LoginModal = ({onClose, C}) => (
   <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
@@ -340,13 +396,27 @@ const Produits = ({products, setProducts, user, onNeedLogin}) => {
     return e;
   };
 
-  const submit = () => {
+  const submit = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
+    const session = sbAuth.getSession();
     if (editingId) {
+      // Mise à jour locale immédiate
       setProducts(prev => prev.map(p => p.id===editingId ? {...form, id:editingId} : p));
+      // Sync Supabase en arrière-plan
+      if (session) sbProducts.update(session, editingId, form);
     } else {
-      setProducts(prev => [...prev, {...form, id: Date.now()}]);
+      if (session) {
+        // Sauvegarder en Supabase et récupérer l'ID réel
+        const saved = await sbProducts.save(session, form);
+        if (saved) {
+          setProducts(prev => [...prev, saved]);
+        } else {
+          setProducts(prev => [...prev, {...form, id: Date.now()}]);
+        }
+      } else {
+        setProducts(prev => [...prev, {...form, id: Date.now()}]);
+      }
     }
     setShowForm(false);
   };
@@ -1234,12 +1304,19 @@ export default function Platform() {
   const [showLogin, setShowLogin] = useState(false);
 
   useEffect(() => {
-    // Gérer le callback OAuth (hash URL après redirection Google)
     if (window.location.hash.includes('access_token')) {
       sbAuth.handleCallback();
       return;
     }
-    setUser(sbAuth.getUser());
+    const u = sbAuth.getUser();
+    setUser(u);
+    // Charger les produits depuis Supabase si connecté
+    if (u) {
+      const session = sbAuth.getSession();
+      sbProducts.load(session).then(prods => {
+        if (prods.length > 0) setProducts(prods);
+      });
+    }
   }, []);
   const [priceCtx, setPriceCtx] = useState({ currency: 'XOF', rate: 1, ready: false });
 
