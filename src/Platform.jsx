@@ -352,6 +352,157 @@ const sbProducts = {
   }
 };
 
+// ── Supabase Briefs API ────────────────────────────────────────────────────
+const sbBriefs = {
+  async loadForProducts(session, productIds) {
+    if (!session?.access_token || !productIds.length) return [];
+    const ids = productIds.map(id => `"${id}"`).join(',');
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/briefs?product_id=in.(${ids})&status=neq.cancelled&order=created_at.desc`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` } }
+    );
+    return r.ok ? r.json() : [];
+  },
+  async create(session, productId, quantity=9) {
+    if (!session?.access_token) return null;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/briefs`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json', Prefer: 'return=representation' },
+      body: JSON.stringify({ product_id: productId, quantity, status: 'pending' })
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0];
+  },
+  async cancel(session, briefId) {
+    if (!session?.access_token) return false;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/briefs?id=eq.${briefId}`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+    });
+    return r.ok;
+  }
+};
+
+// ── Supabase Subscription API ──────────────────────────────────────────────
+const PLAN_CREDITS = { starter: 9, pro: 18, scale: 36 };
+
+const sbSub = {
+  async load(session) {
+    if (!session?.access_token) return null;
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&active=eq.true&limit=1`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` } }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0] || null;
+  }
+};
+
+// Calcule les crédits disponibles dynamiquement
+function computeCredits(sub, allBriefs) {
+  if (!sub || !sub.active) return { total: 0, used: 0, available: 0 };
+  const started = new Date(sub.started_at);
+  const now = new Date();
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const weeksActive = Math.floor((now - started) / msPerWeek) + 1;
+  const total = weeksActive * sub.credits_per_week;
+  const used = allBriefs
+    .filter(b => b.status !== 'cancelled')
+    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
+  return { total, used, available: Math.max(0, total - used) };
+}
+
+// ── Supabase Subscription & Credits ───────────────────────────────────────
+const sbSubs = {
+  async load(session) {
+    if (!session?.access_token) return null;
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&limit=1`,
+      { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` } }
+    );
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0] || null;
+  }
+};
+
+// Calcule les crédits disponibles dynamiquement
+function calcCredits(subscription, briefs) {
+  if (!subscription || !subscription.active) return { earned: 0, used: 0, available: 0, plan: null };
+  const now = Date.now();
+  const started = new Date(subscription.started_at).getTime();
+  const weeksActive = Math.floor((now - started) / (7 * 24 * 60 * 60 * 1000)) + 1;
+  const earned = weeksActive * subscription.credits_per_week;
+  const used = Object.values(briefs)
+    .filter(b => b.status !== 'cancelled')
+    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
+  return { earned, used, available: Math.max(0, earned - used), plan: subscription.plan };
+}
+
+const PLAN_LABELS = { starter: 'Starter', pro: 'Pro', scale: 'Scale' };
+const PLAN_COLORS = { starter: '#8A90B2', pro: '#2D7FF9', scale: '#22C55E' };
+
+// ── Modal demande de créatives ─────────────────────────────────────────────
+const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
+  const [qty, setQty] = React.useState(9);
+  const maxQty = Math.min(credits.available, 999); // pas de cap théorique
+  // Options en multiples de 9 jusqu'au solde max
+  const options = [];
+  for (let q = 9; q <= maxQty; q += 9) options.push(q);
+
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'28px 24px',maxWidth:400,width:'100%',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.6)'}}>
+        <div style={{marginBottom:20}}>
+          <h3 style={{fontSize:16,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Demander des créatives</h3>
+          <p style={{fontSize:12,color:C.sec,margin:0}}>Pour <strong style={{color:C.text}}>{product.nom}</strong></p>
+        </div>
+
+        <div style={{background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',borderRadius:10,padding:'12px 14px',marginBottom:20,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div>
+            <div style={{fontSize:10,color:C.sec,fontWeight:600,textTransform:'uppercase',letterSpacing:.8}}>Crédits disponibles</div>
+            <div style={{fontSize:22,fontWeight:800,color:C.red}}>{credits.available} <span style={{fontSize:12,fontWeight:400,color:C.sec}}>créatives</span></div>
+          </div>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:10,color:C.sec}}>Accumulés</div>
+            <div style={{fontSize:12,color:C.sec}}>{credits.earned} gagnés − {credits.used} utilisés</div>
+          </div>
+        </div>
+
+        <div style={{marginBottom:20}}>
+          <label style={{fontSize:11,color:C.sec,fontWeight:600,display:'block',marginBottom:10}}>Nombre de créatives à demander</label>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {options.map(o => (
+              <button key={o} onClick={()=>setQty(o)} style={{padding:'8px 14px',borderRadius:8,border:`1px solid ${qty===o?C.red:C.border}`,background:qty===o?C.redS:'transparent',color:qty===o?C.red:C.sec,fontWeight:qty===o?700:400,fontSize:12,cursor:'pointer',fontFamily:'inherit',transition:'all .15s'}}>
+                {o}
+              </button>
+            ))}
+          </div>
+          {maxQty === 0 && (
+            <div style={{fontSize:11,color:'#E55050',marginTop:8}}>Aucun crédit disponible.</div>
+          )}
+        </div>
+
+        <div style={{fontSize:11,color:C.muted,marginBottom:20,padding:'10px 12px',borderRadius:8,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`}}>
+          ⏱ Vous pouvez annuler cette demande dans les <strong style={{color:C.text}}>12 heures</strong> suivant la confirmation. Au-delà, la production démarre.
+        </div>
+
+        <div style={{display:'flex',gap:10}}>
+          <button onClick={onClose} style={{flex:1,padding:'11px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
+          <button onClick={()=>onConfirm(qty)} disabled={maxQty===0} style={{flex:2,padding:'11px',borderRadius:9,border:'none',background:maxQty===0?'rgba(255,255,255,0.05)':C.red,color:maxQty===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:maxQty===0?'not-allowed':'pointer',fontFamily:'inherit'}}>
+            Confirmer — {qty} créatives
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Modal de connexion Google ──────────────────────────────────────────────
 const LoginModal = ({onClose, C}) => (
   <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:24}}>
@@ -368,9 +519,11 @@ const LoginModal = ({onClose, C}) => (
   </div>
 );
 
-const Produits = ({products, setProducts, user, onNeedLogin}) => {
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, onAskCreatives}) => {
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
+  const [requestModal, setRequestModal] = useState(null); // { product }
+  const [requestQty, setRequestQty] = useState(9);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_PRODUCT);
   const [errors, setErrors] = useState({});
@@ -422,7 +575,27 @@ const Produits = ({products, setProducts, user, onNeedLogin}) => {
   };
 
   const requestCreatives = (p) => {
-    const qty = 9;
+    if (!user) { onNeedLogin(); return; }
+    if (!subscription?.active) return; // pas d'abonnement
+    const credits = computeCredits(subscription, allBriefs);
+    if (credits.available < 9) return; // pas assez
+    setRequestQty(9);
+    setRequestModal({ product: p });
+  };
+
+  const confirmRequest = async () => {
+    const p = requestModal?.product;
+    if (!p) return;
+    const session = sbAuth.getSession();
+    const brief = await sbBriefs.create(session, p.id, requestQty);
+    if (brief) {
+      brief.credits_used = requestQty;
+      setBriefs(prev => ({...prev, [p.id]: brief}));
+      setAllBriefs(prev => [...prev, brief]);
+    }
+    setRequestModal(null);
+    // Afficher le brief local aussi (ancien comportement)
+    const qty = requestQty;
     setBrief({
       client: "",
       plan: "",
@@ -443,6 +616,15 @@ const Produits = ({products, setProducts, user, onNeedLogin}) => {
       },
     });
     setBriefCopied(false);
+  };
+
+
+  const cancelCreatives = async (p) => {
+    const session = sbAuth.getSession();
+    const brief = briefs[p.id];
+    if (!brief) return;
+    const ok = await sbBriefs.cancel(session, brief.id);
+    if (ok) setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
   };
 
   const copyBrief = () => {
@@ -499,9 +681,40 @@ const Produits = ({products, setProducts, user, onNeedLogin}) => {
               </div>
             </div>
             <div style={{padding:'0 14px 14px'}}>
-              <button onClick={() => requestCreatives(p)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px',borderRadius:7,border:'1px solid rgba(45,127,249,0.2)',background:C.redS,color:C.red,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
-                <Icon name="sparkle" size={13} color={C.red}/> Demander mes créatives
-              </button>
+              {(() => {
+                const brief = briefs[p.id];
+                const CANCEL_WINDOW = 12 * 60 * 60 * 1000;
+                const canCancel = brief && brief.status==='pending' && (Date.now() - new Date(brief.created_at).getTime()) < CANCEL_WINDOW;
+                const inProd = brief && (brief.status==='in_production' || (brief.status==='pending' && !canCancel));
+                const credits = computeCredits(subscription, allBriefs);
+
+                if (!user || !subscription?.active) return (
+                  <button onClick={onNeedLogin} style={{width:'100%',padding:'10px',borderRadius:7,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.sec,fontWeight:600,fontSize:11,cursor:'pointer',fontFamily:'inherit',textAlign:'center'}}>
+                    🔒 Abonnement requis
+                  </button>
+                );
+                if (canCancel) return (
+                  <button onClick={() => cancelCreatives(p)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px',borderRadius:7,border:'1px solid rgba(229,80,80,0.3)',background:'rgba(229,80,80,0.08)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+                    ✕ Annuler la demande
+                  </button>
+                );
+                if (inProd) return (
+                  <div style={{padding:'10px',borderRadius:7,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.sec,fontWeight:600,fontSize:11,textAlign:'center'}}>
+                    ⏳ En production · livraison sous 36h
+                  </div>
+                );
+                if (credits.available < 9) return (
+                  <div style={{padding:'10px',borderRadius:7,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.muted,fontSize:11,textAlign:'center'}}>
+                    ✓ Quota épuisé · disponible semaine prochaine
+                  </div>
+                );
+                return (
+                  <button onClick={() => onAskCreatives ? onAskCreatives(p) : requestCreatives(p)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px',borderRadius:7,border:'1px solid rgba(45,127,249,0.2)',background:C.redS,color:C.red,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+                    <Icon name="sparkle" size={13} color={C.red}/> Demander mes créatives
+                    {credits.available > 9 && <span style={{fontSize:10,opacity:.7}}>({credits.available} crédits)</span>}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         ))}
@@ -600,6 +813,52 @@ const Produits = ({products, setProducts, user, onNeedLogin}) => {
           </div>
         </div>
       )}
+
+      {/* ── Modal demande créatives ── */}
+      {requestModal && (() => {
+        const p = requestModal.product;
+        const credits = computeCredits(subscription, allBriefs);
+        const max = Math.min(credits.available, 999);
+        const steps = [];
+        for (let q = 9; q <= max; q += 9) steps.push(q);
+        return (
+          <div onClick={() => setRequestModal(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+            <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:14,padding:'24px',maxWidth:400,width:'100%',border:`1px solid ${C.borderM}`}}>
+              <h3 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Demande de créatives</h3>
+              <p style={{fontSize:12,color:C.sec,margin:'0 0 20px'}}>Produit : <strong style={{color:C.text}}>{p.nom}</strong></p>
+              <div style={{marginBottom:20}}>
+                <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
+                  <span style={{fontSize:11,color:C.sec,fontWeight:600}}>Nombre de créatives</span>
+                  <span style={{fontSize:13,fontWeight:700,color:C.red}}>{requestQty} créatives</span>
+                </div>
+                <input type="range" min={9} max={max} step={9} value={requestQty}
+                  onChange={e=>setRequestQty(Number(e.target.value))}
+                  style={{width:'100%',accentColor:C.red,cursor:'pointer'}}/>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:C.muted,marginTop:4}}>
+                  <span>9 min</span><span style={{color:C.sec}}>{max} disponibles</span>
+                </div>
+              </div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:20}}>
+                {steps.map(q => (
+                  <button key={q} onClick={()=>setRequestQty(q)}
+                    style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${requestQty===q?C.red:C.border}`,background:requestQty===q?C.redS:'transparent',color:requestQty===q?C.red:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+              <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,fontSize:11,color:C.sec,marginBottom:16}}>
+                💡 Solde après demande : <strong style={{color:C.text}}>{credits.available - requestQty} crédits</strong> restants
+              </div>
+              <div style={{display:'flex',gap:10}}>
+                <button onClick={() => setRequestModal(null)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontWeight:600,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
+                <button onClick={confirmRequest} style={{flex:2,padding:'10px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+                  Confirmer · {requestQty} créatives
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 };
@@ -1303,6 +1562,11 @@ export default function Platform() {
   const [user, setUser] = useState(() => sbAuth.getUser());
   const [showLogin, setShowLogin] = useState(false);
 
+  const [briefs, setBriefs] = useState({});
+  const [allBriefs, setAllBriefs] = useState([]); // tous les briefs pour calcul crédits
+  const [subscription, setSubscription] = useState(null);
+  const [creativesTarget, setCreativesTarget] = useState(null);
+
   useEffect(() => {
     if (window.location.hash.includes('access_token')) {
       sbAuth.handleCallback();
@@ -1310,11 +1574,23 @@ export default function Platform() {
     }
     const u = sbAuth.getUser();
     setUser(u);
-    // Charger les produits depuis Supabase si connecté
     if (u) {
       const session = sbAuth.getSession();
-      sbProducts.load(session).then(prods => {
-        if (prods.length > 0) setProducts(prods);
+      // Charger produits + abonnement en parallèle
+      Promise.all([
+        sbProducts.load(session),
+        sbSubs.load(session),
+      ]).then(([prods, sub]) => {
+        if (prods.length > 0) {
+          setProducts(prods);
+          sbBriefs.loadForProducts(session, prods.map(p=>p.id)).then(bs => {
+            setAllBriefs(bs);
+            const map = {};
+            bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
+            setBriefs(map);
+          });
+        }
+        setSubscription(sub);
       });
     }
   }, []);
@@ -1384,7 +1660,7 @@ export default function Platform() {
 
   const views = {
     demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)}/>,
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} onAskCreatives={(p)=>{ if(!user){setShowLogin(true);return;} if(!subscription?.active){setSection('tarifs');return;} setCreativesTarget(p); }}/>,
     galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
@@ -1410,6 +1686,23 @@ export default function Platform() {
     </div>
     <Chatbot />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C}/>}
+    {creativesTarget && (
+      <CreativesModal
+        product={creativesTarget}
+        credits={computeCredits(subscription, allBriefs)}
+        C={C}
+        onClose={()=>setCreativesTarget(null)}
+        onConfirm={async (qty) => {
+          const session = sbAuth.getSession();
+          const brief = await sbBriefs.create(session, creativesTarget.id, qty);
+          if (brief) {
+            setAllBriefs(prev => [...prev, brief]);
+            setBriefs(prev => ({...prev, [creativesTarget.id]: brief}));
+          }
+          setCreativesTarget(null);
+        }}
+      />
+    )}
     </>
   );
 }
