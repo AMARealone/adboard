@@ -9,11 +9,7 @@
     body {
       background: transparent;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
-      /* Rendre l'iframe transparente aux clics/touches partout sauf sur le chatbot */
-      pointer-events: none;
     }
-    /* Réactiver les événements sur les éléments du chatbot uniquement */
-    #as-chat-btn, #as-bubble, #as-bubble * { pointer-events: auto; }
     /* ── Page hôte vide — seul le widget flotte ── */
   </style>
 </head>
@@ -293,7 +289,11 @@ function asToggle() {
     if (qBubble) qBubble.style.display = 'none';
     document.getElementById('as-notif-badge').style.display = 'none';
     if (asHistory.length === 0) asInit();
-  } else { bubble.style.display = 'none'; }
+    window.parent.postMessage({ type: 'as-open' }, '*');
+  } else {
+    bubble.style.display = 'none';
+    window.parent.postMessage({ type: 'as-close' }, '*');
+  }
 }
 
 function asInit() {

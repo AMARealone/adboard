@@ -929,13 +929,36 @@ const Marche = ({products, isDemo, setSection}) => {
 };
 
 
-const Chatbot = () => (
-  <iframe
-    src="/adstack-chatbot.html"
-    style={{position:"fixed",bottom:0,right:0,width:420,height:640,border:"none",background:"transparent",zIndex:9999,maxWidth:"100vw",maxHeight:"100vh"}}
-    title="Chatbot Amina"
-  />
-);
+const Chatbot = () => {
+  const [chatOpen, setChatOpen] = React.useState(false);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.data?.type === 'as-open') setChatOpen(true);
+      if (e.data?.type === 'as-close') setChatOpen(false);
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
+  return (
+    <iframe
+      src="/adstack-chatbot.html"
+      style={{
+        position: 'fixed',
+        bottom: 0,
+        right: 0,
+        width: chatOpen ? '100vw' : 90,
+        height: chatOpen ? '100vh' : 90,
+        border: 'none',
+        background: 'transparent',
+        zIndex: 9999,
+        transition: 'width 0.2s, height 0.2s',
+      }}
+      title="Chatbot Amina"
+    />
+  );
+};
 
 const PLANS = [
   {
