@@ -26,7 +26,31 @@ const sbAuth = {
   getUser: () => {
     try { return JSON.parse(localStorage.getItem('sb_user') || 'null'); } catch(e){ return null; }
   },
-  // Extrait et stocke la session depuis le hash URL (#access_token=...) après callback OAuth
+  // Rafraîchit le token si expiré, retourne une session valide
+  refreshSession: async () => {
+    try {
+      const session = JSON.parse(localStorage.getItem('sb_session') || 'null');
+      if (!session) return null;
+      // Vérifier si le token est encore valide (marge de 60s)
+      if (session.expires_at && Date.now() < session.expires_at - 60000) return session;
+      // Rafraîchir via refresh_token
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON },
+        body: JSON.stringify({ refresh_token: session.refresh_token })
+      });
+      if (!r.ok) { localStorage.removeItem('sb_session'); localStorage.removeItem('sb_user'); return null; }
+      const data = await r.json();
+      const newSession = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_at: Date.now() + (data.expires_in * 1000),
+      };
+      localStorage.setItem('sb_session', JSON.stringify(newSession));
+      if (data.user) localStorage.setItem('sb_user', JSON.stringify(data.user));
+      return newSession;
+    } catch(e) { return null; }
+  },
   handleCallback: () => {
     const hash = window.location.hash;
     if (!hash.includes('access_token')) return false;
@@ -562,15 +586,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const submit = async () => {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    const session = sbAuth.getSession();
+    const session = await sbAuth.refreshSession();
     if (editingId) {
-      // Mise à jour locale immédiate
       setProducts(prev => prev.map(p => p.id===editingId ? {...form, id:editingId} : p));
-      // Sync Supabase en arrière-plan
       if (session) sbProducts.update(session, editingId, form);
     } else {
       if (session) {
-        // Sauvegarder en Supabase et récupérer l'ID réel
         const saved = await sbProducts.save(session, form);
         if (saved) {
           setProducts(prev => [...prev, saved]);
@@ -1606,22 +1627,24 @@ export default function Platform() {
     const u = sbAuth.getUser();
     setUser(u);
     if (u) {
-      const session = sbAuth.getSession();
-      // Charger produits + abonnement en parallèle
-      Promise.all([
-        sbProducts.load(session),
-        sbSubs.load(session),
-      ]).then(([prods, sub]) => {
-        if (prods.length > 0) {
-          setProducts(prods);
-          sbBriefs.loadForProducts(session, prods.map(p=>p.id)).then(bs => {
-            setAllBriefs(bs);
-            const map = {};
-            bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
-            setBriefs(map);
-          });
-        }
-        setSubscription(sub);
+      // Rafraîchir le token avant de charger les données
+      sbAuth.refreshSession().then(session => {
+        if (!session) { setUser(null); return; }
+        Promise.all([
+          sbProducts.load(session),
+          sbSubs.load(session),
+        ]).then(([prods, sub]) => {
+          if (prods.length > 0) {
+            setProducts(prods);
+            sbBriefs.loadForProducts(session, prods.map(p=>p.id)).then(bs => {
+              setAllBriefs(bs);
+              const map = {};
+              bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
+              setBriefs(map);
+            });
+          }
+          setSubscription(sub);
+        });
       });
     }
   }, []);
