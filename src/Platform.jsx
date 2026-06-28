@@ -1776,11 +1776,45 @@ export default function Platform() {
         C={C}
         onClose={()=>setCreativesTarget(null)}
         onConfirm={async (qty) => {
-          const session = sbAuth.getSession();
+          const session = await sbAuth.refreshSession();
           const brief = await sbBriefs.create(session, creativesTarget.id, qty);
           if (brief) {
             setAllBriefs(prev => [...prev, brief]);
             setBriefs(prev => ({...prev, [creativesTarget.id]: brief}));
+
+            // ── Envoyer le ticket vers Factory ──
+            const p = creativesTarget;
+            const pastBriefs = allBriefs.filter(b => b.product_id === p.id && b.status !== 'cancelled');
+            try {
+              fetch('https://alienate-helper-wanted.ngrok-free.dev/webhook/brief', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' },
+                body: JSON.stringify({
+                  brief_id: brief.id,
+                  user_id: user?.id,
+                  user_email: user?.email,
+                  plan: subscription?.plan || 'starter',
+                  quantity: qty,
+                  product: {
+                    id: p.id,
+                    nom: p.nom,
+                    pricing: p.pricing,
+                    pays: p.pays,
+                    cible: p.cible || '',
+                    utilite: p.utilite || '',
+                    couleur1: p.couleur1 || '',
+                    couleur2: p.couleur2 || '',
+                    couleur3: p.couleur3 || '',
+                    photo_url: p.photo_url || null,
+                    photo_base64: p.photo?.startsWith('data:') ? p.photo : null,
+                  },
+                  history: {
+                    batches_count: pastBriefs.length,
+                    total_creatives_done: pastBriefs.reduce((s,b) => s+(b.credits_used||9), 0),
+                  }
+                })
+              }).catch(e => console.warn('[Webhook] Factory non joignable:', e.message));
+            } catch(e) { console.warn('[Webhook]', e); }
           }
           setCreativesTarget(null);
         }}
