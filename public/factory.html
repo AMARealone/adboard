@@ -4229,7 +4229,7 @@ async function loadCommandes() {
   if (!el) return;
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3);">Chargement…</div>';
   try {
-    const r = await fetch('https://alienate-helper-wanted.ngrok-free.dev/commandes', { headers: { 'ngrok-skip-browser-warning': '1' } });
+    const r = await fetch('https://curler-buggy-actress.ngrok-free.dev/commandes', { headers: { 'ngrok-skip-browser-warning': '1' } });
     const briefs = await r.json();
     const count = briefs.filter(b => b.status === 'pending' || b.status === 'in_production').length;
     const badge = document.getElementById('sidebarCommandesCount');
@@ -4296,7 +4296,7 @@ async function loadCommandes() {
 
 async function lancerProduction(id, briefJson) {
   try {
-    await fetch(`https://alienate-helper-wanted.ngrok-free.dev/commandes/${id}/start`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
+    await fetch(`https://curler-buggy-actress.ngrok-free.dev/commandes/${id}/start`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
     const b = JSON.parse(briefJson);
     // Pré-remplir les champs Factory avec les infos du brief
     const nomProdEl = document.getElementById('nomProd') || document.getElementById('productName') || document.getElementById('nomProduit');
@@ -4313,7 +4313,7 @@ async function lancerProduction(id, briefJson) {
 
 async function marquerLivre(id) {
   if (!confirm('Marquer cette commande comme livrée ?')) return;
-  await fetch(`https://alienate-helper-wanted.ngrok-free.dev/commandes/${id}/done`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
+  await fetch(`https://curler-buggy-actress.ngrok-free.dev/commandes/${id}/done`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
   loadCommandes();
 }
 
@@ -4325,7 +4325,7 @@ function voirBrief(id) {
 // Rafraîchir le badge commandes toutes les 30s
 setInterval(async () => {
   try {
-    const r = await fetch('https://alienate-helper-wanted.ngrok-free.dev/commandes', { headers: { 'ngrok-skip-browser-warning': '1' } });
+    const r = await fetch('https://curler-buggy-actress.ngrok-free.dev/commandes', { headers: { 'ngrok-skip-browser-warning': '1' } });
     const briefs = await r.json();
     const count = briefs.filter(b => b.status === 'pending').length;
     const badge = document.getElementById('sidebarCommandesCount');
