@@ -1786,7 +1786,7 @@ export default function Platform() {
             const p = creativesTarget;
             const pastBriefs = allBriefs.filter(b => b.product_id === p.id && b.status !== 'cancelled');
             try {
-              fetch('https://curler-buggy-actress.ngrok-free.dev/webhook/brief', {
+              fetch('https://adstack-server.onrender.com/webhook/brief', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' },
                 body: JSON.stringify({
