@@ -416,6 +416,11 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
     <span id="sidebarDemosCount" style="background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;min-width:20px;text-align:center;">—</span>
   </div>
 
+  <div id="sidebarCommandesBtn" class="sidebar-demogen-btn" onclick="showCommandes()" style="margin-top:6px;background:var(--bg3);color:var(--t2);border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <span>🎯 Commandes AdBoard</span>
+    <span id="sidebarCommandesCount" style="background:var(--blue);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;min-width:20px;text-align:center;display:none;">0</span>
+  </div>
+
   <div class="sidebar-section sidebar-toggle" onclick="togglePipelineAgents()" id="sidebarPipelineToggle" style="cursor:pointer;user-select:none;">
     <span id="pipelineArrow">▸</span> Pipeline <span style="opacity:0.5;font-weight:400;letter-spacing:0">(test agents)</span>
   </div>
@@ -674,6 +679,18 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
       </div>
     </div>
   </div>
+</div>
+
+<!-- VUE COMMANDES ADBOARD -->
+<div class="dashboard" id="viewCommandes" style="padding:24px;overflow-y:auto;background:var(--bg1);min-height:100%;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div>
+      <h2 style="font-size:17px;font-weight:700;margin:0 0 3px;">Commandes reçues</h2>
+      <p style="font-size:12px;color:var(--t3);margin:0;">Tickets de production envoyés depuis AdBoard par vos clients</p>
+    </div>
+    <button onclick="loadCommandes()" style="padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Rafraîchir</button>
+  </div>
+  <div id="commandesList"></div>
 </div>
 
 <!-- PRODUCTION VIEW -->
@@ -4190,12 +4207,131 @@ function hideAll(){
   document.getElementById('viewProduction').classList.remove('show');
   const _vg=document.getElementById('viewGallery'); if(_vg) _vg.classList.remove('show');
   const _vd=document.getElementById('viewDemos'); if(_vd) _vd.classList.remove('show');
+  const _vc=document.getElementById('viewCommandes'); if(_vc) _vc.classList.remove('show');
   document.querySelectorAll('.agent-item').forEach(a=>a.classList.remove('active'));
 }
 
 
 
 
+
+function showCommandes() {
+  hideAll();
+  const v = document.getElementById('viewCommandes');
+  if (v) v.classList.add('show');
+  document.getElementById('topTitle').innerHTML = '<span>🎯 Commandes AdBoard</span>';
+  document.getElementById('sidebarCommandesBtn')?.classList.add('active');
+  loadCommandes();
+}
+
+async function loadCommandes() {
+  const el = document.getElementById('commandesList');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3);">Chargement…</div>';
+  try {
+    const r = await fetch('http://localhost:3001/commandes', { headers: { 'ngrok-skip-browser-warning': '1' } });
+    const briefs = await r.json();
+    const count = briefs.filter(b => b.status === 'pending' || b.status === 'in_production').length;
+    const badge = document.getElementById('sidebarCommandesCount');
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
+
+    if (!briefs.length) {
+      el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--t3);font-size:13px;">Aucune commande reçue pour l\'instant.</div>';
+      return;
+    }
+
+    const statusColor = { pending: '#F59E0B', in_production: '#3B82F6', done: '#22C55E', cancelled: '#6B7280' };
+    const statusLabel = { pending: '⏳ En attente', in_production: '🔵 En production', done: '✅ Livré', cancelled: '✗ Annulé' };
+
+    el.innerHTML = briefs.map(b => {
+      const photo = b.photo_nobg || b.product.photo_base64 || b.product.photo_url;
+      const photoHtml = photo
+        ? `<div style="width:80px;height:80px;flex-shrink:0;border-radius:8px;overflow:hidden;background:#1a1a2a;border:1px solid var(--border);">
+            <img src="${photo}" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'"/>
+            ${b.photo_nobg ? '<div style="font-size:9px;text-align:center;color:#22C55E;margin-top:2px;">✓ BG supprimé</div>' : ''}
+           </div>`
+        : `<div style="width:80px;height:80px;flex-shrink:0;border-radius:8px;background:#1a1a2a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:22px;">📦</div>`;
+
+      const couleurs = b.product.couleurs?.filter(Boolean) || [];
+      const couleursHtml = couleurs.map(c => `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:1px solid rgba(255,255,255,0.2);"></span>`).join('');
+
+      return `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start;">
+        ${photoHtml}
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+            <span style="font-size:15px;font-weight:700;color:var(--t1);">${b.product.nom}</span>
+            <span style="padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:${statusColor[b.status]}22;color:${statusColor[b.status]};">${statusLabel[b.status] || b.status}</span>
+            <span style="padding:2px 8px;border-radius:12px;font-size:10px;background:var(--bg3);color:var(--blue);">× ${b.quantity} images</span>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:6px;">
+            📧 ${b.client?.email || b.client?.user_id?.slice(0,8)+'...'} · ${b.client?.plan?.toUpperCase()} · ${new Date(b.created_at).toLocaleString('fr-FR')}
+          </div>
+          ${b.product.pricing ? `<div style="font-size:11px;color:var(--t2);">Prix : <strong>${b.product.pricing}</strong> · ${b.product.pays || ''}</div>` : ''}
+          ${b.product.cible ? `<div style="font-size:11px;color:var(--t2);margin-top:3px;">Cible : ${b.product.cible}</div>` : ''}
+          ${couleurs.length ? `<div style="margin-top:6px;display:flex;gap:4px;align-items:center;">${couleursHtml}</div>` : ''}
+          ${b.history?.batches_count > 0 ? `<div style="font-size:10px;color:var(--t3);margin-top:4px;">📊 ${b.history.batches_count} batch(es) précédent(s) · ${b.history.total_creatives_done} créatives déjà livrées</div>` : ''}
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+            ${b.status === 'pending' ? `
+              <button onclick="lancerProduction('${b.id}', ${JSON.stringify(JSON.stringify(b)).slice(1,-1)})" 
+                style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
+                ▶ Lancer la production
+              </button>
+              <button onclick="voirBrief('${b.id}')" style="padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
+                📋 Voir le brief
+              </button>
+            ` : b.status === 'in_production' ? `
+              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:#22C55E22;border:1px solid #22C55E44;border-radius:7px;color:#22C55E;font-size:12px;font-weight:700;cursor:pointer;">
+                ✅ Marquer livré
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:#f87171;padding:20px;font-size:12px;">Erreur: ${e.message}. Le serveur local tourne-t-il?</div>`;
+  }
+}
+
+async function lancerProduction(id, briefJson) {
+  try {
+    await fetch(`http://localhost:3001/commandes/${id}/start`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
+    const b = JSON.parse(briefJson);
+    // Pré-remplir les champs Factory avec les infos du brief
+    const nomProdEl = document.getElementById('nomProd') || document.getElementById('productName') || document.getElementById('nomProduit');
+    if (nomProdEl) nomProdEl.value = b.product.nom;
+    const paysEl = document.getElementById('pays') || document.getElementById('countryInput');
+    if (paysEl) paysEl.value = b.product.pays || '';
+    // Passer en mode production
+    setMode('prod');
+    showProduction();
+    alert(`✅ Commande ${b.product.nom} marquée "En production".\nLes champs ont été pré-remplis. Lance la production normalement.`);
+    loadCommandes();
+  } catch(e) { alert('Erreur: ' + e.message); }
+}
+
+async function marquerLivre(id) {
+  if (!confirm('Marquer cette commande comme livrée ?')) return;
+  await fetch(`http://localhost:3001/commandes/${id}/done`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
+  loadCommandes();
+}
+
+function voirBrief(id) {
+  // Trouve le brief dans le DOM et affiche les détails
+  alert('Brief ID: ' + id + '\nConsulte briefs_queue.json sur le serveur pour le détail complet.');
+}
+
+// Rafraîchir le badge commandes toutes les 30s
+setInterval(async () => {
+  try {
+    const r = await fetch('http://localhost:3001/commandes', { headers: { 'ngrok-skip-browser-warning': '1' } });
+    const briefs = await r.json();
+    const count = briefs.filter(b => b.status === 'pending').length;
+    const badge = document.getElementById('sidebarCommandesCount');
+    if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
+  } catch(e) {}
+}, 30000);
 
 function showDashboard(){
   hideAll();
