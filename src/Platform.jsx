@@ -334,21 +334,25 @@ const sbProducts = {
   async uploadPhoto(session, base64DataUrl) {
     if (!base64DataUrl || !base64DataUrl.startsWith('data:')) return null;
     try {
-      const [meta, data] = base64DataUrl.split(',');
-      const mime = meta.match(/:(.*?);/)[1];
-      const ext = mime.split('/')[1] || 'jpg';
-      const bytes = atob(data);
-      const arr = new Uint8Array([...bytes].map(ch => ch.charCodeAt(0)));
-      const blob = new Blob([arr], { type: mime });
+      const blob = await fetch(base64DataUrl).then(r => r.blob());
+      const ext = blob.type.split('/')[1] || 'jpg';
       const filename = `${Date.now()}.${ext}`;
       const r = await fetch(`${SUPABASE_URL}/storage/v1/object/product-photos/${filename}`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON, 'Content-Type': mime },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: SUPABASE_ANON,
+          'Content-Type': blob.type,
+          'x-upsert': 'true',
+        },
         body: blob
       });
-      if (!r.ok) return null;
+      if (!r.ok) {
+        console.error('Photo upload failed:', r.status, await r.text());
+        return null;
+      }
       return `${SUPABASE_URL}/storage/v1/object/public/product-photos/${filename}`;
-    } catch(e) { console.error('Photo upload failed:', e); return null; }
+    } catch(e) { console.error('Photo upload error:', e); return null; }
   },
   async save(session, product) {
     if (!session?.access_token) return null;
