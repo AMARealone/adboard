@@ -331,13 +331,37 @@ const sbProducts = {
     const rows = await r.json();
     return rows.map(p => ({ ...p, photo: p.photo_url }));
   },
+  async uploadPhoto(session, base64DataUrl) {
+    if (!base64DataUrl || !base64DataUrl.startsWith('data:')) return null;
+    try {
+      const [meta, data] = base64DataUrl.split(',');
+      const mime = meta.match(/:(.*?);/)[1];
+      const ext = mime.split('/')[1] || 'jpg';
+      const bytes = atob(data);
+      const arr = new Uint8Array([...bytes].map(ch => ch.charCodeAt(0)));
+      const blob = new Blob([arr], { type: mime });
+      const filename = `${Date.now()}.${ext}`;
+      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/product-photos/${filename}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON, 'Content-Type': mime },
+        body: blob
+      });
+      if (!r.ok) return null;
+      return `${SUPABASE_URL}/storage/v1/object/public/product-photos/${filename}`;
+    } catch(e) { console.error('Photo upload failed:', e); return null; }
+  },
   async save(session, product) {
     if (!session?.access_token) return null;
+    // Upload photo si base64
+    let photoUrl = product.photo || null;
+    if (photoUrl && photoUrl.startsWith('data:')) {
+      photoUrl = await sbProducts.uploadPhoto(session, photoUrl);
+    }
     const body = {
-      nom: product.nom, pricing: product.pricing, promo: product.promo,
-      lien: product.lien, utilite: product.utilite, cible: product.cible,
+      nom: product.nom, pricing: product.pricing, promo: product.promo||'',
+      lien: product.lien||'', utilite: product.utilite||'', cible: product.cible||'',
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
-      couleur3: product.couleur3||'', photo_url: product.photo||null,
+      couleur3: product.couleur3||'', photo_url: photoUrl,
     };
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
       method: 'POST',
@@ -345,17 +369,25 @@ const sbProducts = {
         'Content-Type': 'application/json', Prefer: 'return=representation' },
       body: JSON.stringify(body)
     });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const err = await r.text();
+      console.error('sbProducts.save error:', err);
+      return null;
+    }
     const rows = await r.json();
     return { ...rows[0], photo: rows[0].photo_url };
   },
   async update(session, id, product) {
     if (!session?.access_token) return false;
+    let photoUrl = product.photo || null;
+    if (photoUrl && photoUrl.startsWith('data:')) {
+      photoUrl = await sbProducts.uploadPhoto(session, photoUrl);
+    }
     const body = {
-      nom: product.nom, pricing: product.pricing, promo: product.promo,
-      lien: product.lien, utilite: product.utilite, cible: product.cible,
+      nom: product.nom, pricing: product.pricing, promo: product.promo||'',
+      lien: product.lien||'', utilite: product.utilite||'', cible: product.cible||'',
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
-      couleur3: product.couleur3||'', photo_url: product.photo||null,
+      couleur3: product.couleur3||'', photo_url: photoUrl,
       updated_at: new Date().toISOString(),
     };
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
@@ -553,6 +585,34 @@ const LoginModal = ({onClose, C}) => {
 };
 
 
+const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, C}) => {
+  const brief = briefs[p.id];
+  const CANCEL_WINDOW = 12 * 60 * 60 * 1000;
+  const canCancel = brief && brief.status==="pending" && (Date.now() - new Date(brief.created_at).getTime()) < CANCEL_WINDOW;
+  const inProd = brief && (brief.status==="in_production" || (brief.status==="pending" && !canCancel));
+  const credits = computeCredits(subscription, allBriefs);
+  if (canCancel) return (
+    <button onClick={() => cancelCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:"1px solid rgba(229,80,80,0.3)",background:"rgba(229,80,80,0.08)",color:"#E55050",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+      ✕ Annuler la demande
+    </button>
+  );
+  if (inProd) return (
+    <div style={{padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.sec,fontWeight:600,fontSize:11,textAlign:"center"}}>
+      ⏳ En production · livraison sous 36h
+    </div>
+  );
+  if (subscription?.active && credits.available < 9) return (
+    <div style={{padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
+      ✓ Disponible semaine prochaine
+    </div>
+  );
+  return (
+    <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:"1px solid rgba(45,127,249,0.2)",background:C.redS,color:C.red,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+      <Icon name="sparkle" size={13} color={C.red}/> Demander mes images
+    </button>
+  );
+};
+
 const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits={available:0,used:0,earned:0}, onAskCreatives}) => {
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
@@ -733,40 +793,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               </div>
             </div>
             <div style={{padding:'0 14px 14px'}}>
-              {(() => {
-                const brief = briefs[p.id];
-                const CANCEL_WINDOW = 12 * 60 * 60 * 1000;
-                const canCancel = brief && brief.status==='pending' && (Date.now() - new Date(brief.created_at).getTime()) < CANCEL_WINDOW;
-                const inProd = brief && (brief.status==='in_production' || (brief.status==='pending' && !canCancel));
-                const credits = computeCredits(subscription, allBriefs);
-
-                if (!user || !subscription?.active) return (
-                  <button onClick={onNeedLogin} style={{width:'100%',padding:'10px',borderRadius:7,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.sec,fontWeight:600,fontSize:11,cursor:'pointer',fontFamily:'inherit',textAlign:'center'}}>
-                    🔒 Abonnement requis
-                  </button>
-                );
-                if (canCancel) return (
-                  <button onClick={() => cancelCreatives(p)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px',borderRadius:7,border:'1px solid rgba(229,80,80,0.3)',background:'rgba(229,80,80,0.08)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
-                    ✕ Annuler la demande
-                  </button>
-                );
-                if (inProd) return (
-                  <div style={{padding:'10px',borderRadius:7,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.sec,fontWeight:600,fontSize:11,textAlign:'center'}}>
-                    ⏳ En production · livraison sous 36h
-                  </div>
-                );
-                if (credits.available < 9) return (
-                  <div style={{padding:'10px',borderRadius:7,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.muted,fontSize:11,textAlign:'center'}}>
-                    ✓ Quota épuisé · disponible semaine prochaine
-                  </div>
-                );
-                return (
-                  <button onClick={() => onAskCreatives ? onAskCreatives(p) : requestCreatives(p)} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px',borderRadius:7,border:'1px solid rgba(45,127,249,0.2)',background:C.redS,color:C.red,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
-                    <Icon name="sparkle" size={13} color={C.red}/> Demander mes créatives
-                    {credits.available > 9 && <span style={{fontSize:10,opacity:.7}}>({credits.available} images pub)</span>}
-                  </button>
-                );
-              })()}
+              <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} C={C}/>
             </div>
           </div>
         ))}
@@ -866,51 +893,6 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         </div>
       )}
 
-      {/* ── Modal demande créatives ── */}
-      {requestModal && (() => {
-        const p = requestModal.product;
-        const credits = computeCredits(subscription, allBriefs);
-        const max = Math.min(credits.available, 999);
-        const steps = [];
-        for (let q = 9; q <= max; q += 9) steps.push(q);
-        return (
-          <div onClick={() => setRequestModal(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-            <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:14,padding:'24px',maxWidth:400,width:'100%',border:`1px solid ${C.borderM}`}}>
-              <h3 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Demande de créatives</h3>
-              <p style={{fontSize:12,color:C.sec,margin:'0 0 20px'}}>Produit : <strong style={{color:C.text}}>{p.nom}</strong></p>
-              <div style={{marginBottom:20}}>
-                <div style={{display:'flex',justifyContent:'space-between',marginBottom:8}}>
-                  <span style={{fontSize:11,color:C.sec,fontWeight:600}}>Nombre de créatives</span>
-                  <span style={{fontSize:13,fontWeight:700,color:C.red}}>{requestQty} créatives</span>
-                </div>
-                <input type="range" min={9} max={max} step={9} value={requestQty}
-                  onChange={e=>setRequestQty(Number(e.target.value))}
-                  style={{width:'100%',accentColor:C.red,cursor:'pointer'}}/>
-                <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:C.muted,marginTop:4}}>
-                  <span>9 min</span><span style={{color:C.sec}}>{max} disponibles</span>
-                </div>
-              </div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:20}}>
-                {steps.map(q => (
-                  <button key={q} onClick={()=>setRequestQty(q)}
-                    style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${requestQty===q?C.red:C.border}`,background:requestQty===q?C.redS:'transparent',color:requestQty===q?C.red:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
-                    {q}
-                  </button>
-                ))}
-              </div>
-              <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,fontSize:11,color:C.sec,marginBottom:16}}>
-                💡 Solde après demande : <strong style={{color:C.text}}>{credits.available - requestQty} crédits</strong> restants
-              </div>
-              <div style={{display:'flex',gap:10}}>
-                <button onClick={() => setRequestModal(null)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontWeight:600,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
-                <button onClick={confirmRequest} style={{flex:2,padding:'10px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
-                  Confirmer · {requestQty} créatives
-                </button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
     </div>
   );
 };
@@ -1597,11 +1579,18 @@ const DemoPreview = ({slug}) => {
 
 export default function Platform() {
   const [section, _setSection] = useState(() => {
-    try { return localStorage.getItem('adstack_section') || 'produits'; } catch(e) { return 'produits'; }
+    try {
+      return sessionStorage.getItem('adstack_section')
+        || localStorage.getItem('adstack_section')
+        || 'produits';
+    } catch(e) { return 'produits'; }
   });
   const setSection = (s) => {
     _setSection(s);
-    try { localStorage.setItem('adstack_section', s); } catch(e) {}
+    try {
+      sessionStorage.setItem('adstack_section', s);
+      localStorage.setItem('adstack_section', s);
+    } catch(e) {}
   };
   const [isDemo, setIsDemo] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
