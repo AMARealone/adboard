@@ -357,7 +357,12 @@ const sbProducts = {
     if (photoUrl && photoUrl.startsWith('data:')) {
       photoUrl = await sbProducts.uploadPhoto(session, photoUrl);
     }
+    // Extraire user_id du JWT
+    const user = sbAuth.getUser();
+    const userId = user?.id;
+    if (!userId) return null;
     const body = {
+      user_id: userId,
       nom: product.nom, pricing: product.pricing, promo: product.promo||'',
       lien: product.lien||'', utilite: product.utilite||'', cible: product.cible||'',
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
@@ -421,11 +426,13 @@ const sbBriefs = {
   },
   async create(session, productId, quantity=9) {
     if (!session?.access_token) return null;
+    const user = sbAuth.getUser();
+    if (!user?.id) return null;
     const r = await fetch(`${SUPABASE_URL}/rest/v1/briefs`, {
       method: 'POST',
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({ product_id: productId, quantity, status: 'pending' })
+      body: JSON.stringify({ user_id: user.id, product_id: productId, quantity, status: 'pending', credits_used: quantity })
     });
     if (!r.ok) return null;
     const rows = await r.json();
@@ -770,9 +777,19 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
                 </div>
               )}
-              <button onClick={() => openEdit(p)} style={{position:'absolute',top:8,right:8,width:28,height:28,borderRadius:7,border:'none',background:'rgba(7,8,12,0.7)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <Icon name="pencil" size={13} color="#fff"/>
-              </button>
+              <div style={{position:'absolute',top:8,right:8,display:'flex',gap:4}}>
+                <button onClick={() => openEdit(p)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(7,8,12,0.7)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <Icon name="pencil" size={13} color="#fff"/>
+                </button>
+                <button onClick={async () => {
+                  if (!confirm('Supprimer ce produit ?')) return;
+                  const session = await sbAuth.refreshSession();
+                  if (session) await sbProducts.delete(session, p.id);
+                  setProducts(prev => prev.filter(x => x.id !== p.id));
+                }} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(229,48,48,0.8)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                  <Icon name="x" size={13} color="#fff"/>
+                </button>
+              </div>
               {p.promo && (
                 <div style={{position:'absolute',top:8,left:8}}>
                   <Tag ch={p.promo} color="red"/>
