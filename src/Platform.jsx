@@ -332,12 +332,19 @@ const sbProducts = {
     return rows.map(p => ({ ...p, photo: p.photo_url }));
   },
   async uploadPhoto(session, base64DataUrl) {
-    if (!base64DataUrl || !base64DataUrl.startsWith('data:')) return null;
+    if (!base64DataUrl || !base64DataUrl.startsWith('data:')) {
+      console.warn('[Photo] Pas de base64 valide');
+      return null;
+    }
     try {
+      console.log('[Photo] Conversion base64 → blob...');
       const blob = await fetch(base64DataUrl).then(r => r.blob());
+      console.log(`[Photo] Blob: ${blob.type}, ${(blob.size/1024).toFixed(1)}KB`);
       const ext = blob.type.split('/')[1] || 'jpg';
       const filename = `${Date.now()}.${ext}`;
-      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/product-photos/${filename}`, {
+      const url = `${SUPABASE_URL}/storage/v1/object/product-photos/${filename}`;
+      console.log('[Photo] Upload vers:', url);
+      const r = await fetch(url, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -347,24 +354,29 @@ const sbProducts = {
         },
         body: blob
       });
-      if (!r.ok) {
-        console.error('Photo upload failed:', r.status, await r.text());
-        return null;
-      }
-      return `${SUPABASE_URL}/storage/v1/object/public/product-photos/${filename}`;
-    } catch(e) { console.error('Photo upload error:', e); return null; }
+      const responseText = await r.text();
+      console.log(`[Photo] Réponse Supabase: ${r.status}`, responseText);
+      if (!r.ok) return null;
+      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/product-photos/${filename}`;
+      console.log('[Photo] ✅ URL publique:', publicUrl);
+      return publicUrl;
+    } catch(e) {
+      console.error('[Photo] Erreur:', e);
+      return null;
+    }
   },
   async save(session, product) {
-    if (!session?.access_token) return null;
-    // Upload photo si base64
-    let photoUrl = product.photo || null;
-    if (photoUrl && photoUrl.startsWith('data:')) {
-      photoUrl = await sbProducts.uploadPhoto(session, photoUrl);
-    }
-    // Extraire user_id du JWT
+    if (!session?.access_token) { console.warn('[Save] Pas de session'); return null; }
     const user = sbAuth.getUser();
     const userId = user?.id;
-    if (!userId) return null;
+    if (!userId) { console.warn('[Save] Pas de user_id'); return null; }
+
+    let photoUrl = product.photo || null;
+    console.log('[Save] Photo initiale:', photoUrl ? `base64 (${(photoUrl.length/1024).toFixed(0)}KB)` : 'null');
+    if (photoUrl && photoUrl.startsWith('data:')) {
+      photoUrl = await sbProducts.uploadPhoto(session, photoUrl);
+      console.log('[Save] Photo URL après upload:', photoUrl);
+    }
     const body = {
       user_id: userId,
       nom: product.nom, pricing: product.pricing, promo: product.promo||'',
@@ -372,6 +384,7 @@ const sbProducts = {
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
       couleur3: product.couleur3||'', photo_url: photoUrl,
     };
+    console.log('[Save] Body envoyé à Supabase:', JSON.stringify({...body, photo_url: photoUrl ? '(url)' : null}));
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
       method: 'POST',
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
@@ -1047,12 +1060,7 @@ const Galerie = ({products, isDemo, setSection}) => {
         </div>
       )}
 
-      {isDemo && (
-        <div style={{position:'relative',marginTop:14,height:72}}>
-          <div style={{height:'100%',background:C.card,borderRadius:10}}/>
-          <LockOverlay/>
-        </div>
-      )}
+
 
       {selected && (
         <div onClick={() => setSelected(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
@@ -1127,7 +1135,7 @@ const Copies = ({products, setSection}) => {
                   <Icon name="document" size={26} color={C.red}/>
                 </div>
                 <div>
-                  <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos ad copies arriveront ici</div>
+                  <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos ad copies apparaîtront ici</div>
                   <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
                     Hooks accrocheurs et descriptions optimisées Meta Ads, classés par angle. Copiez-collez directement dans votre Ads Manager pour gagner du temps.
                   </div>
@@ -1190,7 +1198,7 @@ const Copies = ({products, setSection}) => {
             <div style={{textAlign:'center',padding:'40px',color:C.sec}}>
               <Icon name="clock" size={28} color={C.muted}/>
               <div style={{fontSize:13,fontWeight:600,color:C.text,marginTop:12}}>Aucun Ad Copy livré pour le moment</div>
-              <div style={{fontSize:11,marginTop:6}}>Vos Ad Copies apparaîtront ici après la première livraison AdStack</div>
+              <div style={{fontSize:11,marginTop:6}}>Dès que votre agence aura livré vos copies, elles apparaîtront ici</div>
             </div>
           ) : (
             <>
@@ -1366,7 +1374,7 @@ const Marche = ({products, isDemo, setSection}) => {
           <div style={{textAlign:'center',padding:'40px',color:C.sec}}>
             <Icon name="clock" size={28} color={C.muted}/>
             <div style={{fontSize:13,fontWeight:600,color:C.text,marginTop:12}}>Aucune donnée marché disponible pour le moment</div>
-            <div style={{fontSize:11,marginTop:6}}>Vos données apparaîtront ici après la première analyse AdStack</div>
+            <div style={{fontSize:11,marginTop:6}}>Dès que votre agence aura produit votre analyse, elle apparaîtra ici</div>
           </div>
         ) : (
           <>
@@ -1541,7 +1549,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA')}) => {
 
             <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
               <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(p.price)}</span>
-              <span style={{fontSize:11,color:C.sec}}>FCFA / mois</span>
+              <span style={{fontSize:11,color:C.sec}}>/ mois</span>
             </div>
 
             <div style={{
@@ -1595,7 +1603,7 @@ const DemoPreview = ({slug}) => {
       <Icon name="eye" size={48} color={C.muted}/>
       <div style={{fontSize:18,fontWeight:700,color:C.text}}>Aucune démo à afficher</div>
       <div style={{fontSize:13,color:C.sec,maxWidth:400}}>
-        Lorsque votre agence génère une démonstration pour votre marque, elle apparaîtra ici avec l'analyse de marché, le persona cible et les créatives Meta Ads.
+        Dès que votre agence aura généré votre démonstration, elle apparaîtra ici avec l'analyse de marché, le persona cible et vos créatives Meta Ads.
       </div>
     </div>
   );
