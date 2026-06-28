@@ -642,9 +642,20 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const handleFile = (e, fieldKey) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm(f => ({...f, [fieldKey]: reader.result}));
-    reader.readAsDataURL(file);
+    const img = new Image();
+    const objUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      const MAX = 800;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      const compressed = canvas.toDataURL('image/jpeg', 0.82);
+      setForm(f => ({...f, [fieldKey]: compressed}));
+      URL.revokeObjectURL(objUrl);
+    };
+    img.src = objUrl;
   };
 
   const validate = () => {
