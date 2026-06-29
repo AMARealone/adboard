@@ -918,7 +918,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   );
 };
 
-const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}}) => {
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}}) => {
   // Recalculer les crédits en temps réel depuis allBriefs
   const credits = computeCredits(subscription, allBriefs);
   const isMobile = useIsMobile();
@@ -1033,30 +1033,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   };
 
 
-  const cancelCreatives = async (p) => {
-    const session = await sbAuth.refreshSession();
-    const brief = briefs[p.id];
-    if (!brief) return;
-    const ok = await sbBriefs.cancel(session, brief.id);
-    if (ok) {
-      setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
-      setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
-      notify(`✕ Commande annulée pour "${p.nom}"`, 'warning');
-      // Notifier Factory de l'annulation (avec retry)
-      const tryCancel = async () => {
-        for (let i=0; i<3; i++) {
-          try {
-            const r = await fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
-              method:'POST', headers:{'Content-Type':'application/json'},
-              signal: AbortSignal.timeout(12000)
-            });
-            if (r.ok) return;
-          } catch(e) { await new Promise(res=>setTimeout(res,2000)); }
-        }
-      };
-      tryCancel().catch(()=>{});
-    }
-  };
+  // cancelCreatives vient de Platform via prop
 
   const copyBrief = () => {
     navigator.clipboard?.writeText(JSON.stringify(brief, null, 2)).then(() => {
@@ -2190,7 +2167,7 @@ export default function Platform() {
 
   const views = {
     demo: <DemoPreview slug={demoSlug} setSection={setSection}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} onAskCreatives={(p)=>{ 
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
             // Anti-doublon : brief actif existant ?
