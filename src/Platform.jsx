@@ -208,8 +208,8 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <>
           <div style={{width:28,height:28,borderRadius:7,background:`linear-gradient(135deg,${C.red},#0B3D91)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>A</div>
           <div style={{overflow:'hidden',flex:1}}>
-            <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1,whiteSpace:'nowrap'}}>AdStack</div>
-            <div style={{fontSize:9,color:C.sec,letterSpacing:'1px',textTransform:'uppercase',whiteSpace:'nowrap'}}>Espace Client</div>
+            <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1,whiteSpace:'nowrap'}}>AdBoard</div>
+            <div style={{fontSize:9,color:C.sec,letterSpacing:'1px',textTransform:'uppercase',whiteSpace:'nowrap'}}>AdStack</div>
           </div>
           <button
             onClick={() => isMobile ? setMobileOpen(false) : setCollapsed(true)}
@@ -276,7 +276,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
           <div style={{fontSize:11,color:C.red,fontWeight:700,marginBottom:2}}>Conversion Starter</div>
           <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>9 images / semaine · Données marché</div>
-          <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(34900)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
+          <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(39900)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
           <button onClick={() => set('tarifs')}
             style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.red,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
             Commencer <Icon name="arrow" size={11} color="#fff"/>
@@ -1471,22 +1471,23 @@ const Chatbot = () => {
 const PLANS = [
   {
     id:'starter', name:'Conversion Starter',
-    price:34900, priceBarre:50000, prixImg:969, discount:30,
-    color:C.gray, best:false,
-    current: false,
+    price:39900, priceBarre:60000, prixImg:1108, discount:33,
+    color:C.gray, best:false, current:false,
+    checkout:'https://ecomaster.mychariow.shop/prd_ljowq8/checkout',
     features:[
       '9 Images Publicitaires Livrées / Semaine',
       '1 Produit / Semaine',
       'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
       'Titres et Descriptions à mettre dans la Campagne',
+      'Assistant IA dispo 7j/7',
       'Livraison en 48h chaque semaine',
     ],
   },
   {
     id:'pro', name:'Conversion Pro',
-    price:64900, priceBarre:100000, prixImg:901, discount:35,
-    color:C.red, best:true,
-    current: false,
+    price:79900, priceBarre:120000, prixImg:1108, discount:33,
+    color:C.red, best:true, current:false,
+    checkout:'https://ecomaster.mychariow.shop/prd_34w031/checkout',
     features:[
       '18 Images Publicitaires Livrées / Semaine',
       '1 à 2 Produits / Semaine',
@@ -1498,9 +1499,9 @@ const PLANS = [
   },
   {
     id:'scale', name:'Conversion Scale',
-    price:104900, priceBarre:200000, prixImg:728, discount:48,
-    color:C.white, best:false,
-    current: false,
+    price:99900, priceBarre:240000, prixImg:694, discount:58,
+    color:C.white, best:false, current:false,
+    checkout:'https://ecomaster.mychariow.shop/prd_9fi79y/checkout',
     features:[
       '36 Images Publicitaires Livrées / Semaine',
       '1 à 4 Produits / Semaine',
@@ -1512,103 +1513,195 @@ const PLANS = [
   },
 ];
 
-const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA')}) => {
+const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null}) => {
   const isMobile = useIsMobile();
-  const onCta = () => window.open('https://thefirstquality01.systeme.io/nosoffres','_blank');
+  const onCta = async (plan) => {
+    // Si pas connecté → login d'abord
+    const user = sbAuth.getUser();
+    if (!user) {
+      // Sauvegarder le plan visé et ouvrir le login
+      localStorage.setItem('adstack_pending_plan', JSON.stringify(plan));
+      sbAuth.signInWithGoogle();
+      return;
+    }
+    // Créer le checkout via notre serveur (avec user_id en metadata)
+    try {
+      const session = await sbAuth.refreshSession();
+      const r = await fetch('https://adstack-server.onrender.com/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: plan.id === 'starter' ? 'prd_ljowq8' : plan.id === 'pro' ? 'prd_34w031' : 'prd_9fi79y',
+          email: user.email,
+          user_id: user.id,
+          plan: plan.id
+        })
+      });
+      const data = await r.json();
+      if (data.checkout_url) {
+        window.open(data.checkout_url, '_blank');
+      } else if (data.already_active) {
+        alert('Votre abonnement est déjà actif !');
+      } else {
+        // Fallback au lien direct si le serveur échoue
+        window.open(plan.checkout, '_blank');
+      }
+    } catch(e) {
+      // Fallback au lien direct
+      window.open(plan.checkout, '_blank');
+    }
+  };
+  const userPlan = subscription?.plan;
+
+  // Inject gradient animation CSS
+  useEffect(() => {
+    if (document.getElementById('tarifs-gradient-css')) return;
+    const s = document.createElement('style');
+    s.id = 'tarifs-gradient-css';
+    s.textContent = `
+      @keyframes gradientFlow {
+        0%   { background-position: 0% 50%; }
+        50%  { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+      .headline-gradient {
+        background: linear-gradient(90deg, #1FB6FF, #2D7FF9, #5B8FFF, #1FB6FF);
+        background-size: 250% auto;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: gradientFlow 4s ease infinite;
+        display: inline;
+      }
+      .cta-btn-active:hover {
+        opacity: 0.88;
+        transform: translateY(-1px);
+        box-shadow: 0 8px 24px rgba(45,127,249,0.45) !important;
+      }
+    `;
+    document.head.appendChild(s);
+    return () => { const el = document.getElementById('tarifs-gradient-css'); if(el) el.remove(); };
+  }, []);
 
   return (
     <div>
-      <div style={{marginBottom:8}}>
-        <div style={{display:'inline-flex',alignItems:'center',gap:8,padding:'5px 14px',borderRadius:20,background:C.redS,border:'1px solid rgba(45,127,249,0.22)',marginBottom:14}}>
-          <span style={{width:6,height:6,borderRadius:'50%',background:C.red,display:'inline-block'}}/>
-          <span style={{fontSize:10,color:C.red,fontWeight:800,letterSpacing:'1.5px'}}>TÉLÉCHARGE · PUBLIE · VENDS 2X PLUS</span>
+      {/* ── Header ── */}
+      <div style={{marginBottom:28}}>
+        <div style={{fontSize:11,color:C.sec,fontWeight:700,letterSpacing:'2px',textTransform:'uppercase',marginBottom:10}}>
+          Nos Tarifs
         </div>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Nos Tarifs</h1>
-        <p style={{fontSize:13,color:C.sec,marginTop:3}}>Sans engagement · Paiement par mobile money, carte bancaire</p>
+        <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.1,letterSpacing:'-0.5px'}}>
+          <span className="headline-gradient">Télécharge. Publie. Vends.</span>
+        </h1>
+        <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:480}}>
+          Moins de temps sur Canva et ChatGPT — plus de temps à scaler ton business.
+        </p>
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20,marginTop:18}}>
-        {PLANS.map(p => (
-          <div key={p.id}
-            style={{
-              background: p.best
-                ? 'linear-gradient(180deg,rgba(45,127,249,0.09),rgba(45,127,249,0.03))'
-                : C.card,
-              border:`1px solid ${p.current?'rgba(255,255,255,0.22)':p.best?'rgba(45,127,249,0.32)':C.border}`,
-              borderRadius:12, padding:'22px', display:'flex', flexDirection:'column',
-              position:'relative', transition:'transform 0.2s, box-shadow 0.2s',
-            }}
-            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow=`0 12px 28px rgba(0,0,0,0.3)`;}}
-            onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none';}}
-          >
-            {p.current && (
-              <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:C.white,color:C.bg,fontSize:9,fontWeight:800,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
-                VOTRE ABONNEMENT
-              </div>
-            )}
-            {p.best && !p.current && (
-              <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:C.red,color:'#fff',fontSize:9,fontWeight:800,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
-                RECOMMANDÉ
-              </div>
-            )}
-
-            <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:p.current||p.best?8:0,marginBottom:10,letterSpacing:'0.3px'}}>{p.name}</div>
-
-            <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
-              {convertPrice(p.priceBarre)}
-            </div>
-
-            <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
-              <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(p.price)}</span>
-              <span style={{fontSize:11,color:C.sec}}>/ mois</span>
-            </div>
-
-            <div style={{
-              display:'inline-flex',alignItems:'center',gap:5,
-              padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',
-              background:`${p.color}18`,border:`1px solid ${p.color}38`,
-            }}>
-              <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{convertPrice(p.prixImg)}</span>
-              <span style={{fontSize:10,color:C.sec}}>/ image</span>
-            </div>
-
-            <div style={{height:1,background:C.border,marginBottom:16}}/>
-
-            <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:10}}>
-              {p.features.map((f,j) => (
-                <div key={j} style={{display:'flex',alignItems:'flex-start',gap:9}}>
-                  <span style={{flexShrink:0,marginTop:1,color:p.color}}><Icon name="check" size={13}/></span>
-                  <div style={{fontSize:12,color:C.sec,lineHeight:1.4}}>{f}</div>
-                </div>
-              ))}
-            </div>
-
-            <button onClick={onCta} style={{
-              width:'100%', padding:'11px', borderRadius:8, fontFamily:'inherit',
-              border:`1px solid ${p.current?'rgba(255,255,255,0.2)':p.best?'transparent':C.borderM}`,
-              background: p.current ? 'rgba(255,255,255,0.08)' : p.best ? C.red : 'rgba(255,255,255,0.05)',
-              color: p.current ? C.text : p.best ? '#fff' : C.sec,
-              fontWeight:700, fontSize:12, cursor:'pointer', transition:'all 0.2s',
-              display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-            }}
-              onMouseEnter={e=>{if(!p.current&&!p.best){e.currentTarget.style.background='rgba(255,255,255,0.09)';e.currentTarget.style.color=C.text;}}}
-              onMouseLeave={e=>{if(!p.current&&!p.best){e.currentTarget.style.background='rgba(255,255,255,0.05)';e.currentTarget.style.color=C.sec;}}}
+      {/* ── Plan cards ── */}
+      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20}}>
+        {PLANS.map(p => {
+          const isCurrent = userPlan === p.id;
+          return (
+            <div key={p.id}
+              style={{
+                background: p.best
+                  ? 'linear-gradient(180deg,rgba(45,127,249,0.10),rgba(45,127,249,0.03))'
+                  : C.card,
+                border:`1px solid ${isCurrent?'rgba(255,255,255,0.28)':p.best?'rgba(45,127,249,0.38)':C.border}`,
+                borderRadius:14, padding:'22px', display:'flex', flexDirection:'column',
+                position:'relative', transition:'transform 0.2s, box-shadow 0.2s',
+              }}
+              onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 14px 32px rgba(0,0,0,0.35)';}}
+              onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none';}}
             >
-              {p.current
-                ? (<><Icon name="check" size={13}/> Abonnement actif</>)
-                : p.best
-                  ? (<>Upgrader maintenant <Icon name="arrow" size={13} color="#fff"/></>)
-                  : 'Choisir ce plan'}
-            </button>
-          </div>
-        ))}
+              {/* Badge */}
+              {isCurrent && (
+                <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,0.9)',color:'#0A0A0E',fontSize:9,fontWeight:900,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
+                  VOTRE PLAN ACTUEL
+                </div>
+              )}
+              {p.best && !isCurrent && (
+                <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:`linear-gradient(90deg,${C.red},#0B3D91)`,color:'#fff',fontSize:9,fontWeight:900,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
+                  ✦ RECOMMANDÉ
+                </div>
+              )}
+
+              <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:isCurrent||p.best?8:0,marginBottom:10,letterSpacing:'0.3px'}}>{p.name}</div>
+
+              <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
+                {convertPrice(p.priceBarre)}
+              </div>
+
+              <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
+                <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(p.price)}</span>
+                <span style={{fontSize:11,color:C.sec}}>/ mois</span>
+              </div>
+
+              <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',background:`${p.color}18`,border:`1px solid ${p.color}38`}}>
+                <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{convertPrice(p.prixImg)}</span>
+                <span style={{fontSize:10,color:C.sec}}>/ image</span>
+              </div>
+
+              <div style={{height:1,background:C.border,marginBottom:16}}/>
+
+              <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:10}}>
+                {p.features.map((f,j) => (
+                  <div key={j} style={{display:'flex',alignItems:'flex-start',gap:9}}>
+                    <span style={{flexShrink:0,marginTop:1,color:p.color}}><Icon name="check" size={13}/></span>
+                    <div style={{fontSize:12,color:C.sec,lineHeight:1.4}}>{f}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* CTA Button */}
+              <button
+                onClick={() => !isCurrent && onCta(p)}
+                className={isCurrent ? '' : 'cta-btn-active'}
+                style={{
+                  width:'100%', padding:'12px', borderRadius:9, fontFamily:'inherit',
+                  border:'none', cursor: isCurrent ? 'default' : 'pointer',
+                  fontWeight:700, fontSize:13, transition:'all 0.2s',
+                  display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                  background: isCurrent
+                    ? 'rgba(255,255,255,0.07)'
+                    : 'linear-gradient(135deg,#2D7FF9,#0B3D91)',
+                  color: isCurrent ? C.sec : '#fff',
+                  boxShadow: isCurrent ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
+                }}
+              >
+                {isCurrent
+                  ? (<><Icon name="check" size={13} color={C.sec}/> Abonnement actuel</>)
+                  : (<>Commencer maintenant <Icon name="arrow" size={13} color="#fff"/></>)
+                }
+              </button>
+
+              {/* Reassurance */}
+              {!isCurrent && (
+                <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted,lineHeight:1.5}}>
+                  🔒 Paiement sécurisé<br/>
+                  <span style={{color:C.sec}}>Satisfait ou 100% remboursé</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
 };
 
 // ── Vue Démo : charge la mindmap dans un iframe ──────────────────────────────
-const DemoPreview = ({slug}) => {
+const DemoPreview = ({slug, setSection}) => {
+  const [showCta, setShowCta] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    if (!slug) return;
+    const t = setTimeout(() => setShowCta(true), 30000);
+    return () => clearTimeout(t);
+  }, [slug]);
+
   if (!slug) return (
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:16,padding:40,textAlign:'center'}}>
       <Icon name="eye" size={48} color={C.muted}/>
@@ -1619,12 +1712,37 @@ const DemoPreview = ({slug}) => {
     </div>
   );
   return (
-    <iframe
-      src={`/demo/${slug}.html`}
-      style={{width:'100%',height:'100%',border:'none',display:'block'}}
-      title="Démo AdStack"
-      allow="fullscreen"
-    />
+    <div style={{position:'relative',width:'100%',height:'100%'}}>
+      <iframe
+        src={`/demo/${slug}.html`}
+        style={{width:'100%',height:'100%',border:'none',display:'block'}}
+        title="Démo AdStack"
+        allow="fullscreen"
+      />
+      {/* Bouton flottant — apparaît après 30s */}
+      {showCta && !dismissed && (
+        <div style={{
+          position:'absolute', bottom:28, left:'50%', transform:'translateX(-50%)',
+          zIndex:50, animation:'ctaFloat 0.6s cubic-bezier(.34,1.56,.64,1) forwards',
+        }}>
+          <style>{`
+            @keyframes ctaFloat {
+              from { opacity:0; transform:translateX(-50%) translateY(20px); }
+              to   { opacity:1; transform:translateX(-50%) translateY(0); }
+            }
+            @keyframes ctaPulse {
+              0%,100% { box-shadow:0 6px 28px rgba(45,127,249,0.55); }
+              50%      { box-shadow:0 6px 36px rgba(45,127,249,0.80); }
+            }
+          `}</style>
+          <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#2D7FF9,#0B3D91)',color:'#fff',fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
+            onClick={() => setSection && setSection('tarifs')}>
+            ✦ Découvrir nos offres
+            <button onClick={e=>{e.stopPropagation();setDismissed(true);}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',fontSize:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -1753,7 +1871,7 @@ export default function Platform() {
   }, []);
 
   const views = {
-    demo: <DemoPreview slug={demoSlug}/>,
+    demo: <DemoPreview slug={demoSlug} setSection={setSection}/>,
     produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
@@ -1772,7 +1890,7 @@ export default function Platform() {
     galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
-    tarifs: <Tarifs convertPrice={convertPrice}/>,
+    tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription}/>,
   };
 
   return (
