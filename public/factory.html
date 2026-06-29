@@ -4274,11 +4274,11 @@ async function loadCommandes() {
           ${b.history?.batches_count > 0 ? `<div style="font-size:10px;color:var(--t3);margin-top:4px;">📊 ${b.history.batches_count} batch(es) précédent(s) · ${b.history.total_creatives_done} créatives déjà livrées</div>` : ''}
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
             ${b.status === 'pending' ? `
-              <button onclick="lancerProduction('${b.id}', ${JSON.stringify(JSON.stringify(b)).slice(1,-1)})" 
+              <button onclick="lancerProduction('${b.id}')"
                 style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
                 ▶ Lancer la production
               </button>
-              <button onclick="voirBrief('${b.id}', this)" style="padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
+              <button onclick="voirBrief('${b.id}')" style="padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
                 📋 Voir le brief
               </button>
               <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
@@ -4287,6 +4287,14 @@ async function loadCommandes() {
             ` : b.status === 'in_production' ? `
               <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:#22C55E22;border:1px solid #22C55E44;border-radius:7px;color:#22C55E;font-size:12px;font-weight:700;cursor:pointer;">
                 ✅ Marquer livré
+              </button>
+              <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
+                🗑 Supprimer
+              </button>
+            ` : b.status === 'cancelled' ? `
+              <span style="font-size:11px;color:var(--t3);padding:4px 8px;">Annulé par le client</span>
+              <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
+                🗑 Supprimer
               </button>
             ` : ''}
           </div>
@@ -4298,10 +4306,12 @@ async function loadCommandes() {
   }
 }
 
-async function lancerProduction(id, briefJson) {
+async function lancerProduction(id) {
   try {
     await fetch(`https://adstack-server.onrender.com/commandes/${id}/start`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
-    const b = JSON.parse(briefJson);
+  // Récupérer le brief depuis le serveur
+  const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json()).catch(()=>[]);
+  const b = briefs.find(x=>x.id===id)||{};
     // Pré-remplir les champs Factory avec les infos du brief
     const nomProdEl = document.getElementById('nomProd') || document.getElementById('productName') || document.getElementById('nomProduit');
     if (nomProdEl) nomProdEl.value = b.product.nom;

@@ -758,7 +758,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
       setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
       // Notifier Factory de l'annulation
-      fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/cancel', {
+      fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
         method:'POST', headers:{'Content-Type':'application/json'}
       }).catch(()=>{});
     }
@@ -784,9 +784,9 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               <span style={{fontSize:16,fontWeight:800,color:credits.available>0?C.red:C.muted}}>{credits.available}</span>
             </div>
             <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8FFF)`:'rgba(255,255,255,0.1)',width:credits.earned===0?'0%':`${Math.min(100,(credits.available/credits.earned)*100)}%`,transition:'width .4s ease'}}/>
+              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8FFF)`:'rgba(255,255,255,0.1)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
             </div>
-            <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.earned} accumulées au total</div>
+            <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.total} accumulées au total</div>
           </div>
           {credits.available === 0 && (
             <div style={{fontSize:11,color:C.muted,padding:'6px 12px',borderRadius:7,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
