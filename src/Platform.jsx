@@ -97,6 +97,7 @@ const NAV = [
   {id:'galerie',icon:'grid',label:'Galerie Créatives'},
   {id:'copies',icon:'document',label:'Ad Copies'},
   {id:'marche',icon:'chart',label:'Données Marché'},
+  {id:'suivi',icon:'clock',label:'Suivi Demande'},
   {id:'notifications',icon:'bell',label:'Notifications'},
   {id:'tarifs',icon:'tag',label:'Nos Tarifs'},
 ];
@@ -266,8 +267,20 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
     <nav style={{flex:1,padding:'10px',overflow:'auto'}}>
       {NAV.map(n => (
         <button key={n.id} onClick={() => navClick(n.id)} title={(showCollapsed || (isMobile && !mobileOpen)) ? n.label : undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:(showCollapsed || (isMobile && !mobileOpen))?'center':'flex-start',gap:(showCollapsed || (isMobile && !mobileOpen))?0:10,padding:(showCollapsed || (isMobile && !mobileOpen))?'10px 0':'9px 10px',borderRadius:7,border:'none',cursor:'pointer',background:active===n.id?C.redS:'transparent',color:active===n.id?C.red:C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',borderLeft:active===n.id?`2px solid ${C.red}`:'2px solid transparent',transition:'all 0.15s',textAlign:'left',marginBottom:1,whiteSpace:'nowrap'}}>
-          <Icon name={n.icon} size={14} color={active===n.id?C.red:C.sec}/>
-          {!(showCollapsed || (isMobile && !mobileOpen)) && n.label}
+          <div style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name={n.icon} size={14} color={active===n.id?C.red:C.sec}/>
+            {n.id==='notifications' && unreadCount>0 && (
+              <span style={{position:'absolute',top:-5,right:-5,background:'#E55050',color:'#fff',borderRadius:'50%',minWidth:14,height:14,fontSize:8,fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 2px',lineHeight:1}}>
+                {unreadCount>9?'9+':unreadCount}
+              </span>
+            )}
+          </div>
+          {!(showCollapsed || (isMobile && !mobileOpen)) && <span style={{flex:1}}>{n.label}</span>}
+          {!(showCollapsed || (isMobile && !mobileOpen)) && n.id==='notifications' && unreadCount>0 && (
+            <span style={{background:'#E55050',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:9,fontWeight:900,minWidth:16,textAlign:'center',marginLeft:'auto'}}>
+              {unreadCount>9?'9+':unreadCount}
+            </span>
+          )}
         </button>
       ))}
     </nav>
@@ -723,6 +736,156 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
           ))}
         </div>
       )}
+    </div>
+  );
+};
+
+// ── Section Suivi Demande ──────────────────────────────────────────────────
+const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
+  const isMobile = useIsMobile();
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n+1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  const CANCEL_WIN = 12*60*60*1000;
+  const DELIVERY_WIN = 36*60*60*1000;
+
+  const formatCountdown = (ms) => {
+    if (ms <= 0) return null;
+    const h = Math.floor(ms/3600000);
+    const m = Math.floor((ms%3600000)/60000);
+    const s = Math.floor((ms%60000)/1000);
+    return `${h}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
+  };
+
+  const STATUS_COLORS = { pending:'#F59E0B', in_production:'#2D7FF9', done:'#22C55E', cancelled:'#6B7280' };
+  const STATUS_LABELS = { pending:'⏳ En attente', in_production:'🔵 En production', done:'✅ Livré', cancelled:'✗ Annulé' };
+
+  const sorted = [...allBriefs].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+
+  if (!sorted.length) return (
+    <div>
+      <div style={{marginBottom:20}}>
+        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
+          <div style={{width:40,height:40,borderRadius:10,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name="clock" size={18} color={C.red}/>
+          </div>
+          <div>
+            <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
+            <p style={{fontSize:12,color:C.sec,margin:0}}>Suivez vos demandes de production en temps réel</p>
+          </div>
+        </div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
+        <div style={{width:56,height:56,borderRadius:14,background:C.redS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <Icon name="clock" size={24} color={C.red}/>
+        </div>
+        <div style={{fontSize:16,fontWeight:700,color:C.text}}>Aucune demande en cours</div>
+        <div style={{fontSize:12,color:C.sec,maxWidth:300}}>Vos demandes de visuels apparaîtront ici avec leur statut et le temps restant avant livraison.</div>
+      </div>
+    </div>
+  );
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
+        <div style={{width:40,height:40,borderRadius:10,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <Icon name="clock" size={18} color={C.red}/>
+        </div>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
+          <p style={{fontSize:12,color:C.sec,margin:0}}>{sorted.filter(b=>b.status==='pending'||b.status==='in_production').length} demande(s) active(s)</p>
+        </div>
+      </div>
+
+      <div style={{display:'flex',flexDirection:'column',gap:12}}>
+        {sorted.map(b => {
+          const prod = products.find(p=>p.id===b.product_id);
+          const now = Date.now();
+          const created = new Date(b.created_at).getTime();
+          const sinceCreated = now - created;
+          const cancelRemaining = CANCEL_WIN - sinceCreated;
+          const canCancel = b.status==='pending' && cancelRemaining > 0;
+          const deliveryStart = new Date(b.started_at || b.created_at).getTime();
+          const deliveryRemaining = DELIVERY_WIN - (now - deliveryStart);
+
+          return (
+            <div key={b.id} style={{
+              background:C.card, border:`1px solid ${b.status==='pending'?'rgba(245,158,11,0.2)':b.status==='in_production'?'rgba(45,127,249,0.2)':b.status==='done'?'rgba(34,197,94,0.15)':C.border}`,
+              borderRadius:12, padding:18, display:'flex', flexDirection:'column', gap:12
+            }}>
+              {/* Header */}
+              <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+                {prod?.photo && (
+                  <div style={{width:52,height:52,borderRadius:8,overflow:'hidden',flexShrink:0,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+                    <img src={prod.photo} style={{width:'100%',height:'100%',objectFit:'contain'}} alt=""/>
+                  </div>
+                )}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:4}}>
+                    <span style={{fontSize:14,fontWeight:700,color:C.text}}>{prod?.nom||'Produit inconnu'}</span>
+                    <span style={{padding:'2px 8px',borderRadius:20,fontSize:10,fontWeight:700,background:`${STATUS_COLORS[b.status]}18`,color:STATUS_COLORS[b.status]}}>
+                      {STATUS_LABELS[b.status]}
+                    </span>
+                  </div>
+                  <div style={{fontSize:11,color:C.sec}}>
+                    <span style={{color:C.red,fontWeight:700}}>{b.quantity||9} visuels</span>
+                    {' · '}{new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+                  </div>
+                </div>
+              </div>
+
+              {/* Timer */}
+              {canCancel && (
+                <div style={{background:'rgba(245,158,11,0.06)',border:'1px solid rgba(245,158,11,0.2)',borderRadius:8,padding:'10px 14px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:8}}>
+                  <div>
+                    <div style={{fontSize:10,color:'#F59E0B',fontWeight:700,marginBottom:2}}>⏱ FENÊTRE D'ANNULATION</div>
+                    <div style={{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:800,color:'#F59E0B',letterSpacing:1}}>
+                      {formatCountdown(cancelRemaining)||'Expirée'}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (prod && window.confirm(`Annuler la demande pour "${prod.nom}" ?`)) {
+                        cancelCreatives(prod);
+                      }
+                    }}
+                    style={{padding:'8px 16px',borderRadius:8,border:'1px solid rgba(229,80,80,0.4)',background:'rgba(229,80,80,0.08)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+                    ✕ Annuler
+                  </button>
+                </div>
+              )}
+
+              {b.status==='in_production' && deliveryRemaining>0 && (
+                <div style={{background:'rgba(45,127,249,0.06)',border:'1px solid rgba(45,127,249,0.2)',borderRadius:8,padding:'10px 14px'}}>
+                  <div style={{fontSize:10,color:C.red,fontWeight:700,marginBottom:2}}>🚀 LIVRAISON ESTIMÉE DANS</div>
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:18,fontWeight:800,color:C.red,letterSpacing:1}}>
+                    {formatCountdown(deliveryRemaining)||'Bientôt'}
+                  </div>
+                </div>
+              )}
+
+              {b.status==='done' && (
+                <div style={{background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:8,padding:'10px 14px',display:'flex',alignItems:'center',gap:10}}>
+                  <Icon name="check" size={16} color="#22C55E"/>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:'#22C55E'}}>Visuels livrés</div>
+                    {b.done_at && <div style={{fontSize:10,color:C.sec}}>{new Date(b.done_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>}
+                  </div>
+                </div>
+              )}
+
+              {b.status==='pending' && !canCancel && (
+                <div style={{background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`,borderRadius:8,padding:'10px 14px',fontSize:11,color:C.muted}}>
+                  🔒 Fenêtre d'annulation expirée — visuels en cours de préparation
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -2046,13 +2209,14 @@ export default function Platform() {
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription}/>,
+    suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C}/>,
     notifications: <Notifications
         notifications={notifications}
         C={C}
-        onMarkRead={async()=>{const s=await sbAuth.refreshSession();if(s)sbNotifications.markAllRead(s);setUnreadCount(0);setNotifications(p=>p.map(n=>({...n,read:true})));}}
+        onMarkRead={async()=>{const s=await sbAuth.refreshSession();if(s)await sbNotifications.markAllRead(s);setUnreadCount(0);setNotifications(p=>p.map(n=>({...n,read:true})));}}
         onDeleteAll={async()=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${user?.id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications([]);setUnreadCount(0);}}
         onDeleteOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications(p=>p.filter(n=>n.id!==id));setUnreadCount(p=>Math.max(0,p-1));}}
-        onMarkOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'PATCH',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`,'Content-Type':'application/json'},body:JSON.stringify({read:true})});}setNotifications(p=>p.map(n=>n.id===id?{...n,read:true}:n));setUnreadCount(p=>Math.max(0,p-1));}}
+        onMarkOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'PATCH',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({read:true})});}setNotifications(p=>p.map(n=>n.id===id?{...n,read:true}:n));setUnreadCount(p=>Math.max(0,p-1));}}
       />,
   };
 
