@@ -1516,17 +1516,15 @@ const PLANS = [
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null}) => {
   const isMobile = useIsMobile();
   const onCta = async (plan) => {
-    // Si pas connecté → login d'abord
     const user = sbAuth.getUser();
     if (!user) {
-      // Sauvegarder le plan visé et ouvrir le login
       localStorage.setItem('adstack_pending_plan', JSON.stringify(plan));
       sbAuth.signInWithGoogle();
       return;
     }
-    // Créer le checkout via notre serveur (avec user_id en metadata)
+    // Ouvrir une fenêtre AVANT l'appel async (sinon bloqué sur mobile)
+    const popup = window.open('', '_blank') || window;
     try {
-      const session = await sbAuth.refreshSession();
       const r = await fetch('https://adstack-server.onrender.com/create-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1538,17 +1536,12 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         })
       });
       const data = await r.json();
-      if (data.checkout_url) {
-        window.open(data.checkout_url, '_blank');
-      } else if (data.already_active) {
-        alert('Votre abonnement est déjà actif !');
-      } else {
-        // Fallback au lien direct si le serveur échoue
-        window.open(plan.checkout, '_blank');
-      }
+      const url = data.checkout_url || plan.checkout;
+      if (popup === window) { window.location.href = url; }
+      else { popup.location.href = url; }
     } catch(e) {
-      // Fallback au lien direct
-      window.open(plan.checkout, '_blank');
+      if (popup === window) { window.location.href = plan.checkout; }
+      else { popup.location.href = plan.checkout; }
     }
   };
   const userPlan = subscription?.plan;
