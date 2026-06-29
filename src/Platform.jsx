@@ -700,6 +700,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       }
     }
     setShowForm(false);
+    // Fix iOS zoom - blur active input after submit
+    if (document.activeElement) document.activeElement.blur();
   };
 
   const requestCreatives = (p) => {
@@ -782,7 +784,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               <span style={{fontSize:16,fontWeight:800,color:credits.available>0?C.red:C.muted}}>{credits.available}</span>
             </div>
             <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8FFF)`:'rgba(255,255,255,0.1)',width:credits.available===0?'100%':`${Math.min(100,(credits.available/credits.earned)*100)}%`,transition:'width .4s'}}/>
+              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8FFF)`:'rgba(255,255,255,0.1)',width:credits.earned===0?'0%':`${Math.min(100,(credits.available/credits.earned)*100)}%`,transition:'width .4s ease'}}/>
             </div>
             <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.earned} accumulées au total</div>
           </div>
@@ -1714,7 +1716,7 @@ export default function Platform() {
   useEffect(() => {
     const style = document.createElement('style');
     style.id = 'ios-zoom-fix';
-    style.textContent = 'input,textarea,select{touch-action:manipulation;}'; // iOS zoom: géré directement dans Field
+    style.textContent = 'html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}input,textarea,select{touch-action:manipulation;}'; // iOS zoom + no white padding
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
