@@ -1697,30 +1697,219 @@ const Marche = ({products, isDemo, setSection}) => {
 };
 
 
-const Chatbot = () => {
-  const [chatOpen, setChatOpen] = useState(false);
+const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], briefs={}, section='', setSection, openProductForm}) => {
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [sessionId] = useState(() => {
+    let id = localStorage.getItem('amina_session');
+    if (!id) { id = 'sess_' + Math.random().toString(36).slice(2); localStorage.setItem('amina_session', id); }
+    return id;
+  });
+  const messagesEndRef = useRef(null);
+  const inputRef = useRef(null);
 
+  const language = (() => {
+    const lang = navigator.language || 'fr';
+    return lang.startsWith('fr') ? 'fr' : 'en';
+  })();
+
+  // Load history on open
   useEffect(() => {
-    const handler = (e) => {
-      if (e.data?.type === 'as-open') setChatOpen(true);
-      if (e.data?.type === 'as-close') setChatOpen(false);
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, []);
+    if (!open || messages.length > 0) return;
+    fetch(`https://adstack-server.onrender.com/chat/history/${user?.id || sessionId}`)
+      .then(r => r.json())
+      .then(rows => {
+        if (rows?.length) {
+          setMessages(rows.map(r => ({ role: r.role, content: r.content })));
+        } else {
+          // Message de bienvenue
+          const name = user?.user_metadata?.full_name?.split(' ')[0] || '';
+          const welcome = language === 'fr'
+            ? `Bonjour${name ? ' ' + name : ''} ! 👋 Je suis **Amina**, ton assistante AdStack. Je connais ta boutique, ton forfait, et tes produits. Comment puis-je t'aider aujourd'hui ?`
+            : `Hi${name ? ' ' + name : ''} ! 👋 I'm **Amina**, your AdStack assistant. I know your account, plan, and products. How can I help you today?`;
+          setMessages([{ role: 'model', content: welcome }]);
+        }
+      })
+      .catch(() => {
+        const welcome = language === 'fr'
+          ? `Bonjour ! 👋 Je suis **Amina**, ton assistante AdStack. Comment puis-je t'aider ?`
+          : `Hi! 👋 I'm **Amina**, your AdStack assistant. How can I help?`;
+        setMessages([{ role: 'model', content: welcome }]);
+      });
+  }, [open]);
+
+  // Auto-scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, loading]);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading) return;
+    setInput('');
+    const newHistory = [...messages, { role: 'user', content: text }];
+    setMessages(newHistory);
+    setLoading(true);
+    try {
+      const r = await fetch('https://adstack-server.onrender.com/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: text,
+          history: messages.slice(-8),
+          session_id: user?.id || sessionId,
+          context: {
+            user: user ? { email: user.email, name: user.user_metadata?.full_name } : null,
+            subscription, products: products.slice(0,5),
+            credits: computeCredits(subscription, allBriefs),
+            section, language
+          }
+        })
+      });
+      const data = await r.json();
+      setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
+    } catch(e) {
+      setMessages(prev => [...prev, { role: 'model', content: language==='fr' ? "Désolée, je suis temporairement indisponible. Réessaie dans un instant." : "Sorry, I'm temporarily unavailable. Please try again." }]);
+    }
+    setLoading(false);
+  };
+
+  // Parse message for action buttons
+  const parseMessage = (content) => {
+    const btnRegex = /\[BTN:([^\]]+)\]/g;
+    const buttons = [];
+    let match;
+    while ((match = btnRegex.exec(content)) !== null) buttons.push(match[1]);
+    const text = content.replace(/\[BTN:[^\]]+\]/g, '').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').trim();
+    return { text, buttons };
+  };
+
+  const handleAction = (action) => {
+    const parts = action.split(':');
+    const type = parts[0];
+    if (type === 'navigate' && parts[1]) { setSection(parts[1]); setOpen(false); }
+    if (type === 'openProductForm') { setSection('produits'); openProductForm?.(); setOpen(false); }
+    if (type === 'login') { sbAuth.signInWithGoogle(); }
+  };
+
+  const BTN_LABELS = {
+    'navigate:tarifs': '→ Voir les offres',
+    'navigate:produits': '→ Mes produits',
+    'navigate:suivi': '→ Suivi de demandes',
+    'navigate:notifications': '→ Mes notifications',
+    'navigate:galerie': '→ Galerie créatives',
+    'openProductForm': '+ Créer un produit',
+    'login': '🔑 Se connecter avec Google',
+  };
 
   return (
-    <iframe
-      src="/adstack-chatbot.html"
-      style={{
-        position: 'fixed', bottom: 0, right: 0,
-        width: chatOpen ? '100vw' : 90,
-        height: chatOpen ? '100vh' : 90,
-        border: 'none', background: 'transparent',
-        zIndex: 9999, transition: 'width 0.2s, height 0.2s',
+    <>
+      {/* Inject chat CSS */}
+      <style>{`
+        @keyframes aminaIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+        @keyframes aminaPulse{0%,100%{box-shadow:0 4px 20px rgba(45,127,249,0.5)}50%{box-shadow:0 4px 28px rgba(45,127,249,0.8)}}
+        .amina-msg strong{font-weight:700;color:#fff}
+        .amina-bubble::-webkit-scrollbar{width:4px}
+        .amina-bubble::-webkit-scrollbar-track{background:transparent}
+        .amina-bubble::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
+        .amina-input:focus{outline:none;border-color:rgba(45,127,249,0.5)!important;box-shadow:0 0 0 3px rgba(45,127,249,0.12)}
+      `}</style>
+
+      {/* Panel chat */}
+      {open && (
+        <div style={{
+          position:'fixed', bottom: isMobile?0:90, right: isMobile?0:20,
+          width: isMobile?'100vw':380, height: isMobile?'100dvh':540,
+          background:'#0C0D14', border:'1px solid rgba(255,255,255,0.08)',
+          borderRadius: isMobile?0:16, zIndex:9998,
+          display:'flex', flexDirection:'column', overflow:'hidden',
+          boxShadow:'0 24px 64px rgba(0,0,0,0.7)',
+          animation:'aminaIn .25s cubic-bezier(.34,1.56,.64,1)'
+        }}>
+          {/* Header */}
+          <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#2D7FF9,#0B3D91)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>👩🏽‍💼</div>
+            <div style={{flex:1}}>
+              <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Outfit',sans-serif"}}>Amina</div>
+              <div style={{fontSize:10,color:'#22C55E',fontWeight:600}}>● En ligne</div>
+            </div>
+            <button onClick={()=>setOpen(false)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.4)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>✕</button>
+          </div>
+
+          {/* Messages */}
+          <div className="amina-bubble" style={{flex:1,overflowY:'auto',padding:'16px 14px',display:'flex',flexDirection:'column',gap:12}}>
+            {messages.map((m, i) => {
+              const isUser = m.role === 'user';
+              const { text, buttons } = parseMessage(m.content);
+              return (
+                <div key={i} style={{display:'flex',flexDirection:'column',alignItems:isUser?'flex-end':'flex-start',gap:6,animation:'aminaIn .2s ease'}}>
+                  <div className="amina-msg" style={{
+                    maxWidth:'82%', padding:'9px 12px', borderRadius: isUser?'14px 14px 4px 14px':'14px 14px 14px 4px',
+                    background: isUser ? 'linear-gradient(135deg,#2D7FF9,#0B3D91)' : 'rgba(255,255,255,0.07)',
+                    color: isUser?'#fff':'rgba(255,255,255,0.88)', fontSize:12.5, lineHeight:1.55,
+                    fontFamily:"'Outfit',sans-serif",
+                  }} dangerouslySetInnerHTML={{__html: text}}/>
+                  {buttons.length > 0 && (
+                    <div style={{display:'flex',flexWrap:'wrap',gap:6,maxWidth:'82%'}}>
+                      {buttons.map((b, j) => (
+                        <button key={j} onClick={()=>handleAction(b)}
+                          style={{padding:'6px 12px',borderRadius:20,border:'1px solid rgba(45,127,249,0.4)',background:'rgba(45,127,249,0.1)',color:'#5B8FFF',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:"'Outfit',sans-serif",transition:'all 0.15s'}}
+                          onMouseEnter={e=>{e.currentTarget.style.background='rgba(45,127,249,0.2)';e.currentTarget.style.borderColor='rgba(45,127,249,0.7)';}}
+                          onMouseLeave={e=>{e.currentTarget.style.background='rgba(45,127,249,0.1)';e.currentTarget.style.borderColor='rgba(45,127,249,0.4)';}}>
+                          {BTN_LABELS[b] || b.split(':').pop()}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {loading && (
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <div style={{padding:'9px 14px',borderRadius:'14px 14px 14px 4px',background:'rgba(255,255,255,0.07)'}}>
+                  <div style={{display:'flex',gap:4,alignItems:'center'}}>
+                    {[0,1,2].map(i=><div key={i} style={{width:5,height:5,borderRadius:'50%',background:'rgba(255,255,255,0.4)',animation:`aminaPulse 1.2s ${i*0.2}s infinite`}}/>)}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef}/>
+          </div>
+
+          {/* Input */}
+          <div style={{padding:'12px 14px',borderTop:'1px solid rgba(255,255,255,0.07)',display:'flex',gap:8,flexShrink:0}}>
+            <input ref={inputRef} className="amina-input" value={input}
+              onChange={e=>setInput(e.target.value)}
+              onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }}
+              placeholder={language==='fr'?"Pose-moi une question...":"Ask me anything..."}
+              style={{flex:1,padding:'9px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:12,fontFamily:"'Outfit',sans-serif",outline:'none',transition:'border-color .2s, box-shadow .2s'}}
+            />
+            <button onClick={send} disabled={!input.trim()||loading}
+              style={{width:36,height:36,borderRadius:10,border:'none',background:input.trim()&&!loading?'linear-gradient(135deg,#2D7FF9,#0B3D91)':'rgba(255,255,255,0.06)',color:'#fff',cursor:input.trim()&&!loading?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .2s'}}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Floating button */}
+      <button onClick={()=>setOpen(o=>!o)} style={{
+        position:'fixed', bottom:isMobile?16:20, right:isMobile?16:20,
+        width:52, height:52, borderRadius:'50%', border:'none',
+        background:'linear-gradient(135deg,#2D7FF9,#0B3D91)',
+        color:'#fff', cursor:'pointer', zIndex:9999,
+        display:open?'none':'flex', alignItems:'center', justifyContent:'center',
+        fontSize:22, boxShadow:'0 4px 20px rgba(45,127,249,0.55)',
+        animation:'aminaPulse 3s ease infinite', transition:'transform .2s',
       }}
-      title="Chatbot Amina"
-    />
+      onMouseEnter={e=>e.currentTarget.style.transform='scale(1.08)'}
+      onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
+        👩🏽‍💼
+      </button>
+    </>
   );
 };
 
@@ -2218,7 +2407,7 @@ export default function Platform() {
         </main>
       </div>
     </div>
-    <Chatbot />
+    <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C}/>}
     {creativesTarget && (
       <CreativesModal
