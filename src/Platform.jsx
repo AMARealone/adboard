@@ -97,6 +97,7 @@ const NAV = [
   {id:'galerie',icon:'grid',label:'Galerie Créatives'},
   {id:'copies',icon:'document',label:'Ad Copies'},
   {id:'marche',icon:'chart',label:'Données Marché'},
+  {id:'notifications',icon:'bell',label:'Notifications'},
   {id:'tarifs',icon:'tag',label:'Nos Tarifs'},
 ];
 
@@ -588,6 +589,35 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
 
 
 
+// ── Supabase Notifications API ─────────────────────────────────────────────
+const sbNotifications = {
+  async load(session) {
+    if (!session?.access_token) return [];
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/notifications?select=*&order=created_at.desc&limit=50`, {
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` }
+    });
+    return r.ok ? r.json() : [];
+  },
+  async create(session, message, type='info') {
+    if (!session?.access_token) return;
+    const user = sbAuth.getUser();
+    if (!user?.id) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id, message, type })
+    });
+  },
+  async markAllRead(session) {
+    if (!session?.access_token) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/notifications?read=eq.false`, {
+      method: 'PATCH',
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ read: true })
+    });
+  }
+};
+
 // ── Modal de connexion Google ──────────────────────────────────────────────
 const LoginModal = ({onClose, C}) => {
   const font = "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif";
@@ -608,6 +638,67 @@ const LoginModal = ({onClose, C}) => {
   );
 };
 
+
+// ── Toast notification ─────────────────────────────────────────────────────
+const NOTIF_ICONS = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️', payment:'💳', brief:'📦', product:'📷' };
+
+const Toast = ({toasts}) => (
+  <div style={{position:'fixed',bottom:100,right:20,zIndex:8000,display:'flex',flexDirection:'column',gap:8,pointerEvents:'none'}}>
+    {toasts.map(t => (
+      <div key={t.id} style={{
+        background:'rgba(15,17,28,0.97)',border:'1px solid rgba(255,255,255,0.12)',
+        borderRadius:10,padding:'12px 16px',maxWidth:320,
+        display:'flex',alignItems:'flex-start',gap:10,
+        boxShadow:'0 8px 32px rgba(0,0,0,0.5)',
+        animation:'toastIn .3s cubic-bezier(.34,1.56,.64,1)',
+        fontFamily:"'Outfit',sans-serif",
+        borderLeft:`3px solid ${t.type==='success'?'#22C55E':t.type==='error'?'#E55050':t.type==='payment'?'#2D7FF9':'#F59E0B'}`,
+      }}>
+        <span style={{fontSize:16,flexShrink:0}}>{NOTIF_ICONS[t.type]||'ℹ️'}</span>
+        <span style={{fontSize:12,color:'#E8EAF0',lineHeight:1.4}}>{t.message}</span>
+      </div>
+    ))}
+    <style>{`@keyframes toastIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:none}}`}</style>
+  </div>
+);
+
+// ── Section Notifications ──────────────────────────────────────────────────
+const Notifications = ({notifications, onMarkRead, C}) => {
+  const isMobile = useIsMobile();
+  useEffect(() => { onMarkRead(); }, []);
+  const COLORS = { success:'#22C55E', error:'#E55050', info:'#2D7FF9', payment:'#2D7FF9', brief:'#F59E0B', product:'#8B5CF6', warning:'#F59E0B' };
+
+  return (
+    <div>
+      <div style={{marginBottom:20}}>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Notifications</h1>
+        <p style={{fontSize:13,color:C.sec,margin:0}}>Historique de vos activités et mises à jour</p>
+      </div>
+      {!notifications.length ? (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
+          <div style={{fontSize:32}}>🔔</div>
+          <div style={{fontSize:15,fontWeight:700,color:C.text}}>Aucune notification</div>
+          <div style={{fontSize:12,color:C.sec}}>Vos notifications apparaîtront ici</div>
+        </div>
+      ) : (
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {notifications.map(n => (
+            <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 16px',borderRadius:10,background:n.read?'transparent':C.redS,border:`1px solid ${n.read?C.border:'rgba(45,127,249,0.2)'}`,transition:'background .2s'}}>
+              <div style={{width:36,height:36,borderRadius:9,background:`${COLORS[n.type]||C.red}18`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>
+                {NOTIF_ICONS[n.type]||'ℹ️'}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,color:C.text,lineHeight:1.4,marginBottom:3}}>{n.message}</div>
+                <div style={{fontSize:10,color:C.muted}}>{new Date(n.created_at).toLocaleString('fr-FR')}</div>
+              </div>
+              {!n.read && <div style={{width:7,height:7,borderRadius:'50%',background:C.red,flexShrink:0,marginTop:4}}/>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, C}) => {
   const brief = briefs[p.id];
@@ -757,6 +848,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     if (ok) {
       setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
       setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
+      notify(`✕ Commande annulée pour "${p.nom}"`, 'warning');
       // Notifier Factory de l'annulation
       fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
         method:'POST', headers:{'Content-Type':'application/json'}
@@ -825,6 +917,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   const session = await sbAuth.refreshSession();
                   if (session) await sbProducts.delete(session, p.id);
                   setProducts(prev => prev.filter(x => x.id !== p.id));
+                  notify(`🗑 Produit "${p.nom}" supprimé`, 'info');
                 }} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(229,48,48,0.8)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
                   <Icon name="x" size={13} color="#fff"/>
                 </button>
@@ -1765,6 +1858,26 @@ export default function Platform() {
   const [user, setUser] = useState(() => sbAuth.getUser());
   const [showLogin, setShowLogin] = useState(false);
 
+  // ── Notifications ──
+  const [toasts, setToasts] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const notify = (message, type='info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, {id, message, type}]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500);
+    // Sauvegarder en Supabase si connecté
+    sbAuth.refreshSession().then(session => {
+      if (session) {
+        sbNotifications.create(session, message, type).then(() => {
+          setNotifications(prev => [{id, user_id:'', message, type, read:false, created_at:new Date().toISOString()}, ...prev]);
+          setUnreadCount(n => n + 1);
+        });
+      }
+    });
+  };
+
   const [briefs, setBriefs] = useState({});
   const [allBriefs, setAllBriefs] = useState([]); // tous les briefs pour calcul crédits
   const [subscription, setSubscription] = useState(null);
@@ -1818,10 +1931,11 @@ export default function Platform() {
   const convertPrice = (fcfa) => {
     const { currency, rate, ready } = priceCtx;
     if (!ready || currency === 'XOF') return fcfa.toLocaleString('fr-FR') + ' FCFA';
+    const CHARIOW_COEFF = 1.035; // +3.5% pour rester légèrement au-dessus de Chariow
     const NO_DECIMALS = ['XOF','XAF','GNF','KMF','DJF','RWF','BIF','UGX','TZS','MGA','JPY','KRW','VND','CLP','PYG','IDR','MMK'];
     const hasDecimals = !NO_DECIMALS.includes(currency);
     const decimals = hasDecimals ? 2 : 0;
-    const raw = fcfa * rate;
+    const raw = fcfa * rate * CHARIOW_COEFF;
     return new Intl.NumberFormat(undefined, { style:'currency', currency, minimumFractionDigits:decimals, maximumFractionDigits:decimals }).format(raw);
   };
   useEffect(() => {
@@ -1884,6 +1998,7 @@ export default function Platform() {
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription}/>,
+    notifications: <Notifications notifications={notifications} onMarkRead={async()=>{const s=await sbAuth.refreshSession();if(s)sbNotifications.markAllRead(s);setUnreadCount(0);setNotifications(p=>p.map(n=>({...n,read:true})));}} C={C}/>,
   };
 
   return (
@@ -1917,6 +2032,7 @@ export default function Platform() {
           if (brief) {
             setAllBriefs(prev => [...prev, brief]);
             setBriefs(prev => ({...prev, [creativesTarget.id]: brief}));
+            notify(`📦 Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
 
             // ── Envoyer le ticket vers Factory ──
             const p = creativesTarget;
@@ -1956,6 +2072,7 @@ export default function Platform() {
         }}
       />
     )}
+    <Toast toasts={toasts}/>
     </>
   );
 }
