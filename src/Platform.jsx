@@ -1821,10 +1821,10 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       {/* Panel chat */}
       {open && (
         <div style={{
-          position:'fixed', bottom: isMobile?0:90, right: isMobile?0:20,
-          width: isMobile?'100vw':380, height: isMobile?'100dvh':540,
+          position:'fixed', bottom: isMobile?16:90, right: isMobile?8:20,
+          width: isMobile?'calc(100vw - 16px)':380, height: isMobile?'72vh':540,
           background:'#0C0D14', border:'1px solid rgba(255,255,255,0.08)',
-          borderRadius: isMobile?0:16, zIndex:9998,
+          borderRadius:16, zIndex:9998,
           display:'flex', flexDirection:'column', overflow:'hidden',
           boxShadow:'0 24px 64px rgba(0,0,0,0.7)',
           animation:'aminaIn .25s cubic-bezier(.34,1.56,.64,1)'
@@ -2324,12 +2324,8 @@ export default function Platform() {
     style.id = 'ios-zoom-fix';
     style.textContent = `
       html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}
-      input,textarea,select{touch-action:manipulation;}
-      @media (max-width:768px){
-        input,textarea,select,
-        .amina-input{font-size:16px!important;}
-      }
-    `; // iOS zoom fix: font-size<16px déclenche le zoom Safari
+      input,textarea,select{touch-action:manipulation;font-size:16px !important;}
+    `; // iOS zoom fix: Safari zoome si font-size<16px
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
