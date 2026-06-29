@@ -178,7 +178,7 @@ const LockOverlay = () => (
   </div>
 );
 
-const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA')}) => {
+const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0}) => {
   const showCollapsed = collapsed && !isMobile;
 
   const navClick = (id) => {
@@ -2057,6 +2057,26 @@ export default function Platform() {
     });
   };
 
+  const cancelCreatives = async (p) => {
+    const session = await sbAuth.refreshSession();
+    const brief = briefs[p.id];
+    if (!brief) return;
+    const ok = await sbBriefs.cancel(session, brief.id);
+    if (ok) {
+      setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
+      setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
+      notify(`✕ Commande annulée pour "${p.nom}"`, 'warning');
+      for (let i=0; i<3; i++) {
+        try {
+          const r = await fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
+            method:'POST', headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(12000)
+          });
+          if (r.ok) break;
+        } catch(e) { await new Promise(res=>setTimeout(res,2000)); }
+      }
+    }
+  };
+
   const [briefs, setBriefs] = useState({});
   const [allBriefs, setAllBriefs] = useState([]); // tous les briefs pour calcul crédits
   const [subscription, setSubscription] = useState(null);
@@ -2203,7 +2223,7 @@ export default function Platform() {
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
-        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser}/>
+        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount}/>
 
         {isMobile && mobileOpen && (
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
