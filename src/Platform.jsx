@@ -143,6 +143,11 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
     pencil: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
     menu: <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></>,
     eye: <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>,
+    bell: <><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></>,
+    package: <><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><line x1="12" y1="22" x2="12" y2="12"/><path d="M3.27 6.96L12 12l8.73-5.04"/></>,
+    camera: <><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></>,
+    alerttriangle: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+    creditcard: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled?color:'none'} stroke={filled?'none':color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -640,7 +645,7 @@ const LoginModal = ({onClose, C}) => {
 
 
 // ── Toast notification ─────────────────────────────────────────────────────
-const NOTIF_ICONS = { success:'✅', error:'❌', info:'ℹ️', warning:'⚠️', payment:'💳', brief:'📦', product:'📷' };
+const NOTIF_ICONS = { success:'check', error:'x', info:'bell', warning:'alerttriangle', payment:'creditcard', brief:'package', product:'camera' };
 
 const Toast = ({toasts}) => (
   <div style={{position:'fixed',bottom:100,right:20,zIndex:8000,display:'flex',flexDirection:'column',gap:8,pointerEvents:'none'}}>
@@ -654,7 +659,7 @@ const Toast = ({toasts}) => (
         fontFamily:"'Outfit',sans-serif",
         borderLeft:`3px solid ${t.type==='success'?'#22C55E':t.type==='error'?'#E55050':t.type==='payment'?'#2D7FF9':'#F59E0B'}`,
       }}>
-        <span style={{fontSize:16,flexShrink:0}}>{NOTIF_ICONS[t.type]||'ℹ️'}</span>
+        <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={NOTIF_ICONS[t.type]||'bell'} size={15} color={t.type==='success'?'#22C55E':t.type==='error'?'#E55050':t.type==='payment'?'#2D7FF9':'#F59E0B'}/></div>
         <span style={{fontSize:12,color:'#E8EAF0',lineHeight:1.4}}>{t.message}</span>
       </div>
     ))}
@@ -663,7 +668,7 @@ const Toast = ({toasts}) => (
 );
 
 // ── Section Notifications ──────────────────────────────────────────────────
-const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteOne=()=>{}, C}) => {
+const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteOne=()=>{}, onMarkOne=()=>{}, C}) => {
   const isMobile = useIsMobile();
   useEffect(() => { onMarkRead(); }, []);
   const COLORS = { success:'#22C55E', error:'#E55050', info:'#2D7FF9', payment:'#2D7FF9', brief:'#F59E0B', product:'#8B5CF6', warning:'#F59E0B' };
@@ -702,15 +707,17 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
           {notifications.map(n => (
             <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 16px',borderRadius:10,background:n.read?'transparent':C.redS,border:`1px solid ${n.read?C.border:'rgba(45,127,249,0.2)'}`,transition:'background .2s'}}>
               <div style={{width:36,height:36,borderRadius:9,background:`${COLORS[n.type]||C.red}18`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>
-                {NOTIF_ICONS[n.type]||'ℹ️'}
+                <Icon name={NOTIF_ICONS[n.type]||'bell'} size={16} color={COLORS[n.type]||C.red}/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,color:C.text,lineHeight:1.4,marginBottom:3}}>{n.message}</div>
                 <div style={{fontSize:10,color:C.muted}}>{new Date(n.created_at).toLocaleString('fr-FR')}</div>
               </div>
               <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
-                {!n.read && <div style={{width:7,height:7,borderRadius:'50%',background:C.red}}/>}
-                <button onClick={()=>onDeleteOne(n.id)} style={{width:22,height:22,borderRadius:5,border:`1px solid ${C.border}`,background:'transparent',color:C.muted,cursor:'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+                {!n.read && (
+                  <button onClick={()=>onMarkOne(n.id)} title="Marquer comme lu" style={{padding:'2px 7px',borderRadius:5,border:`1px solid rgba(45,127,249,0.3)`,background:'transparent',color:C.red,cursor:'pointer',fontSize:9,fontWeight:700,whiteSpace:'nowrap'}}>✓ Lu</button>
+                )}
+                <button onClick={()=>onDeleteOne(n.id)} title="Supprimer" style={{width:22,height:22,borderRadius:5,border:`1px solid ${C.border}`,background:'transparent',color:C.muted,cursor:'pointer',fontSize:10,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
               </div>
             </div>
           ))}
@@ -1940,6 +1947,15 @@ export default function Platform() {
             });
           }
           setSubscription(sub);
+      // Charger notifications si pas encore chargées
+      if (notifications.length === 0) {
+        sbNotifications.load(sess).then(notifs => {
+          if (notifs?.length) {
+            setNotifications(notifs);
+            setUnreadCount(notifs.filter(n => !n.read).length);
+          }
+        });
+      }
         });
       });
     }
@@ -2036,6 +2052,7 @@ export default function Platform() {
         onMarkRead={async()=>{const s=await sbAuth.refreshSession();if(s)sbNotifications.markAllRead(s);setUnreadCount(0);setNotifications(p=>p.map(n=>({...n,read:true})));}}
         onDeleteAll={async()=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${user?.id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications([]);setUnreadCount(0);}}
         onDeleteOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications(p=>p.filter(n=>n.id!==id));setUnreadCount(p=>Math.max(0,p-1));}}
+        onMarkOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'PATCH',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`,'Content-Type':'application/json'},body:JSON.stringify({read:true})});}setNotifications(p=>p.map(n=>n.id===id?{...n,read:true}:n));setUnreadCount(p=>Math.max(0,p-1));}}
       />,
   };
 
