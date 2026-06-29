@@ -688,7 +688,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
       <h2 style="font-size:17px;font-weight:700;margin:0 0 3px;">Commandes reçues</h2>
       <p style="font-size:12px;color:var(--t3);margin:0;">Tickets de production envoyés depuis AdBoard par vos clients</p>
     </div>
-    <button onclick="loadCommandes()" style="padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Rafraîchir</button>
+    <button onclick="loadCommandes()" style="padding:7px 14px;background:rgba(255,255,255,0.10);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Rafraîchir</button>
   </div>
   <div id="commandesList"></div>
 </div>
@@ -4278,7 +4278,7 @@ async function loadCommandes() {
                 style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
                 ▶ Lancer la production
               </button>
-              <button onclick="voirBrief('${b.id}')" style="padding:7px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
+              <button onclick="voirBrief('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.10);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
                 📋 Voir le brief
               </button>
               <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">

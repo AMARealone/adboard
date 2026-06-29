@@ -246,7 +246,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         </div>
       )}
       {!showCollapsed && !(isMobile && !mobileOpen) && !user && (
-        <button onClick={sbAuth.signInWithGoogle} style={{flex:1,display:'flex',alignItems:'center',gap:7,padding:'6px 8px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',cursor:'pointer',fontFamily:'inherit',textAlign:'left',transition:'background 0.15s'}}
+        <button onClick={sbAuth.signInWithGoogle} style={{flex:1,display:'flex',alignItems:'center',gap:7,padding:'6px 8px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.09)',cursor:'pointer',fontFamily:'inherit',textAlign:'left',transition:'background 0.15s'}}
           onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.08)'}
           onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.04)'}>
           <svg width="13" height="13" viewBox="0 0 24 24" style={{flexShrink:0}}><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
@@ -569,7 +569,7 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
         </div>
 
         {/* Jauge semaine */}
-        <div style={{background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px',marginBottom:24}}>
+        <div style={{background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px',marginBottom:24}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7}}>
             <span style={{fontSize:11,color:C.sec,fontWeight:600,fontFamily:font}}>Disponibles cette semaine</span>
             <span style={{fontSize:20,fontWeight:800,color:max>0?C.red:C.muted,fontFamily:font}}>{max}</span>
@@ -814,7 +814,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
               {/* Header */}
               <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
                 {prod?.photo && (
-                  <div style={{width:52,height:52,borderRadius:8,overflow:'hidden',flexShrink:0,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+                  <div style={{width:52,height:52,borderRadius:8,overflow:'hidden',flexShrink:0,background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`}}>
                     <img src={prod.photo} style={{width:'100%',height:'100%',objectFit:'contain'}} alt=""/>
                   </div>
                 )}
@@ -852,7 +852,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
                 </button>
               )}
               {b.status==='pending' && !canCancel && (
-                <div style={{padding:'9px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.03)',fontSize:11,color:C.muted,textAlign:'center'}}>
+                <div style={{padding:'9px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',fontSize:11,color:C.muted,textAlign:'center'}}>
                   En cours de traitement · Annulation non disponible
                 </div>
               )}
@@ -1032,7 +1032,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     <div>
       {/* ── Jauge images publicitaires ── */}
       {subscription?.active && (
-        <div style={{marginBottom:18,padding:'14px 16px',borderRadius:10,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+        <div style={{marginBottom:18,padding:'14px 16px',borderRadius:10,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
           <div style={{flex:1,minWidth:160}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
               <span style={{fontSize:11,color:C.sec,fontWeight:600}}>Images publicitaires disponibles</span>
@@ -1044,7 +1044,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.total} accumulées au total</div>
           </div>
           {credits.available === 0 && (
-            <div style={{fontSize:11,color:C.muted,padding:'6px 12px',borderRadius:7,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+            <div style={{fontSize:11,color:C.muted,padding:'6px 12px',borderRadius:7,background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`}}>
               Nouvelles images disponibles semaine prochaine
             </div>
           )}
@@ -1124,7 +1124,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:460,maxHeight:'82vh',overflow:'auto',borderRadius:12,background:C.card,border:`1px solid ${C.borderM}`,padding:'16px 16px 20px',boxShadow:'0 24px 64px rgba(0,0,0,0.6)'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
               <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
-              <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <Icon name="x" size={14}/>
               </button>
             </div>
@@ -1157,7 +1157,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                     {[1,2,3].map(n => {
                       const key = `couleur${n}`;
                       return form[key]
-                        ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)'}}>
+                        ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.09)'}}>
                             <input type="color" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:28,height:28,borderRadius:5,border:'none',cursor:'pointer',padding:0,background:'none'}}/>
                             <span style={{fontSize:10,color:C.sec,fontFamily:'monospace'}}>{form[key].toUpperCase()}</span>
                             <button onClick={()=>setForm(f=>({...f,[key]:''}))} style={{width:14,height:14,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.15)',color:C.sec,fontSize:9,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
@@ -1191,7 +1191,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:0}}>Brief créatives envoyé</h2>
                 <p style={{fontSize:11,color:C.sec,marginTop:3}}>{brief.quantite_demandee} créatives seront générées pour ce produit</p>
               </div>
-              <button onClick={() => setBrief(null)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <button onClick={() => setBrief(null)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                 <Icon name="x" size={14}/>
               </button>
             </div>
@@ -1455,7 +1455,7 @@ const Copies = ({products, setSection}) => {
               </div>
             </div>
             <button onClick={()=>setSelected(null)}
-              style={{width:30,height:30,borderRadius:7,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 0.15s'}}
+              style={{width:30,height:30,borderRadius:7,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 0.15s'}}
               onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.1)'}
               onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.05)'}
             ><Icon name="x" size={13}/></button>
@@ -1631,7 +1631,7 @@ const Marche = ({products, isDemo, setSection}) => {
             </div>
           </div>
           <button onClick={() => setSelected(null)}
-            style={{width:30,height:30,borderRadius:7,border:'none',background:'rgba(255,255,255,0.05)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 0.15s'}}
+            style={{width:30,height:30,borderRadius:7,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'background 0.15s'}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(255,255,255,0.1)'}
             onMouseLeave={e=>e.currentTarget.style.background='rgba(255,255,255,0.05)'}
           ><Icon name="x" size={13}/></button>
@@ -1831,7 +1831,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
         }}>
           {/* Header */}
           <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#2D7FF9,#0B3D91)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>👩🏽‍💼</div>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#1FB6FF,#2D7FF9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>👩🏽‍💼</div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Outfit',sans-serif"}}>Amina</div>
               <div style={{fontSize:10,color:'#22C55E',fontWeight:600}}>● En ligne</div>
@@ -1885,10 +1885,10 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
               onChange={e=>setInput(e.target.value)}
               onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }}
               placeholder={language==='fr'?"Pose-moi une question...":"Ask me anything..."}
-              style={{flex:1,padding:'9px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.05)',color:'#fff',fontSize:12,fontFamily:"'Outfit',sans-serif",outline:'none',transition:'border-color .2s, box-shadow .2s'}}
+              style={{flex:1,padding:'9px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.10)',color:'#fff',fontSize:12,fontFamily:"'Outfit',sans-serif",outline:'none',transition:'border-color .2s, box-shadow .2s'}}
             />
             <button onClick={send} disabled={!input.trim()||loading}
-              style={{width:36,height:36,borderRadius:10,border:'none',background:input.trim()&&!loading?'linear-gradient(135deg,#2D7FF9,#0B3D91)':'rgba(255,255,255,0.06)',color:'#fff',cursor:input.trim()&&!loading?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .2s'}}>
+              style={{width:36,height:36,borderRadius:10,border:'none',background:input.trim()&&!loading?'linear-gradient(135deg,#1FB6FF,#2D7FF9)':'rgba(255,255,255,0.12)',color:'#fff',cursor:input.trim()&&!loading?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .2s'}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
@@ -1899,7 +1899,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       <button onClick={()=>setOpen(o=>!o)} style={{
         position:'fixed', bottom:isMobile?16:20, right:isMobile?16:20,
         width:52, height:52, borderRadius:'50%', border:'none',
-        background:'linear-gradient(135deg,#2D7FF9,#0B3D91)',
+        background:'linear-gradient(135deg,#1FB6FF,#2D7FF9)',
         color:'#fff', cursor:'pointer', zIndex:9999,
         display:open?'none':'flex', alignItems:'center', justifyContent:'center',
         fontSize:22, boxShadow:'0 4px 20px rgba(45,127,249,0.55)',
