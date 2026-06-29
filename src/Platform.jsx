@@ -616,7 +616,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   const inProd = brief && (brief.status==="in_production" || (brief.status==="pending" && !canCancel));
   const credits = computeCredits(subscription, allBriefs);
   if (canCancel) return (
-    <button onClick={() => cancelCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:"1px solid rgba(229,80,80,0.3)",background:"rgba(229,80,80,0.08)",color:"#E55050",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+    <button onClick={() => cancelCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:"1px solid rgba(229,80,80,0.5)",background:"linear-gradient(135deg,rgba(229,80,80,0.15),rgba(229,80,80,0.05))",color:"#E55050",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 12px rgba(229,80,80,0.2)",transition:"all 0.2s"}}>
       ✕ Annuler la demande
     </button>
   );
@@ -631,13 +631,15 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
     </div>
   );
   return (
-    <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:"1px solid rgba(45,127,249,0.2)",background:C.redS,color:C.red,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit"}}>
+    <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.red},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
       <Icon name="sparkle" size={13} color={C.red}/> Demander mes images
     </button>
   );
 };
 
-const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits={available:0,used:0,earned:0}, onAskCreatives}) => {
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives}) => {
+  // Recalculer les crédits en temps réel depuis allBriefs
+  const credits = computeCredits(subscription, allBriefs);
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [requestModal, setRequestModal] = useState(null); // { product }
@@ -746,11 +748,18 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
 
   const cancelCreatives = async (p) => {
-    const session = sbAuth.getSession();
+    const session = await sbAuth.refreshSession();
     const brief = briefs[p.id];
     if (!brief) return;
     const ok = await sbBriefs.cancel(session, brief.id);
-    if (ok) setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
+    if (ok) {
+      setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
+      setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
+      // Notifier Factory de l'annulation
+      fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/cancel', {
+        method:'POST', headers:{'Content-Type':'application/json'}
+      }).catch(()=>{});
+    }
   };
 
   const copyBrief = () => {
@@ -1743,7 +1752,21 @@ export default function Platform() {
 
   const views = {
     demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onAskCreatives={(p)=>{ if(!user){setShowLogin(true);return;} if(!subscription?.active){setSection('tarifs');return;} setCreativesTarget(p); }}/>,
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onAskCreatives={(p)=>{ 
+            if(!user){setShowLogin(true);return;} 
+            if(!subscription?.active){setSection('tarifs');return;}
+            // Anti-doublon : brief actif existant ?
+            const existing = briefs[p.id];
+            const CANCEL_WIN = 12*60*60*1000;
+            const isActive = existing && existing.status !== 'cancelled' && existing.status !== 'done';
+            if(isActive){
+              const canCancel = existing.status==='pending' && (Date.now()-new Date(existing.created_at).getTime()) < CANCEL_WIN;
+              const msg = canCancel
+                ? `Vous avez déjà une commande en cours pour "${p.nom}" (annulable). Souhaitez-vous ajouter une commande supplémentaire ?`
+                : `Vos visuels pour "${p.nom}" sont en production. Souhaitez-vous commander un batch supplémentaire ?`;
+              if(!window.confirm(msg)) return;
+            }
+            setCreativesTarget(p); }}/>,
     galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
