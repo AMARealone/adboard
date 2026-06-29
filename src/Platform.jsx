@@ -2322,7 +2322,14 @@ export default function Platform() {
   useEffect(() => {
     const style = document.createElement('style');
     style.id = 'ios-zoom-fix';
-    style.textContent = 'html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}input,textarea,select{touch-action:manipulation;}'; // iOS zoom + no white padding
+    style.textContent = `
+      html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}
+      input,textarea,select{touch-action:manipulation;}
+      @media (max-width:768px){
+        input,textarea,select,
+        .amina-input{font-size:16px!important;}
+      }
+    `; // iOS zoom fix: font-size<16px déclenche le zoom Safari
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
