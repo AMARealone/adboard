@@ -663,16 +663,33 @@ const Toast = ({toasts}) => (
 );
 
 // ── Section Notifications ──────────────────────────────────────────────────
-const Notifications = ({notifications, onMarkRead, C}) => {
+const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteOne=()=>{}, C}) => {
   const isMobile = useIsMobile();
   useEffect(() => { onMarkRead(); }, []);
   const COLORS = { success:'#22C55E', error:'#E55050', info:'#2D7FF9', payment:'#2D7FF9', brief:'#F59E0B', product:'#8B5CF6', warning:'#F59E0B' };
 
   return (
     <div>
-      <div style={{marginBottom:20}}>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:'0 0 4px'}}>Notifications</h1>
-        <p style={{fontSize:13,color:C.sec,margin:0}}>Historique de vos activités et mises à jour</p>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:10}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <div style={{width:40,height:40,borderRadius:10,background:C.redS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name="bell" size={18} color={C.red}/>
+          </div>
+          <div>
+            <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:'0 0 2px'}}>Notifications</h1>
+            <p style={{fontSize:12,color:C.sec,margin:0}}>{notifications.filter(n=>!n.read).length > 0 ? `${notifications.filter(n=>!n.read).length} non lue(s)` : 'Tout est lu'}</p>
+          </div>
+        </div>
+        {notifications.length > 0 && (
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={onMarkRead} style={{padding:'6px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
+              ✓ Tout marquer lu
+            </button>
+            <button onClick={onDeleteAll} style={{padding:'6px 12px',borderRadius:7,border:'1px solid rgba(229,80,80,0.3)',background:'transparent',color:'#E55050',fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
+              🗑 Tout supprimer
+            </button>
+          </div>
+        )}
       </div>
       {!notifications.length ? (
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
@@ -691,7 +708,10 @@ const Notifications = ({notifications, onMarkRead, C}) => {
                 <div style={{fontSize:13,color:C.text,lineHeight:1.4,marginBottom:3}}>{n.message}</div>
                 <div style={{fontSize:10,color:C.muted}}>{new Date(n.created_at).toLocaleString('fr-FR')}</div>
               </div>
-              {!n.read && <div style={{width:7,height:7,borderRadius:'50%',background:C.red,flexShrink:0,marginTop:4}}/>}
+              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:4,flexShrink:0}}>
+                {!n.read && <div style={{width:7,height:7,borderRadius:'50%',background:C.red}}/>}
+                <button onClick={()=>onDeleteOne(n.id)} style={{width:22,height:22,borderRadius:5,border:`1px solid ${C.border}`,background:'transparent',color:C.muted,cursor:'pointer',fontSize:11,display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+              </div>
             </div>
           ))}
         </div>
@@ -728,7 +748,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   );
 };
 
-const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives}) => {
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}}) => {
   // Recalculer les crédits en temps réel depuis allBriefs
   const credits = computeCredits(subscription, allBriefs);
   const isMobile = useIsMobile();
@@ -778,20 +798,23 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     if (editingId) {
       setProducts(prev => prev.map(p => p.id===editingId ? {...form, id:editingId} : p));
       if (session) sbProducts.update(session, editingId, form);
+      notify(`✏️ "${form.nom}" mis à jour`, 'product');
     } else {
       if (session) {
         const saved = await sbProducts.save(session, form);
         if (saved) {
           setProducts(prev => [...prev, saved]);
+          notify(`✅ Produit "${saved.nom}" créé avec succès`, 'product');
         } else {
           setProducts(prev => [...prev, {...form, id: Date.now()}]);
+          notify(`✅ Produit "${form.nom}" ajouté`, 'product');
         }
       } else {
         setProducts(prev => [...prev, {...form, id: Date.now()}]);
+        notify(`✅ Produit "${form.nom}" ajouté`, 'product');
       }
     }
     setShowForm(false);
-    // Fix iOS zoom - blur active input after submit
     if (document.activeElement) document.activeElement.blur();
   };
 
@@ -849,10 +872,19 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
       setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
       notify(`✕ Commande annulée pour "${p.nom}"`, 'warning');
-      // Notifier Factory de l'annulation
-      fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
-        method:'POST', headers:{'Content-Type':'application/json'}
-      }).catch(()=>{});
+      // Notifier Factory de l'annulation (avec retry)
+      const tryCancel = async () => {
+        for (let i=0; i<3; i++) {
+          try {
+            const r = await fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              signal: AbortSignal.timeout(12000)
+            });
+            if (r.ok) return;
+          } catch(e) { await new Promise(res=>setTimeout(res,2000)); }
+        }
+      };
+      tryCancel().catch(()=>{});
     }
   };
 
@@ -1808,8 +1840,8 @@ const DemoPreview = ({slug, setSection}) => {
       {/* Bouton flottant — apparaît après 30s */}
       {showCta && !dismissed && (
         <div style={{
-          position:'absolute', bottom:28, left:'50%', transform:'translateX(-50%)',
-          zIndex:50, animation:'ctaFloat 0.6s cubic-bezier(.34,1.56,.64,1) forwards',
+          position:'fixed', bottom:88, left:'50%', transform:'translateX(-50%)',
+          zIndex:8000, animation:'ctaFloat 0.6s cubic-bezier(.34,1.56,.64,1) forwards',
         }}>
           <style>{`
             @keyframes ctaFloat {
@@ -1979,7 +2011,7 @@ export default function Platform() {
 
   const views = {
     demo: <DemoPreview slug={demoSlug} setSection={setSection}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onAskCreatives={(p)=>{ 
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
             // Anti-doublon : brief actif existant ?
@@ -1998,7 +2030,13 @@ export default function Platform() {
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription}/>,
-    notifications: <Notifications notifications={notifications} onMarkRead={async()=>{const s=await sbAuth.refreshSession();if(s)sbNotifications.markAllRead(s);setUnreadCount(0);setNotifications(p=>p.map(n=>({...n,read:true})));}} C={C}/>,
+    notifications: <Notifications
+        notifications={notifications}
+        C={C}
+        onMarkRead={async()=>{const s=await sbAuth.refreshSession();if(s)sbNotifications.markAllRead(s);setUnreadCount(0);setNotifications(p=>p.map(n=>({...n,read:true})));}}
+        onDeleteAll={async()=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${user?.id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications([]);setUnreadCount(0);}}
+        onDeleteOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications(p=>p.filter(n=>n.id!==id));setUnreadCount(p=>Math.max(0,p-1));}}
+      />,
   };
 
   return (
@@ -2034,9 +2072,23 @@ export default function Platform() {
             setBriefs(prev => ({...prev, [creativesTarget.id]: brief}));
             notify(`📦 Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
 
-            // ── Envoyer le ticket vers Factory ──
+            // ── Envoyer le ticket vers Factory (avec wake-up Render) ──
             const p = creativesTarget;
             const pastBriefs = allBriefs.filter(b => b.product_id === p.id && b.status !== 'cancelled');
+            const sendWebhook = async (payload, retries=3) => {
+              for (let i=0; i<retries; i++) {
+                try {
+                  const r = await fetch('https://adstack-server.onrender.com/webhook/brief', {
+                    method:'POST', headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify(payload),
+                    signal: AbortSignal.timeout(15000)
+                  });
+                  if (r.ok) return;
+                } catch(e) {
+                  if (i < retries-1) await new Promise(res => setTimeout(res, 3000));
+                }
+              }
+            };
             try {
               fetch('https://adstack-server.onrender.com/webhook/brief', {
                 method: 'POST',
