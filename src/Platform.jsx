@@ -1755,7 +1755,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
             user: user ? { email: user.email, name: user.user_metadata?.full_name } : null,
             subscription, products: products.slice(0,5),
             credits: computeCredits(subscription, allBriefs),
-            section, language
+            section, language,
+            currency: priceCtx?.currency || 'XOF',
+            currencyRate: priceCtx?.rate || 1,
           }
         })
       });
