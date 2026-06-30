@@ -1716,29 +1716,19 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     return lang.startsWith('fr') ? 'fr' : 'en';
   })();
 
-  // Load history on open
+  // Bienvenue frais à chaque ouverture (pas d'historique affiché)
   useEffect(() => {
-    if (!open || messages.length > 0) return;
-    fetch(`https://adstack-server.onrender.com/chat/history/${user?.id || sessionId}`)
-      .then(r => r.json())
-      .then(rows => {
-        if (rows?.length) {
-          setMessages(rows.map(r => ({ role: r.role, content: r.content })));
-        } else {
-          // Message de bienvenue
-          const name = user?.user_metadata?.full_name?.split(' ')[0] || '';
-          const welcome = language === 'fr'
-            ? `Bonjour${name ? ' ' + name : ''} ! 👋 Je suis **Amina**, ton assistante AdStack. Je connais ta boutique, ton forfait, et tes produits. Comment puis-je t'aider aujourd'hui ?`
-            : `Hi${name ? ' ' + name : ''} ! 👋 I'm **Amina**, your AdStack assistant. I know your account, plan, and products. How can I help you today?`;
-          setMessages([{ role: 'model', content: welcome }]);
-        }
-      })
-      .catch(() => {
-        const welcome = language === 'fr'
-          ? `Bonjour ! 👋 Je suis **Amina**, ton assistante AdStack. Comment puis-je t'aider ?`
-          : `Hi! 👋 I'm **Amina**, your AdStack assistant. How can I help?`;
-        setMessages([{ role: 'model', content: welcome }]);
-      });
+    if (!open) return;
+    setMessages([]);
+    const name = user?.user_metadata?.full_name?.split(' ')[0] || '';
+    const hour = new Date().getHours();
+    const greeting = language === 'fr'
+      ? (hour < 12 ? 'Bonne matinée' : hour < 18 ? 'Bonne après-midi' : 'Bonsoir')
+      : (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
+    const welcome = language === 'fr'
+      ? `${greeting}${name ? ' ' + name : ''} ! 👋 Je suis **Amina**. Dis-moi — qu'est-ce qui t'amène aujourd'hui ?`
+      : `${greeting}${name ? ' ' + name : ''} ! 👋 I'm **Amina**. What brings you here today?`;
+    setTimeout(() => setMessages([{ role: 'model', content: welcome }]), 120);
   }, [open]);
 
   // Auto-scroll
@@ -1791,8 +1781,17 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     const parts = action.split(':');
     const type = parts[0];
     if (type === 'navigate' && parts[1]) { setSection(parts[1]); setOpen(false); }
-    if (type === 'openProductForm') { setSection('produits'); openProductForm?.(); setOpen(false); }
+    if (type === 'openProductForm') { setSection('produits'); setOpen(false); setTimeout(() => openProductForm?.(), 200); }
     if (type === 'login') { sbAuth.signInWithGoogle(); }
+    if (type === 'checkout') {
+      const urls = {
+        starter: 'https://ecomaster.mychariow.shop/prd_ljowq8/checkout',
+        pro: 'https://ecomaster.mychariow.shop/prd_34w031/checkout',
+        scale: 'https://ecomaster.mychariow.shop/prd_9fi79y/checkout',
+      };
+      const url = urls[parts[1]];
+      if (url) window.open(url, '_blank');
+    }
   };
 
   const BTN_LABELS = {
@@ -1801,8 +1800,11 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'navigate:suivi': '→ Suivi de demandes',
     'navigate:notifications': '→ Mes notifications',
     'navigate:galerie': '→ Galerie créatives',
-    'openProductForm': '+ Créer un produit',
-    'login': '🔑 Se connecter avec Google',
+    'openProductForm': '+ Créer mon produit maintenant',
+    'login': '🔑 Connecter mon compte Google',
+    'checkout:starter': '🚀 Commencer avec Starter →',
+    'checkout:pro': '⚡ Passer en Pro →',
+    'checkout:scale': '🔥 Passer en Scale →',
   };
 
   return (
