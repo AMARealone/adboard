@@ -560,7 +560,13 @@ const sbSubs = {
     );
     if (!r.ok) return null;
     const rows = await r.json();
-    return rows[0] || null;
+    const sub = rows[0] || null;
+    if (!sub) return null;
+    // Sécurité : même si la DB dit active=true, on vérifie l'expiration réelle côté client
+    if (sub.expires_at && new Date(sub.expires_at) < new Date()) {
+      return { ...sub, active: false, expired: true };
+    }
+    return sub;
   }
 };
 
@@ -2020,6 +2026,28 @@ const PLANS = [
   },
 ];
 
+const triggerChariowCheckout = async (plan, user, popup) => {
+  try {
+    const r = await fetch('https://adstack-server.onrender.com/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id: plan.id === 'starter' ? 'prd_ljowq8' : plan.id === 'pro' ? 'prd_34w031' : 'prd_9fi79y',
+        email: user.email,
+        user_id: user.id,
+        plan: plan.id
+      })
+    });
+    const data = await r.json();
+    const url = data.checkout_url || plan.checkout;
+    if (popup === window) { window.location.href = url; }
+    else { popup.location.href = url; }
+  } catch(e) {
+    if (popup === window) { window.location.href = plan.checkout; }
+    else { popup.location.href = plan.checkout; }
+  }
+};
+
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null}) => {
   const isMobile = useIsMobile();
   const onCta = async (plan) => {
@@ -2031,25 +2059,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
     }
     // Ouvrir une fenêtre AVANT l'appel async (sinon bloqué sur mobile)
     const popup = window.open('', '_blank') || window;
-    try {
-      const r = await fetch('https://adstack-server.onrender.com/create-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_id: plan.id === 'starter' ? 'prd_ljowq8' : plan.id === 'pro' ? 'prd_34w031' : 'prd_9fi79y',
-          email: user.email,
-          user_id: user.id,
-          plan: plan.id
-        })
-      });
-      const data = await r.json();
-      const url = data.checkout_url || plan.checkout;
-      if (popup === window) { window.location.href = url; }
-      else { popup.location.href = url; }
-    } catch(e) {
-      if (popup === window) { window.location.href = plan.checkout; }
-      else { popup.location.href = plan.checkout; }
-    }
+    triggerChariowCheckout(plan, user, popup);
   };
   const userPlan = subscription?.plan;
 
@@ -2359,6 +2369,16 @@ export default function Platform() {
     const u = sbAuth.getUser();
     setUser(u);
     if (u) {
+      // Reprise automatique du checkout si l'utilisateur vient de se connecter pour payer
+      try {
+        const pendingRaw = localStorage.getItem('adstack_pending_plan');
+        if (pendingRaw) {
+          localStorage.removeItem('adstack_pending_plan');
+          const pendingPlan = JSON.parse(pendingRaw);
+          setSection('tarifs');
+          setTimeout(() => triggerChariowCheckout(pendingPlan, u, window), 400);
+        }
+      } catch(e) {}
       // Rafraîchir le token avant de charger les données
       sbAuth.refreshSession().then(session => {
         if (!session) { setUser(null); return; }
@@ -2376,6 +2396,9 @@ export default function Platform() {
             });
           }
           setSubscription(sub);
+          if (sub?.expired) {
+            notify(`⏳ Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos visuels chaque semaine.`, 'warning');
+          }
       // Charger notifications si pas encore chargées
       if (notifications.length === 0) {
         sbNotifications.load(sess).then(notifs => {
