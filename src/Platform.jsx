@@ -1752,6 +1752,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       const r = await fetch('https://adstack-server.onrender.com/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: AbortSignal.timeout(30000),
         body: JSON.stringify({
           message: text,
           history: messages.slice(-8),
@@ -1766,6 +1767,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
           }
         })
       });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
       setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
     } catch(e) {
