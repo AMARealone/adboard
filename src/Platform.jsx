@@ -73,6 +73,17 @@ const sbAuth = {
           localStorage.setItem('adstack_lead_sent', '1');
         }
       } catch(e) {}
+      // Email de bienvenue — uniquement pour un compte réellement nouveau (créé il y a <2min)
+      try {
+        const createdAt = new Date(user.created_at).getTime();
+        if (Date.now() - createdAt < 2 * 60 * 1000) {
+          fetch('https://adstack-server.onrender.com/send-welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: user.email, name: user.user_metadata?.full_name })
+          }).catch(()=>{});
+        }
+      } catch(e) {}
       window.location.replace('/adboard');
     }).catch(()=>{ window.location.replace('/adboard'); });
     return true;
@@ -2298,6 +2309,7 @@ export default function Platform() {
     } catch(e) {}
   };
   const [isDemo, setIsDemo] = useState(false);
+  const pendingPurchaseRef = useRef(false);
   const [collapsed, setCollapsed] = useState(false);
 
   // Événement AddToCart — dès que la section Tarifs devient active
@@ -2415,6 +2427,18 @@ export default function Platform() {
           if (sub?.expired) {
             notify(`⏳ Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos visuels chaque semaine.`, 'warning');
           }
+          // Événement Purchase — déclenché ici pour avoir le vrai montant du plan
+          if (pendingPurchaseRef.current && sub?.plan) {
+            pendingPurchaseRef.current = false;
+            const boughtPlan = PLANS.find(pl => pl.id === sub.plan);
+            try {
+              window.fbq && window.fbq('track', 'Purchase', {
+                currency: 'XOF',
+                value: boughtPlan?.price || 0,
+                content_name: boughtPlan?.name || sub.plan,
+              });
+            } catch(e) {}
+          }
       // Charger notifications si pas encore chargées
       if (notifications.length === 0) {
         sbNotifications.load(sess).then(notifs => {
@@ -2478,9 +2502,9 @@ export default function Platform() {
       const saved = localStorage.getItem('adstack_demo_slug');
       if (saved) setDemoSlug(saved);
     }
-    // Détection retour paiement réussi (redirect Chariow) → événement Purchase
+    // Détection retour paiement réussi (redirect Chariow) → sera trackée une fois l'abonnement chargé (pour avoir le vrai montant)
     if (params.get('payment') === 'success') {
-      try { window.fbq && window.fbq('track', 'Purchase', { currency: 'XOF', value: 0 }); } catch(e) {}
+      pendingPurchaseRef.current = true;
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
