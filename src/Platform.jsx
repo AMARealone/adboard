@@ -116,6 +116,17 @@ const useIsMobile = () => {
 };
 
 
+const Logo = ({size=28}) => (
+  <div style={{width:size,height:size,borderRadius:Math.round(size*0.25),background:'#0B0F1A',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+    <svg width={size*0.6} height={size*0.6} viewBox="0 0 100 100">
+      <g transform="translate(50,50)">
+        <path d="M -21 17 L -21 6 L -7.5 -12 L 6 4 L 21 -19 L 21 -8" fill="none" stroke="#2D7FF9" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M 12 -19 L 21 -19 L 21 -10" fill="none" stroke="#2D7FF9" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
+      </g>
+    </svg>
+  </div>
+);
+
 const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
   const filled = name==='sparkle' || name==='bolt';
   const paths = {
@@ -213,7 +224,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       ) : (
         /* Mode étendu : logo + titre + bouton fermer */
         <>
-          <div style={{width:28,height:28,borderRadius:7,background:`linear-gradient(135deg,${C.red},#0B3D91)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>A</div>
+          <Logo size={28}/>
           <div style={{overflow:'hidden',flex:1}}>
             <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1,whiteSpace:'nowrap'}}>AdBoard</div>
             <div style={{fontSize:9,color:C.sec,letterSpacing:'1px',textTransform:'uppercase',whiteSpace:'nowrap'}}>AdStack</div>
@@ -257,7 +268,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         </button>
       )}
       {!showCollapsed && !(isMobile && !mobileOpen) && user && (
-        <button onClick={()=>{ sbAuth.signOut(); setUser(null); }} title="Se déconnecter"
+        <button onClick={()=>{ if(window.confirm('Es-tu sûr de vouloir te déconnecter ?')) { sbAuth.signOut(); setUser(null); } }} title="Se déconnecter"
           style={{width:24,height:24,borderRadius:6,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
           <Icon name="x" size={11} color={C.sec}/>
         </button>
@@ -648,7 +659,7 @@ const LoginModal = ({onClose, C}) => {
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:font}}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'32px 28px',maxWidth:380,width:'100%',textAlign:'center',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)',position:'relative',fontFamily:font}}>
         <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
-        <div style={{width:52,height:52,borderRadius:14,background:`linear-gradient(135deg,${C.red},#0B3D91)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:800,color:'#fff',margin:'0 auto 16px'}}>A</div>
+        <div style={{margin:'0 auto 16px',width:'fit-content'}}><Logo size={52}/></div>
         <h2 style={{fontSize:18,fontWeight:700,color:C.text,margin:'0 0 8px',fontFamily:font}}>Connectez-vous pour continuer</h2>
         <p style={{fontSize:13,color:C.sec,lineHeight:1.5,margin:'0 0 24px',fontFamily:font}}>Votre catalogue produits sera sauvegardé et accessible depuis n'importe quel appareil.</p>
         <button onClick={sbAuth.signInWithGoogle} style={{width:'100%',padding:'12px 16px',borderRadius:10,border:`1px solid rgba(255,255,255,0.15)`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:font,display:'flex',alignItems:'center',justifyContent:'center',gap:10,marginBottom:10}}>
@@ -1081,7 +1092,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <Icon name="pencil" size={13} color="#fff"/>
                 </button>
                 <button onClick={async () => {
-                  if (!confirm('Supprimer ce produit ?')) return;
+                  if (!confirm(`Supprimer "${p.nom}" ?\n\nCette action est irréversible. La fiche produit sera définitivement supprimée.\n\n(Les images, données marché et copies déjà générées pour ce produit resteront disponibles dans vos sections.)`)) return;
                   const session = await sbAuth.refreshSession();
                   if (session) await sbProducts.delete(session, p.id);
                   setProducts(prev => prev.filter(x => x.id !== p.id));
@@ -2054,6 +2065,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
       <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20}}>
         {PLANS.map(p => {
           const isCurrent = userPlan === p.id;
+          const PLAN_ORDER = { starter:1, pro:2, scale:3 };
+          const isDowngrade = userPlan && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
+          const isUpgrade = userPlan && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           return (
             <div key={p.id}
               style={{
@@ -2109,22 +2123,28 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {/* CTA Button */}
               <button
                 onClick={() => !isCurrent && onCta(p)}
-                className={isCurrent ? '' : 'cta-btn-active'}
+                className={(isCurrent || isDowngrade) ? '' : 'cta-btn-active'}
                 style={{
                   width:'100%', padding:'12px', borderRadius:9, fontFamily:'inherit',
-                  border:'none', cursor: isCurrent ? 'default' : 'pointer',
+                  border: isDowngrade ? `1px solid ${C.borderM}` : 'none', cursor: isCurrent ? 'default' : 'pointer',
                   fontWeight:700, fontSize:13, transition:'all 0.2s',
                   display:'flex', alignItems:'center', justifyContent:'center', gap:6,
                   background: isCurrent
                     ? 'rgba(255,255,255,0.07)'
-                    : 'linear-gradient(135deg,#2D7FF9,#0B3D91)',
-                  color: isCurrent ? C.sec : '#fff',
-                  boxShadow: isCurrent ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
+                    : isDowngrade
+                      ? 'transparent'
+                      : 'linear-gradient(135deg,#2D7FF9,#0B3D91)',
+                  color: isCurrent ? C.sec : isDowngrade ? C.sec : '#fff',
+                  boxShadow: (isCurrent || isDowngrade) ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
                 }}
               >
                 {isCurrent
                   ? (<><Icon name="check" size={13} color={C.sec}/> Abonnement actuel</>)
-                  : (<>Commencer maintenant <Icon name="arrow" size={13} color="#fff"/></>)
+                  : isDowngrade
+                    ? (<>Downgrade <Icon name="arrow" size={13} color="#fff"/></>)
+                    : isUpgrade
+                      ? (<>Upgrade <Icon name="arrow" size={13} color="#fff"/></>)
+                      : (<>Commencer maintenant <Icon name="arrow" size={13} color="#fff"/></>)
                 }
               </button>
 
