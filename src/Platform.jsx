@@ -73,8 +73,8 @@ const sbAuth = {
 };
 
 const C = {
-  bg:'#0B0F1A',    sidebar:'#070A12',    card:'#141D30',
-  border:'rgba(255,255,255,0.11)',        borderM:'rgba(255,255,255,0.22)',
+  bg:'#19223A',    sidebar:'#141C33',    card:'#223150',
+  border:'rgba(255,255,255,0.14)',        borderM:'rgba(255,255,255,0.26)',
   red:'#2D7FF9',   redS:'rgba(45,127,249,0.11)', redM:'rgba(45,127,249,0.22)',
   white:'#FFFFFF', whiteS:'rgba(255,255,255,0.09)',
   gray:'#9CA0B5',  grayS:'rgba(255,255,255,0.07)',
@@ -2256,7 +2256,7 @@ const DemoPreview = ({slug, setSection}) => {
 };
 
 export default function Platform() {
-  const SECTION_PATHS = { tarifs:'offers', produits:'produits', galerie:'galerie', copies:'copies', marche:'marche', suivi:'suivi', notifications:'notifications', demo:'demo' };
+  const SECTION_PATHS = { tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
 
   const [section, _setSection] = useState(() => {
