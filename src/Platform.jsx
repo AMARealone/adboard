@@ -178,7 +178,7 @@ const LockOverlay = () => (
   </div>
 );
 
-const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0}) => {
+const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null}) => {
   const showCollapsed = collapsed && !isMobile;
 
   const navClick = (id) => {
@@ -286,22 +286,27 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
     </nav>
 
     <div style={{padding:showCollapsed?'12px 0':'12px 14px',borderTop:`1px solid ${C.border}`}}>
-      <button onClick={() => { if(!isDemo) set('demo'); setDemo(!isDemo); }} title={showCollapsed||(isMobile&&!mobileOpen)?(isDemo?'Mode Démo actif':'VOIR DEMO'):undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:isDemo?C.redS:'rgba(255,255,255,0.07)',border:`1px solid ${isDemo?'rgba(45,127,249,0.28)':C.border}`,color:isDemo?C.red:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
-        {isDemo
-          ? (<><Icon name="bolt" size={12} color={C.red}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'Mode Démo actif'}</>)
-          : (<><Icon name="image" size={12} color={C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}</>)}
+      <button onClick={() => set('demo')} title={showCollapsed||(isMobile&&!mobileOpen)?'Voir la démo':undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:active==='demo'?C.redS:'rgba(255,255,255,0.07)',border:`1px solid ${active==='demo'?'rgba(45,127,249,0.28)':C.border}`,color:active==='demo'?C.red:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
+        <Icon name="image" size={12} color={active==='demo'?C.red:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
-      {!showCollapsed && !(isMobile && !mobileOpen) && (
-        <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
-          <div style={{fontSize:11,color:C.red,fontWeight:700,marginBottom:2}}>Conversion Starter</div>
-          <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>9 images / semaine · Données marché</div>
-          <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(39900)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
-          <button onClick={() => set('tarifs')}
-            style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.red,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-            Commencer <Icon name="arrow" size={11} color="#fff"/>
-          </button>
-        </div>
-      )}
+      {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
+        const nextPlan = !subscription?.active
+          ? { name:'Conversion Starter', desc:'9 images / semaine · Données marché', price:39900 }
+          : subscription.plan === 'starter'
+          ? { name:'Conversion Pro', desc:'18 images / semaine · 2 produits', price:79900 }
+          : { name:'Conversion Scale', desc:'36 images / semaine · 4 produits', price:99900 };
+        return (
+          <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
+            <div style={{fontSize:11,color:C.red,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
+            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.desc}</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(nextPlan.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
+            <button onClick={() => set('tarifs')}
+              style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.red,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+              {subscription?.active ? 'Upgrader' : 'Commencer'} <Icon name="arrow" size={11} color="#fff"/>
+            </button>
+          </div>
+        );
+      })()}
     </div>
   </aside>
   );
@@ -2403,7 +2408,7 @@ export default function Platform() {
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
-        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount}/>
+        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription}/>
 
         {isMobile && mobileOpen && (
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
