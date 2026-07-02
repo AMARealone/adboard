@@ -1702,7 +1702,7 @@ const Marche = ({products, isDemo, setSection}) => {
 };
 
 
-const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], briefs={}, section='', setSection, openProductForm}) => {
+const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], briefs={}, section='', setSection, openProductForm, priceCtx={currency:'XOF',rate:1}}) => {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([]);
@@ -2421,7 +2421,7 @@ export default function Platform() {
         </main>
       </div>
     </div>
-    <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} />
+    <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C}/>}
     {creativesTarget && (
       <CreativesModal
