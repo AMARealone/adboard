@@ -66,6 +66,13 @@ const sbAuth = {
     }).then(r=>r.json()).then(user => {
       localStorage.setItem('sb_session', JSON.stringify(session));
       localStorage.setItem('sb_user', JSON.stringify(user));
+      // Événement Lead — uniquement à la toute première connexion sur cet appareil
+      try {
+        if (!localStorage.getItem('adstack_lead_sent') && window.fbq) {
+          window.fbq('track', 'Lead', { content_name: 'Google Login' });
+          localStorage.setItem('adstack_lead_sent', '1');
+        }
+      } catch(e) {}
       window.location.replace('/adboard');
     }).catch(()=>{ window.location.replace('/adboard'); });
     return true;
@@ -1114,6 +1121,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
+          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>💡 Créez votre produit, puis demandez vos visuels — livrés en 48h.</p>
         </div>
         <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
           <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
@@ -2051,6 +2059,7 @@ const triggerChariowCheckout = async (plan, user, popup) => {
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null}) => {
   const isMobile = useIsMobile();
   const onCta = async (plan) => {
+    try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: plan.price, currency: 'XOF' }); } catch(e) {}
     const user = sbAuth.getUser();
     if (!user) {
       localStorage.setItem('adstack_pending_plan', JSON.stringify(plan));
@@ -2290,6 +2299,13 @@ export default function Platform() {
   };
   const [isDemo, setIsDemo] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+
+  // Événement AddToCart — dès que la section Tarifs devient active
+  useEffect(() => {
+    if (section === 'tarifs') {
+      try { window.fbq && window.fbq('track', 'AddToCart', { content_name: 'Voir les offres' }); } catch(e) {}
+    }
+  }, [section]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [demoSlug, setDemoSlug] = useState(null);
@@ -2461,6 +2477,11 @@ export default function Platform() {
       // Vérifier si un slug est stocké
       const saved = localStorage.getItem('adstack_demo_slug');
       if (saved) setDemoSlug(saved);
+    }
+    // Détection retour paiement réussi (redirect Chariow) → événement Purchase
+    if (params.get('payment') === 'success') {
+      try { window.fbq && window.fbq('track', 'Purchase', { currency: 'XOF', value: 0 }); } catch(e) {}
+      window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
 
