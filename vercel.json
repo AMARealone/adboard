@@ -1,9 +1,7 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/adboard", "destination": "/adboard.html" },
-    { "source": "/adboard/(.*)", "destination": "/adboard.html" },
-    { "source": "/factory", "destination": "/factory.html" },
-    { "source": "/factory/(.*)", "destination": "/factory.html" }
+    { "source": "/adboard/:path*", "destination": "/adboard.html" },
+    { "source": "/factory/:path*", "destination": "/factory.html" }
   ]
 }
