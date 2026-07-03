@@ -58,7 +58,7 @@ async function registerPushSubscription(userId) {
 const sbAuth = {
   signInWithGoogle: () => {
     const redirectTo = encodeURIComponent(window.location.origin + '/adboard');
-    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}`;
+    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&prompt=select_account`;
   },
   signOut: async () => {
     const session = JSON.parse(localStorage.getItem('sb_session') || 'null');
@@ -130,7 +130,8 @@ const sbAuth = {
           fetch('https://adstack-server.onrender.com/send-welcome-email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: user.email, name: user.user_metadata?.full_name })
+            body: JSON.stringify({ email: user.email, name: user.user_metadata?.full_name }),
+            keepalive: true, // survit à la navigation immédiate qui suit (window.location.replace)
           }).catch(()=>{});
         }
       } catch(e) {}
@@ -382,7 +383,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       );})}
     </nav>
 
-    <div style={{padding:showCollapsed?'12px 0':'12px 14px',borderTop:`1px solid ${C.border}`}}>
+    <div style={{padding:showCollapsed?'12px 0 calc(12px + env(safe-area-inset-bottom, 0px))':'12px 14px calc(12px + env(safe-area-inset-bottom, 0px))',borderTop:`1px solid ${C.border}`}}>
       <button onClick={() => set('demo')} title={showCollapsed||(isMobile&&!mobileOpen)?'Voir la démo':undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:active==='demo'?C.redS:'rgba(255,255,255,0.07)',border:`1px solid ${active==='demo'?'rgba(45,127,249,0.28)':C.border}`,color:active==='demo'?C.red:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
         <Icon name="image" size={12} color={active==='demo'?C.red:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
@@ -890,11 +891,6 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
             </div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
-            {pushStatus==='enabled' && (
-              <button onClick={sendTestPush} style={{padding:'6px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
-                Tester
-              </button>
-            )}
             <button
               onClick={togglePush}
               disabled={pushLoading || pushStatus==='denied' || pushStatus==='checking'}
@@ -2481,6 +2477,22 @@ export default function Platform() {
     return () => clearTimeout(t);
   }, [user]);
 
+  // ── Auto-prompt notifications push après 2min (connecté, jamais sollicité, plateforme compatible) ──
+  useEffect(() => {
+    if (!user) return;
+    try {
+      if (localStorage.getItem('adstack_push_prompted')) return;
+    } catch(e) {}
+    const t = setTimeout(async () => {
+      try { localStorage.setItem('adstack_push_prompted', '1'); } catch(e) {}
+      const status = await getPushStatus();
+      if (status === 'default') {
+        await registerPushSubscription(user.id);
+      }
+    }, 120000);
+    return () => clearTimeout(t);
+  }, [user]);
+
   // ── Notifications ──
   const [toasts, setToasts] = useState([]);
   const [notifications, setNotifications] = useState([]);
@@ -2619,9 +2631,10 @@ export default function Platform() {
     const style = document.createElement('style');
     style.id = 'ios-zoom-fix';
     style.textContent = `
-      html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;}
+      html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;}
       input,textarea,select{touch-action:manipulation;font-size:16px !important;}
-    `; // iOS zoom fix: Safari zoome si font-size<16px
+      *{overscroll-behavior-y:contain;}
+    `; // iOS zoom fix: Safari zoome si font-size<16px + fix rebond blanc PWA standalone
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
