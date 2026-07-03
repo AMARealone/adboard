@@ -12,19 +12,33 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
 }
 
+// Détecte l'état actuel : 'unsupported' | 'denied' | 'default' | 'enabled'
+async function getPushStatus() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return 'unsupported';
+  if (typeof Notification === 'undefined') return 'unsupported';
+  if (Notification.permission === 'denied') return 'denied';
+  if (Notification.permission !== 'granted') return 'default';
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (!reg) return 'default';
+    const sub = await reg.pushManager.getSubscription();
+    return sub ? 'enabled' : 'default';
+  } catch(e) { return 'default'; }
+}
+
+// Déclenché explicitement (toggle) — demande la permission navigateur en réponse directe au clic
 async function registerPushSubscription(userId) {
   try {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    if (Notification.permission === 'denied') return;
-    if (localStorage.getItem('adstack_push_registered')) return; // déjà fait sur cet appareil
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
+    if (Notification.permission === 'denied') return false;
 
     const reg = await navigator.serviceWorker.register('/sw.js');
     const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
+    if (perm !== 'granted') return false;
 
     const keyRes = await fetch('https://adstack-server.onrender.com/push-vapid-key');
     const { key } = await keyRes.json();
-    if (!key) return;
+    if (!key) return false;
 
     const sub = await reg.pushManager.subscribe({
       userVisibleOnly: true,
@@ -36,8 +50,8 @@ async function registerPushSubscription(userId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId, subscription: sub.toJSON() })
     });
-    localStorage.setItem('adstack_push_registered', '1');
-  } catch(e) { /* silencieux — pas critique */ }
+    return true;
+  } catch(e) { return false; }
 }
 
 // Supabase Auth helpers (sans SDK — fetch natif)
@@ -794,14 +808,51 @@ const Toast = ({toasts}) => (
 );
 
 // ── Section Notifications ──────────────────────────────────────────────────
-const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteOne=()=>{}, onMarkOne=()=>{}, C}) => {
+const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteOne=()=>{}, onMarkOne=()=>{}, C, user, notify=()=>{}}) => {
   const isMobile = useIsMobile();
   useEffect(() => { onMarkRead(); }, []);
   const COLORS = { success:'#22C55E', error:'#E55050', info:'#2D7FF9', payment:'#2D7FF9', brief:'#F59E0B', product:'#8B5CF6', warning:'#F59E0B' };
 
+  const [pushStatus, setPushStatus] = useState('checking'); // checking | unsupported | denied | default | enabled
+  const [pushLoading, setPushLoading] = useState(false);
+
+  useEffect(() => {
+    getPushStatus().then(setPushStatus);
+  }, []);
+
+  const togglePush = async () => {
+    if (pushLoading || pushStatus === 'denied' || pushStatus === 'unsupported') return;
+    if (pushStatus === 'enabled') {
+      // Désactivation : on désabonne côté navigateur (le serveur nettoiera automatiquement l'entrée invalide au prochain envoi)
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        const sub = await reg?.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
+      } catch(e) {}
+      setPushStatus('default');
+      return;
+    }
+    setPushLoading(true);
+    const ok = await registerPushSubscription(user?.id);
+    setPushStatus(await getPushStatus());
+    setPushLoading(false);
+    if (ok) notify('🔔 Notifications activées', 'success');
+  };
+
+  const sendTestPush = async () => {
+    try {
+      await fetch('https://adstack-server.onrender.com/push-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user?.id })
+      });
+      notify('Notification de test envoyée', 'info');
+    } catch(e) {}
+  };
+
   return (
     <div>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20,flexWrap:'wrap',gap:10}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
           <div style={{width:40,height:40,borderRadius:10,background:C.redS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
             <Icon name="bell" size={18} color={C.red}/>
@@ -822,6 +873,48 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
           </div>
         )}
       </div>
+
+      {/* Toggle notifications push */}
+      {pushStatus !== 'unsupported' && (
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'14px 16px',borderRadius:10,background:C.card,border:`1px solid ${C.border}`,marginBottom:20,flexWrap:'wrap'}}>
+          <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
+            <Icon name="bell" size={16} color={pushStatus==='enabled'?C.red:C.sec}/>
+            <div>
+              <div style={{fontSize:12.5,fontWeight:600,color:C.text}}>Notifications push</div>
+              <div style={{fontSize:10.5,color:C.muted}}>
+                {pushStatus==='denied' ? 'Bloquées dans les réglages de ton navigateur' :
+                 pushStatus==='enabled' ? 'Activées sur cet appareil' :
+                 pushStatus==='checking' ? 'Vérification...' :
+                 'Reçois un signal quand tes visuels sont prêts'}
+              </div>
+            </div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+            {pushStatus==='enabled' && (
+              <button onClick={sendTestPush} style={{padding:'6px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
+                Tester
+              </button>
+            )}
+            <button
+              onClick={togglePush}
+              disabled={pushLoading || pushStatus==='denied' || pushStatus==='checking'}
+              style={{
+                width:42,height:24,borderRadius:12,border:'none',position:'relative',
+                background: pushStatus==='enabled' ? C.red : 'rgba(255,255,255,0.15)',
+                cursor: (pushStatus==='denied'||pushStatus==='checking') ? 'not-allowed' : 'pointer',
+                opacity: pushStatus==='denied' ? 0.5 : 1,
+                transition:'background 0.2s', flexShrink:0,
+              }}>
+              <div style={{
+                width:18,height:18,borderRadius:'50%',background:'#fff',position:'absolute',top:3,
+                left: pushStatus==='enabled' ? 21 : 3, transition:'left 0.2s',
+                boxShadow:'0 1px 3px rgba(0,0,0,0.3)',
+              }}/>
+            </button>
+          </div>
+        </div>
+      )}
+
       {!notifications.length ? (
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
           <div style={{fontSize:32}}>🔔</div>
@@ -2441,8 +2534,6 @@ export default function Platform() {
     const u = sbAuth.getUser();
     setUser(u);
     if (u) {
-      // Demande de permission push — différée pour ne pas cumuler avec d'autres popups
-      setTimeout(() => registerPushSubscription(u.id), 3000);
       // Reprise automatique du checkout si l'utilisateur vient de se connecter pour payer
       try {
         const pendingRaw = localStorage.getItem('adstack_pending_plan');
@@ -2596,6 +2687,8 @@ export default function Platform() {
     notifications: <Notifications
         notifications={notifications}
         C={C}
+        user={user}
+        notify={notify}
         onMarkRead={async()=>{const s=await sbAuth.refreshSession();if(!s)return;const fresh=await sbNotifications.load(s);if(fresh?.length){setNotifications(fresh);}await sbNotifications.markAllRead(s);setUnreadCount(0);setNotifications(p=>p.map(n=>({...n,read:true})));}}
         onDeleteAll={async()=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?user_id=eq.${user?.id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications([]);setUnreadCount(0);}}
         onDeleteOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'DELETE',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`}});}setNotifications(p=>p.filter(n=>n.id!==id));setUnreadCount(p=>Math.max(0,p-1));}}
