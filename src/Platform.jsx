@@ -2352,6 +2352,14 @@ export default function Platform() {
   useEffect(() => {
     if (section === 'tarifs') {
       try { window.fbq && window.fbq('track', 'AddToCart', { content_name: 'Voir les offres' }); } catch(e) {}
+      // Tracking léger pour le nudge push "vu Tarifs sans payer"
+      if (user?.id) {
+        fetch('https://adstack-server.onrender.com/track-event', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: user.id, event_key: 'viewed_pricing' })
+        }).catch(()=>{});
+      }
     }
   }, [section]);
   const [mobileOpen, setMobileOpen] = useState(false);
