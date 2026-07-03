@@ -4,6 +4,42 @@ import { useState, useEffect, useRef } from "react";
 const SUPABASE_URL = 'https://mifljhsusidgzelnswma.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
 
+// ── Web Push (notifications navigateur) ─────────────────────────────────────
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+async function registerPushSubscription(userId) {
+  try {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (Notification.permission === 'denied') return;
+    if (localStorage.getItem('adstack_push_registered')) return; // déjà fait sur cet appareil
+
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+
+    const keyRes = await fetch('https://adstack-server.onrender.com/push-vapid-key');
+    const { key } = await keyRes.json();
+    if (!key) return;
+
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(key),
+    });
+
+    await fetch('https://adstack-server.onrender.com/push-subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, subscription: sub.toJSON() })
+    });
+    localStorage.setItem('adstack_push_registered', '1');
+  } catch(e) { /* silencieux — pas critique */ }
+}
+
 // Supabase Auth helpers (sans SDK — fetch natif)
 const sbAuth = {
   signInWithGoogle: () => {
@@ -2397,6 +2433,8 @@ export default function Platform() {
     const u = sbAuth.getUser();
     setUser(u);
     if (u) {
+      // Demande de permission push — différée pour ne pas cumuler avec d'autres popups
+      setTimeout(() => registerPushSubscription(u.id), 3000);
       // Reprise automatique du checkout si l'utilisateur vient de se connecter pour payer
       try {
         const pendingRaw = localStorage.getItem('adstack_pending_plan');
