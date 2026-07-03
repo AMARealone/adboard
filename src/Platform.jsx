@@ -29,6 +29,7 @@ async function getPushStatus() {
 // Déclenché explicitement (toggle) — demande la permission navigateur en réponse directe au clic
 async function registerPushSubscription(userId) {
   try {
+    if (!userId) { console.warn('[Push] Tentative sans userId — annulée'); return false; }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
     if (Notification.permission === 'denied') return false;
 
@@ -280,7 +281,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
 
   return (
   <aside style={asideStyle}>
-    <div style={{padding:'12px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:9,minHeight:52}}>
+    <div style={{padding:'12px',paddingTop:isMobile?'calc(12px + env(safe-area-inset-top, 0px))':'12px',borderBottom:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:9,minHeight:52}}>
       {(showCollapsed || (isMobile && !mobileOpen)) ? (
         /* Mode icônes seulement : bouton ☰ centré à la place du logo */
         <button
@@ -823,6 +824,7 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 
   const togglePush = async () => {
     if (pushLoading || pushStatus === 'denied' || pushStatus === 'unsupported') return;
+    if (!user?.id) { notify('Un instant, ta session se charge encore...', 'warning'); return; }
     if (pushStatus === 'enabled') {
       // Désactivation : on désabonne côté navigateur (le serveur nettoiera automatiquement l'entrée invalide au prochain envoi)
       try {
@@ -2479,7 +2481,7 @@ export default function Platform() {
 
   // ── Auto-prompt notifications push après 2min (connecté, jamais sollicité, plateforme compatible) ──
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id) return;
     try {
       if (localStorage.getItem('adstack_push_prompted')) return;
     } catch(e) {}
