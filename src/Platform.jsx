@@ -2692,6 +2692,27 @@ export default function Platform() {
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
+  // Fix hauteur réelle iOS PWA — dvh seul ne se recalcule pas toujours correctement au premier rendu sur certaines versions iOS
+  const [appHeight, setAppHeight] = useState(null);
+  useEffect(() => {
+    const setRealHeight = () => {
+      const h = window.visualViewport?.height || window.innerHeight;
+      setAppHeight(h);
+      document.documentElement.style.setProperty('--app-height', `${h}px`);
+    };
+    setRealHeight();
+    // Petit délai supplémentaire : certaines versions iOS ne rapportent la bonne valeur qu'après le tout premier paint
+    const t = setTimeout(setRealHeight, 100);
+    window.addEventListener('resize', setRealHeight);
+    window.addEventListener('orientationchange', setRealHeight);
+    window.visualViewport?.addEventListener('resize', setRealHeight);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', setRealHeight);
+      window.removeEventListener('orientationchange', setRealHeight);
+      window.visualViewport?.removeEventListener('resize', setRealHeight);
+    };
+  }, []);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('demo');
@@ -2780,7 +2801,7 @@ export default function Platform() {
 
   return (
     <>
-    <div style={{display:'flex',flexDirection:'column',height:'100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Outfit',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
+    <div style={{display:'flex',flexDirection:'column',height: appHeight ? `${appHeight}px` : '100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Outfit',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
