@@ -936,7 +936,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
 
     <script>
 
-const SERVER = 'http://localhost:3001';
+const SERVER = 'https://adstack-server.onrender.com';
 // ── Supabase (file d'attente démos) ──
 const SB_FACTORY  = 'https://mifljhsusidgzelnswma.supabase.co/rest/v1';
 const SB_KEY_F    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
@@ -3863,7 +3863,7 @@ Exemples PRECIS :
 
 Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
 
-    var resp = await fetch('http://localhost:3001/name-ct', {
+    var resp = await fetch('https://adstack-server.onrender.com/name-ct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ b64: b64, mime: mime, prompt: NAMING_PROMPT })
@@ -3923,7 +3923,7 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
     if (toastBar) toastBar.style.width = ((i / all.length) * 100) + '%';
     if (toastSub) toastSub.textContent = rec.name;
     try {
-      var resp = await fetch('http://localhost:3001/name-ct', {
+      var resp = await fetch('https://adstack-server.onrender.com/name-ct', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ b64: rec.b64, mime: rec.mime, prompt: NAMING_PROMPT })
@@ -4011,7 +4011,7 @@ Exemples PRECIS :
 Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
 
   try {
-    var resp = await fetch('http://localhost:3001/name-ct', {
+    var resp = await fetch('https://adstack-server.onrender.com/name-ct', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ b64: b64, mime: mime, prompt: NAMING_PROMPT })
@@ -5207,7 +5207,7 @@ async function runAgentTest() {
         errMsg.style.cssText = 'margin-top:8px;padding:10px 12px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:#ef4444;font-size:11px;line-height:1.5;';
         errMsg.innerHTML = '<strong>Upload serveur échoué — lien permanent indisponible</strong><br>' +
           '<span style="color:#f87171;">Erreur : '+uploadError+'</span><br>' +
-          '<span style="color:#999;font-size:10px;">Cause probable : (1) serveur pas redémarré avec /save-mindmap, (2) page chargée via file:// au lieu de http://localhost:3001, (3) SERVER mal configuré.</span><br>' +
+          '<span style="color:#999;font-size:10px;">Cause probable : (1) serveur pas redémarré avec /save-mindmap, (2) page chargée via file:// au lieu du bon serveur, (3) SERVER mal configuré.</span><br>' +
           '<span style="color:#999;font-size:10px;">URL actuelle SERVER : <code>'+SERVER+'</code></span>';
         output.parentNode.insertBefore(errMsg, output.nextSibling);
       }
