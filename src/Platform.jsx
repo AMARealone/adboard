@@ -2437,6 +2437,58 @@ export default function Platform() {
   };
   const [isDemo, setIsDemo] = useState(false);
   const pendingPurchaseRef = useRef(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [pullDistance, setPullDistance] = useState(0);
+  const touchStartY = useRef(0);
+  const mainRef = useRef(null);
+
+  // Rafraîchit toutes les données utilisateur (abonnement, produits, briefs) — utilisé par le pull-to-refresh
+  const refreshUserData = async () => {
+    if (!user) return;
+    setIsRefreshing(true);
+    try {
+      const session = await sbAuth.refreshSession();
+      if (!session) { setIsRefreshing(false); return; }
+      const [prods, sub] = await Promise.all([sbProducts.load(session), sbSubs.load(session)]);
+      if (prods) setProducts(prods);
+      setSubscription(sub);
+      if (prods?.length > 0) {
+        const bs = await sbBriefs.loadForProducts(session, prods.map(p=>p.id));
+        setAllBriefs(bs);
+        const map = {};
+        bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
+        setBriefs(map);
+      }
+      const notifs = await sbNotifications.load(session);
+      if (notifs) {
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter(n => !n.read).length);
+      }
+    } catch(e) {}
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
+
+  // Pull-to-refresh tactile — actif uniquement si le contenu est tout en haut
+  const handleTouchStart = (e) => {
+    if (mainRef.current && mainRef.current.scrollTop === 0) {
+      touchStartY.current = e.touches[0].clientY;
+    } else {
+      touchStartY.current = 0;
+    }
+  };
+  const handleTouchMove = (e) => {
+    if (!touchStartY.current || isRefreshing) return;
+    const delta = e.touches[0].clientY - touchStartY.current;
+    if (delta > 0 && mainRef.current?.scrollTop === 0) {
+      setPullDistance(Math.min(delta, 100));
+    }
+  };
+  const handleTouchEnd = () => {
+    if (pullDistance > 65 && !isRefreshing) refreshUserData();
+    setPullDistance(0);
+    touchStartY.current = 0;
+  };
+
   const [collapsed, setCollapsed] = useState(false);
 
   // Événement AddToCart — dès que la section Tarifs devient active
@@ -2592,7 +2644,7 @@ export default function Platform() {
           }
       // Charger notifications si pas encore chargées
       if (notifications.length === 0) {
-        sbNotifications.load(sess).then(notifs => {
+        sbNotifications.load(session).then(notifs => {
           if (notifs?.length) {
             setNotifications(notifs);
             setUnreadCount(notifs.filter(n => !n.read).length);
@@ -2654,10 +2706,25 @@ export default function Platform() {
       const saved = localStorage.getItem('adstack_demo_slug');
       if (saved) setDemoSlug(saved);
     }
-    // Détection retour paiement réussi (redirect Chariow) → sera trackée une fois l'abonnement chargé (pour avoir le vrai montant)
+    // Détection retour paiement réussi (redirect Chariow) → on force un re-check répété (le webhook peut arriver avec quelques secondes de délai)
     if (params.get('payment') === 'success') {
       pendingPurchaseRef.current = true;
       window.history.replaceState({}, '', window.location.pathname);
+      let attempts = 0;
+      const maxAttempts = 10; // 10 x 3s = 30s de fenêtre
+      const poll = setInterval(async () => {
+        attempts++;
+        const session = await sbAuth.refreshSession();
+        if (session) {
+          const sub = await sbSubs.load(session);
+          if (sub?.active) {
+            setSubscription(sub);
+            notify(`✅ Abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} activé !`, 'payment');
+            clearInterval(poll);
+          }
+        }
+        if (attempts >= maxAttempts) clearInterval(poll);
+      }, 3000);
     }
   }, []);
 
@@ -2713,7 +2780,7 @@ export default function Platform() {
 
   return (
     <>
-    <div style={{display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden',background:C.bg,fontFamily:"'Outfit',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
+    <div style={{display:'flex',flexDirection:'column',height:'100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Outfit',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
@@ -2723,7 +2790,32 @@ export default function Platform() {
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
         )}
 
-        <main style={{flex:1,overflow:section==='demo'?'hidden':'auto',padding:section==='demo'?0:isMobile?'16px':'28px 30px',marginLeft:isMobile?52:0,transition:'margin-left 0.22s cubic-bezier(.4,0,.2,1)'}}>
+        <main
+          ref={mainRef}
+          onTouchStart={isMobile ? handleTouchStart : undefined}
+          onTouchMove={isMobile ? handleTouchMove : undefined}
+          onTouchEnd={isMobile ? handleTouchEnd : undefined}
+          style={{
+          flex:1,overflow:section==='demo'?'hidden':'auto',
+          padding: section==='demo' ? 0 : isMobile
+            ? 'calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px))'
+            : '28px 30px',
+          marginLeft:isMobile?52:0,
+          overscrollBehaviorY:'contain',
+          transition: pullDistance>0 ? 'none' : 'margin-left 0.22s cubic-bezier(.4,0,.2,1)',
+          transform: pullDistance>0 ? `translateY(${pullDistance}px)` : undefined,
+          position:'relative',
+        }}>
+          {isMobile && (pullDistance > 0 || isRefreshing) && (
+            <div style={{position:'absolute',top:'calc(-40px + env(safe-area-inset-top, 0px))',left:0,right:0,display:'flex',justifyContent:'center',alignItems:'center',height:40,color:C.red}}>
+              <div style={{
+                width:18,height:18,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.red,
+                animation: isRefreshing ? 'spin 0.7s linear infinite' : 'none',
+                transform: !isRefreshing ? `rotate(${Math.min(pullDistance*3.6,360)}deg)` : undefined,
+              }}/>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            </div>
+          )}
           {views[section]}
         </main>
       </div>
