@@ -704,6 +704,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
       <div id="ctGalleryCount" style="font-size:11px;color:var(--t3);margin-top:2px;">Chargement…</div>
     </div>
     <div style="display:flex;gap:8px;">
+      <button onclick="migrateCTsToSupabase()" title="Copier les CTs de ce navigateur vers Supabase (ne supprime rien)" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">↑ Migrer vers Supabase</button>
       <button onclick="renamAllCTs()" title="Re-nommer tous les CTs via Gemini" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Re-nommer tous</button>
       <button onclick="triggerCTUpload()" style="padding:8px 16px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;white-space:nowrap;">
         <span style="font-size:17px;line-height:1;margin-top:-1px;">+</span> Ajouter un CT
@@ -3715,32 +3716,91 @@ COMP_FILES['COMPETENCE_MINDMAP.md'] = "Tu es un expert analyste AdStack sp\u00e9
 // ── CT FILES ──
 
 // ══════════════════════════════════════════════════════════════
-// GALERIE CT — IndexedDB illimité, nommage intelligent
+// GALERIE CT — Supabase Storage (bucket "ct-gallery"), survit au navigateur
 // ══════════════════════════════════════════════════════════════
 
 let CT_IMAGES = {};
 
-const _CTDB_NAME = 'adstack_ct_gallery_v3';
+const CT_SB_URL    = 'https://mifljhsusidgzelnswma.supabase.co/storage/v1';
+const CT_SB_BUCKET = 'ct-gallery';
+const CT_SB_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
+const CT_SB_HEADERS = { 'apikey': CT_SB_KEY, 'Authorization': 'Bearer ' + CT_SB_KEY };
+let _ctBucketReady = false;
 
-function _ctOpenDB() {
-  return new Promise((res, rej) => {
-    const r = indexedDB.open(_CTDB_NAME, 1);
-    r.onupgradeneeded = e => e.target.result.createObjectStore('cts', {keyPath: 'id'});
-    r.onsuccess = e => res(e.target.result);
-    r.onerror   = e => rej(e.target.error);
+async function _ctEnsureBucket() {
+  if (_ctBucketReady) return;
+  try {
+    await fetch(CT_SB_URL + '/bucket', {
+      method: 'POST',
+      headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': 'application/json'}),
+      body: JSON.stringify({ id: CT_SB_BUCKET, name: CT_SB_BUCKET, public: true })
+    });
+  } catch(e) { /* déjà existant ou hors-ligne — on continue quand même */ }
+  _ctBucketReady = true;
+}
+
+function _blobToB64(blob) {
+  return new Promise((resolve, reject) => {
+    var r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
   });
 }
-function _dbOp(mode, fn) {
-  return _ctOpenDB().then(db => new Promise((res, rej) => {
-    const store = db.transaction('cts', mode).objectStore('cts');
-    const r = fn(store);
-    r.onsuccess = e => res(e.target.result);
-    r.onerror   = e => rej(e.target.error);
-  }));
+
+// Un CT = 2 fichiers dans le bucket : {id}.jpg (image) + {id}.json (nom + date d'ajout)
+async function _ctGetOne(id) {
+  try {
+    var metaRes = await fetch(CT_SB_URL + '/object/public/' + CT_SB_BUCKET + '/' + id + '.json');
+    if (!metaRes.ok) return null;
+    var meta = await metaRes.json();
+    var imgRes = await fetch(CT_SB_URL + '/object/public/' + CT_SB_BUCKET + '/' + id + '.jpg');
+    if (!imgRes.ok) return null;
+    var b64 = await _blobToB64(await imgRes.blob());
+    return { id: id, name: meta.name || id, b64: b64, mime: 'image/jpeg', addedAt: meta.addedAt || 0 };
+  } catch(e) { return null; }
 }
-const _ctGetAll = () => _dbOp('readonly', s => s.getAll());
-const _ctPut    = rec => _dbOp('readwrite', s => s.put(rec));
-const _ctDel    = id  => _dbOp('readwrite', s => s.delete(id));
+
+async function _ctGetAll() {
+  await _ctEnsureBucket();
+  var res = await fetch(CT_SB_URL + '/object/list/' + CT_SB_BUCKET, {
+    method: 'POST',
+    headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': 'application/json'}),
+    body: JSON.stringify({ prefix: '', limit: 2000, sortBy: { column: 'name', order: 'asc' } })
+  });
+  if (!res.ok) throw new Error('Liste Supabase échouée : ' + res.status);
+  var objects = await res.json();
+  var ids = objects.filter(function(o) { return o.name.endsWith('.json'); })
+                    .map(function(o) { return o.name.replace(/\.json$/, ''); });
+  var records = await Promise.all(ids.map(_ctGetOne));
+  return records.filter(Boolean);
+}
+
+// Sauvegarde (ajout OU renommage) — écrase image + métadonnées
+async function _ctPut(rec) {
+  await _ctEnsureBucket();
+  var byteChars = atob(rec.b64);
+  var bytes = new Uint8Array(byteChars.length);
+  for (var i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
+  await fetch(CT_SB_URL + '/object/' + CT_SB_BUCKET + '/' + rec.id + '.jpg', {
+    method: 'POST',
+    headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': rec.mime || 'image/jpeg', 'x-upsert': 'true'}),
+    body: bytes
+  });
+  await fetch(CT_SB_URL + '/object/' + CT_SB_BUCKET + '/' + rec.id + '.json', {
+    method: 'POST',
+    headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': 'application/json', 'x-upsert': 'true'}),
+    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now() })
+  });
+}
+
+async function _ctDel(id) {
+  await fetch(CT_SB_URL + '/object/' + CT_SB_BUCKET, {
+    method: 'DELETE',
+    headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': 'application/json'}),
+    body: JSON.stringify({ prefixes: [id + '.jpg', id + '.json'] })
+  });
+}
 
 // Compression → JPEG max 800px
 function _ctCompress(file, maxDim, q) {
@@ -3780,10 +3840,59 @@ async function loadCTImages() {
     }
     renderCTSelector();
     if (selectedCT && CT_IMAGES[selectedCT]) selectCT(selectedCT);
-    console.log('[CT Gallery] ' + all.length + ' CTs chargés');
+    console.log('[CT Gallery] ' + all.length + ' CTs chargés depuis Supabase');
   } catch(e) {
     console.error('[CT Gallery] Erreur:', e);
   }
+}
+
+// ── MIGRATION — ancienne galerie IndexedDB (navigateur) → Supabase, à la demande, ne supprime rien ──
+const _CTDB_NAME_LEGACY = 'adstack_ct_gallery_v3';
+function _ctOpenDB_LEGACY() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(_CTDB_NAME_LEGACY, 1);
+    r.onupgradeneeded = e => e.target.result.createObjectStore('cts', {keyPath: 'id'});
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = e => rej(e.target.error);
+  });
+}
+function _ctGetAll_LEGACY() {
+  return _ctOpenDB_LEGACY().then(db => new Promise((res, rej) => {
+    const store = db.transaction('cts', 'readonly').objectStore('cts');
+    const r = store.getAll();
+    r.onsuccess = e => res(e.target.result);
+    r.onerror   = e => rej(e.target.error);
+  }));
+}
+
+async function migrateCTsToSupabase() {
+  var toast = document.getElementById('ctUploadToast');
+  var toastLbl = document.getElementById('ctToastLabel');
+  var toastBar = document.getElementById('ctToastBar');
+  var toastSub = document.getElementById('ctToastSub');
+
+  var legacy;
+  try { legacy = await _ctGetAll_LEGACY(); } catch(e) { alert('Aucune ancienne galerie trouvée dans ce navigateur.'); return; }
+  if (!legacy || legacy.length === 0) { alert('Aucun CT à migrer depuis ce navigateur.'); return; }
+  if (!confirm(legacy.length + ' CT(s) trouvé(s) dans ce navigateur. Les copier vers Supabase ? (rien ne sera supprimé du navigateur)')) return;
+
+  if (toast) toast.style.display = 'block';
+  for (var i = 0; i < legacy.length; i++) {
+    var rec = legacy[i];
+    if (toastLbl) toastLbl.textContent = 'Migration ' + (i+1) + ' / ' + legacy.length;
+    if (toastBar) toastBar.style.width = ((i / legacy.length) * 100) + '%';
+    if (toastSub) toastSub.textContent = rec.name;
+    try {
+      await _ctPut({ id: rec.id, name: rec.name, b64: rec.b64, mime: rec.mime, addedAt: rec.addedAt || 0 });
+    } catch(e) { console.error('[Migration CT] ' + rec.id, e); }
+  }
+  if (toastBar) toastBar.style.width = '100%';
+  if (toastLbl) toastLbl.textContent = legacy.length + ' CT(s) migré(s) vers Supabase';
+  if (toastSub) toastSub.textContent = '';
+  setTimeout(function() { if (toast) toast.style.display = 'none'; }, 3000);
+
+  await loadCTImages();
+  renderGallery();
 }
 
 // ── CT SELECTOR (dans les agents) ──
@@ -3964,10 +4073,8 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
     var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
     if (!name) throw new Error('Nom vide');
 
-    // Mettre à jour IndexedDB
-    var all = await _ctGetAll();
-    var rec = all.find(function(r) { return r.id === id; });
-    if (rec) { rec.name = name; await _ctPut(rec); }
+    // Sauvegarder sur Supabase (b64/mime déjà en mémoire, pas besoin de re-télécharger)
+    await _ctPut({ id: id, name: name, b64: b64, mime: mime, addedAt: CT_IMAGES[id + '_addedAt'] || Date.now() });
 
     // Mettre à jour mémoire
     CT_IMAGES[id + '_name'] = name;
