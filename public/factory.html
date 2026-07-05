@@ -3725,19 +3725,8 @@ const CT_SB_URL    = 'https://mifljhsusidgzelnswma.supabase.co/storage/v1';
 const CT_SB_BUCKET = 'ct-gallery';
 const CT_SB_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
 const CT_SB_HEADERS = { 'apikey': CT_SB_KEY, 'Authorization': 'Bearer ' + CT_SB_KEY };
-let _ctBucketReady = false;
-
-async function _ctEnsureBucket() {
-  if (_ctBucketReady) return;
-  try {
-    await fetch(CT_SB_URL + '/bucket', {
-      method: 'POST',
-      headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': 'application/json'}),
-      body: JSON.stringify({ id: CT_SB_BUCKET, name: CT_SB_BUCKET, public: true })
-    });
-  } catch(e) { /* déjà existant ou hors-ligne — on continue quand même */ }
-  _ctBucketReady = true;
-}
+// Le bucket "ct-gallery" doit être créé une fois, à la main, dans Supabase (Storage → New bucket → public).
+// La clé utilisée ici (anon) ne peut pas créer de bucket depuis le navigateur — question de sécurité normale.
 
 function _blobToB64(blob) {
   return new Promise((resolve, reject) => {
@@ -3762,13 +3751,15 @@ async function _ctGetOne(id) {
 }
 
 async function _ctGetAll() {
-  await _ctEnsureBucket();
   var res = await fetch(CT_SB_URL + '/object/list/' + CT_SB_BUCKET, {
     method: 'POST',
     headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': 'application/json'}),
     body: JSON.stringify({ prefix: '', limit: 2000, sortBy: { column: 'name', order: 'asc' } })
   });
-  if (!res.ok) throw new Error('Liste Supabase échouée : ' + res.status);
+  if (!res.ok) {
+    var errBody = await res.text().catch(function(){ return ''; });
+    throw new Error('Bucket "ct-gallery" introuvable ou inaccessible (HTTP ' + res.status + '). Vérifie qu\'il existe dans Supabase → Storage. ' + errBody.slice(0,150));
+  }
   var objects = await res.json();
   var ids = objects.filter(function(o) { return o.name.endsWith('.json'); })
                     .map(function(o) { return o.name.replace(/\.json$/, ''); });
@@ -3778,20 +3769,29 @@ async function _ctGetAll() {
 
 // Sauvegarde (ajout OU renommage) — écrase image + métadonnées
 async function _ctPut(rec) {
-  await _ctEnsureBucket();
   var byteChars = atob(rec.b64);
   var bytes = new Uint8Array(byteChars.length);
   for (var i = 0; i < byteChars.length; i++) bytes[i] = byteChars.charCodeAt(i);
-  await fetch(CT_SB_URL + '/object/' + CT_SB_BUCKET + '/' + rec.id + '.jpg', {
+
+  var imgRes = await fetch(CT_SB_URL + '/object/' + CT_SB_BUCKET + '/' + rec.id + '.jpg', {
     method: 'POST',
     headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': rec.mime || 'image/jpeg', 'x-upsert': 'true'}),
     body: bytes
   });
-  await fetch(CT_SB_URL + '/object/' + CT_SB_BUCKET + '/' + rec.id + '.json', {
+  if (!imgRes.ok) {
+    var imgErr = await imgRes.text().catch(function(){ return ''; });
+    throw new Error('Upload image Supabase échoué (HTTP ' + imgRes.status + ') pour ' + rec.id + '. Le bucket "ct-gallery" existe-t-il ? ' + imgErr.slice(0,150));
+  }
+
+  var metaRes = await fetch(CT_SB_URL + '/object/' + CT_SB_BUCKET + '/' + rec.id + '.json', {
     method: 'POST',
     headers: Object.assign({}, CT_SB_HEADERS, {'Content-Type': 'application/json', 'x-upsert': 'true'}),
     body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now() })
   });
+  if (!metaRes.ok) {
+    var metaErr = await metaRes.text().catch(function(){ return ''; });
+    throw new Error('Upload métadonnées Supabase échoué (HTTP ' + metaRes.status + ') pour ' + rec.id + '. ' + metaErr.slice(0,150));
+  }
 }
 
 async function _ctDel(id) {
@@ -3877,6 +3877,7 @@ async function migrateCTsToSupabase() {
   if (!confirm(legacy.length + ' CT(s) trouvé(s) dans ce navigateur. Les copier vers Supabase ? (rien ne sera supprimé du navigateur)')) return;
 
   if (toast) toast.style.display = 'block';
+  var ok = 0, failed = 0, firstError = '';
   for (var i = 0; i < legacy.length; i++) {
     var rec = legacy[i];
     if (toastLbl) toastLbl.textContent = 'Migration ' + (i+1) + ' / ' + legacy.length;
@@ -3884,12 +3885,24 @@ async function migrateCTsToSupabase() {
     if (toastSub) toastSub.textContent = rec.name;
     try {
       await _ctPut({ id: rec.id, name: rec.name, b64: rec.b64, mime: rec.mime, addedAt: rec.addedAt || 0 });
-    } catch(e) { console.error('[Migration CT] ' + rec.id, e); }
+      ok++;
+    } catch(e) {
+      failed++;
+      if (!firstError) firstError = e.message;
+      console.error('[Migration CT] ' + rec.id, e);
+    }
   }
-  if (toastBar) toastBar.style.width = '100%';
-  if (toastLbl) toastLbl.textContent = legacy.length + ' CT(s) migré(s) vers Supabase';
-  if (toastSub) toastSub.textContent = '';
-  setTimeout(function() { if (toast) toast.style.display = 'none'; }, 3000);
+  if (toast) toast.style.display = 'none';
+
+  if (failed > 0 && ok === 0) {
+    alert('Migration échouée pour tous les CT (' + failed + '/' + legacy.length + ').\n\nErreur : ' + firstError);
+    return;
+  }
+  if (failed > 0) {
+    alert(ok + ' CT migré(s), ' + failed + ' échoué(s).\n\nPremière erreur : ' + firstError);
+  } else {
+    alert(ok + ' CT migré(s) avec succès vers Supabase.');
+  }
 
   await loadCTImages();
   renderGallery();
