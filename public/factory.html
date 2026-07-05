@@ -1366,7 +1366,7 @@ async function runFullDemo() {
       const ctMime = CT_IMAGES[ct + '_mime'] || 'image/jpeg';
       const ctB64 = await compressImg(CT_IMAGES[ct], ctMime);
 
-      const prompt = `Applique les 4 phases de ta compétence : décode l'intention de IMAGE 1, comprends la nature du nouveau contexte, traduis l'intention (pas la surface) au nouveau contexte, auto-critique comme un directeur créatif, puis écris le prompt Gemini final.\n\nSYNTHÈSE :\n${synthese}`;
+      const prompt = `Applique tes 4 phases : décode le CT, comprends le nouveau contexte (produit fourni + synthèse), transpose l'intention (pas la surface) au nouveau contexte, puis auto-critique comme un directeur créatif avant d'écrire le prompt final.\n\nSYNTHÈSE :\n${synthese}`;
 
       const res = await fetch(SERVER + '/generate-image-gemini', {
         method: 'POST',
@@ -5459,7 +5459,7 @@ async function runAgentTest() {
       const ctB64 = await compressImg(CT_IMAGES[selectedCT], ctMime);
       const productB64 = await compressImg(testImgB64, testImgMime || 'image/jpeg');
 
-      const prompt = `Applique les 4 phases de ta compétence : décode l'intention de IMAGE 1, comprends la nature du nouveau contexte, traduis l'intention (pas la surface) au nouveau contexte, auto-critique comme un directeur créatif, puis écris le prompt Gemini final.\n\nSYNTHÈSE :\n${input}`;
+      const prompt = `Applique tes 4 phases : décode le CT, comprends le nouveau contexte (produit fourni + synthèse), transpose l'intention (pas la surface) au nouveau contexte, puis auto-critique comme un directeur créatif avant d'écrire le prompt final.\n\nSYNTHÈSE :\n${input}`;
 
       const res = await fetch(SERVER+'/generate-image-gemini', {
         method: 'POST',
