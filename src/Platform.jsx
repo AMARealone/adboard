@@ -170,6 +170,7 @@ const NAV = [
   {id:'suivi',icon:'clock',label:'Suivi Demande'},
   {id:'notifications',icon:'bell',label:'Notifications'},
   {id:'tarifs',icon:'tag',label:'Nos Tarifs'},
+  {id:'faq',icon:'help',label:'FAQ & Aide'},
 ];
 
 const cs = (extra={}) => ({background:C.card, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:'0 2px 14px rgba(0,0,0,0.45)', ...extra});
@@ -230,6 +231,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
     camera: <><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></>,
     alerttriangle: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
     creditcard: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
+    help: <><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2.5 3.2"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled?color:'none'} stroke={filled?'none':color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -2194,6 +2196,75 @@ const triggerChariowCheckout = async (plan, user, popup) => {
   }
 };
 
+const FAQ_ITEMS = [
+  {
+    q: "Qu'est-ce qu'AdBoard exactement ?",
+    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit chaque semaine vos visuels publicitaires (images Meta Ads), une analyse de votre marché cible, et des textes publicitaires prêts à l'emploi — livrés directement sur votre tableau de bord."
+  },
+  {
+    q: "Quelle est la différence entre les 3 formules ?",
+    a: "Conversion Starter (9 images/semaine, 1 produit), Conversion Pro (18 images/semaine, 2 produits), et Conversion Scale (36 images/semaine, 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
+  },
+  {
+    q: "En combien de temps mes visuels sont-ils livrés ?",
+    a: "Comptez généralement jusqu'à 48h après votre demande. Vous êtes notifié dès que vos visuels sont prêts, directement dans l'onglet Notifications."
+  },
+  {
+    q: "Comment fonctionne l'analyse de marché ?",
+    a: "Pour chaque produit, notre équipe analyse votre marché cible (pays, concurrence, persona) et vous fournit une synthèse claire pour orienter vos campagnes — visible dans l'onglet Données Marché."
+  },
+  {
+    q: "Puis-je changer de formule à tout moment ?",
+    a: "Oui. Vous pouvez upgrader depuis l'onglet Nos Tarifs à tout moment ; le changement prend effet immédiatement."
+  },
+  {
+    q: "Comment se passe le paiement ?",
+    a: "Le paiement est traité de façon sécurisée par notre partenaire Chariow. Nous ne stockons jamais vos informations bancaires directement."
+  },
+  {
+    q: "Que faire si un visuel ne me convient pas ?",
+    a: "Contactez-nous directement — nous ajustons en fonction de vos retours pour que vos prochains lots correspondent mieux à vos attentes."
+  },
+  {
+    q: "Mes données sont-elles en sécurité ?",
+    a: "Oui. Vos informations sont hébergées de façon sécurisée et ne sont jamais revendues à des tiers à des fins publicitaires. Le détail complet est disponible dans notre Politique de confidentialité ci-dessous."
+  },
+];
+
+const Faq = () => {
+  const isMobile = useIsMobile();
+  const [openIdx, setOpenIdx] = useState(0);
+  return (
+    <div style={{maxWidth:720, margin:'0 auto', padding: isMobile ? '20px 16px 60px' : '32px 24px 80px'}}>
+      <h1 style={{fontSize:isMobile?20:24, fontWeight:800, color:C.text, margin:'0 0 6px'}}>FAQ & Aide</h1>
+      <p style={{fontSize:13, color:C.sec, margin:'0 0 24px', lineHeight:1.6}}>Les réponses aux questions les plus fréquentes sur AdBoard.</p>
+
+      {FAQ_ITEMS.map((item, i) => (
+        <div key={i} style={cs({marginBottom:10, overflow:'hidden'})}>
+          <button onClick={() => setOpenIdx(openIdx === i ? null : i)} style={{
+            width:'100%', display:'flex', alignItems:'center', justifyContent:'space-between', gap:12,
+            padding:'14px 16px', background:'transparent', border:'none', cursor:'pointer',
+            fontFamily:'inherit', textAlign:'left',
+          }}>
+            <span style={{fontSize:13.5, fontWeight:700, color:C.text}}>{item.q}</span>
+            <Icon name={openIdx === i ? 'x' : 'plus'} size={14} color={C.sec}/>
+          </button>
+          {openIdx === i && (
+            <div style={{padding:'0 16px 16px', fontSize:13, color:C.sec, lineHeight:1.6}}>
+              {item.a}
+            </div>
+          )}
+        </div>
+      ))}
+
+      <div style={{marginTop:28, padding:'16px', borderTop:`1px solid ${C.border}`, fontSize:12, color:C.sec, lineHeight:1.8}}>
+        <div>Une autre question ? Écrivez-nous à <a href="mailto:thefirstquality01@gmail.com" style={{color:'#5B8FFF'}}>thefirstquality01@gmail.com</a></div>
+        <div>Pour savoir comment vos données sont traitées, consultez notre <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{color:'#5B8FFF'}}>Politique de confidentialité</a>.</div>
+      </div>
+    </div>
+  );
+};
+
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null}) => {
   const isMobile = useIsMobile();
   const onCta = async (plan) => {
@@ -2413,7 +2484,7 @@ const DemoPreview = ({slug, setSection}) => {
 };
 
 export default function Platform() {
-  const SECTION_PATHS = { tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo' };
+  const SECTION_PATHS = { tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
 
   const [section, _setSection] = useState(() => {
@@ -2786,6 +2857,7 @@ export default function Platform() {
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription}/>,
+    faq: <Faq/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C}/>,
     notifications: <Notifications
         notifications={notifications}
