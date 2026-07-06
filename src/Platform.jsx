@@ -143,12 +143,12 @@ const sbAuth = {
 };
 
 const C = {
-  bg:'#19223A',    sidebar:'#141C33',    card:'#223150',
-  border:'rgba(255,255,255,0.14)',        borderM:'rgba(255,255,255,0.26)',
-  red:'#2D7FF9',   redS:'rgba(45,127,249,0.11)', redM:'rgba(45,127,249,0.22)',
-  white:'#FFFFFF', whiteS:'rgba(255,255,255,0.09)',
-  gray:'#9CA0B5',  grayS:'rgba(255,255,255,0.07)',
-  text:'#E8EDF8',  sec:'#8A90B2',        muted:'#50587A',
+  bg:'#0A0C11',    sidebar:'#0D1016',    card:'#12151C',
+  border:'rgba(255,255,255,0.07)',        borderM:'rgba(255,255,255,0.16)',
+  red:'#5B8DEF',   redS:'rgba(91,141,239,0.11)', redM:'rgba(91,141,239,0.22)',
+  white:'#FFFFFF', whiteS:'rgba(255,255,255,0.06)',
+  gray:'#8891A0',  grayS:'rgba(255,255,255,0.06)',
+  text:'#F2F4F8',  sec:'#8891A0',        muted:'#626B7A',
 };
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
@@ -173,7 +173,7 @@ const NAV = [
   {id:'faq',icon:'help',label:'FAQ & Aide'},
 ];
 
-const cs = (extra={}) => ({background:C.card, border:`1px solid ${C.border}`, borderRadius:10, boxShadow:'0 2px 14px rgba(0,0,0,0.45)', ...extra});
+const cs = (extra={}) => ({background:C.card, border:`1px solid ${C.border}`, borderRadius:14, boxShadow:'0 1px 2px rgba(0,0,0,0.25)', ...extra});
 
 const MOBILE_BREAKPOINT = 768;
 const useIsMobile = () => {
@@ -191,8 +191,8 @@ const Logo = ({size=28}) => (
   <div style={{width:size,height:size,borderRadius:Math.round(size*0.25),background:'#0B0F1A',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
     <svg width={size*0.6} height={size*0.6} viewBox="0 0 100 100">
       <g transform="translate(50,50)">
-        <path d="M -21 17 L -21 6 L -7.5 -12 L 6 4 L 21 -19 L 21 -8" fill="none" stroke="#2D7FF9" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M 12 -19 L 21 -19 L 21 -10" fill="none" stroke="#2D7FF9" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M -21 17 L -21 6 L -7.5 -12 L 6 4 L 21 -19 L 21 -8" fill="none" stroke="#5B8DEF" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M 12 -19 L 21 -19 L 21 -10" fill="none" stroke="#5B8DEF" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
       </g>
     </svg>
   </div>
@@ -360,7 +360,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             : (active===n.id?C.redS:'transparent'),
           backgroundSize: isTarifs && active!==n.id ? '250% auto' : undefined,
           animation: isTarifs && active!==n.id ? 'navGradientFlow 3.5s ease infinite' : undefined,
-          color:active===n.id?C.red:(isTarifs?'#5B8FFF':C.sec),
+          color:active===n.id?C.red:(isTarifs?'#5B8DEF':C.sec),
           fontSize:12,fontWeight:isTarifs?700:600,fontFamily:'inherit',
           borderLeft:active===n.id?`2px solid ${C.red}`:'2px solid transparent',
           transition:'all 0.15s',textAlign:'left',marginBottom:1,whiteSpace:'nowrap',
@@ -369,7 +369,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             <style>{`@keyframes navGradientFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
           )}
           <div style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name={n.icon} size={14} color={active===n.id?C.red:(isTarifs?'#5B8FFF':C.sec)}/>
+            <Icon name={n.icon} size={14} color={active===n.id?C.red:(isTarifs?'#5B8DEF':C.sec)}/>
             {n.id==='notifications' && unreadCount>0 && (showCollapsed || (isMobile && !mobileOpen)) && (
               <span style={{position:'absolute',top:-5,right:-5,background:'#E55050',color:'#fff',borderRadius:'50%',minWidth:14,height:14,fontSize:8,fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 2px',lineHeight:1}}>
                 {unreadCount>9?'9+':unreadCount}
@@ -656,7 +656,7 @@ function calcCredits(subscription, briefs) {
 }
 
 const PLAN_LABELS = { starter: 'Starter', pro: 'Pro', scale: 'Scale' };
-const PLAN_COLORS = { starter: '#8A90B2', pro: '#2D7FF9', scale: '#22C55E' };
+const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
 
 // ── Modal demande de créatives ─────────────────────────────────────────────
 const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
@@ -665,7 +665,7 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
   const canIncrease = qty + 9 <= max;
   const canDecrease = qty > 9;
 
-  const font = "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif";
+  const font = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
 
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:font}}>
@@ -687,7 +687,7 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
             <span style={{fontSize:20,fontWeight:800,color:max>0?C.red:C.muted,fontFamily:font}}>{max}</span>
           </div>
           <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-            <div style={{height:'100%',borderRadius:3,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.red},#5B8FFF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
+            <div style={{height:'100%',borderRadius:3,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.red},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
           </div>
           <div style={{fontSize:10,color:C.muted,marginTop:4,fontFamily:font}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
         </div>
@@ -750,7 +750,7 @@ const sbNotifications = {
 
 // ── Modal de connexion Google ──────────────────────────────────────────────
 const LoginModal = ({onClose, C, autoPrompt=false}) => {
-  const font = "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif";
+  const font = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:font}}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'32px 28px',maxWidth:380,width:'100%',textAlign:'center',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)',position:'relative',fontFamily:font}}>
@@ -800,10 +800,10 @@ const Toast = ({toasts}) => (
         display:'flex',alignItems:'flex-start',gap:10,
         boxShadow:'0 8px 32px rgba(0,0,0,0.5)',
         animation:'toastIn .3s cubic-bezier(.34,1.56,.64,1)',
-        fontFamily:"'Outfit',sans-serif",
-        borderLeft:`3px solid ${t.type==='success'?'#22C55E':t.type==='error'?'#E55050':t.type==='payment'?'#2D7FF9':'#F59E0B'}`,
+        fontFamily:"'Inter',sans-serif",
+        borderLeft:`3px solid ${t.type==='success'?'#22C55E':t.type==='error'?'#E55050':t.type==='payment'?'#5B8DEF':'#F59E0B'}`,
       }}>
-        <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={NOTIF_ICONS[t.type]||'bell'} size={15} color={t.type==='success'?'#22C55E':t.type==='error'?'#E55050':t.type==='payment'?'#2D7FF9':'#F59E0B'}/></div>
+        <div style={{flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={NOTIF_ICONS[t.type]||'bell'} size={15} color={t.type==='success'?'#22C55E':t.type==='error'?'#E55050':t.type==='payment'?'#5B8DEF':'#F59E0B'}/></div>
         <span style={{fontSize:12,color:'#E8EAF0',lineHeight:1.4}}>{t.message}</span>
       </div>
     ))}
@@ -815,7 +815,7 @@ const Toast = ({toasts}) => (
 const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteOne=()=>{}, onMarkOne=()=>{}, C, user, notify=()=>{}}) => {
   const isMobile = useIsMobile();
   useEffect(() => { onMarkRead(); }, []);
-  const COLORS = { success:'#22C55E', error:'#E55050', info:'#2D7FF9', payment:'#2D7FF9', brief:'#F59E0B', product:'#8B5CF6', warning:'#F59E0B' };
+  const COLORS = { success:'#22C55E', error:'#E55050', info:'#5B8DEF', payment:'#5B8DEF', brief:'#F59E0B', product:'#8B5CF6', warning:'#F59E0B' };
 
   const [pushStatus, setPushStatus] = useState('checking'); // checking | unsupported | denied | default | enabled
   const [pushLoading, setPushLoading] = useState(false);
@@ -961,7 +961,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
     return `${h}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
   };
 
-  const STATUS_COLORS = { pending:'#F59E0B', in_production:'#2D7FF9', done:'#22C55E', cancelled:'#6B7280' };
+  const STATUS_COLORS = { pending:'#F59E0B', in_production:'#5B8DEF', done:'#22C55E', cancelled:'#6B7280' };
   const STATUS_LABELS = { pending:'⏳ En attente', in_production:'🔵 En production', done:'✅ Livré', cancelled:'✗ Annulé' };
 
   const sorted = [...allBriefs].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
@@ -1245,7 +1245,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               <span style={{fontSize:16,fontWeight:800,color:credits.available>0?C.red:C.muted}}>{credits.available}</span>
             </div>
             <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8FFF)`:'rgba(255,255,255,0.1)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
+              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8DEF)`:'rgba(255,255,255,0.1)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
             </div>
             <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.total} accumulées au total</div>
           </div>
@@ -1270,17 +1270,24 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
         {products.map(p => (
-          <div key={p.id} style={cs({overflow:'hidden',display:'flex',flexDirection:'column'})}>
-            <div style={{aspectRatio:'4/5',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div key={p.id}
+            style={cs({overflow:'hidden',display:'flex',flexDirection:'column',transition:'border-color 0.15s, transform 0.15s'})}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.borderM; e.currentTarget.style.transform='translateY(-2px)';}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)';}}
+          >
+            <div style={{aspectRatio:'4/5',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
               {!p.photo && <Icon name="box" size={32} color={C.muted}/>}
               {p.logo && (
-                <div style={{position:'absolute',bottom:8,left:8,width:32,height:32,borderRadius:6,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:4}}>
+                <div style={{position:'absolute',bottom:8,left:8,width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:4}}>
                   <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
                 </div>
               )}
-              <div style={{position:'absolute',top:8,right:8,display:'flex',gap:4}}>
-                <button onClick={() => openEdit(p)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(7,8,12,0.7)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <Icon name="pencil" size={13} color="#fff"/>
+              <div style={{position:'absolute',top:10,right:10,display:'flex',gap:6}}>
+                <button onClick={() => openEdit(p)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(91,141,239,0.85)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
+                >
+                  <Icon name="pencil" size={13} color="#E4E7EC"/>
                 </button>
                 <button onClick={async () => {
                   if (!confirm(`Supprimer "${p.nom}" ?\n\nCette action est irréversible. La fiche produit sera définitivement supprimée.\n\n(Les images, données marché et copies déjà générées pour ce produit resteront disponibles dans vos sections.)`)) return;
@@ -1288,41 +1295,46 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   if (session) await sbProducts.delete(session, p.id);
                   setProducts(prev => prev.filter(x => x.id !== p.id));
                   notify(`🗑 Produit "${p.nom}" supprimé`, 'info');
-                }} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(229,48,48,0.8)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <Icon name="x" size={13} color="#fff"/>
+                }} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='rgba(239,107,91,0.85)'}
+                  onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
+                >
+                  <Icon name="x" size={13} color="#E4E7EC"/>
                 </button>
               </div>
               {p.promo && (
-                <div style={{position:'absolute',top:8,left:8}}>
+                <div style={{position:'absolute',top:10,left:10}}>
                   <Tag ch={p.promo} color="red"/>
                 </div>
               )}
             </div>
-            <div style={{padding:'12px 14px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
-              <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
+            <div style={{padding:'14px 16px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
+              <div style={{fontSize:14.5,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
               <div style={{fontSize:12,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
               <div style={{fontSize:10,color:C.sec,lineHeight:1.5,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.utilite}</div>
               <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:2}}>
-                {p.pays ? <Tag ch={p.pays} color="gray"/> : <span/>}
-                <div style={{display:'flex',gap:4}}>
+                {p.pays ? <span style={{fontSize:11,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'4px 9px',borderRadius:99}}>{p.pays}</span> : <span/>}
+                <div style={{display:'flex',gap:5}}>
                   {[p.couleur1,p.couleur2,p.couleur3].filter(Boolean).map((col,i)=>(
-                    <span key={i} style={{width:12,height:12,borderRadius:'50%',background:col,border:`1px solid ${C.border}`}}/>
+                    <span key={i} style={{width:13,height:13,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
                   ))}
                 </div>
               </div>
             </div>
-            <div style={{padding:'0 14px 14px'}}>
+            <div style={{padding:'0 16px 16px'}}>
               <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} C={C}/>
             </div>
           </div>
         ))}
 
-        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:240,borderRadius:10,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.sec,fontFamily:'inherit',transition:'border-color 0.15s'}}
-          onMouseEnter={e=>e.currentTarget.style.borderColor=C.borderM}
-          onMouseLeave={e=>e.currentTarget.style.borderColor=C.border}
+        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:240,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.red; e.currentTarget.style.color=C.red; e.currentTarget.style.background='rgba(91,141,239,0.05)';}}
+          onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.muted; e.currentTarget.style.background='transparent';}}
         >
-          <Icon name="plus" size={22}/>
-          <span style={{fontSize:12,fontWeight:600}}>Ajouter un produit</span>
+          <div style={{width:38,height:38,borderRadius:'50%',border:'1.5px solid currentColor',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name="plus" size={16}/>
+          </div>
+          <span style={{fontSize:13.5,fontWeight:600}}>Ajouter un produit</span>
         </button>
       </div>
 
@@ -2047,9 +2059,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
         }}>
           {/* Header */}
           <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#1FB6FF,#2D7FF9)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>👩🏽‍💼</div>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#1FB6FF,#5B8DEF)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>👩🏽‍💼</div>
             <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Outfit',sans-serif"}}>Amina</div>
+              <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Inter',sans-serif"}}>Amina</div>
               <div style={{fontSize:10,color:'#22C55E',fontWeight:600}}>● En ligne</div>
             </div>
             <button onClick={()=>setOpen(false)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.4)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>✕</button>
@@ -2064,15 +2076,15 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
                 <div key={i} style={{display:'flex',flexDirection:'column',alignItems:isUser?'flex-end':'flex-start',gap:6,animation:'aminaIn .2s ease'}}>
                   <div className="amina-msg" style={{
                     maxWidth:'82%', padding:'9px 12px', borderRadius: isUser?'14px 14px 4px 14px':'14px 14px 14px 4px',
-                    background: isUser ? 'linear-gradient(135deg,#2D7FF9,#0B3D91)' : 'rgba(255,255,255,0.07)',
+                    background: isUser ? 'linear-gradient(135deg,#5B8DEF,#0B3D91)' : 'rgba(255,255,255,0.07)',
                     color: isUser?'#fff':'rgba(255,255,255,0.88)', fontSize:12.5, lineHeight:1.55,
-                    fontFamily:"'Outfit',sans-serif",
+                    fontFamily:"'Inter',sans-serif",
                   }} dangerouslySetInnerHTML={{__html: text}}/>
                   {buttons.length > 0 && (
                     <div style={{display:'flex',flexWrap:'wrap',gap:6,maxWidth:'82%'}}>
                       {buttons.map((b, j) => (
                         <button key={j} onClick={()=>handleAction(b)}
-                          style={{padding:'6px 12px',borderRadius:20,border:'1px solid rgba(45,127,249,0.4)',background:'rgba(45,127,249,0.1)',color:'#5B8FFF',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:"'Outfit',sans-serif",transition:'all 0.15s'}}
+                          style={{padding:'6px 12px',borderRadius:20,border:'1px solid rgba(45,127,249,0.4)',background:'rgba(45,127,249,0.1)',color:'#5B8DEF',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",transition:'all 0.15s'}}
                           onMouseEnter={e=>{e.currentTarget.style.background='rgba(45,127,249,0.2)';e.currentTarget.style.borderColor='rgba(45,127,249,0.7)';}}
                           onMouseLeave={e=>{e.currentTarget.style.background='rgba(45,127,249,0.1)';e.currentTarget.style.borderColor='rgba(45,127,249,0.4)';}}>
                           {BTN_LABELS[b] || b.split(':').pop()}
@@ -2101,10 +2113,10 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
               onChange={e=>setInput(e.target.value)}
               onKeyDown={e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} }}
               placeholder={language==='fr'?"Pose-moi une question...":"Ask me anything..."}
-              style={{flex:1,padding:'9px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.10)',color:'#fff',fontSize:12,fontFamily:"'Outfit',sans-serif",outline:'none',transition:'border-color .2s, box-shadow .2s'}}
+              style={{flex:1,padding:'9px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.10)',color:'#fff',fontSize:12,fontFamily:"'Inter',sans-serif",outline:'none',transition:'border-color .2s, box-shadow .2s'}}
             />
             <button onClick={send} disabled={!input.trim()||loading}
-              style={{width:36,height:36,borderRadius:10,border:'none',background:input.trim()&&!loading?'linear-gradient(135deg,#1FB6FF,#2D7FF9)':'rgba(255,255,255,0.12)',color:'#fff',cursor:input.trim()&&!loading?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .2s'}}>
+              style={{width:36,height:36,borderRadius:10,border:'none',background:input.trim()&&!loading?'linear-gradient(135deg,#1FB6FF,#5B8DEF)':'rgba(255,255,255,0.12)',color:'#fff',cursor:input.trim()&&!loading?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .2s'}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
@@ -2115,7 +2127,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       <button onClick={()=>setOpen(o=>!o)} style={{
         position:'fixed', bottom:isMobile?16:20, right:isMobile?16:20,
         width:52, height:52, borderRadius:'50%', border:'none',
-        background:'linear-gradient(135deg,#1FB6FF,#2D7FF9)',
+        background:'linear-gradient(135deg,#1FB6FF,#5B8DEF)',
         color:'#fff', cursor:'pointer', zIndex:9999,
         display:open?'none':'flex', alignItems:'center', justifyContent:'center',
         fontSize:22, boxShadow:'0 4px 20px rgba(45,127,249,0.55)',
@@ -2258,8 +2270,8 @@ const Faq = () => {
       ))}
 
       <div style={{marginTop:28, padding:'16px', borderTop:`1px solid ${C.border}`, fontSize:12, color:C.sec, lineHeight:1.8}}>
-        <div>Une autre question ? Écrivez-nous à <a href="mailto:thefirstquality01@gmail.com" style={{color:'#5B8FFF'}}>thefirstquality01@gmail.com</a></div>
-        <div>Pour savoir comment vos données sont traitées, consultez notre <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{color:'#5B8FFF'}}>Politique de confidentialité</a>.</div>
+        <div>Une autre question ? Écrivez-nous à <a href="mailto:thefirstquality01@gmail.com" style={{color:'#5B8DEF'}}>thefirstquality01@gmail.com</a></div>
+        <div>Pour savoir comment vos données sont traitées, consultez notre <a href="/privacy.html" target="_blank" rel="noopener noreferrer" style={{color:'#5B8DEF'}}>Politique de confidentialité</a>.</div>
       </div>
     </div>
   );
@@ -2293,7 +2305,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         100% { background-position: 0% 50%; }
       }
       .headline-gradient {
-        background: linear-gradient(90deg, #1FB6FF, #2D7FF9, #5B8FFF, #1FB6FF);
+        background: linear-gradient(90deg, #1FB6FF, #5B8DEF, #8AB4F8, #1FB6FF);
         background-size: 250% auto;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -2398,7 +2410,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                     ? 'rgba(255,255,255,0.07)'
                     : isDowngrade
                       ? 'transparent'
-                      : 'linear-gradient(135deg,#2D7FF9,#0B3D91)',
+                      : 'linear-gradient(135deg,#5B8DEF,#0B3D91)',
                   color: isCurrent ? C.sec : isDowngrade ? C.sec : '#fff',
                   boxShadow: (isCurrent || isDowngrade) ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
                 }}
@@ -2472,7 +2484,7 @@ const DemoPreview = ({slug, setSection}) => {
               50%      { box-shadow:0 6px 36px rgba(45,127,249,0.80); }
             }
           `}</style>
-          <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#2D7FF9,#0B3D91)',color:'#fff',fontFamily:"'Outfit',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
+          <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
             onClick={() => setSection && setSection('tarifs')}>
             ✦ Découvrir nos offres
             <button onClick={e=>{e.stopPropagation();setDismissed(true);}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',fontSize:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
@@ -2873,7 +2885,7 @@ export default function Platform() {
 
   return (
     <>
-    <div style={{display:'flex',flexDirection:'column',height: appHeight ? `${appHeight}px` : '100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Outfit',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
+    <div style={{display:'flex',flexDirection:'column',height: appHeight ? `${appHeight}px` : '100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Inter',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
