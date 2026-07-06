@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 // ── Supabase Auth ──────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://mifljhsusidgzelnswma.supabase.co';
@@ -152,6 +153,8 @@ const C = {
 };
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
+
+const BRAND_SWATCHES = ['#1E3A8A','#DC2626','#EA580C','#CA8A04','#059669','#0891B2','#7C3AED','#DB2777','#000000','#78716C','#FFFFFF'];
 
 const PLAN_QUANTITY = { 'Conversion Starter':9, 'Conversion Pro':18, 'Conversion Scale':36 };
 
@@ -1086,31 +1089,136 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   const canCancel = brief && brief.status==="pending" && (Date.now() - new Date(brief.created_at).getTime()) < CANCEL_WINDOW;
   const inProd = brief && (brief.status==="in_production" || (brief.status==="pending" && !canCancel));
   const credits = computeCredits(subscription, allBriefs);
+  const nextCreditDate = (() => {
+    if (!subscription?.started_at) return null;
+    const started = new Date(subscription.started_at);
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksActive = Math.floor((Date.now() - started.getTime()) / msPerWeek) + 1;
+    const next = new Date(started.getTime() + weeksActive * msPerWeek);
+    return next.toLocaleDateString('fr-FR', { day:'numeric', month:'long' });
+  })();
   if (canCancel) return (
     <button onClick={() => cancelCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:"1px solid rgba(229,80,80,0.5)",background:"linear-gradient(135deg,rgba(229,80,80,0.15),rgba(229,80,80,0.05))",color:"#E55050",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 12px rgba(229,80,80,0.2)",transition:"all 0.2s"}}>
-      ✕ Annuler la demande
+      <Icon name="x" size={13} color="#E55050"/> Annuler la demande
     </button>
   );
   if (inProd) return (
-    <div style={{padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.sec,fontWeight:600,fontSize:11,textAlign:"center"}}>
-      ⏳ En production · livraison sous 36h
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.sec,fontWeight:600,fontSize:11,textAlign:"center"}}>
+      <Icon name="clock" size={13} color={C.sec}/> En production · livraison sous 36h
     </div>
   );
   if (subscription?.active && credits.available < 9) return (
-    <div style={{padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
-      ✓ Disponible semaine prochaine
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
+      <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochain crédit le ${nextCreditDate}` : 'Crédits épuisés cette semaine'}
     </div>
   );
   return (
     <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.red},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
-      <Icon name="sparkle" size={13} color={C.red}/> Demander mes images
+      <Icon name="sparkle" size={13} color="#fff"/> Demander mes images
     </button>
   );
 };
 
-const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}}) => {
+const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, notify, setProducts, openEdit, C}) => {
+  const [hovered, setHovered] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const brief = briefs[p.id];
+  const hasActiveBrief = brief && brief.status !== 'cancelled';
+
+  const doDelete = async () => {
+    const session = await sbAuth.refreshSession();
+    if (session) await sbProducts.delete(session, p.id);
+    setProducts(prev => prev.filter(x => x.id !== p.id));
+    notify(`🗑 Produit "${p.nom}" supprimé`, 'info');
+    setConfirmDelete(false);
+  };
+
+  return (
+    <>
+    <div
+      style={cs({overflow:'hidden',display:'flex',flexDirection:'column',transition:'border-color 0.15s, transform 0.15s'})}
+      onMouseEnter={e=>{setHovered(true); e.currentTarget.style.borderColor=C.borderM; e.currentTarget.style.transform='translateY(-2px)';}}
+      onMouseLeave={e=>{setHovered(false); e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)';}}
+    >
+      <div style={{aspectRatio:'4/5',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        {!p.photo && <Icon name="box" size={32} color={C.muted}/>}
+        {p.logo && (
+          <div style={{position:'absolute',bottom:8,left:8,width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:4}}>
+            <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+          </div>
+        )}
+        <div style={{position:'absolute',top:10,right:10,display:'flex',gap:6,opacity:hovered?1:0,transition:'opacity 0.15s'}}>
+          <button onClick={() => openEdit(p)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(91,141,239,0.85)'}
+            onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
+          >
+            <Icon name="pencil" size={13} color="#E4E7EC"/>
+          </button>
+          <button onClick={() => setConfirmDelete(true)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+            onMouseEnter={e=>e.currentTarget.style.background='rgba(239,107,91,0.85)'}
+            onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
+          >
+            <Icon name="x" size={13} color="#E4E7EC"/>
+          </button>
+        </div>
+        <div style={{position:'absolute',top:10,left:10,display:'flex',gap:6}}>
+          {p.promo && <Tag ch={p.promo} color="red"/>}
+        </div>
+        <div style={{position:'absolute',bottom:10,left:10}}>
+          <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.02em',padding:'4px 9px',borderRadius:99,background: hasActiveBrief ? 'rgba(91,141,239,0.16)' : 'rgba(255,255,255,0.09)', color: hasActiveBrief ? C.red : C.muted, border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
+            {hasActiveBrief ? 'En production' : 'Prêt à commander'}
+          </span>
+        </div>
+      </div>
+      <div style={{padding:'14px 16px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
+        <div style={{fontSize:14.5,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
+        <div style={{fontSize:12,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:2}}>
+          {p.pays ? <span style={{fontSize:11,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'4px 9px',borderRadius:99}}>{p.pays}</span> : <span/>}
+          <div style={{display:'flex',gap:5}}>
+            {[p.couleur1,p.couleur2,p.couleur3].filter(Boolean).map((col,i)=>(
+              <span key={i} style={{width:13,height:13,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div style={{padding:'0 16px 16px'}}>
+        <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} C={C}/>
+      </div>
+    </div>
+
+    {confirmDelete && createPortal(
+      <div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:380,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
+          <div style={{width:40,height:40,borderRadius:11,background:'rgba(239,107,91,0.14)',border:'1px solid rgba(239,107,91,0.3)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14,color:'#EF6B5B'}}>
+            <Icon name="alerttriangle" size={18} color="#EF6B5B"/>
+          </div>
+          <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Supprimer "{p.nom}" ?</h2>
+          <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:0}}>Cette action est irréversible. La fiche produit sera définitivement supprimée.</p>
+          <p style={{fontSize:11.5,color:C.muted,lineHeight:1.6,marginTop:8}}>Les images, données marché et copies déjà générées pour ce produit resteront disponibles dans vos sections.</p>
+          <div style={{display:'flex',gap:8,marginTop:18}}>
+            <button onClick={()=>setConfirmDelete(false)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
+            <button onClick={doDelete} style={{flex:1,padding:'10px',borderRadius:8,border:'none',background:'#EF6B5B',color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Supprimer</button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
+  );
+};
+
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}, setSection}) => {
   // Recalculer les crédits en temps réel depuis allBriefs
   const credits = computeCredits(subscription, allBriefs);
+  const nextCreditDate = (() => {
+    if (!subscription?.started_at) return null;
+    const started = new Date(subscription.started_at);
+    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+    const weeksActive = Math.floor((Date.now() - started.getTime()) / msPerWeek) + 1;
+    const next = new Date(started.getTime() + weeksActive * msPerWeek);
+    return next.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
+  })();
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [requestModal, setRequestModal] = useState(null); // { product }
@@ -1145,7 +1253,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   };
 
   const validate = () => {
-    const req = ['nom','pricing','pays'];
+    const req = ['nom','pricing','pays','photo'];
     const e = {};
     req.forEach(k => { if (!form[k]) e[k] = true; });
     return e;
@@ -1237,7 +1345,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   return (
     <div>
       {/* ── Jauge images publicitaires ── */}
-      {subscription?.active && (
+      {subscription?.active ? (
         <div style={{marginBottom:18,padding:'14px 16px',borderRadius:10,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
           <div style={{flex:1,minWidth:160}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
@@ -1251,9 +1359,22 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           </div>
           {credits.available === 0 && (
             <div style={{fontSize:11,color:C.muted,padding:'6px 12px',borderRadius:7,background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`}}>
-              Nouvelles images disponibles semaine prochaine
+              {nextCreditDate ? `Prochaines images disponibles le ${nextCreditDate}` : 'Prochaines images disponibles la semaine prochaine'}
             </div>
           )}
+        </div>
+      ) : (
+        <div style={{marginBottom:18,padding:'14px 16px',borderRadius:10,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',opacity:0.75}}>
+          <div style={{flex:1,minWidth:160,display:'flex',alignItems:'center',gap:10}}>
+            <Icon name="lock" size={15} color={C.muted}/>
+            <div>
+              <div style={{fontSize:12,fontWeight:600,color:C.sec}}>Images publicitaires</div>
+              <div style={{fontSize:10.5,color:C.muted,marginTop:2}}>Abonnez-vous pour recevoir vos visuels chaque semaine</div>
+            </div>
+          </div>
+          <button onClick={()=>setSection && setSection('tarifs')} style={{padding:'8px 16px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+            Voir les offres
+          </button>
         </div>
       )}
 
@@ -1268,63 +1389,22 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         </button>
       </div>
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
-        {products.map(p => (
-          <div key={p.id}
-            style={cs({overflow:'hidden',display:'flex',flexDirection:'column',transition:'border-color 0.15s, transform 0.15s'})}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.borderM; e.currentTarget.style.transform='translateY(-2px)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)';}}
-          >
-            <div style={{aspectRatio:'4/5',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              {!p.photo && <Icon name="box" size={32} color={C.muted}/>}
-              {p.logo && (
-                <div style={{position:'absolute',bottom:8,left:8,width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:4}}>
-                  <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
-                </div>
-              )}
-              <div style={{position:'absolute',top:10,right:10,display:'flex',gap:6}}>
-                <button onClick={() => openEdit(p)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(91,141,239,0.85)'}
-                  onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
-                >
-                  <Icon name="pencil" size={13} color="#E4E7EC"/>
-                </button>
-                <button onClick={async () => {
-                  if (!confirm(`Supprimer "${p.nom}" ?\n\nCette action est irréversible. La fiche produit sera définitivement supprimée.\n\n(Les images, données marché et copies déjà générées pour ce produit resteront disponibles dans vos sections.)`)) return;
-                  const session = await sbAuth.refreshSession();
-                  if (session) await sbProducts.delete(session, p.id);
-                  setProducts(prev => prev.filter(x => x.id !== p.id));
-                  notify(`🗑 Produit "${p.nom}" supprimé`, 'info');
-                }} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='rgba(239,107,91,0.85)'}
-                  onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
-                >
-                  <Icon name="x" size={13} color="#E4E7EC"/>
-                </button>
-              </div>
-              {p.promo && (
-                <div style={{position:'absolute',top:10,left:10}}>
-                  <Tag ch={p.promo} color="red"/>
-                </div>
-              )}
-            </div>
-            <div style={{padding:'14px 16px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
-              <div style={{fontSize:14.5,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
-              <div style={{fontSize:12,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
-              <div style={{fontSize:10,color:C.sec,lineHeight:1.5,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.utilite}</div>
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:2}}>
-                {p.pays ? <span style={{fontSize:11,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'4px 9px',borderRadius:99}}>{p.pays}</span> : <span/>}
-                <div style={{display:'flex',gap:5}}>
-                  {[p.couleur1,p.couleur2,p.couleur3].filter(Boolean).map((col,i)=>(
-                    <span key={i} style={{width:13,height:13,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div style={{padding:'0 16px 16px'}}>
-              <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} C={C}/>
-            </div>
+      {products.length === 0 && (
+        <div style={{borderRadius:16,border:`1px solid ${C.border}`,background:C.card,padding:'60px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:12,textAlign:'center',marginBottom:14}}>
+          <div style={{width:44,height:44,borderRadius:12,background:C.redS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.red}}>
+            <Icon name="box" size={20}/>
           </div>
+          <div style={{fontSize:17,fontWeight:700,color:C.text}}>Aucun produit pour l'instant</div>
+          <div style={{fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 48h.</div>
+          <button onClick={openNew} style={{marginTop:6,padding:'10px 20px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+            <Icon name="plus" size={14} color="#fff"/> Ajouter mon premier produit
+          </button>
+        </div>
+      )}
+
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
+        {products.map(p => (
+          <ProductCard key={p.id} p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} notify={notify} setProducts={setProducts} openEdit={openEdit} C={C}/>
         ))}
 
         <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:240,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
@@ -1359,34 +1439,59 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               </div>
             </div>
 
-            <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                <Field label="Prix actuel" k="pricing" required placeholder="Ex : 12 900" form={form} setForm={setForm} errors={errors} C={C}/>
-                <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal" form={form} setForm={setForm} errors={errors} C={C}/>
-              </div>
-              <Field label="Lien de la page produit" k="lien" placeholder="https://..." form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Offre promo en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Cible principale" k="cible" textarea placeholder="Femme +25ans Dakar, Teint métisse..." form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Utilité principale" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+
               <div>
-                  <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque <span style={{fontWeight:400,opacity:.6}}>(pour vos visuels Meta Ads · optionnel)</span></label>
-                  <div style={{fontSize:10,color:C.muted,marginBottom:8}}>Ces couleurs seront utilisées dans vos créatives publicitaires</div>
-                  <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
-                    {[1,2,3].map(n => {
-                      const key = `couleur${n}`;
-                      return form[key]
-                        ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.09)'}}>
-                            <input type="color" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:28,height:28,borderRadius:5,border:'none',cursor:'pointer',padding:0,background:'none'}}/>
-                            <span style={{fontSize:10,color:C.sec,fontFamily:'monospace'}}>{form[key].toUpperCase()}</span>
-                            <button onClick={()=>setForm(f=>({...f,[key]:''}))} style={{width:14,height:14,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.15)',color:C.sec,fontSize:9,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
-                          </div>
-                        : <button key={n} onClick={()=>setForm(f=>({...f,[key]:'#1E3A8A'}))} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:7,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:11,fontFamily:'inherit'}}>
-                            <span style={{fontSize:14,lineHeight:1}}>+</span> Ajouter
-                          </button>;
-                    })}
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.06em',color:C.muted,textTransform:'uppercase',marginBottom:8}}>Identité</div>
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                    <Field label="Prix actuel" k="pricing" required placeholder="Ex : 12 900" form={form} setForm={setForm} errors={errors} C={C}/>
+                    <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal" form={form} setForm={setForm} errors={errors} C={C}/>
                   </div>
                 </div>
+              </div>
+
+              <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.06em',color:C.muted,textTransform:'uppercase',marginBottom:8}}>Vente</div>
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  <Field label="Lien de la page produit" k="lien" placeholder="https://..." form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Offre promo en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
+                </div>
+              </div>
+
+              <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.06em',color:C.muted,textTransform:'uppercase',marginBottom:8}}>Ciblage créatif</div>
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  <Field label="Cible principale" k="cible" textarea placeholder="Femme +25ans Dakar, Teint métisse..." form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Utilité principale" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
+                  <div>
+                    <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque <span style={{fontWeight:400,opacity:.6}}>(pour vos visuels Meta Ads · optionnel)</span></label>
+                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>Choisissez jusqu'à 3 couleurs — utilisées dans vos créatives publicitaires</div>
+                    <div style={{display:'flex',gap:7,flexWrap:'wrap',alignItems:'center'}}>
+                      {BRAND_SWATCHES.map(sw => {
+                        const slots = [form.couleur1, form.couleur2, form.couleur3];
+                        const selectedIdx = slots.findIndex(c => c === sw);
+                        const isSelected = selectedIdx !== -1;
+                        const emptyIdx = slots.findIndex(c => !c);
+                        return (
+                          <button key={sw} type="button"
+                            onClick={() => {
+                              if (isSelected) { setForm(f=>({...f, [`couleur${selectedIdx+1}`]:''})); return; }
+                              if (emptyIdx === -1) return; // 3 déjà choisies
+                              setForm(f=>({...f, [`couleur${emptyIdx+1}`]:sw}));
+                            }}
+                            style={{width:26,height:26,borderRadius:'50%',background:sw,border:isSelected?`2px solid ${C.red}`:'1.5px solid rgba(255,255,255,0.18)',cursor:'pointer',position:'relative',padding:0,boxShadow:isSelected?`0 0 0 2px ${C.card}, 0 0 0 3px ${C.red}`:'none'}}
+                          >
+                            {isSelected && <span style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={11} color={sw==='#FFFFFF'?'#000':'#fff'}/></span>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             {Object.keys(errors).length>0 && (
@@ -1405,19 +1510,43 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       {brief && (
         <div onClick={() => setBrief(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:480,maxHeight:'85vh',overflow:'auto',borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-              <div>
-                <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:0}}>Brief créatives envoyé</h2>
-                <p style={{fontSize:11,color:C.sec,marginTop:3}}>{brief.quantite_demandee} créatives seront générées pour ce produit</p>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
+              <div style={{display:'flex',alignItems:'center',gap:12}}>
+                <div style={{width:38,height:38,borderRadius:10,background:C.redS,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <Icon name="check" size={17} color={C.red}/>
+                </div>
+                <div>
+                  <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:0}}>Demande envoyée</h2>
+                  <p style={{fontSize:11,color:C.sec,marginTop:2}}>Livraison sous 48h</p>
+                </div>
               </div>
               <button onClick={() => setBrief(null)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                 <Icon name="x" size={14}/>
               </button>
             </div>
-            <pre style={{fontSize:10.5,color:C.sec,background:'rgba(255,255,255,0.055)',border:`1px solid ${C.border}`,borderRadius:8,padding:'12px',overflow:'auto',lineHeight:1.6,whiteSpace:'pre-wrap',fontFamily:"'DM Mono',monospace"}}>
-              {JSON.stringify(brief, null, 2)}
-            </pre>
-            <button onClick={copyBrief} style={{width:'100%',marginTop:12,padding:'10px',borderRadius:8,border:`1px solid ${briefCopied?'rgba(45,127,249,0.3)':C.borderM}`,background:briefCopied?C.redS:'rgba(255,255,255,0.05)',color:briefCopied?C.red:C.text,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,transition:'all 0.2s'}}>
+
+            <div style={{display:'flex',flexDirection:'column',gap:0,borderRadius:10,border:`1px solid ${C.border}`,overflow:'hidden'}}>
+              {[
+                ['Produit', brief.produit?.nom],
+                ['Quantité', `${brief.quantite_demandee} visuels`],
+                ['Pays de vente', brief.produit?.pays_de_vente || '—'],
+                ['Date de la demande', brief.date_demande],
+              ].map(([label, value], i) => (
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'11px 14px',borderTop:i>0?`1px solid ${C.border}`:'none',fontSize:12.5}}>
+                  <span style={{color:C.sec}}>{label}</span>
+                  <span style={{color:C.text,fontWeight:600}}>{value}</span>
+                </div>
+              ))}
+            </div>
+
+            <details style={{marginTop:14}}>
+              <summary style={{fontSize:11.5,color:C.sec,cursor:'pointer',fontWeight:600,userSelect:'none'}}>Voir les détails techniques</summary>
+              <pre style={{marginTop:8,fontSize:10.5,color:C.sec,background:'rgba(255,255,255,0.055)',border:`1px solid ${C.border}`,borderRadius:8,padding:'12px',overflow:'auto',lineHeight:1.6,whiteSpace:'pre-wrap',fontFamily:"'DM Mono',monospace"}}>
+                {JSON.stringify(brief, null, 2)}
+              </pre>
+            </details>
+
+            <button onClick={copyBrief} style={{width:'100%',marginTop:14,padding:'10px',borderRadius:8,border:`1px solid ${briefCopied?'rgba(91,141,239,0.3)':C.borderM}`,background:briefCopied?C.redS:'rgba(255,255,255,0.05)',color:briefCopied?C.red:C.text,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,transition:'all 0.2s'}}>
               {briefCopied ? (<><Icon name="check" size={13}/> Brief copié</>) : 'Copier le brief'}
             </button>
           </div>
@@ -2850,7 +2979,7 @@ export default function Platform() {
 
   const views = {
     demo: <DemoPreview slug={demoSlug} setSection={setSection}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} onAskCreatives={(p)=>{ 
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
             // Anti-doublon : brief actif existant ?
