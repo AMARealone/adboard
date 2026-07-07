@@ -146,7 +146,7 @@ const sbAuth = {
 const C = {
   bg:'#0A0C11',    sidebar:'#0D1016',    card:'#12151C',
   border:'rgba(255,255,255,0.07)',        borderM:'rgba(255,255,255,0.16)',
-  red:'#5B8DEF',   redS:'rgba(91,141,239,0.11)', redM:'rgba(91,141,239,0.22)',
+  accent:'#5B8DEF', accentS:'rgba(91,141,239,0.11)', accentM:'rgba(91,141,239,0.22)',
   white:'#FFFFFF', whiteS:'rgba(255,255,255,0.06)',
   gray:'#8891A0',  grayS:'rgba(255,255,255,0.06)',
   text:'#F2F4F8',  sec:'#8891A0',        muted:'#626B7A',
@@ -245,7 +245,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
 
 const Tag = ({ch, color='red'}) => {
   const m = {
-    red:{bg:C.redS,c:C.red,b:'rgba(45,127,249,0.2)'},
+    red:{bg:C.accentS,c:C.accent,b:'rgba(45,127,249,0.2)'},
     gray:{bg:'rgba(255,255,255,0.05)',c:C.sec,b:C.border},
     white:{bg:'rgba(255,255,255,0.08)',c:C.text,b:'rgba(255,255,255,0.16)'},
   };
@@ -258,7 +258,7 @@ const LockOverlay = () => (
     <Icon name="lock" size={26} color={C.sec}/>
     <div style={{fontSize:13,fontWeight:700,color:C.text}}>Réservé aux abonnés</div>
     <div style={{fontSize:11,color:C.sec,textAlign:'center',maxWidth:200,lineHeight:1.5}}>Abonnez-vous pour accéder à toutes vos données</div>
-    <button style={{marginTop:6,padding:'9px 22px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6}}>
+    <button style={{marginTop:6,padding:'9px 22px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:6}}>
       Voir les offres <Icon name="arrow" size={13} color="#fff"/>
     </button>
   </div>
@@ -328,7 +328,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       {!showCollapsed && !(isMobile && !mobileOpen) && user && (
         <div style={{overflow:'hidden',flex:1}}>
           <div style={{fontSize:12,fontWeight:600,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{user.user_metadata?.full_name || user.email}</div>
-          <div style={{fontSize:10,color:C.red}}>Connecté</div>
+          <div style={{fontSize:10,color:C.accent}}>Connecté</div>
         </div>
       )}
       {!showCollapsed && !(isMobile && !mobileOpen) && !user && (
@@ -359,20 +359,20 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           gap:(showCollapsed || (isMobile && !mobileOpen))?0:10,padding:(showCollapsed || (isMobile && !mobileOpen))?'10px 0':'9px 10px',
           borderRadius:7,border:'none',cursor:'pointer',
           background: isTarifs
-            ? (active===n.id ? C.redS : 'linear-gradient(90deg, rgba(45,127,249,0.06), rgba(91,143,255,0.14), rgba(45,127,249,0.06))')
-            : (active===n.id?C.redS:'transparent'),
+            ? (active===n.id ? C.accentS : 'linear-gradient(90deg, rgba(45,127,249,0.06), rgba(91,143,255,0.14), rgba(45,127,249,0.06))')
+            : (active===n.id?C.accentS:'transparent'),
           backgroundSize: isTarifs && active!==n.id ? '250% auto' : undefined,
           animation: isTarifs && active!==n.id ? 'navGradientFlow 3.5s ease infinite' : undefined,
-          color:active===n.id?C.red:(isTarifs?'#5B8DEF':C.sec),
+          color:active===n.id?C.accent:(isTarifs?'#5B8DEF':C.sec),
           fontSize:12,fontWeight:isTarifs?700:600,fontFamily:'inherit',
-          borderLeft:active===n.id?`2px solid ${C.red}`:'2px solid transparent',
+          borderLeft:active===n.id?`2px solid ${C.accent}`:'2px solid transparent',
           transition:'all 0.15s',textAlign:'left',marginBottom:1,whiteSpace:'nowrap',
         }}>
           {isTarifs && (
             <style>{`@keyframes navGradientFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
           )}
           <div style={{position:'relative',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name={n.icon} size={14} color={active===n.id?C.red:(isTarifs?'#5B8DEF':C.sec)}/>
+            <Icon name={n.icon} size={14} color={active===n.id?C.accent:(isTarifs?'#5B8DEF':C.sec)}/>
             {n.id==='notifications' && unreadCount>0 && (showCollapsed || (isMobile && !mobileOpen)) && (
               <span style={{position:'absolute',top:-5,right:-5,background:'#E55050',color:'#fff',borderRadius:'50%',minWidth:14,height:14,fontSize:8,fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 2px',lineHeight:1}}>
                 {unreadCount>9?'9+':unreadCount}
@@ -390,8 +390,8 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
     </nav>
 
     <div style={{padding:showCollapsed?'12px 0 calc(12px + env(safe-area-inset-bottom, 0px))':'12px 14px calc(12px + env(safe-area-inset-bottom, 0px))',borderTop:`1px solid ${C.border}`}}>
-      <button onClick={() => set('demo')} title={showCollapsed||(isMobile&&!mobileOpen)?'Voir la démo':undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:active==='demo'?C.redS:'rgba(255,255,255,0.07)',border:`1px solid ${active==='demo'?'rgba(45,127,249,0.28)':C.border}`,color:active==='demo'?C.red:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
-        <Icon name="image" size={12} color={active==='demo'?C.red:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
+      <button onClick={() => set('demo')} title={showCollapsed||(isMobile&&!mobileOpen)?'Voir la démo':undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:active==='demo'?C.accentS:'rgba(255,255,255,0.07)',border:`1px solid ${active==='demo'?'rgba(45,127,249,0.28)':C.border}`,color:active==='demo'?C.accent:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
+        <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
       {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
         const nextPlan = !subscription?.active
@@ -401,11 +401,11 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           : { name:'Conversion Scale', desc:'36 images / semaine · 4 produits', price:99900 };
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
-            <div style={{fontSize:11,color:C.red,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
+            <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
             <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.desc}</div>
             <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(nextPlan.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => set('tarifs')}
-              style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.red,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+              style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
               {subscription?.active ? 'Upgrader' : 'Commencer'} <Icon name="arrow" size={11} color="#fff"/>
             </button>
           </div>
@@ -431,7 +431,7 @@ const Field = ({label, k, required, textarea, placeholder, type='text', form, se
     style:{
       width:'100%', padding:'8px 10px', borderRadius:7,
       background:'rgba(255,255,255,0.07)',
-      border:`1px solid ${err?C.red:C.border}`,
+      border:`1px solid ${err?C.accent:C.border}`,
       color:C.text,
       fontSize:13,
       fontFamily:'inherit', outline:'none', resize:'vertical',
@@ -441,7 +441,7 @@ const Field = ({label, k, required, textarea, placeholder, type='text', form, se
   return (
     <div>
       <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:6,display:'block'}}>
-        {label}{required && <span style={{color:C.red}}> *</span>}
+        {label}{required && <span style={{color:C.accent}}> *</span>}
       </label>
       {textarea ? <textarea rows={2} {...common}/> : <input type={type} {...common}/>}
     </div>
@@ -675,7 +675,7 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
       <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'26px 24px',maxWidth:380,width:'100%',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)',position:'relative',fontFamily:font}}>
 
         {/* Bouton fermer */}
-        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:font}}>✕</button>
+        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:font}}><Icon name="x" size={14}/></button>
 
         {/* Header */}
         <div style={{marginBottom:20,paddingRight:32}}>
@@ -687,10 +687,10 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
         <div style={{background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px',marginBottom:24}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7}}>
             <span style={{fontSize:11,color:C.sec,fontWeight:600,fontFamily:font}}>Disponibles cette semaine</span>
-            <span style={{fontSize:20,fontWeight:800,color:max>0?C.red:C.muted,fontFamily:font}}>{max}</span>
+            <span style={{fontSize:20,fontWeight:800,color:max>0?C.accent:C.muted,fontFamily:font}}>{max}</span>
           </div>
           <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-            <div style={{height:'100%',borderRadius:3,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.red},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
+            <div style={{height:'100%',borderRadius:3,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
           </div>
           <div style={{fontSize:10,color:C.muted,marginTop:4,fontFamily:font}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
         </div>
@@ -704,14 +704,14 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
               <div style={{fontSize:40,fontWeight:800,color:C.text,lineHeight:1,fontFamily:font}}>{qty}</div>
               <div style={{fontSize:11,color:C.sec,marginTop:4,fontFamily:font}}>visuels</div>
             </div>
-            <button onClick={()=>canIncrease&&setQty(q=>q+9)} style={{width:44,height:44,borderRadius:10,border:`1px solid ${canIncrease?C.red:'rgba(255,255,255,0.05)'}`,background:canIncrease?C.redS:'rgba(255,255,255,0.02)',color:canIncrease?C.red:C.muted,fontSize:24,cursor:canIncrease?'pointer':'not-allowed',fontFamily:font,display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
+            <button onClick={()=>canIncrease&&setQty(q=>q+9)} style={{width:44,height:44,borderRadius:10,border:`1px solid ${canIncrease?C.accent:'rgba(255,255,255,0.05)'}`,background:canIncrease?C.accentS:'rgba(255,255,255,0.02)',color:canIncrease?C.accent:C.muted,fontSize:24,cursor:canIncrease?'pointer':'not-allowed',fontFamily:font,display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
           </div>
         </div>
 
         {/* Boutons */}
         <div style={{display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:'12px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:font}}>Annuler</button>
-          <button onClick={()=>max>0&&onConfirm(qty)} disabled={max===0} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':C.red,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:font}}>
+          <button onClick={()=>max>0&&onConfirm(qty)} disabled={max===0} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':C.accent,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:font}}>
             {max===0 ? 'Aucun visuel disponible' : `Confirmer · ${qty} visuels`}
           </button>
         </div>
@@ -757,7 +757,7 @@ const LoginModal = ({onClose, C, autoPrompt=false}) => {
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:font}}>
       <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'32px 28px',maxWidth:380,width:'100%',textAlign:'center',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)',position:'relative',fontFamily:font}}>
-        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={14}/></button>
         <div style={{margin:'0 auto 16px',width:'fit-content'}}><Logo size={52}/></div>
         <h2 style={{fontSize:18,fontWeight:700,color:C.text,margin:'0 0 8px',fontFamily:font}}>
           {autoPrompt ? 'Ne perds pas ta progression' : 'Connectez-vous pour continuer'}
@@ -765,15 +765,15 @@ const LoginModal = ({onClose, C, autoPrompt=false}) => {
         {autoPrompt ? (
           <div style={{textAlign:'left',margin:'0 0 24px',display:'flex',flexDirection:'column',gap:10}}>
             <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
-              <span style={{color:C.red,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
+              <span style={{color:C.accent,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
               <span style={{fontSize:12.5,color:C.sec,lineHeight:1.5}}>Ton catalogue produits sauvegardé, accessible partout</span>
             </div>
             <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
-              <span style={{color:C.red,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
+              <span style={{color:C.accent,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
               <span style={{fontSize:12.5,color:C.sec,lineHeight:1.5}}>Sois informé en premier des nouveautés et bonus</span>
             </div>
             <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
-              <span style={{color:C.red,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
+              <span style={{color:C.accent,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
               <span style={{fontSize:12.5,color:C.sec,lineHeight:1.5}}>Accès direct à tes demandes de visuels</span>
             </div>
           </div>
@@ -844,7 +844,7 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
     const ok = await registerPushSubscription(user?.id);
     setPushStatus(await getPushStatus());
     setPushLoading(false);
-    if (ok) notify('🔔 Notifications activées', 'success');
+    if (ok) notify('Notifications activées', 'success');
   };
 
   const sendTestPush = async () => {
@@ -862,8 +862,8 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
     <div>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16,flexWrap:'wrap',gap:10}}>
         <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <div style={{width:40,height:40,borderRadius:10,background:C.redS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name="bell" size={18} color={C.red}/>
+          <div style={{width:40,height:40,borderRadius:10,background:C.accentS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <Icon name="bell" size={18} color={C.accent}/>
           </div>
           <div>
             <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:'0 0 2px'}}>Notifications</h1>
@@ -872,11 +872,11 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
         </div>
         {notifications.length > 0 && (
           <div style={{display:'flex',gap:8}}>
-            <button onClick={onMarkRead} style={{padding:'6px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
-              ✓ Tout marquer lu
+            <button onClick={onMarkRead} style={{display:'flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
+              <Icon name="check" size={12} color={C.sec}/> Tout marquer lu
             </button>
-            <button onClick={onDeleteAll} style={{padding:'6px 12px',borderRadius:7,border:'1px solid rgba(229,80,80,0.3)',background:'transparent',color:'#E55050',fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
-              🗑 Tout supprimer
+            <button onClick={onDeleteAll} style={{display:'flex',alignItems:'center',gap:6,padding:'6px 12px',borderRadius:7,border:'1px solid rgba(229,80,80,0.3)',background:'transparent',color:'#E55050',fontSize:11,cursor:'pointer',fontFamily:'inherit'}}>
+              <Icon name="x" size={12} color="#E55050"/> Tout supprimer
             </button>
           </div>
         )}
@@ -886,7 +886,7 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
       {pushStatus !== 'unsupported' && (
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'14px 16px',borderRadius:10,background:C.card,border:`1px solid ${C.border}`,marginBottom:20,flexWrap:'wrap'}}>
           <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
-            <Icon name="bell" size={16} color={pushStatus==='enabled'?C.red:C.sec}/>
+            <Icon name="bell" size={16} color={pushStatus==='enabled'?C.accent:C.sec}/>
             <div>
               <div style={{fontSize:12.5,fontWeight:600,color:C.text}}>Notifications push</div>
               <div style={{fontSize:10.5,color:C.muted}}>
@@ -903,7 +903,7 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
               disabled={pushLoading || pushStatus==='denied' || pushStatus==='checking'}
               style={{
                 width:42,height:24,borderRadius:12,border:'none',position:'relative',
-                background: pushStatus==='enabled' ? C.red : 'rgba(255,255,255,0.15)',
+                background: pushStatus==='enabled' ? C.accent : 'rgba(255,255,255,0.15)',
                 cursor: (pushStatus==='denied'||pushStatus==='checking') ? 'not-allowed' : 'pointer',
                 opacity: pushStatus==='denied' ? 0.5 : 1,
                 transition:'background 0.2s', flexShrink:0,
@@ -920,22 +920,24 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 
       {!notifications.length ? (
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
-          <div style={{fontSize:32}}>🔔</div>
+          <div style={{width:44,height:44,borderRadius:12,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.accent}}>
+            <Icon name="bell" size={20}/>
+          </div>
           <div style={{fontSize:15,fontWeight:700,color:C.text}}>Aucune notification</div>
           <div style={{fontSize:12,color:C.sec}}>Vos notifications apparaîtront ici</div>
         </div>
       ) : (
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {notifications.map(n => (
-            <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 16px',borderRadius:10,background:n.read?'transparent':C.redS,border:`1px solid ${n.read?C.border:'rgba(45,127,249,0.2)'}`,transition:'background .2s'}}>
-              <div style={{width:36,height:36,borderRadius:9,background:`${COLORS[n.type]||C.red}18`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>
-                <Icon name={NOTIF_ICONS[n.type]||'bell'} size={16} color={COLORS[n.type]||C.red}/>
+            <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 16px',borderRadius:10,background:n.read?'transparent':C.accentS,border:`1px solid ${n.read?C.border:'rgba(45,127,249,0.2)'}`,transition:'background .2s'}}>
+              <div style={{width:36,height:36,borderRadius:9,background:`${COLORS[n.type]||C.accent}18`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>
+                <Icon name={NOTIF_ICONS[n.type]||'bell'} size={16} color={COLORS[n.type]||C.accent}/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,color:C.text,lineHeight:1.4,marginBottom:3}}>{n.message}</div>
                 <div style={{fontSize:10,color:C.muted}}>{new Date(n.created_at).toLocaleString('fr-FR')}</div>
               </div>
-              <button onClick={()=>onDeleteOne(n.id)} title="Supprimer" style={{width:22,height:22,borderRadius:5,border:`1px solid ${C.border}`,background:'transparent',color:C.muted,cursor:'pointer',fontSize:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+              <button onClick={()=>onDeleteOne(n.id)} title="Supprimer" style={{width:22,height:22,borderRadius:5,border:`1px solid ${C.border}`,background:'transparent',color:C.muted,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={10}/></button>
             </div>
           ))}
         </div>
@@ -965,7 +967,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
   };
 
   const STATUS_COLORS = { pending:'#F59E0B', in_production:'#5B8DEF', done:'#22C55E', cancelled:'#6B7280' };
-  const STATUS_LABELS = { pending:'⏳ En attente', in_production:'🔵 En production', done:'✅ Livré', cancelled:'✗ Annulé' };
+  const STATUS_LABELS = { pending:'En attente', in_production:'En production', done:'Livré', cancelled:'Annulé' };
 
   const sorted = [...allBriefs].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
 
@@ -974,7 +976,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
       <div style={{marginBottom:20}}>
         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
           <div style={{width:40,height:40,borderRadius:10,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name="clock" size={18} color={C.red}/>
+            <Icon name="clock" size={18} color={C.accent}/>
           </div>
           <div>
             <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
@@ -983,8 +985,8 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
         </div>
       </div>
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
-        <div style={{width:56,height:56,borderRadius:14,background:C.redS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <Icon name="clock" size={24} color={C.red}/>
+        <div style={{width:56,height:56,borderRadius:14,background:C.accentS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <Icon name="clock" size={24} color={C.accent}/>
         </div>
         <div style={{fontSize:16,fontWeight:700,color:C.text}}>Aucune demande en cours</div>
         <div style={{fontSize:12,color:C.sec,maxWidth:300}}>Vos demandes de visuels apparaîtront ici avec leur statut et le temps restant avant livraison.</div>
@@ -996,7 +998,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
     <div>
       <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
         <div style={{width:40,height:40,borderRadius:10,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <Icon name="clock" size={18} color={C.red}/>
+          <Icon name="clock" size={18} color={C.accent}/>
         </div>
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
@@ -1035,7 +1037,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
                     </span>
                   </div>
                   <div style={{fontSize:11,color:C.sec}}>
-                    <span style={{color:C.red,fontWeight:700}}>{b.quantity||9} visuels</span>
+                    <span style={{color:C.accent,fontWeight:700}}>{b.quantity||9} visuels</span>
                     {' · '}{new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
                   </div>
                 </div>
@@ -1045,7 +1047,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
               {(b.status==='pending' || b.status==='in_production') && deliveryRemaining > 0 && (
                 <div style={{background:'linear-gradient(135deg,rgba(45,127,249,0.07),rgba(91,143,255,0.04))',border:'1px solid rgba(45,127,249,0.2)',borderRadius:10,padding:'12px 16px'}}>
                   <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:6}}>Livraison estimée dans</div>
-                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:22,fontWeight:900,color:C.red,letterSpacing:2,lineHeight:1}}>
+                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:22,fontWeight:900,color:C.accent,letterSpacing:2,lineHeight:1}}>
                     {formatCountdown(deliveryRemaining)}
                   </div>
                   <div style={{fontSize:10,color:C.muted,marginTop:4}}>à partir de votre commande du {new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
@@ -1056,8 +1058,8 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
               {canCancel && (
                 <button onClick={() => {
                   if (prod && window.confirm(`Annuler la demande pour "${prod.nom}" ?`)) cancelCreatives(prod);
-                }} style={{width:'100%',padding:'9px',borderRadius:8,border:'1px solid rgba(229,80,80,0.3)',background:'rgba(229,80,80,0.06)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
-                  ✕ Annuler la commande
+                }} style={{width:'100%',padding:'9px',borderRadius:8,border:'1px solid rgba(229,80,80,0.3)',background:'rgba(229,80,80,0.06)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                  <Icon name="x" size={12} color="#E55050"/> Annuler la commande
                 </button>
               )}
               {b.status==='pending' && !canCancel && (
@@ -1070,7 +1072,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
                 <div style={{background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:8,padding:'10px 14px',display:'flex',alignItems:'center',gap:10}}>
                   <Icon name="check" size={16} color="#22C55E"/>
                   <div>
-                    <div style={{fontSize:12,fontWeight:700,color:'#22C55E'}}>Visuels livrés ✓</div>
+                    <div style={{fontSize:12,fontWeight:700,color:'#22C55E'}}>Visuels livrés</div>
                     {b.done_at && <div style={{fontSize:10,color:C.sec}}>{new Date(b.done_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>}
                   </div>
                 </div>
@@ -1113,7 +1115,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
     </div>
   );
   return (
-    <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.red},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
+    <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
       <Icon name="sparkle" size={13} color="#fff"/> Demander mes images
     </button>
   );
@@ -1129,7 +1131,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
     const session = await sbAuth.refreshSession();
     if (session) await sbProducts.delete(session, p.id);
     setProducts(prev => prev.filter(x => x.id !== p.id));
-    notify(`🗑 Produit "${p.nom}" supprimé`, 'info');
+    notify(`Produit "${p.nom}" supprimé`, 'info');
     setConfirmDelete(false);
   };
 
@@ -1165,7 +1167,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
           {p.promo && <Tag ch={p.promo} color="red"/>}
         </div>
         <div style={{position:'absolute',bottom:10,left:10}}>
-          <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.02em',padding:'4px 9px',borderRadius:99,background: hasActiveBrief ? 'rgba(91,141,239,0.16)' : 'rgba(255,255,255,0.09)', color: hasActiveBrief ? C.red : C.muted, border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
+          <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.02em',padding:'4px 9px',borderRadius:99,background: hasActiveBrief ? 'rgba(91,141,239,0.16)' : 'rgba(255,255,255,0.09)', color: hasActiveBrief ? C.accent : C.muted, border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
             {hasActiveBrief ? 'En production' : 'Prêt à commander'}
           </span>
         </div>
@@ -1266,20 +1268,20 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     if (editingId) {
       setProducts(prev => prev.map(p => p.id===editingId ? {...form, id:editingId} : p));
       if (session) sbProducts.update(session, editingId, form);
-      notify(`✏️ "${form.nom}" mis à jour`, 'product');
+      notify(`"${form.nom}" mis à jour`, 'product');
     } else {
       if (session) {
         const saved = await sbProducts.save(session, form);
         if (saved) {
           setProducts(prev => [...prev, saved]);
-          notify(`✅ Produit "${saved.nom}" créé avec succès`, 'product');
+          notify(`Produit "${saved.nom}" créé avec succès`, 'product');
         } else {
           setProducts(prev => [...prev, {...form, id: Date.now()}]);
-          notify(`✅ Produit "${form.nom}" ajouté`, 'product');
+          notify(`Produit "${form.nom}" ajouté`, 'product');
         }
       } else {
         setProducts(prev => [...prev, {...form, id: Date.now()}]);
-        notify(`✅ Produit "${form.nom}" ajouté`, 'product');
+        notify(`Produit "${form.nom}" ajouté`, 'product');
       }
     }
     setShowForm(false);
@@ -1350,10 +1352,10 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           <div style={{flex:1,minWidth:160}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
               <span style={{fontSize:11,color:C.sec,fontWeight:600}}>Images publicitaires disponibles</span>
-              <span style={{fontSize:16,fontWeight:800,color:credits.available>0?C.red:C.muted}}>{credits.available}</span>
+              <span style={{fontSize:16,fontWeight:800,color:credits.available>0?C.accent:C.muted}}>{credits.available}</span>
             </div>
             <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.red},#5B8DEF)`:'rgba(255,255,255,0.1)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
+              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
             </div>
             <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.total} accumulées au total</div>
           </div>
@@ -1372,7 +1374,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               <div style={{fontSize:10.5,color:C.muted,marginTop:2}}>Abonnez-vous pour recevoir vos visuels chaque semaine</div>
             </div>
           </div>
-          <button onClick={()=>setSection && setSection('tarifs')} style={{padding:'8px 16px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+          <button onClick={()=>setSection && setSection('tarifs')} style={{padding:'8px 16px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
             Voir les offres
           </button>
         </div>
@@ -1382,21 +1384,21 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
-          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>💡 Créez votre produit, puis demandez vos visuels — livrés en 48h.</p>
+          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos visuels — livrés en 48h.</p>
         </div>
-        <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+        <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
           <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
         </button>
       </div>
 
       {products.length === 0 && (
         <div style={{borderRadius:16,border:`1px solid ${C.border}`,background:C.card,padding:'60px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:12,textAlign:'center',marginBottom:14}}>
-          <div style={{width:44,height:44,borderRadius:12,background:C.redS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.red}}>
+          <div style={{width:44,height:44,borderRadius:12,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.accent}}>
             <Icon name="box" size={20}/>
           </div>
           <div style={{fontSize:17,fontWeight:700,color:C.text}}>Aucun produit pour l'instant</div>
           <div style={{fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 48h.</div>
-          <button onClick={openNew} style={{marginTop:6,padding:'10px 20px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+          <button onClick={openNew} style={{marginTop:6,padding:'10px 20px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
             <Icon name="plus" size={14} color="#fff"/> Ajouter mon premier produit
           </button>
         </div>
@@ -1408,7 +1410,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         ))}
 
         <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:240,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.red; e.currentTarget.style.color=C.red; e.currentTarget.style.background='rgba(91,141,239,0.05)';}}
+          onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; e.currentTarget.style.background='rgba(91,141,239,0.05)';}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.muted; e.currentTarget.style.background='transparent';}}
         >
           <div style={{width:38,height:38,borderRadius:'50%',border:'1.5px solid currentColor',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -1430,11 +1432,11 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
             <div style={{marginBottom:12,display:'flex',alignItems:'center',gap:12}}>
               <input ref={photoRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e,'photo')}/>
-              <div onClick={()=>photoRef.current?.click()} style={{width:72,height:72,flexShrink:0,borderRadius:10,border:`2px dashed ${errors.photo?C.red:C.border}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+              <div onClick={()=>photoRef.current?.click()} style={{width:72,height:72,flexShrink:0,borderRadius:10,border:`2px dashed ${errors.photo?C.accent:C.border}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
                 {!form.photo && <Icon name="upload" size={18} color={C.sec}/>}
               </div>
               <div>
-                <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:3}}>Photo du produit<span style={{color:C.red}}> *</span></div>
+                <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:3}}>Photo du produit<span style={{color:C.accent}}> *</span></div>
                 <div style={{fontSize:11,color:C.sec}}>Cliquez pour uploader</div>
               </div>
             </div>
@@ -1481,7 +1483,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                               if (emptyIdx === -1) return; // 3 déjà choisies
                               setForm(f=>({...f, [`couleur${emptyIdx+1}`]:sw}));
                             }}
-                            style={{width:26,height:26,borderRadius:'50%',background:sw,border:isSelected?`2px solid ${C.red}`:'1.5px solid rgba(255,255,255,0.18)',cursor:'pointer',position:'relative',padding:0,boxShadow:isSelected?`0 0 0 2px ${C.card}, 0 0 0 3px ${C.red}`:'none'}}
+                            style={{width:26,height:26,borderRadius:'50%',background:sw,border:isSelected?`2px solid ${C.accent}`:'1.5px solid rgba(255,255,255,0.18)',cursor:'pointer',position:'relative',padding:0,boxShadow:isSelected?`0 0 0 2px ${C.card}, 0 0 0 3px ${C.accent}`:'none'}}
                           >
                             {isSelected && <span style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={11} color={sw==='#FFFFFF'?'#000':'#fff'}/></span>}
                           </button>
@@ -1495,12 +1497,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             </div>
 
             {Object.keys(errors).length>0 && (
-              <div style={{marginTop:14,padding:'10px 14px',borderRadius:8,background:C.redS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.red}}>
+              <div style={{marginTop:14,padding:'10px 14px',borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.accent}}>
                 Merci de renseigner les champs marqués d'un astérisque.
               </div>
             )}
 
-            <button onClick={submit} style={{width:'100%',marginTop:18,padding:'12px',borderRadius:8,border:'none',background:C.red,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+            <button onClick={submit} style={{width:'100%',marginTop:18,padding:'12px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
               <Icon name="check" size={14} color="#fff"/> {editingId ? 'Enregistrer les modifications' : 'Créer le produit'}
             </button>
           </div>
@@ -1512,8 +1514,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:480,maxHeight:'85vh',overflow:'auto',borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:18}}>
               <div style={{display:'flex',alignItems:'center',gap:12}}>
-                <div style={{width:38,height:38,borderRadius:10,background:C.redS,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <Icon name="check" size={17} color={C.red}/>
+                <div style={{width:38,height:38,borderRadius:10,background:C.accentS,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <Icon name="check" size={17} color={C.accent}/>
                 </div>
                 <div>
                   <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:0}}>Demande envoyée</h2>
@@ -1546,7 +1548,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               </pre>
             </details>
 
-            <button onClick={copyBrief} style={{width:'100%',marginTop:14,padding:'10px',borderRadius:8,border:`1px solid ${briefCopied?'rgba(91,141,239,0.3)':C.borderM}`,background:briefCopied?C.redS:'rgba(255,255,255,0.05)',color:briefCopied?C.red:C.text,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,transition:'all 0.2s'}}>
+            <button onClick={copyBrief} style={{width:'100%',marginTop:14,padding:'10px',borderRadius:8,border:`1px solid ${briefCopied?'rgba(91,141,239,0.3)':C.borderM}`,background:briefCopied?C.accentS:'rgba(255,255,255,0.05)',color:briefCopied?C.accent:C.text,fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,transition:'all 0.2s'}}>
               {briefCopied ? (<><Icon name="check" size={13}/> Brief copié</>) : 'Copier le brief'}
             </button>
           </div>
@@ -1592,12 +1594,12 @@ const Galerie = ({products, isDemo, setSection}) => {
         <div style={{display:'flex',gap:8,marginBottom:16,overflowX:'auto',paddingBottom:2}}>
           <button
             onClick={() => setSelectedProduct(null)}
-            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,border:`1px solid ${!selectedProduct ? C.red : C.border}`,background:!selectedProduct ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:!selectedProduct ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
+            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,border:`1px solid ${!selectedProduct ? C.accent : C.border}`,background:!selectedProduct ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:!selectedProduct ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
           >Tous</button>
           {products.map(p => (
             <button key={p.id}
               onClick={() => setSelectedProduct(selectedProduct === p.id ? null : p.id)}
-              style={{display:'flex',alignItems:'center',gap:7,padding:'5px 12px 5px 7px',borderRadius:20,border:`1px solid ${selectedProduct===p.id ? C.red : C.border}`,background:selectedProduct===p.id ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:selectedProduct===p.id ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
+              style={{display:'flex',alignItems:'center',gap:7,padding:'5px 12px 5px 7px',borderRadius:20,border:`1px solid ${selectedProduct===p.id ? C.accent : C.border}`,background:selectedProduct===p.id ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:selectedProduct===p.id ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
             >
               <div style={{width:20,height:20,borderRadius:4,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.08)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
                 {!p.photo && <Icon name="box" size={10} color={C.sec}/>}
@@ -1624,7 +1626,7 @@ const Galerie = ({products, isDemo, setSection}) => {
       <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18}}>
         {[['tous','Tous','grid'],['date','Date','calendar'],['angle','Angle','tag']].map(([id,label,icon]) => (
           <button key={id} onClick={() => {setFilterMode(id); setActiveChip(null);}}
-            style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.red:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
+            style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
           </button>
         ))}
@@ -1661,7 +1663,7 @@ const Galerie = ({products, isDemo, setSection}) => {
       {CREA.length===0 && !query && (
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
           <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name="grid" size={26} color={C.red}/>
+            <Icon name="grid" size={26} color={C.accent}/>
           </div>
           <div>
             <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos créatives apparaîtront ici</div>
@@ -1669,7 +1671,7 @@ const Galerie = ({products, isDemo, setSection}) => {
               Dès que votre agence aura produit vos visuels Meta Ads, vous les retrouverez ici — triés par angle, par semaine, prêts à télécharger et à publier.
             </div>
           </div>
-          <button onClick={() => setSection && setSection('tarifs')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+          <button onClick={() => setSection && setSection('tarifs')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
             Découvrir nos offres <Icon name="arrow" size={12} color="#fff"/>
           </button>
         </div>
@@ -1747,7 +1749,7 @@ const Copies = ({products, setSection}) => {
           {products.length === 0
             ? <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
                 <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <Icon name="document" size={26} color={C.red}/>
+                  <Icon name="document" size={26} color={C.accent}/>
                 </div>
                 <div>
                   <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos ad copies apparaîtront ici</div>
@@ -1755,7 +1757,7 @@ const Copies = ({products, setSection}) => {
                     Hooks accrocheurs et descriptions optimisées Meta Ads, classés par angle. Copiez-collez directement dans votre Ads Manager pour gagner du temps.
                   </div>
                 </div>
-                <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+                <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
                   Ajouter un produit <Icon name="arrow" size={12} color="#fff"/>
                 </button>
               </div>
@@ -1824,7 +1826,7 @@ const Copies = ({products, setSection}) => {
                   {allAngles.map(a => (
                     <button key={a.numero} onClick={()=>scrollTo(a.numero)} title={`Angle ${a.numero} · ${a.nom}`}
                       style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.red;e.currentTarget.style.background=C.redS;e.currentTarget.style.color=C.red;}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
                     >A{a.numero}</button>
                   ))}
@@ -1847,8 +1849,8 @@ const Copies = ({products, setSection}) => {
                     {delivery.angles.map(angle => (
                       <div key={angle.numero} ref={el=>{angleRefs.current[angle.numero]=el;}} style={cs({padding:'20px',scrollMarginTop:16})}>
                         <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:18}}>
-                          <div style={{width:30,height:30,borderRadius:8,background:C.redS,border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                            <span style={{fontSize:11,fontWeight:800,color:C.red}}>A{angle.numero}</span>
+                          <div style={{width:30,height:30,borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                            <span style={{fontSize:11,fontWeight:800,color:C.accent}}>A{angle.numero}</span>
                           </div>
                           <div style={{fontSize:14,fontWeight:700,color:C.text}}>{angle.nom}</div>
                         </div>
@@ -1860,7 +1862,7 @@ const Copies = ({products, setSection}) => {
                               <div key={i} style={cs({padding:'10px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,marginBottom:7})}>
                                 <div style={{fontSize:12,color:C.text,lineHeight:1.45,flex:1}}>{hook}</div>
                                 <button onClick={()=>copy(hook,`h-${angle.numero}-${i}`)}
-                                  style={{flexShrink:0,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`h-${angle.numero}-${i}`?C.redS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`h-${angle.numero}-${i}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`h-${angle.numero}-${i}`?C.red:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
+                                  style={{flexShrink:0,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`h-${angle.numero}-${i}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`h-${angle.numero}-${i}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`h-${angle.numero}-${i}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
                                   {copied===`h-${angle.numero}-${i}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier'}
                                 </button>
                               </div>
@@ -1871,7 +1873,7 @@ const Copies = ({products, setSection}) => {
                             <div style={cs({padding:'14px',position:'relative'})}>
                               <pre style={{fontSize:12,color:C.text,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.body}</pre>
                               <button onClick={()=>copy(angle.body,`body-${angle.numero}`)}
-                                style={{position:'absolute',top:10,right:10,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.redS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.red:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
+                                style={{position:'absolute',top:10,right:10,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
                                 {copied===`body-${angle.numero}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier tout'}
                               </button>
                             </div>
@@ -1926,7 +1928,7 @@ const Marche = ({products, isDemo, setSection}) => {
         {products.length === 0
           ? <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
               <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <Icon name="chart" size={26} color={C.red}/>
+                <Icon name="chart" size={26} color={C.accent}/>
               </div>
               <div>
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos données marché apparaîtront ici</div>
@@ -1934,7 +1936,7 @@ const Marche = ({products, isDemo, setSection}) => {
                   Analyse de la concurrence, tendances actuelles, persona cible et ciblage Meta Ads optimisé pour chacun de vos produits — mis à jour chaque semaine.
                 </div>
               </div>
-              <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.red,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+              <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
                 Ajouter un produit <Icon name="arrow" size={12} color="#fff"/>
               </button>
             </div>
@@ -2017,7 +2019,7 @@ const Marche = ({products, isDemo, setSection}) => {
                 {m.stats.map(stat => (
                   <div key={stat.l} style={cs({padding:'13px 16px'})}>
                     <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>{stat.l}</div>
-                    <div style={{fontSize:14,fontWeight:700,color:stat.c==='red'?C.red:C.text,marginTop:4}}>{stat.v}</div>
+                    <div style={{fontSize:14,fontWeight:700,color:stat.c==='red'?C.accent:C.text,marginTop:4}}>{stat.v}</div>
                     <div style={{fontSize:10,color:C.sec}}>{stat.s}</div>
                   </div>
                 ))}
@@ -2156,10 +2158,10 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'navigate:notifications': '→ Mes notifications',
     'navigate:galerie': '→ Galerie créatives',
     'openProductForm': '+ Créer mon produit maintenant',
-    'login': '🔑 Connecter mon compte Google',
-    'checkout:starter': '🚀 Commencer avec Starter →',
-    'checkout:pro': '⚡ Passer en Pro →',
-    'checkout:scale': '🔥 Passer en Scale →',
+    'login': '→ Connecter mon compte Google',
+    'checkout:starter': 'Commencer avec Starter →',
+    'checkout:pro': 'Passer en Pro →',
+    'checkout:scale': 'Passer en Scale →',
   };
 
   return (
@@ -2188,12 +2190,12 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
         }}>
           {/* Header */}
           <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#1FB6FF,#5B8DEF)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>👩🏽‍💼</div>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#1FB6FF,#5B8DEF)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="sparkle" size={16} color="#fff"/></div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Inter',sans-serif"}}>Amina</div>
               <div style={{fontSize:10,color:'#22C55E',fontWeight:600}}>● En ligne</div>
             </div>
-            <button onClick={()=>setOpen(false)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.4)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>✕</button>
+            <button onClick={()=>setOpen(false)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.4)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={13} color="rgba(255,255,255,0.4)"/></button>
           </div>
 
           {/* Messages */}
@@ -2264,7 +2266,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       }}
       onMouseEnter={e=>e.currentTarget.style.transform='scale(1.08)'}
       onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-        👩🏽‍💼
+        <Icon name="sparkle" size={22} color="#fff"/>
       </button>
     </>
   );
@@ -2288,7 +2290,7 @@ const PLANS = [
   {
     id:'pro', name:'Conversion Pro',
     price:79900, priceBarre:120000, prixImg:1108, discount:33,
-    color:C.red, best:true, current:false,
+    color:C.accent, best:true, current:false,
     checkout:'https://ecomaster.mychariow.shop/prd_34w031/checkout',
     features:[
       '18 Images Publicitaires Livrées / Semaine',
@@ -2494,8 +2496,8 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 </div>
               )}
               {p.best && !isCurrent && (
-                <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:`linear-gradient(90deg,${C.red},#0B3D91)`,color:'#fff',fontSize:9,fontWeight:900,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
-                  ✦ RECOMMANDÉ
+                <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:`linear-gradient(90deg,${C.accent},#0B3D91)`,color:'#fff',fontSize:9,fontWeight:900,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
+                  RECOMMANDÉ
                 </div>
               )}
 
@@ -2557,7 +2559,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {/* Reassurance */}
               {!isCurrent && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted,lineHeight:1.5}}>
-                  🔒 Paiement sécurisé<br/>
+                  <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span><br/>
                   <span style={{color:C.sec}}>Satisfait ou 100% remboursé</span>
                 </div>
               )}
@@ -2615,8 +2617,8 @@ const DemoPreview = ({slug, setSection}) => {
           `}</style>
           <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
             onClick={() => setSection && setSection('tarifs')}>
-            ✦ Découvrir nos offres
-            <button onClick={e=>{e.stopPropagation();setDismissed(true);}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',fontSize:10,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>✕</button>
+            <Icon name="sparkle" size={13} color="#fff"/> Découvrir nos offres
+            <button onClick={e=>{e.stopPropagation();setDismissed(true);}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={9} color="#fff"/></button>
           </div>
         </div>
       )}
@@ -2787,7 +2789,7 @@ export default function Platform() {
     if (ok) {
       setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
       setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
-      notify(`✕ Commande annulée pour "${p.nom}"`, 'warning');
+      notify(`Commande annulée pour "${p.nom}"`, 'warning');
       for (let i=0; i<3; i++) {
         try {
           const r = await fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
@@ -2840,7 +2842,7 @@ export default function Platform() {
           }
           setSubscription(sub);
           if (sub?.expired) {
-            notify(`⏳ Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos visuels chaque semaine.`, 'warning');
+            notify(`Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos visuels chaque semaine.`, 'warning');
           }
           // Événement Purchase — déclenché ici pour avoir le vrai montant du plan
           if (pendingPurchaseRef.current && sub?.plan) {
@@ -2952,7 +2954,7 @@ export default function Platform() {
           const sub = await sbSubs.load(session);
           if (sub?.active) {
             setSubscription(sub);
-            notify(`✅ Abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} activé !`, 'payment');
+            notify(`Abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} activé !`, 'payment');
             clearInterval(poll);
           }
         }
@@ -3041,9 +3043,9 @@ export default function Platform() {
           position:'relative',
         }}>
           {isMobile && (pullDistance > 0 || isRefreshing) && (
-            <div style={{position:'absolute',top:'calc(-40px + env(safe-area-inset-top, 0px))',left:0,right:0,display:'flex',justifyContent:'center',alignItems:'center',height:40,color:C.red}}>
+            <div style={{position:'absolute',top:'calc(-40px + env(safe-area-inset-top, 0px))',left:0,right:0,display:'flex',justifyContent:'center',alignItems:'center',height:40,color:C.accent}}>
               <div style={{
-                width:18,height:18,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.red,
+                width:18,height:18,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,
                 animation: isRefreshing ? 'spin 0.7s linear infinite' : 'none',
                 transform: !isRefreshing ? `rotate(${Math.min(pullDistance*3.6,360)}deg)` : undefined,
               }}/>
@@ -3068,7 +3070,7 @@ export default function Platform() {
           if (brief) {
             setAllBriefs(prev => [...prev, brief]);
             setBriefs(prev => ({...prev, [creativesTarget.id]: brief}));
-            notify(`📦 Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
+            notify(`Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
 
             // ── Envoyer le ticket vers Factory (avec wake-up Render) ──
             const p = creativesTarget;
