@@ -2458,27 +2458,38 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
       </div>
 
       {/* ── Toggle Mensuel / Annuel ── */}
-      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
-        <span style={{fontSize:13,fontWeight:600,color:!annual?C.text:C.sec}}>Mensuel</span>
-        <button
-          onClick={() => setAnnual(a => !a)}
-          style={{width:44,height:24,borderRadius:99,border:'none',cursor:'pointer',position:'relative',background:annual?C.accent:'rgba(255,255,255,0.15)',transition:'background 0.2s',flexShrink:0}}
-        >
-          <div style={{position:'absolute',top:2,left:annual?22:2,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
-        </button>
-        <span style={{fontSize:13,fontWeight:600,color:annual?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
-          Annuel
-          <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-25%</span>
-        </span>
+      <div style={{display:'flex',flexDirection:'column',alignItems:isMobile?'center':'flex-start',marginBottom:24}}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <span style={{fontSize:13,fontWeight:600,color:!annual?C.text:C.sec}}>Mensuel</span>
+          <button
+            onClick={() => setAnnual(a => !a)}
+            style={{width:44,height:24,borderRadius:99,border:'none',cursor:'pointer',position:'relative',background:annual?C.accent:'rgba(255,255,255,0.15)',transition:'background 0.2s',flexShrink:0}}
+          >
+            <div style={{position:'absolute',top:2,left:annual?22:2,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
+          </button>
+          <span style={{fontSize:13,fontWeight:600,color:annual?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
+            Annuel
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-25%</span>
+          </span>
+        </div>
+        <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
+          Facturation au choix — paie mensuellement ou une fois par an. <strong style={{color:C.accent}}>L'annuel te fait économiser jusqu'à 25%.</strong>
+        </p>
       </div>
 
       {/* ── Plan cards ── */}
       <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20}}>
         {PLANS.map(p => {
-          const isCurrent = userPlan === p.id;
+          const selectedCycle = annual ? 'annual' : 'monthly';
+          const sameTier = userPlan === p.id;
+          // Abonnements créés avant l'ajout du cycle annuel → toujours mensuel historiquement
+          const currentCycle = subscription?.cycle || 'monthly';
+          const isCurrent = sameTier && currentCycle === selectedCycle;
+          const isCycleUpsell = sameTier && currentCycle !== selectedCycle && selectedCycle === 'annual';   // même palier, passer à l'annuel
+          const isCycleDowngradeCycle = sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
           const PLAN_ORDER = { starter:1, pro:2, scale:3 };
-          const isDowngrade = userPlan && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
-          const isUpgrade = userPlan && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
+          const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
+          const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           const cycleData = annual ? p.annual : p.monthly;
           const features = [
             `${p.imagesPerWeek} Images Publicitaires Livrées / Semaine`,
@@ -2543,28 +2554,32 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {/* CTA Button */}
               <button
                 onClick={() => !isCurrent && onCta(p)}
-                className={(isCurrent || isDowngrade) ? '' : 'cta-btn-active'}
+                className={(isCurrent || isDowngrade || isCycleDowngradeCycle) ? '' : 'cta-btn-active'}
                 style={{
                   width:'100%', padding:'12px', borderRadius:9, fontFamily:'inherit',
-                  border: isDowngrade ? `1px solid ${C.borderM}` : 'none', cursor: isCurrent ? 'default' : 'pointer',
+                  border: (isDowngrade || isCycleDowngradeCycle) ? `1px solid ${C.borderM}` : 'none', cursor: isCurrent ? 'default' : 'pointer',
                   fontWeight:700, fontSize:13, transition:'all 0.2s',
                   display:'flex', alignItems:'center', justifyContent:'center', gap:6,
                   background: isCurrent
                     ? 'rgba(255,255,255,0.07)'
-                    : isDowngrade
+                    : (isDowngrade || isCycleDowngradeCycle)
                       ? 'transparent'
                       : 'linear-gradient(135deg,#5B8DEF,#0B3D91)',
-                  color: isCurrent ? C.sec : isDowngrade ? C.sec : '#fff',
-                  boxShadow: (isCurrent || isDowngrade) ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
+                  color: isCurrent ? C.sec : (isDowngrade || isCycleDowngradeCycle) ? C.sec : '#fff',
+                  boxShadow: (isCurrent || isDowngrade || isCycleDowngradeCycle) ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
                 }}
               >
                 {isCurrent
                   ? (<><Icon name="check" size={13} color={C.sec}/> Abonnement actuel</>)
-                  : isDowngrade
-                    ? (<>Downgrade <Icon name="arrow" size={13} color="#fff"/></>)
-                    : isUpgrade
-                      ? (<>Upgrade <Icon name="arrow" size={13} color="#fff"/></>)
-                      : (<>Commencer maintenant <Icon name="arrow" size={13} color="#fff"/></>)
+                  : isCycleUpsell
+                    ? (<>Passer à l'annuel <Icon name="arrow" size={13} color="#fff"/></>)
+                    : isCycleDowngradeCycle
+                      ? (<>Repasser au mensuel</>)
+                      : isDowngrade
+                        ? (<>Downgrade <Icon name="arrow" size={13} color="#fff"/></>)
+                        : isUpgrade
+                          ? (<>Upgrade <Icon name="arrow" size={13} color="#fff"/></>)
+                          : (<>Commencer maintenant <Icon name="arrow" size={13} color="#fff"/></>)
                 }
               </button>
 
