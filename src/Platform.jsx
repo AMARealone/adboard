@@ -2274,68 +2274,53 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
 
 const PLANS = [
   {
-    id:'starter', name:'Conversion Starter',
-    price:39900, priceBarre:60000, prixImg:1108, discount:33,
-    color:C.gray, best:false, current:false,
-    checkout:'https://ecomaster.mychariow.shop/prd_ljowq8/checkout',
-    features:[
-      '9 Images Publicitaires Livrées / Semaine',
-      '1 Produit / Semaine',
-      'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
-      'Titres et Descriptions à mettre dans la Campagne',
-      'Assistant IA dispo 7j/7',
-      'Livraison en 48h chaque semaine',
-    ],
+    id:'starter', name:'Conversion Starter', color:C.gray, best:false,
+    imagesPerWeek: 9, produitsPerWeek: '1',
+    monthly: { price:39900, priceBarre:60000, prixImg:1108, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    annual:  { price:29900, priceBarre:39900, prixImg:830,  delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
-    id:'pro', name:'Conversion Pro',
-    price:79900, priceBarre:120000, prixImg:1108, discount:33,
-    color:C.accent, best:true, current:false,
-    checkout:'https://ecomaster.mychariow.shop/prd_34w031/checkout',
-    features:[
-      '18 Images Publicitaires Livrées / Semaine',
-      '1 à 2 Produits / Semaine',
-      'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
-      'Titres et Descriptions à mettre dans la Campagne',
-      'Assistant IA dispo 7j/7',
-      'Livraison en 48h chaque semaine',
-    ],
+    id:'pro', name:'Conversion Pro', color:C.accent, best:true,
+    imagesPerWeek: 18, produitsPerWeek: '1 à 2',
+    monthly: { price:69900, priceBarre:120000, prixImg:970, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    annual:  { price:54900, priceBarre:69900,  prixImg:762, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
-    id:'scale', name:'Conversion Scale',
-    price:99900, priceBarre:240000, prixImg:694, discount:58,
-    color:C.white, best:false, current:false,
-    checkout:'https://ecomaster.mychariow.shop/prd_9fi79y/checkout',
-    features:[
-      '36 Images Publicitaires Livrées / Semaine',
-      '1 à 4 Produits / Semaine',
-      'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
-      'Titres et Descriptions à mettre dans la Campagne',
-      'Assistant IA dispo 7j/7',
-      'Livraison en 48h chaque semaine',
-    ],
+    id:'scale', name:'Conversion Scale', color:C.white, best:false,
+    imagesPerWeek: 36, produitsPerWeek: '1 à 4',
+    monthly: { price:109900, priceBarre:240000, prixImg:763, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    annual:  { price:79900,  priceBarre:109900, prixImg:554, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
-const triggerChariowCheckout = async (plan, user, popup) => {
+const PLAN_CHECKOUT_IDS = {
+  'starter-monthly': 'prd_ljowq8',   'starter-annual': 'prd_wdya3v9h',
+  'pro-monthly':     'prd_34w031',   'pro-annual':     'prd_lnp4ax0b',
+  'scale-monthly':   'prd_9fi79y',   'scale-annual':   'prd_dn4fb72l',
+};
+
+const triggerChariowCheckout = async (plan, cycle, user, popup) => {
+  const cycleData = plan[cycle];
+  const checkoutUrl = cycleData.checkout;
   try {
     const r = await fetch('https://adstack-server.onrender.com/create-checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        product_id: plan.id === 'starter' ? 'prd_ljowq8' : plan.id === 'pro' ? 'prd_34w031' : 'prd_9fi79y',
+        product_id: PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`],
         email: user.email,
         user_id: user.id,
-        plan: plan.id
+        plan: plan.id,
+        cycle,
       })
     });
     const data = await r.json();
-    const url = data.checkout_url || plan.checkout;
+    const url = data.checkout_url || checkoutUrl;
     if (popup === window) { window.location.href = url; }
     else { popup.location.href = url; }
   } catch(e) {
-    if (popup === window) { window.location.href = plan.checkout; }
-    else { popup.location.href = plan.checkout; }
+    if (popup === window) { window.location.href = checkoutUrl; }
+    else { popup.location.href = checkoutUrl; }
   }
 };
 
@@ -2410,17 +2395,20 @@ const Faq = () => {
 
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null}) => {
   const isMobile = useIsMobile();
+  const [annual, setAnnual] = useState(true); // activé par défaut sur annuel
   const onCta = async (plan) => {
-    try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: plan.price, currency: 'XOF' }); } catch(e) {}
+    const cycle = annual ? 'annual' : 'monthly';
+    const cycleData = plan[cycle];
+    try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
     const user = sbAuth.getUser();
     if (!user) {
-      localStorage.setItem('adstack_pending_plan', JSON.stringify(plan));
+      localStorage.setItem('adstack_pending_plan', JSON.stringify({ ...plan, cycle }));
       sbAuth.signInWithGoogle();
       return;
     }
     // Ouvrir une fenêtre AVANT l'appel async (sinon bloqué sur mobile)
     const popup = window.open('', '_blank') || window;
-    triggerChariowCheckout(plan, user, popup);
+    triggerChariowCheckout(plan, cycle, user, popup);
   };
   const userPlan = subscription?.plan;
 
@@ -2469,6 +2457,21 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         </p>
       </div>
 
+      {/* ── Toggle Mensuel / Annuel ── */}
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
+        <span style={{fontSize:13,fontWeight:600,color:!annual?C.text:C.sec}}>Mensuel</span>
+        <button
+          onClick={() => setAnnual(a => !a)}
+          style={{width:44,height:24,borderRadius:99,border:'none',cursor:'pointer',position:'relative',background:annual?C.accent:'rgba(255,255,255,0.15)',transition:'background 0.2s',flexShrink:0}}
+        >
+          <div style={{position:'absolute',top:2,left:annual?22:2,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
+        </button>
+        <span style={{fontSize:13,fontWeight:600,color:annual?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
+          Annuel
+          <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-25%</span>
+        </span>
+      </div>
+
       {/* ── Plan cards ── */}
       <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20}}>
         {PLANS.map(p => {
@@ -2476,6 +2479,15 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const PLAN_ORDER = { starter:1, pro:2, scale:3 };
           const isDowngrade = userPlan && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
+          const cycleData = annual ? p.annual : p.monthly;
+          const features = [
+            `${p.imagesPerWeek} Images Publicitaires Livrées / Semaine`,
+            `${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''} / Semaine`,
+            'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
+            'Titres et Descriptions à mettre dans la Campagne',
+            'Assistant IA dispo 7j/7',
+            `Livraison en ${cycleData.delivery} chaque semaine`,
+          ];
           return (
             <div key={p.id}
               style={{
@@ -2504,23 +2516,23 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:isCurrent||p.best?8:0,marginBottom:10,letterSpacing:'0.3px'}}>{p.name}</div>
 
               <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
-                {convertPrice(p.priceBarre)}
+                {convertPrice(cycleData.priceBarre)}
               </div>
 
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
-                <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(p.price)}</span>
+                <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 <span style={{fontSize:11,color:C.sec}}>/ mois</span>
               </div>
 
               <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',background:`${p.color}18`,border:`1px solid ${p.color}38`}}>
-                <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{convertPrice(p.prixImg)}</span>
+                <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{convertPrice(cycleData.prixImg)}</span>
                 <span style={{fontSize:10,color:C.sec}}>/ image</span>
               </div>
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
 
               <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:10}}>
-                {p.features.map((f,j) => (
+                {features.map((f,j) => (
                   <div key={j} style={{display:'flex',alignItems:'flex-start',gap:9}}>
                     <span style={{flexShrink:0,marginTop:1,color:p.color}}><Icon name="check" size={13}/></span>
                     <div style={{fontSize:12,color:C.sec,lineHeight:1.4}}>{f}</div>
@@ -2821,7 +2833,7 @@ export default function Platform() {
           localStorage.removeItem('adstack_pending_plan');
           const pendingPlan = JSON.parse(pendingRaw);
           setSection('tarifs');
-          setTimeout(() => triggerChariowCheckout(pendingPlan, u, window), 400);
+          setTimeout(() => triggerChariowCheckout(pendingPlan, pendingPlan.cycle || 'annual', u, window), 400);
         }
       } catch(e) {}
       // Rafraîchir le token avant de charger les données
