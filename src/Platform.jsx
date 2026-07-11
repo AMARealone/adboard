@@ -2885,7 +2885,23 @@ export default function Platform() {
   const [showLogin, setShowLogin] = useState(false);
   const [loginAutoPrompt, setLoginAutoPrompt] = useState(false);
 
-  // ── Auto-prompt connexion Google après 60s (nouveau visiteur non connecté) ──
+  // ── Incitation "Ajouter à l'écran d'accueil" (iOS uniquement, pré-requis pour que les notifs push marchent sur iPhone) ──
+  const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  useEffect(() => {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    if (!isIOS || isStandalone) return;
+    try {
+      if (localStorage.getItem('adstack_ios_prompted')) return;
+    } catch(e) {}
+    const t = setTimeout(() => {
+      setShowIOSPrompt(true);
+      try { localStorage.setItem('adstack_ios_prompted', '1'); } catch(e) {}
+    }, 30000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // ── Auto-prompt connexion Google après 40s (nouveau visiteur non connecté) ──
   useEffect(() => {
     if (user) return;
     try {
@@ -2897,22 +2913,22 @@ export default function Platform() {
         setShowLogin(true);
         try { localStorage.setItem('adstack_login_prompted', '1'); } catch(e) {}
       }
-    }, 60000);
+    }, 40000);
     return () => clearTimeout(t);
   }, [user]);
 
-  // ── Auto-prompt notifications push après 2min (connecté, jamais sollicité, plateforme compatible) ──
+  // ── Auto-prompt notifications push après 70s (1x par visite tant que pas décidé — jamais plus, pour éviter que Chrome bloque le popup si trop sollicité) ──
   useEffect(() => {
     try {
-      if (localStorage.getItem('adstack_push_prompted')) return;
+      if (sessionStorage.getItem('adstack_push_prompted')) return;
     } catch(e) {}
     const t = setTimeout(async () => {
-      try { localStorage.setItem('adstack_push_prompted', '1'); } catch(e) {}
+      try { sessionStorage.setItem('adstack_push_prompted', '1'); } catch(e) {}
       const status = await getPushStatus();
       if (status === 'default') {
         await registerPushSubscription(user?.id);
       }
-    }, 120000);
+    }, 70000);
     return () => clearTimeout(t);
   }, [user]);
 
@@ -3244,6 +3260,23 @@ export default function Platform() {
     </div>
     <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} onOpenPayment={(productId)=>setPaymentProductId(productId)} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C} autoPrompt={loginAutoPrompt}/>}
+    {showIOSPrompt && (
+      <div style={{position:'fixed',left:12,right:12,bottom:12,zIndex:550,maxWidth:420,margin:'0 auto',borderRadius:14,background:'#12151C',border:'1px solid rgba(255,255,255,0.14)',padding:'14px 16px',boxShadow:'0 12px 40px rgba(0,0,0,0.5)',display:'flex',alignItems:'center',gap:12,animation:'toastIn .3s cubic-bezier(.34,1.56,.64,1)'}}>
+        <div style={{width:36,height:36,borderRadius:10,background:'rgba(91,141,239,0.14)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon name="bell" size={17} color="#5B8DEF"/>
+        </div>
+        <div style={{flex:1,fontSize:12,color:'#E8EAF0',lineHeight:1.5}}>
+          Ajoute AdBoard à ton écran d'accueil pour recevoir tes notifications (visuels prêts, suivi de commande...).
+          <div style={{marginTop:4,color:'#8891A0',fontSize:11}}>
+            Appuie sur <strong>Partager</strong> <span style={{fontSize:13}}>⎋</span> puis <strong>"Sur l'écran d'accueil"</strong>.
+          </div>
+        </div>
+        <button onClick={()=>setShowIOSPrompt(false)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(255,255,255,0.08)',color:'#8891A0',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon name="x" size={12} color="#8891A0"/>
+        </button>
+      </div>
+    )}
+
     {paymentProductId && (
       <PaymentModal productId={paymentProductId} userEmail={user?.email} onClose={()=>setPaymentProductId(null)}/>
     )}
