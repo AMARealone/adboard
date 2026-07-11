@@ -410,7 +410,8 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
             <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => {
-              if (onOpenPayment) { onOpenPayment(PLAN_CHECKOUT_IDS[`${nextPlan.id}-monthly`]); return; }
+              const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-monthly`];
+              if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
               const popup = window.open('', '_blank') || window;
               popup.location.href = cycleData.checkout;
             }}
@@ -676,7 +677,7 @@ const PLAN_LABELS = { starter: 'Starter', pro: 'Pro', scale: 'Scale' };
 const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
 
 // ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
-const PaymentModal = ({ productId, onClose }) => {
+const PaymentModal = ({ productId, userEmail, onClose }) => {
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -701,6 +702,8 @@ const PaymentModal = ({ productId, onClose }) => {
 
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      {/* Anti-zoom iOS : un champ avec une police < 16px déclenche un zoom auto au focus sur Safari mobile */}
+      <style>{`#chariow-widget input, #chariow-widget textarea, #chariow-widget select { font-size:16px !important; }`}</style>
       <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:460,maxHeight:'90vh',overflow:'auto',borderRadius:16,background:'#fff',padding:'20px',position:'relative'}}>
         <button onClick={onClose} style={{position:'absolute',top:12,right:12,width:30,height:30,borderRadius:8,border:'none',background:'rgba(0,0,0,0.06)',color:'#333',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
           <Icon name="x" size={14} color="#333"/>
@@ -717,6 +720,7 @@ const PaymentModal = ({ productId, onClose }) => {
           data-cta-animation="none"
           data-locale="fr"
           data-background-color="#FFFFFF"
+          data-email={userEmail || undefined}
         />
       </div>
     </div>
@@ -2091,7 +2095,7 @@ const Marche = ({products, isDemo, setSection}) => {
 };
 
 
-const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], briefs={}, section='', setSection, openProductForm, priceCtx={currency:'XOF',rate:1}}) => {
+const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], briefs={}, section='', setSection, openProductForm, priceCtx={currency:'XOF',rate:1}, onOpenPayment}) => {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [showNudge, setShowNudge] = useState(true); // petit badge rouge incitatif, tant que le chat n'a jamais été ouvert
@@ -2186,13 +2190,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     if (type === 'openProductForm') { setSection('produits'); setOpen(false); setTimeout(() => openProductForm?.(), 200); }
     if (type === 'login') { sbAuth.signInWithGoogle(); }
     if (type === 'checkout') {
-      const urls = {
-        starter: 'https://ecomaster.mychariow.shop/prd_ljowq8/checkout',
-        pro: 'https://ecomaster.mychariow.shop/prd_34w031/checkout',
-        scale: 'https://ecomaster.mychariow.shop/prd_9fi79y/checkout',
-      };
-      const url = urls[parts[1]];
-      if (url) window.open(url, '_blank');
+      const cycle = 'monthly';
+      const productId = PLAN_CHECKOUT_IDS[`${parts[1]}-${cycle}`];
+      if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
   };
 
@@ -2364,6 +2364,18 @@ const PLAN_CHECKOUT_IDS = {
   'scale-monthly':   'prd_9fi79y',   'scale-annual':   'prd_dn4fb72l',
 };
 
+// Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
+// Vérifie la connexion Google, mémorise l'intention si pas connecté, reprend automatiquement après connexion.
+const startCheckout = (productId, setPaymentProductId) => {
+  const user = sbAuth.getUser();
+  if (!user) {
+    localStorage.setItem('adstack_pending_checkout', productId);
+    sbAuth.signInWithGoogle();
+    return;
+  }
+  setPaymentProductId(productId);
+};
+
 const triggerChariowCheckout = async (plan, cycle, user, popup) => {
   const cycleData = plan[cycle];
   const checkoutUrl = cycleData.checkout;
@@ -2465,15 +2477,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
     const cycle = annual ? 'annual' : 'monthly';
     const cycleData = plan[cycle];
     try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
-    const user = sbAuth.getUser();
-    if (!user) {
-      localStorage.setItem('adstack_pending_plan', JSON.stringify({ ...plan, cycle }));
-      sbAuth.signInWithGoogle();
-      return;
-    }
     const productId = PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`];
-    if (onOpenPayment && productId) { onOpenPayment(productId); return; }
+    if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
     // Filet de sécurité si jamais le produit n'est pas reconnu : ouvrir le checkout classique
+    const user = sbAuth.getUser();
+    if (!user) { localStorage.setItem('adstack_pending_plan', JSON.stringify({ ...plan, cycle })); sbAuth.signInWithGoogle(); return; }
     const popup = window.open('', '_blank') || window;
     triggerChariowCheckout(plan, cycle, user, popup);
   };
@@ -2911,17 +2919,25 @@ export default function Platform() {
     if (u) {
       // Reprise automatique du checkout si l'utilisateur vient de se connecter pour payer
       try {
-        const pendingRaw = localStorage.getItem('adstack_pending_plan');
-        if (pendingRaw) {
-          localStorage.removeItem('adstack_pending_plan');
-          const pendingPlan = JSON.parse(pendingRaw);
-          const pendingCycle = pendingPlan.cycle || 'annual';
+        const pendingProductId = localStorage.getItem('adstack_pending_checkout');
+        if (pendingProductId) {
+          localStorage.removeItem('adstack_pending_checkout');
           setSection('tarifs');
-          const productId = PLAN_CHECKOUT_IDS[`${pendingPlan.id}-${pendingCycle}`];
-          setTimeout(() => {
-            if (productId) setPaymentProductId(productId);
-            else triggerChariowCheckout(pendingPlan, pendingCycle, u, window);
-          }, 400);
+          setTimeout(() => setPaymentProductId(pendingProductId), 400);
+        } else {
+          // Ancienne clé (avant unification du flux de paiement) — compatibilité pendant la transition
+          const pendingRaw = localStorage.getItem('adstack_pending_plan');
+          if (pendingRaw) {
+            localStorage.removeItem('adstack_pending_plan');
+            const pendingPlan = JSON.parse(pendingRaw);
+            const pendingCycle = pendingPlan.cycle || 'annual';
+            setSection('tarifs');
+            const productId = PLAN_CHECKOUT_IDS[`${pendingPlan.id}-${pendingCycle}`];
+            setTimeout(() => {
+              if (productId) setPaymentProductId(productId);
+              else triggerChariowCheckout(pendingPlan, pendingCycle, u, window);
+            }, 400);
+          }
         }
       } catch(e) {}
       // Rafraîchir le token avant de charger les données
@@ -3166,10 +3182,10 @@ export default function Platform() {
         </main>
       </div>
     </div>
-    <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} />
+    <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} onOpenPayment={(productId)=>setPaymentProductId(productId)} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C} autoPrompt={loginAutoPrompt}/>}
     {paymentProductId && (
-      <PaymentModal productId={paymentProductId} onClose={()=>setPaymentProductId(null)}/>
+      <PaymentModal productId={paymentProductId} userEmail={user?.email} onClose={()=>setPaymentProductId(null)}/>
     )}
 
     {reAskConfirm && (
