@@ -403,7 +403,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         const nextPlanId = !subscription?.active ? 'starter' : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
-        const cycleData = nextPlan.annual; // on pousse l'annuel, cohérent avec Nos Tarifs
+        const cycleData = nextPlan.monthly;
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
