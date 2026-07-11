@@ -264,7 +264,7 @@ const LockOverlay = () => (
   </div>
 );
 
-const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null}) => {
+const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0}) => {
   const showCollapsed = collapsed && !isMobile;
 
   const navClick = (id) => {
@@ -378,11 +378,19 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
                 {unreadCount>9?'9+':unreadCount}
               </span>
             )}
+            {n.id==='suivi' && activeBriefsCount>0 && (showCollapsed || (isMobile && !mobileOpen)) && (
+              <span style={{position:'absolute',top:-3,right:-3,width:8,height:8,borderRadius:'50%',background:'#22C55E',boxShadow:'0 0 6px #22C55E'}}/>
+            )}
           </div>
           {!(showCollapsed || (isMobile && !mobileOpen)) && <span style={{flex:1}}>{n.label}</span>}
           {!(showCollapsed || (isMobile && !mobileOpen)) && n.id==='notifications' && unreadCount>0 && (
             <span style={{background:'#E55050',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:9,fontWeight:900,minWidth:16,textAlign:'center',marginLeft:'auto'}}>
               {unreadCount>9?'9+':unreadCount}
+            </span>
+          )}
+          {!(showCollapsed || (isMobile && !mobileOpen)) && n.id==='suivi' && activeBriefsCount>0 && (
+            <span style={{display:'flex',alignItems:'center',gap:4,background:'rgba(34,197,94,0.14)',border:'1px solid rgba(34,197,94,0.35)',color:'#22C55E',borderRadius:20,padding:'2px 8px',fontSize:9,fontWeight:800,marginLeft:'auto',letterSpacing:'0.3px',boxShadow:'0 0 8px rgba(34,197,94,0.25)'}}>
+              <span style={{width:5,height:5,borderRadius:'50%',background:'#22C55E'}}/> EN COURS
             </span>
           )}
         </button>
@@ -394,17 +402,19 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
       {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
-        const nextPlan = !subscription?.active
-          ? { name:'Conversion Starter', desc:'9 images / semaine · Données marché', price:39900 }
-          : subscription.plan === 'starter'
-          ? { name:'Conversion Pro', desc:'18 images / semaine · 2 produits', price:79900 }
-          : { name:'Conversion Scale', desc:'36 images / semaine · 4 produits', price:99900 };
+        const nextPlanId = !subscription?.active ? 'starter' : subscription.plan === 'starter' ? 'pro' : 'scale';
+        const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
+        if (!nextPlan) return null;
+        const cycleData = nextPlan.annual; // on pousse l'annuel, cohérent avec Nos Tarifs
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
-            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.desc}</div>
-            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(nextPlan.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
-            <button onClick={() => set('tarifs')}
+            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
+            <button onClick={() => {
+              const popup = window.open('', '_blank') || window;
+              popup.location.href = cycleData.checkout;
+            }}
               style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
               {subscription?.active ? 'Upgrader' : 'Commencer'} <Icon name="arrow" size={11} color="#fff"/>
             </button>
@@ -613,16 +623,21 @@ const sbSub = {
 
 // Calcule les images publicitaires disponibles dynamiquement
 function computeCredits(sub, allBriefs) {
-  if (!sub || !sub.active) return { total: 0, used: 0, available: 0 };
+  if (!sub || !sub.active) return { total: 0, used: 0, available: 0, nextCreditDate: null };
   const started = new Date(sub.started_at);
   const now = new Date();
-  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-  const weeksActive = Math.floor((now - started) / msPerWeek) + 1;
+  // Rechargement à minuit (jour civil), pas à l'heure exacte de l'abonnement — plus prévisible pour l'utilisateur
+  const startedMidnight = new Date(started.getFullYear(), started.getMonth(), started.getDate());
+  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysElapsed = Math.floor((nowMidnight - startedMidnight) / msPerDay);
+  const weeksActive = Math.floor(daysElapsed / 7) + 1;
   const total = weeksActive * sub.credits_per_week;
   const used = allBriefs
     .filter(b => b.status !== 'cancelled')
     .reduce((sum, b) => sum + (b.credits_used || 9), 0);
-  return { total, used, available: Math.max(0, total - used) };
+  const nextCreditDate = new Date(startedMidnight.getTime() + weeksActive * 7 * msPerDay);
+  return { total, used, available: Math.max(0, total - used), nextCreditDate };
 }
 
 // ── Supabase Subscription & Credits ───────────────────────────────────────
@@ -1087,37 +1102,27 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
 
 const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, C}) => {
   const brief = briefs[p.id];
-  const CANCEL_WINDOW = 12 * 60 * 60 * 1000;
-  const canCancel = brief && brief.status==="pending" && (Date.now() - new Date(brief.created_at).getTime()) < CANCEL_WINDOW;
-  const inProd = brief && (brief.status==="in_production" || (brief.status==="pending" && !canCancel));
+  const hasActiveBrief = brief && brief.status !== 'cancelled' && brief.status !== 'done';
   const credits = computeCredits(subscription, allBriefs);
-  const nextCreditDate = (() => {
-    if (!subscription?.started_at) return null;
-    const started = new Date(subscription.started_at);
-    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-    const weeksActive = Math.floor((Date.now() - started.getTime()) / msPerWeek) + 1;
-    const next = new Date(started.getTime() + weeksActive * msPerWeek);
-    return next.toLocaleDateString('fr-FR', { day:'numeric', month:'long' });
-  })();
-  if (canCancel) return (
-    <button onClick={() => cancelCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:"1px solid rgba(229,80,80,0.5)",background:"linear-gradient(135deg,rgba(229,80,80,0.15),rgba(229,80,80,0.05))",color:"#E55050",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:"0 0 12px rgba(229,80,80,0.2)",transition:"all 0.2s"}}>
-      <Icon name="x" size={13} color="#E55050"/> Annuler la demande
-    </button>
-  );
-  if (inProd) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.sec,fontWeight:600,fontSize:11,textAlign:"center"}}>
-      <Icon name="clock" size={13} color={C.sec}/> En production · livraison sous 36h
-    </div>
-  );
+  const nextCreditDate = credits.nextCreditDate
+    ? credits.nextCreditDate.toLocaleDateString('fr-FR', { day:'numeric', month:'long' })
+    : null;
   if (subscription?.active && credits.available < 9) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
       <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochain crédit le ${nextCreditDate}` : 'Crédits épuisés cette semaine'}
     </div>
   );
   return (
-    <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
-      <Icon name="sparkle" size={13} color="#fff"/> Demander mes images
-    </button>
+    <div style={{display:'flex',flexDirection:'column',gap:6}}>
+      {hasActiveBrief && (
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,fontSize:10.5,color:C.sec}}>
+          <Icon name="check" size={11} color="#22C55E"/> Demande déjà envoyée pour ce produit
+        </div>
+      )}
+      <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
+        <Icon name="sparkle" size={13} color="#fff"/> Demander mes images
+      </button>
+    </div>
   );
 };
 
@@ -1213,14 +1218,9 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
 const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}, setSection}) => {
   // Recalculer les crédits en temps réel depuis allBriefs
   const credits = computeCredits(subscription, allBriefs);
-  const nextCreditDate = (() => {
-    if (!subscription?.started_at) return null;
-    const started = new Date(subscription.started_at);
-    const msPerWeek = 7 * 24 * 60 * 60 * 1000;
-    const weeksActive = Math.floor((Date.now() - started.getTime()) / msPerWeek) + 1;
-    const next = new Date(started.getTime() + weeksActive * msPerWeek);
-    return next.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' });
-  })();
+  const nextCreditDate = credits.nextCreditDate
+    ? credits.nextCreditDate.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long' })
+    : null;
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [requestModal, setRequestModal] = useState(null); // { product }
@@ -2275,18 +2275,21 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
 const PLANS = [
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
+    tagline:'Pour faire multiplier les ventes de votre produit, sans rechute.',
     imagesPerWeek: 9, produitsPerWeek: '1',
     monthly: { price:39900, priceBarre:60000, prixImg:1108, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
     annual:  { price:29900, priceBarre:39900, prixImg:830,  delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
+    tagline:'Pour dominer votre marché et positionner votre marque comme référence.',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
     monthly: { price:69900, priceBarre:120000, prixImg:970, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
     annual:  { price:54900, priceBarre:69900,  prixImg:762, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
+    tagline:'Pour exploiter plusieurs marchés en simultané et amener vos revenus à un autre niveau.',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
     monthly: { price:109900, priceBarre:240000, prixImg:763, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
     annual:  { price:79900,  priceBarre:109900, prixImg:554, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
@@ -2524,7 +2527,8 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 </div>
               )}
 
-              <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:isCurrent||p.best?8:0,marginBottom:10,letterSpacing:'0.3px'}}>{p.name}</div>
+              <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:isCurrent||p.best?8:0,marginBottom:4,letterSpacing:'0.3px'}}>{p.name}</div>
+              <div style={{fontSize:11,color:C.sec,lineHeight:1.4,marginBottom:10,minHeight:28}}>{p.tagline}</div>
 
               <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
                 {convertPrice(cycleData.priceBarre)}
@@ -2832,6 +2836,7 @@ export default function Platform() {
   const [allBriefs, setAllBriefs] = useState([]); // tous les briefs pour calcul crédits
   const [subscription, setSubscription] = useState(null);
   const [creativesTarget, setCreativesTarget] = useState(null);
+  const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
 
   useEffect(() => {
     if (window.location.hash.includes('access_token')) {
@@ -3011,16 +3016,26 @@ export default function Platform() {
     produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
+            // Limite anti-abus : max 36 images / 4 demandes par fenêtre glissante de 24h (tous produits confondus)
+            const now = Date.now();
+            const WIN_24H = 24*60*60*1000;
+            const recentBriefs = allBriefs.filter(b => b.status !== 'cancelled' && (now - new Date(b.created_at).getTime()) < WIN_24H);
+            const recentImages = recentBriefs.reduce((sum,b) => sum + (b.quantity || b.credits_used || 9), 0);
+            if (recentBriefs.length >= 4 || recentImages >= 36) {
+              const oldest = recentBriefs.reduce((o,b) => !o || new Date(b.created_at) < new Date(o.created_at) ? b : o, null);
+              const freeAt = oldest ? new Date(new Date(oldest.created_at).getTime() + WIN_24H) : null;
+              const freeAtStr = freeAt ? freeAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) + ' le ' + freeAt.toLocaleDateString('fr-FR', { day:'numeric', month:'long' }) : 'plus tard';
+              notify(`Limite atteinte : maximum 36 images (4 demandes) par 24h. Réessayez après ${freeAtStr}.`, 'info');
+              return;
+            }
             // Anti-doublon : brief actif existant ?
             const existing = briefs[p.id];
             const CANCEL_WIN = 12*60*60*1000;
             const isActive = existing && existing.status !== 'cancelled' && existing.status !== 'done';
             if(isActive){
               const canCancel = existing.status==='pending' && (Date.now()-new Date(existing.created_at).getTime()) < CANCEL_WIN;
-              const msg = canCancel
-                ? `Vous avez déjà une commande en cours pour "${p.nom}" (annulable). Souhaitez-vous ajouter une commande supplémentaire ?`
-                : `Vos visuels pour "${p.nom}" sont en production. Souhaitez-vous commander un batch supplémentaire ?`;
-              if(!window.confirm(msg)) return;
+              setReAskConfirm({ product: p, canCancel });
+              return;
             }
             setCreativesTarget(p); }}/>,
     galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
@@ -3047,7 +3062,7 @@ export default function Platform() {
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
-        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription}/>
+        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription} activeBriefsCount={allBriefs.filter(b=>b.status==='pending'||b.status==='in_production').length}/>
 
         {isMobile && mobileOpen && (
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
@@ -3085,6 +3100,26 @@ export default function Platform() {
     </div>
     <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C} autoPrompt={loginAutoPrompt}/>}
+    {reAskConfirm && (
+      <div onClick={()=>setReAskConfirm(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:380,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
+          <div style={{width:40,height:40,borderRadius:11,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14,color:C.accent}}>
+            <Icon name="sparkle" size={18} color={C.accent}/>
+          </div>
+          <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Nouvelle demande pour "{reAskConfirm.product.nom}" ?</h2>
+          <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:0}}>
+            {reAskConfirm.canCancel
+              ? 'Vous avez déjà une commande en cours pour ce produit. Voulez-vous en ajouter une supplémentaire ?'
+              : 'Vos visuels pour ce produit sont déjà en production. Voulez-vous commander un batch supplémentaire ?'}
+          </p>
+          <div style={{display:'flex',gap:8,marginTop:18}}>
+            <button onClick={()=>setReAskConfirm(null)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
+            <button onClick={()=>{ setCreativesTarget(reAskConfirm.product); setReAskConfirm(null); }} style={{flex:1,padding:'10px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Confirmer</button>
+          </div>
+        </div>
+      </div>
+    )}
+
     {creativesTarget && (
       <CreativesModal
         product={creativesTarget}
