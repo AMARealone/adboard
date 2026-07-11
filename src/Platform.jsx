@@ -78,6 +78,20 @@ const sbAuth = {
   getUser: () => {
     try { return JSON.parse(localStorage.getItem('sb_user') || 'null'); } catch(e){ return null; }
   },
+  // Mémorise la devise détectée sur le compte — pour que les emails automatiques (sans navigateur ouvert)
+  // sachent dans quelle devise s'adresser à la personne.
+  updateUserMetadata: async (data) => {
+    try {
+      const session = JSON.parse(localStorage.getItem('sb_session') || 'null');
+      if (!session?.access_token) return;
+      const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON },
+        body: JSON.stringify({ data })
+      });
+      if (r.ok) { const updated = await r.json(); localStorage.setItem('sb_user', JSON.stringify(updated)); }
+    } catch(e) {}
+  },
   // Rafraîchit le token si expiré, retourne une session valide
   refreshSession: async () => {
     try {
@@ -2995,14 +3009,19 @@ export default function Platform() {
       try {
         const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
         const currency = (geo.currency || 'XOF').toUpperCase();
-        if (currency === 'XOF') { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); return; }
+        const persistIfNeeded = (curr) => {
+          const u = sbAuth.getUser();
+          if (u && u.user_metadata?.currency !== curr) sbAuth.updateUserMetadata({ currency: curr });
+        };
+        if (currency === 'XOF') { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); persistIfNeeded('XOF'); return; }
         const rates = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json').then(r => r.json());
         const rate = rates.xof?.[currency.toLowerCase()];
-        if (!rate) { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); return; }
+        if (!rate) { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); persistIfNeeded('XOF'); return; }
         setPriceCtx({ currency, rate, ready: true });
+        persistIfNeeded(currency);
       } catch(e) { setPriceCtx({ currency: 'XOF', rate: 1, ready: true }); }
     })();
-  }, []);
+  }, [user]);
 
   const convertPrice = (fcfa) => {
     const { currency, rate, ready } = priceCtx;
