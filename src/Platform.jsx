@@ -154,8 +154,6 @@ const C = {
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
 
-const BRAND_SWATCHES = ['#1E3A8A','#DC2626','#EA580C','#CA8A04','#059669','#0891B2','#7C3AED','#DB2777','#000000','#78716C','#FFFFFF'];
-
 const PLAN_QUANTITY = { 'Conversion Starter':9, 'Conversion Pro':18, 'Conversion Scale':36 };
 
 const ANGLES = [];
@@ -1258,6 +1256,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     const req = ['nom','pricing','pays','photo'];
     const e = {};
     req.forEach(k => { if (!form[k]) e[k] = true; });
+    const nbCouleurs = [form.couleur1, form.couleur2, form.couleur3].filter(Boolean).length;
+    if (nbCouleurs === 1) e.couleurs = true;
     return e;
   };
 
@@ -1469,27 +1469,22 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <Field label="Utilité principale" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
                   <div>
                     <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque <span style={{fontWeight:400,opacity:.6}}>(pour vos visuels Meta Ads · optionnel)</span></label>
-                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>Choisissez jusqu'à 3 couleurs — utilisées dans vos créatives publicitaires</div>
-                    <div style={{display:'flex',gap:7,flexWrap:'wrap',alignItems:'center'}}>
-                      {BRAND_SWATCHES.map(sw => {
-                        const slots = [form.couleur1, form.couleur2, form.couleur3];
-                        const selectedIdx = slots.findIndex(c => c === sw);
-                        const isSelected = selectedIdx !== -1;
-                        const emptyIdx = slots.findIndex(c => !c);
-                        return (
-                          <button key={sw} type="button"
-                            onClick={() => {
-                              if (isSelected) { setForm(f=>({...f, [`couleur${selectedIdx+1}`]:''})); return; }
-                              if (emptyIdx === -1) return; // 3 déjà choisies
-                              setForm(f=>({...f, [`couleur${emptyIdx+1}`]:sw}));
-                            }}
-                            style={{width:26,height:26,borderRadius:'50%',background:sw,border:isSelected?`2px solid ${C.accent}`:'1.5px solid rgba(255,255,255,0.18)',cursor:'pointer',position:'relative',padding:0,boxShadow:isSelected?`0 0 0 2px ${C.card}, 0 0 0 3px ${C.accent}`:'none'}}
-                          >
-                            {isSelected && <span style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={11} color={sw==='#FFFFFF'?'#000':'#fff'}/></span>}
-                          </button>
-                        );
+                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>Si vous en ajoutez, minimum 2 couleurs, jusqu'à 3 — utilisées dans vos créatives publicitaires</div>
+                    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                      {[1,2,3].map(n => {
+                        const key = `couleur${n}`;
+                        return form[key]
+                          ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.09)'}}>
+                              <input type="color" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:28,height:28,borderRadius:5,border:'none',cursor:'pointer',padding:0,background:'none'}}/>
+                              <span style={{fontSize:10,color:C.sec,fontFamily:'monospace'}}>{form[key].toUpperCase()}</span>
+                              <button type="button" onClick={()=>setForm(f=>({...f,[key]:''}))} style={{width:14,height:14,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.15)',color:C.sec,fontSize:9,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={8} color={C.sec}/></button>
+                            </div>
+                          : <button key={n} type="button" onClick={()=>setForm(f=>({...f,[key]:'#1E3A8A'}))} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:7,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:11,fontFamily:'inherit'}}>
+                              <Icon name="plus" size={11} color={C.sec}/> Ajouter
+                            </button>;
                       })}
                     </div>
+                    {errors.couleurs && <div style={{fontSize:10.5,color:'#E55050',marginTop:6}}>Ajoutez au moins 2 couleurs, ou aucune.</div>}
                   </div>
                 </div>
               </div>
@@ -2050,6 +2045,7 @@ const Marche = ({products, isDemo, setSection}) => {
 const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], briefs={}, section='', setSection, openProductForm, priceCtx={currency:'XOF',rate:1}}) => {
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [showNudge, setShowNudge] = useState(true); // petit badge rouge incitatif, tant que le chat n'a jamais été ouvert
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -2076,8 +2072,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       ? (hour < 12 ? 'Bonne matinée' : hour < 18 ? 'Bonne après-midi' : 'Bonsoir')
       : (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
     const welcome = language === 'fr'
-      ? `${greeting}${name ? ' ' + name : ''} ! 👋 Je suis **Amina**. Dis-moi — qu'est-ce qui t'amène aujourd'hui ?`
-      : `${greeting}${name ? ' ' + name : ''} ! 👋 I'm **Amina**. What brings you here today?`;
+      ? `${greeting}${name ? ' ' + name : ''} ! 👋 Je suis **Ava**. Dis-moi — qu'est-ce qui t'amène aujourd'hui ?`
+      : `${greeting}${name ? ' ' + name : ''} ! 👋 I'm **Ava**. What brings you here today?`;
     setTimeout(() => setMessages([{ role: 'model', content: welcome }]), 120);
   }, [open]);
 
@@ -2192,7 +2188,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
           <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
             <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#1FB6FF,#5B8DEF)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="sparkle" size={16} color="#fff"/></div>
             <div style={{flex:1}}>
-              <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Inter',sans-serif"}}>Amina</div>
+              <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Inter',sans-serif"}}>Ava</div>
               <div style={{fontSize:10,color:'#22C55E',fontWeight:600}}>● En ligne</div>
             </div>
             <button onClick={()=>setOpen(false)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.4)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={13} color="rgba(255,255,255,0.4)"/></button>
@@ -2255,18 +2251,28 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       )}
 
       {/* Floating button */}
-      <button onClick={()=>setOpen(o=>!o)} style={{
+      <button onClick={()=>{setOpen(o=>!o); setShowNudge(false);}} style={{
         position:'fixed', bottom:isMobile?16:20, right:isMobile?16:20,
-        width:52, height:52, borderRadius:'50%', border:'none',
-        background:'linear-gradient(135deg,#1FB6FF,#5B8DEF)',
+        width:56, height:56, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.12)',
+        background:'linear-gradient(145deg,#141C33,#0B0F1A)',
         color:'#fff', cursor:'pointer', zIndex:9999,
         display:open?'none':'flex', alignItems:'center', justifyContent:'center',
-        fontSize:22, boxShadow:'0 4px 20px rgba(45,127,249,0.55)',
-        animation:'aminaPulse 3s ease infinite', transition:'transform .2s',
+        boxShadow:'0 8px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
+        transition:'transform .2s',
       }}
       onMouseEnter={e=>e.currentTarget.style.transform='scale(1.08)'}
       onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-        <Icon name="sparkle" size={22} color="#fff"/>
+        <svg width="26" height="26" viewBox="0 0 100 100">
+          <g transform="translate(50,50)">
+            <path d="M -21 17 L -21 6 L -7.5 -12 L 6 4 L 21 -19 L 21 -8" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M 12 -19 L 21 -19 L 21 -10" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+          </g>
+        </svg>
+        {showNudge && (
+          <span style={{position:'absolute',top:-2,right:-2,width:20,height:20,borderRadius:'50%',background:'#E55050',color:'#fff',fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #0A0C11',boxShadow:'0 0 8px rgba(229,80,80,0.6)'}}>
+            1
+          </span>
+        )}
       </button>
     </>
   );
@@ -2557,24 +2563,22 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
 
               {/* CTA Button */}
               <button
-                onClick={() => !isCurrent && onCta(p)}
-                className={(isCurrent || isDowngrade || isCycleDowngradeCycle) ? '' : 'cta-btn-active'}
+                onClick={() => onCta(p)}
+                className={(isDowngrade || isCycleDowngradeCycle) ? '' : 'cta-btn-active'}
                 style={{
                   width:'100%', padding:'12px', borderRadius:9, fontFamily:'inherit',
-                  border: (isDowngrade || isCycleDowngradeCycle) ? `1px solid ${C.borderM}` : 'none', cursor: isCurrent ? 'default' : 'pointer',
+                  border: (isDowngrade || isCycleDowngradeCycle) ? `1px solid ${C.borderM}` : 'none', cursor: 'pointer',
                   fontWeight:700, fontSize:13, transition:'all 0.2s',
                   display:'flex', alignItems:'center', justifyContent:'center', gap:6,
-                  background: isCurrent
-                    ? 'rgba(255,255,255,0.07)'
-                    : (isDowngrade || isCycleDowngradeCycle)
-                      ? 'transparent'
-                      : 'linear-gradient(135deg,#5B8DEF,#0B3D91)',
-                  color: isCurrent ? C.sec : (isDowngrade || isCycleDowngradeCycle) ? C.sec : '#fff',
-                  boxShadow: (isCurrent || isDowngrade || isCycleDowngradeCycle) ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
+                  background: (isDowngrade || isCycleDowngradeCycle)
+                    ? 'transparent'
+                    : 'linear-gradient(135deg,#5B8DEF,#0B3D91)',
+                  color: (isDowngrade || isCycleDowngradeCycle) ? C.sec : '#fff',
+                  boxShadow: (isDowngrade || isCycleDowngradeCycle) ? 'none' : '0 4px 16px rgba(45,127,249,0.35)',
                 }}
               >
                 {isCurrent
-                  ? (<><Icon name="check" size={13} color={C.sec}/> Abonnement actuel</>)
+                  ? (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
                   : isCycleUpsell
                     ? (<>Passer à l'annuel <Icon name="arrow" size={13} color="#fff"/></>)
                     : isCycleDowngradeCycle
