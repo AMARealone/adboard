@@ -262,7 +262,7 @@ const LockOverlay = () => (
   </div>
 );
 
-const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0}) => {
+const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null}) => {
   const showCollapsed = collapsed && !isMobile;
 
   const navClick = (id) => {
@@ -410,6 +410,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
             <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => {
+              if (onOpenPayment) { onOpenPayment(PLAN_CHECKOUT_IDS[`${nextPlan.id}-monthly`]); return; }
               const popup = window.open('', '_blank') || window;
               popup.location.href = cycleData.checkout;
             }}
@@ -673,6 +674,54 @@ function calcCredits(subscription, briefs) {
 
 const PLAN_LABELS = { starter: 'Starter', pro: 'Pro', scale: 'Scale' };
 const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
+
+// ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
+const PaymentModal = ({ productId, onClose }) => {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!productId) return;
+    // On recharge le script à chaque ouverture pour garantir qu'il détecte
+    // bien le nouveau data-product-id (pas de doublon de script accumulé).
+    document.querySelectorAll('script[src*="chariowcdn"]').forEach(s => s.remove());
+    const script = document.createElement('script');
+    script.src = 'https://js.chariowcdn.com/v1/widget.min.js';
+    script.async = true;
+    document.head.appendChild(script);
+
+    if (!document.querySelector('link[href*="chariowcdn"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://js.chariowcdn.com/v1/widget.min.css';
+      document.head.appendChild(link);
+    }
+
+    return () => { script.remove(); };
+  }, [productId]);
+
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:460,maxHeight:'90vh',overflow:'auto',borderRadius:16,background:'#fff',padding:'20px',position:'relative'}}>
+        <button onClick={onClose} style={{position:'absolute',top:12,right:12,width:30,height:30,borderRadius:8,border:'none',background:'rgba(0,0,0,0.06)',color:'#333',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:2}}>
+          <Icon name="x" size={14} color="#333"/>
+        </button>
+        <div
+          key={productId}
+          ref={containerRef}
+          id="chariow-widget"
+          data-product-id={productId}
+          data-store-domain="shop.adstackofficial.com"
+          data-style="frame"
+          data-border-style="rounded"
+          data-cta-width="xs"
+          data-cta-animation="none"
+          data-locale="fr"
+          data-background-color="#FFFFFF"
+        />
+      </div>
+    </div>
+  );
+};
 
 // ── Modal demande de créatives ─────────────────────────────────────────────
 const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
@@ -2186,7 +2235,14 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
         }}>
           {/* Header */}
           <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(135deg,#1FB6FF,#5B8DEF)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="sparkle" size={16} color="#fff"/></div>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(145deg,#141C33,#0B0F1A)',border:'1px solid rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <svg width="20" height="20" viewBox="0 0 100 100">
+                <g transform="translate(50,50)">
+                  <path d="M -21 17 L -21 6 L -7.5 -12 L 6 4 L 21 -19 L 21 -8" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M 12 -19 L 21 -19 L 21 -10" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+                </g>
+              </svg>
+            </div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Inter',sans-serif"}}>Ava</div>
               <div style={{fontSize:10,color:'#22C55E',fontWeight:600}}>● En ligne</div>
@@ -2402,7 +2458,7 @@ const Faq = () => {
   );
 };
 
-const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null}) => {
+const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, onOpenPayment=null}) => {
   const isMobile = useIsMobile();
   const [annual, setAnnual] = useState(true); // activé par défaut sur annuel
   const onCta = async (plan) => {
@@ -2415,7 +2471,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
       sbAuth.signInWithGoogle();
       return;
     }
-    // Ouvrir une fenêtre AVANT l'appel async (sinon bloqué sur mobile)
+    const productId = PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`];
+    if (onOpenPayment && productId) { onOpenPayment(productId); return; }
+    // Filet de sécurité si jamais le produit n'est pas reconnu : ouvrir le checkout classique
     const popup = window.open('', '_blank') || window;
     triggerChariowCheckout(plan, cycle, user, popup);
   };
@@ -2841,6 +2899,7 @@ export default function Platform() {
   const [subscription, setSubscription] = useState(null);
   const [creativesTarget, setCreativesTarget] = useState(null);
   const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
+  const [paymentProductId, setPaymentProductId] = useState(null); // id produit Chariow pour la modale de paiement intégrée
 
   useEffect(() => {
     if (window.location.hash.includes('access_token')) {
@@ -2856,8 +2915,13 @@ export default function Platform() {
         if (pendingRaw) {
           localStorage.removeItem('adstack_pending_plan');
           const pendingPlan = JSON.parse(pendingRaw);
+          const pendingCycle = pendingPlan.cycle || 'annual';
           setSection('tarifs');
-          setTimeout(() => triggerChariowCheckout(pendingPlan, pendingPlan.cycle || 'annual', u, window), 400);
+          const productId = PLAN_CHECKOUT_IDS[`${pendingPlan.id}-${pendingCycle}`];
+          setTimeout(() => {
+            if (productId) setPaymentProductId(productId);
+            else triggerChariowCheckout(pendingPlan, pendingCycle, u, window);
+          }, 400);
         }
       } catch(e) {}
       // Rafraîchir le token avant de charger les données
@@ -3045,7 +3109,7 @@ export default function Platform() {
     galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
-    tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription}/>,
+    tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     faq: <Faq/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C}/>,
     notifications: <Notifications
@@ -3066,7 +3130,7 @@ export default function Platform() {
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
-        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription} activeBriefsCount={allBriefs.filter(b=>b.status==='pending'||b.status==='in_production').length}/>
+        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription} activeBriefsCount={allBriefs.filter(b=>b.status==='pending'||b.status==='in_production').length} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>
 
         {isMobile && mobileOpen && (
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>
@@ -3104,6 +3168,10 @@ export default function Platform() {
     </div>
     <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C} autoPrompt={loginAutoPrompt}/>}
+    {paymentProductId && (
+      <PaymentModal productId={paymentProductId} onClose={()=>setPaymentProductId(null)}/>
+    )}
+
     {reAskConfirm && (
       <div onClick={()=>setReAskConfirm(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
         <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:380,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
