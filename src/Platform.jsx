@@ -57,6 +57,16 @@ async function registerPushSubscription(userId) {
 }
 
 // Supabase Auth helpers (sans SDK — fetch natif)
+// Déclenche une notif push+in-app pour une action côté client (fire-and-forget, ne bloque jamais l'action)
+function notifyAction(userId, action, name) {
+  if (!userId) return;
+  fetch('https://adstack-server.onrender.com/notify-action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ user_id: userId, action, name })
+  }).catch(()=>{});
+}
+
 const sbAuth = {
   signInWithGoogle: () => {
     const redirectTo = encodeURIComponent(window.location.origin + '/adboard');
@@ -1202,6 +1212,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
     if (session) await sbProducts.delete(session, p.id);
     setProducts(prev => prev.filter(x => x.id !== p.id));
     notify(`Produit "${p.nom}" supprimé`, 'info');
+    notifyAction(sbAuth.getUser()?.id, 'product_deleted', p.nom);
     setConfirmDelete(false);
   };
 
@@ -1342,6 +1353,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         if (saved) {
           setProducts(prev => [...prev, saved]);
           notify(`Produit "${saved.nom}" créé avec succès`, 'product');
+          notifyAction(sbAuth.getUser()?.id, 'product_created', saved.nom);
         } else {
           setProducts(prev => [...prev, {...form, id: Date.now()}]);
           notify(`Produit "${form.nom}" ajouté`, 'product');
@@ -2908,6 +2920,7 @@ export default function Platform() {
       setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
       setBriefs(prev => { const n={...prev}; delete n[p.id]; return n; });
       notify(`Commande annulée pour "${p.nom}"`, 'warning');
+      notifyAction(sbAuth.getUser()?.id, 'request_cancelled', p.nom);
       for (let i=0; i<3; i++) {
         try {
           const r = await fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
