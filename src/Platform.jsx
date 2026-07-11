@@ -27,10 +27,20 @@ async function getPushStatus() {
   } catch(e) { return 'default'; }
 }
 
+// Identifiant anonyme persistant — permet d'activer les notifs AVANT la connexion Google.
+// Relié au vrai compte automatiquement dès que la personne se connecte (voir mergeAnonPush).
+function getAnonId() {
+  let id = localStorage.getItem('adstack_anon_id');
+  if (!id) {
+    id = 'anon_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+    localStorage.setItem('adstack_anon_id', id);
+  }
+  return id;
+}
+
 // Déclenché explicitement (toggle) — demande la permission navigateur en réponse directe au clic
 async function registerPushSubscription(userId) {
   try {
-    if (!userId) { console.warn('[Push] Tentative sans userId — annulée'); return false; }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return false;
     if (Notification.permission === 'denied') return false;
 
@@ -47,10 +57,15 @@ async function registerPushSubscription(userId) {
       applicationServerKey: urlBase64ToUint8Array(key),
     });
 
+    // Avec un compte connu, ou avec un identifiant anonyme si pas encore connecté
+    const body = userId
+      ? { user_id: userId, subscription: sub.toJSON() }
+      : { anon_id: getAnonId(), subscription: sub.toJSON() };
+
     await fetch('https://adstack-server.onrender.com/push-subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, subscription: sub.toJSON() })
+      body: JSON.stringify(body)
     });
     return true;
   } catch(e) { return false; }
@@ -158,6 +173,18 @@ const sbAuth = {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: user.email, name: user.user_metadata?.full_name }),
             keepalive: true, // survit à la navigation immédiate qui suit (window.location.replace)
+          }).catch(()=>{});
+        }
+      } catch(e) {}
+      // Fusion de l'identifiant anonyme (souscription push faite avant connexion) avec le vrai compte
+      try {
+        const anonId = localStorage.getItem('adstack_anon_id');
+        if (anonId) {
+          fetch('https://adstack-server.onrender.com/push-merge-anon', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ anon_id: anonId, user_id: user.id }),
+            keepalive: true,
           }).catch(()=>{});
         }
       } catch(e) {}
@@ -919,7 +946,6 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 
   const togglePush = async () => {
     if (pushLoading || pushStatus === 'denied' || pushStatus === 'unsupported') return;
-    if (!user?.id) { notify('Un instant, ta session se charge encore...', 'warning'); return; }
     if (pushStatus === 'enabled') {
       // Désactivation : on désabonne côté navigateur (le serveur nettoiera automatiquement l'entrée invalide au prochain envoi)
       try {
@@ -2877,7 +2903,6 @@ export default function Platform() {
 
   // ── Auto-prompt notifications push après 2min (connecté, jamais sollicité, plateforme compatible) ──
   useEffect(() => {
-    if (!user?.id) return;
     try {
       if (localStorage.getItem('adstack_push_prompted')) return;
     } catch(e) {}
@@ -2885,7 +2910,7 @@ export default function Platform() {
       try { localStorage.setItem('adstack_push_prompted', '1'); } catch(e) {}
       const status = await getPushStatus();
       if (status === 'default') {
-        await registerPushSubscription(user.id);
+        await registerPushSubscription(user?.id);
       }
     }, 120000);
     return () => clearTimeout(t);
