@@ -2189,8 +2189,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     if (type === 'navigate' && parts[1]) { setSection(parts[1]); setOpen(false); }
     if (type === 'openProductForm') { setSection('produits'); setOpen(false); setTimeout(() => openProductForm?.(), 200); }
     if (type === 'login') { sbAuth.signInWithGoogle(); }
-    if (type === 'checkout') {
-      const cycle = 'monthly';
+    if (type === 'checkout' || type === 'checkout-annual') {
+      const cycle = type === 'checkout-annual' ? 'annual' : 'monthly';
       const productId = PLAN_CHECKOUT_IDS[`${parts[1]}-${cycle}`];
       if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
@@ -2207,6 +2207,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
+    'checkout-annual:starter': 'Starter annuel (-25%) →',
+    'checkout-annual:pro': 'Pro annuel (-25%) →',
+    'checkout-annual:scale': 'Scale annuel (-25%) →',
   };
 
   return (
