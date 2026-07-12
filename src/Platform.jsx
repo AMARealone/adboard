@@ -728,6 +728,155 @@ const PLAN_LABELS = { starter: 'Starter', pro: 'Pro', scale: 'Scale' };
 const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
 
 // ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
+const PREPURCHASE_QUESTIONS = [
+  "Aujourd'hui, qu'est-ce qui te frustre le plus avec tes pubs ou tes visuels ?",
+  "Si tout se passait bien pour ton business dans 6 mois, à quoi ça ressemblerait ?",
+  "Qu'est-ce que t'as déjà essayé pour améliorer tes ventes, et qu'est-ce qui n'a pas marché ?",
+  "D'après toi, qu'est-ce qui ferait vraiment la différence pour toi en ce moment ?",
+  "Si une solution te faisait gagner plusieurs heures chaque semaine, ça changerait quoi pour toi concrètement ?",
+  "Qu'est-ce qui te ferait hésiter à essayer une nouvelle solution pour tes visuels ?",
+  "Comment tu décrirais, avec tes mots, ce qui bloque vraiment tes ventes ?",
+  "T'as déjà entendu parler d'autres solutions ou agences pour ce genre de besoin ? T'en penses quoi ?",
+  "Qu'est-ce que tu serais prêt à changer pour vraiment débloquer tes ventes ?",
+  "Pourquoi c'est important pour toi de régler ça maintenant ?",
+];
+
+const POSTPURCHASE_QUESTIONS = [
+  "Avant qu'on te contacte, tu connaissais déjà des solutions comme la nôtre ?",
+  "Qu'est-ce qui a fait la différence pour toi, ce qui t'a décidé à te lancer ?",
+  "Y a-t-il eu un moment où t'as failli ne pas continuer ?",
+  "Qu'est-ce qui t'a rassuré si jamais t'avais un doute avant de valider ?",
+  "Qu'est-ce que t'aimerais voir en plus sur la plateforme, même si ça n'existe pas encore ?",
+  "Où t'en es avec ton business — tu débutes, ou ça fait un moment que tu vends ?",
+  "Qu'est-ce qui a fait que tu passes à l'action maintenant plutôt que dans un mois ?",
+  "Qu'est-ce qui te ferait dire, dans quelques semaines, que c'était le bon choix ?",
+  "Le prix, ça t'a semblé juste, cher, ou une bonne affaire vu ce que t'en attends ?",
+  "Tu connais d'autres vendeurs qui galèrent avec le même souci que toi ?",
+];
+
+// Formulaire partagé — pré-achat (obligatoire, code promo) et post-achat (facultatif, dismissible)
+const InsightForm = ({ mode, user, onClose, C }) => {
+  const isPre = mode === 'prepurchase';
+  const questions = isPre ? PREPURCHASE_QUESTIONS : POSTPURCHASE_QUESTIONS;
+  const [answers, setAnswers] = useState(Array(10).fill(''));
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [promoCode, setPromoCode] = useState(null);
+  const [copied, setCopied] = useState(false);
+
+  const submit = async () => {
+    if (isPre && answers.some(a => !a.trim())) {
+      setError('Réponds à toutes les questions pour valider — ça ne prend que quelques minutes.');
+      return;
+    }
+    setSubmitting(true);
+    setError('');
+    try {
+      const filled = questions.map((q, i) => ({ question: q, answer: answers[i] })).filter(a => a.answer.trim());
+      const r = await fetch('https://adstack-server.onrender.com/save-form-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user?.id || null,
+          email: user?.email || null,
+          source: isPre ? 'prepurchase_form' : 'postpurchase_form',
+          answers: filled,
+        })
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        if (data.error === 'low_effort') { setError(data.message); setSubmitting(false); return; }
+        throw new Error(data.error || 'unknown');
+      }
+      try { localStorage.setItem(isPre ? 'adstack_prepurchase_form_done' : 'adstack_postpurchase_form_done', '1'); } catch(e) {}
+      if (isPre && data.promo_code) { setPromoCode(data.promo_code); }
+      else { onClose(); }
+    } catch(e) {
+      setError("Un souci technique est survenu — réessaie dans un instant.");
+    }
+    setSubmitting(false);
+  };
+
+  const copyCode = () => {
+    navigator.clipboard?.writeText(promoCode);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return createPortal(
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:700,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div style={{width:'100%',maxWidth:520,maxHeight:'88vh',overflow:'auto',borderRadius:16,background:C.card,border:`1px solid ${C.borderM}`,padding:'26px'}}>
+
+        {promoCode ? (
+          <div style={{textAlign:'center',padding:'10px 0'}}>
+            <div style={{width:52,height:52,borderRadius:14,background:'rgba(34,197,94,0.14)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
+              <Icon name="check" size={24} color="#22C55E"/>
+            </div>
+            <h2 style={{fontSize:17,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Merci pour tes réponses !</h2>
+            <p style={{fontSize:13,color:C.sec,marginBottom:20}}>Voici ton code pour -10% sur ton premier abonnement :</p>
+            <div onClick={copyCode} style={{display:'inline-flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:10,border:`1.5px dashed ${C.accent}`,background:C.accentS,cursor:'pointer'}}>
+              <span style={{fontSize:18,fontWeight:800,letterSpacing:'1px',color:C.accent,fontFamily:"'DM Mono',monospace"}}>{promoCode}</span>
+              <Icon name={copied ? 'check' : 'document'} size={15} color={C.accent}/>
+            </div>
+            <p style={{fontSize:11,color:C.muted,marginTop:10}}>{copied ? 'Copié !' : 'Clique pour copier'} — à saisir au moment du paiement.</p>
+            <button onClick={onClose} style={{marginTop:20,padding:'10px 24px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>
+              Continuer
+            </button>
+          </div>
+        ) : (
+          <>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
+              <div>
+                <h2 style={{fontSize:17,fontWeight:700,color:C.text,margin:0}}>
+                  {isPre ? 'Réponds à 10 questions, obtiens -10%' : 'Aide-nous à mieux te servir'}
+                </h2>
+                <p style={{fontSize:12.5,color:C.sec,marginTop:6,lineHeight:1.5}}>
+                  {isPre
+                    ? 'Tes réponses nous aident à améliorer notre service — en échange, un code de réduction pour ton premier abonnement.'
+                    : "10 questions facultatives — réponds à celles que tu veux, ça nous aide à mieux te servir. Tu peux fermer à tout moment."}
+                </p>
+              </div>
+              {!isPre && (
+                <button onClick={onClose} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <Icon name="x" size={14}/>
+                </button>
+              )}
+            </div>
+
+            <div style={{display:'flex',flexDirection:'column',gap:14,marginTop:18}}>
+              {questions.map((q, i) => (
+                <div key={i}>
+                  <label style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:6,display:'block',lineHeight:1.4}}>
+                    {i+1}. {q}{isPre && <span style={{color:'#E55050'}}> *</span>}
+                  </label>
+                  <textarea
+                    value={answers[i]}
+                    onChange={e => { const a=[...answers]; a[i]=e.target.value; setAnswers(a); }}
+                    rows={2}
+                    style={{width:'100%',padding:'10px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:13,fontFamily:'inherit',resize:'vertical',outline:'none'}}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {error && <div style={{marginTop:14,padding:'10px 14px',borderRadius:8,background:'rgba(229,80,80,0.1)',border:'1px solid rgba(229,80,80,0.3)',color:'#E55050',fontSize:12}}>{error}</div>}
+
+            <button onClick={submit} disabled={submitting} style={{width:'100%',marginTop:18,padding:'13px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13.5,cursor:submitting?'default':'pointer',fontFamily:'inherit',opacity:submitting?0.6:1}}>
+              {submitting ? 'Envoi...' : isPre ? 'Valider et obtenir mon code' : 'Envoyer mes réponses'}
+            </button>
+            {!isPre && (
+              <button onClick={onClose} style={{width:'100%',marginTop:8,padding:'10px',borderRadius:9,border:'none',background:'transparent',color:C.muted,fontWeight:600,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+                Plus tard
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>,
+    document.body
+  );
+};
+
 const PaymentModal = ({ productId, userEmail, onClose }) => {
   const containerRef = useRef(null);
 
@@ -2979,6 +3128,36 @@ export default function Platform() {
   const [creativesTarget, setCreativesTarget] = useState(null);
   const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
   const [paymentProductId, setPaymentProductId] = useState(null); // id produit Chariow pour la modale de paiement intégrée
+  const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
+  const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
+
+  // ── Formulaire pré-achat : à chaque visite, après 5 min, tant qu'il n'a jamais été rempli ──
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('adstack_prepurchase_form_done')) return;
+    } catch(e) {}
+    const t = setTimeout(() => setShowPrepurchaseForm(true), 5 * 60 * 1000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Vérifie si un achat vient de se conclure (appelé après fermeture de la modale de paiement)
+  const checkRecentPurchase = async () => {
+    try {
+      if (localStorage.getItem('adstack_postpurchase_form_done')) return;
+    } catch(e) {}
+    for (const delay of [3000, 8000, 15000]) {
+      await new Promise(res => setTimeout(res, delay));
+      try {
+        const session = await sbAuth.refreshSession();
+        if (!session) continue;
+        const freshSub = await sbSubs.load(session);
+        if (freshSub?.active && freshSub.started_at) {
+          const startedRecently = (Date.now() - new Date(freshSub.started_at).getTime()) < 10 * 60 * 1000;
+          if (startedRecently) { setShowPostpurchaseForm(true); return; }
+        }
+      } catch(e) {}
+    }
+  };
 
   useEffect(() => {
     if (window.location.hash.includes('access_token')) {
@@ -3278,7 +3457,15 @@ export default function Platform() {
     )}
 
     {paymentProductId && (
-      <PaymentModal productId={paymentProductId} userEmail={user?.email} onClose={()=>setPaymentProductId(null)}/>
+      <PaymentModal productId={paymentProductId} userEmail={user?.email} onClose={()=>{ setPaymentProductId(null); checkRecentPurchase(); }}/>
+    )}
+
+    {showPrepurchaseForm && (
+      <InsightForm mode="prepurchase" user={user} C={C} onClose={()=>setShowPrepurchaseForm(false)}/>
+    )}
+
+    {showPostpurchaseForm && (
+      <InsightForm mode="postpurchase" user={user} C={C} onClose={()=>setShowPostpurchaseForm(false)}/>
     )}
 
     {reAskConfirm && (
