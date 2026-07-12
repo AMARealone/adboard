@@ -23,6 +23,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
+    <style>
+      /* Police par défaut sur le body — sans ça, tout élément affiché hors de l'arbre React normal
+         (createPortal : modales de confirmation, etc.) hérite de la police système au lieu d'Inter. */
+      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+    </style>
+
     <!-- Microsoft Clarity -->
     <script type="text/javascript">
       (function(c,l,a,r,i,t,y){
