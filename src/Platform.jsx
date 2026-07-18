@@ -3401,42 +3401,6 @@ export default function Platform() {
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
-  // Fix hauteur réelle iOS PWA — dvh seul ne se recalcule pas toujours correctement au premier rendu sur certaines versions iOS
-  const [appHeight, setAppHeight] = useState(null);
-  useEffect(() => {
-    const champActif = () => {
-      const a = document.activeElement;
-      return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT' || a.isContentEditable);
-    };
-    const setRealHeight = () => {
-      // Un champ de saisie a le focus → ce redimensionnement vient très probablement du
-      // clavier mobile qui s'ouvre/se ferme, pas d'une vraie rotation d'écran. Redimensionner
-      // l'app dans ce cas précis peut faire perdre le focus du champ et fermer le clavier
-      // tout seul (iOS considère alors que le champ n'est plus visible). On ignore donc ce
-      // recalcul tant qu'on écrit quelque part.
-      if (champActif()) return;
-      const h = window.visualViewport?.height || window.innerHeight;
-      setAppHeight(h);
-      document.documentElement.style.setProperty('--app-height', `${h}px`);
-    };
-    setRealHeight();
-    // Plusieurs tentatives échelonnées : au lancement depuis l'écran d'accueil (PWA installée),
-    // l'interface du système (barre de statut, etc.) peut mettre plus de temps à se stabiliser
-    // qu'un simple onglet de navigateur — un seul essai à 100ms ne suffisait pas toujours,
-    // laissant un espace vide en bas tant que la vraie hauteur n'était pas recalculée.
-    const timers = [100, 300, 600, 1000].map(delai => setTimeout(setRealHeight, delai));
-    window.addEventListener('resize', setRealHeight);
-    window.addEventListener('orientationchange', setRealHeight);
-    window.addEventListener('pageshow', setRealHeight);
-    window.visualViewport?.addEventListener('resize', setRealHeight);
-    return () => {
-      timers.forEach(clearTimeout);
-      window.removeEventListener('resize', setRealHeight);
-      window.removeEventListener('pageshow', setRealHeight);
-      window.removeEventListener('orientationchange', setRealHeight);
-      window.visualViewport?.removeEventListener('resize', setRealHeight);
-    };
-  }, []);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const slug = params.get('demo');
@@ -3608,7 +3572,7 @@ const views = {
 
   return (
     <>
-    <div style={{display:'flex',flexDirection:'column',height: appHeight ? `${appHeight}px` : '100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Inter',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
+    <div style={{display:'flex',flexDirection:'column',height:'100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Inter',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
@@ -3630,8 +3594,13 @@ const views = {
             : '28px 30px',
           marginLeft:isMobile?52:0,
           overscrollBehaviorY:'contain',
-          transition: pullDistance>0 ? 'none' : 'margin-left 0.22s cubic-bezier(.4,0,.2,1)',
-          transform: pullDistance>0 ? `translateY(${pullDistance}px)` : undefined,
+          // Pas de transition PENDANT le glissement du doigt (suivi direct, 1:1) — mais une
+          // vraie transition douce dès qu'on relâche, que ce soit pour se caler sur la position
+          // de rafraîchissement ou pour revenir à zéro une fois terminé. Avant, le retour à zéro
+          // était instantané dès le relâchement, faisant "disparaître" le cercle de chargement
+          // avant même que le rafraîchissement soit fini — donnant une impression de blocage.
+          transition: (pullDistance>0 && !isRefreshing) ? 'none' : 'transform 0.25s cubic-bezier(.34,1.56,.64,1), margin-left 0.22s cubic-bezier(.4,0,.2,1)',
+          transform: (isRefreshing ? 56 : pullDistance) > 0 ? `translateY(${isRefreshing ? 56 : pullDistance}px)` : undefined,
           position:'relative',
         }}>
           {isMobile && (pullDistance > 0 || isRefreshing) && (
@@ -3640,6 +3609,8 @@ const views = {
                 width:18,height:18,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,
                 animation: isRefreshing ? 'spin 0.7s linear infinite' : 'none',
                 transform: !isRefreshing ? `rotate(${Math.min(pullDistance*3.6,360)}deg)` : undefined,
+                opacity: isRefreshing ? 1 : Math.min(pullDistance/65, 1),
+                transition: 'opacity 0.15s ease',
               }}/>
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
             </div>
