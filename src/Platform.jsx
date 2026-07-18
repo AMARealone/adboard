@@ -188,6 +188,18 @@ const sbAuth = {
           }).catch(()=>{});
         }
       } catch(e) {}
+      // Attribution CRM — attache le prospect + le message d'origine (démo/J+3/J+10/J+21) au
+      // compte dès la connexion, pour qu'on sache automatiquement, au moment d'un futur achat,
+      // quel prospect et quel message ont mené à la conversion — sans rien cocher manuellement.
+      try {
+        const attribution = JSON.parse(localStorage.getItem('crm_attribution') || 'null');
+        if (attribution?.prospect_id) {
+          sbAuth.updateUserMetadata({
+            crm_prospect_id: attribution.prospect_id,
+            crm_last_campaign: attribution.campagne,
+          });
+        }
+      } catch(e) {}
       window.location.replace('/adboard');
     }).catch(()=>{ window.location.replace('/adboard'); });
     return true;
@@ -3167,6 +3179,18 @@ export default function Platform() {
     const u = sbAuth.getUser();
     setUser(u);
     if (u) {
+      // Attribution CRM — mêmes règles que dans handleCallback, mais pour un utilisateur déjà
+      // connecté qui clique un NOUVEAU lien traqué (pas une nouvelle connexion). On veut le
+      // dernier message cliqué avant l'achat, donc on met à jour à chaque nouvelle capture.
+      try {
+        const attribution = JSON.parse(localStorage.getItem('crm_attribution') || 'null');
+        if (attribution?.prospect_id && u.user_metadata?.crm_last_campaign !== attribution.campagne) {
+          sbAuth.updateUserMetadata({
+            crm_prospect_id: attribution.prospect_id,
+            crm_last_campaign: attribution.campagne,
+          });
+        }
+      } catch(e) {}
       // Reprise automatique du checkout si l'utilisateur vient de se connecter pour payer
       try {
         const pendingProductId = localStorage.getItem('adstack_pending_checkout');
