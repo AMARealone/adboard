@@ -58,6 +58,25 @@
       fbq('init', '1425042735803143');
       fbq('track', 'PageView');
     </script>
+
+    <!-- Attribution CRM — capture le prospect et le message d'origine (démo/J+3/J+10/J+21)
+         dès l'arrivée, avant même la connexion. Indépendant de React, s'exécute toujours. -->
+    <script>
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var prospectId = params.get('utm_content');
+        var campagne   = params.get('utm_campaign');
+        if (prospectId && campagne) {
+          try {
+            localStorage.setItem('crm_attribution', JSON.stringify({
+              prospect_id: prospectId,
+              campagne: campagne,
+              capture_le: new Date().toISOString()
+            }));
+          } catch(e) {}
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript><img height="1" width="1" style="display:none"
