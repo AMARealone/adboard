@@ -234,6 +234,7 @@ const NAV = [
   {id:'suivi',icon:'clock',label:'Suivi Demande'},
   {id:'notifications',icon:'bell',label:'Notifications'},
   {id:'tarifs',icon:'tag',label:'Nos Tarifs'},
+  {id:'commentaires',icon:'document',label:'Commentaires'},
   {id:'faq',icon:'help',label:'FAQ & Aide'},
 ];
 
@@ -770,6 +771,7 @@ const POSTPURCHASE_QUESTIONS = [
 const InsightForm = ({ mode, user, onClose, C }) => {
   const isPre = mode === 'prepurchase';
   const questions = isPre ? PREPURCHASE_QUESTIONS : POSTPURCHASE_QUESTIONS;
+  const [step, setStep] = useState('teaser'); // 'teaser' → 'form' → (promoCode affiché si pré-achat)
   const [answers, setAnswers] = useState(Array(10).fill(''));
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -815,8 +817,49 @@ const InsightForm = ({ mode, user, onClose, C }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Champs anti-zoom mobile : iOS Safari zoome automatiquement sur tout champ dont la taille
+  // de police calculée est sous 16px — donc jamais en dessous, peu importe le design voulu.
+  const inputStyle = {width:'100%',padding:'10px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:16,fontFamily:'inherit',resize:'vertical',outline:'none'};
+
+  const closeBtn = (
+    <button onClick={onClose} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+      <Icon name="x" size={14}/>
+    </button>
+  );
+
   return createPortal(
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:700,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+
+      {step === 'teaser' ? (
+        <div style={{width:'100%',maxWidth:420,borderRadius:16,overflow:'hidden',position:'relative',
+          background:'linear-gradient(115deg, #0B1E3D, #1FB6FF, #0B1E3D, #123A6B)',backgroundSize:'300% 300%',
+          animation:'adstackGradientMove 6s ease infinite',border:`1px solid ${C.borderM}`}}>
+          <style>{`@keyframes adstackGradientMove {0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}`}</style>
+          <div style={{position:'absolute',top:12,right:12,zIndex:2}}>{closeBtn}</div>
+          <div style={{padding:'40px 28px',textAlign:'center',position:'relative',zIndex:1}}>
+            {isPre ? (
+              <>
+                <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.85)',letterSpacing:'1px',textTransform:'uppercase',margin:'0 0 8px'}}>Offre exclusive</p>
+                <p style={{fontSize:52,fontWeight:900,color:'#fff',margin:'0 0 8px',lineHeight:1}}>-10%</p>
+                <p style={{fontSize:14,color:'rgba(255,255,255,0.9)',margin:'0 0 26px',lineHeight:1.5}}>sur ton premier abonnement, en répondant à un rapide formulaire qui nous aide à améliorer AdStack.</p>
+                <button onClick={() => setStep('form')} style={{padding:'13px 28px',borderRadius:9,border:'none',background:'#fff',color:'#0B1E3D',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'inherit'}}>
+                  Obtenir mon code -10%
+                </button>
+              </>
+            ) : (
+              <>
+                <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.85)',letterSpacing:'1px',textTransform:'uppercase',margin:'0 0 8px'}}>Aide-nous à mieux te servir</p>
+                <p style={{fontSize:22,fontWeight:800,color:'#fff',margin:'0 0 10px',lineHeight:1.3}}>2 minutes pour améliorer tes prochains livrables</p>
+                <p style={{fontSize:14,color:'rgba(255,255,255,0.9)',margin:'0 0 26px',lineHeight:1.5}}>Quelques questions rapides, entièrement facultatives.</p>
+                <button onClick={() => setStep('form')} style={{padding:'13px 28px',borderRadius:9,border:'none',background:'#fff',color:'#0B1E3D',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'inherit'}}>
+                  Répondre au formulaire
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+
       <div style={{width:'100%',maxWidth:520,maxHeight:'88vh',overflow:'auto',borderRadius:16,background:C.card,border:`1px solid ${C.borderM}`,padding:'26px'}}>
 
         {promoCode ? (
@@ -844,15 +887,11 @@ const InsightForm = ({ mode, user, onClose, C }) => {
                 </h2>
                 <p style={{fontSize:12.5,color:C.sec,marginTop:6,lineHeight:1.5}}>
                   {isPre
-                    ? 'Tes réponses nous aident à améliorer notre service — en échange, un code de réduction pour ton premier abonnement.'
+                    ? "Termine de répondre à ces 10 questions pour obtenir ton code de réduction MERCI10."
                     : "10 questions facultatives — réponds à celles que tu veux, ça nous aide à mieux te servir. Tu peux fermer à tout moment."}
                 </p>
               </div>
-              {!isPre && (
-                <button onClick={onClose} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <Icon name="x" size={14}/>
-                </button>
-              )}
+              {closeBtn}
             </div>
 
             <div style={{display:'flex',flexDirection:'column',gap:14,marginTop:18}}>
@@ -865,7 +904,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
                     value={answers[i]}
                     onChange={e => { const a=[...answers]; a[i]=e.target.value; setAnswers(a); }}
                     rows={2}
-                    style={{width:'100%',padding:'10px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:13,fontFamily:'inherit',resize:'vertical',outline:'none'}}
+                    style={inputStyle}
                   />
                 </div>
               ))}
@@ -884,6 +923,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
           </>
         )}
       </div>
+      )}
     </div>,
     document.body
   );
@@ -2944,7 +2984,7 @@ const DemoPreview = ({slug, setSection}) => {
 };
 
 export default function Platform() {
-  const SECTION_PATHS = { tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq' };
+  const SECTION_PATHS = { tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
 
   const [section, _setSection] = useState(() => {
@@ -3143,12 +3183,24 @@ export default function Platform() {
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
 
-  // ── Formulaire pré-achat : à chaque visite, après 5 min, tant qu'il n'a jamais été rempli ──
+  // ── Formulaire pré-achat : à chaque visite, après 5 min, tant qu'il n'a jamais été rempli
+  // ET qu'il n'a pas déjà d'abonnement actif — vérifié à neuf au moment du déclenchement,
+  // pas au chargement de la page, pour éviter de le montrer à quelqu'un qui vient tout
+  // juste de passer client entre-temps. ──
   useEffect(() => {
     try {
       if (localStorage.getItem('adstack_prepurchase_form_done')) return;
     } catch(e) {}
-    const t = setTimeout(() => setShowPrepurchaseForm(true), 5 * 60 * 1000);
+    const t = setTimeout(async () => {
+      try {
+        const session = await sbAuth.refreshSession();
+        if (session) {
+          const freshSub = await sbSubs.load(session);
+          if (freshSub?.active) return; // déjà abonné — jamais ce popup
+        }
+      } catch(e) {}
+      setShowPrepurchaseForm(true);
+    }, 5 * 60 * 1000);
     return () => clearTimeout(t);
   }, []);
 
@@ -3374,7 +3426,78 @@ export default function Platform() {
     document.head.appendChild(s);
   }, []);
 
-  const views = {
+  const Commentaires = ({ user }) => {
+  const [texte, setTexte] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const [envoye, setEnvoye] = useState(false);
+
+  const envoyer = async () => {
+    if (!texte.trim()) { setError('Écris quelque chose avant d\'envoyer.'); return; }
+    setSubmitting(true);
+    setError('');
+    try {
+      const r = await fetch('https://adstack-server.onrender.com/save-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user?.id || null, email: user?.email || null, texte }),
+      });
+      const data = await r.json();
+      if (!r.ok) {
+        if (data.error === 'contenu_inapproprie') { setError("Merci de reformuler ton message de façon constructive."); setSubmitting(false); return; }
+        throw new Error(data.error || 'unknown');
+      }
+      setEnvoye(true);
+      setTexte('');
+    } catch(e) {
+      setError("Un souci technique est survenu — réessaie dans un instant.");
+    }
+    setSubmitting(false);
+  };
+
+  return (
+    <div style={{maxWidth:640}}>
+      <h1 style={{fontSize:20,fontWeight:800,color:C.text,margin:'0 0 6px'}}>Commentaires</h1>
+      <p style={{fontSize:13.5,color:C.sec,lineHeight:1.6,marginBottom:24}}>
+        Une remarque sur nos tarifs, une idée d'amélioration, un résultat que tu aimerais avoir ?
+        Dis-nous tout ici — on lit chaque message pour améliorer AdStack.
+      </p>
+
+      {envoye ? (
+        <div style={{textAlign:'center',padding:'40px 20px',borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`}}>
+          <div style={{width:48,height:48,borderRadius:12,background:'rgba(34,197,94,0.14)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
+            <Icon name="check" size={22} color="#22C55E"/>
+          </div>
+          <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Merci pour ton message !</p>
+          <p style={{fontSize:12.5,color:C.sec,marginBottom:18}}>C'est bien pris en compte.</p>
+          <button onClick={()=>setEnvoye(false)} style={{padding:'9px 20px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>
+            Envoyer un autre commentaire
+          </button>
+        </div>
+      ) : (
+        <div style={{borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:20}}>
+          <textarea
+            value={texte}
+            onChange={e => setTexte(e.target.value)}
+            placeholder="Écris ton commentaire ici..."
+            rows={6}
+            maxLength={2000}
+            style={{width:'100%',padding:'12px 14px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:16,fontFamily:'inherit',resize:'vertical',outline:'none'}}
+          />
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
+            <span style={{fontSize:11,color:C.muted}}>{texte.length}/2000</span>
+          </div>
+          {error && <div style={{marginTop:10,padding:'10px 14px',borderRadius:8,background:'rgba(229,80,80,0.1)',border:'1px solid rgba(229,80,80,0.3)',color:'#E55050',fontSize:12}}>{error}</div>}
+          <button onClick={envoyer} disabled={submitting} style={{marginTop:14,padding:'12px 26px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13.5,cursor:submitting?'default':'pointer',fontFamily:'inherit',opacity:submitting?0.6:1}}>
+            {submitting ? 'Envoi...' : 'Envoyer'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const views = {
     demo: <DemoPreview slug={demoSlug} setSection={setSection}/>,
     produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
@@ -3406,6 +3529,7 @@ export default function Platform() {
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     faq: <Faq/>,
+    commentaires: <Commentaires user={user}/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C}/>,
     notifications: <Notifications
         notifications={notifications}
