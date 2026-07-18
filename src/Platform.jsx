@@ -3356,16 +3356,29 @@ export default function Platform() {
     style.id = 'ios-zoom-fix';
     style.textContent = `
       html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;}
-      input,textarea,select{touch-action:manipulation;font-size:16px !important;}
+      html,body{font-family:'Inter',sans-serif;}
+      input,textarea,select{touch-action:manipulation;font-size:16px !important;font-family:'Inter',sans-serif;}
       *{overscroll-behavior-y:contain;}
     `; // iOS zoom fix: Safari zoome si font-size<16px + fix rebond blanc PWA standalone
+       // + police Inter posée sur html/body : les popups en createPortal (document.body) sortent
+       // de l'arbre React et n'héritaient donc pas de la police du conteneur principal.
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
   }, []);
   // Fix hauteur réelle iOS PWA — dvh seul ne se recalcule pas toujours correctement au premier rendu sur certaines versions iOS
   const [appHeight, setAppHeight] = useState(null);
   useEffect(() => {
+    const champActif = () => {
+      const a = document.activeElement;
+      return a && (a.tagName === 'TEXTAREA' || a.tagName === 'INPUT' || a.isContentEditable);
+    };
     const setRealHeight = () => {
+      // Un champ de saisie a le focus → ce redimensionnement vient très probablement du
+      // clavier mobile qui s'ouvre/se ferme, pas d'une vraie rotation d'écran. Redimensionner
+      // l'app dans ce cas précis peut faire perdre le focus du champ et fermer le clavier
+      // tout seul (iOS considère alors que le champ n'est plus visible). On ignore donc ce
+      // recalcul tant qu'on écrit quelque part.
+      if (champActif()) return;
       const h = window.visualViewport?.height || window.innerHeight;
       setAppHeight(h);
       document.documentElement.style.setProperty('--app-height', `${h}px`);
