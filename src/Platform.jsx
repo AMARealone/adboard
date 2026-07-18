@@ -887,7 +887,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
                 </h2>
                 <p style={{fontSize:12.5,color:C.sec,marginTop:6,lineHeight:1.5}}>
                   {isPre
-                    ? "Termine de répondre à ces 10 questions pour obtenir ton code de réduction MERCI10."
+                    ? "Termine de répondre à ces 10 questions pour obtenir ton code de réduction."
                     : "10 questions facultatives — réponds à celles que tu veux, ça nous aide à mieux te servir. Tu peux fermer à tout moment."}
                 </p>
               </div>
