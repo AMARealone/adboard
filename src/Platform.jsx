@@ -3041,6 +3041,15 @@ export default function Platform() {
 
   // Pull-to-refresh tactile — actif uniquement si le contenu est tout en haut
   const handleTouchStart = (e) => {
+    // Ne jamais initier le tirer-pour-rafraîchir depuis un champ de saisie — un simple tap
+    // avec un micro-mouvement du doigt peut sinon déclencher un léger pullDistance, qui
+    // applique une transformation sur le conteneur juste au moment où le clavier devrait
+    // s'ouvrir, et casse les deux (clavier qui ne vient pas + zone du spinner qui s'affiche).
+    const cible = e.target;
+    if (cible && (cible.tagName === 'TEXTAREA' || cible.tagName === 'INPUT' || cible.isContentEditable)) {
+      touchStartY.current = 0;
+      return;
+    }
     if (mainRef.current && mainRef.current.scrollTop === 0) {
       touchStartY.current = e.touches[0].clientY;
     } else {
