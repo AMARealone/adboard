@@ -1498,7 +1498,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
     </div>
 
     {confirmDelete && createPortal(
-      <div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
         <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:380,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
           <div style={{width:40,height:40,borderRadius:11,background:'rgba(239,107,91,0.14)',border:'1px solid rgba(239,107,91,0.3)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14,color:'#EF6B5B'}}>
             <Icon name="alerttriangle" size={18} color="#EF6B5B"/>
@@ -1672,15 +1672,17 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           )}
         </div>
       ) : (
-        <div style={{marginBottom:18,padding:'14px 16px',borderRadius:10,background:'rgba(255,255,255,0.03)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',opacity:0.75}}>
+        <div style={{marginBottom:18,padding:'16px 18px',borderRadius:12,background:'linear-gradient(135deg, rgba(91,141,239,0.16), rgba(91,141,239,0.06))',border:`1px solid rgba(91,141,239,0.35)`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
           <div style={{flex:1,minWidth:160,display:'flex',alignItems:'center',gap:10}}>
-            <Icon name="lock" size={15} color={C.muted}/>
+            <div style={{width:32,height:32,borderRadius:9,background:'rgba(91,141,239,0.18)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon name="bolt" size={15} color={C.accent}/>
+            </div>
             <div>
-              <div style={{fontSize:12,fontWeight:600,color:C.sec}}>Images publicitaires</div>
-              <div style={{fontSize:10.5,color:C.muted,marginTop:2}}>Abonnez-vous pour recevoir vos visuels chaque semaine</div>
+              <div style={{fontSize:13,fontWeight:700,color:C.text}}>Images publicitaires</div>
+              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonne-toi pour recevoir tes visuels chaque semaine</div>
             </div>
           </div>
-          <button onClick={()=>setSection && setSection('tarifs')} style={{padding:'8px 16px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+          <button onClick={()=>setSection && setSection('tarifs')} style={{padding:'9px 18px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',boxShadow:'0 4px 14px rgba(91,141,239,0.35)'}}>
             Voir les offres
           </button>
         </div>
@@ -3039,7 +3041,11 @@ export default function Platform() {
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
-  // Pull-to-refresh tactile — actif uniquement si le contenu est tout en haut
+  // Pull-to-refresh tactile — actif uniquement si le contenu est tout en haut.
+  // Tolérance de quelques pixels plutôt qu'une égalité stricte à 0 : sur iOS, le scroll
+  // élastique/momentum ne se stabilise pas toujours pile à 0px (0.4px, 1px...), ce qui
+  // bloquait silencieusement le geste environ une fois sur deux avec une égalité stricte.
+  const enHaut = () => (mainRef.current?.scrollTop || 0) <= 3;
   const handleTouchStart = (e) => {
     // Ne jamais initier le tirer-pour-rafraîchir depuis un champ de saisie — un simple tap
     // avec un micro-mouvement du doigt peut sinon déclencher un léger pullDistance, qui
@@ -3050,16 +3056,12 @@ export default function Platform() {
       touchStartY.current = 0;
       return;
     }
-    if (mainRef.current && mainRef.current.scrollTop === 0) {
-      touchStartY.current = e.touches[0].clientY;
-    } else {
-      touchStartY.current = 0;
-    }
+    touchStartY.current = enHaut() ? e.touches[0].clientY : 0;
   };
   const handleTouchMove = (e) => {
     if (!touchStartY.current || isRefreshing) return;
     const delta = e.touches[0].clientY - touchStartY.current;
-    if (delta > 0 && mainRef.current?.scrollTop === 0) {
+    if (delta > 0 && enHaut()) {
       setPullDistance(Math.min(delta, 100));
     }
   };
@@ -3095,21 +3097,46 @@ export default function Platform() {
   const [showLogin, setShowLogin] = useState(false);
   const [loginAutoPrompt, setLoginAutoPrompt] = useState(false);
 
-  // ── Incitation "Ajouter à l'écran d'accueil" (iOS uniquement, pré-requis pour que les notifs push marchent sur iPhone) ──
-  const [showIOSPrompt, setShowIOSPrompt] = useState(false);
+  // ── Incitation "Ajouter à l'écran d'accueil" — universelle. Sur Android/Chromium, un vrai
+  // bouton d'installation en un clic (API beforeinstallprompt, la seule plateforme qui le
+  // permet réellement). Sur iOS, Apple n'expose AUCUNE API pour déclencher ça par code —
+  // c'est une vraie limite plateforme, pas un manque d'effort : on ne peut qu'afficher des
+  // instructions manuelles aussi claires que possible. ──
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const deferredInstallPrompt = useRef(null);
+  const [canAutoInstall, setCanAutoInstall] = useState(false);
+  useEffect(() => {
+    const onBeforeInstall = (e) => {
+      e.preventDefault();
+      deferredInstallPrompt.current = e;
+      setCanAutoInstall(true);
+    };
+    window.addEventListener('beforeinstallprompt', onBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+  }, []);
   useEffect(() => {
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-    if (!isIOS || isStandalone) return;
+    if (isStandalone) return;
     try {
-      if (localStorage.getItem('adstack_ios_prompted')) return;
+      if (localStorage.getItem('adstack_install_prompted')) return;
     } catch(e) {}
     const t = setTimeout(() => {
-      setShowIOSPrompt(true);
-      try { localStorage.setItem('adstack_ios_prompted', '1'); } catch(e) {}
+      // Sur Android sans event beforeinstallprompt capté (déjà installé, ou navigateur non
+      // compatible) et pas iOS non plus → rien de pertinent à montrer, on n'insiste pas.
+      if (!isIOS && !deferredInstallPrompt.current) return;
+      setShowInstallPrompt(true);
+      try { localStorage.setItem('adstack_install_prompted', '1'); } catch(e) {}
     }, 30000);
     return () => clearTimeout(t);
   }, []);
+  const lancerInstallation = async () => {
+    if (!deferredInstallPrompt.current) return;
+    deferredInstallPrompt.current.prompt();
+    await deferredInstallPrompt.current.userChoice;
+    deferredInstallPrompt.current = null;
+    setShowInstallPrompt(false);
+  };
 
   // ── Auto-prompt connexion Google après 40s (nouveau visiteur non connecté) ──
   useEffect(() => {
@@ -3127,7 +3154,11 @@ export default function Platform() {
     return () => clearTimeout(t);
   }, [user]);
 
-  // ── Auto-prompt notifications push après 70s (1x par visite tant que pas décidé — jamais plus, pour éviter que Chrome bloque le popup si trop sollicité) ──
+  // ── Auto-prompt notifications push après 70s — passe D'ABORD par un écran maison expliquant
+  // la valeur, et ne déclenche la VRAIE popup native du navigateur qu'après un clic volontaire.
+  // Demander la permission brute sans contexte est un anti-pattern connu qui fait chuter le
+  // taux d'acceptation — le navigateur affiche sa popup générique sans aucune explication. ──
+  const [showPushPriming, setShowPushPriming] = useState(false);
   useEffect(() => {
     try {
       if (sessionStorage.getItem('adstack_push_prompted')) return;
@@ -3136,11 +3167,16 @@ export default function Platform() {
       try { sessionStorage.setItem('adstack_push_prompted', '1'); } catch(e) {}
       const status = await getPushStatus();
       if (status === 'default') {
-        await registerPushSubscription(user?.id);
+        setShowInstallPrompt(false); // jamais deux bandeaux en bas de l'écran en même temps
+        setShowPushPriming(true);
       }
     }, 70000);
     return () => clearTimeout(t);
   }, [user]);
+  const activerNotifications = async () => {
+    setShowPushPriming(false);
+    await registerPushSubscription(user?.id);
+  };
 
   // ── Notifications ──
   const [toasts, setToasts] = useState([]);
@@ -3384,14 +3420,19 @@ export default function Platform() {
       document.documentElement.style.setProperty('--app-height', `${h}px`);
     };
     setRealHeight();
-    // Petit délai supplémentaire : certaines versions iOS ne rapportent la bonne valeur qu'après le tout premier paint
-    const t = setTimeout(setRealHeight, 100);
+    // Plusieurs tentatives échelonnées : au lancement depuis l'écran d'accueil (PWA installée),
+    // l'interface du système (barre de statut, etc.) peut mettre plus de temps à se stabiliser
+    // qu'un simple onglet de navigateur — un seul essai à 100ms ne suffisait pas toujours,
+    // laissant un espace vide en bas tant que la vraie hauteur n'était pas recalculée.
+    const timers = [100, 300, 600, 1000].map(delai => setTimeout(setRealHeight, delai));
     window.addEventListener('resize', setRealHeight);
     window.addEventListener('orientationchange', setRealHeight);
+    window.addEventListener('pageshow', setRealHeight);
     window.visualViewport?.addEventListener('resize', setRealHeight);
     return () => {
-      clearTimeout(t);
+      timers.forEach(clearTimeout);
       window.removeEventListener('resize', setRealHeight);
+      window.removeEventListener('pageshow', setRealHeight);
       window.removeEventListener('orientationchange', setRealHeight);
       window.visualViewport?.removeEventListener('resize', setRealHeight);
     };
@@ -3609,18 +3650,42 @@ const views = {
     </div>
     <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} onOpenPayment={(productId)=>setPaymentProductId(productId)} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C} autoPrompt={loginAutoPrompt}/>}
-    {showIOSPrompt && (
-      <div style={{position:'fixed',left:12,right:12,bottom:12,zIndex:550,maxWidth:420,margin:'0 auto',borderRadius:14,background:'#12151C',border:'1px solid rgba(255,255,255,0.14)',padding:'14px 16px',boxShadow:'0 12px 40px rgba(0,0,0,0.5)',display:'flex',alignItems:'center',gap:12,animation:'toastIn .3s cubic-bezier(.34,1.56,.64,1)'}}>
+    {showInstallPrompt && (
+      <div style={{position:'fixed',left:12,right:12,bottom: isMobile ? 88 : 96,zIndex:550,maxWidth:420,margin:'0 auto',borderRadius:14,background:'#12151C',border:'1px solid rgba(255,255,255,0.14)',padding:'14px 16px',boxShadow:'0 12px 40px rgba(0,0,0,0.5)',display:'flex',alignItems:'center',gap:12,animation:'toastIn .3s cubic-bezier(.34,1.56,.64,1)'}}>
         <div style={{width:36,height:36,borderRadius:10,background:'rgba(91,141,239,0.14)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
           <Icon name="bell" size={17} color="#5B8DEF"/>
         </div>
         <div style={{flex:1,fontSize:12,color:'#E8EAF0',lineHeight:1.5}}>
           Ajoute AdBoard à ton écran d'accueil pour recevoir tes notifications (visuels prêts, suivi de commande...).
-          <div style={{marginTop:4,color:'#8891A0',fontSize:11}}>
-            Appuie sur <strong>Partager</strong> <span style={{fontSize:13}}>⎋</span> puis <strong>"Sur l'écran d'accueil"</strong>.
-          </div>
+          {!canAutoInstall && (
+            <div style={{marginTop:4,color:'#8891A0',fontSize:11}}>
+              Appuie sur <strong>Partager</strong> <span style={{fontSize:13}}>⎋</span> puis <strong>"Sur l'écran d'accueil"</strong>.
+            </div>
+          )}
         </div>
-        <button onClick={()=>setShowIOSPrompt(false)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(255,255,255,0.08)',color:'#8891A0',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+        {canAutoInstall && (
+          <button onClick={lancerInstallation} style={{padding:'8px 14px',borderRadius:8,border:'none',background:'#5B8DEF',color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
+            Installer
+          </button>
+        )}
+        <button onClick={()=>setShowInstallPrompt(false)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(255,255,255,0.08)',color:'#8891A0',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon name="x" size={12} color="#8891A0"/>
+        </button>
+      </div>
+    )}
+
+    {showPushPriming && (
+      <div style={{position:'fixed',left:12,right:12,bottom: isMobile ? 88 : 96,zIndex:550,maxWidth:420,margin:'0 auto',borderRadius:14,background:'#12151C',border:'1px solid rgba(255,255,255,0.14)',padding:'14px 16px',boxShadow:'0 12px 40px rgba(0,0,0,0.5)',display:'flex',alignItems:'center',gap:12,animation:'toastIn .3s cubic-bezier(.34,1.56,.64,1)'}}>
+        <div style={{width:36,height:36,borderRadius:10,background:'rgba(91,141,239,0.14)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          <Icon name="bell" size={17} color="#5B8DEF"/>
+        </div>
+        <div style={{flex:1,fontSize:12,color:'#E8EAF0',lineHeight:1.5}}>
+          Sois prévenu dès que tes visuels sont prêts, sans avoir à revenir vérifier.
+        </div>
+        <button onClick={activerNotifications} style={{padding:'8px 14px',borderRadius:8,border:'none',background:'#5B8DEF',color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
+          Activer
+        </button>
+        <button onClick={()=>setShowPushPriming(false)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(255,255,255,0.08)',color:'#8891A0',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
           <Icon name="x" size={12} color="#8891A0"/>
         </button>
       </div>
@@ -3639,7 +3704,7 @@ const views = {
     )}
 
     {reAskConfirm && (
-      <div onClick={()=>setReAskConfirm(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:400,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div onClick={()=>setReAskConfirm(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
         <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:380,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
           <div style={{width:40,height:40,borderRadius:11,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14,color:C.accent}}>
             <Icon name="sparkle" size={18} color={C.accent}/>
