@@ -2269,7 +2269,7 @@ function handleJsonBrief(input){
     let brief;
     try { brief = JSON.parse(e.target.result); }
     catch(err){ alert('JSON invalide : ' + err.message); input.value=''; return; }
-    lastBrief = { marque: brief.marque||'', produit: brief.produit||'', pays: brief.pays||'' };
+    lastBrief = { marque: brief.marque||'', produit: brief.produit||'', pays: brief.pays||'', lien_page_produit: brief.lien_page_produit||'' };
 
     if(brief.photo_produit && brief.photo_produit.data){
       testImgB64 = brief.photo_produit.data;
