@@ -2298,49 +2298,116 @@ const Marche = ({products, isDemo, setSection}) => {
           </div>
         ) : (
           <>
-            <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12,marginBottom:12}}>
-              <div style={cs({padding:'18px'})}>
-                <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:12}}>Persona Principal</div>
-                <div style={{display:'flex',gap:12,marginBottom:14}}>
-                  <div style={{width:44,height:44,borderRadius:10,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <Icon name="person" size={20} color={C.text}/>
+            {/* Positionnement marché */}
+            {m.positionnement && (
+              <div style={cs({padding:'18px',marginBottom:12})}>
+                <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:14}}>Positionnement marché</div>
+                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(2,1fr)',gap:10,marginBottom:14}}>
+                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
+                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Taille du marché</div>
+                    <div style={{fontSize:12.5,color:C.text,marginTop:5,lineHeight:1.5}}>{m.positionnement.taille_marche_personnes}</div>
                   </div>
-                  <div>
-                    <div style={{fontSize:14,fontWeight:700,color:C.text}}>{m.persona.nom}</div>
-                    <div style={{fontSize:11,color:C.sec}}>{m.persona.role}</div>
-                    <div style={{fontSize:10,color:C.sec,marginTop:1}}>{m.persona.revenu}</div>
+                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
+                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Valeur estimée</div>
+                    <div style={{fontSize:12.5,color:C.text,marginTop:5,lineHeight:1.5}}>{m.positionnement.taille_marche_revenus}</div>
+                  </div>
+                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
+                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Tendance</div>
+                    <div style={{fontSize:12.5,color:C.text,marginTop:5,lineHeight:1.5}}>{m.positionnement.taux_croissance}</div>
+                  </div>
+                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
+                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:5}}>Concurrence</div>
+                    <div style={{display:'flex',alignItems:'center',gap:7}}>
+                      <span style={{fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:20,
+                        background: m.positionnement.concurrence==='Élevée' ? 'rgba(229,80,80,0.14)' : m.positionnement.concurrence==='Moyenne' ? 'rgba(255,181,71,0.14)' : 'rgba(34,197,94,0.14)',
+                        color: m.positionnement.concurrence==='Élevée' ? '#E55050' : m.positionnement.concurrence==='Moyenne' ? '#FFB547' : '#22C55E'}}>
+                        {m.positionnement.concurrence}
+                      </span>
+                    </div>
+                    <div style={{fontSize:11.5,color:C.sec,marginTop:6,lineHeight:1.5}}>{m.positionnement.concurrence_explication}</div>
                   </div>
                 </div>
-                <div style={{fontSize:12,color:C.sec,lineHeight:1.6,padding:'10px 12px',background:'rgba(255,255,255,0.055)',borderRadius:8,border:`1px solid ${C.border}`,marginBottom:12,fontStyle:'italic'}}>
-                  {m.persona.quote}
-                </div>
-                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                  {m.persona.platforms.map(pl => <Tag key={pl} ch={pl} color="gray"/>)}
+                <div style={{padding:'11px 14px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',fontSize:12,color:C.text,lineHeight:1.5}}>
+                  💰 {m.positionnement.positionnement_prix}
                 </div>
               </div>
-              <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                {m.stats.map(stat => (
-                  <div key={stat.l} style={cs({padding:'13px 16px'})}>
-                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>{stat.l}</div>
-                    <div style={{fontSize:14,fontWeight:700,color:stat.c==='red'?C.accent:C.text,marginTop:4}}>{stat.v}</div>
-                    <div style={{fontSize:10,color:C.sec}}>{stat.s}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            )}
 
-            <div style={cs({padding:'18px',position:'relative'})}>
-              <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:14}}>Insights applicables</div>
-              <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:10}}>
-                {m.insights.map((ins,idx) => (
-                  <div key={idx} style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.055)',border:`1px solid ${C.border}`,display:'flex',gap:11,alignItems:'flex-start'}}>
-                    <div style={{flexShrink:0,marginTop:1,color:C.sec}}><Icon name={ins.icon} size={16}/></div>
-                    <span style={{fontSize:11,color:C.sec,lineHeight:1.55}}>{ins.t}</span>
-                  </div>
-                ))}
+            {/* Insights actionnables */}
+            {m.insights?.length > 0 && (
+              <div style={cs({padding:'18px',marginBottom:12,position:'relative'})}>
+                <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:14}}>Insights applicables</div>
+                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:10}}>
+                  {m.insights.map((ins,idx) => (
+                    <div key={idx} style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.055)',border:`1px solid ${C.border}`,display:'flex',gap:11,alignItems:'flex-start'}}>
+                      <div style={{flexShrink:0,marginTop:1,color:C.sec}}><Icon name={ins.icon} size={16}/></div>
+                      <span style={{fontSize:11,color:C.sec,lineHeight:1.55}}>{ins.t}</span>
+                    </div>
+                  ))}
+                </div>
+                {isDemo && <LockOverlay/>}
               </div>
-              {isDemo && <LockOverlay/>}
-            </div>
+            )}
+
+            {/* Cibles — s'accumulent à chaque nouveau batch, la plus récente en premier */}
+            {m.cibles?.length > 0 && (
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
+                  Cibles identifiées
+                  <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:'rgba(255,255,255,0.08)',color:C.sec}}>{m.cibles.length}</span>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                  {[...m.cibles].reverse().map((cible, idx) => (
+                    <div key={cible.id||idx} style={cs({padding:'18px'})}>
+                      {cible.angle_utilise && (
+                        <div style={{fontSize:10.5,color:C.accent,fontWeight:700,marginBottom:12,padding:'4px 10px',borderRadius:6,background:'rgba(45,127,249,0.10)',display:'inline-block'}}>
+                          {cible.angle_utilise}
+                        </div>
+                      )}
+                      <div style={{display:'flex',gap:12,marginBottom:14}}>
+                        <div style={{width:44,height:44,borderRadius:10,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                          <Icon name="person" size={20} color={C.text}/>
+                        </div>
+                        <div>
+                          <div style={{fontSize:14,fontWeight:700,color:C.text}}>{cible.nom}{cible.age ? `, ${cible.age} ans` : ''}</div>
+                          <div style={{fontSize:11,color:C.sec}}>{cible.role}{cible.ville ? ` · ${cible.ville}` : ''}</div>
+                          <div style={{fontSize:10,color:C.sec,marginTop:1}}>{cible.revenu}</div>
+                        </div>
+                      </div>
+                      {cible.quote && (
+                        <div style={{fontSize:12,color:C.sec,lineHeight:1.6,padding:'10px 12px',background:'rgba(255,255,255,0.055)',borderRadius:8,border:`1px solid ${C.border}`,marginBottom:12,fontStyle:'italic'}}>
+                          "{cible.quote}"
+                        </div>
+                      )}
+                      {cible.platforms?.length > 0 && (
+                        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+                          {cible.platforms.map(pl => <Tag key={pl} ch={pl} color="gray"/>)}
+                        </div>
+                      )}
+                      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:10}}>
+                        {cible.desirs?.length > 0 && (
+                          <div>
+                            <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Ce qu'elle veut</div>
+                            {cible.desirs.map((d,i) => <div key={i} style={{fontSize:11.5,color:C.text,lineHeight:1.6}}>✓ {d}</div>)}
+                          </div>
+                        )}
+                        {cible.craintes?.length > 0 && (
+                          <div>
+                            <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Ce qui la freine</div>
+                            {cible.craintes.map((cr,i) => <div key={i} style={{fontSize:11.5,color:C.text,lineHeight:1.6}}>⚠ {cr}</div>)}
+                          </div>
+                        )}
+                      </div>
+                      {cible.comportement_social && (
+                        <div style={{fontSize:11.5,color:C.sec,lineHeight:1.6,marginTop:12,paddingTop:12,borderTop:`1px solid ${C.border}`}}>
+                          📱 {cible.comportement_social}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
