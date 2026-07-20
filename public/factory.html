@@ -4456,7 +4456,12 @@ const AGENTS_PROD = [
    maxTokens:8000,
    placeholder:'Colle ici la Synthèse complète S0→S7 produite par l\'Analyste de Marché...',
    prompt:'Produis les Ad Copy complets pour les 3 angles selon ta compétence — 5 hooks variés + 1 description AIDA paragraphée par angle, registre Most Aware.',
-   comp:'[Chargement COMPETENCE_COPYWRITER_PROD.md...]'}
+   comp:'[Chargement COMPETENCE_COPYWRITER_PROD.md...]'},
+  {name:'Livrable Données Marché',sub:'Synthèse → données marché en langage simple pour le client',model:'gemini-2.5-pro',file:'COMPETENCE_LIVRABLE_MARCHE.md',status:'wip',color:'#8FD9A8',
+   maxTokens:3000,
+   placeholder:'Colle ici la Synthèse complète S0→S7 produite par l\'Analyste de Marché...',
+   prompt:'Réécris cette synthèse en langage simple pour le client selon ta compétence. Réponds uniquement par le JSON demandé, sans le lier à aucun compte — c\'est un test de sortie seulement.',
+   comp:'[Chargement COMPETENCE_LIVRABLE_MARCHE.md...]'}
 ];
 
 let currentMode = 'demo';
