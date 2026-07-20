@@ -784,19 +784,19 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
         <div class="prodv2-pipeline-grid">
           <div class="prodv2-agent pending" id="prodv2Agent1">
             <div class="prodv2-agent-head"><div class="prodv2-agent-badge">1</div><div class="prodv2-agent-name">Analyste de Marché</div></div>
-            <div class="prodv2-agent-model">claude-sonnet-4-6</div>
+            <div class="prodv2-agent-model">gemini-2.5-pro</div>
             <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
             <div class="prodv2-agent-status">En attente</div>
           </div>
           <div class="prodv2-agent pending" id="prodv2Agent2">
             <div class="prodv2-agent-head"><div class="prodv2-agent-badge">2</div><div class="prodv2-agent-name">Creative Image</div></div>
-            <div class="prodv2-agent-model">sonnet-4-6 + gemini-3-pro-image</div>
+            <div class="prodv2-agent-model">gemini-2.5-pro + gemini-3-pro-image</div>
             <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
             <div class="prodv2-agent-status">En attente — 9 créatives à produire</div>
           </div>
           <div class="prodv2-agent pending" id="prodv2Agent3">
             <div class="prodv2-agent-head"><div class="prodv2-agent-badge">3</div><div class="prodv2-agent-name">Copywriter</div></div>
-            <div class="prodv2-agent-model">claude-sonnet-4-6</div>
+            <div class="prodv2-agent-model">gemini-2.5-pro</div>
             <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
             <div class="prodv2-agent-status">En attente — 5 hooks + 1 description × 3 angles</div>
           </div>
@@ -4190,7 +4190,7 @@ async function deleteCTById(id) {
   renderCTSelector();
 }
 
-// ── UPLOAD FLOW — Auto-nommage Claude Vision ──
+// ── UPLOAD FLOW — Auto-nommage Gemini Vision ──
 
 function triggerCTUpload() {
   var inp = document.getElementById('ctFileInput');
@@ -4203,7 +4203,7 @@ function handleCTFilesSelected(files) {
 }
 
 async function _autoNameCT(b64, mime) {
-  // Appel Claude Vision pour générer un nom structuré interprétable par les agents
+  // Appel Gemini Vision pour générer un nom structuré interprétable par les agents
   var NAMING_PROMPT = `Analyse ce Creative Template Meta Ads avec precision maximale.
 Genere UN nom unique (65 caracteres max) decrivant specifiquement cette image.
 Couvre : structure visuelle + style/ambiance + elements cles + traitement graphique.
@@ -4254,7 +4254,7 @@ async function _processCTQueue(files) {
       // 1. Compression
       var compressed = await _ctCompress(file);
 
-      // 2. Auto-nommage Claude Vision
+      // 2. Auto-nommage Gemini Vision
       if (toastSub) toastSub.textContent = 'Nommage IA…';
       var name = await _autoNameCT(compressed.b64, compressed.mime);
 
@@ -4367,13 +4367,13 @@ const AGENTS_DEMO = [
 ];
 
 const AGENTS_PROD = [
-  {name:'Analyste de Marché',sub:'Brief client (JSON) → Synthèse S0→S7, persona + 3 angles',model:'claude-sonnet-4-6',file:'COMPETENCE_ANALYSTE.md',status:'wip',color:'#5C7A99',
+  {name:'Analyste de Marché',sub:'Brief client (JSON) → Synthèse S0→S7, persona + 3 angles',model:'gemini-2.5-pro',file:'COMPETENCE_ANALYSTE.md',status:'wip',color:'#5C7A99',
    hasJsonBrief:true,
    maxTokens:64000,
    placeholder:'Charge le brief.json du client via le bouton ci-dessus...',
    prompt:'DONNÉES BRUTES :\n[Sources externes (Gemini/Trends/YouTube/Jumia/CSE) non connectées pour ce test — applique RÈGLE #1/#2/#3 de ta compétence : marque chaque point qui en dépendrait par [NON TROUVÉ DANS DONNÉES BRUTES].]\n\nProduis la Synthèse complète S0→S7 selon ta compétence.',
    comp:'[Chargement COMPETENCE_ANALYSTE.md...]'},
-  {name:'Creative Image',sub:'CT + brief.json + Synthèse → Static ad Meta Ads 4:5',model:'claude-sonnet-4-6 + gemini-3-pro-image',file:'COMPETENCE_CREATIVE_PROD.md',status:'wip',color:'#5AB4FF',
+  {name:'Creative Image',sub:'CT + brief.json + Synthèse → Static ad Meta Ads 4:5',model:'gemini-2.5-pro + gemini-3-pro-image',file:'COMPETENCE_CREATIVE_PROD.md',status:'wip',color:'#5AB4FF',
    hasJsonBrief:true,
    hasCTSelector:true,
    hasSubAvatar:true,
@@ -4382,7 +4382,7 @@ const AGENTS_PROD = [
    maxTokens:8000,
    placeholder:'Colle ici la Synthèse complète S0→S7 produite par l\'Analyste de Marché...',
    comp:'[Chargement COMPETENCE_CREATIVE_PROD.md...]'},
-  {name:'Copywriter',sub:'Synthèse → 3 angles × (5 hooks + 1 description AIDA)',model:'claude-sonnet-4-6',file:'COMPETENCE_COPYWRITER_PROD.md',status:'wip',color:'#7FA8D9',
+  {name:'Copywriter',sub:'Synthèse → 3 angles × (5 hooks + 1 description AIDA)',model:'gemini-2.5-pro',file:'COMPETENCE_COPYWRITER_PROD.md',status:'wip',color:'#7FA8D9',
    isCopywriter:true,
    maxTokens:8000,
    placeholder:'Colle ici la Synthèse complète S0→S7 produite par l\'Analyste de Marché...',
@@ -5494,13 +5494,13 @@ async function runAgentTest() {
       document.querySelectorAll('.agent-status')[currentAgentIdx].className = 'agent-status status-ready';
 
     } else if(agent.hasCTSelector && agent.isCreativeProd) {
-      // ── Creative Image PRODUCTION → Claude Sonnet (prompt) → Gemini 3 Pro Image (render) ──
+      // ── Creative Image PRODUCTION → Gemini 2.5 Pro (prompt) → Gemini 3 Pro Image (render) ──
       if(!selectedCT || !CT_IMAGES[selectedCT]) { alert('Sélectionne un CT dans la galerie.'); btn.disabled=false; btn.textContent='▶ Tester cet agent'; clearInterval(interval); return; }
       if(!testImgB64) { alert('Charge le brief.json (la photo produit en sera extraite).'); btn.disabled=false; btn.textContent='▶ Tester cet agent'; clearInterval(interval); return; }
       const syntheseText = (document.getElementById('syntheseInput')||{}).value || '';
       if(!syntheseText.trim()) { alert('Colle la Synthèse S0→S7 produite par l\'Analyste de Marché.'); btn.disabled=false; btn.textContent='▶ Tester cet agent'; clearInterval(interval); return; }
 
-      output.textContent = '⏳ Claude Sonnet 4.6 raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative...';
+      output.textContent = '⏳ Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative...';
 
       const compCreativeProd = COMP_FILES['COMPETENCE_CREATIVE_PROD.md'] || '';
       const ctMime = CT_IMAGES[selectedCT+'_mime'] || 'image/jpeg';
