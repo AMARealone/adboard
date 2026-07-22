@@ -2558,6 +2558,84 @@ GATE FINAL (silencieux — si un point échoue, réécris)
 □ Emojis intentionnels partout, jamais décoratifs vides, pas de strings d'emojis collés ?
 □ Aucune description ne dépasse 130 mots — coupe le gras si oui ?`;
 
+COMP_FILES['COMPETENCE_STRATEGE_V1.0.md'] = `Tu es le STRATÈGE DE MARCHÉ — Mode Démo.
+
+Ta mission : à partir d'une recherche multi-source (DONNÉES BRUTES) et d'un brief simplifié, produire une synthèse S0→S7 rapide mais crédible pour générer UNE créative de démonstration. Contrairement au mode production, tu ne construis qu'UN SEUL angle marketing (pas 3), et pas de déclinaison par niveau de conscience — l'objectif est un aperçu bluffant en une seule créative, pas une matrice complète.
+
+⚠️ RÈGLE ANTI-AI-SLOP : base-toi sur DONNÉES BRUTES, jamais sur ton mode de raisonnement générique. Une information absente de DONNÉES BRUTES est signalée [ESTIMATION] plutôt qu'inventée comme un fait.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORMAT DE SORTIE — S0 À S7
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+S0 — PRODUIT & PALETTE & OFFRE
+Nom du produit, mécanisme réel, catégorie, palette de marque observée, prix/offre si disponible.
+
+S1 — PERSONA
+Un seul persona : prénom local, âge, ville, occupation, pouvoir d'achat, déclencheur d'achat, 2-3 objections principales, journée type (3 moments factuels HH:MM), frustration profonde et rêve associé.
+
+S2 — ANGLE MARKETING UNIQUE
+Un seul angle construit sur un moteur dominant (peur, désir ou douleur) trouvé dans DONNÉES BRUTES. Formulation en 1-2 phrases : moteur nommé + produit nommé + élément différenciant. Doit être spécifique à ce produit, non réplicable par un concurrent.
+
+S3 — NIVEAU DE CONSCIENCE
+Un seul niveau choisi selon ce que DONNÉES BRUTES révèle sur la maturité de ce marché (Solution Aware par défaut si incertain — reste pédagogique sans nommer le produit trop tôt dans le hook).
+
+S4 — USP / UMS
+USP format "[Produit] est le seul qui X grâce à Y". UMS : mécanisme réel observable. Si non trouvé : [NON SOURCÉ].
+
+S5 — VERBATIM CLÉ
+1-2 verbatims réels trouvés dans DONNÉES BRUTES illustrant la douleur/désir du persona, avec source.
+
+S6 — VOIX & LEXIQUE
+Tu/vous selon le marché, 3-5 mots/expressions à utiliser issus des verbatims réels (pas édulcorés), 2-3 mots à éviter.
+
+S7 — CODE VISUEL
+Une scène : décor concret et spécifique au pays, persona (posture/expression cohérente avec le moteur de l'angle), lumière/ambiance. Liste noire : clichés à éviter pour cette catégorie.
+
+GATE FINAL :
+❌ Angle générique sans moteur nommé ni produit nommé
+❌ Verbatim inventé — utilise [AUCUN VERBATIM TROUVÉ] si absent de DONNÉES BRUTES
+❌ USP hors format obligatoire
+❌ Persona réduit à des traits émotionnels sans actions concrètes dans la journée type`;
+
+COMP_FILES['COMPETENCE_MINDMAP.md'] = `Tu es l'agent MINDMAP DÉMO.
+
+Ta mission : à partir d'une synthèse S0→S7 (produite par le Stratège), générer un résumé visuel structuré en mindmap — destiné à être envoyé à un prospect via WhatsApp pendant une conversation de prospection, pour lui montrer concrètement la profondeur de recherche derrière sa future créative.
+
+⚠️ RÈGLE ABSOLUE : réponds uniquement par un objet JSON valide, sans markdown ni explication.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RÈGLES D'ÉCRITURE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ Langage simple, sans jargon marketing — le prospect n'a aucune formation en publicité
+→ Concret : reprends les vrais éléments de la synthèse (chiffres, noms, verbatims), jamais une généralité
+→ Doit donner envie : le prospect doit se dire "ils ont vraiment étudié mon marché"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORMAT JSON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{
+  "titre": "Nom du produit + pays, ex: 'Ashwagandha Bio — Côte d'Ivoire'",
+  "branches": [
+    {
+      "label": "Ta cible",
+      "contenu": "1-2 phrases simples décrivant le persona (prénom, rôle, ville)"
+    },
+    {
+      "label": "Ce qui la freine ou la motive",
+      "contenu": "1-2 phrases simples sur le moteur principal (peur/désir/douleur) de l'angle retenu"
+    },
+    {
+      "label": "Ce qui te différencie",
+      "contenu": "1-2 phrases simples sur l'USP/UMS, sans jargon"
+    },
+    {
+      "label": "L'angle retenu pour ta créative",
+      "contenu": "1-2 phrases simples expliquant l'idée créative choisie"
+    }
+  ]
+}`;
+
 COMP_FILES['MASTER_CREATIVE.md'] = `Tu génères un prompt Gemini pour une static ad Meta Ads 4:5 — MODE DÉMO.
 
 Tu es l'agent Creative Image — Démo. Tu produis UNE créative de démonstration à partir d'un CT (Creative Template) de référence, d'une photo produit, et d'une synthèse de marché simplifiée. Contrairement au mode production, tu ne gères ni angles multiples ni niveaux de conscience — une seule créative, la meilleure possible, pour donner un aperçu bluffant de la qualité AdStack à un prospect.
@@ -3647,62 +3725,112 @@ EXEMPLE DE TON ATTENDU (illustratif, pas à copier)
 `;
 
 // ── SÉLECTEUR CT COMPACT (bande horizontale) ──
-// ── STOCKAGE CT — IndexedDB ────────────────────────────────────
-// Couche complète, reconstruite après une corruption qui l'avait effacée entièrement
-// (aucune trace de _ctGetAll/_ctPut/_ctDel/_ctCompress ne subsistait dans le fichier,
-// bien qu'elles soient appelées à plusieurs endroits — la galerie CT restait donc
-// silencieusement vide, sans aucune erreur visible).
-const _CT_DB_NAME = 'adstack_ct_db';
-const _CT_STORE = 'cts';
+// ── STOCKAGE CT — Supabase Storage (bucket ct-gallery) ──────────
+// Chaque CT = 2 fichiers dans le bucket : id.jpg (image) + id.json ({name, addedAt}).
+// Confirmé via le vrai contenu d'un .json existant — les CT vivent nativement ici,
+// jamais dans le navigateur (IndexedDB était une fausse piste des tentatives précédentes).
+const _CT_BUCKET = 'ct-gallery';
 
-function _ctOpenDB() {
-  return new Promise((resolve, reject) => {
-    var req = indexedDB.open(_CT_DB_NAME, 1);
-    req.onupgradeneeded = function(e) {
-      var db = e.target.result;
-      if (!db.objectStoreNames.contains(_CT_STORE)) {
-        db.createObjectStore(_CT_STORE, { keyPath: 'id' });
-      }
-    };
-    req.onsuccess = function(e) { resolve(e.target.result); };
-    req.onerror = function(e) { reject(e.target.error); };
-  });
+function _ctPublicUrl(fileName) {
+  return `${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/public/${_CT_BUCKET}/${fileName}`;
 }
 
 async function _ctGetAll() {
-  var db = await _ctOpenDB();
-  return new Promise((resolve, reject) => {
-    var tx = db.transaction(_CT_STORE, 'readonly');
-    var store = tx.objectStore(_CT_STORE);
-    var req = store.getAll();
-    req.onsuccess = function() { resolve(req.result || []); };
-    req.onerror = function() { reject(req.error); };
+  var resp = await fetch(`${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/list/${_CT_BUCKET}`, {
+    method: 'POST',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, SB_H_F),
+    body: JSON.stringify({ prefix: '', limit: 2000, sortBy: { column: 'name', order: 'desc' } })
   });
+  if (!resp.ok) {
+    var errTxt = await resp.text().catch(function(){ return ''; });
+    throw new Error('Liste Supabase Storage échouée : HTTP ' + resp.status + ' — ' + errTxt.slice(0,200));
+  }
+  var files = await resp.json();
+
+  var byId = {};
+  files.forEach(function(f) {
+    var m = f.name.match(/^(ct_\d+_[a-z0-9]+)\.(jpg|jpeg|png|webp|json)$/i);
+    if (!m) return;
+    var id = m[1], ext = m[2].toLowerCase();
+    if (!byId[id]) byId[id] = {};
+    if (ext === 'json') byId[id].jsonName = f.name;
+    else { byId[id].imgName = f.name; byId[id].mime = 'image/' + (ext === 'jpg' ? 'jpeg' : ext); }
+  });
+
+  var records = [];
+  for (var id in byId) {
+    var entry = byId[id];
+    if (!entry.imgName) continue; // .json orphelin sans image associée — ignoré
+    var meta = { name: id, addedAt: 0 };
+    if (entry.jsonName) {
+      try {
+        var mResp = await fetch(_ctPublicUrl(entry.jsonName));
+        if (mResp.ok) meta = await mResp.json();
+      } catch(e) { /* garde le nom par défaut si le .json est illisible */ }
+    }
+    records.push({
+      id: id,
+      name: meta.name || id,
+      addedAt: meta.addedAt || 0,
+      mime: entry.mime || 'image/jpeg',
+      url: _ctPublicUrl(entry.imgName),
+    });
+  }
+  records.sort(function(a, b) { return b.addedAt - a.addedAt; });
+  return records;
 }
 
+// rec = { id, name, b64?, mime?, addedAt } — b64/mime fournis seulement lors d'un nouvel
+// upload (image à envoyer) ; pour un simple renommage, seuls id/name/addedAt sont fournis
+// et l'image existante dans le bucket n'est pas retouchée.
 async function _ctPut(rec) {
-  var db = await _ctOpenDB();
-  return new Promise((resolve, reject) => {
-    var tx = db.transaction(_CT_STORE, 'readwrite');
-    tx.objectStore(_CT_STORE).put(rec);
-    tx.oncomplete = function() { resolve(rec); };
-    tx.onerror = function() { reject(tx.error); };
+  var ext = (rec.mime && rec.mime.includes('png')) ? 'png' : (rec.mime && rec.mime.includes('webp')) ? 'webp' : 'jpg';
+  if (rec.b64) {
+    var byteChars = atob(rec.b64);
+    var byteNumbers = new Array(byteChars.length);
+    for (var i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    var blob = new Blob([new Uint8Array(byteNumbers)], { type: rec.mime || 'image/jpeg' });
+    var upResp = await fetch(`${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/${_CT_BUCKET}/${rec.id}.${ext}`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F, 'Content-Type': rec.mime || 'image/jpeg', 'x-upsert': 'true' },
+      body: blob
+    });
+    if (!upResp.ok) throw new Error('Upload image Supabase échoué : HTTP ' + upResp.status);
+  }
+  var jsonResp = await fetch(`${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/${_CT_BUCKET}/${rec.id}.json`, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F, 'Content-Type': 'application/json', 'x-upsert': 'true' },
+    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now() })
   });
+  if (!jsonResp.ok) throw new Error('Upload métadonnées Supabase échoué : HTTP ' + jsonResp.status);
+  return rec;
 }
 
 async function _ctDel(id) {
-  var db = await _ctOpenDB();
-  return new Promise((resolve, reject) => {
-    var tx = db.transaction(_CT_STORE, 'readwrite');
-    tx.objectStore(_CT_STORE).delete(id);
-    tx.oncomplete = function() { resolve(); };
-    tx.onerror = function() { reject(tx.error); };
+  var candidats = ['jpg','jpeg','png','webp','json'].map(function(ext) { return id + '.' + ext; });
+  await fetch(`${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/${_CT_BUCKET}`, {
+    method: 'DELETE',
+    headers: Object.assign({ 'Content-Type': 'application/json' }, SB_H_F),
+    body: JSON.stringify({ prefixes: candidats })
   });
 }
 
-// Compresse une image uploadée avant stockage — redimensionne au maximum 1200px sur le
-// plus grand côté et ré-encode en JPEG qualité 0.85, pour limiter le poids en IndexedDB
-// sans perte visible sur des créatives de référence (pas des visuels finaux).
+// Récupère le base64 d'un CT à la demande (pour l'envoyer à Gemini) — CT_IMAGES ne stocke
+// plus que l'URL publique (léger), jamais le base64 complet en mémoire pour chaque CT.
+async function _ctGetBase64(id) {
+  var url = CT_IMAGES[id];
+  var resp = await fetch(url);
+  var blob = await resp.blob();
+  return new Promise(function(resolve, reject) {
+    var reader = new FileReader();
+    reader.onload = function() { resolve(reader.result.split(',')[1]); };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+// Compresse une image uploadée avant envoi vers Supabase Storage — redimensionne au
+// maximum 1200px sur le plus grand côté et ré-encode en JPEG qualité 0.85.
 function _ctCompress(file) {
   return new Promise((resolve, reject) => {
     var reader = new FileReader();
@@ -3732,7 +3860,7 @@ async function renderCTSelector() {
   var grid = document.getElementById('ctSelectorGrid');
   if (!grid) return;
   var all;
-  try { all = await _ctGetAll(); } catch(e) { return; }
+  try { all = await _ctGetAll(); } catch(e) { console.error('[CT] Échec _ctGetAll :', e); return; }
   all.sort(function(a, b) { return b.addedAt - a.addedAt; });
   grid.innerHTML = '';
 
@@ -3779,7 +3907,7 @@ async function renderGallery() {
   if (!grid) return;
 
   var all;
-  try { all = await _ctGetAll(); } catch(e) { return; }
+  try { all = await _ctGetAll(); } catch(e) { console.error('[CT] Échec _ctGetAll :', e); return; }
 
   if (countEl) countEl.textContent = all.length + ' CT' + (all.length > 1 ? 's' : '') + ' dans la galerie';
 
