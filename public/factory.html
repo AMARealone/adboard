@@ -1269,15 +1269,15 @@ function copyDemoGenLink() {
 }
 
 // ── Sélection intelligente des CTs pour génération complète ──
-async function selectCTsForGeneration(synthesis, count) {
+async function selectCTsForGeneration(synthesis, count, mode) {
   const ids = Object.keys(CT_IMAGES).filter(function(k) {
-    return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt');
+    return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta');
   });
   if (ids.length === 0) return [];
   if (ids.length <= count) return ids.sort(function() { return Math.random() - 0.5; });
 
   const ctList = ids.map(function(id) {
-    return { id: id, name: CT_IMAGES[id + '_name'] || id };
+    return { id: id, name: CT_IMAGES[id + '_name'] || id, meta: CT_IMAGES[id + '_meta'] || '' };
   });
 
   try {
@@ -1287,7 +1287,8 @@ async function selectCTsForGeneration(synthesis, count) {
       body: JSON.stringify({
         synthesis: synthesis.substring(0, 4000),
         ctList: ctList,
-        count: count
+        count: count,
+        mode: mode || 'demo'
       })
     });
     const data = await resp.json();
@@ -1359,7 +1360,7 @@ async function runFullDemo() {
 
     // ── 2/3 — CREATIVE IMAGE ×3 : 3 CT sélectionnés intelligemment ──
     log('Sélection des CTs adaptés au contexte…');
-    const chosenCTs = await selectCTsForGeneration(synthese, 3);
+    const chosenCTs = await selectCTsForGeneration(synthese, 3, 'demo');
     if (chosenCTs.length === 0) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT.');
     log('✓ ' + chosenCTs.length + ' CT(s) sélectionné(s) : ' + chosenCTs.map(function(id){ return CT_IMAGES[id+'_name']||id; }).join(' · '), 'ok');
 
@@ -1928,7 +1929,7 @@ async function prodv2Launch() {
 
     // ── ÉTAPES 2 & 3 EN PARALLÈLE : Creatives ×9 et Copywriter ×3 ──
     prodv2SetAgentState(2, 'running', 'Sélection des CTs adaptés à la synthèse…', 5);
-    const ctPick = await selectCTsForGeneration(synthesis, 9);
+    const ctPick = await selectCTsForGeneration(synthesis, 9, 'production');
     if (ctPick.length === 0) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT.');
     console.log('[PROD] CTs selectionnes :', ctPick.map(function(id){ return CT_IMAGES[id+'_name'] || id; }).join(' / '));
 
@@ -3778,6 +3779,7 @@ async function _ctGetAll() {
       id: id,
       name: meta.name || id,
       addedAt: meta.addedAt || 0,
+      meta: meta.meta || '',
       mime: entry.mime || 'image/jpeg',
       url: _ctPublicUrl(entry.imgName),
     });
@@ -3786,9 +3788,9 @@ async function _ctGetAll() {
   return records;
 }
 
-// rec = { id, name, b64?, mime?, addedAt } — b64/mime fournis seulement lors d'un nouvel
-// upload (image à envoyer) ; pour un simple renommage, seuls id/name/addedAt sont fournis
-// et l'image existante dans le bucket n'est pas retouchée.
+// rec = { id, name, b64?, mime?, addedAt, meta? } — b64/mime fournis seulement lors d'un
+// nouvel upload (image à envoyer) ; pour un simple renommage, seuls id/name/addedAt/meta
+// sont fournis et l'image existante dans le bucket n'est pas retouchée.
 async function _ctPut(rec) {
   var ext = (rec.mime && rec.mime.includes('png')) ? 'png' : (rec.mime && rec.mime.includes('webp')) ? 'webp' : 'jpg';
   if (rec.b64) {
@@ -3806,7 +3808,7 @@ async function _ctPut(rec) {
   var jsonResp = await fetch(`${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/${_CT_BUCKET}/${rec.id}.json`, {
     method: 'POST',
     headers: { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F, 'Content-Type': 'application/json', 'x-upsert': 'true' },
-    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now() })
+    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '' })
   });
   if (!jsonResp.ok) throw new Error('Upload métadonnées Supabase échoué : HTTP ' + jsonResp.status);
   return rec;
@@ -3875,6 +3877,7 @@ async function renderCTSelector() {
     CT_IMAGES[rec.id + '_mime'] = rec.mime;
     CT_IMAGES[rec.id + '_name'] = rec.name;
     CT_IMAGES[rec.id + '_addedAt'] = rec.addedAt;
+    CT_IMAGES[rec.id + '_meta'] = rec.meta || '';
 
     var ct = { id: rec.id, name: rec.name };
     var btn = document.createElement('button');
@@ -4027,14 +4030,16 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
     });
     var data = await resp.json();
     var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
+    var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
     if (!name) throw new Error('Nom vide');
 
-    // Juste le nom change — pas de b64/mime ici, donc _ctPut ne re-uploade PAS l'image,
-    // seulement le .json de métadonnées (voir _ctPut).
-    await _ctPut({ id: id, name: name, addedAt: CT_IMAGES[id + '_addedAt'] || Date.now() });
+    // Juste le nom/meta changent — pas de b64/mime ici, donc _ctPut ne re-uploade PAS
+    // l'image, seulement le .json de métadonnées (voir _ctPut).
+    await _ctPut({ id: id, name: name, meta: meta, addedAt: CT_IMAGES[id + '_addedAt'] || Date.now() });
 
     // Mettre à jour mémoire
     CT_IMAGES[id + '_name'] = name;
+    CT_IMAGES[id + '_meta'] = meta;
 
     // Mettre à jour UI
     if (nameEl) { nameEl.textContent = name; nameEl.style.color = 'var(--t1)'; }
@@ -4089,10 +4094,13 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       var data = await resp.json();
       var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
+      var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
       if (!name) throw new Error('Nom vide reçu du serveur');
       rec.name = name;
+      rec.meta = meta;
       await _ctPut(rec);
       CT_IMAGES[rec.id + '_name'] = name;
+      CT_IMAGES[rec.id + '_meta'] = meta;
       succes++;
     } catch(e) {
       echecs++;
@@ -5634,6 +5642,7 @@ async function loadCTImages() {
       CT_IMAGES[rec.id + '_mime'] = rec.mime;
       CT_IMAGES[rec.id + '_name'] = rec.name;
       CT_IMAGES[rec.id + '_addedAt'] = rec.addedAt;
+    CT_IMAGES[rec.id + '_meta'] = rec.meta || '';
     });
   } catch(e) {
     console.warn('[loadCTImages] échec chargement initial :', e.message);
