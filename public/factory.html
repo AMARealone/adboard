@@ -939,6 +939,12 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
 
 const SERVER = 'https://adstack-server.onrender.com';
 // ── Supabase (file d'attente démos) ──
+// Cache en mémoire des CT (id -> URL publique, + _mime/_name/_addedAt par clé dérivée) —
+// variable manquante depuis la corruption d'origine, jamais restaurée jusqu'ici. Son absence
+// causait l'échec silencieux de "renommer tous" et de l'aperçu plein écran (ReferenceError
+// attrapée dans un try/catch pour l'un, non catchée pour l'autre).
+const CT_IMAGES = {};
+
 const SB_FACTORY  = 'https://mifljhsusidgzelnswma.supabase.co/rest/v1';
 const SB_KEY_F    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
 const SB_H_F      = { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F, 'Content-Type': 'application/json' };
