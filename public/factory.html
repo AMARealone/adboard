@@ -1372,22 +1372,32 @@ async function runFullDemo() {
       const ctDisplayName = CT_IMAGES[ct+'_name'] || ct;
       log(`2/3 · Creative Image — concept ${i+1}/3 (${ctDisplayName})...`);
       const ctMime = CT_IMAGES[ct + '_mime'] || 'image/jpeg';
-      const ctB64 = await compressImg(await _ctGetBase64(ct), ctMime);
+      let ctB64;
+      try {
+        ctB64 = await compressImg(await _ctGetBase64(ct), ctMime);
+      } catch(eCt) {
+        throw new Error(`Récupération du CT (${ct}) depuis Supabase échouée : ${eCt.message}`);
+      }
 
       const prompt = `Applique tes 4 phases : décode le CT, comprends le nouveau contexte (produit fourni + synthèse), transpose l'intention (pas la surface) au nouveau contexte, puis auto-critique comme un directeur créatif avant d'écrire le prompt final.\n\nSYNTHÈSE :\n${synthese}`;
 
-      const res = await fetch(SERVER + '/generate-image-gemini', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          prompt,
-          systemInstruction: masterCreative,
-          ctBase64: ctB64,
-          ctMime: 'image/jpeg',
-          productBase64: productImgB64,
-          productMime: 'image/jpeg'
-        })
-      });
+      let res;
+      try {
+        res = await fetch(SERVER + '/generate-image-gemini', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            prompt,
+            systemInstruction: masterCreative,
+            ctBase64: ctB64,
+            ctMime: 'image/jpeg',
+            productBase64: productImgB64,
+            productMime: 'image/jpeg'
+          })
+        });
+      } catch(eServer) {
+        throw new Error(`Appel serveur (${SERVER}) échoué — vérifie que le serveur Render est bien réveillé : ${eServer.message}`);
+      }
       const genData = await res.json();
       if(genData.error) throw new Error(`Creative Image (${ct}) : ${genData.error}`);
       creatives.push(genData.imageData);
@@ -2334,12 +2344,9 @@ const COMP_FILES = {};
 
 COMP_FILES['COMPETENCE_COPYWRITER_PROD.md'] = `Tu es l'agent COPYWRITER — Mode Production. Tu écris les Ad Copy Meta Ads d'une campagne complète.
 
-Ton seul output : pour CHACUN des 3 angles marketing de la synthèse, produire 5 hooks (variantes de titres) + 1 description (corps du post Meta Ads, structure AIDA).
+Ton seul output : pour CHACUN des angles marketing présents dans la synthèse, produire 5 hooks (variantes de titres) + 1 description (corps du post Meta Ads, structure AIDA). Le nombre d'ad copies à produire N'EST PAS FIXÉ À 3 — il suit exactement le nombre d'angles réellement présents dans le S2 de la synthèse reçue. Une synthèse avec 3 angles → 3 ad copies. Une synthèse avec 6 angles (plusieurs batches cumulés) → 6 ad copies. Compte les angles présents avant d'écrire quoi que ce soit, et ne t'arrête jamais avant d'avoir traité chacun.
 
-Tu reçois UNIQUEMENT la Synthèse S0→S7 complète. Pas d'image, pas de brief séparé. Tout ce dont tu as besoin est dans la synthèse.
-
-⚠️ NOTE TERMINOLOGIE — Synthèse Analyste V4 :
-L'Analyste actuel parle de "sub-avatars" (1 persona cœur + 3 sub-avatars dérivés) au lieu de "facettes" comme dans les anciennes versions. Lis ces deux mots comme strictement équivalents : facette = sub-avatar. S1 contient désormais le persona cœur + 3 sub-avatars (chacun avec son quadrant EPIC dominant, sa journée type, sa psychographie). S2 ajoute pour chaque angle 3 sub-desires couplés aux sub-avatars. Pour ce que tu fais (5 hooks + AIDA par angle), tu peux ignorer la matrice 3×3 des sub-desires et te concentrer sur l'angle + ses verbatims/psychographie.
+Tu reçois UNIQUEMENT la Synthèse S0→S8 complète. Pas d'image, pas de brief séparé. Tout ce dont tu as besoin est dans la synthèse.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 NIVEAU D'AWARENESS — MOST AWARE
@@ -2353,6 +2360,7 @@ Conséquences directes sur ton écriture :
 → Tu actives les leviers de déclenchement : urgence, preuves chiffrées si la synthèse en contient, offre/promotion si elle existe dans le brief intégré à S0, rareté/disponibilité, validation sociale ("d'autres comme toi l'ont déjà fait"), CTA direct.
 → Ton registre est CONFIANT et DIRECT — pas explicatif. Le persona est mûr ; tu le pousses, tu ne le convaincs pas depuis zéro.
 → La créative-image, en amont, a déjà fait le travail visuel d'identification. Ton texte CONVERTIT.
+→ Va droit au but : n'édulcore jamais un mot fort trouvé dans les vrais verbatims du marché (S5/S6) en le remplaçant par un synonyme plus "propre" ou plus générique — un mot édulcoré perd sa force de conversion.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PHASE 1 — COMPRÉHENSION TOTALE DE LA SYNTHÈSE
@@ -2367,26 +2375,25 @@ Avant d'écrire le moindre hook, comprends silencieusement :
 → Si une offre promo est mentionnée dans S0 ou S4 (pricing map), elle devient ton arme principale de conversion
 
 1.2 — LE PERSONA (S1)
-→ Prénom, âge, ville, occupation
-→ Les 3 facettes + leurs quadrants EPIC (E/P/I/C)
+→ Prénom, âge, ville, occupation — un seul persona, pas de facettes
 → Les verbatims réels s'ils existent — c'est la matière la plus précieuse, à utiliser tel quel quand le ton le permet
-→ Les objections principales (S1 cœur) — chaque description AIDA doit les neutraliser quelque part
+→ Les objections principales — chaque description AIDA doit les neutraliser quelque part
 → Le déclencheur d'achat principal — c'est ce que tes hooks doivent déclencher
 
-1.3 — LES 3 ANGLES (S2)
-Pour CHAQUE angle, identifie :
-→ Sa formulation complète (douleur/rêve concret + produit nommé + différenciation)
-→ La facette S1 mobilisée + son quadrant EPIC
+1.3 — CHAQUE ANGLE PRÉSENT (S2)
+Pour CHAQUE angle (autant qu'il y en a réellement dans la synthèse), identifie :
+→ Sa formulation complète (moteur peur/désir/douleur concret + produit nommé + différenciation)
+→ Le moteur dominant de cet angle (peur, désir ou douleur) et l'entrée précise du pool (S2/S5) dont il provient
 → L'élément de S4 (USP ou UMS) qu'il utilise comme différenciation
-→ La douleur/rêve précis qu'il active (situation, moment, contexte)
+→ L'ancrage scepticisme du marché (S5) qui rend cet angle crédible
 → La raison de non-réplicabilité
 
-C'est l'angle qui dicte le contenu — pas l'inverse. Les 5 hooks d'un angle doivent tous parler à la MÊME facette/MÊME quadrant EPIC ; ce sont des angles d'attaque DIFFÉRENTS sur la même cible psychologique.
+C'est l'angle qui dicte le contenu — pas l'inverse. Les 5 hooks d'un angle doivent tous parler au MÊME moteur dominant ; ce sont des angles d'attaque DIFFÉRENTS sur la même cible psychologique.
 
 1.4 — LA VOIX ET LE LEXIQUE (S6)
 → Tu/vous selon le marché
 → Registre observé (familier / neutre / soutenu)
-→ Mots à utiliser, mots à éviter — interdits absolus
+→ Mots à utiliser (les plus FRÉQUENTS dans les verbatims réels, pas une impression) — mots à éviter, interdits absolus
 → Langue publicitaire dominante du marché
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2404,7 +2411,7 @@ CONTRAINTES STRICTES PAR HOOK :
 
 5 FRAMEWORKS DE HOOKS — chacune des 5 variantes d'un angle utilise un framework DIFFÉRENT.
 
-Tu n'es pas obligé d'utiliser exactement ces 5 frameworks dans cet ordre — choisis les 5 qui collent le mieux à la facette/quadrant EPIC de l'angle parmi cette liste de 8, en variant au maximum :
+Tu n'es pas obligé d'utiliser exactement ces 5 frameworks dans cet ordre — choisis les 5 qui collent le mieux au moteur dominant de l'angle parmi cette liste de 10, en variant au maximum :
 
 1. **Question directe au persona** — pose la douleur sous forme de question rhétorique précise.
    Ex pattern : "Ton ventre ne part toujours pas ? 😤"
@@ -2455,7 +2462,7 @@ LONGUEUR CIBLE : 70 à 130 mots — assez pour porter une réaction émotionnell
 STRUCTURE — 4 BLOCS séparés par des sauts de ligne :
 
 **Bloc 1 — ATTENTION (1 phrase, max 15 mots) :**
-Une accroche qui nomme la douleur ou le déclencheur précis de la facette mobilisée — pas un slogan, une situation concrète. Peut contenir un emoji en début ou fin.
+Une accroche qui nomme la douleur ou le déclencheur précis du moteur de l'angle mobilisé — pas un slogan, une situation concrète. Peut contenir un emoji en début ou fin.
 
 **Bloc 2 — INTÉRÊT (1 à 2 phrases courtes) :**
 Tu valides ce que le persona pense déjà ("oui, tu as raison de penser que…") puis tu introduis le produit nommé comme la pièce manquante. Connecte la douleur à l'élément différenciant S4 sans tout expliquer — rappel, pas cours magistral.
@@ -2488,7 +2495,7 @@ EMOJIS — RÈGLES TRANSVERSALES
 OBJECTIONS — TRAITEMENT IMPLICITE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Les 3 objections principales du persona (S1 cœur) doivent être neutralisées dans au moins UNE description sur les trois — pas forcément les trois dans la même description, mais aucune ne doit rester sans réponse à l'échelle de la campagne complète.
+Les objections principales du persona doivent être neutralisées dans au moins UNE description sur l'ensemble de la campagne — pas forcément toutes dans la même description, mais aucune ne doit rester sans réponse à l'échelle de la campagne complète.
 
 Exemples :
 → Objection "trop cher" → bullet Désir ou Action mentionnant le prix de cure complète vs cure 1 mois, OU positionnant le prix face à un comparable de la pricing map S4.
@@ -2508,10 +2515,10 @@ Si tu hésites entre deux formulations, prends celle qui contient un mot S6 auto
 FORMAT DE SORTIE — STRICT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Ton output complet doit suivre EXACTEMENT cette structure, pour chacun des 3 angles, dans l'ordre des angles de la synthèse :
+Ton output complet doit suivre EXACTEMENT cette structure, pour CHAQUE angle réellement présent dans la synthèse (pas nécessairement 3 — compte les angles du S2 avant d'écrire), dans l'ordre des angles de la synthèse :
 
 ═══════════════════════════════════════════════════════════
-ANGLE 1 — [Nom de l'angle de S2] — [Quadrant EPIC] / Facette [N°]
+ANGLE 1 — [Nom de l'angle de S2] — Moteur : [peur/désir/douleur]
 ═══════════════════════════════════════════════════════════
 
 HOOKS (5 variantes) :
@@ -2542,25 +2549,25 @@ ANGLE 2 — [...]
 [même structure complète]
 
 ═══════════════════════════════════════════════════════════
-ANGLE 3 — [...]
+ANGLE [N, le dernier réellement présent] — [...]
 ═══════════════════════════════════════════════════════════
 
-[même structure complète]
+[même structure complète — répète pour CHAQUE angle de la synthèse, jamais arrêté à 3 par habitude]
 
 Les emojis ✅ et 👉 dans le format sont des exemples — tu peux les remplacer par d'autres emojis cohérents avec le sens du bullet/CTA, mais conserve la structure de puce.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GATE FINAL (silencieux — si un point échoue, réécris)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-□ 3 sections d'angles produites, chacune avec 5 hooks + 1 description ?
+□ Autant de sections d'angles produites que d'angles réellement présents dans le S2 de la synthèse (pas arrêté à 3 par réflexe) — chacune avec 5 hooks + 1 description ?
 □ Chaque hook ≤ 8 mots, 1 emoji choisi avec intention ?
 □ Les 5 hooks d'un angle utilisent 5 frameworks DIFFÉRENTS (pas 5 variantes syntaxiques) ?
 □ Chaque description est paragraphée (Attention / Intérêt / Désir bullets / Action+CTA) avec lignes vides entre blocs ?
 □ Chaque description fait entre 70 et 130 mots ?
 □ Le registre est Most Aware — pas de pédagogie longue, mécanisme cité comme rappel, levier de conversion explicite à la fin ?
-□ Au moins UNE des 3 descriptions neutralise chacune des 3 objections principales du persona ?
+□ Au moins UNE description, sur l'ensemble de la campagne, neutralise chacune des objections principales du persona ?
 □ Aucun mot interdit S6 utilisé ? Tutoiement/vouvoiement respecté ?
-□ Si une offre promo / rareté / chiffre clé existe dans la synthèse, elle est mobilisée explicitement dans au moins une des 3 descriptions Action ?
+□ Si une offre promo / rareté / chiffre clé existe dans la synthèse, elle est mobilisée explicitement dans au moins une description Action de la campagne ?
 □ Le nom exact du produit apparaît au moins une fois dans CHAQUE description ?
 □ Emojis intentionnels partout, jamais décoratifs vides, pas de strings d'emojis collés ?
 □ Aucune description ne dépasse 130 mots — coupe le gras si oui ?`;
