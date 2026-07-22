@@ -4067,6 +4067,7 @@ Exemples PRECIS :
 
 Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
 
+  var succes = 0, echecs = 0, derniereErreur = '';
   for (var i = 0; i < all.length; i++) {
     var rec = all[i];
     if (toastLbl) toastLbl.textContent = 'Renommage ' + (i+1) + ' / ' + all.length;
@@ -4079,20 +4080,25 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ b64: b64, mime: rec.mime, prompt: NAMING_PROMPT })
       });
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
       var data = await resp.json();
       var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
-      if (name) {
-        rec.name = name;
-        await _ctPut(rec);
-        CT_IMAGES[rec.id + '_name'] = name;
-      }
-    } catch(e) { console.error('[RenamAll] CT ' + rec.id, e); }
+      if (!name) throw new Error('Nom vide reçu du serveur');
+      rec.name = name;
+      await _ctPut(rec);
+      CT_IMAGES[rec.id + '_name'] = name;
+      succes++;
+    } catch(e) {
+      echecs++;
+      derniereErreur = e.message;
+      console.error('[RenamAll] CT ' + rec.id, e);
+    }
   }
 
   if (toastBar) toastBar.style.width = '100%';
-  if (toastLbl) toastLbl.textContent = all.length + ' CTs renommés';
-  if (toastSub) toastSub.textContent = '';
-  setTimeout(function() { if (toast) toast.style.display = 'none'; }, 2500);
+  if (toastLbl) toastLbl.textContent = echecs === 0 ? (succes + ' CTs renommés') : (succes + ' renommés, ' + echecs + ' échec(s)');
+  if (toastSub) toastSub.textContent = echecs > 0 ? ('Dernière erreur : ' + derniereErreur) : '';
+  setTimeout(function() { if (toast) toast.style.display = 'none'; }, echecs > 0 ? 6000 : 2500);
   renderGallery();
   renderCTSelector();
 }
