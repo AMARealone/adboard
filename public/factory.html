@@ -772,6 +772,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
         </div>
         <div class="prodv2-launch">
           <button class="prodv2-launch-btn" id="prodv2LaunchBtn" onclick="prodv2Launch()" disabled>Lancer la production</button>
+          <button id="prodv2CancelBtn" onclick="if(prodAbortController) prodAbortController.abort();" style="display:none;width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;font-weight:600;margin-top:6px;">✕ Annuler la production</button>
         </div>
       </div>
 
@@ -881,6 +882,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
           <div class="demogen-top-actions">
             <button id="queueBtn" onclick="toggleQueuePanel()" style="width:100%;padding:9px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--t1);font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:6px;">📋 File d'attente CRM <span id="queueCount" style="background:var(--accent);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;">—</span></button>
             <button id="demoGenBtn" onclick="runFullDemo()" style="width:100%;padding:13px;background:var(--grad-accent);border:none;border-radius:8px;cursor:pointer;color:#fff;font-size:14px;font-weight:700;">Générer la démo complète</button>
+            <button id="demoGenCancelBtn" onclick="if(demoAbortController) demoAbortController.abort();" style="display:none;width:100%;padding:10px;background:transparent;border:1px solid var(--border);border-radius:8px;cursor:pointer;color:var(--t2);font-size:13px;font-weight:600;margin-top:6px;">✕ Annuler la génération</button>
           </div>
 
           <!-- Panel file d'attente démos CRM -->
@@ -951,9 +953,10 @@ const SB_H_F      = { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F,
 let _queueItem    = null; // { demo_id, prospect_id, nom_marque, produit }
 
 // ── API Functions ──
-async function apiSynthesize(system, parts, maxTokens, enrichWithSearch) {
+async function apiSynthesize(system, parts, maxTokens, enrichWithSearch, signal) {
   const res = await fetch(SERVER+'/synthesize', {
     method:'POST', headers:{'Content-Type':'application/json'},
+    signal,
     body: JSON.stringify({
       system, parts,
       maxOutputTokens: maxTokens || 16000,
@@ -970,6 +973,7 @@ async function apiSynthesize(system, parts, maxTokens, enrichWithSearch) {
 // DEMO GENERATOR — orchestrateur Stratège → Creative Image ×3 → Mindmap
 // ═══════════════════════════════════════════════════════
 let demoGenPhotoB64 = null, demoGenPhotoMime = null, demoGenLastUrl = null;
+let demoAbortController = null;
 
 // ── File d'attente démos CRM ──────────────────────────────────────────
 async function loadQueue() {
@@ -1353,6 +1357,9 @@ async function runFullDemo() {
   statusEl.innerHTML = '';
   btn.disabled = true;
   btn.textContent = '⏳ Génération en cours...';
+  demoAbortController = new AbortController();
+  const cancelBtnInit = document.getElementById('demoGenCancelBtn');
+  if (cancelBtnInit) cancelBtnInit.style.display = 'block';
 
   const log = (msg, cls) => {
     const d = document.createElement('div');
@@ -1385,7 +1392,7 @@ async function runFullDemo() {
       {inline_data:{mime_type:'image/jpeg', data: productImgB64}},
       {text: _urlPrefixDemo + _paysDisambigDemo + prospectInfo + '\n\n---\n' + (stratAgent.prompt || '')}
     ];
-    const synthese = await apiSynthesize(stratSystem, stratParts, stratAgent.maxTokens || 32000);
+    const synthese = await apiSynthesize(stratSystem, stratParts, stratAgent.maxTokens || 32000, true, demoAbortController.signal);
     log('✓ Synthèse générée (' + synthese.length + ' caractères)', 'ok');
 
     // Stocker la synthèse pour affichage dans le panel collapsible
@@ -1408,6 +1415,7 @@ async function runFullDemo() {
 
     const creatives = [];
     for (let i = 0; i < chosenCTs.length; i++) {
+      if (demoAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
       const ct = chosenCTs[i];
       const ctDisplayName = CT_IMAGES[ct+'_name'] || ct;
       log(`2/3 · Creative Image — concept ${i+1}/3 (${ctDisplayName})...`);
@@ -1426,6 +1434,7 @@ async function runFullDemo() {
         res = await fetch(SERVER + '/generate-image-gemini', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
+          signal: demoAbortController.signal,
           body: JSON.stringify({
             prompt,
             systemInstruction: masterCreative,
@@ -1436,6 +1445,7 @@ async function runFullDemo() {
           })
         });
       } catch(eServer) {
+        if (eServer.name === 'AbortError') throw eServer;
         throw new Error(`Appel serveur (${SERVER}) échoué — vérifie que le serveur Render est bien réveillé : ${eServer.message}`);
       }
       const genData = await res.json();
@@ -1563,7 +1573,7 @@ async function runFullDemo() {
       + 'INFOS PROSPECT :\n' + prospectInfo
       + '\n\nSYNTHÈSE COMPLÈTE :\n' + synthese
       + '\n\n---\nRéponds UNIQUEMENT avec le JSON.';
-    const jsonText = await apiSynthesize(mindmapSystem, [{text: fullInput}], mindmapAgent.maxTokens || 4000, false);
+    const jsonText = await apiSynthesize(mindmapSystem, [{text: fullInput}], mindmapAgent.maxTokens || 4000, false, demoAbortController.signal);
 
     const cleaned = jsonText.replace(/```json|```/g, '').trim();
     const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
@@ -1694,6 +1704,7 @@ async function runFullDemo() {
     const saveRes = await fetch(SERVER + '/save-mindmap', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
+      signal: demoAbortController.signal,
       body: JSON.stringify({
         html: mindmapHtml,
         productName: data.PRODUIT,
@@ -1748,16 +1759,25 @@ async function runFullDemo() {
     statusEl.style.display = 'none';
 
   } catch(e) {
-    log('✗ Erreur : ' + (e.message || String(e)), 'err');
+    if (demoAbortController && demoAbortController.signal.aborted) {
+      log('⏹ Génération annulée.', 'warn');
+    } else {
+      log('✗ Erreur : ' + (e.message || String(e)), 'err');
+    }
   } finally {
+    window._demoRunning = false;
+    demoAbortController = null;
     btn.disabled = false;
     btn.textContent = 'Générer la démo complète';
+    const cancelBtn = document.getElementById('demoGenCancelBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
   }
 }
 
-async function apiAnalysteSynthese(system, parts, maxTokens, brief) {
+async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal) {
   const res = await fetch(SERVER+'/analyste-synthese', {
     method:'POST', headers:{'Content-Type':'application/json'},
+    signal,
     body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 32000, brief})
   });
   const d = await res.json();
@@ -1765,9 +1785,10 @@ async function apiAnalysteSynthese(system, parts, maxTokens, brief) {
   return d.text;
 }
 
-async function apiCopywriter(system, parts, maxTokens) {
+async function apiCopywriter(system, parts, maxTokens, signal) {
   const res = await fetch(SERVER+'/copywriter', {
     method:'POST', headers:{'Content-Type':'application/json'},
+    signal,
     body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 8000})
   });
   const d = await res.json();
@@ -1936,6 +1957,8 @@ function prodv2ExtractAngles(synthesis) {
   return angles.slice(0,3).map(a => a.text);
 }
 
+let prodAbortController = null;
+
 async function prodv2Launch() {
   if(!prodv2State.brief || !prodv2State.productB64) {
     alert('Charge un brief.json valide avec photo_produit avant de lancer.');
@@ -1946,12 +1969,15 @@ async function prodv2Launch() {
   prodv2State.angles = [];
   prodv2State.creatives = [];
   prodv2State.copies = [];
+  prodAbortController = new AbortController();
 
   // Show pipeline + deliverables sections
   document.getElementById('prodv2PipelineSection').style.display = '';
   document.getElementById('prodv2DelivSection').style.display = '';
   document.getElementById('prodv2LaunchBtn').disabled = true;
   document.getElementById('prodv2LaunchBtn').textContent = 'Production en cours…';
+  const prodCancelBtn = document.getElementById('prodv2CancelBtn');
+  if (prodCancelBtn) prodCancelBtn.style.display = 'block';
 
   try {
     // ── ÉTAPE 1 : Analyste de Marché ──
@@ -1970,7 +1996,7 @@ async function prodv2Launch() {
     if(prodv2State.logoB64) {
       analysteParts.push({ type:'image', source:{ type:'base64', media_type: prodv2State.logoMime, data: prodv2State.logoB64 } });
     }
-    const synthesis = await apiAnalysteSynthese(analysteSystem, analysteParts, 32000, prodv2State.brief);
+    const synthesis = await apiAnalysteSynthese(analysteSystem, analysteParts, 32000, prodv2State.brief, prodAbortController.signal);
     prodv2State.synthesis = synthesis;
     prodv2State.angles = prodv2ExtractAngles(synthesis);
     prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(synthesis.length/1000)}K chars · 3 angles extraits`, 100);
@@ -2031,9 +2057,10 @@ async function prodv2Launch() {
     const runCreativesSequentially = async () => {
       for(let a=0; a<3; a++) {
         for(let c=0; c<3; c++) {
+          if (prodAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
           const idx = a*3 + c;
           const ctPositionInAngle = c;
-          await prodv2GenerateOneCreativeWithRetry(idx, a, ctPositionInAngle, ctPick[idx]);
+          await prodv2GenerateOneCreativeWithRetry(idx, a, ctPositionInAngle, ctPick[idx], prodAbortController.signal);
           creativesDone++;
           prodv2SetAgentState(2, 'active', `${creativesDone} / 9 créatives générées`, Math.round(creativesDone/9*100));
         }
@@ -2041,6 +2068,7 @@ async function prodv2Launch() {
     };
     const sequentialPromise = runCreativesSequentially()
       .catch(err => {
+        if (err.name === 'AbortError') throw err;
         console.error('Erreur génération créatives :', err);
         prodv2SetAgentState(2, 'active', `Erreur : ${err.message}`, 0);
       });
@@ -2049,8 +2077,11 @@ async function prodv2Launch() {
     const copyPromises = [];
     for(let a=0; a<3; a++) {
       copyPromises.push(
-        prodv2GenerateOneCopy(a)
-          .catch(err => prodv2MarkCopyError(a, err.message))
+        prodv2GenerateOneCopy(a, prodAbortController.signal)
+          .catch(err => {
+            if (err.name === 'AbortError') throw err;
+            prodv2MarkCopyError(a, err.message);
+          })
       );
     }
 
@@ -2061,26 +2092,38 @@ async function prodv2Launch() {
 
     document.getElementById('prodv2LaunchBtn').disabled = false;
     document.getElementById('prodv2LaunchBtn').textContent = 'Relancer la production';
+    prodAbortController = null;
+    if (prodCancelBtn) prodCancelBtn.style.display = 'none';
 
   } catch(err) {
-    console.error(err);
-    alert('Erreur production : ' + err.message);
-    document.getElementById('prodv2LaunchBtn').disabled = false;
-    document.getElementById('prodv2LaunchBtn').textContent = 'Réessayer';
+    if (err.name === 'AbortError' || (prodAbortController && prodAbortController.signal.aborted)) {
+      console.log('Production annulée par l\'utilisateur.');
+      document.getElementById('prodv2LaunchBtn').disabled = false;
+      document.getElementById('prodv2LaunchBtn').textContent = 'Relancer la production';
+    } else {
+      console.error(err);
+      alert('Erreur production : ' + err.message);
+      document.getElementById('prodv2LaunchBtn').disabled = false;
+      document.getElementById('prodv2LaunchBtn').textContent = 'Réessayer';
+    }
+    prodAbortController = null;
+    if (prodCancelBtn) prodCancelBtn.style.display = 'none';
   }
 }
 
 // CORRECTION C : retry automatique sur erreur de quota Gemini Image
 // Wrappe prodv2GenerateOneCreative — si erreur "Resource exhausted" / "quota" / 429,
 // attend 30s et réessaye (max 2 tentatives). Affiche le statut dans la carte.
-async function prodv2GenerateOneCreativeWithRetry(idx, angleIdx, ctIdx, ctName) {
+async function prodv2GenerateOneCreativeWithRetry(idx, angleIdx, ctIdx, ctName, signal) {
   const RETRY_DELAY_MS = 30000;
   const MAX_RETRIES = 2;
   let lastErr = null;
   for(let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+    if (signal && signal.aborted) throw new DOMException('Annulé', 'AbortError');
     try {
-      return await prodv2GenerateOneCreative(idx, angleIdx, ctIdx, ctName);
+      return await prodv2GenerateOneCreative(idx, angleIdx, ctIdx, ctName, signal);
     } catch(err) {
+      if (err.name === 'AbortError') throw err;
       lastErr = err;
       const msg = (err.message || '').toLowerCase();
       const isQuotaError = msg.includes('exhausted') || msg.includes('quota') || msg.includes('429') || msg.includes('rate');
@@ -2093,13 +2136,17 @@ async function prodv2GenerateOneCreativeWithRetry(idx, angleIdx, ctIdx, ctName) 
         const status = card.querySelector('.prodv2-crea-status');
         if(status) status.textContent = `Rate limit Gemini — retry ${attempt}/${MAX_RETRIES} dans 30s`;
       }
-      await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+      // Attente abortable — annuler ne doit pas laisser l'utilisateur attendre jusqu'à 30s
+      await new Promise((resolve, reject) => {
+        const t = setTimeout(resolve, RETRY_DELAY_MS);
+        if (signal) signal.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Annulé', 'AbortError')); }, {once:true});
+      });
     }
   }
   throw lastErr;
 }
 
-async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctName) {
+async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctName, signal) {
   const card = document.getElementById('prodv2Crea_' + idx);
   card.querySelector('.prodv2-crea-status').textContent = 'En cours';
 
@@ -2121,6 +2168,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
 
   const res = await fetch(SERVER + '/creative-prod', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
+    signal,
     body: JSON.stringify({
       systemPrompt: creativeSystem,
       synthese: prodv2State.synthesis,
@@ -2168,7 +2216,7 @@ function prodv2MarkCreativeError(idx, errMsg) {
   }
 }
 
-async function prodv2GenerateOneCopy(angleIdx) {
+async function prodv2GenerateOneCopy(angleIdx, signal) {
   const copywriterSystem = COMP_FILES['COMPETENCE_COPYWRITER_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
   // Consigne durcie : pas de markdown gras autour des labels, pas de labels AIDA visibles
@@ -2176,7 +2224,7 @@ async function prodv2GenerateOneCopy(angleIdx) {
 
   // 12 000 tokens — Gemini 2.5 Pro utilise ~3-4k tokens pour "thinking" avant de générer,
   // avec 4000 max il ne lui reste que ~1000 pour le texte → description tronquée
-  const text = await apiCopywriter(copywriterSystem, [{ type:'text', text: userPrompt }], 12000);
+  const text = await apiCopywriter(copywriterSystem, [{ type:'text', text: userPrompt }], 12000, signal);
 
   // ── Parsing robuste : tolère **, espaces français, casse mixte ──
   // Étape 1 : nettoyer le markdown gras autour des labels pour simplifier les regex
