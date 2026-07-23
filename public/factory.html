@@ -981,7 +981,7 @@ async function loadQueue() {
   const cntEl  = document.getElementById('queueCount');
   if (!listEl) return;
   try {
-    const r = await fetch(`${SB_FACTORY}/demos?statut=eq.en_attente&order=created_at.asc&select=*`, { headers: SB_H_F });
+    const r = await fetch(`${SERVER}/crm/demos-en-attente`);
     const items = await r.json();
     if (cntEl) cntEl.textContent = items.length || '0';
     if (!items.length) {
@@ -1037,7 +1037,7 @@ let _demosData = [];
 
 async function loadDemosCount() {
   try {
-    const r = await fetch(`${SB_FACTORY}/demos?statut=eq.en_attente&select=id`, { headers: SB_H_F });
+    const r = await fetch(`${SERVER}/crm/demos-en-attente`);
     const items = await r.json();
     const n = Array.isArray(items) ? items.length : 0;
     const el = document.getElementById('sidebarDemosCount'); if (el) el.textContent = n || '0';
@@ -1061,7 +1061,7 @@ async function loadDemosView() {
   if (!el) return;
   el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--t3);font-size:13px;">Chargement…</div>';
   try {
-    const r = await fetch(`${SB_FACTORY}/demos?statut=eq.en_attente&order=created_at.asc&select=*,prospects(nom_marque,produit,pays,page_produit,notes)`, { headers: SB_H_F });
+    const r = await fetch(`${SERVER}/crm/demos-en-attente`);
     _demosData = await r.json();
     const n = _demosData.length;
     const cnt = document.getElementById('sidebarDemosCount'); if(cnt) cnt.textContent = n;
@@ -1141,21 +1141,12 @@ async function syncDemoToCRM() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi…'; }
 
   try {
-    // 1. Écrire lien_demo dans prospects.notes
-    const pRes  = await fetch(`${SB_FACTORY}/prospects?id=eq.${target.prospect_id}&select=notes`, { headers: SB_H_F });
-    const pRows = await pRes.json();
-    const pNotes = (() => { try { return JSON.parse((pRows[0]||{}).notes||'{}'); } catch(e) { return {}; } })();
-    pNotes.lien_demo = url;
-    pNotes.produit_demo = target.produit || '';
-    await fetch(`${SB_FACTORY}/prospects?id=eq.${target.prospect_id}`, {
-      method:'PATCH', headers:{...SB_H_F,'Prefer':'return=minimal'},
-      body: JSON.stringify({ notes: JSON.stringify(pNotes) })
+    const syncRes = await fetch(`${SERVER}/crm/sync-demo-delivered`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ prospect_id: target.prospect_id, demo_id: target.demo_id, lien_demo: url, produit: target.produit || '' })
     });
-    // 2. Marquer demos.statut = livre
-    await fetch(`${SB_FACTORY}/demos?id=eq.${target.demo_id}`, {
-      method:'PATCH', headers:{...SB_H_F,'Prefer':'return=minimal'},
-      body: JSON.stringify({ statut:'livre', lien_demo: url, delivered_at: new Date().toISOString() })
-    });
+    const syncData = await syncRes.json();
+    if (syncData.error) throw new Error(syncData.error);
     if (btn) { btn.textContent = '✓ Envoyé au CRM'; btn.style.background = '#1DB954'; }
     _queueItem = null;
     loadDemosCount();
@@ -1200,7 +1191,7 @@ function loadDemoToGenerator(demoId) {
 async function deleteDemoFromQueue(demoId, marque) {
   if (!confirm('Supprimer "' + marque + '" de la liste des démos à faire ?\n\n(Cela ne touche pas au prospect dans le CRM.)')) return;
   try {
-    await fetch(`${SB_FACTORY}/demos?id=eq.${demoId}`, { method:'DELETE', headers:{...SB_H_F,'Prefer':'return=minimal'} });
+    await fetch(`${SERVER}/crm/demos/${demoId}`, { method:'DELETE' });
     _demosData = _demosData.filter(x => x.id !== demoId);
     filterDemosView();
     loadDemosCount();
@@ -1730,21 +1721,12 @@ async function runFullDemo() {
     // ── Sync CRM si démo générée depuis la file d'attente ──
     if (_queueItem && saveData.url) {
       try {
-        // 1. Écrire lien_demo dans prospects.notes
-        const _pRes  = await fetch(`${SB_FACTORY}/prospects?id=eq.${_queueItem.prospect_id}&select=notes`, { headers: SB_H_F });
-        const _pRows = await _pRes.json();
-        const _pNotes = (() => { try { return JSON.parse((_pRows[0]||{}).notes||'{}'); } catch(e) { return {}; } })();
-        _pNotes.lien_demo = saveData.url;
-        _pNotes.produit_demo = _queueItem.produit || '';
-        await fetch(`${SB_FACTORY}/prospects?id=eq.${_queueItem.prospect_id}`, {
-          method:'PATCH', headers:{...SB_H_F,'Prefer':'return=minimal'},
-          body: JSON.stringify({ notes: JSON.stringify(_pNotes) })
+        const syncRes = await fetch(`${SERVER}/crm/sync-demo-delivered`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ prospect_id: _queueItem.prospect_id, demo_id: _queueItem.demo_id, lien_demo: saveData.url, produit: _queueItem.produit || '' })
         });
-        // 2. Passer le demo en "livré"
-        await fetch(`${SB_FACTORY}/demos?id=eq.${_queueItem.demo_id}`, {
-          method:'PATCH', headers:{...SB_H_F,'Prefer':'return=minimal'},
-          body: JSON.stringify({ statut:'livre', lien_demo: saveData.url, delivered_at: new Date().toISOString() })
-        });
+        const syncData = await syncRes.json();
+        if (syncData.error) throw new Error(syncData.error);
         log('✓ CRM mis à jour — lien démo envoyé au prospect automatiquement', 'ok');
         const sbtn = document.getElementById('syncCrmBtn');
         if (sbtn) { sbtn.textContent = '✓ Envoyé au CRM'; sbtn.style.background = '#1DB954'; sbtn.disabled = true; }
