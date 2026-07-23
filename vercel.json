@@ -6,6 +6,8 @@
     { "src": "/adboard/(.*)", "dest": "/adboard.html" },
     { "src": "/adboard", "dest": "/adboard.html" },
     { "src": "/factory/(.*)", "dest": "/factory.html" },
-    { "src": "/factory", "dest": "/factory.html" }
+    { "src": "/factory", "dest": "/factory.html" },
+    { "src": "/adstats/(.*)", "dest": "/adstats.html" },
+    { "src": "/adstats", "dest": "/adstats.html" }
   ]
 }
