@@ -987,12 +987,12 @@ let SB_H_F      = { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F, '
 const ADMIN_EMAIL = 'thefirstquality01@gmail.com'; 
 
 const adminAuth = {
-  getSession() { try { return JSON.parse(localStorage.getItem('admin_sb_session') || 'null'); } catch(e) { return null; } },
-  getUser() { try { return JSON.parse(localStorage.getItem('admin_sb_user') || 'null'); } catch(e) { return null; } },
+  getSession() { try { return JSON.parse(localStorage.getItem('factory_admin_sb_session') || 'null'); } catch(e) { return null; } },
+  getUser() { try { return JSON.parse(localStorage.getItem('factory_admin_sb_user') || 'null'); } catch(e) { return null; } },
   _saveSession(d) {
     const session = { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() + ((d.expires_in || 3600) * 1000) };
-    localStorage.setItem('admin_sb_session', JSON.stringify(session));
-    if (d.user) localStorage.setItem('admin_sb_user', JSON.stringify(d.user));
+    localStorage.setItem('factory_admin_sb_session', JSON.stringify(session));
+    if (d.user) localStorage.setItem('factory_admin_sb_user', JSON.stringify(d.user));
   },
   async signInWithPassword(email, password) {
     const r = await fetch(`${SB_FACTORY.replace('/rest/v1','')}/auth/v1/token?grant_type=password`, {
@@ -1005,7 +1005,7 @@ const adminAuth = {
     return d.user;
   },
   signInWithGoogle() {
-    const redirectTo = encodeURIComponent(window.location.origin + '/factory');
+    const redirectTo = encodeURIComponent('https://adstackofficial.com/factory');
     window.location.href = `${SB_FACTORY.replace('/rest/v1','')}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&prompt=select_account`;
   },
   async handleOAuthCallback() {
@@ -1037,8 +1037,8 @@ const adminAuth = {
     if (session?.access_token) {
       await fetch(`${SB_FACTORY.replace('/rest/v1','')}/auth/v1/logout`, { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}`, apikey: SB_KEY_F } }).catch(()=>{});
     }
-    localStorage.removeItem('admin_sb_session');
-    localStorage.removeItem('admin_sb_user');
+    localStorage.removeItem('factory_admin_sb_session');
+    localStorage.removeItem('factory_admin_sb_user');
   }
 };
 
