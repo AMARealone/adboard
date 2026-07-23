@@ -2186,7 +2186,7 @@ const adminAuth = {
     return d.user;
   },
   signInWithGoogle() {
-    const redirectTo = encodeURIComponent(window.location.origin + '/adstats');
+    const redirectTo = encodeURIComponent('https://adstackofficial.com/adstats');
     window.location.href = `${SB.replace('/rest/v1','')}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&prompt=select_account`;
   },
   async handleOAuthCallback() {
