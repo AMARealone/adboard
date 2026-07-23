@@ -24,7 +24,7 @@ Ne renvoie QUE ces champs, sous ces noms exacts, sensibles à la casse :
 
 {
   "PRODUIT": "Nom du produit tel qu'en S0 — ex : Bracelet Magnétique",
-  "MARQUE": "Nom de la marque tel qu'en S0 — ex : Géo Forma",
+  "MARQUE": "Nom de la marque tel qu'en S0 — c'est le revendeur/la boutique du prospect (champ 'Marque ou Boutique e-commerce'), JAMAIS le nom du fabricant imprimé sur le produit — ex : Géo Forma",
   "PAYS": "Pays cible — ex : Cameroun",
 
   "SCORE_POTENTIEL": 85,

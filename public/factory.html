@@ -1302,6 +1302,40 @@ async function selectCTsForGeneration(synthesis, count, mode) {
   return ids.sort(function() { return Math.random() - 0.5; }).slice(0, count);
 }
 
+// ── Décodage pays — cause profonde corrigée : avant ce fix, un code ISO 2 lettres (ex: "CG")
+// était renvoyé tel quel comme "paysLabel" (juste recapitalisé), jamais traduit en nom complet.
+// Le Stratège devait alors deviner lui-même le pays à partir du code brut — risque réel de
+// confusion entre codes proches (CG = Congo-Brazzaville vs CD = RD Congo/Kinshasa, par exemple).
+const ISO2_COUNTRY_NAMES = {
+  ci:"Côte d'Ivoire", sn:'Sénégal', cm:'Cameroun', ml:'Mali', tg:'Togo', bj:'Bénin',
+  bf:'Burkina Faso', gn:'Guinée', mg:'Madagascar', td:'Tchad', cg:'Congo-Brazzaville (République du Congo)',
+  cd:'RD Congo (Kinshasa)', mr:'Mauritanie', ga:'Gabon', cf:'Centrafrique', km:'Comores',
+  dj:'Djibouti', rw:'Rwanda', bi:'Burundi', fr:'France', be:'Belgique', ch:'Suisse',
+  lu:'Luxembourg', ht:'Haïti', ma:'Maroc', dz:'Algérie', tn:'Tunisie',
+  ng:'Nigeria', gh:'Ghana', ke:'Kenya', tz:'Tanzanie', ug:'Ouganda', et:'Éthiopie',
+  za:'Afrique du Sud', zm:'Zambie', zw:'Zimbabwe', bw:'Botswana', us:'États-Unis',
+  gb:'Royaume-Uni', ca:'Canada', au:'Australie', ie:'Irlande', nz:'Nouvelle-Zélande',
+  es:'Espagne', mx:'Mexique', co:'Colombie', ar:'Argentine', pe:'Pérou', cl:'Chili',
+  ve:'Venezuela', ec:'Équateur', bo:'Bolivie', gt:'Guatemala', hn:'Honduras', cu:'Cuba',
+  pa:'Panama', cr:'Costa Rica', do:'République Dominicaine',
+  br:'Brésil', pt:'Portugal', ao:'Angola', mz:'Mozambique', cv:'Cap-Vert',
+  de:'Allemagne', at:'Autriche', it:'Italie'
+};
+const ISO2_LANG = { us:'en', gb:'en', ng:'en', gh:'en', ke:'en', tz:'en', ug:'en', et:'en', za:'en', zm:'en', zw:'en', bw:'en', ca:'en', au:'en', ie:'en', nz:'en',
+  es:'es', mx:'es', co:'es', ar:'es', pe:'es', cl:'es', ve:'es', ec:'es', bo:'es', gt:'es', hn:'es', cu:'es', pa:'es', cr:'es', do:'es',
+  br:'pt', pt:'pt', ao:'pt', mz:'pt', cv:'pt', de:'de', at:'de', it:'it' };
+
+// Extrait le code ISO 2 lettres du champ "Pays :" du prospectInfo et retourne son nom complet + langue.
+// Retourne { code, label, lang } ou null si aucun code ISO reconnu n'est trouvé.
+function decodePaysCode(prospectInfo) {
+  const m = (prospectInfo || '').match(/pays\s*[:\-]\s*([a-zA-Z]{2})\b/i);
+  if (!m) return null;
+  const code = m[1].toLowerCase();
+  const label = ISO2_COUNTRY_NAMES[code];
+  if (!label) return null;
+  return { code, label, lang: ISO2_LANG[code] || 'fr' };
+}
+
 async function runFullDemo() {
   if (window._demoRunning) { return; } // garde anti-double-clic
   window._demoRunning = true;
@@ -1341,9 +1375,15 @@ async function runFullDemo() {
       ? '⚠️ URL PAGE PRODUIT CLIENT (PRIORITÉ — analyse cette page en priorité) :\n'
         + _prospectUrl + '\n\n'
       : '';
+    // Décodage explicite du pays — évite d'envoyer un code ISO brut ("CG") que le modèle
+    // devrait deviner lui-même, avec un vrai risque de confusion entre codes proches.
+    const _paysDecoded = decodePaysCode(prospectInfo);
+    const _paysDisambigDemo = _paysDecoded
+      ? `⚠️ PAYS CIBLE : code reçu "${_paysDecoded.code.toUpperCase()}" = ${_paysDecoded.label}. N'utilise AUCUN autre pays. Ne confonds jamais des codes proches (ex : CG = Congo-Brazzaville ≠ CD = RD Congo/Kinshasa ; CI = Côte d'Ivoire ≠ CM = Cameroun).\n\n`
+      : '';
     const stratParts = [
       {inline_data:{mime_type:'image/jpeg', data: productImgB64}},
-      {text: _urlPrefixDemo + prospectInfo + '\n\n---\n' + (stratAgent.prompt || '')}
+      {text: _urlPrefixDemo + _paysDisambigDemo + prospectInfo + '\n\n---\n' + (stratAgent.prompt || '')}
     ];
     const synthese = await apiSynthesize(stratSystem, stratParts, stratAgent.maxTokens || 32000);
     log('✓ Synthèse générée (' + synthese.length + ' caractères)', 'ok');
@@ -1419,7 +1459,15 @@ async function runFullDemo() {
           .replace(/[\u2013\u2014\u2012]/g, '-'); // tirets → -
       }
 
-      // ── ÉTAPE 1 : extraction directe du champ "Pays :" dans prospectInfo ──
+      // ── ÉTAPE 0 : code ISO 2 lettres direct (le format utilisé par le champ "Pays :" démo) ──
+      // Utilise la même table que le décodage envoyé au Stratège — garantit que Stratège et
+      // Mindmap voient TOUJOURS le même pays, jamais un code brut non traduit.
+      const _decoded0 = decodePaysCode(prospectInfo);
+      if (_decoded0) {
+        return { lang: _decoded0.lang, paysLabel: _decoded0.label };
+      }
+
+      // ── ÉTAPE 1 : extraction directe du champ "Pays :" dans prospectInfo (nom complet ou code non mappé) ──
       // C'est la source la plus fiable — ce que l'utilisateur a tapé explicitement
       const _paysRaw = (prospectInfo.match(/pays\s*[:\-]\s*([^\n,;]+)/i) || [])[1];
       if (_paysRaw) {
@@ -2576,11 +2624,17 @@ COMP_FILES['COMPETENCE_STRATEGE_V1.0.md'] = `Tu es le STRATÈGE DE MARCHÉ — M
 
 Ta mission : à partir d'un input simple (nom de marque, nom du produit, pays, lien de la page produit, photo produit) et d'une recherche multi-source (DONNÉES BRUTES), produire une synthèse S0→S7 crédible et suffisamment détaillée pour donner un aperçu bluffant de la qualité AdStack à un prospect en une seule démo.
 
-⚠️ CE QUE TU REÇOIS EN ENTRÉE :
-→ Nom de la marque, nom du produit, pays cible
-→ Le lien de la page produit (à traiter comme une vraie source — c'est de là que viennent le prix, la typographie, la palette, les urgences, les prix barrés, les réductions, les bundles)
+⚠️ CE QUE TU REÇOIS EN ENTRÉE — 4 champs texte, toujours dans cet ordre :
+→ "Marque ou Boutique e-commerce : [Nom]" — voir RÈGLE MARQUE ci-dessous, ne saute pas cette section
+→ "Produit : [Nom du produit]"
+→ "Pays : [Code ISO 2 lettres, ex: SN, CI, CM, CG...]" — peut être précédé d'une ligne "⚠️ PAYS CIBLE : code reçu... = [nom complet]" que tu dois traiter comme LA source de vérité absolue sur le pays, avant toute autre déduction
+→ "Page produit : [URL]" (à traiter comme une vraie source — c'est de là que viennent le prix, la typographie, la palette, les urgences, les prix barrés, les réductions, les bundles)
 → Une photo du produit
 → DONNÉES BRUTES : le résultat d'une recherche multi-source plus légère que celle du mode production (normal — moins de sources scrapées ici), mais bien réelle
+
+⚠️⚠️ RÈGLE MARQUE — LA CONFUSION LA PLUS FRÉQUENTE, À NE JAMAIS COMMETTRE :
+Le champ "Marque ou Boutique e-commerce" du prospect EST la seule et unique valeur que tu dois utiliser partout où on te demande "la marque" (S0, nom de marque cité dans l'angle, etc.). C'est le nom de la BOUTIQUE/DU REVENDEUR qui vend le produit — jamais le nom du fabricant ou de la marque imprimée sur le packaging du produit lui-même, même si ce nom apparaît en gros sur la page produit ou dans DONNÉES BRUTES.
+Exemple concret : input "Marque ou Boutique e-commerce : OJ Sport", produit trouvé sur la page = "TheGoli Ashwagandha Sommeil Profond". → MARQUE = OJ Sport. "TheGoli" est le nom du FABRICANT du produit physique, il fait partie du NOM DU PRODUIT (tu peux le garder dans le nom complet du produit, ex: "TheGoli Ashwagandha Sommeil Profond"), mais ce n'est JAMAIS "la marque" dans notre système — ne l'écris jamais en tant que tel dans S0, ne le confonds jamais avec le champ marque même si la page produit lui donne plus de visibilité visuelle que le nom du revendeur.
 
 ⚠️ RÈGLE ANTI-AI-SLOP : base-toi sur DONNÉES BRUTES et sur la page produit, jamais sur ton mode de raisonnement générique. Une information absente est signalée [ESTIMATION] ou [NON TROUVÉ] plutôt qu'inventée comme un fait.
 
@@ -2592,7 +2646,7 @@ FORMAT DE SORTIE — S0 À S7 (PAS DE S8 — c'est le rôle exclusif de l'agent 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 S0 — PRODUIT & PALETTE & TYPO & OFFRE (section riche, détaillée)
-→ Nom du produit ET de la marque (distingue les deux si le distributeur diffère de la marque)
+→ Nom du produit (peut inclure le nom du fabricant tel qu'affiché sur la page, ex: "TheGoli Ashwagandha Sommeil Profond") ET nom de la marque = EXACTEMENT le champ "Marque ou Boutique e-commerce" reçu en input (voir RÈGLE MARQUE plus haut) — jamais le nom du fabricant, même s'il semble plus "marketing"
 → Mécanisme réel : comment le produit agit concrètement, pas son slogan marketing — cherche ça sur la page produit et dans DONNÉES BRUTES
 → Forme + mode d'emploi précis (format, contenance, posologie/fréquence si trouvée)
 → Catégorie produit
@@ -2687,7 +2741,7 @@ Ne renvoie QUE ces champs, sous ces noms exacts, sensibles à la casse :
 
 {
   "PRODUIT": "Nom du produit tel qu'en S0 — ex : Bracelet Magnétique",
-  "MARQUE": "Nom de la marque tel qu'en S0 — ex : Géo Forma",
+  "MARQUE": "Nom de la marque tel qu'en S0 — c'est le revendeur/la boutique du prospect (champ 'Marque ou Boutique e-commerce'), JAMAIS le nom du fabricant imprimé sur le produit — ex : Géo Forma",
   "PAYS": "Pays cible — ex : Cameroun",
 
   "SCORE_POTENTIEL": 85,
@@ -2924,11 +2978,19 @@ Le PRODUIT FOURNI doit TOUJOURS être visuellement intégré, jamais absent du c
 RÈGLE HIÉRARCHIQUE — PRODUIT RÉEL > PRÉSENTATION PHYSIQUE DU CT
 Le FORMAT physique du produit du CT (gélule, flacon, sachet, crème...) n'est PAS structurel — c'est du contenu propre à ce CT. Si le CT montre une gélule et que le PRODUIT FOURNI est un flacon, tu décris le FLACON tenu/présenté de manière analogue — jamais la gélule. En cas de conflit entre fidélité produit et fidélité de présentation du CT, la fidélité produit gagne toujours.
 
+RÈGLE — NE JAMAIS EXPOSER UN CONTENU INVISIBLE SUR LA PHOTO RÉELLE DU PRODUIT
+⛔ Cause profonde d'erreur : le CT montre parfois son propre produit sous une forme "ouverte"/exposée (gélules tenues entre les doigts, gommes versées hors du pot, poudre à l'air libre, comprimé sorti de la plaquette). L'agent copie ce degré d'exposition pour le nouveau produit, alors que la photo RÉELLE du PRODUIT FOURNI ne montre pas ce niveau de détail (pot fermé, tube, sachet scellé) — l'agent invente alors un contenu qu'il n'a jamais vu.
+RÈGLE ABSOLUE : le PRODUIT FOURNI est représenté strictement tel qu'il apparaît sur SA PROPRE photo — jamais plus exposé, jamais ouvert, jamais avec un contenu (gomme, gélule, poudre, gel, comprimé) rendu visible si cette vue n'existe pas sur la photo reçue. Si la photo montre un pot fermé, ta créative montre un pot fermé — même si le CT, lui, montrait des gommes à l'air libre. Ne prends jamais le risque de deviner/inventer une forme physique interne non visible sur la photo réelle.
+Exemple concret : CT = gélules tenues entre deux doigts, gros plan. Produit réel fourni = pot fermé de compléments (contenu invisible sur la photo). → Tu ne dessines PAS de gommes/gélules sorties du pot. Tu représentes le pot fermé tel que photographié, tenu en main ou posé, en respectant le cadrage/la structure du CT (gros plan, main qui tient l'objet) mais avec l'objet RÉEL, jamais son contenu imaginé.
+
 RÈGLE #0septies — TRAÇABILITÉ COMPLÈTE DU DÉCODAGE
 Chaque ligne remplie à la fiche de décodage (A à H) doit avoir une trace explicite et littérale dans les zones que tu écris ou dans les INSTRUCTIONS GEMINI ADDITIONNELLES. Un détail correctement observé mais jamais retranscrit est un oubli silencieux, même si le reste du prompt est excellent.
 
+RÈGLE — DISTINCTION MARQUE VENDEUR vs MARQUE PRODUIT PHYSIQUE
+⛔ Cause profonde d'erreur : supposer que "la marque du client" = "ce qui est imprimé sur le produit". Le champ marque de la synthèse (S0) = EXACTEMENT ce que le prospect a fourni dans "Marque ou Boutique e-commerce" — le nom de la BOUTIQUE/DU REVENDEUR qui vend le produit. Le nom imprimé sur le packaging du PRODUIT FOURNI (visible sur sa photo) peut être totalement différent — un revendeur peut vendre un produit fabriqué par un tiers (private label, distribution, co-branding). Ces deux entités sont différentes ; n'écris JAMAIS le nom du fabricant à la place de S0-marque.
+
 MARQUE EN TEXTE, JAMAIS EN LOGO
-Si le CT a une zone marque/logo identifiable → tu y intègres le nom de la marque (S0) en TEXTE, police propre cohérente avec la palette S0, taille discrète. Si le CT n'a PAS de zone marque → aucun nom de marque nulle part, même pas "discret". Jamais de logo image inventé.
+Si le CT a une zone marque/logo identifiable → tu y intègres le nom de la marque (S0 — le revendeur, voir règle ci-dessus) en TEXTE, police propre cohérente avec la palette S0, taille discrète. Si le CT n'a PAS de zone marque → aucun nom de marque nulle part, même pas "discret". Jamais de logo image inventé.
 
 CODE DISNEY — FORMES ARRONDIES
 Tous les éléments graphiques que tu AJOUTES (boutons, cartes, icônes, bulles, encadrés) sont arrondis, sans exception — sauf si le CT montre littéralement un élément pointu structurellement central à son concept (auquel cas tu le conserves, car il appartient à la structure immuable du CT).
@@ -2981,6 +3043,8 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 - Le hook (premier élément lu) nomme le problème/moteur en langage littéral, sauf si le CT impose une métaphore sur le produit lui-même ?
 - Le PRODUIT FOURNI est toujours visuellement présent, fidèle à sa vraie forme/packaging — jamais l'objet du CT (gélule/flacon/sachet) substitué à tort ?
 - Le nom de marque apparaît en TEXTE si le CT a une zone dédiée — jamais en logo image ?
+- Le nom de marque utilisé est bien celui du REVENDEUR (S0), jamais le nom du fabricant imprimé sur le produit ?
+- Le PRODUIT FOURNI n'est jamais montré plus exposé/ouvert que sur sa propre photo (pas de contenu — gomme/gélule/poudre — inventé s'il est invisible sur la photo réelle) ?
 - Tous les éléments graphiques ajoutés sont arrondis (Code Disney), sauf élément pointu structurellement central du CT ?
 - Couleurs exclusivement palette S0 — jamais les couleurs du CT ?
 - Décor et visages adaptés au pays/persona S1/S7 — jamais copiés du CT occidental ?
@@ -3558,6 +3622,10 @@ CT = main tenant une gélule rouge/blanche entre deux doigts, sur fond rouge uni
 Produit réel = flacon Novoma noir 60 gélules
 → Tu reproduis : main tenant LE FLACON entre deux doigts (ou paume), sur fond rouge uni, gros plan
 → Tu NE reproduis PAS : une gélule générique inventée
+
+⛔ CAS PARTICULIER — CONTENU INVISIBLE SUR LA PHOTO RÉELLE (aussi fréquent que le cas ci-dessus) :
+Même règle de priorité, mais dans l'autre sens : si CT montre son produit sous une forme "ouverte"/exposée (gélules hors du flacon, gommes hors du pot, poudre à l'air libre) et que IMAGE 1 (le produit réel) est un contenant FERMÉ dont le contenu n'est pas visible sur sa photo, tu NE dessines PAS ce contenu deviné. Le contenant fermé réel prime — jamais d'invention d'un contenu (gomme/gélule/poudre/comprimé) qui n'apparaît pas sur IMAGE 1.
+Exemple : CT = gommes versées hors du pot, gros plan. Produit réel = pot fermé de compléments (contenu invisible sur sa photo). → Tu représentes le pot FERMÉ tel que photographié, dans un cadrage analogue au CT (gros plan, tenu en main) — jamais son contenu imaginé.
 → La structure (fond uni rouge, main au centre, gros plan, headline en haut) est conservée. La présentation est adaptée au produit réel.
 
 
@@ -3914,6 +3982,7 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 □ Le persona, son persona et le moteur associé sont cohérents entre eux ET avec l'angle imposé (vérifié dans le bloc META) ?
 □ Le mécanisme du produit (USP/UMS) apparaît dans au moins une zone (preuve/mécanisme) du bloc PROMPT_GEMINI ?
 □ Le PRODUIT décrit dans toutes mes zones est LE PRODUIT FOURNI (IMAGE 1) — pas un objet inventé du CT (gélule, comprimé, capsule, sachet) qui n'est pas dans IMAGE 1 ?
+□ Si IMAGE 1 est un contenant fermé dont le contenu n'est pas visible sur sa photo, aucun contenu (gomme/gélule/poudre/comprimé) n'est inventé ou exposé dans mes zones, même si le CT montrait son produit ouvert/exposé ?
 □ Le prompt final commence par "⚠️ IMAGE FOURNIE — PRODUIT" suivi du bloc fidélité ?
 □ J'ai utilisé "(IMAGE FOURNIE — fidélité photographique absolue)" à chaque mention du produit ?
 □ J'ai décrit la structure CT en texte avec suffisamment de précision (%, positions, proportions, invariants) ?
