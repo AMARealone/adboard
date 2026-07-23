@@ -1527,6 +1527,19 @@ textarea::placeholder { color: var(--muted); }
 
   /* ── Contacts : masquer colonnes moins importantes ── */
   .contact-row-meta { font-size: 10px; }
+
+  /* ── Tableaux : scroll horizontal au lieu de couper le contenu ── */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 560px; }
+
+  /* ── Graphiques Chart.js : hauteur maîtrisée, jamais écrasés ── */
+  canvas { max-height: 240px !important; }
+
+  /* ── Inputs : 16px minimum pour éviter le zoom automatique iOS au focus ── */
+  input, select, textarea { font-size: 16px !important; }
+
+  /* ── Cibles tactiles : boutons d'action des cartes à taille suffisante ── */
+  .card-actions button, .card-actions a { min-height: 38px; }
 }
 
 @media (max-width: 480px) {
@@ -1561,6 +1574,13 @@ textarea::placeholder { color: var(--muted); }
     <div id="admin-auth-loading" style="display:none;text-align:center;color:#8a93a6;font-size:12px;margin-top:12px;">Connexion en cours…</div>
   </div>
 </div>
+
+<!-- ════ TOPBAR MOBILE ════ (le CSS/JS l'attendaient déjà, il manquait juste ce bloc) -->
+<div id="mob-topbar" style="display:none;">
+  <div id="mob-menu-btn" onclick="toggleSidebar()">☰</div>
+  <div id="mob-title">AdStats</div>
+</div>
+<div id="mob-overlay" onclick="closeSidebar()"></div>
 
 <!-- ════ SIDEBAR ════ -->
 <nav class="sidebar">
@@ -5580,12 +5600,12 @@ initAuthGate(() => {
 
 // ── Mobile sidebar ──
 function toggleSidebar() {
-  document.querySelector('.sidebar').classList.toggle('open');
-  document.getElementById('mob-overlay').classList.toggle('show');
+  document.querySelector('.sidebar')?.classList.toggle('open');
+  document.getElementById('mob-overlay')?.classList.toggle('show');
 }
 function closeSidebar() {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.getElementById('mob-overlay').classList.remove('show');
+  document.querySelector('.sidebar')?.classList.remove('open');
+  document.getElementById('mob-overlay')?.classList.remove('show');
 }
 
 // Compteurs mobiles
