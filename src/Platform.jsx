@@ -87,6 +87,59 @@ const sbAuth = {
     const redirectTo = encodeURIComponent(window.location.origin + '/adboard');
     window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&prompt=select_account`;
   },
+  signInWithFacebook: () => {
+    const redirectTo = encodeURIComponent(window.location.origin + '/adboard');
+    window.location.href = `${SUPABASE_URL}/auth/v1/authorize?provider=facebook&redirect_to=${redirectTo}`;
+  },
+  // Connexion email/mot de passe "intelligente" — un seul champ, un seul bouton, comme demandé :
+  // 1ère visite = compte créé automatiquement, visites suivantes = connexion. Jamais de choix
+  // "s'inscrire vs se connecter" à faire soi-même, jamais d'email de confirmation à attendre
+  // (nécessite que "Confirm email" soit désactivé côté Supabase Auth settings).
+  signInWithPassword: async (email, password) => {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON },
+      body: JSON.stringify({ email, password })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || 'Identifiants incorrects');
+    const session = { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() + (d.expires_in * 1000) };
+    localStorage.setItem('sb_session', JSON.stringify(session));
+    localStorage.setItem('sb_user', JSON.stringify(d.user));
+    return d.user;
+  },
+  signUp: async (email, password) => {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON },
+      body: JSON.stringify({ email, password })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error_description || d.msg || d.error || 'Erreur de création de compte');
+    if (!d.access_token) throw new Error('NO_SESSION'); // "Confirm email" encore actif côté Supabase
+    const session = { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() + (d.expires_in * 1000) };
+    localStorage.setItem('sb_session', JSON.stringify(session));
+    localStorage.setItem('sb_user', JSON.stringify(d.user));
+    return d.user;
+  },
+  smartSignIn: async (email, password) => {
+    try {
+      return await sbAuth.signInWithPassword(email, password);
+    } catch (signInErr) {
+      // Échec connexion : soit le compte n'existe pas encore (1ère visite), soit mauvais mot de passe.
+      try {
+        return await sbAuth.signUp(email, password);
+      } catch (signUpErr) {
+        if (signUpErr.message === 'NO_SESSION') {
+          throw new Error('Compte créé — vérifie ta boîte mail pour confirmer ton adresse avant de te connecter.');
+        }
+        const msg = (signUpErr.message || '').toLowerCase();
+        if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) {
+          // Le compte existe déjà (confirmé par l'échec de création) → le souci est bien le mot de passe.
+          throw new Error('Mot de passe incorrect.');
+        }
+        throw signUpErr;
+      }
+    }
+  },
   signOut: async () => {
     const session = JSON.parse(localStorage.getItem('sb_session') || 'null');
     if (session?.access_token) {
@@ -3052,6 +3105,70 @@ const DemoPreview = ({slug, setSection}) => {
   );
 };
 
+// ── Page de connexion — écran unique, fluide, façon vrai SaaS ──────────────
+function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!email || !password) { setError('Renseigne ton email et ton mot de passe.'); return; }
+    setLoading(true); setError('');
+    try {
+      await sbAuth.smartSignIn(email.trim(), password);
+      window.location.reload();
+    } catch(err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div style={{position:'fixed',inset:0,background:C.bg,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Inter',sans-serif",padding:16,zIndex:9999}}>
+      <div style={{width:'100%',maxWidth:380,padding:36,background:C.sidebar,border:`1px solid ${C.border}`,borderRadius:16}}>
+        <div style={{textAlign:'center',marginBottom:28}}>
+          <div style={{fontSize:22,fontWeight:800,color:C.text,letterSpacing:-0.3}}>AdStack</div>
+          <div style={{fontSize:12.5,color:C.sec,marginTop:5}}>Connecte-toi ou crée ton compte</div>
+        </div>
+
+        {error && (
+          <div style={{background:'rgba(255,80,80,.1)',border:'1px solid rgba(255,80,80,.3)',color:'#ff8080',fontSize:12,padding:'9px 12px',borderRadius:8,marginBottom:14,lineHeight:1.5}}>{error}</div>
+        )}
+
+        <form onSubmit={submit}>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" autoComplete="username"
+            style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',marginBottom:10,background:'rgba(255,255,255,.05)',border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13.5,fontFamily:'inherit',outline:'none'}}/>
+          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mot de passe" autoComplete="current-password"
+            style={{width:'100%',boxSizing:'border-box',padding:'12px 14px',marginBottom:16,background:'rgba(255,255,255,.05)',border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13.5,fontFamily:'inherit',outline:'none'}}/>
+          <button type="submit" disabled={loading}
+            style={{width:'100%',padding:12,background:C.accent,border:'none',borderRadius:9,color:'#fff',fontSize:13.5,fontWeight:700,cursor:loading?'default':'pointer',fontFamily:'inherit',opacity:loading?0.7:1}}>
+            {loading ? 'Connexion…' : 'Continuer'}
+          </button>
+        </form>
+
+        <div style={{display:'flex',alignItems:'center',gap:10,margin:'18px 0'}}>
+          <div style={{flex:1,height:1,background:C.border}}/>
+          <div style={{fontSize:11,color:C.sec}}>ou</div>
+          <div style={{flex:1,height:1,background:C.border}}/>
+        </div>
+
+        <button onClick={sbAuth.signInWithGoogle}
+          style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:11,background:'rgba(255,255,255,.06)',border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:9}}>
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          Continuer avec Google
+        </button>
+        <button onClick={sbAuth.signInWithFacebook}
+          style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:11,background:'rgba(255,255,255,.06)',border:`1px solid ${C.border}`,borderRadius:9,color:C.text,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+          <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#1877F2" d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+          Continuer avec Facebook
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Platform() {
   const SECTION_PATHS = { tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
@@ -3636,6 +3753,10 @@ const views = {
         onMarkOne={async(id)=>{const s=await sbAuth.refreshSession();if(s){await fetch(`${SUPABASE_URL}/rest/v1/notifications?id=eq.${id}`,{method:'PATCH',headers:{apikey:SUPABASE_ANON,Authorization:`Bearer ${s.access_token}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:JSON.stringify({read:true})});}setNotifications(p=>p.map(n=>n.id===id?{...n,read:true}:n));setUnreadCount(p=>Math.max(0,p-1));}}
       />,
   };
+
+  // Portail d'authentification — l'app entière (sidebar + contenu) ne se rend que si connecté.
+  // Placé APRÈS tous les hooks (règles de React), juste avant le vrai rendu.
+  if (!user) return <LoginScreen />;
 
   return (
     <>
