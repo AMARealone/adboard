@@ -5203,6 +5203,9 @@ async function loadCommandes() {
                 🗑 Supprimer
               </button>
             ` : b.status === 'in_production' ? `
+              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.10);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
+                ↻ Relancer
+              </button>
               <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:#22C55E22;border:1px solid #22C55E44;border-radius:7px;color:#22C55E;font-size:12px;font-weight:700;cursor:pointer;">
                 ✅ Marquer livré
               </button>
