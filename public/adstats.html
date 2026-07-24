@@ -1465,14 +1465,23 @@ textarea::placeholder { color: var(--muted); }
   .btn-red.btn-sm { padding: 6px 9px; }
 
   /* ── KPI strip dashboard ── */
-  .kpi-strip { flex-wrap: wrap; gap: 0; }
+  /* Cause profonde corrigée : .kpi-strip est en display:grid, "flex-wrap" ci-dessus
+     n'avait donc aucun effet — c'est grid-template-columns qu'il fallait forcer.
+     !important nécessaire pour battre les overrides inline (ex: Acheteurs Starter, 3 colonnes). */
+  .kpi-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 0 !important; }
   .kpi-cell {
-    flex: 1 1 calc(50% - 1px);
-    min-width: 0;
-    border-right: none;
+    border-right: none !important;
     border-bottom: 1px solid var(--border);
   }
-  .kpi-cell:nth-child(odd) { border-right: 1px solid var(--border); }
+  .kpi-cell:nth-child(odd) { border-right: 1px solid var(--border) !important; }
+
+  /* ── Barres de filtres/recherche en en-tête (Prospects/Suivi/Leads/Contacts) ──
+     Débordaient horizontalement : plusieurs champs à largeur fixe sur une seule ligne
+     sans possibilité de retour à la ligne. ── */
+  .toolbar { flex-wrap: wrap; }
+  .search-wrap { width: 100% !important; }
+  .page-header select,
+  .page-header input[type="date"] { min-width: 0; flex: 1 1 auto; }
 
   /* ── Dash cards grille ── */
   .dash-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
@@ -1540,6 +1549,31 @@ textarea::placeholder { color: var(--muted); }
 
   /* ── Cibles tactiles : boutons d'action des cartes à taille suffisante ── */
   .card-actions button, .card-actions a { min-height: 38px; }
+
+  /* ── L'état "replié" (icônes seules) est une fonction desktop — ne doit jamais
+     s'appliquer au tiroir mobile, même si persisté en localStorage depuis le PC ── */
+  .sidebar.folded { width: 220px; }
+  .sidebar.folded .logo-text,
+  .sidebar.folded .logo-sub,
+  .sidebar.folded .nav-label,
+  .sidebar.folded .nav-item span,
+  .sidebar.folded .nav-count {
+    display: initial;
+  }
+  .sidebar.folded .nav-item { justify-content: flex-start; padding: inherit; }
+  .sidebar.folded .logo { justify-content: flex-start; padding: inherit; }
+  .main.folded { margin-left: 0 !important; }
+
+  /* ── Badge rythme Instagram : le bas d'écran est occupé par les boutons d'action
+     des cartes sur mobile — on le remonte sous la topbar plutôt que de masquer du contenu ── */
+  #igPacingBadge {
+    bottom: auto !important;
+    top: 54px !important;
+    right: 10px !important;
+    font-size: 10px !important;
+    padding: 5px 10px !important;
+    max-width: calc(100vw - 20px);
+  }
 }
 
 @media (max-width: 480px) {
@@ -1882,7 +1916,7 @@ textarea::placeholder { color: var(--muted); }
       <div class="page-title">Suivi prospection</div>
       <div class="page-sub">Cochez l'évolution — 3 cases cochées = bouton Lead disponible</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div class="search-wrap" style="width:220px">
         <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
         <input type="text" placeholder="Rechercher un prospect..." id="suivi-search" oninput="filterSuivi()" style="font-size:13px">
@@ -1963,7 +1997,7 @@ textarea::placeholder { color: var(--muted); }
       <div class="page-title">Leads</div>
       <div class="page-sub">Génération automatique des 3 relances à partir de la mindmap</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <div class="search-wrap" style="width:220px">
         <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
         <input type="text" placeholder="Rechercher un lead..." id="leads-search" oninput="filterLeads()" style="font-size:13px">
