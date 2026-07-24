@@ -1959,8 +1959,13 @@ const Galerie = ({products, isDemo, setSection}) => {
   const [selectedProduct, setSelectedProduct] = useState(null);
 
   const weeks = ['S1','S2','S3','S4','S5'];
+  // Cause profonde corrigée : CREA était une constante vide codée en dur (jamais remplie) —
+  // la galerie affichait des rectangles de dégradé factices, jamais les vraies créatives déjà
+  // livrées par Factory. Dérivé maintenant depuis products (real Supabase products.creatives).
+  const realCreatives = products.flatMap(p => p.creatives || []);
+  const angleSet = [...new Set(realCreatives.map(c => c.angle))];
 
-  const filtered = CREA.filter(c => {
+  const filtered = realCreatives.filter(c => {
     if (selectedProduct && c.productId !== selectedProduct) return false;
     const q = query.trim().toLowerCase();
     if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q)) return false;
@@ -1969,7 +1974,7 @@ const Galerie = ({products, isDemo, setSection}) => {
     return true;
   });
 
-  const chips = filterMode==='angle' ? ANGLES : filterMode==='date' ? weeks : [];
+  const chips = filterMode==='angle' ? angleSet : filterMode==='date' ? weeks : [];
 
   return (
     <div>
@@ -2038,7 +2043,7 @@ const Galerie = ({products, isDemo, setSection}) => {
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
         {filtered.map(c => (
           <div key={c.id} className="gallery-item" onClick={() => setSelected(c)}
-            style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:`linear-gradient(160deg,${c.g1},${c.g2})`}}
+            style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:c.imageUrl?`url(${c.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`}}
           >
             <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))'}}>
               <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.angle}</div>
@@ -2052,7 +2057,7 @@ const Galerie = ({products, isDemo, setSection}) => {
         <div style={{textAlign:'center',padding:'60px 0',color:C.sec,fontSize:12}}>Aucune créative trouvée pour cette recherche</div>
       )}
 
-      {CREA.length===0 && !query && (
+      {realCreatives.length===0 && !query && (
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
           <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <Icon name="grid" size={26} color={C.accent}/>
@@ -2074,15 +2079,15 @@ const Galerie = ({products, isDemo, setSection}) => {
       {selected && (
         <div onClick={() => setSelected(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
           <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:320,borderRadius:14,overflow:'hidden',background:C.card,border:`1px solid ${C.borderM}`}}>
-            <div style={{aspectRatio:'4/5',background:`linear-gradient(160deg,${selected.g1},${selected.g2})`}}/>
+            <div style={{aspectRatio:'4/5',background:selected.imageUrl?`url(${selected.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${selected.g1||'#333'},${selected.g2||'#111'})`}}/>
             <div style={{padding:'14px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:C.text}}>{selected.angle}</div>
                 <div style={{fontSize:11,color:C.sec}}>Semaine {selected.week.replace('S','')}</div>
               </div>
-              <button style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <a href={selected.imageUrl} download target="_blank" rel="noreferrer" style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',textDecoration:'none'}}>
                 <Icon name="download" size={15}/>
-              </button>
+              </a>
             </div>
           </div>
           <button onClick={() => setSelected(null)} style={{position:'absolute',top:24,right:24,width:38,height:38,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>

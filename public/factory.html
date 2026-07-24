@@ -2235,6 +2235,25 @@ function prodv2ExtractAngles(synthesis) {
 
 let prodAbortController = null;
 
+// ── Sauvegarde incrémentale des livrables — pas juste à la toute fin ──
+// Cause du risque signalé : si le navigateur plante/se ferme en cours de production, seule
+// la sauvegarde finale existait — tout le travail déjà payé (appels Gemini) pouvait être perdu.
+// Appelée après CHAQUE créative/copy individuelle, avec un léger debounce pour ne pas spammer
+// le serveur si plusieurs complétions arrivent presque en même temps.
+let _prodv2AutosaveTimer = null;
+function prodv2AutosaveDeliverables() {
+  if (prodv2State.briefSource !== 'commande' || !prodv2State.commandeId) return;
+  clearTimeout(_prodv2AutosaveTimer);
+  _prodv2AutosaveTimer = setTimeout(async () => {
+    try {
+      await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
+        method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+        body: JSON.stringify({ creatives: prodv2State.creatives, copies: prodv2State.copies, synthesis: prodv2State.synthesis, angles: prodv2State.angles })
+      });
+    } catch(e) { console.warn('[Commande] Autosave échoué :', e.message); }
+  }, 800);
+}
+
 async function prodv2Launch() {
   if(!prodv2State.brief || !prodv2State.productB64) {
     alert('Charge un brief.json valide avec photo_produit avant de lancer.');
@@ -2339,6 +2358,7 @@ async function prodv2Launch() {
           await prodv2GenerateOneCreativeWithRetry(idx, a, ctPositionInAngle, ctPick[idx], prodAbortController.signal);
           creativesDone++;
           prodv2SetAgentState(2, 'active', `${creativesDone} / 9 créatives générées`, Math.round(creativesDone/9*100));
+          prodv2AutosaveDeliverables();
         }
       }
     };
@@ -2375,7 +2395,8 @@ async function prodv2Launch() {
           body: JSON.stringify({
             creatives: prodv2State.creatives,
             copies: prodv2State.copies,
-            synthesis: prodv2State.synthesis
+            synthesis: prodv2State.synthesis,
+            angles: prodv2State.angles
           })
         });
       } catch(e) { console.warn('[Commande] Sauvegarde livrables échouée :', e.message); }
@@ -2562,6 +2583,7 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
 
   prodv2State.copies[angleIdx] = { hooks, description };
   prodv2RenderCopy(angleIdx);
+  prodv2AutosaveDeliverables();
 }
 
 function prodv2RenderCopy(angleIdx) {
