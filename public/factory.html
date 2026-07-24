@@ -5243,12 +5243,32 @@ async function prodv2LoadBriefFromCommande(b) {
   prodv2State.briefSource = 'commande';
   prodv2State.commandeId = b.id;
 
-  // Photo : priorité à photo_nobg (fond déjà retiré), sinon photo_base64 brute
-  const photo = b.photo_nobg || b.product.photo_base64 || '';
-  if (photo) {
-    const m = photo.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+  // Photo : priorité photo_nobg (fond retiré) → photo_base64 (déjà en base64) → photo_url
+  // (une URL à récupérer et convertir — oublié dans la première version, présent dans
+  // loadCommandes() qui affiche la liste, d'où l'incohérence "visible dans la liste mais
+  // absente une fois le brief chargé").
+  const photoData = b.photo_nobg || b.product.photo_base64 || '';
+  if (photoData) {
+    const m = photoData.match(/^data:(image\/[a-z]+);base64,(.+)$/);
     if (m) { prodv2State.productMime = m[1]; prodv2State.productB64 = m[2]; }
-    else { prodv2State.productMime = 'image/png'; prodv2State.productB64 = photo; }
+    else { prodv2State.productMime = 'image/png'; prodv2State.productB64 = photoData; }
+  } else if (b.product.photo_url) {
+    try {
+      const imgResp = await fetch(b.product.photo_url);
+      if (!imgResp.ok) throw new Error('HTTP ' + imgResp.status);
+      const blob = await imgResp.blob();
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const m = dataUrl.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+      if (m) { prodv2State.productMime = m[1]; prodv2State.productB64 = m[2]; }
+    } catch(e) {
+      console.warn('[Commande] Récupération photo_url échouée :', e.message);
+      prodv2State.productB64 = null; prodv2State.productMime = null;
+    }
   } else {
     prodv2State.productB64 = null; prodv2State.productMime = null;
   }
