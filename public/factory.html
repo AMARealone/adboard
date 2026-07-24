@@ -2390,7 +2390,7 @@ async function prodv2Launch() {
     // même après avoir quitté la page (pas dépendant de la mémoire du navigateur).
     if (prodv2State.briefSource === 'commande' && prodv2State.commandeId) {
       try {
-        await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
+        const rSave = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
           method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
           body: JSON.stringify({
             creatives: prodv2State.creatives,
@@ -2399,7 +2399,15 @@ async function prodv2Launch() {
             angles: prodv2State.angles
           })
         });
-      } catch(e) { console.warn('[Commande] Sauvegarde livrables échouée :', e.message); }
+        if (!rSave.ok) throw new Error('HTTP ' + rSave.status);
+      } catch(e) {
+        console.warn('[Commande] Sauvegarde livrables échouée :', e.message);
+        // Cause profonde corrigée : cet échec finissait uniquement dans la console, invisible
+        // au moment où il compte encore (onglet ouvert, prodv2State encore en mémoire). Alerte
+        // visible + reste sur cette page : le bouton "Envoyer au client" en bas fonctionne
+        // toujours puisqu'il utilise prodv2State directement, sans dépendre de cette sauvegarde.
+        alert("⚠️ La sauvegarde automatique des livrables a échoué (" + e.message + ").\n\nNE FERME PAS CET ONGLET — utilise directement le bouton \"Envoyer au client\" en bas de cette page, il fonctionne avec ce qui est déjà généré ici, sans dépendre de cette sauvegarde.");
+      }
     }
 
     document.getElementById('prodv2LaunchBtn').disabled = false;
