@@ -3951,14 +3951,14 @@ async function genMessages(html) {
   let templates = DEFAULT_RELANCES;
   try {
     const _cr = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
-    if (_cr.ok) {
-      const _rows = await _cr.json();
-      if (_rows.length) {
-        const _cfg = JSON.parse(_rows[0].notes || '{}');
-        if (_cfg.tpl_relances) templates = _cfg.tpl_relances;
-      }
+    if (!_cr.ok) throw new Error(`Lecture config templates : HTTP ${_cr.status}`);
+    const _rows = await _cr.json();
+    if (_rows.length) {
+      const _cfg = JSON.parse(_rows[0].notes || '{}');
+      if (_cfg.tpl_relances) templates = _cfg.tpl_relances;
     }
   } catch(e) {
+    console.warn('[genMessages] Lecture config Supabase échouée, fallback localStorage :', e.message);
     templates = JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
   }
   // Ancien format (5 relances) encore enregistré quelque part → périmé, on force les nouveaux templates
@@ -5078,20 +5078,23 @@ async function loadTemplates() {
   let cfg_demo_msg = '';
   try {
     const r = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
-    if (r.ok) {
-      const rows = await r.json();
-      if (rows.length) {
-        const cfg = JSON.parse(rows[0].notes || '{}');
-        if (cfg.tpl_intros)    intros    = cfg.tpl_intros;
-        if (cfg.tpl_relances)  relances  = cfg.tpl_relances;
-        if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
-        if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
-        DB._config = cfg;
-        // Sync localStorage pour genMessages (lecture rapide)
-        localStorage.setItem('tpl_relances', JSON.stringify(relances));
-      }
+    // Cause profonde corrigée : un rejet HTTP (RLS, permissions...) ne lève PAS d'exception
+    // fetch — r.ok=false passait inaperçu, ni erreur ni fallback localStorage déclenché,
+    // les templates par défaut (périmés) restaient utilisés sans que rien ne le signale.
+    if (!r.ok) throw new Error(`Lecture config templates : HTTP ${r.status}`);
+    const rows = await r.json();
+    if (rows.length) {
+      const cfg = JSON.parse(rows[0].notes || '{}');
+      if (cfg.tpl_intros)    intros    = cfg.tpl_intros;
+      if (cfg.tpl_relances)  relances  = cfg.tpl_relances;
+      if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
+      if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
+      DB._config = cfg;
+      // Sync localStorage pour genMessages (lecture rapide)
+      localStorage.setItem('tpl_relances', JSON.stringify(relances));
     }
   } catch(e) {
+    console.warn('[loadTemplates] Lecture config Supabase échouée, fallback localStorage :', e.message);
     // Fallback localStorage
     intros    = JSON.parse(localStorage.getItem('tpl_intros')   || 'null') || DEFAULT_INTROS;
     relances  = JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
@@ -5107,8 +5110,11 @@ async function loadTemplates() {
   let dbTemplates = [];
   try {
     const rDb = await fetch(`${SB}/templates?select=*`, { headers: H });
-    if (rDb.ok) dbTemplates = await rDb.json();
-  } catch(e) {}
+    if (!rDb.ok) throw new Error(`Lecture table templates : HTTP ${rDb.status}`);
+    dbTemplates = await rDb.json();
+  } catch(e) {
+    console.warn('[loadTemplates] Lecture table templates échouée :', e.message);
+  }
   const parCle = {};
   dbTemplates.forEach(t => { parCle[t.cle] = t; });
 
@@ -5356,7 +5362,15 @@ async function saveAllTemplates() {
   try {
     // Vérifier si la ligne config existe
     const r = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
-    const rows = r.ok ? await r.json() : [];
+    // Cause profonde corrigée : un rejet HTTP était traité comme "aucune ligne config
+    // n'existe encore", ce qui pouvait créer une DEUXIÈME ligne config en double au lieu
+    // de mettre à jour la vraie — source de templates qui ne se mettent jamais à jour.
+    if (!r.ok) {
+      toast('Erreur lecture config (HTTP ' + r.status + ') — sauvegarde annulée, réessaie');
+      console.error('[Templates] Lecture config échouée avant sauvegarde:', r.status);
+      return;
+    }
+    const rows = await r.json();
     if (rows.length) {
       // PATCH ligne existante
       const pr = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, {
