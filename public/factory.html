@@ -1067,10 +1067,9 @@ async function _checkAdminAndProceed(user, onSuccess) {
   }
   _hideAuthGate();
   _renderAccountBadge(user);
-  const session = adminAuth.getSession();
-  if (session) {
-    SB_H_F.Authorization = 'Bearer ' + session.access_token;
-  }
+  // SB_H_F ne sert plus qu'au stockage Supabase (galerie CT) depuis que prospects/demos
+  // passent par le serveur — le stockage a toujours fonctionné avec la clé anon simple,
+  // jamais eu besoin du token de session. Le remplacer cassait la galerie CT.
   onSuccess();
 }
 
