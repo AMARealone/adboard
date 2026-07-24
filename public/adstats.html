@@ -5090,8 +5090,9 @@ async function loadTemplates() {
       if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
       if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
       DB._config = cfg;
-      // Sync localStorage pour genMessages (lecture rapide)
+      // Sync localStorage pour lecture rapide (genMessages, getIntroLinks, getIntroTextsInstagram)
       localStorage.setItem('tpl_relances', JSON.stringify(relances));
+      if (cfg.tpl_intros) localStorage.setItem('tpl_intros', JSON.stringify(intros));
     }
   } catch(e) {
     console.warn('[loadTemplates] Lecture config Supabase échouée, fallback localStorage :', e.message);
@@ -5475,7 +5476,8 @@ function removeIntro(idx) {
 // Générer les textes d'intro pour Instagram — pas de lien pré-rempli possible (contrairement à wa.me),
 // donc on ouvre juste le profil et on copie le texte pour un collage rapide.
 function getIntroTextsInstagram(prospect) {
-  const intros = JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
+  // Priorité : config Supabase (DB._config, source de vérité) → cache localStorage → défaut
+  const intros = (DB._config && DB._config.tpl_intros) || JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
   return intros.map((tpl, i) => {
     const msg = tpl
       .replace(/\[Marque\]/g, prospect.nom_marque || '')
@@ -5621,7 +5623,8 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
 
 // Générer les liens WhatsApp avec les intros pour un prospect
 function getIntroLinks(prospect) {
-  const intros = JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
+  // Priorité : config Supabase (DB._config, source de vérité) → cache localStorage → défaut
+  const intros = (DB._config && DB._config.tpl_intros) || JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
   const numero = prospect.lien_wa.replace('https://wa.me/', '');
   return intros.map((tpl, i) => {
     const msg = tpl
