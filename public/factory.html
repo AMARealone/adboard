@@ -445,6 +445,8 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
   input, select, textarea { font-size: 16px !important; }
   button { min-height: 36px; }
 }
+@keyframes prodv2Blink36 { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+.prodv2-timer36-blink { animation: prodv2Blink36 1s ease-in-out infinite; background: rgba(239,68,68,0.15) !important; color: #EF4444 !important; font-weight:700; }
 </style>
 </head>
 <body>
@@ -856,7 +858,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
             <div class="prodv2-drop-sub">ou clique pour parcourir</div>
           </div>
           <div class="prodv2-preview" id="prodv2Preview">
-            <div class="prodv2-preview-label">Aperçu</div>
+            <div class="prodv2-preview-label">Photo produit</div>
             <div class="prodv2-preview-empty">Aucun brief chargé</div>
           </div>
         </div>
@@ -2110,33 +2112,51 @@ function prodv2HandleBrief(input) {
 function prodv2RenderPreview() {
   const b = prodv2State.brief;
   const photoOk = !!prodv2State.productB64;
-  const logoOk = !!prodv2State.logoB64;
   const provenance = prodv2State.briefSource === 'commande'
     ? `✓ brief.json chargé automatiquement depuis la commande #${prodv2State.commandeId}`
-    : (b.__manualUpload ? '✓ brief.json chargé (fichier local)' : '');
-  const html = `
-    <div class="prodv2-preview-label">Aperçu</div>
-    ${provenance ? `<div style="font-size:10.5px;color:var(--blue);margin-bottom:8px;">${provenance}</div>` : ''}
-    <div class="prodv2-preview-row">
+    : '✓ brief.json chargé (fichier local)';
+
+  // ── Côté gauche : résumé des infos remontées — jamais le JSON brut, juste ce qu'il faut
+  // pour confirmer que le client a bien renseigné son brief ──
+  const dropEl = document.getElementById('prodv2Drop');
+  dropEl.classList.add('loaded');
+  dropEl.onclick = null;
+  dropEl.innerHTML = `
+    <div class="prodv2-preview-label">Brief reçu</div>
+    <div style="font-size:10.5px;color:var(--blue);margin-bottom:10px;">${provenance}</div>
+    <div class="prodv2-preview-row" style="text-align:left;">
       <div>marque : <span class="val">${(b.marque||'—')}</span></div>
       <div>produit : <span class="val">${(b.produit||'—')}</span></div>
-      <div>pays : <span class="val">${(b.pays||'—')}</span>${b.pricing ? ' · prix : <span class="val">'+b.pricing+'</span>' : ''}</div>
+      <div>pays : <span class="val">${(b.pays||'—')}</span></div>
+      <div>prix : <span class="${b.pricing?'ok':'miss'}">${b.pricing || '✗ non renseigné'}</span></div>
+      ${b.cible ? `<div>cible : <span class="val">${b.cible}</span></div>` : ''}
+      ${b.utilite ? `<div>utilité : <span class="val">${b.utilite}</span></div>` : ''}
+      ${(b.couleurs && b.couleurs.length) ? `<div>couleurs : ${b.couleurs.map(c=>`<span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${c};margin-right:3px;vertical-align:middle;border:1px solid rgba(255,255,255,.2);"></span>`).join('')}</div>` : ''}
     </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
-      ${photoOk
-        ? `<img src="data:${prodv2State.productMime};base64,${prodv2State.productB64}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;">`
-        : `<div style="width:56px;height:56px;border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:10px;flex-shrink:0;">✗</div>`
-      }
-      <div style="display:flex;flex-direction:column;gap:5px;flex:1;">
-        <span class="${photoOk?'ok':'miss'}" style="font-size:11px;">${photoOk?'✓ photo produit chargée':'✗ photo absente'}</span>
-        <div style="display:flex;gap:6px;">
-          <button type="button" onclick="document.getElementById('prodv2PhotoReplace').click()" style="font-size:10px;padding:4px 9px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t2);cursor:pointer;">↻ Remplacer</button>
-          ${photoOk ? `<button type="button" onclick="prodv2RemovePhoto()" style="font-size:10px;padding:4px 9px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:5px;color:#E55050;cursor:pointer;">Supprimer</button>` : ''}
-        </div>
+    <div style="margin-top:10px;">
+      <button type="button" onclick="event.stopPropagation();document.getElementById('prodv2BriefInput').click()" style="font-size:10px;padding:4px 9px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t2);cursor:pointer;">↻ Charger un autre brief.json</button>
+    </div>`;
+
+  // ── Côté droit : juste la photo, en grand ──
+  const html = photoOk
+    ? `
+    <div class="prodv2-preview-label">Photo produit</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <img src="data:${prodv2State.productMime};base64,${prodv2State.productB64}" style="max-width:100%;max-height:220px;object-fit:contain;border-radius:10px;border:1px solid var(--border);">
+      <div style="display:flex;gap:6px;">
+        <button type="button" onclick="document.getElementById('prodv2PhotoReplace').click()" style="font-size:10px;padding:5px 11px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t2);cursor:pointer;">↻ Remplacer</button>
+        <button type="button" onclick="prodv2RemovePhoto()" style="font-size:10px;padding:5px 11px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:5px;color:#E55050;cursor:pointer;">Supprimer</button>
       </div>
     </div>
-    <input type="file" accept="image/*" id="prodv2PhotoReplace" style="display:none" onchange="prodv2ReplacePhoto(this)">
-    ${logoOk ? `<div style="font-size:10.5px;color:var(--t3);margin-top:8px;">logo : <span class="ok">✓ chargé</span></div>` : ''}`;
+    <input type="file" accept="image/*" id="prodv2PhotoReplace" style="display:none" onchange="prodv2ReplacePhoto(this)">`
+    : `
+    <div class="prodv2-preview-label">Photo produit</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 0;">
+      <div style="width:64px;height:64px;border-radius:10px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:12px;">✗</div>
+      <span class="miss" style="font-size:11px;">Photo absente</span>
+      <button type="button" onclick="document.getElementById('prodv2PhotoReplace').click()" style="font-size:10px;padding:5px 11px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t2);cursor:pointer;">↻ Ajouter une photo</button>
+    </div>
+    <input type="file" accept="image/*" id="prodv2PhotoReplace" style="display:none" onchange="prodv2ReplacePhoto(this)">`;
   document.getElementById('prodv2Preview').innerHTML = html;
 }
 
@@ -2345,6 +2365,21 @@ async function prodv2Launch() {
 
     prodv2SetAgentState(2, 'done', '9 / 9 créatives générées', 100);
     prodv2SetAgentState(3, 'done', '3 / 3 sets ad copy générés', 100);
+
+    // Sauvegarde auto des livrables côté serveur — pour que "Envoyer au client" fonctionne
+    // même après avoir quitté la page (pas dépendant de la mémoire du navigateur).
+    if (prodv2State.briefSource === 'commande' && prodv2State.commandeId) {
+      try {
+        await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
+          method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+          body: JSON.stringify({
+            creatives: prodv2State.creatives,
+            copies: prodv2State.copies,
+            synthesis: prodv2State.synthesis
+          })
+        });
+      } catch(e) { console.warn('[Commande] Sauvegarde livrables échouée :', e.message); }
+    }
 
     document.getElementById('prodv2LaunchBtn').disabled = false;
     document.getElementById('prodv2LaunchBtn').textContent = 'Relancer la production';
@@ -5181,6 +5216,7 @@ async function loadCommandes() {
             <span style="font-size:15px;font-weight:700;color:var(--t1);">${b.product.nom}</span>
             <span id="status-${b.id}" style="padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:${statusColor[b.status]}22;color:${statusColor[b.status]};">${statusLabel[b.status] || b.status}</span>
             ${b.status==='pending' ? `<span id="timer-${b.id}" style="padding:2px 8px;border-radius:12px;font-size:10px;background:rgba(245,158,11,0.1);color:#F59E0B;" data-created="${b.created_at}">⏱ calcul...</span>` : ''}
+            ${b.status==='in_production' && b.started_at ? `<span id="timer36-${b.id}" class="prodv2-timer36" style="padding:2px 8px;border-radius:12px;font-size:10px;background:rgba(59,130,246,0.1);color:#3B82F6;" data-started="${b.started_at}">⏱ calcul...</span>` : ''}
             <span style="padding:2px 8px;border-radius:12px;font-size:10px;background:var(--bg3);color:var(--blue);">× ${b.quantity} images</span>
           </div>
           <div style="font-size:11px;color:var(--t3);margin-bottom:6px;">
@@ -5207,7 +5243,7 @@ async function loadCommandes() {
                 ↻ Relancer
               </button>
               <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:#22C55E22;border:1px solid #22C55E44;border-radius:7px;color:#22C55E;font-size:12px;font-weight:700;cursor:pointer;">
-                ✅ Marquer livré
+                ✅ Envoyer au client
               </button>
               <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
                 🗑 Supprimer
@@ -5313,7 +5349,7 @@ setInterval(async () => {
 }, 30000);
 
 async function supprimerTicket(id) {
-  if (!confirm('Supprimer ce ticket ?')) return;
+  if (!confirm('Supprimer définitivement cette commande client ? Cette action est irréversible.')) return;
   await fetch(`https://adstack-server.onrender.com/commandes/${id}/delete`, { method:'POST', headers:{'ngrok-skip-browser-warning':'1'} });
   loadCommandes();
 }
@@ -5384,6 +5420,24 @@ setInterval(() => {
       const m = Math.floor((remaining % 3600000) / 60000);
       const s = Math.floor((remaining % 60000) / 1000);
       el.textContent = `⏱ ${h}h${m.toString().padStart(2,'0')}m${s.toString().padStart(2,'0')}s restantes`;
+    }
+  });
+  // ── Minuteur interne 36h (marge de 12h avant le délai client de 48h) ──
+  // Une fois dépassé, clignote pour signaler qu'il est temps d'envoyer les livrables
+  // si la production est terminée.
+  document.querySelectorAll('[id^="timer36-"]').forEach(el => {
+    const started = new Date(el.dataset.started).getTime();
+    const elapsed = Date.now() - started;
+    const WINDOW36 = 36 * 60 * 60 * 1000;
+    const remaining = WINDOW36 - elapsed;
+    if (remaining <= 0) {
+      el.textContent = '🔴 Urgent — envoie les livrables';
+      el.classList.add('prodv2-timer36-blink');
+    } else {
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      el.textContent = `⏱ ${h}h${m.toString().padStart(2,'0')}m avant échéance interne`;
+      el.classList.remove('prodv2-timer36-blink');
     }
   });
 }, 1000);
