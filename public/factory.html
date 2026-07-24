@@ -2657,8 +2657,39 @@ function prodv2ExportZip() {
   alert('Export ZIP — à implémenter (côté serveur, endpoint /export-zip)');
 }
 
-function prodv2SendClient() {
-  alert('Envoi client — à implémenter');
+async function prodv2SendClient() {
+  if (!prodv2State.commandeId) {
+    alert("Cette production n'est pas liée à une commande AdBoard — rien à envoyer automatiquement.");
+    return;
+  }
+  if (!prodv2State.creatives.some(c => c && c.imgB64) && !prodv2State.copies.some(c => c)) {
+    alert('Aucun livrable généré pour l\'instant — rien à envoyer.');
+    return;
+  }
+  const btn = document.querySelector('.prodv2-footer-btn.primary');
+  if (btn) { btn.disabled = true; btn.textContent = 'Envoi en cours…'; }
+  try {
+    // 1. S'assurer que le serveur a bien la toute dernière version de ce qui est en mémoire
+    //    (utile si la sauvegarde auto avait échoué à un moment précis pendant la génération)
+    await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
+      method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({
+        creatives: prodv2State.creatives, copies: prodv2State.copies,
+        synthesis: prodv2State.synthesis, angles: prodv2State.angles
+      })
+    });
+    // 2. Déclenche l'envoi réel (marque "done" + pousse vers briefs/products AdBoard)
+    const r = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/done`, {
+      method: 'POST', headers: {'ngrok-skip-browser-warning':'1'}
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    if (btn) { btn.textContent = '✓ Envoyé au client'; }
+    alert('✅ Envoyé au client.');
+    loadCommandes();
+  } catch(e) {
+    alert("Erreur lors de l'envoi : " + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Envoyer au client'; }
+  }
 }
 
 let testImgB64 = null;
@@ -5272,6 +5303,17 @@ async function loadCommandes() {
               </button>
             ` : b.status === 'cancelled' ? `
               <span style="font-size:11px;color:var(--t3);padding:4px 8px;">Annulé par le client</span>
+              <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
+                🗑 Supprimer
+              </button>
+            ` : b.status === 'done' ? `
+              <span style="font-size:11px;color:#22C55E;padding:4px 8px;">✅ Livré</span>
+              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.10);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
+                ↻ Relancer (nouveau lot)
+              </button>
+              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:#22C55E22;border:1px solid #22C55E44;border-radius:7px;color:#22C55E;font-size:12px;cursor:pointer;">
+                ↻ Renvoyer au client
+              </button>
               <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
                 🗑 Supprimer
               </button>
