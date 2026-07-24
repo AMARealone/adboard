@@ -375,7 +375,7 @@ const LockOverlay = () => (
   </div>
 );
 
-const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null, onOpenLogin=null}) => {
+const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null, onOpenLogin=null, sectionBadges={}}) => {
   const showCollapsed = collapsed && !isMobile;
 
   const navClick = (id) => {
@@ -489,6 +489,11 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
                 {unreadCount>9?'9+':unreadCount}
               </span>
             )}
+            {['galerie','copies','marche'].includes(n.id) && sectionBadges[n.id]>0 && (showCollapsed || (isMobile && !mobileOpen)) && (
+              <span style={{position:'absolute',top:-5,right:-5,background:'#E55050',color:'#fff',borderRadius:'50%',minWidth:14,height:14,fontSize:8,fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 2px',lineHeight:1}}>
+                {sectionBadges[n.id]>9?'9+':sectionBadges[n.id]}
+              </span>
+            )}
             {n.id==='suivi' && activeBriefsCount>0 && (showCollapsed || (isMobile && !mobileOpen)) && (
               <span style={{position:'absolute',top:-3,right:-3,width:8,height:8,borderRadius:'50%',background:'#22C55E',boxShadow:'0 0 6px #22C55E'}}/>
             )}
@@ -497,6 +502,11 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           {!(showCollapsed || (isMobile && !mobileOpen)) && n.id==='notifications' && unreadCount>0 && (
             <span style={{background:'#E55050',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:9,fontWeight:900,minWidth:16,textAlign:'center',marginLeft:'auto'}}>
               {unreadCount>9?'9+':unreadCount}
+            </span>
+          )}
+          {!(showCollapsed || (isMobile && !mobileOpen)) && ['galerie','copies','marche'].includes(n.id) && sectionBadges[n.id]>0 && (
+            <span style={{background:'#E55050',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:9,fontWeight:900,minWidth:16,textAlign:'center',marginLeft:'auto'}}>
+              {sectionBadges[n.id]>9?'9+':sectionBadges[n.id]}
             </span>
           )}
           {!(showCollapsed || (isMobile && !mobileOpen)) && n.id==='suivi' && activeBriefsCount>0 && (
@@ -3167,6 +3177,12 @@ export default function Platform() {
       localStorage.setItem('adstack_section', s);
       const path = SECTION_PATHS[s];
       if (path) window.history.replaceState({}, '', `/adboard/${path}`);
+      // Marquer la section comme vue (fait disparaître son badge de nouveau contenu)
+      if (['galerie','copies','marche'].includes(s)) {
+        const counts = { galerie: totalCreatives, copies: totalAngles, marche: totalMarche, ...seenCounts };
+        counts[s] = s === 'galerie' ? totalCreatives : s === 'copies' ? totalAngles : totalMarche;
+        localStorage.setItem('adstack_seen_counts', JSON.stringify(counts));
+      }
     } catch(e) {}
   };
   const [isDemo, setIsDemo] = useState(false);
@@ -3250,6 +3266,21 @@ export default function Platform() {
   }, [section]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
+
+  // ── Badges "nouveau contenu" (Galerie/Ad Copies/Données Marché) — même principe que
+  // Notifications : compare le total actuel au dernier total vu (localStorage), affiche
+  // la différence, se remet à zéro dès que le client ouvre la section concernée. ──
+  const totalCreatives = products.reduce((s,p) => s + (p.creatives||[]).length, 0);
+  const totalAngles = products.reduce((s,p) => s + (p.deliveries||[]).reduce((s2,d) => s2 + (d.angles?.length||0), 0), 0);
+  const totalMarche = products.filter(p => p.marche).length;
+  const seenCounts = (() => {
+    try { return JSON.parse(localStorage.getItem('adstack_seen_counts') || '{}'); } catch(e) { return {}; }
+  })();
+  const sectionBadges = {
+    galerie: Math.max(0, totalCreatives - (seenCounts.galerie||0)),
+    copies: Math.max(0, totalAngles - (seenCounts.copies||0)),
+    marche: Math.max(0, totalMarche - (seenCounts.marche||0)),
+  };
   const [demoSlug, setDemoSlug] = useState(null);
   const isMobile = useIsMobile();
 
@@ -3737,7 +3768,7 @@ const views = {
 
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
-        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription} activeBriefsCount={allBriefs.filter(b=>b.status==='pending'||b.status==='in_production').length} onOpenPayment={(productId)=>setPaymentProductId(productId)} onOpenLogin={()=>setShowLogin(true)}/>
+        <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription} activeBriefsCount={allBriefs.filter(b=>b.status==='pending'||b.status==='in_production').length} onOpenPayment={(productId)=>setPaymentProductId(productId)} onOpenLogin={()=>setShowLogin(true)} sectionBadges={sectionBadges}/>
 
         {isMobile && mobileOpen && (
           <div onClick={() => setMobileOpen(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.55)',zIndex:400}}/>

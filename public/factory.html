@@ -2565,11 +2565,15 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
     const aDesir= rawDesc.match(/\[D(?:ÉS|ES)IR\]\s*([\s\S]+?)(?=\[ACTION\]|$)/i);
     const aAct  = rawDesc.match(/\[ACTION\]\s*([\s\S]+)$/i);
     if(aAttn && aIntr && aDesir && aAct) {
+      // Cause profonde corrigée : les labels [ATTENTION]/[INTÉRÊT]/[DÉSIR]/[ACTION] ne servent
+      // qu'à structurer la génération de Gemini — ils ne doivent JAMAIS apparaître dans le texte
+      // final que le client copie-colle dans son Ads Manager. Avant ce fix, ils étaient
+      // explicitement remis en clair ("ATTENTION : ...") au lieu d'être retirés.
       description = [
-        'ATTENTION : ' + aAttn[1].trim(),
-        'INTÉRÊT : '  + aIntr[1].trim(),
-        'DÉSIR : '    + aDesir[1].trim(),
-        'ACTION : '   + aAct[1].trim()
+        aAttn[1].trim(),
+        aIntr[1].trim(),
+        aDesir[1].trim(),
+        aAct[1].trim()
       ].join('\n\n');
     } else {
       // Fallback : garder le texte brut en nettoyant les anciens labels si présents
