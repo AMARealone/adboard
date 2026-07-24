@@ -2033,6 +2033,8 @@ async function compressImg(b64, mime) {
 let prodv2State = {
   brief: null,         // parsed brief.json
   briefRaw: null,      // raw string
+  briefSource: null,   // 'commande' | 'manuel'
+  commandeId: null,    // id du ticket AdBoard si briefSource === 'commande'
   productB64: null, productMime: null,
   logoB64: null, logoMime: null,
   synthesis: null,
@@ -2067,6 +2069,9 @@ function prodv2HandleBrief(input) {
     try {
       const raw = e.target.result;
       const brief = JSON.parse(raw);
+      brief.__manualUpload = true;
+      prodv2State.briefSource = 'manuel';
+      prodv2State.commandeId = null;
       prodv2State.brief = brief;
       prodv2State.briefRaw = raw;
 
@@ -2106,15 +2111,53 @@ function prodv2RenderPreview() {
   const b = prodv2State.brief;
   const photoOk = !!prodv2State.productB64;
   const logoOk = !!prodv2State.logoB64;
+  const provenance = prodv2State.briefSource === 'commande'
+    ? `✓ brief.json chargé automatiquement depuis la commande #${prodv2State.commandeId}`
+    : (b.__manualUpload ? '✓ brief.json chargé (fichier local)' : '');
   const html = `
     <div class="prodv2-preview-label">Aperçu</div>
+    ${provenance ? `<div style="font-size:10.5px;color:var(--blue);margin-bottom:8px;">${provenance}</div>` : ''}
     <div class="prodv2-preview-row">
       <div>marque : <span class="val">${(b.marque||'—')}</span></div>
       <div>produit : <span class="val">${(b.produit||'—')}</span></div>
       <div>pays : <span class="val">${(b.pays||'—')}</span>${b.pricing ? ' · prix : <span class="val">'+b.pricing+'</span>' : ''}</div>
-      <div>photo : <span class="${photoOk?'ok':'miss'}">${photoOk?'✓ chargée':'✗ absente'}</span> · logo : <span class="${logoOk?'ok':'miss'}">${logoOk?'✓ chargé':'absent'}</span></div>
-    </div>`;
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;">
+      ${photoOk
+        ? `<img src="data:${prodv2State.productMime};base64,${prodv2State.productB64}" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--border);flex-shrink:0;">`
+        : `<div style="width:56px;height:56px;border-radius:8px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:10px;flex-shrink:0;">✗</div>`
+      }
+      <div style="display:flex;flex-direction:column;gap:5px;flex:1;">
+        <span class="${photoOk?'ok':'miss'}" style="font-size:11px;">${photoOk?'✓ photo produit chargée':'✗ photo absente'}</span>
+        <div style="display:flex;gap:6px;">
+          <button type="button" onclick="document.getElementById('prodv2PhotoReplace').click()" style="font-size:10px;padding:4px 9px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t2);cursor:pointer;">↻ Remplacer</button>
+          ${photoOk ? `<button type="button" onclick="prodv2RemovePhoto()" style="font-size:10px;padding:4px 9px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:5px;color:#E55050;cursor:pointer;">Supprimer</button>` : ''}
+        </div>
+      </div>
+    </div>
+    <input type="file" accept="image/*" id="prodv2PhotoReplace" style="display:none" onchange="prodv2ReplacePhoto(this)">
+    ${logoOk ? `<div style="font-size:10.5px;color:var(--t3);margin-top:8px;">logo : <span class="ok">✓ chargé</span></div>` : ''}`;
   document.getElementById('prodv2Preview').innerHTML = html;
+}
+
+function prodv2ReplacePhoto(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const m = e.target.result.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+    if(m) { prodv2State.productMime = m[1]; prodv2State.productB64 = m[2]; }
+    prodv2RenderPreview();
+    document.getElementById('prodv2LaunchBtn').disabled = !prodv2State.brief;
+  };
+  reader.readAsDataURL(file);
+}
+
+function prodv2RemovePhoto() {
+  prodv2State.productB64 = null;
+  prodv2State.productMime = null;
+  prodv2RenderPreview();
+  document.getElementById('prodv2LaunchBtn').disabled = true;
 }
 
 function prodv2ToggleSyn() {
@@ -5181,21 +5224,50 @@ async function loadCommandes() {
   }
 }
 
+// Charge un brief.json construit depuis une commande AdBoard directement dans prodv2State —
+// remplace l'ancienne version qui essayait (sans succès) de remplir des champs texte séparés
+// (#nomProd/#pays) qui ne correspondent pas à ce que la vue Production utilise réellement.
+async function prodv2LoadBriefFromCommande(b) {
+  const brief = {
+    marque: b.client?.email ? (b.product.marque || b.product.nom) : b.product.nom,
+    produit: b.product.nom,
+    pays: b.product.pays || '',
+    pricing: b.product.pricing || '',
+    cible: b.product.cible || '',
+    utilite: b.product.utilite || '',
+    couleurs: b.product.couleurs || [],
+    quantite: b.quantity || 9,
+  };
+  prodv2State.brief = brief;
+  prodv2State.briefRaw = JSON.stringify(brief, null, 2);
+  prodv2State.briefSource = 'commande';
+  prodv2State.commandeId = b.id;
+
+  // Photo : priorité à photo_nobg (fond déjà retiré), sinon photo_base64 brute
+  const photo = b.photo_nobg || b.product.photo_base64 || '';
+  if (photo) {
+    const m = photo.match(/^data:(image\/[a-z]+);base64,(.+)$/);
+    if (m) { prodv2State.productMime = m[1]; prodv2State.productB64 = m[2]; }
+    else { prodv2State.productMime = 'image/png'; prodv2State.productB64 = photo; }
+  } else {
+    prodv2State.productB64 = null; prodv2State.productMime = null;
+  }
+  prodv2State.logoB64 = null; prodv2State.logoMime = null;
+
+  prodv2RenderPreview();
+  document.getElementById('prodv2Drop').classList.add('has-file');
+  document.getElementById('prodv2LaunchBtn').disabled = !prodv2State.productB64;
+}
+
 async function lancerProduction(id) {
   try {
     await fetch(`https://adstack-server.onrender.com/commandes/${id}/start`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
-  // Récupérer le brief depuis le serveur
-  const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json()).catch(()=>[]);
-  const b = briefs.find(x=>x.id===id)||{};
-    // Pré-remplir les champs Factory avec les infos du brief
-    const nomProdEl = document.getElementById('nomProd') || document.getElementById('productName') || document.getElementById('nomProduit');
-    if (nomProdEl) nomProdEl.value = b.product.nom;
-    const paysEl = document.getElementById('pays') || document.getElementById('countryInput');
-    if (paysEl) paysEl.value = b.product.pays || '';
-    // Passer en mode production
+    const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json()).catch(()=>[]);
+    const b = briefs.find(x=>x.id===id);
+    if (!b) { alert('Commande introuvable.'); return; }
     setMode('prod');
     showProduction();
-    alert(`✅ Commande ${b.product.nom} marquée "En production".\nLes champs ont été pré-remplis. Lance la production normalement.`);
+    await prodv2LoadBriefFromCommande(b);
     loadCommandes();
   } catch(e) { alert('Erreur: ' + e.message); }
 }
@@ -5204,11 +5276,6 @@ async function marquerLivre(id) {
   if (!confirm('Marquer cette commande comme livrée ?')) return;
   await fetch(`https://adstack-server.onrender.com/commandes/${id}/done`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
   loadCommandes();
-}
-
-function voirBrief(id) {
-  // Trouve le brief dans le DOM et affiche les détails
-  alert('Brief ID: ' + id + '\nConsulte briefs_queue.json sur le serveur pour le détail complet.');
 }
 
 // Rafraîchir le badge commandes toutes les 30s
