@@ -5915,27 +5915,21 @@ function showTab(tab){
 // ── Reprise après refresh accidentel ──────────────────────────────
 // Ne stocke jamais d'images en localStorage (risque de dépassement de quota) — juste l'id
 // de la commande. Au retour, va chercher ce qui a déjà été sauvegardé côté serveur et
-// propose de reprendre plutôt que de tout perdre silencieusement.
+// restaure automatiquement, dès que le brief est chargé — pas seulement une fois des
+// livrables générés. Aucune popup de confirmation : la restauration doit être systématique
+// et silencieuse, jamais un obstacle.
 async function prodv2CheckResume() {
-  if (prodv2State.brief) return; // déjà en cours dans cette session, ne rien proposer
+  if (prodv2State.brief) return; // déjà en cours dans cette session, ne rien écraser
   let marker;
   try { marker = JSON.parse(localStorage.getItem('adstack_active_production') || 'null'); } catch(e) { return; }
   if (!marker || !marker.commandeId) return;
   try {
     const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json());
     const b = briefs.find(x => x.id === marker.commandeId);
-    if (!b || b.status !== 'in_production') { localStorage.removeItem('adstack_active_production'); return; }
-    const d = b.deliverables;
-    const nbCrea = d && d.creatives ? d.creatives.filter(c=>c && c.imgB64).length : 0;
-    const nbCopy = d && d.copies ? d.copies.filter(Boolean).length : 0;
-    if (nbCrea === 0 && nbCopy === 0) return;
-
-    const reprendre = confirm(
-      `Une production en cours a été trouvée pour "${b.product?.nom || '?'}" ` +
-      `(${nbCrea}/9 créatives, ${nbCopy}/3 sets ad copy déjà sauvegardés — probablement suite à un refresh).\n\n` +
-      `Reprendre où ça s'est arrêté ?`
-    );
-    if (!reprendre) return;
+    if (!b || (b.status !== 'in_production' && b.status !== 'pending')) { localStorage.removeItem('adstack_active_production'); return; }
+    const d = b.deliverables || {};
+    const nbCrea = d.creatives ? d.creatives.filter(c=>c && c.imgB64).length : 0;
+    const nbCopy = d.copies ? d.copies.filter(Boolean).length : 0;
 
     await prodv2LoadBriefFromCommande(b);
     prodv2State.synthesis = d.synthesis || null;
@@ -5944,6 +5938,18 @@ async function prodv2CheckResume() {
     prodv2State.copies = d.copies || [];
 
     setMode('prod'); showProduction();
+
+    // Bannière discrète — jamais bloquante, juste informative
+    const banner = document.createElement('div');
+    banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
+    banner.textContent = nbCrea || nbCopy
+      ? `↻ État restauré après rechargement — "${b.product?.nom || '?'}" (${nbCrea}/9 créatives, ${nbCopy}/3 sets ad copy déjà sauvegardés). Rien n'a été perdu.`
+      : `↻ Brief restauré après rechargement — "${b.product?.nom || '?'}". Aucune génération n'avait encore commencé.`;
+    const container = document.getElementById('viewProduction');
+    if (container) container.insertBefore(banner, container.firstChild);
+
+    if (nbCrea === 0 && nbCopy === 0) return; // rien d'autre à reconstruire visuellement
+
     document.getElementById('prodv2PipelineSection').style.display = '';
     document.getElementById('prodv2DelivSection').style.display = '';
 
