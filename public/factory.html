@@ -1515,7 +1515,7 @@ function copyDemoGenLink() {
 }
 
 // ── Sélection intelligente des CTs pour génération complète ──
-async function selectCTsForGeneration(synthesis, count, mode) {
+async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
   const ids = Object.keys(CT_IMAGES).filter(function(k) {
     return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta');
   });
@@ -1534,7 +1534,8 @@ async function selectCTsForGeneration(synthesis, count, mode) {
         synthesis: synthesis.substring(0, 4000),
         ctList: ctList,
         count: count,
-        mode: mode || 'demo'
+        mode: mode || 'demo',
+        excludeIds: excludeIds || []
       })
     });
     const data = await resp.json();
@@ -2237,6 +2238,9 @@ function prodv2PickCTs() {
 // Extract angles from synthesis text (S2 section : 3 angles)
 function prodv2ExtractAngles(synthesis, nbAngles=3) {
   // Looks for lines starting with "Angle 1", "Angle 2", ... "Angle N"
+  // Retourne TOUS les angles trouvés (pas tronqué à nbAngles) — nécessaire en renouvellement,
+  // où la synthèse contient les anciens angles + les nouveaux ajoutés pour cette commande.
+  // Le tri "quels angles utiliser pour CETTE production" se fait à l'appel (voir prodv2Launch).
   const angles = [];
   const lines = synthesis.split('\n');
   let current = null;
@@ -2253,9 +2257,10 @@ function prodv2ExtractAngles(synthesis, nbAngles=3) {
     }
   }
   if(current) angles.push(current);
-  // Pad to nbAngles if needed
+  // Pad to nbAngles si on en a trouvé MOINS que prévu (cas normal, pas un renouvellement) —
+  // ne tronque jamais si on en a trouvé PLUS (cas renouvellement, tous sont légitimes).
   while(angles.length < nbAngles) angles.push({ idx: angles.length, text: 'Angle ' + (angles.length+1) });
-  return angles.slice(0,nbAngles).map(a => a.text);
+  return angles.map(a => a.text);
 }
 
 let prodAbortController = null;
@@ -2334,6 +2339,12 @@ async function prodv2Launch() {
     );
     if (!continuer) return;
   }
+  // Bloque le lancement si une commande précédente sur ce même produit est encore en
+  // production — nécessaire pour que l'historique d'angles (renouvellement) reste cohérent.
+  if (prodv2State.renewalContext?.commandeActiveAilleurs) {
+    alert("⚠️ Une autre commande est déjà en production pour ce produit.\n\nAttends qu'elle se termine (ou soit envoyée au client) avant de lancer celle-ci — sinon l'historique d'angles marketing ne sera plus fiable.");
+    return;
+  }
   prodv2State.startTime = Date.now();
   prodv2State.synthesis = null;
   prodv2State.angles = [];
@@ -2364,9 +2375,18 @@ async function prodv2Launch() {
         + _briefUrl + '\n\n'
       : '';
     // Nombre d'angles imposé explicitement — l'Analyste ne doit plus supposer 3 par défaut
-    const _nbAnglesHeader = `⚠️ NOMBRE D'ANGLES À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles distincts en S2, ni plus ni moins, peu importe le nombre habituel.\n\n`;
+    const _nbAnglesHeader = `⚠️ NOMBRE D'ANGLES ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}distincts en S2 (en plus des existants recopiés si renouvellement, voir ci-dessous), ni plus ni moins, peu importe le nombre habituel.\n\n`;
+
+    // ── Contexte de renouvellement — injecté uniquement si ce n'est pas la première commande
+    // sur ce produit (voir MODE RENOUVELLEMENT dans le fichier de compétences) ──
+    let _renewalHeader = '';
+    const rctx = prodv2State.renewalContext;
+    if (rctx?.estRenouvellement && rctx.syntheseExistante) {
+      _renewalHeader = `⚠️ COMMANDE DE RENOUVELLEMENT — CE N'EST PAS LA PREMIÈRE COMMANDE SUR CE PRODUIT :\nROTATION NÉCESSAIRE : ${rctx.rotationNecessaire ? 'OUI' : 'NON'}\n${rctx.personaActuel ? `PERSONA ACTUEL : ${rctx.personaActuel.nom || '?'} (${rctx.nbAnglesPersonaCourant} angle(s) déjà exploité(s) sur ce persona)` : ''}\n\nSYNTHÈSE EXISTANTE POUR CE PRODUIT :\n${rctx.syntheseExistante}\n\n(Voir section MODE RENOUVELLEMENT de tes instructions pour savoir exactement quoi faire de cette synthèse existante.)\n\n`;
+    }
+
     const analysteParts = [
-      { type: 'text', text: _nbAnglesHeader + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
+      { type: 'text', text: _renewalHeader + _nbAnglesHeader + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
       { type: 'image', source: { type:'base64', media_type: prodv2State.productMime, data: prodv2State.productB64 } }
     ];
     if(prodv2State.logoB64) {
@@ -2374,7 +2394,10 @@ async function prodv2Launch() {
     }
     const synthesis = await apiAnalysteSynthese(analysteSystem, analysteParts, 32000, prodv2State.brief, prodAbortController.signal);
     prodv2State.synthesis = synthesis;
-    prodv2State.angles = prodv2ExtractAngles(synthesis, nbAngles);
+    // Garde toujours les N DERNIERS angles trouvés (les plus récents) pour la génération de
+    // CETTE commande — sans effet si commande normale (il n'y en a que N au total), essentiel
+    // en renouvellement (la synthèse contient anciens + nouveaux, seuls les nouveaux comptent ici).
+    prodv2State.angles = prodv2ExtractAngles(synthesis, nbAngles).slice(-nbAngles);
     prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
 
     // Show synthesis in accordion
@@ -2389,7 +2412,7 @@ async function prodv2Launch() {
 
     // ── ÉTAPES 2 & 3 EN PARALLÈLE : Creatives ×N et Copywriter ×nbAngles ──
     prodv2SetAgentState(2, 'running', 'Sélection des CTs adaptés à la synthèse…', 5);
-    const ctPick = await selectCTsForGeneration(synthesis, nbCreativesTotal, 'production');
+    const ctPick = await selectCTsForGeneration(synthesis, nbCreativesTotal, 'production', prodv2State.renewalContext?.ctsUtilisesDernierLot);
     if (ctPick.length === 0) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT.');
     console.log('[PROD] CTs selectionnes :', ctPick.map(function(id){ return CT_IMAGES[id+'_name'] || id; }).join(' / '));
 
@@ -3716,9 +3739,29 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 
 COMP_FILES['COMPETENCE_ANALYSTE.md'] = `Tu es l'ANALYSTE DE MARCHÉ AdStack — Mode Production, V5.
 
-Ton seul critère de succès : produire une data ET 3 angles marketing construits à partir de 4 variables (peur, désir, douleur, scepticisme du marché) — AU-DESSUS DE LA MOYENNE DU MARCHÉ. Pas de data générique. Pas de surface. Tu creuses jusqu'à trouver ce que personne d'autre ne trouve — puis tu transformes cette matière en 3 angles, chacun décliné en 3 niveaux de conscience (9 créatives au total : 3 angles × 3 niveaux).
+Ton seul critère de succès : produire une data ET des angles marketing construits à partir de 4 variables (peur, désir, douleur, scepticisme du marché) — AU-DESSUS DE LA MOYENNE DU MARCHÉ. Pas de data générique. Pas de surface. Tu creuses jusqu'à trouver ce que personne d'autre ne trouve — puis tu transformes cette matière en angles, chacun décliné en 3 niveaux de conscience.
 
 Tu reçois : un brief client (JSON), une photo produit, et un bloc DONNÉES BRUTES (résultats de recherche multi-source : avis produit, verbatims Reddit/Trustpilot/AliExpress/X, prix concurrents, contexte culturel, taille et croissance du marché, scepticisme du marché).
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODE RENOUVELLEMENT — SI UNE SYNTHÈSE EXISTANTE T'EST FOURNIE (COMMANDE RÉPÉTÉE SUR LE MÊME PRODUIT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Si ton input contient un bloc "SYNTHÈSE EXISTANTE POUR CE PRODUIT" — ce n'est pas ta première commande sur ce produit. Ne repars PAS de zéro. Deux cas, selon ce qu'indique le bloc "ROTATION NÉCESSAIRE" :
+
+CAS A — ROTATION NÉCESSAIRE : NON (persona courant a encore de la marge, moins de 18 angles exploités) :
+→ Reprends EXACTEMENT le même persona (S1) que la synthèse existante — même nom, même profil, mêmes critères de validation. Ne le re-dérive pas, ne le modifie pas, ne le "améliore" pas. C'est la même personne tout le long de la vie de ce persona.
+→ Le bloc "ANGLES DÉJÀ EXPLOITÉS" liste les angles déjà utilisés (par leur nom) — construis UNIQUEMENT des angles NOUVEAUX, distincts de tous ceux listés, pour ce même persona. Un angle "nouveau" doit reposer sur un moteur (peur/désir/douleur) ou un mécanisme réellement différent — pas une reformulation d'un angle déjà listé avec d'autres mots.
+→ Utilise DONNÉES BRUTES (recherche fraîche) pour trouver ces nouveaux angles — le marché et les avis évoluent, de nouveaux verbatims/objections/désirs peuvent apparaître depuis la dernière analyse.
+→ Ton output reste une synthèse COMPLÈTE S0 à S8 (S0/S1/S4/S5/S6/S7/S8 peuvent rester proches de l'existant s'ils sont toujours valables — actualise-les seulement si DONNÉES BRUTES révèle un changement réel), mais S2 contient la liste COMPLÈTE des angles : ceux déjà existants (recopiés tels quels, ne les réécris pas) + les nouveaux que tu viens de construire.
+
+CAS B — ROTATION NÉCESSAIRE : OUI (persona courant a déjà atteint le seuil) :
+→ Ce persona a été exploité au maximum de ce qu'il peut raisonnablement porter. Construis un NOUVEAU persona — élargi mais crédible, jamais un simple copier-coller avec un prénom différent. "Élargi" veut dire : un cercle plus large de personnes concernées par le même produit (ex : du persona initial très spécifique vers une variante socio-démographique voisine, un contexte d'usage adjacent, un déclencheur différent mais plausible pour ce même produit) — jamais un persona qui n'a plus de rapport crédible avec le produit.
+→ Ce nouveau persona doit valider les mêmes 4 critères (RÈGLE DE VALIDATION ci-dessous) indépendamment de l'ancien.
+→ Une fois ce nouveau persona posé, tu repars sur un compteur d'angles à zéro pour LUI — construis ses premiers angles comme pour une toute première commande (le bloc "ANGLES DÉJÀ EXPLOITÉS" de l'ancien persona ne le concerne pas, il peut réutiliser librement des mécanismes déjà vus sur l'ancien persona si pertinents pour lui).
+→ Signale ce changement explicitement dans S1 : commence la section persona par "NOUVEAU PERSONA (rotation depuis le persona précédent, seuil d'angles atteint) : ...".
+
+Si aucun bloc "SYNTHÈSE EXISTANTE POUR CE PRODUIT" n'est présent dans ton input : c'est une première commande sur ce produit, procède normalement (tout ce qui suit).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE ANTI-AI-SLOP — NON NÉGOCIABLE
@@ -5652,9 +5695,42 @@ async function prodv2LoadBriefFromCommande(b) {
   }
   prodv2State.logoB64 = null; prodv2State.logoMime = null;
 
+  // ── Contexte de renouvellement — nouvelle commande ou répétition sur ce même produit ? ──
+  prodv2State.renewalContext = null;
+  if (prodv2State.productId) {
+    try {
+      const rc = await fetch(`https://adstack-server.onrender.com/products/${prodv2State.productId}/renewal-context`, {headers:{'ngrok-skip-browser-warning':'1'}});
+      prodv2State.renewalContext = await rc.json();
+    } catch(e) {
+      console.warn('[Renouvellement] Récupération du contexte échouée :', e.message);
+    }
+  }
+
   prodv2RenderPreview();
   document.getElementById('prodv2Drop').classList.add('has-file');
   document.getElementById('prodv2LaunchBtn').disabled = !prodv2State.productB64;
+
+  // Bannière de statut renouvellement — juste informative, affichée après le rendu de l'aperçu
+  const rctx = prodv2State.renewalContext;
+  if (rctx) {
+    const existingBanner = document.getElementById('prodv2RenewalBanner');
+    if (existingBanner) existingBanner.remove();
+    const banner = document.createElement('div');
+    banner.id = 'prodv2RenewalBanner';
+    if (rctx.commandeActiveAilleurs) {
+      banner.style.cssText = 'margin:12px 0;padding:10px 14px;border-radius:8px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#F59E0B;font-size:12px;';
+      banner.textContent = '⚠️ Une autre commande est déjà en production pour ce produit — attends qu\'elle se termine avant de lancer celle-ci, pour que l\'historique d\'angles reste cohérent.';
+    } else if (rctx.estRenouvellement) {
+      banner.style.cssText = 'margin:12px 0;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
+      banner.textContent = rctx.rotationNecessaire
+        ? `↻ Renouvellement pour ce produit — persona "${rctx.personaActuel?.nom || '?'}" a atteint ${rctx.nbAnglesPersonaCourant} angles : rotation vers une nouvelle cible élargie à cette génération.`
+        : `↻ Renouvellement pour ce produit — même persona "${rctx.personaActuel?.nom || '?'}" (${rctx.nbAnglesPersonaCourant}/18 angles exploités), nouveaux angles uniquement.`;
+    }
+    if (banner.textContent) {
+      const container = document.getElementById('prodv2BriefSection') || document.getElementById('viewProduction');
+      if (container) container.insertBefore(banner, container.firstChild);
+    }
+  }
 }
 
 async function lancerProduction(id) {
