@@ -893,6 +893,12 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
             <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
             <div class="prodv2-agent-status">En attente — 5 hooks + 1 description × 3 angles</div>
           </div>
+          <div class="prodv2-agent pending" id="prodv2Agent4">
+            <div class="prodv2-agent-head"><div class="prodv2-agent-badge">4</div><div class="prodv2-agent-name">Données Marché</div></div>
+            <div class="prodv2-agent-model">gemini-2.5-pro</div>
+            <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
+            <div class="prodv2-agent-status">En attente</div>
+          </div>
         </div>
       </div>
 
@@ -2049,12 +2055,14 @@ let prodv2State = {
   briefRaw: null,      // raw string
   briefSource: null,   // 'commande' | 'manuel'
   commandeId: null,    // id du ticket AdBoard si briefSource === 'commande'
+  productId: null,     // id du produit AdBoard (nécessaire pour l'agent Données Marché)
   productB64: null, productMime: null,
   logoB64: null, logoMime: null,
   synthesis: null,
   angles: [],          // 3 strings (formulations des angles)
   creatives: [],       // 9 items {angleIdx, ctIdx, ct, desc, imgB64, status}
   copies: [],          // 3 items {hooks:[5], description}
+  marche: null,        // {positionnement, persona, insights, angles} — calculé par l'agent Livrable Marché
   startTime: null,
   activeAngle: 0
 };
@@ -2265,7 +2273,7 @@ function prodv2AutosaveDeliverables() {
     try {
       await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
         method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
-        body: JSON.stringify({ creatives: prodv2State.creatives, copies: prodv2State.copies, synthesis: prodv2State.synthesis, angles: prodv2State.angles })
+        body: JSON.stringify({ creatives: prodv2State.creatives, copies: prodv2State.copies, synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche })
       });
     } catch(e) { console.warn('[Commande] Autosave échoué :', e.message); }
   }, 800);
@@ -2454,7 +2462,39 @@ async function prodv2Launch() {
       );
     }
 
-    await Promise.all([...creativePromises, ...copyPromises]);
+    // ── Livrable Données Marché — 4e agent, en parallèle, jusqu'ici jamais câblé dans le
+    // pipeline réel malgré son existence. Nécessite un productId (donc une commande liée) —
+    // ignoré proprement pour les tests manuels sans ticket.
+    let marchePromise = Promise.resolve();
+    if (prodv2State.productId) {
+      prodv2SetAgentState(4, 'active', 'Analyse positionnement + persona + angles marché…', 20);
+      marchePromise = (async () => {
+        try {
+          const res = await fetch(SERVER + '/livrable-marche', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            signal: prodAbortController.signal,
+            body: JSON.stringify({
+              synthese: prodv2State.synthesis,
+              brief: prodv2State.brief,
+              productId: prodv2State.productId,
+              systemPrompt: COMP_FILES['COMPETENCE_LIVRABLE_MARCHE.md'] || ''
+            })
+          });
+          const d = await res.json();
+          if (d.error) throw new Error(d.error);
+          prodv2State.marche = d.marche;
+          prodv2SetAgentState(4, 'done', `Données marché prêtes · ${d.nouveaux_angles || 0} nouvel(aux) angle(s)`, 100);
+        } catch(err) {
+          if (err.name === 'AbortError') throw err;
+          console.error('Erreur Livrable Marché :', err);
+          prodv2SetAgentState(4, 'active', `Erreur : ${err.message}`, 0);
+        }
+      })();
+    } else {
+      prodv2SetAgentState(4, 'done', 'Ignoré — production hors commande (pas de produit lié)', 100);
+    }
+
+    await Promise.all([...creativePromises, ...copyPromises, marchePromise]);
 
     prodv2SetAgentState(2, 'done', `${nbCreativesTotal} / ${nbCreativesTotal} créatives générées`, 100);
     prodv2SetAgentState(3, 'done', `${nbAngles} / ${nbAngles} sets ad copy générés`, 100);
@@ -2469,7 +2509,8 @@ async function prodv2Launch() {
             creatives: prodv2State.creatives,
             copies: prodv2State.copies,
             synthesis: prodv2State.synthesis,
-            angles: prodv2State.angles
+            angles: prodv2State.angles,
+            marche: prodv2State.marche
           })
         });
         if (!rSave.ok) throw new Error('HTTP ' + rSave.status);
@@ -2869,7 +2910,8 @@ async function prodv2ConfirmManualSend() {
           creatives: prodv2State.creatives,
           copies: prodv2State.copies,
           synthesis: prodv2State.synthesis,
-          angles: prodv2State.angles
+          angles: prodv2State.angles,
+          marche: prodv2State.marche
         }
       })
     });
@@ -2901,7 +2943,7 @@ async function prodv2SendClient() {
       method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
       body: JSON.stringify({
         creatives: prodv2State.creatives, copies: prodv2State.copies,
-        synthesis: prodv2State.synthesis, angles: prodv2State.angles
+        synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche
       })
     });
     // 2. Déclenche l'envoi réel (marque "done" + pousse vers briefs/products AdBoard)
@@ -5572,6 +5614,7 @@ async function prodv2LoadBriefFromCommande(b) {
   prodv2State.briefRaw = JSON.stringify(brief, null, 2);
   prodv2State.briefSource = 'commande';
   prodv2State.commandeId = b.id;
+  prodv2State.productId = b.product?.id || null;
 
   // Marqueur léger (juste l'id, pas les images) — permet de proposer une reprise après un
   // refresh accidentel, en récupérant les livrables déjà sauvegardés côté serveur plutôt que
@@ -5968,6 +6011,7 @@ async function prodv2CheckResume() {
     prodv2State.angles = d.angles || [];
     prodv2State.creatives = d.creatives || [];
     prodv2State.copies = d.copies || [];
+    prodv2State.marche = d.marche || null;
 
     setMode('prod'); showProduction();
 
@@ -6037,6 +6081,7 @@ async function prodv2CheckResume() {
       if (prodv2State.copies[i]) prodv2RenderCopy(i);
     }
     prodv2SetAgentState(3, nbCopy===nbAngles?'done':'active', `${nbCopy} / ${nbAngles} sets ad copy générés`, Math.round(nbCopy/nbAngles*100));
+    if (prodv2State.marche) prodv2SetAgentState(4, 'done', 'Données marché restaurées', 100);
 
     const launchBtn = document.getElementById('prodv2LaunchBtn');
     if (launchBtn) { launchBtn.textContent = 'Relancer la production'; launchBtn.disabled = false; }
