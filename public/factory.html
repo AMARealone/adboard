@@ -3638,11 +3638,18 @@ RÈGLE ANTI-AI-SLOP — NON NÉGOCIABLE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Tu dois BASER ta synthèse sur DONNÉES BRUTES, jamais sur ton propre mode de raisonnement générique. Si une information demandée n'existe pas dans DONNÉES BRUTES, tu l'indiques explicitement entre crochets (ex : [AUCUN VERBATIM TROUVÉ DANS DONNÉES BRUTES], [ESTIMATION — contexte culturel]) — tu n'inventes JAMAIS un fait en le faisant passer pour une donnée réelle. Une estimation raisonnée reste acceptable SI elle est étiquetée comme telle.
 
+CAS PARTICULIER LE PLUS IMPORTANT DE CETTE RÈGLE — LE NOM DE MARQUE :
+Le champ "marque" du brief peut légitimement arriver vide. Ce n'est pas une erreur ni un oubli à corriger : beaucoup de clients enregistrent un produit dans leur catalogue sans jamais renseigner de nom de marque, seulement le nom du produit et parfois un lien de page produit. Applique le même principe qu'au-dessus, sans exception :
+→ Si le champ "marque" est vide ET qu'aucun lien de page produit n'est fourni : il n'y a strictement AUCUNE base pour déterminer une marque. Ne cherche pas à la deviner depuis l'image du produit, depuis le nom du produit, ou depuis DONNÉES BRUTES au sens large (ces recherches élargies parlent de la catégorie, pas forcément de CE vendeur précis — l'utiliser reviendrait à attribuer à ce client une identité qui n'est pas la sienne). Écris explicitement [AUCUNE MARQUE FOURNIE] en S0 et ne réintroduis ce nom nulle part ailleurs dans la synthèse.
+→ Si un lien de page produit EST fourni : tu peux l'utiliser comme vraie source (comme pour le prix ou la description) pour identifier le nom du revendeur/de la boutique qui vend RÉELLEMENT ce produit à cette adresse. Mais seulement si cette information est effectivement présente et lisible sur cette page précise — si le lien est fourni mais que la page ne révèle pas clairement de nom de marque/boutique (juste un nom de produit, par exemple), le résultat est le même que si aucun lien n'existait : [AUCUNE MARQUE FOURNIE], jamais une supposition.
+→ Pourquoi cette rigueur compte autant ici précisément : une marque inventée ne reste pas cantonnée à S0 — elle se propage jusqu'à la créative finale (texte visible, ton du persona, cohérence de l'angle). Un nom qui ne correspond à rien de réel y est immédiatement plus visible et plus dommageable qu'une estimation de contexte culturel mal calibrée ailleurs dans la synthèse.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 1 — S0 : PRODUIT & PALETTE & TYPO & OFFRE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 → Nom du produit exact, mécanisme réel (comment il agit concrètement, pas son marketing)
 → Forme + mode d'emploi, catégorie produit
+→ Nom de marque : le champ "marque" du brief tel quel, ou [AUCUNE MARQUE FOURNIE] selon la règle ci-dessus — jamais une supposition
 → Palette de marque (couleurs exactes observées sur le produit/packaging)
 → Typographie de marque (famille, poids, personnalité visuelle)
 → Offre & pricing : prix de vente affiché (devise locale, depuis lien_page_produit si fourni), prix barré, réduction, bundle/pack, BOGO/cadeau, livraison (fait neutre, jamais un argument différenciant — voir S4), garantie/retour, urgence affichée
@@ -4220,13 +4227,17 @@ RÈGLE V4 — NOM DE MARQUE EN TEXTE (PAS DE LOGO IMAGE)
 
 ⛔ Principe fondamental (cause profonde) : Cette règle ne CRÉE PAS de zone marque. Elle dit comment REMPLIR une zone marque qui existe déjà dans IMAGE 2. Si IMAGE 2 n'a pas de zone marque identifiable → cette règle est dormante, aucun nom de marque n'apparaît nulle part.
 
-CONDITION : IMAGE 2 possède une zone dédiée au nom de marque ou à un logo (bandeau, coin, signature visible dans le CT).
+CONDITION 1 : IMAGE 2 possède une zone dédiée au nom de marque ou à un logo (bandeau, coin, signature visible dans le CT).
 → SI OUI : tu y intègres le nom client (brief.marque) en TEXTE. Police propre, lisible, cohérente avec la palette S0. Taille discrète. Joue le rôle de signature, pas d'élément central.
 → SI NON : aucun nom de marque n'est ajouté nulle part dans la créative. L'espace reste tel quel, sans substitution. "Discret" ne justifie pas l'ajout d'une zone absente.
 
+CONDITION 2 — À VÉRIFIER MÊME QUAND LA CONDITION 1 EST OUI : brief.marque ou S0 contient-il un vrai nom de marque, ou l'équivalent de [AUCUNE MARQUE FOURNIE] ?
+→ Un brief sans marque renseignée est un cas normal et fréquent (beaucoup de clients ne renseignent qu'un nom de produit, parfois un lien de page produit, jamais de nom de marque) — ce n'est jamais à toi de compenser cette absence en déduisant un nom depuis l'image du produit, le nom du produit lui-même, ou une supposition générique de catégorie.
+→ SI brief.marque est vide ou marqué [AUCUNE MARQUE FOURNIE] : la zone marque identifiée en Condition 1 reste VIDE, même si le CT en présente une — exactement comme si Condition 1 avait répondu NON. Une zone visuellement présente dans le CT ne devient jamais une raison d'inventer ce qui doit la remplir.
+
 Ne JAMAIS inventer un logo image, un pictogramme de marque, ou un symbole graphique.
 
-Si IMAGE 2 montre une zone logo → remplace le logo par le nom de marque en TEXTE à la même position et la même échelle.
+Si IMAGE 2 montre une zone logo → remplace le logo par le nom de marque en TEXTE à la même position et la même échelle (uniquement si Condition 2 est satisfaite).
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -4330,7 +4341,10 @@ Le moteur de l'angle (peur/désir/douleur, voir S2) infuse les 4 temps ci-dessou
 → Most Aware : ~60% du poids sur désir (la vie une fois le problème résolu) + urgence/offre — 40% sur peur/douleur en rappel bref. Les TEMPS 3 et 4 portent l'essentiel de ce poids.
 Ce dosage s'applique autant au VISUEL (ce qui est montré, l'expression du persona, l'ambiance) qu'au TEXTE des zones — les deux doivent porter le même dosage, pas seulement l'un des deux.
 
-Quelle que soit l'architecture du CT (split, bandes, scène unique, podcast, screenshot, etc.), les 4 ÉLÉMENTS PSYCHOLOGIQUES suivants doivent être présents dans le contenu, dans cet ordre de lecture (haut→bas ou gauche→droite) :
+Quelle que soit l'architecture du CT (split, bandes, scène unique, podcast, screenshot, etc.), les 4 ÉLÉMENTS PSYCHOLOGIQUES suivants doivent être présents dans le contenu, dans l'ordre de lecture RÉEL de CE CT précis :
+
+⚠️ CAUSE FRÉQUENTE D'ERREUR — NE PAS SUPPOSER L'ORDRE, LE VÉRIFIER POUR CE CT PRÉCIS :
+"Haut→bas ou gauche→droite" est une tendance générale, pas une formule automatique valable pour tout CT sans vérification. Un CT réel peut placer sa zone de preuve en haut et son hook dans une bande latérale, un CTA au centre plutôt qu'en bas, une structure en colonnes où l'ordre naturel de lecture est diagonal, etc. Avant d'assigner un temps psychologique à une zone, pose-toi la question dans l'autre sens : "si je regarde CE CT précis pendant 2 secondes sans effort de lecture, quelle zone mon œil rencontre-t-il en premier, en deuxième, en troisième, en dernier ?" — c'est CET ordre observé, propre à ce CT, qui reçoit respectivement le hook, la preuve, le pic émotionnel et le CTA — jamais un ordre haut-bas supposé sans avoir réellement observé la structure d'IMAGE 2. Une inversion (le CTA lu en premier, le hook relégué en dernier) casse la mécanique persuasive tout autant qu'une zone manquante — vérifie cet ordre AVANT d'écrire le contenu de chaque zone, pas après.
 
 1. TEMPS HOOK (premier élément vu, équivalent du 0-2s vidéo) :
    → Adapté au niveau de conscience imposé (voir RÈGLE V4.2 et dosage ci-dessus)
@@ -4351,9 +4365,9 @@ Quelle que soit l'architecture du CT (split, bandes, scène unique, podcast, scr
    → Si IMAGE 2 a une zone CTA : génère un CTA adapté à l'angle et au niveau de conscience (Most Aware = urgence/FOMO/offre, Solution Aware = doux, invite à en savoir plus)
    → Si IMAGE 2 n'a PAS de zone CTA : le temps 4 s'exprime dans la zone existante la plus basse en rendant son contenu plus orienté action (headline finale plus incitative, dernière bullet plus actionnable, closing phrase plus directe). JAMAIS par un bouton, bandeau ou zone CTA nouvelle.
 
-⛔ La fin du visuel (dernier élément lu) doit TOUJOURS aboutir sur une émotion POSITIVE.
+⛔ La fin du visuel (dernier élément lu selon l'ordre RÉEL observé, voir avertissement ci-dessus) doit TOUJOURS aboutir sur une émotion POSITIVE — vérifie que la zone que tu identifies comme "dernière lue" est bien la bonne avant d'y placer la conclusion positive.
 
-⛔ Ces 4 temps remplissent les zones du CT. Si le CT a 3 zones, tu FUSIONNES intelligemment 2 temps psy dans une même zone. Si le CT a 5 zones, tu peux étaler. Tu n'AJOUTES JAMAIS de zone qui n'existe pas dans IMAGE 2.
+⛔ Ces 4 temps remplissent les zones du CT selon l'ordre de lecture réellement observé, pas un gabarit fixe. Si le CT a 3 zones, tu FUSIONNES intelligemment 2 temps psy dans une même zone (dans l'ordre où ELLE est lue). Si le CT a 5 zones, tu peux étaler. Tu n'AJOUTES JAMAIS de zone qui n'existe pas dans IMAGE 2.
 
 ═══ RÈGLE V4.4 — CODE DISNEY (visuel) — FORMES ARRONDIES PARTOUT ═══
 
@@ -4538,7 +4552,8 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 □ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : les INSTRUCTIONS GEMINI ADDITIONNELLES contiennent la ligne "Le nom [NOM_CLIENT] est le nom du vendeur, pas nécessairement le texte imprimé sur le produit — NE PAS substituer [NOM_CLIENT] sur l'étiquette si IMAGE 1 montre autre chose" ?
 □ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : le produit est décrit dans chaque zone par "(IMAGE 1 — fidélité absolue, même étiquette, même couleurs, même texte visible sur le packaging)" et JAMAIS par "(le flacon [NOM_CLIENT])" ?
 □ Produit (IMAGE 1) intégré de manière fidèle au packaging et au mode d'intégration du CT (IMAGE 2 ignoré pour son produit, gardé pour sa structure) ?
-□ Le nom de marque apparaît en TEXTE quelque part dans une zone du visuel — aucun logo image (IMAGE 3) référencé ?
+□ Si brief.marque contient un vrai nom (pas [AUCUNE MARQUE FOURNIE]) ET qu'IMAGE 2 a une zone marque : ce nom apparaît en TEXTE dans cette zone, aucun logo image (IMAGE 3) référencé ? Si brief.marque est vide/absent, AUCUN nom de marque n'apparaît nulle part, même si IMAGE 2 a une zone marque disponible ?
+□ ⛔ ORDRE DE LECTURE RÉEL : j'ai identifié l'ordre dans lequel un œil rencontre réellement les zones de CE CT (pas supposé un schéma haut-bas générique), et les 4 temps psychologiques (hook/preuve/pic émotionnel/CTA) suivent CET ordre observé, pas un ordre par défaut ?
 □ TYPE CT (dans le bloc META) décrit la vraie structure d'IMAGE 2 — pas un format substitué ?
 □ Textes des zones cohérents avec l'angle choisi — aucun slogan inventé ?
 □ Décor et visages adaptés au persona et au pays — pas copiés du CT occidental ?
@@ -5488,7 +5503,12 @@ async function loadCommandes() {
 // (#nomProd/#pays) qui ne correspondent pas à ce que la vue Production utilise réellement.
 async function prodv2LoadBriefFromCommande(b) {
   const brief = {
-    marque: b.client?.email ? (b.product.marque || b.product.nom) : b.product.nom,
+    // Cause profonde corrigée : avant, une marque manquante retombait sur le nom du produit,
+    // que l'Analyste traitait alors comme un vrai nom de marque à rechercher sur le web —
+    // menant à des informations inventées/incohérentes. Une marque non fournie reste
+    // maintenant explicitement vide ; aucune créative n'affichera de nom de marque/logo dans
+    // ce cas (voir COMPETENCE_ANALYSTE.md et COMPETENCE_CREATIVE_PROD.md).
+    marque: b.product.marque || '',
     produit: b.product.nom,
     pays: b.product.pays || '',
     pricing: b.product.pricing || '',
@@ -5496,6 +5516,9 @@ async function prodv2LoadBriefFromCommande(b) {
     utilite: b.product.utilite || '',
     couleurs: b.product.couleurs || [],
     quantite: b.quantity || 9,
+    // Jusqu'ici jamais transmis à l'Analyste malgré son existence côté AdBoard — la Source 6
+    // (page produit officielle) et la logique "n'invente pas de marque sans lien" en dépendent.
+    lien_page_produit: b.product.lien_page_produit || '',
   };
   prodv2State.brief = brief;
   prodv2State.briefRaw = JSON.stringify(brief, null, 2);

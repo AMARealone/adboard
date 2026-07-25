@@ -1382,8 +1382,8 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
     return `${h}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
   };
 
-  const STATUS_COLORS = { pending:'#F59E0B', in_production:'#5B8DEF', done:'#22C55E', cancelled:'#6B7280' };
-  const STATUS_LABELS = { pending:'En attente', in_production:'En production', done:'Livré', cancelled:'Annulé' };
+  const STATUS_COLORS = { pending:'#F59E0B', in_production:'#5B8DEF', done:'#22C55E', cancelled:'#6B7280', probleme_agence:'#E55050' };
+  const STATUS_LABELS = { pending:'En attente', in_production:'En production', done:'Livré', cancelled:'Annulé', probleme_agence:'Problème rencontré' };
 
   const sorted = [...allBriefs].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
 
@@ -1493,6 +1493,16 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
                   </div>
                 </div>
               )}
+
+              {b.status==='probleme_agence' && (
+                <div style={{background:'rgba(229,80,80,0.06)',border:'1px solid rgba(229,80,80,0.2)',borderRadius:8,padding:'10px 14px',display:'flex',alignItems:'center',gap:10}}>
+                  <Icon name="x" size={16} color="#E55050"/>
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:'#E55050'}}>On a rencontré un souci avec cette demande</div>
+                    <div style={{fontSize:10,color:C.sec}}>Repasse une nouvelle demande, ou contacte-nous si besoin.</div>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
@@ -1503,7 +1513,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
 
 const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, C}) => {
   const brief = briefs[p.id];
-  const hasActiveBrief = brief && brief.status !== 'cancelled' && brief.status !== 'done';
+  const hasActiveBrief = brief && brief.status !== 'cancelled' && brief.status !== 'done' && brief.status !== 'probleme_agence';
   const credits = computeCredits(subscription, allBriefs);
   const nextCreditDate = credits.nextCreditDate
     ? credits.nextCreditDate.toLocaleDateString('fr-FR', { day:'numeric', month:'long' })
@@ -1531,7 +1541,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   const [hovered, setHovered] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const brief = briefs[p.id];
-  const hasActiveBrief = brief && brief.status !== 'cancelled';
+  const hasActiveBrief = brief && brief.status !== 'cancelled' && brief.status !== 'probleme_agence';
 
   const doDelete = async () => {
     const session = await sbAuth.refreshSession();
@@ -3939,6 +3949,8 @@ const views = {
                     couleur3: p.couleur3 || '',
                     photo_url: p.photo_url || null,
                     photo_base64: p.photo?.startsWith('data:') ? p.photo : null,
+                    lien_page_produit: p.lien || null,
+                    marque: p.marque || null,
                   },
                   history: {
                     batches_count: pastBriefs.length,
