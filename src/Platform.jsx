@@ -1363,13 +1363,26 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 };
 
 // ── Section Suivi Demande ──────────────────────────────────────────────────
-const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C}) => {
+const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefresh}) => {
   const isMobile = useIsMobile();
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick(n => n+1), 1000);
     return () => clearInterval(t);
   }, []);
+
+  // Cause profonde corrigée : les données (statuts, minuteurs) n'étaient rafraîchies qu'à la
+  // connexion ou via le tire-pour-rafraîchir manuel — jamais automatiquement. Un minuteur pouvait
+  // donc continuer de tourner à l'écran bien après que le statut réel soit passé à "livré" côté
+  // serveur, tant que le client ne rechargeait pas la page lui-même. Rafraîchit maintenant en
+  // arrière-plan toutes les 25s tant qu'il y a une demande active à surveiller.
+  useEffect(() => {
+    if (!onRefresh) return;
+    const hasActive = (allBriefs || []).some(b => b.status === 'pending' || b.status === 'in_production');
+    if (!hasActive) return;
+    const p = setInterval(() => onRefresh(), 25000);
+    return () => clearInterval(p);
+  }, [onRefresh, allBriefs]);
 
   const CANCEL_WIN = 12*60*60*1000;
   const DELIVERY_WIN = 48*60*60*1000;
@@ -1971,12 +1984,53 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   );
 };
 
-const Galerie = ({products, isDemo, setSection}) => {
+// Téléchargement direct — contourne la limitation navigateur qui ignore l'attribut "download"
+// sur un lien cross-origin (Supabase Storage ≠ domaine AdBoard). Récupère l'image en mémoire
+// (blob), puis déclenche le téléchargement depuis cette copie locale (même origine, donc jamais
+// bloqué).
+async function downloadImageDirect(url, filename) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename || 'creative.jpg';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+  } catch(e) {
+    window.open(url, '_blank');
+  }
+}
+
+// Mobile : ouvre le menu de partage natif (inclut "Enregistrer dans Photos" sur iOS/Android)
+// quand le navigateur le supporte. Sinon, retombe sur le téléchargement direct classique.
+async function shareOrDownloadImage(url, filename, isMobile) {
+  if (isMobile && navigator.share && navigator.canShare) {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], filename || 'creative.jpg', { type: blob.type || 'image/jpeg' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file] });
+        return;
+      }
+    } catch(e) { /* utilisateur a annulé le partage, ou navigateur incompatible — on retombe ci-dessous */ }
+  }
+  await downloadImageDirect(url, filename);
+}
+
+const Galerie = ({products, isDemo, setSection, isMobile}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null);
   const [selected, setSelected] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDownloading, setBulkDownloading] = useState(false);
 
   const weeks = ['S1','S2','S3','S4','S5'];
   // Cause profonde corrigée : CREA était une constante vide codée en dur (jamais remplie) —
@@ -2003,8 +2057,41 @@ const Galerie = ({products, isDemo, setSection}) => {
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Galerie Créatives</h1>
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Vos visuels produits</p>
         </div>
-        <Tag ch={`${filtered.length} créatives`} color="gray"/>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <Tag ch={`${filtered.length} créatives`} color="gray"/>
+          {realCreatives.length > 0 && (
+            <button onClick={() => { setSelectMode(m => !m); setSelectedIds([]); }}
+              style={{padding:'6px 12px',borderRadius:7,border:`1px solid ${selectMode?C.accent:C.border}`,background:selectMode?'rgba(196,30,58,0.08)':'rgba(255,255,255,0.05)',color:selectMode?C.text:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+              {selectMode ? 'Annuler' : 'Sélectionner'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {selectMode && (
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:14,padding:'10px 14px',borderRadius:9,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+          <button onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(c=>c.id))}
+            style={{fontSize:11.5,fontWeight:600,color:C.accent,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
+            {selectedIds.length === filtered.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+          </button>
+          <div style={{display:'flex',alignItems:'center',gap:10}}>
+            <span style={{fontSize:11.5,color:C.sec}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>
+            <button disabled={!selectedIds.length || bulkDownloading}
+              onClick={async () => {
+                setBulkDownloading(true);
+                const items = filtered.filter(c => selectedIds.includes(c.id));
+                for (const item of items) {
+                  await downloadImageDirect(item.imageUrl, `${item.angle}-${item.week}.jpg`.replace(/[^\w.-]+/g,'_'));
+                  await new Promise(r => setTimeout(r, 350)); // laisse le temps au navigateur entre chaque téléchargement
+                }
+                setBulkDownloading(false);
+              }}
+              style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit'}}>
+              <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? 'Téléchargement…' : `Télécharger (${selectedIds.length})`}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Product filter strip */}
       {products.length > 0 && (
@@ -2062,9 +2149,17 @@ const Galerie = ({products, isDemo, setSection}) => {
 
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
         {filtered.map(c => (
-          <div key={c.id} className="gallery-item" onClick={() => setSelected(c)}
+          <div key={c.id} className="gallery-item"
+            onClick={() => selectMode
+              ? setSelectedIds(ids => ids.includes(c.id) ? ids.filter(i=>i!==c.id) : [...ids, c.id])
+              : setSelected(c)}
             style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:c.imageUrl?`url(${c.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`}}
           >
+            {selectMode && (
+              <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:selectedIds.includes(c.id)?C.accent:'rgba(0,0,0,0.45)',border:`1.5px solid ${selectedIds.includes(c.id)?C.accent:'rgba(255,255,255,0.6)'}`,backdropFilter:'blur(2px)'}}>
+                {selectedIds.includes(c.id) && <Icon name="check" size={12} color="#fff"/>}
+              </div>
+            )}
             <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))'}}>
               <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.angle}</div>
               <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Semaine {c.week.replace('S','')}</div>
@@ -2097,7 +2192,7 @@ const Galerie = ({products, isDemo, setSection}) => {
 
 
       {selected && (
-        <div onClick={() => setSelected(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <div onClick={() => setSelected(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
           <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:320,borderRadius:14,overflow:'hidden',background:C.card,border:`1px solid ${C.borderM}`}}>
             <div style={{aspectRatio:'4/5',background:selected.imageUrl?`url(${selected.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${selected.g1||'#333'},${selected.g2||'#111'})`}}/>
             <div style={{padding:'14px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -2105,9 +2200,10 @@ const Galerie = ({products, isDemo, setSection}) => {
                 <div style={{fontSize:13,fontWeight:700,color:C.text}}>{selected.angle}</div>
                 <div style={{fontSize:11,color:C.sec}}>Semaine {selected.week.replace('S','')}</div>
               </div>
-              <a href={selected.imageUrl} download target="_blank" rel="noreferrer" style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',textDecoration:'none'}}>
+              <button onClick={() => shareOrDownloadImage(selected.imageUrl, `${selected.angle}-${selected.week}.jpg`.replace(/[^\w.-]+/g,'_'), isMobile)}
+                style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <Icon name="download" size={15}/>
-              </a>
+              </button>
             </div>
           </div>
           <button onClick={() => setSelected(null)} style={{position:'absolute',top:24,right:24,width:38,height:38,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -2286,10 +2382,10 @@ const Copies = ({products, setSection}) => {
                             ))}
                           </div>
                           <div>
-                            <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:10}}>Corps AIDA</div>
+                            <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:10}}>Texte</div>
                             <div style={cs({padding:'14px',position:'relative'})}>
-                              <pre style={{fontSize:12,color:C.text,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.body}</pre>
-                              <button onClick={()=>copy(angle.body,`body-${angle.numero}`)}
+                              <pre style={{fontSize:12,color:C.text,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.description}</pre>
+                              <button onClick={()=>copy(angle.description,`body-${angle.numero}`)}
                                 style={{position:'absolute',top:10,right:10,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
                                 {copied===`body-${angle.numero}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier tout'}
                               </button>
@@ -3753,13 +3849,13 @@ const views = {
               return;
             }
             setCreativesTarget(p); }}/>,
-    galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection}/>,
+    galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection} isMobile={isMobile}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     faq: <Faq/>,
     commentaires: <Commentaires user={user}/>,
-    suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C}/>,
+    suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData}/>,
     notifications: <Notifications
         notifications={notifications}
         C={C}
