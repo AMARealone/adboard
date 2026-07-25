@@ -1486,54 +1486,67 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
           const canCancel = b.status==='pending' && cancelRemaining > 0;
           const deliveryStart = new Date(b.started_at || b.created_at).getTime();
           const deliveryRemaining = DELIVERY_WIN - (now - deliveryStart);
+          const pctElapsed = Math.min(100, Math.max(0, ((now - deliveryStart) / DELIVERY_WIN) * 100));
 
           return (
             <div key={b.id} style={{
-              background:C.card, border:`1px solid ${C.borderM}`,
-              borderRadius:12, padding:18, display:'flex', flexDirection:'column', gap:12
+              position:'relative', overflow:'hidden',
+              background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',
+              border:`1px solid ${C.border}`, borderRadius:16, padding:'22px 22px 20px',
             }}>
-              {/* Header */}
-              <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+              {/* Lueur d'ambiance — remplace le fond plat, une seule fois, jamais un encart */}
+              <div style={{position:'absolute',top:-50,right:-40,width:180,height:180,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.16), transparent 70%)',pointerEvents:'none'}}/>
+
+              {/* En-tête — photo + nom intégrés, pas de boîte séparée */}
+              <div style={{display:'flex',alignItems:'center',gap:11,marginBottom:22,position:'relative'}}>
                 {prod?.photo && (
-                  <div style={{width:52,height:52,borderRadius:8,overflow:'hidden',flexShrink:0,background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`}}>
+                  <div style={{width:38,height:38,borderRadius:10,overflow:'hidden',flexShrink:0,background:'rgba(255,255,255,0.06)'}}>
                     <img src={prod.photo} style={{width:'100%',height:'100%',objectFit:'contain'}} alt=""/>
                   </div>
                 )}
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:4}}>
-                    <span style={{fontSize:14,fontWeight:700,color:C.text}}>{prod?.nom||'Produit inconnu'}</span>
-                    <span style={{padding:'2px 8px',borderRadius:20,fontSize:10,fontWeight:700,background:C.accentS,color:C.accent}}>
-                      {STATUS_LABELS[b.status]}
-                    </span>
-                  </div>
-                  <div style={{fontSize:11,color:C.sec}}>
+                  <div style={{fontSize:14.5,fontWeight:800,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{prod?.nom||'Produit inconnu'}</div>
+                  <div style={{fontSize:11,color:C.muted}}>
                     <span style={{color:C.accent,fontWeight:700}}>{b.quantity||9} visuels</span>
                     {' · '}{new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
                   </div>
                 </div>
+                <span style={{padding:'3px 9px',borderRadius:20,fontSize:9.5,fontWeight:700,background:'rgba(255,255,255,0.06)',color:C.sec,flexShrink:0}}>
+                  {STATUS_LABELS[b.status]}
+                </span>
               </div>
 
-              {/* Timer livraison 48h — visible dès la commande */}
+              {/* Décompte — élément hero, aucune boîte autour, la typographie porte tout */}
               {(b.status==='pending' || b.status==='in_production') && deliveryRemaining > 0 && (
-                <div style={{background:'linear-gradient(135deg,rgba(45,127,249,0.07),rgba(91,143,255,0.04))',border:'1px solid rgba(45,127,249,0.2)',borderRadius:10,padding:'12px 16px'}}>
-                  <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:6}}>Livraison estimée dans</div>
-                  <div style={{fontFamily:"'DM Mono',monospace",fontSize:22,fontWeight:900,color:C.accent,letterSpacing:2,lineHeight:1}}>
+                <div style={{position:'relative'}}>
+                  <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.6px',textTransform:'uppercase',marginBottom:8}}>Livraison estimée dans</div>
+                  <div style={{
+                    fontFamily:"'DM Mono',monospace",fontSize:36,fontWeight:800,letterSpacing:'-0.5px',lineHeight:1,
+                    background:'linear-gradient(90deg, #ffffff 0%, #9fbcff 100%)',
+                    WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
+                  }}>
                     {formatCountdown(deliveryRemaining)}
                   </div>
-                  <div style={{fontSize:10,color:C.muted,marginTop:4}}>à partir de votre commande du {new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+
+                  {/* Ligne de progression fine — remplace l'encart, jamais un rectangle */}
+                  <div style={{marginTop:16,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden'}}>
+                    <div style={{height:'100%',width:`${100-pctElapsed}%`,borderRadius:2,background:'linear-gradient(90deg, #5B8DFF, #2D7FF9)',transition:'width 1s linear'}}/>
+                  </div>
                 </div>
               )}
 
-              {/* Bouton annuler — visible 12h sans countdown */}
+              {/* Annulation — lien discret, plus un bloc rouge alarmant */}
               {canCancel && (
-                <button onClick={() => { if (prod) setCancelConfirm(prod); }}
-                  style={{width:'100%',padding:'9px',borderRadius:8,border:'1px solid rgba(229,80,80,0.3)',background:'rgba(229,80,80,0.06)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
-                  <Icon name="x" size={12} color="#E55050"/> Annuler la commande
-                </button>
+                <div style={{marginTop:18,display:'flex',justifyContent:'flex-end'}}>
+                  <button onClick={() => { if (prod) setCancelConfirm(prod); }}
+                    style={{background:'none',border:'none',color:'#E88',fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:5,padding:'6px 2px',opacity:0.85}}>
+                    <Icon name="x" size={11} color="#E88"/> Annuler la commande
+                  </button>
+                </div>
               )}
               {b.status==='pending' && !canCancel && (
-                <div style={{padding:'9px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',fontSize:11,color:C.muted,textAlign:'center'}}>
-                  En cours de traitement · Annulation non disponible
+                <div style={{marginTop:18,fontSize:11,color:C.muted,textAlign:'right'}}>
+                  Annulation non disponible — en cours de traitement
                 </div>
               )}
             </div>
