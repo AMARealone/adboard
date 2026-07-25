@@ -1662,20 +1662,13 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
     </div>
 
     {confirmDelete && createPortal(
-      <div onClick={()=>setConfirmDelete(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:380,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
-          <div style={{width:40,height:40,borderRadius:11,background:'rgba(239,107,91,0.14)',border:'1px solid rgba(239,107,91,0.3)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14,color:'#EF6B5B'}}>
-            <Icon name="alerttriangle" size={18} color="#EF6B5B"/>
-          </div>
-          <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Supprimer "{p.nom}" ?</h2>
-          <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:0}}>Cette action est irréversible. La fiche produit sera définitivement supprimée.</p>
-          <p style={{fontSize:11.5,color:C.muted,lineHeight:1.6,marginTop:8}}>Les images, données marché et copies déjà générées pour ce produit resteront disponibles dans vos sections.</p>
-          <div style={{display:'flex',gap:8,marginTop:18}}>
-            <button onClick={()=>setConfirmDelete(false)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
-            <button onClick={doDelete} style={{flex:1,padding:'10px',borderRadius:8,border:'none',background:'#EF6B5B',color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Supprimer</button>
-          </div>
-        </div>
-      </div>,
+      <ConfirmModal
+        title={`Supprimer "${p.nom}" ?`}
+        message="Cette action est irréversible. La fiche produit sera définitivement supprimée. Les images, données marché et copies déjà générées pour ce produit resteront disponibles dans vos sections."
+        confirmLabel="Supprimer" cancelLabel="Annuler" danger={true}
+        onCancel={()=>setConfirmDelete(false)}
+        onConfirm={doDelete}
+      />,
       document.body
     )}
     </>
@@ -2445,39 +2438,48 @@ const Copies = ({products, setSection}) => {
                     <div style={{height:1,flex:1,background:C.border}}/>
                   </div>
 
-                  <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                  <div style={{display:'flex',flexDirection:'column',gap:16}}>
                     {delivery.angles.map(angle => (
-                      <div key={angle.numero} ref={el=>{angleRefs.current[angle.numero]=el;}} style={cs({padding:'20px',scrollMarginTop:16})}>
-                        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:18}}>
-                          <div style={{width:30,height:30,borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                            <span style={{fontSize:11,fontWeight:800,color:C.accent}}>A{angle.numero}</span>
-                          </div>
-                          <div style={{fontSize:14,fontWeight:700,color:C.text}}>{angle.nom}</div>
+                      <div key={angle.numero} ref={el=>{angleRefs.current[angle.numero]=el;}} style={{
+                        position:'relative', overflow:'hidden', scrollMarginTop:16,
+                        background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',
+                        border:`1px solid ${C.border}`, borderRadius:16, padding:'24px 24px 22px',
+                      }}>
+                        {/* Numéro d'angle géant en filigrane — remplace le badge carré */}
+                        <div style={{position:'absolute',top:-18,right:10,fontSize:96,fontWeight:900,color:'rgba(255,255,255,0.025)',lineHeight:1,fontFamily:"'DM Mono',monospace",pointerEvents:'none'}}>
+                          {String(angle.numero).padStart(2,'0')}
                         </div>
 
-                        <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:12}}>
-                          <div>
-                            <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:10}}>5 Hooks</div>
+                        <div style={{position:'relative'}}>
+                          <div style={{fontSize:9.5,color:C.accent,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:6}}>Angle {angle.numero}</div>
+                          <div style={{fontSize:16.5,fontWeight:800,color:C.text,marginBottom:22}}>{angle.nom}</div>
+
+                          {/* Hooks — liste divisée par de fines lignes, plus une boîte par hook */}
+                          <div style={{marginBottom:24}}>
+                            <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:4}}>5 Hooks</div>
                             {angle.hooks.map((hook,i) => (
-                              <div key={i} style={cs({padding:'10px 12px',display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,marginBottom:7})}>
-                                <div style={{fontSize:12,color:C.text,lineHeight:1.45,flex:1}}>{hook}</div>
-                                <button onClick={()=>copy(hook,`h-${angle.numero}-${i}`)}
-                                  style={{flexShrink:0,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`h-${angle.numero}-${i}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`h-${angle.numero}-${i}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`h-${angle.numero}-${i}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
-                                  {copied===`h-${angle.numero}-${i}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier'}
+                              <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',borderBottom:i<angle.hooks.length-1?'1px solid rgba(255,255,255,0.05)':'none'}}>
+                                <span style={{fontSize:10,color:C.muted,fontFamily:"'DM Mono',monospace",flexShrink:0,width:14}}>{i+1}</span>
+                                <span style={{flex:1,fontSize:12.5,color:C.text,lineHeight:1.5}}>{hook}</span>
+                                <button onClick={()=>copy(hook,`h-${angle.numero}-${i}`)} title="Copier"
+                                  style={{flexShrink:0,width:26,height:26,borderRadius:6,border:'none',background:copied===`h-${angle.numero}-${i}`?C.accentS:'transparent',color:copied===`h-${angle.numero}-${i}`?C.accent:C.muted,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.15s'}}>
+                                  <Icon name={copied===`h-${angle.numero}-${i}`?'check':'document'} size={12}/>
                                 </button>
                               </div>
                             ))}
                           </div>
+
+                          {/* Texte — citation à bordure latérale, plus un encart fermé */}
                           <div>
                             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-                              <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase'}}>Texte</div>
+                              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>Texte</div>
                               <button onClick={()=>copy(angle.description,`body-${angle.numero}`)}
-                                style={{padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
+                                style={{padding:'4px 11px',borderRadius:6,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
                                 {copied===`body-${angle.numero}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier tout'}
                               </button>
                             </div>
-                            <div style={cs({padding:'14px'})}>
-                              <pre style={{fontSize:12,color:C.text,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.description}</pre>
+                            <div style={{borderLeft:`2px solid ${C.accent}`,paddingLeft:14}}>
+                              <pre style={{fontSize:12.5,color:C.sec,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.description}</pre>
                             </div>
                           </div>
                         </div>
@@ -2599,48 +2601,53 @@ const Marche = ({products, isDemo, setSection}) => {
           <>
             {/* Positionnement marché */}
             {m.positionnement && (
-              <div style={cs({padding:'18px',marginBottom:12})}>
-                <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:14}}>Positionnement marché</div>
-                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(2,1fr)',gap:10,marginBottom:14}}>
-                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
-                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Taille du marché</div>
-                    <div style={{fontSize:12.5,color:C.text,marginTop:5,lineHeight:1.5}}>{m.positionnement.taille_marche_personnes}</div>
-                  </div>
-                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
-                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Valeur estimée</div>
-                    <div style={{fontSize:12.5,color:C.text,marginTop:5,lineHeight:1.5}}>{m.positionnement.taille_marche_revenus}</div>
-                  </div>
-                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
-                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px'}}>Tendance</div>
-                    <div style={{fontSize:12.5,color:C.text,marginTop:5,lineHeight:1.5}}>{m.positionnement.taux_croissance}</div>
-                  </div>
-                  <div style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.045)',border:`1px solid ${C.border}`}}>
-                    <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:5}}>Concurrence</div>
-                    <div style={{display:'flex',alignItems:'center',gap:7}}>
-                      <span style={{fontSize:11,fontWeight:700,padding:'2px 9px',borderRadius:20,
-                        background: m.positionnement.concurrence==='Élevée' ? 'rgba(229,80,80,0.14)' : m.positionnement.concurrence==='Moyenne' ? 'rgba(255,181,71,0.14)' : 'rgba(34,197,94,0.14)',
+              <div style={{position:'relative',overflow:'hidden',background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'24px',marginBottom:16}}>
+                <div style={{position:'absolute',top:-50,right:-40,width:180,height:180,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.14), transparent 70%)',pointerEvents:'none'}}/>
+                <div style={{position:'relative'}}>
+                  <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:20}}>Positionnement marché</div>
+
+                  {/* Stats en ligne fluide — plus de grille de mini-boîtes */}
+                  <div style={{display:'flex',flexWrap:'wrap',gap:isMobile?20:32,marginBottom:22}}>
+                    <div>
+                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Taille du marché</div>
+                      <div style={{fontSize:15,fontWeight:800,color:C.text,lineHeight:1.3,maxWidth:200}}>{m.positionnement.taille_marche_personnes}</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Valeur estimée</div>
+                      <div style={{fontSize:15,fontWeight:800,color:C.text,lineHeight:1.3,maxWidth:200}}>{m.positionnement.taille_marche_revenus}</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Tendance</div>
+                      <div style={{fontSize:15,fontWeight:800,color:C.text,lineHeight:1.3,maxWidth:200}}>{m.positionnement.taux_croissance}</div>
+                    </div>
+                    <div>
+                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Concurrence</div>
+                      <div style={{fontSize:14,fontWeight:800,
                         color: m.positionnement.concurrence==='Élevée' ? '#E55050' : m.positionnement.concurrence==='Moyenne' ? '#FFB547' : '#22C55E'}}>
                         {m.positionnement.concurrence}
-                      </span>
+                      </div>
                     </div>
-                    <div style={{fontSize:11.5,color:C.sec,marginTop:6,lineHeight:1.5}}>{m.positionnement.concurrence_explication}</div>
                   </div>
-                </div>
-                <div style={{padding:'11px 14px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',fontSize:12,color:C.text,lineHeight:1.5}}>
-                  💰 {m.positionnement.positionnement_prix}
+                  <div style={{fontSize:11.5,color:C.sec,lineHeight:1.6,marginBottom:18,maxWidth:520}}>{m.positionnement.concurrence_explication}</div>
+
+                  {/* Positionnement prix — citation à bordure latérale, sans emoji */}
+                  <div style={{borderLeft:`2px solid ${C.accent}`,paddingLeft:14}}>
+                    <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:5}}>Positionnement prix</div>
+                    <div style={{fontSize:12.5,color:C.text,lineHeight:1.6}}>{m.positionnement.positionnement_prix}</div>
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Insights actionnables */}
             {m.insights?.length > 0 && (
-              <div style={cs({padding:'18px',marginBottom:12,position:'relative'})}>
-                <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:14}}>Insights applicables</div>
-                <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:10}}>
+              <div style={{position:'relative',background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'24px',marginBottom:16}}>
+                <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:16}}>Insights applicables</div>
+                <div style={{display:'flex',flexDirection:'column'}}>
                   {m.insights.map((ins,idx) => (
-                    <div key={idx} style={{padding:'12px 14px',borderRadius:8,background:'rgba(255,255,255,0.055)',border:`1px solid ${C.border}`,display:'flex',gap:11,alignItems:'flex-start'}}>
-                      <div style={{flexShrink:0,marginTop:1,color:C.sec}}><Icon name={ins.icon} size={16}/></div>
-                      <span style={{fontSize:11,color:C.sec,lineHeight:1.55}}>{ins.t}</span>
+                    <div key={idx} style={{display:'flex',gap:12,alignItems:'flex-start',padding:'13px 0',borderBottom:idx<m.insights.length-1?'1px solid rgba(255,255,255,0.05)':'none'}}>
+                      <div style={{flexShrink:0,marginTop:1,color:C.accent}}><Icon name={ins.icon} size={15}/></div>
+                      <span style={{fontSize:12,color:C.sec,lineHeight:1.6}}>{ins.t}</span>
                     </div>
                   ))}
                 </div>
@@ -2651,20 +2658,20 @@ const Marche = ({products, isDemo, setSection}) => {
             {/* Cibles — s'accumulent à chaque nouveau batch, la plus récente en premier */}
             {m.cibles?.length > 0 && (
               <div>
-                <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10,display:'flex',alignItems:'center',gap:8}}>
+                <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:14,display:'flex',alignItems:'center',gap:8}}>
                   Cibles identifiées
-                  <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:'rgba(255,255,255,0.08)',color:C.sec}}>{m.cibles.length}</span>
+                  <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:'rgba(255,255,255,0.08)',color:C.sec,letterSpacing:0,textTransform:'none'}}>{m.cibles.length}</span>
                 </div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                <div style={{display:'flex',flexDirection:'column',gap:12}}>
                   {[...m.cibles].reverse().map((cible, idx) => (
-                    <div key={cible.id||idx} style={cs({padding:'18px'})}>
+                    <div key={cible.id||idx} style={{background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'22px 24px'}}>
                       {cible.angle_utilise && (
-                        <div style={{fontSize:10.5,color:C.accent,fontWeight:700,marginBottom:12,padding:'4px 10px',borderRadius:6,background:'rgba(45,127,249,0.10)',display:'inline-block'}}>
+                        <div style={{fontSize:10.5,color:C.accent,fontWeight:700,marginBottom:14,padding:'4px 10px',borderRadius:6,background:'rgba(45,127,249,0.10)',display:'inline-block'}}>
                           {cible.angle_utilise}
                         </div>
                       )}
                       <div style={{display:'flex',gap:12,marginBottom:14}}>
-                        <div style={{width:44,height:44,borderRadius:10,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        <div style={{width:44,height:44,borderRadius:10,flexShrink:0,background:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center'}}>
                           <Icon name="person" size={20} color={C.text}/>
                         </div>
                         <div>
@@ -2674,32 +2681,40 @@ const Marche = ({products, isDemo, setSection}) => {
                         </div>
                       </div>
                       {cible.quote && (
-                        <div style={{fontSize:12,color:C.sec,lineHeight:1.6,padding:'10px 12px',background:'rgba(255,255,255,0.055)',borderRadius:8,border:`1px solid ${C.border}`,marginBottom:12,fontStyle:'italic'}}>
-                          "{cible.quote}"
+                        <div style={{borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:14}}>
+                          <div style={{fontSize:12,color:C.sec,lineHeight:1.6,fontStyle:'italic'}}>"{cible.quote}"</div>
                         </div>
                       )}
                       {cible.platforms?.length > 0 && (
-                        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:12}}>
+                        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14}}>
                           {cible.platforms.map(pl => <Tag key={pl} ch={pl} color="gray"/>)}
                         </div>
                       )}
-                      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:10}}>
+                      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:14}}>
                         {cible.desirs?.length > 0 && (
                           <div>
-                            <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Ce qu'elle veut</div>
-                            {cible.desirs.map((d,i) => <div key={i} style={{fontSize:11.5,color:C.text,lineHeight:1.6}}>✓ {d}</div>)}
+                            <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Ce qu'elle veut</div>
+                            {cible.desirs.map((d,i) => (
+                              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:11.5,color:C.text,lineHeight:1.6,marginBottom:4}}>
+                                <Icon name="check" size={12} color="#22C55E"/><span>{d}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
                         {cible.craintes?.length > 0 && (
                           <div>
-                            <div style={{fontSize:9,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Ce qui la freine</div>
-                            {cible.craintes.map((cr,i) => <div key={i} style={{fontSize:11.5,color:C.text,lineHeight:1.6}}>⚠ {cr}</div>)}
+                            <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Ce qui la freine</div>
+                            {cible.craintes.map((cr,i) => (
+                              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:11.5,color:C.text,lineHeight:1.6,marginBottom:4}}>
+                                <Icon name="alerttriangle" size={12} color="#FFB547"/><span>{cr}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>
                       {cible.comportement_social && (
-                        <div style={{fontSize:11.5,color:C.sec,lineHeight:1.6,marginTop:12,paddingTop:12,borderTop:`1px solid ${C.border}`}}>
-                          📱 {cible.comportement_social}
+                        <div style={{fontSize:11.5,color:C.sec,lineHeight:1.6,marginTop:14,paddingTop:14,borderTop:`1px solid ${C.border}`,display:'flex',gap:8,alignItems:'flex-start'}}>
+                          <Icon name="phone" size={13} color={C.muted}/><span>{cible.comportement_social}</span>
                         </div>
                       )}
                     </div>
@@ -2746,8 +2761,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       ? (hour < 12 ? 'Bonne matinée' : hour < 18 ? 'Bonne après-midi' : 'Bonsoir')
       : (hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening');
     const welcome = language === 'fr'
-      ? `${greeting}${name ? ' ' + name : ''} ! 👋 Je suis **Ava**. Dis-moi — qu'est-ce qui t'amène aujourd'hui ?`
-      : `${greeting}${name ? ' ' + name : ''} ! 👋 I'm **Ava**. What brings you here today?`;
+      ? `${greeting}${name ? ' ' + name : ''} ! Je suis **Ava**. Dis-moi — qu'est-ce qui t'amène aujourd'hui ?`
+      : `${greeting}${name ? ' ' + name : ''} ! I'm **Ava**. What brings you here today?`;
     setTimeout(() => setMessages([{ role: 'model', content: welcome }]), 120);
   }, [open]);
 
