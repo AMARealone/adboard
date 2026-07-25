@@ -936,6 +936,33 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
         <div class="prodv2-footer">
           <button class="prodv2-footer-btn" onclick="prodv2ExportZip()">Exporter (zip)</button>
           <button class="prodv2-footer-btn primary" onclick="prodv2SendClient()">Envoyer au client</button>
+          <button class="prodv2-footer-btn" onclick="prodv2OpenManualSend()" style="font-size:11.5px;">✉️ Envoyer à un autre compte…</button>
+        </div>
+      </div>
+
+      <!-- Modale envoi manuel — choisir n'importe quel compte, même sans forfait -->
+      <div id="prodv2ManualSendModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;align-items:center;justify-content:center;">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px;width:420px;max-width:90vw;max-height:85vh;overflow-y:auto;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:15px;font-weight:700;margin:0;color:var(--t1);">Envoyer à un compte spécifique</h3>
+            <button onclick="prodv2CloseManualSend()" style="background:var(--bg3);border:1px solid var(--border);border-radius:7px;color:var(--t2);padding:5px 10px;cursor:pointer;font-size:12px;">✕</button>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:14px;">Fonctionne même pour un compte qui n'a encore pris aucun forfait — juste connecté par email.</div>
+
+          <div style="margin-bottom:14px;">
+            <label style="font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;">Compte client</label>
+            <input type="text" id="prodv2ManualSearchInput" placeholder="Cherche par email…" oninput="prodv2ManualSearchUsers(this.value)" style="width:100%;margin-top:6px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t1);font-size:13px;box-sizing:border-box;">
+            <div id="prodv2ManualSearchResults" style="margin-top:6px;max-height:160px;overflow-y:auto;"></div>
+          </div>
+
+          <div id="prodv2ManualProductStep" style="display:none;margin-bottom:14px;">
+            <label style="font-size:10.5px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;">Produit</label>
+            <div id="prodv2ManualProductList" style="margin-top:6px;display:flex;flex-direction:column;gap:6px;"></div>
+            <div style="margin-top:8px;font-size:11px;color:var(--t3);">— ou —</div>
+            <input type="text" id="prodv2ManualNewProductInput" placeholder="Créer un nouveau produit : nom…" style="width:100%;margin-top:8px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t1);font-size:13px;box-sizing:border-box;">
+          </div>
+
+          <button id="prodv2ManualSendBtn" onclick="prodv2ConfirmManualSend()" disabled style="width:100%;padding:11px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;opacity:0.5;">Envoyer</button>
         </div>
       </div>
 
@@ -2693,6 +2720,124 @@ function prodv2ExportZip() {
   alert('Export ZIP — à implémenter (côté serveur, endpoint /export-zip)');
 }
 
+function prodv2OpenManualSend() {
+  if (!prodv2State.creatives.some(c => c && c.imgB64) && !prodv2State.copies.some(c => c)) {
+    alert('Aucun livrable généré pour l\'instant — rien à envoyer.');
+    return;
+  }
+  document.getElementById('prodv2ManualSendModal').style.display = 'flex';
+  document.getElementById('prodv2ManualSearchInput').value = '';
+  document.getElementById('prodv2ManualSearchResults').innerHTML = '';
+  document.getElementById('prodv2ManualProductStep').style.display = 'none';
+  document.getElementById('prodv2ManualSendBtn').disabled = true;
+  document.getElementById('prodv2ManualSendBtn').style.opacity = '0.5';
+  window._manualSendSelectedUser = null;
+  window._manualSendSelectedProduct = null;
+}
+function prodv2CloseManualSend() {
+  document.getElementById('prodv2ManualSendModal').style.display = 'none';
+}
+
+let _manualSearchTimer = null;
+function prodv2ManualSearchUsers(q) {
+  clearTimeout(_manualSearchTimer);
+  const resultsEl = document.getElementById('prodv2ManualSearchResults');
+  if (q.trim().length < 2) { resultsEl.innerHTML = ''; return; }
+  _manualSearchTimer = setTimeout(async () => {
+    resultsEl.innerHTML = '<div style="font-size:11px;color:var(--t3);padding:6px 0;">Recherche…</div>';
+    try {
+      const res = await fetch(`https://adstack-server.onrender.com/users/search?q=${encodeURIComponent(q)}`, {headers:{'ngrok-skip-browser-warning':'1'}});
+      const users = await res.json();
+      if (!users.length) { resultsEl.innerHTML = '<div style="font-size:11px;color:var(--t3);padding:6px 0;">Aucun compte trouvé.</div>'; return; }
+      resultsEl.innerHTML = users.map(u => `
+        <div onclick="prodv2ManualSelectUser('${u.id}','${u.email.replace(/'/g,"\\'")}')" style="padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12.5px;color:var(--t1);border:1px solid transparent;" onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background='transparent'">
+          ${u.email}
+        </div>`).join('');
+    } catch(e) {
+      resultsEl.innerHTML = '<div style="font-size:11px;color:#E55050;padding:6px 0;">Erreur de recherche.</div>';
+    }
+  }, 350);
+}
+
+async function prodv2ManualSelectUser(userId, email) {
+  window._manualSendSelectedUser = { id: userId, email };
+  document.getElementById('prodv2ManualSearchInput').value = email;
+  document.getElementById('prodv2ManualSearchResults').innerHTML = '';
+  document.getElementById('prodv2ManualProductStep').style.display = 'block';
+  const listEl = document.getElementById('prodv2ManualProductList');
+  listEl.innerHTML = '<div style="font-size:11px;color:var(--t3);">Chargement des produits…</div>';
+  try {
+    const res = await fetch(`https://adstack-server.onrender.com/users/${userId}/products`, {headers:{'ngrok-skip-browser-warning':'1'}});
+    const products = await res.json();
+    if (!products.length) {
+      listEl.innerHTML = '<div style="font-size:11px;color:var(--t3);">Aucun produit existant pour ce compte — crée-en un ci-dessous.</div>';
+    } else {
+      listEl.innerHTML = products.map(p => `
+        <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--t1);">
+          <input type="radio" name="prodv2ManualProduct" value="${p.id}" onchange="prodv2ManualPickProduct('${p.id}')">
+          ${p.nom}
+        </label>`).join('');
+    }
+  } catch(e) {
+    listEl.innerHTML = '<div style="font-size:11px;color:#E55050;">Erreur de chargement.</div>';
+  }
+  prodv2ManualUpdateSendBtn();
+}
+
+function prodv2ManualPickProduct(productId) {
+  window._manualSendSelectedProduct = productId;
+  document.getElementById('prodv2ManualNewProductInput').value = '';
+  prodv2ManualUpdateSendBtn();
+}
+
+document.addEventListener('input', (e) => {
+  if (e.target && e.target.id === 'prodv2ManualNewProductInput') {
+    if (e.target.value.trim()) {
+      window._manualSendSelectedProduct = null;
+      document.querySelectorAll('input[name="prodv2ManualProduct"]').forEach(r => r.checked = false);
+    }
+    prodv2ManualUpdateSendBtn();
+  }
+});
+
+function prodv2ManualUpdateSendBtn() {
+  const newName = document.getElementById('prodv2ManualNewProductInput')?.value.trim();
+  const ok = window._manualSendSelectedUser && (window._manualSendSelectedProduct || newName);
+  const btn = document.getElementById('prodv2ManualSendBtn');
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? '1' : '0.5';
+}
+
+async function prodv2ConfirmManualSend() {
+  const newName = document.getElementById('prodv2ManualNewProductInput')?.value.trim();
+  const btn = document.getElementById('prodv2ManualSendBtn');
+  btn.disabled = true; btn.textContent = 'Envoi en cours…';
+  try {
+    const res = await fetch('https://adstack-server.onrender.com/manual-deliver', {
+      method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({
+        userId: window._manualSendSelectedUser.id,
+        productId: window._manualSendSelectedProduct || undefined,
+        newProductName: window._manualSendSelectedProduct ? undefined : newName,
+        ticketId: prodv2State.commandeId || undefined,
+        deliverables: {
+          creatives: prodv2State.creatives,
+          copies: prodv2State.copies,
+          synthesis: prodv2State.synthesis,
+          angles: prodv2State.angles
+        }
+      })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    alert(`✅ Envoyé à ${window._manualSendSelectedUser.email}.`);
+    prodv2CloseManualSend();
+  } catch(e) {
+    alert('Erreur lors de l\'envoi : ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Envoyer';
+  }
+}
+
 async function prodv2SendClient() {
   if (!prodv2State.commandeId) {
     alert("Cette production n'est pas liée à une commande AdBoard — rien à envoyer automatiquement.");
@@ -2720,6 +2865,7 @@ async function prodv2SendClient() {
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     if (btn) { btn.textContent = '✓ Envoyé au client'; }
+    try { localStorage.removeItem('adstack_active_production'); } catch(e) {}
     alert('✅ Envoyé au client.');
     loadCommandes();
   } catch(e) {
@@ -5298,62 +5444,36 @@ async function loadCommandes() {
       const couleursHtml = couleurs.map(c => `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:1px solid rgba(255,255,255,0.2);"></span>`).join('');
 
       return `
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start;">
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start;">
         ${photoHtml}
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
             <span style="font-size:15px;font-weight:700;color:var(--t1);">${b.product.nom}</span>
-            <span id="status-${b.id}" style="padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;background:${statusColor[b.status]}22;color:${statusColor[b.status]};">${statusLabel[b.status] || b.status}</span>
-            ${b.status==='pending' ? `<span id="timer-${b.id}" style="padding:2px 8px;border-radius:12px;font-size:10px;background:rgba(245,158,11,0.1);color:#F59E0B;" data-created="${b.created_at}">⏱ calcul...</span>` : ''}
-            ${b.status==='in_production' && b.started_at ? `<span id="timer36-${b.id}" class="prodv2-timer36" style="padding:2px 8px;border-radius:12px;font-size:10px;background:rgba(59,130,246,0.1);color:#3B82F6;" data-started="${b.started_at}">⏱ calcul...</span>` : ''}
-            <span style="padding:2px 8px;border-radius:12px;font-size:10px;background:var(--bg3);color:var(--blue);">× ${b.quantity} images</span>
+            <span id="status-${b.id}" style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${statusColor[b.status]}18;color:${statusColor[b.status]};">${statusLabel[b.status] || b.status}</span>
           </div>
-          <div style="font-size:11px;color:var(--t3);margin-bottom:6px;">
-            📧 ${b.client?.email || b.client?.user_id?.slice(0,8)+'...'} · ${b.client?.plan?.toUpperCase()} · ${new Date(b.created_at).toLocaleString('fr-FR')}
+          <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">
+            ${b.client?.email || b.client?.user_id?.slice(0,8)+'...'} · ${b.client?.plan?.toUpperCase()} · ${new Date(b.created_at).toLocaleString('fr-FR')} · <span style="color:var(--t2);">${b.quantity} images</span>
           </div>
-          ${b.product.pricing ? `<div style="font-size:11px;color:var(--t2);">Prix : <strong>${b.product.pricing}</strong> · ${b.product.pays || ''}</div>` : ''}
-          ${b.product.cible ? `<div style="font-size:11px;color:var(--t2);margin-top:3px;">Cible : ${b.product.cible}</div>` : ''}
-          ${couleurs.length ? `<div style="margin-top:6px;display:flex;gap:4px;align-items:center;">${couleursHtml}</div>` : ''}
-          ${b.history?.batches_count > 0 ? `<div style="font-size:10px;color:var(--t3);margin-top:4px;">📊 ${b.history.batches_count} batch(es) précédent(s) · ${b.history.total_creatives_done} créatives déjà livrées</div>` : ''}
-          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+          <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--t2);margin-bottom:10px;">
+            ${b.product.pricing ? `<span>${b.product.pricing}${b.product.pays ? ' · '+b.product.pays : ''}</span>` : ''}
+            ${b.product.cible ? `<span style="color:var(--t3);">${b.product.cible}</span>` : ''}
+            ${couleurs.length ? `<span style="display:inline-flex;gap:4px;align-items:center;">${couleursHtml}</span>` : ''}
+            ${b.history?.batches_count > 0 ? `<span style="color:var(--t3);">${b.history.batches_count} batch(es) précédent(s)</span>` : ''}
+          </div>
+          ${b.status==='pending' ? `<div id="timer-${b.id}" style="font-size:11px;color:var(--t3);margin-bottom:10px;" data-created="${b.created_at}">⏱ calcul...</div>` : ''}
+          ${b.status==='in_production' && b.started_at ? `<div id="timer36-${b.id}" class="prodv2-timer36" style="font-size:11px;color:var(--t3);margin-bottom:10px;" data-started="${b.started_at}">⏱ calcul...</div>` : ''}
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
             ${b.status === 'pending' ? `
-              <button onclick="lancerProduction('${b.id}')"
-                style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">
-                ▶ Lancer la production
-              </button>
-              <button onclick="voirBrief('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.10);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
-                📋 Voir le brief
-              </button>
-              <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
-                🗑 Supprimer
-              </button>
+              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">▶ Lancer la production</button>
             ` : b.status === 'in_production' ? `
-              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.10);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
-                ↻ Relancer
-              </button>
-              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:#22C55E22;border:1px solid #22C55E44;border-radius:7px;color:#22C55E;font-size:12px;font-weight:700;cursor:pointer;">
-                ✅ Envoyer au client
-              </button>
-              <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
-                🗑 Supprimer
-              </button>
-            ` : b.status === 'cancelled' ? `
-              <span style="font-size:11px;color:var(--t3);padding:4px 8px;">Annulé par le client</span>
-              <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
-                🗑 Supprimer
-              </button>
+              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Relancer</button>
+              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Envoyer au client</button>
             ` : b.status === 'done' ? `
-              <span style="font-size:11px;color:#22C55E;padding:4px 8px;">✅ Livré</span>
-              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.10);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">
-                ↻ Relancer (nouveau lot)
-              </button>
-              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:#22C55E22;border:1px solid #22C55E44;border-radius:7px;color:#22C55E;font-size:12px;cursor:pointer;">
-                ↻ Renvoyer au client
-              </button>
-              <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);border-radius:7px;color:#E55050;font-size:12px;cursor:pointer;">
-                🗑 Supprimer
-              </button>
+              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Nouveau lot</button>
+              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Renvoyer</button>
             ` : ''}
+            <button onclick="voirBrief('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">Voir le brief</button>
+            <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:transparent;border:1px solid var(--border2);border-radius:7px;color:var(--t3);font-size:12px;cursor:pointer;margin-left:auto;">Supprimer</button>
           </div>
         </div>
       </div>`;
@@ -5381,6 +5501,11 @@ async function prodv2LoadBriefFromCommande(b) {
   prodv2State.briefRaw = JSON.stringify(brief, null, 2);
   prodv2State.briefSource = 'commande';
   prodv2State.commandeId = b.id;
+
+  // Marqueur léger (juste l'id, pas les images) — permet de proposer une reprise après un
+  // refresh accidentel, en récupérant les livrables déjà sauvegardés côté serveur plutôt que
+  // de stocker des images en localStorage (risque de dépassement de quota).
+  try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: b.id, ts: Date.now() })); } catch(e) {}
 
   // Photo : priorité photo_nobg (fond retiré) → photo_base64 (déjà en base64) → photo_url
   // (une URL à récupérer et convertir — oublié dans la première version, présent dans
@@ -5434,6 +5559,10 @@ async function lancerProduction(id) {
 async function marquerLivre(id) {
   if (!confirm('Marquer cette commande comme livrée ?')) return;
   await fetch(`https://adstack-server.onrender.com/commandes/${id}/done`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
+  try {
+    const marker = JSON.parse(localStorage.getItem('adstack_active_production') || 'null');
+    if (marker && marker.commandeId === id) localStorage.removeItem('adstack_active_production');
+  } catch(e) {}
   loadCommandes();
 }
 
@@ -5742,6 +5871,95 @@ function showTab(tab){
   const tabs = {comp:0,test:1,feedback:2};
   document.querySelectorAll('.av-tab')[tabs[tab]].classList.add('active');
   document.getElementById('panel'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('show');
+}
+
+// ── Reprise après refresh accidentel ──────────────────────────────
+// Ne stocke jamais d'images en localStorage (risque de dépassement de quota) — juste l'id
+// de la commande. Au retour, va chercher ce qui a déjà été sauvegardé côté serveur et
+// propose de reprendre plutôt que de tout perdre silencieusement.
+async function prodv2CheckResume() {
+  if (prodv2State.brief) return; // déjà en cours dans cette session, ne rien proposer
+  let marker;
+  try { marker = JSON.parse(localStorage.getItem('adstack_active_production') || 'null'); } catch(e) { return; }
+  if (!marker || !marker.commandeId) return;
+  try {
+    const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json());
+    const b = briefs.find(x => x.id === marker.commandeId);
+    if (!b || b.status !== 'in_production') { localStorage.removeItem('adstack_active_production'); return; }
+    const d = b.deliverables;
+    const nbCrea = d && d.creatives ? d.creatives.filter(c=>c && c.imgB64).length : 0;
+    const nbCopy = d && d.copies ? d.copies.filter(Boolean).length : 0;
+    if (nbCrea === 0 && nbCopy === 0) return;
+
+    const reprendre = confirm(
+      `Une production en cours a été trouvée pour "${b.product?.nom || '?'}" ` +
+      `(${nbCrea}/9 créatives, ${nbCopy}/3 sets ad copy déjà sauvegardés — probablement suite à un refresh).\n\n` +
+      `Reprendre où ça s'est arrêté ?`
+    );
+    if (!reprendre) return;
+
+    await prodv2LoadBriefFromCommande(b);
+    prodv2State.synthesis = d.synthesis || null;
+    prodv2State.angles = d.angles || [];
+    prodv2State.creatives = d.creatives || [];
+    prodv2State.copies = d.copies || [];
+
+    setMode('prod'); showProduction();
+    document.getElementById('prodv2PipelineSection').style.display = '';
+    document.getElementById('prodv2DelivSection').style.display = '';
+
+    if (prodv2State.synthesis) {
+      document.getElementById('prodv2SynBody').textContent = prodv2State.synthesis;
+      prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(prodv2State.synthesis.length/1000)}K chars · 3 angles extraits`, 100);
+    }
+    document.querySelectorAll('.prodv2-angle-tab').forEach((el,i) => {
+      const angle = prodv2State.angles[i] || ('Angle ' + (i+1));
+      const short = angle.length > 50 ? angle.slice(0,47) + '…' : angle;
+      el.textContent = `Angle ${i+1} · ${short.replace(/^[Aa]ngle\s*\d\s*[:—–-]?\s*/,'')}`;
+    });
+
+    // Reconstruire les 9 cartes créatives depuis l'état restauré
+    for (let a = 0; a < 3; a++) {
+      const container = document.getElementById('prodv2Creas' + a);
+      if (!container) continue;
+      container.innerHTML = '';
+      for (let c = 0; c < 3; c++) {
+        const idx = a*3 + c;
+        const item = prodv2State.creatives[idx] || { angleIdx:a, ctIdx:c, ct:'?', status:'pending' };
+        const card = document.createElement('div');
+        card.className = 'prodv2-crea' + (item.status === 'done' ? ' done' : '');
+        card.id = 'prodv2Crea_' + idx;
+        card.innerHTML = `
+          <div class="prodv2-crea-img">${item.imgB64 ? `<img src="data:${item.imageMime||'image/png'};base64,${item.imgB64}" alt="Créative ${idx+1}">` : '<div class="prodv2-crea-img-empty"></div>'}</div>
+          <div class="prodv2-crea-body">
+            <div class="prodv2-crea-meta">
+              <div class="prodv2-crea-ct">${item.ct || '?'}</div>
+              <div class="prodv2-crea-status">${item.status === 'done' ? 'Prêt' : 'En attente'}</div>
+            </div>
+            <div class="prodv2-crea-desc" ${item.status!=='done' ? 'style="color:var(--t3);font-style:italic;"' : ''}>${item.status==='done' ? (item.desc||'') : 'Génération à venir…'}</div>
+            <div class="prodv2-crea-actions">
+              <button class="prodv2-crea-btn" ${item.status!=='done'?'disabled':''}>Télécharger</button>
+              <button class="prodv2-crea-btn icon" title="Régénérer" ${item.status!=='done'?'disabled':''}>↻</button>
+            </div>
+          </div>`;
+        container.appendChild(card);
+        if (item.status === 'done') {
+          const btns = card.querySelectorAll('.prodv2-crea-btn');
+          btns[0].onclick = () => prodv2DownloadCrea(idx);
+          btns[1].onclick = () => prodv2RegenerateCrea(idx);
+        }
+      }
+    }
+    prodv2SetAgentState(2, nbCrea===9?'done':'active', `${nbCrea} / 9 créatives générées`, Math.round(nbCrea/9*100));
+
+    for (let i = 0; i < 3; i++) {
+      if (prodv2State.copies[i]) prodv2RenderCopy(i);
+    }
+    prodv2SetAgentState(3, nbCopy===3?'done':'active', `${nbCopy} / 3 sets ad copy générés`, Math.round(nbCopy/3*100));
+
+    const launchBtn = document.getElementById('prodv2LaunchBtn');
+    if (launchBtn) { launchBtn.textContent = 'Relancer la production'; launchBtn.disabled = false; }
+  } catch(e) { console.warn('[Reprise] Échec :', e.message); }
 }
 
 function showProduction(){
@@ -6610,6 +6828,7 @@ initAuthGate(() => {
     restoreSessionFromStorage();
   }
   loadCTImages();
+  prodv2CheckResume();
   window.addEventListener('beforeunload', function() { saveAgentState(); persistSessionToStorage(); });
 });
 
