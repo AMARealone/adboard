@@ -899,39 +899,24 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
       <!-- 3. LIVRABLES -->
       <div class="prodv2-deliv" id="prodv2DelivSection" style="display:none;">
         <div class="prodv2-deliv-head">
-          <h3>Livrables · Synthèse + 9 créatives + 3 sets ad copy</h3>
+          <h3 id="prodv2DelivTitle">Livrables · Synthèse + créatives + ad copies</h3>
           <div class="prodv2-step-num">Étape 3/3</div>
         </div>
 
         <!-- Synthèse en accordéon -->
         <div class="prodv2-syn" id="prodv2Syn">
           <div class="prodv2-syn-head" onclick="prodv2ToggleSyn()">
-            <div class="prodv2-syn-title"><span class="prodv2-syn-arrow">›</span> Synthèse S0→S7 · 1 persona · 3 angles</div>
+            <div class="prodv2-syn-title"><span class="prodv2-syn-arrow">›</span> Synthèse S0→S7 · 1 persona · <span id="prodv2SynAnglesCount">3</span> angles</div>
             <div class="prodv2-syn-meta" id="prodv2SynMeta">—</div>
           </div>
           <div class="prodv2-syn-body" id="prodv2SynBody"></div>
         </div>
 
-        <!-- Onglets angles -->
-        <div class="prodv2-angles-tabs" id="prodv2AnglesTabs">
-          <div class="prodv2-angle-tab active" onclick="prodv2SwitchAngle(0)">Angle 1</div>
-          <div class="prodv2-angle-tab" onclick="prodv2SwitchAngle(1)">Angle 2</div>
-          <div class="prodv2-angle-tab" onclick="prodv2SwitchAngle(2)">Angle 3</div>
-        </div>
+        <!-- Onglets angles — générés dynamiquement selon le nombre d'angles (voir prodv2BuildAngleUI) -->
+        <div class="prodv2-angles-tabs" id="prodv2AnglesTabs"></div>
 
-        <!-- Panes des 3 angles -->
-        <div class="prodv2-angle-pane show" id="prodv2Pane0">
-          <div class="prodv2-creas" id="prodv2Creas0"></div>
-          <div class="prodv2-copy" id="prodv2Copy0"><div class="prodv2-copy-loading">Génération des hooks et de la description…</div></div>
-        </div>
-        <div class="prodv2-angle-pane" id="prodv2Pane1">
-          <div class="prodv2-creas" id="prodv2Creas1"></div>
-          <div class="prodv2-copy" id="prodv2Copy1"><div class="prodv2-copy-loading">Génération des hooks et de la description…</div></div>
-        </div>
-        <div class="prodv2-angle-pane" id="prodv2Pane2">
-          <div class="prodv2-creas" id="prodv2Creas2"></div>
-          <div class="prodv2-copy" id="prodv2Copy2"><div class="prodv2-copy-loading">Génération des hooks et de la description…</div></div>
-        </div>
+        <!-- Panes des angles — générés dynamiquement (voir prodv2BuildAngleUI) -->
+        <div id="prodv2AnglePanes"></div>
 
         <div class="prodv2-footer">
           <button class="prodv2-footer-btn" onclick="prodv2ExportZip()">Exporter (zip)</button>
@@ -2242,13 +2227,13 @@ function prodv2PickCTs() {
 }
 
 // Extract angles from synthesis text (S2 section : 3 angles)
-function prodv2ExtractAngles(synthesis) {
-  // Looks for lines starting with "Angle 1", "Angle 2", "Angle 3"
+function prodv2ExtractAngles(synthesis, nbAngles=3) {
+  // Looks for lines starting with "Angle 1", "Angle 2", ... "Angle N"
   const angles = [];
   const lines = synthesis.split('\n');
   let current = null;
   for(const line of lines) {
-    const m = line.match(/^Angle\s*([123])\s*[:—–-]?\s*(.*)/i);
+    const m = line.match(/^Angle\s*(\d+)\s*[:—–-]?\s*(.*)/i);
     if(m) {
       if(current) angles.push(current);
       current = { idx: parseInt(m[1])-1, text: m[2].trim() };
@@ -2260,9 +2245,9 @@ function prodv2ExtractAngles(synthesis) {
     }
   }
   if(current) angles.push(current);
-  // Pad to 3 if needed
-  while(angles.length < 3) angles.push({ idx: angles.length, text: 'Angle ' + (angles.length+1) });
-  return angles.slice(0,3).map(a => a.text);
+  // Pad to nbAngles if needed
+  while(angles.length < nbAngles) angles.push({ idx: angles.length, text: 'Angle ' + (angles.length+1) });
+  return angles.slice(0,nbAngles).map(a => a.text);
 }
 
 let prodAbortController = null;
@@ -2284,6 +2269,42 @@ function prodv2AutosaveDeliverables() {
       });
     } catch(e) { console.warn('[Commande] Autosave échoué :', e.message); }
   }, 800);
+}
+
+// ── Nombre d'angles dynamique selon la quantité commandée ──
+// 3 visuels par angle, toujours. Quantités valides : 9/18/27/36 → 3/6/9/12 angles.
+// Bornes défensives (3 à 12) au cas où une quantité inattendue arriverait un jour.
+function prodv2GetAngleCount() {
+  const q = Number(prodv2State.brief?.quantite) || 9;
+  const nb = Math.round(q / 3);
+  return Math.max(3, Math.min(12, nb));
+}
+
+// Construit les onglets + panes d'angles pour N angles — remplace la structure figée à 3.
+function prodv2BuildAngleUI(nbAngles) {
+  const tabsEl = document.getElementById('prodv2AnglesTabs');
+  const panesEl = document.getElementById('prodv2AnglePanes');
+  tabsEl.innerHTML = '';
+  panesEl.innerHTML = '';
+  for (let a = 0; a < nbAngles; a++) {
+    const tab = document.createElement('div');
+    tab.className = 'prodv2-angle-tab' + (a === 0 ? ' active' : '');
+    tab.textContent = `Angle ${a + 1}`;
+    tab.onclick = () => prodv2SwitchAngle(a);
+    tabsEl.appendChild(tab);
+
+    const pane = document.createElement('div');
+    pane.className = 'prodv2-angle-pane' + (a === 0 ? ' show' : '');
+    pane.id = 'prodv2Pane' + a;
+    pane.innerHTML = `
+      <div class="prodv2-creas" id="prodv2Creas${a}"></div>
+      <div class="prodv2-copy" id="prodv2Copy${a}"><div class="prodv2-copy-loading">Génération des hooks et de la description…</div></div>`;
+    panesEl.appendChild(pane);
+  }
+  const synCount = document.getElementById('prodv2SynAnglesCount');
+  if (synCount) synCount.textContent = nbAngles;
+  const delivTitle = document.getElementById('prodv2DelivTitle');
+  if (delivTitle) delivTitle.textContent = `Livrables · Synthèse + ${nbAngles * 3} créatives + ${nbAngles} sets ad copy`;
 }
 
 async function prodv2Launch() {
@@ -2312,6 +2333,10 @@ async function prodv2Launch() {
   prodv2State.copies = [];
   prodAbortController = new AbortController();
 
+  const nbAngles = prodv2GetAngleCount();
+  const nbCreativesTotal = nbAngles * 3;
+  prodv2BuildAngleUI(nbAngles);
+
   // Show pipeline + deliverables sections
   document.getElementById('prodv2PipelineSection').style.display = '';
   document.getElementById('prodv2DelivSection').style.display = '';
@@ -2330,8 +2355,10 @@ async function prodv2Launch() {
       ? '⚠️ URL PAGE PRODUIT CLIENT (PRIORITÉ ABSOLUE — utilise cette URL pour analyser la page) :\n'
         + _briefUrl + '\n\n'
       : '';
+    // Nombre d'angles imposé explicitement — l'Analyste ne doit plus supposer 3 par défaut
+    const _nbAnglesHeader = `⚠️ NOMBRE D'ANGLES À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles distincts en S2, ni plus ni moins, peu importe le nombre habituel.\n\n`;
     const analysteParts = [
-      { type: 'text', text: _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
+      { type: 'text', text: _nbAnglesHeader + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
       { type: 'image', source: { type:'base64', media_type: prodv2State.productMime, data: prodv2State.productB64 } }
     ];
     if(prodv2State.logoB64) {
@@ -2339,8 +2366,8 @@ async function prodv2Launch() {
     }
     const synthesis = await apiAnalysteSynthese(analysteSystem, analysteParts, 32000, prodv2State.brief, prodAbortController.signal);
     prodv2State.synthesis = synthesis;
-    prodv2State.angles = prodv2ExtractAngles(synthesis);
-    prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(synthesis.length/1000)}K chars · 3 angles extraits`, 100);
+    prodv2State.angles = prodv2ExtractAngles(synthesis, nbAngles);
+    prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
 
     // Show synthesis in accordion
     document.getElementById('prodv2SynBody').textContent = synthesis;
@@ -2352,14 +2379,14 @@ async function prodv2Launch() {
       el.textContent = `Angle ${i+1} · ${short.replace(/^[Aa]ngle\s*\d\s*[:—–-]?\s*/,'')}`;
     });
 
-    // ── ÉTAPES 2 & 3 EN PARALLÈLE : Creatives ×9 et Copywriter ×3 ──
+    // ── ÉTAPES 2 & 3 EN PARALLÈLE : Creatives ×N et Copywriter ×nbAngles ──
     prodv2SetAgentState(2, 'running', 'Sélection des CTs adaptés à la synthèse…', 5);
-    const ctPick = await selectCTsForGeneration(synthesis, 9, 'production');
+    const ctPick = await selectCTsForGeneration(synthesis, nbCreativesTotal, 'production');
     if (ctPick.length === 0) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT.');
     console.log('[PROD] CTs selectionnes :', ctPick.map(function(id){ return CT_IMAGES[id+'_name'] || id; }).join(' / '));
 
-    // Initialize 9 placeholder creative cards
-    for(let a=0; a<3; a++) {
+    // Initialize placeholder creative cards (nbAngles × 3)
+    for(let a=0; a<nbAngles; a++) {
       const container = document.getElementById('prodv2Creas' + a);
       container.innerHTML = '';
       for(let c=0; c<3; c++) {
@@ -2386,24 +2413,24 @@ async function prodv2Launch() {
       }
     }
 
-    prodv2SetAgentState(2, 'active', '0 / 9 créatives générées', 0);
+    prodv2SetAgentState(2, 'active', `0 / ${nbCreativesTotal} créatives générées`, 0);
     prodv2SetAgentState(3, 'active', 'Écriture des hooks et descriptions…', 10);
 
-    // ── CORRECTION A : lancer les 9 créatives en MODE SÉQUENTIEL ──
+    // ── CORRECTION A : lancer les créatives en MODE SÉQUENTIEL ──
     // Gemini 3 Pro Image planifie "Resource exhausted" si plusieurs requêtes se croisent.
     // Solution : chaque créative attend la fin complète de la précédente (succès ou retry final)
     // avant de lancer la suivante — élimine tout empilement de requêtes.
     const creativePromises = [];
     let creativesDone = 0;
     const runCreativesSequentially = async () => {
-      for(let a=0; a<3; a++) {
+      for(let a=0; a<nbAngles; a++) {
         for(let c=0; c<3; c++) {
           if (prodAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
           const idx = a*3 + c;
           const ctPositionInAngle = c;
           await prodv2GenerateOneCreativeWithRetry(idx, a, ctPositionInAngle, ctPick[idx], prodAbortController.signal);
           creativesDone++;
-          prodv2SetAgentState(2, 'active', `${creativesDone} / 9 créatives générées`, Math.round(creativesDone/9*100));
+          prodv2SetAgentState(2, 'active', `${creativesDone} / ${nbCreativesTotal} créatives générées`, Math.round(creativesDone/nbCreativesTotal*100));
           prodv2AutosaveDeliverables();
         }
       }
@@ -2417,7 +2444,7 @@ async function prodv2Launch() {
     creativePromises.push(sequentialPromise);
 
     const copyPromises = [];
-    for(let a=0; a<3; a++) {
+    for(let a=0; a<nbAngles; a++) {
       copyPromises.push(
         prodv2GenerateOneCopy(a, prodAbortController.signal)
           .catch(err => {
@@ -2429,8 +2456,8 @@ async function prodv2Launch() {
 
     await Promise.all([...creativePromises, ...copyPromises]);
 
-    prodv2SetAgentState(2, 'done', '9 / 9 créatives générées', 100);
-    prodv2SetAgentState(3, 'done', '3 / 3 sets ad copy générés', 100);
+    prodv2SetAgentState(2, 'done', `${nbCreativesTotal} / ${nbCreativesTotal} créatives générées`, 100);
+    prodv2SetAgentState(3, 'done', `${nbAngles} / ${nbAngles} sets ad copy générés`, 100);
 
     // Sauvegarde auto des livrables côté serveur — pour que "Envoyer au client" fonctionne
     // même après avoir quitté la page (pas dépendant de la mémoire du navigateur).
@@ -2531,6 +2558,8 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
 
   const creativeSystem = COMP_FILES['COMPETENCE_CREATIVE_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
+  const nbAnglesTotal = prodv2State.angles.length || 3;
+  const nbCreativesTotalRun = nbAnglesTotal * 3;
 
   // ── Routing niveau de conscience par position CT dans l'angle ──
   // ctPositionInAngle : 0 → Solution Aware, 1 → Product Aware, 2 → Most Aware
@@ -2538,7 +2567,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   const consciencePos = ctPositionInAngle; // 0, 1 ou 2
   const niveauConscience = niveauxConscience[consciencePos];
 
-  const angleInstruction = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nANGLE IMPOSÉ POUR CETTE CRÉATIVE (NON-NÉGOCIABLE) :\nAngle ${angleIdx+1} — ${angle}\n\n⛔ INTERDICTION ABSOLUE : tu ne dois PAS choisir un autre angle. L'angle ${angleIdx+1} est déjà sélectionné par l'orchestrateur. La PHASE de choix d'angle est NEUTRALISÉE.\n\n✅ DANS TON BLOC ===META===, tu écris OBLIGATOIREMENT : "ANGLE CHOISI : ${angleIdx+1} · ${angle}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nROUTAGE 3 ANGLES × 3 NIVEAUX DE CONSCIENCE (NON-NÉGOCIABLE) :\nCette créative est la créative n°${consciencePos+1} de l'Angle ${angleIdx+1}.\n\nNIVEAU DE CONSCIENCE IMPOSÉ : ${niveauConscience}. Utilise la déclinaison "${niveauConscience}" de l'Angle ${angleIdx+1} telle que définie dans S3 de la synthèse (ton, instructions spécifiques, dosage peur/désir-douleur — voir RÈGLE V4.3).\n\n✅ Dans le bloc ===META===, déclare :\n   NIVEAU DE CONSCIENCE CHOISI : ${niveauConscience}\n   MOTEUR DOMINANT : [peur/désir/douleur de l'Angle ${angleIdx+1}, depuis S2]\n   VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX 8 AUTRES : Niveau ${niveauConscience} · Angle ${angleIdx+1} · Concept CT [type observé en IMAGE 2]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  const angleInstruction = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nANGLE IMPOSÉ POUR CETTE CRÉATIVE (NON-NÉGOCIABLE) :\nAngle ${angleIdx+1} — ${angle}\n\n⛔ INTERDICTION ABSOLUE : tu ne dois PAS choisir un autre angle. L'angle ${angleIdx+1} est déjà sélectionné par l'orchestrateur. La PHASE de choix d'angle est NEUTRALISÉE.\n\n✅ DANS TON BLOC ===META===, tu écris OBLIGATOIREMENT : "ANGLE CHOISI : ${angleIdx+1} · ${angle}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ TAILLE RÉELLE DE CE RUN (prime sur toute mention "3 angles"/"9 créatives" du fichier de compétences, qui décrit le cas le plus courant mais pas systématique) :\nCette commande compte ${nbAnglesTotal} angles au total (pas nécessairement 3) et ${nbCreativesTotalRun} créatives au total (pas nécessairement 9) — 3 niveaux de conscience par angle, comme toujours.\n\nROUTAGE ${nbAnglesTotal} ANGLES × 3 NIVEAUX DE CONSCIENCE (NON-NÉGOCIABLE) :\nCette créative est la créative n°${consciencePos+1} de l'Angle ${angleIdx+1}.\n\nNIVEAU DE CONSCIENCE IMPOSÉ : ${niveauConscience}. Utilise la déclinaison "${niveauConscience}" de l'Angle ${angleIdx+1} telle que définie dans S3 de la synthèse (ton, instructions spécifiques, dosage peur/désir-douleur — voir RÈGLE V4.3).\n\n✅ Dans le bloc ===META===, déclare :\n   NIVEAU DE CONSCIENCE CHOISI : ${niveauConscience}\n   MOTEUR DOMINANT : [peur/désir/douleur de l'Angle ${angleIdx+1}, depuis S2]\n   VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX ${nbCreativesTotalRun-1} AUTRES : Niveau ${niveauConscience} · Angle ${angleIdx+1} · Concept CT [type observé en IMAGE 2]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   // Cause du blocage signalé : aucun timeout côté navigateur, seulement l'annulation manuelle.
   // Si le serveur redémarre en plein appel (redéploiement, crash), la requête ne se termine
@@ -5939,11 +5968,15 @@ async function prodv2CheckResume() {
 
     setMode('prod'); showProduction();
 
+    const nbAngles = prodv2GetAngleCount();
+    const nbCreativesTotal = nbAngles * 3;
+    prodv2BuildAngleUI(nbAngles);
+
     // Bannière discrète — jamais bloquante, juste informative
     const banner = document.createElement('div');
     banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
     banner.textContent = nbCrea || nbCopy
-      ? `↻ État restauré après rechargement — "${b.product?.nom || '?'}" (${nbCrea}/9 créatives, ${nbCopy}/3 sets ad copy déjà sauvegardés). Rien n'a été perdu.`
+      ? `↻ État restauré après rechargement — "${b.product?.nom || '?'}" (${nbCrea}/${nbCreativesTotal} créatives, ${nbCopy}/${nbAngles} sets ad copy déjà sauvegardés). Rien n'a été perdu.`
       : `↻ Brief restauré après rechargement — "${b.product?.nom || '?'}". Aucune génération n'avait encore commencé.`;
     const container = document.getElementById('viewProduction');
     if (container) container.insertBefore(banner, container.firstChild);
@@ -5955,7 +5988,7 @@ async function prodv2CheckResume() {
 
     if (prodv2State.synthesis) {
       document.getElementById('prodv2SynBody').textContent = prodv2State.synthesis;
-      prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(prodv2State.synthesis.length/1000)}K chars · 3 angles extraits`, 100);
+      prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(prodv2State.synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
     }
     document.querySelectorAll('.prodv2-angle-tab').forEach((el,i) => {
       const angle = prodv2State.angles[i] || ('Angle ' + (i+1));
@@ -5963,8 +5996,8 @@ async function prodv2CheckResume() {
       el.textContent = `Angle ${i+1} · ${short.replace(/^[Aa]ngle\s*\d\s*[:—–-]?\s*/,'')}`;
     });
 
-    // Reconstruire les 9 cartes créatives depuis l'état restauré
-    for (let a = 0; a < 3; a++) {
+    // Reconstruire les cartes créatives depuis l'état restauré (nbAngles × 3)
+    for (let a = 0; a < nbAngles; a++) {
       const container = document.getElementById('prodv2Creas' + a);
       if (!container) continue;
       container.innerHTML = '';
@@ -5995,12 +6028,12 @@ async function prodv2CheckResume() {
         }
       }
     }
-    prodv2SetAgentState(2, nbCrea===9?'done':'active', `${nbCrea} / 9 créatives générées`, Math.round(nbCrea/9*100));
+    prodv2SetAgentState(2, nbCrea===nbCreativesTotal?'done':'active', `${nbCrea} / ${nbCreativesTotal} créatives générées`, Math.round(nbCrea/nbCreativesTotal*100));
 
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < nbAngles; i++) {
       if (prodv2State.copies[i]) prodv2RenderCopy(i);
     }
-    prodv2SetAgentState(3, nbCopy===3?'done':'active', `${nbCopy} / 3 sets ad copy générés`, Math.round(nbCopy/3*100));
+    prodv2SetAgentState(3, nbCopy===nbAngles?'done':'active', `${nbCopy} / ${nbAngles} sets ad copy générés`, Math.round(nbCopy/nbAngles*100));
 
     const launchBtn = document.getElementById('prodv2LaunchBtn');
     if (launchBtn) { launchBtn.textContent = 'Relancer la production'; launchBtn.disabled = false; }
