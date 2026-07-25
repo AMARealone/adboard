@@ -4146,9 +4146,11 @@ Quand c'est cohérent avec la scène, privilégier un mode d'intégration qui re
 RÈGLE #0quinquies — DISTINCTION MARQUE VENDEUR vs MARQUE PRODUIT PHYSIQUE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+⚠️ CETTE RÈGLE ENTIÈRE NE S'APPLIQUE QUE SI brief.marque contient un vrai nom (pas vide, pas [AUCUNE MARQUE FOURNIE]). Si brief.marque est vide, cette règle est INTÉGRALEMENT dormante : aucune ligne la concernant n'apparaît dans les INSTRUCTIONS GEMINI ADDITIONNELLES, aucun nom générique ("la marque", "le vendeur", "le revendeur"...) n'est écrit à sa place. Une marque manquante est un cas normal — beaucoup de briefs clients ne renseignent qu'un nom de produit, parfois un lien de page produit, jamais de nom de marque. Ce n'est jamais à toi de compenser cette absence par une invention ou une formulation générique.
+
 ⛔ Cause profonde d'erreur systémique : l'agent suppose que "marque du client" = "ce qui est imprimé sur le produit". Ce n'est pas vrai. Un client peut vendre un produit d'une autre marque (ex : distributeur qui vend un produit fabriqué par un tiers, private label, co-branding, etc.).
 
-Le brief contient : le champ "marque" = qui VEND (le client). IMAGE 1 montre : qui est FABRIQUÉ (ce qui est imprimé sur l'emballage physique). Ces deux entités peuvent être différentes.
+Le brief contient : le champ "marque" = qui VEND (le client). IMAGE 1 montre : qui est FABRIQUÉ (ce qui est imprimé sur l'emballage physique). Ces deux entités peuvent être différentes — mais cette distinction ne se pose QUE si un nom de vendeur existe réellement dans le brief.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE #0sexies — TRANSFERT D'INTENTION SANS REPRODUCTION LITTÉRALE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -4263,8 +4265,9 @@ RÈGLE : L'identité visuelle du produit (texte sur l'étiquette, nom de marque 
 IMPLICATION PRATIQUE DANS LE PROMPT GEMINI :
 Quand tu décris le produit dans une zone, ne mentionne JAMAIS le nom du client en lien direct avec le packaging. Dis : "(IMAGE 1 — fidélité absolue, même étiquette, même couleurs, même texte visible sur le packaging)" — pas "(le flacon [NOM_CLIENT])".
 
-La ligne obligatoire dans INSTRUCTIONS GEMINI ADDITIONNELLES est :
-"→ Produit IMAGE 1 : le packaging reproduit EXACTEMENT ce que montre IMAGE 1, y compris le texte et la marque visibles sur l'étiquette physique. Le nom '[NOM_CLIENT]' est le nom du vendeur, pas nécessairement le nom imprimé sur le produit — NE PAS substituer '[NOM_CLIENT]' sur l'étiquette si IMAGE 1 montre autre chose."
+La ligne obligatoire dans INSTRUCTIONS GEMINI ADDITIONNELLES — UNIQUEMENT SI brief.marque contient un vrai nom (sinon cette ligne n'existe pas du tout, voir RÈGLE #0quinquies) :
+"→ Produit IMAGE 1 : le packaging reproduit EXACTEMENT ce que montre IMAGE 1, y compris le texte et la marque visibles sur l'étiquette physique. Le nom '[remplace par le vrai nom de marque du brief]' est le nom du vendeur, pas nécessairement le nom imprimé sur le produit — NE PAS substituer '[remplace par le vrai nom de marque du brief]' sur l'étiquette si IMAGE 1 montre autre chose."
+Si brief.marque est vide : n'écris aucune ligne de ce type. La ligne standard suffit : "→ Produit IMAGE 1 : le packaging reproduit EXACTEMENT ce que montre IMAGE 1, y compris le texte et la marque visibles sur l'étiquette physique." — sans aucune mention de vendeur, ni le mot "marque" employé comme nom propre, ni aucun texte de substitution générique.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE V4 — NOM DE MARQUE EN TEXTE (PAS DE LOGO IMAGE)
@@ -4594,8 +4597,8 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 □ ⛔ INVENTAIRE DES ABSENTS — CAUSE PROFONDE 1 : si IMAGE 2 n'avait pas de persona → mon output n'a pas de personnage inventé ?
 □ ⛔ TRANSFERT D'INTENTION (RÈGLE #0sexies) : chaque élément narratif fort d'IMAGE 2 (comparaison concurrentielle, personnage secondaire, symbole) a été vérifié contre S1/S4/S5 de ce persona — abandonné s'il n'est justifié par aucune donnée réelle de la synthèse ?
 □ La ligne TRANSFERT INTENTION du bloc META est cohérente avec ce qui apparaît réellement dans PROMPT_GEMINI (si « NON, abandonné », l'élément ne doit PAS apparaître dans les zones) ?
-□ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : les INSTRUCTIONS GEMINI ADDITIONNELLES contiennent la ligne "Le nom [NOM_CLIENT] est le nom du vendeur, pas nécessairement le texte imprimé sur le produit — NE PAS substituer [NOM_CLIENT] sur l'étiquette si IMAGE 1 montre autre chose" ?
-□ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : le produit est décrit dans chaque zone par "(IMAGE 1 — fidélité absolue, même étiquette, même couleurs, même texte visible sur le packaging)" et JAMAIS par "(le flacon [NOM_CLIENT])" ?
+□ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : SI brief.marque contient un vrai nom, les INSTRUCTIONS GEMINI ADDITIONNELLES contiennent la ligne de distinction vendeur/produit avec ce vrai nom substitué (jamais un placeholder littéral non remplacé, jamais "la marque" en toutes lettres à la place d'un nom réel) ? SI brief.marque est vide, cette ligne est absente et aucun mot générique ("la marque", "le vendeur"...) ne la remplace ?
+□ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : le produit est décrit dans chaque zone par "(IMAGE 1 — fidélité absolue, même étiquette, même couleurs, même texte visible sur le packaging)" et JAMAIS par "(le flacon [nom quelconque])", que ce nom soit réel ou générique ?
 □ Produit (IMAGE 1) intégré de manière fidèle au packaging et au mode d'intégration du CT (IMAGE 2 ignoré pour son produit, gardé pour sa structure) ?
 □ Si brief.marque contient un vrai nom (pas [AUCUNE MARQUE FOURNIE]) ET qu'IMAGE 2 a une zone marque : ce nom apparaît en TEXTE dans cette zone, aucun logo image (IMAGE 3) référencé ? Si brief.marque est vide/absent, AUCUN nom de marque n'apparaît nulle part, même si IMAGE 2 a une zone marque disponible ?
 □ ⛔ ORDRE DE LECTURE RÉEL : j'ai identifié l'ordre dans lequel un œil rencontre réellement les zones de CE CT (pas supposé un schéma haut-bas générique), et les 4 temps psychologiques (hook/preuve/pic émotionnel/CTA) suivent CET ordre observé, pas un ordre par défaut ?
