@@ -2489,18 +2489,26 @@ async function prodv2GenerateOneCreativeWithRetry(idx, angleIdx, ctIdx, ctName, 
     try {
       return await prodv2GenerateOneCreative(idx, angleIdx, ctIdx, ctName, signal);
     } catch(err) {
-      if (err.name === 'AbortError') throw err;
+      // Cause profonde corrigée : un timeout (ajouté pour éviter un blocage silencieux si le
+      // serveur redémarre en plein appel) produit aussi une erreur nommée AbortError — la
+      // confondre avec une vraie annulation utilisateur empêchait tout retry. On distingue
+      // maintenant : seule une annulation RÉELLE (signal externe aborted) arrête tout de suite.
+      const vraieAnnulation = err.name === 'AbortError' && signal && signal.aborted;
+      if (vraieAnnulation) throw err;
       lastErr = err;
       const msg = (err.message || '').toLowerCase();
+      const isTimeout = err.name === 'AbortError' || err.name === 'TimeoutError' || msg.includes('timeout');
       const isQuotaError = msg.includes('exhausted') || msg.includes('quota') || msg.includes('429') || msg.includes('rate');
-      if(!isQuotaError || attempt > MAX_RETRIES) {
+      if((!isQuotaError && !isTimeout) || attempt > MAX_RETRIES) {
         throw err;
       }
-      // Afficher le statut "rate limit" sur la carte concernée
+      // Afficher le statut sur la carte concernée
       const card = document.getElementById('prodv2Crea_' + idx);
       if(card) {
         const status = card.querySelector('.prodv2-crea-status');
-        if(status) status.textContent = `Rate limit Gemini — retry ${attempt}/${MAX_RETRIES} dans 30s`;
+        if(status) status.textContent = isTimeout
+          ? `Timeout serveur — retry ${attempt}/${MAX_RETRIES} dans 30s`
+          : `Rate limit Gemini — retry ${attempt}/${MAX_RETRIES} dans 30s`;
       }
       // Attente abortable — annuler ne doit pas laisser l'utilisateur attendre jusqu'à 30s
       await new Promise((resolve, reject) => {
@@ -2532,9 +2540,17 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
 
   const angleInstruction = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nANGLE IMPOSÉ POUR CETTE CRÉATIVE (NON-NÉGOCIABLE) :\nAngle ${angleIdx+1} — ${angle}\n\n⛔ INTERDICTION ABSOLUE : tu ne dois PAS choisir un autre angle. L'angle ${angleIdx+1} est déjà sélectionné par l'orchestrateur. La PHASE de choix d'angle est NEUTRALISÉE.\n\n✅ DANS TON BLOC ===META===, tu écris OBLIGATOIREMENT : "ANGLE CHOISI : ${angleIdx+1} · ${angle}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nROUTAGE 3 ANGLES × 3 NIVEAUX DE CONSCIENCE (NON-NÉGOCIABLE) :\nCette créative est la créative n°${consciencePos+1} de l'Angle ${angleIdx+1}.\n\nNIVEAU DE CONSCIENCE IMPOSÉ : ${niveauConscience}. Utilise la déclinaison "${niveauConscience}" de l'Angle ${angleIdx+1} telle que définie dans S3 de la synthèse (ton, instructions spécifiques, dosage peur/désir-douleur — voir RÈGLE V4.3).\n\n✅ Dans le bloc ===META===, déclare :\n   NIVEAU DE CONSCIENCE CHOISI : ${niveauConscience}\n   MOTEUR DOMINANT : [peur/désir/douleur de l'Angle ${angleIdx+1}, depuis S2]\n   VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX 8 AUTRES : Niveau ${niveauConscience} · Angle ${angleIdx+1} · Concept CT [type observé en IMAGE 2]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
+  // Cause du blocage signalé : aucun timeout côté navigateur, seulement l'annulation manuelle.
+  // Si le serveur redémarre en plein appel (redéploiement, crash), la requête ne se termine
+  // JAMAIS d'elle-même — bloqué indéfiniment sans la moindre erreur visible. Un timeout de
+  // 150s (marge au-dessus des ~120s internes du serveur pour le rendu image) force un échec
+  // explicite, qui déclenche alors le retry existant au lieu d'un blocage silencieux.
+  const combinedSignal = (typeof AbortSignal.any === 'function')
+    ? AbortSignal.any([signal, AbortSignal.timeout(150000)])
+    : signal;
   const res = await fetch(SERVER + '/creative-prod', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
-    signal,
+    signal: combinedSignal,
     body: JSON.stringify({
       systemPrompt: creativeSystem,
       synthese: prodv2State.synthesis,
