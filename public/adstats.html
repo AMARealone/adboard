@@ -2307,6 +2307,23 @@ async function _checkAdminAndProceed(user, onSuccess) {
     H.Authorization = 'Bearer ' + session.access_token;
     H_PATCH.Authorization = 'Bearer ' + session.access_token;
   }
+  // Cause profonde corrigée : refreshSession() n'était appelée qu'une fois, au chargement de
+  // la page. Si l'onglet restait ouvert plus longtemps que la durée de vie du token (~1h),
+  // rien ne le renouvelait — obligeant un F5 complet pour se reconnecter. Ce timer renouvelle
+  // en arrière-plan bien avant l'expiration, tant que l'onglet reste ouvert.
+  if (!window._adminSessionKeepAlive) {
+    window._adminSessionKeepAlive = setInterval(async () => {
+      try {
+        const fresh = await adminAuth.refreshSession();
+        if (fresh) {
+          H.Authorization = 'Bearer ' + fresh.access_token;
+          H_PATCH.Authorization = 'Bearer ' + fresh.access_token;
+        } else {
+          console.warn('[AdStats] Renouvellement de session échoué — reconnexion nécessaire à la prochaine action.');
+        }
+      } catch(e) { console.warn('[AdStats] Erreur renouvellement session :', e.message); }
+    }, 10 * 60 * 1000);
+  }
   onSuccess();
 }
 
@@ -3607,7 +3624,11 @@ async function renderApiCosts() {
   const toEl   = document.getElementById('dash-date-to');
   const from   = fromEl ? fromEl.value : '';
   const to     = toEl   ? toEl.value   : '';
-  let query = `${SB}/api_usage_log?select=cout_usd,created_at`;
+  // Cause profonde corrigée : cette requête sommait TOUT (démo, production, tests d'agents
+  // confondus) — les tests manuels et les vraies productions client faussaient le "coût
+  // d'acquisition" affiché ici. Ne compte désormais que démo + prospecteur + génération de
+  // messages (tous catégorisés comme coûts d'acquisition réels) — production et tests exclus.
+  let query = `${SB}/api_usage_log?select=cout_usd,created_at&source=in.(demo,prospecteur)`;
   if (from || to) {
     if (from) query += `&created_at=gte.${from}T00:00:00`;
     if (to)   query += `&created_at=lte.${to}T23:59:59`;
