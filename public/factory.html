@@ -1989,22 +1989,22 @@ async function runFullDemo() {
   }
 }
 
-async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal) {
+async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal, isTest=false) {
   const res = await fetch(SERVER+'/analyste-synthese', {
     method:'POST', headers:{'Content-Type':'application/json'},
     signal,
-    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 32000, brief})
+    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 32000, brief, isTest})
   });
   const d = await res.json();
   if(d.error) throw new Error(d.error);
   return d.text;
 }
 
-async function apiCopywriter(system, parts, maxTokens, signal) {
+async function apiCopywriter(system, parts, maxTokens, signal, isTest=false) {
   const res = await fetch(SERVER+'/copywriter', {
     method:'POST', headers:{'Content-Type':'application/json'},
     signal,
-    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 8000})
+    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 8000, isTest})
   });
   const d = await res.json();
   if(d.error) throw new Error(d.error);
@@ -2112,9 +2112,13 @@ function prodv2HandleBrief(input) {
 function prodv2RenderPreview() {
   const b = prodv2State.brief;
   const photoOk = !!prodv2State.productB64;
-  const provenance = prodv2State.briefSource === 'commande'
+  const autosaveOk = prodv2State.briefSource === 'commande' && !!prodv2State.commandeId;
+  const provenance = autosaveOk
     ? `✓ brief.json chargé automatiquement depuis la commande #${prodv2State.commandeId}`
     : '✓ brief.json chargé (fichier local)';
+  const badgeSauvegarde = autosaveOk
+    ? `<div style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#22C55E;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);padding:3px 9px;border-radius:12px;margin-bottom:8px;">✅ Sauvegarde automatique active</div>`
+    : `<div style="display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#F59E0B;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);padding:3px 9px;border-radius:12px;margin-bottom:8px;">⚠️ Pas de sauvegarde auto — lié à aucun ticket</div>`;
 
   // ── Côté gauche : résumé des infos remontées — jamais le JSON brut, juste ce qu'il faut
   // pour confirmer que le client a bien renseigné son brief ──
@@ -2122,6 +2126,7 @@ function prodv2RenderPreview() {
   dropEl.classList.add('loaded');
   dropEl.onclick = null;
   dropEl.innerHTML = `
+    ${badgeSauvegarde}
     <div class="prodv2-preview-label">Brief reçu</div>
     <div style="font-size:10.5px;color:var(--blue);margin-bottom:10px;">${provenance}</div>
     <div class="prodv2-preview-row" style="text-align:left;">
@@ -2258,6 +2263,20 @@ async function prodv2Launch() {
   if(!prodv2State.brief || !prodv2State.productB64) {
     alert('Charge un brief.json valide avec photo_produit avant de lancer.');
     return;
+  }
+  // Avertissement explicite AVANT de dépenser quoi que ce soit — la sauvegarde automatique
+  // ne fonctionne que si la production est liée à un ticket de commande (brief chargé via
+  // "Lancer la production" / "Relancer" depuis un ticket). Un brief.json chargé manuellement
+  // n'a pas d'id de commande, donc rien à sauvegarder côté serveur pendant la génération.
+  if (prodv2State.briefSource !== 'commande' || !prodv2State.commandeId) {
+    const continuer = confirm(
+      "⚠️ Cette production N'EST PAS liée à un ticket de commande.\n\n" +
+      "La sauvegarde automatique des livrables ne sera PAS active — si tu fermes l'onglet " +
+      "avant d'avoir cliqué \"Envoyer au client\", tout sera perdu.\n\n" +
+      "Lance plutôt depuis un ticket (\"Lancer la production\" / \"Relancer\") si c'est pour un vrai client.\n\n" +
+      "Continuer quand même (test) ?"
+    );
+    if (!continuer) return;
   }
   prodv2State.startTime = Date.now();
   prodv2State.synthesis = null;
@@ -6430,7 +6449,8 @@ async function runAgentTest() {
           ctBase64: ctB64,
           ctMime: 'image/jpeg',
           productBase64: productB64,
-          productMime: 'image/jpeg'
+          productMime: 'image/jpeg',
+          isTest: true
         })
       });
 
@@ -6526,9 +6546,9 @@ async function runAgentTest() {
       }
       parts.push({text: input + '\n\n---\n' + (agent.prompt||'Produis le rapport complet.')});
       const result = agent.isCopywriter
-        ? await apiCopywriter(systemPrompt, parts, agent.maxTokens)
+        ? await apiCopywriter(systemPrompt, parts, agent.maxTokens, undefined, true)
         : agent.hasJsonBrief
-          ? await apiAnalysteSynthese(systemPrompt, parts, agent.maxTokens, lastBrief)
+          ? await apiAnalysteSynthese(systemPrompt, parts, agent.maxTokens, lastBrief, undefined, true)
           : await apiSynthesize(systemPrompt, parts, agent.maxTokens||8192, agent.apiModel||null);
       clearInterval(interval);
       timer.textContent = Math.round((Date.now()-startTime)/1000)+'s ✓';
