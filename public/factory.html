@@ -2245,7 +2245,7 @@ function prodv2ExtractAngles(synthesis, nbAngles=3) {
   const lines = synthesis.split('\n');
   let current = null;
   for(const line of lines) {
-    const m = line.match(/^Angle\s*(\d+)\s*[:—–-]?\s*(.*)/i);
+    const m = line.match(/^\*{0,2}\s*Angle\s*(\d+)\s*\*{0,2}\s*[:—–-]?\s*\*{0,2}\s*(.*)/i);
     if(m) {
       if(current) angles.push(current);
       current = { idx: parseInt(m[1])-1, text: m[2].trim() };
@@ -3821,6 +3821,16 @@ AVANT de construire les angles, extrais 4 POOLS de matière première depuis DON
 
 Chaque pool doit contenir plusieurs entrées distinctes si DONNÉES BRUTES le permet — un pool réduit à une seule entrée est un signal que la recherche doit être creusée plus loin avant de construire les angles.
 
+⚠️ FORMAT DE LIGNE OBLIGATOIRE POUR CHAQUE ANGLE (NON-NÉGOCIABLE — lu automatiquement par un
+programme en aval, pas seulement par un humain) :
+La toute première ligne de chaque angle DOIT suivre EXACTEMENT ce format, sans variation :
+"Angle N — [Nom court de l'angle]"
+Exemple : "Angle 1 — La Double Action : Beauté & Mobilité"
+→ Toujours le mot "Angle" (jamais "ANGLE MARKETING", "Angle marketing n°", ni un numéro seul sans le mot "Angle").
+→ Toujours le tiret cadratin "—" entre le numéro et le nom (jamais uniquement deux-points, jamais de retour à la ligne entre le numéro et le nom).
+→ Le nom de l'angle qui suit doit être COURT (moins de 12 mots) — c'est un identifiant/étiquette, pas la formulation complète de l'angle. La formulation détaillée (1-2 phrases) vient ensuite, sur les lignes suivantes, sous son propre champ "Formulation de l'angle :".
+→ Cette ligne d'en-tête ne contient RIEN d'autre que "Angle N — [Nom]" — tous les autres champs (Moteur dominant, Formulation, Élément différenciant, etc.) viennent sur des lignes séparées APRÈS cet en-tête, jamais sur la même ligne.
+
 Pour CHAQUE angle (×3) :
 → Nom de l'angle (court, étiquette interne)
 → Moteur dominant : peur / désir / douleur — lequel, et quelle entrée précise du pool correspondant
@@ -3963,6 +3973,7 @@ Si aucune donnée chiffrée n'est trouvée nulle part, écris explicitement [AUC
 GATE FINAL — INTERDICTIONS ABSOLUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ❌ Output tronqué — S0 à S8 obligatoires et complets, 3 angles dans S2, chacun décliné sur 3 niveaux de conscience, 3 scènes de base dans S7
+❌ Un des angles de S2 ne commence pas EXACTEMENT par "Angle N — [Nom court]" en première ligne (voir FORMAT DE LIGNE OBLIGATOIRE ci-dessus) — un programme en aval lit cette ligne précise pour afficher le nom de l'angle au client ; un format différent le fait échouer silencieusement
 ❌ Verbatim construit, même labelisé "basé sur forums" ou "exemple typique" — seule forme acceptable : [AUCUN VERBATIM TROUVÉ DANS DONNÉES BRUTES]
 ❌ USP qui ne respecte pas le format "[produit] est le seul qui X grâce à Y"
 ❌ Livraison gratuite ou paiement à la livraison présenté comme un USP ou argument différenciant dans un angle — jamais en Afrique francophone, voir règle S4

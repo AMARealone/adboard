@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Fragment } from "react";
 import { createPortal } from "react-dom";
 
 // ── Supabase Auth ──────────────────────────────────────────────────────────
@@ -276,15 +276,15 @@ const INITIAL_PRODUCTS = [];
 
 
 const NAV = [
-  {id:'produits',icon:'box',label:'Mes Produits'},
-  {id:'galerie',icon:'grid',label:'Galerie Créatives'},
-  {id:'copies',icon:'document',label:'Ad Copies'},
-  {id:'marche',icon:'chart',label:'Données Marché'},
-  {id:'suivi',icon:'clock',label:'Suivi Demande'},
-  {id:'notifications',icon:'bell',label:'Notifications'},
-  {id:'tarifs',icon:'tag',label:'Nos Tarifs'},
-  {id:'commentaires',icon:'document',label:'Commentaires'},
-  {id:'faq',icon:'help',label:'FAQ & Aide'},
+  {id:'produits',icon:'box',label:'Mes Produits', group:'Ressources'},
+  {id:'galerie',icon:'grid',label:'Galerie Créatives', group:'Ressources'},
+  {id:'copies',icon:'document',label:'Ad Copies', group:'Ressources'},
+  {id:'marche',icon:'chart',label:'Données Marché', group:'Ressources'},
+  {id:'suivi',icon:'clock',label:'Suivi Demande', group:'Suivi'},
+  {id:'notifications',icon:'bell',label:'Notifications', group:'Suivi'},
+  {id:'tarifs',icon:'tag',label:'Nos Tarifs', group:'Compte'},
+  {id:'commentaires',icon:'document',label:'Commentaires', group:'Aide'},
+  {id:'faq',icon:'help',label:'FAQ & Aide', group:'Aide'},
 ];
 
 const cs = (extra={}) => ({background:C.card, border:`1px solid ${C.border}`, borderRadius:14, boxShadow:'0 1px 2px rgba(0,0,0,0.25)', ...extra});
@@ -364,6 +364,24 @@ const Tag = ({ch, color='red'}) => {
   return <span style={{padding:'2px 8px',borderRadius:4,fontSize:10,fontWeight:700,letterSpacing:'0.4px',background:t.bg,color:t.c,border:`1px solid ${t.b}`}}>{ch}</span>;
 };
 
+// Modale de confirmation stylisée AdBoard — remplace les window.confirm() natifs du navigateur,
+// jugés hors identité visuelle. Réutilisable partout (déconnexion, annulation, suppression...).
+const ConfirmModal = ({title, message, confirmLabel='Confirmer', cancelLabel='Annuler', danger=true, onConfirm, onCancel}) => (
+  <div onClick={onCancel} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:900,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+    <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:360,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:24}}>
+      <div style={{width:44,height:44,borderRadius:12,background:danger?'rgba(229,80,80,0.12)':'rgba(45,127,249,0.12)',display:'flex',alignItems:'center',justifyContent:'center',marginBottom:16}}>
+        <Icon name="alerttriangle" size={22} color={danger?'#E55050':C.accent}/>
+      </div>
+      <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:8}}>{title}</div>
+      <div style={{fontSize:12.5,color:C.sec,lineHeight:1.5,marginBottom:20}}>{message}</div>
+      <div style={{display:'flex',gap:10}}>
+        <button onClick={onCancel} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.05)',color:C.text,fontSize:12.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>{cancelLabel}</button>
+        <button onClick={onConfirm} style={{flex:1,padding:'10px',borderRadius:8,border:'none',background:danger?'#E55050':C.accent,color:'#fff',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{confirmLabel}</button>
+      </div>
+    </div>
+  </div>
+);
+
 const LockOverlay = () => (
   <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,backdropFilter:'blur(6px)',background:'rgba(11,15,26,0.90)',borderRadius:10,zIndex:10,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10}}>
     <Icon name="lock" size={26} color={C.sec}/>
@@ -377,6 +395,7 @@ const LockOverlay = () => (
 
 const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null, onOpenLogin=null, sectionBadges={}}) => {
   const showCollapsed = collapsed && !isMobile;
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const navClick = (id) => {
     set(id);
@@ -454,18 +473,32 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         </button>
       )}
       {!showCollapsed && !(isMobile && !mobileOpen) && user && (
-        <button onClick={()=>{ if(window.confirm('Es-tu sûr de vouloir te déconnecter ?')) { sbAuth.signOut(); setUser(null); } }} title="Se déconnecter"
+        <button onClick={()=>setShowLogoutConfirm(true)} title="Se déconnecter"
           style={{width:24,height:24,borderRadius:6,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
           <Icon name="x" size={11} color={C.sec}/>
         </button>
       )}
+      {showLogoutConfirm && (
+        <ConfirmModal
+          title="Se déconnecter ?"
+          message="Tu devras te reconnecter pour retrouver tes produits et tes visuels."
+          confirmLabel="Se déconnecter" cancelLabel="Rester connecté" danger={true}
+          onCancel={()=>setShowLogoutConfirm(false)}
+          onConfirm={()=>{ sbAuth.signOut(); setUser(null); setShowLogoutConfirm(false); }}
+        />
+      )}
     </div>
 
     <nav style={{flex:1,padding:'10px',overflow:'auto'}}>
-      {NAV.map(n => {
+      {NAV.map((n, i) => {
         const isTarifs = n.id === 'tarifs';
+        const showGroupHeader = (i === 0 || NAV[i-1].group !== n.group) && !(showCollapsed || (isMobile && !mobileOpen));
         return (
-        <button key={n.id} onClick={() => navClick(n.id)} title={(showCollapsed || (isMobile && !mobileOpen)) ? n.label : undefined} style={{
+        <Fragment key={n.id}>
+        {showGroupHeader && (
+          <div style={{padding:'14px 10px 6px',fontSize:10,fontWeight:700,letterSpacing:'0.6px',textTransform:'uppercase',color:C.muted}}>{n.group}</div>
+        )}
+        <button onClick={() => navClick(n.id)} title={(showCollapsed || (isMobile && !mobileOpen)) ? n.label : undefined} style={{
           width:'100%',display:'flex',alignItems:'center',justifyContent:(showCollapsed || (isMobile && !mobileOpen))?'center':'flex-start',
           gap:(showCollapsed || (isMobile && !mobileOpen))?0:10,padding:(showCollapsed || (isMobile && !mobileOpen))?'10px 0':'9px 10px',
           borderRadius:7,border:'none',cursor:'pointer',
@@ -515,6 +548,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             </span>
           )}
         </button>
+        </Fragment>
       );})}
     </nav>
 
@@ -1366,6 +1400,7 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefresh}) => {
   const isMobile = useIsMobile();
   const [tick, setTick] = useState(0);
+  const [cancelConfirm, setCancelConfirm] = useState(null); // {id, nom} du produit à annuler
   useEffect(() => {
     const t = setInterval(() => setTick(n => n+1), 1000);
     return () => clearInterval(t);
@@ -1395,10 +1430,16 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
     return `${h}h ${m.toString().padStart(2,'0')}m ${s.toString().padStart(2,'0')}s`;
   };
 
-  const STATUS_COLORS = { pending:'#F59E0B', in_production:'#5B8DEF', done:'#22C55E', cancelled:'#6B7280', probleme_agence:'#E55050' };
-  const STATUS_LABELS = { pending:'En attente', in_production:'En production', done:'Livré', cancelled:'Annulé', probleme_agence:'Problème rencontré' };
+  // Une seule couleur d'accent cohérente avec AdBoard pour le badge de statut — plus de
+  // multicolore par statut (jaune/rouge/vert/gris), juste le texte qui change.
+  const STATUS_LABELS = { pending:'En attente', in_production:'En production' };
 
-  const sorted = [...allBriefs].sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+  // Cause profonde corrigée : les demandes déjà terminées (livrées, annulées, problème) restaient
+  // affichées indéfiniment dans cette liste, mélangées aux demandes actives. "Tout disparaît" une
+  // fois la demande satisfaite — seules les demandes réellement en cours restent visibles ici.
+  const sorted = [...allBriefs]
+    .filter(b => b.status === 'pending' || b.status === 'in_production')
+    .sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
 
   if (!sorted.length) return (
     <div>
@@ -1431,7 +1472,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
         </div>
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
-          <p style={{fontSize:12,color:C.sec,margin:0}}>{sorted.filter(b=>b.status==='pending'||b.status==='in_production').length} demande(s) active(s)</p>
+          <p style={{fontSize:12,color:C.sec,margin:0}}>{sorted.length} demande(s) active(s)</p>
         </div>
       </div>
 
@@ -1448,7 +1489,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
 
           return (
             <div key={b.id} style={{
-              background:C.card, border:`1px solid ${b.status==='pending'?'rgba(245,158,11,0.2)':b.status==='in_production'?'rgba(45,127,249,0.2)':b.status==='done'?'rgba(34,197,94,0.15)':C.border}`,
+              background:C.card, border:`1px solid ${C.borderM}`,
               borderRadius:12, padding:18, display:'flex', flexDirection:'column', gap:12
             }}>
               {/* Header */}
@@ -1461,7 +1502,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:4}}>
                     <span style={{fontSize:14,fontWeight:700,color:C.text}}>{prod?.nom||'Produit inconnu'}</span>
-                    <span style={{padding:'2px 8px',borderRadius:20,fontSize:10,fontWeight:700,background:`${STATUS_COLORS[b.status]}18`,color:STATUS_COLORS[b.status]}}>
+                    <span style={{padding:'2px 8px',borderRadius:20,fontSize:10,fontWeight:700,background:C.accentS,color:C.accent}}>
                       {STATUS_LABELS[b.status]}
                     </span>
                   </div>
@@ -1485,9 +1526,8 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
 
               {/* Bouton annuler — visible 12h sans countdown */}
               {canCancel && (
-                <button onClick={() => {
-                  if (prod && window.confirm(`Annuler la demande pour "${prod.nom}" ?`)) cancelCreatives(prod);
-                }} style={{width:'100%',padding:'9px',borderRadius:8,border:'1px solid rgba(229,80,80,0.3)',background:'rgba(229,80,80,0.06)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                <button onClick={() => { if (prod) setCancelConfirm(prod); }}
+                  style={{width:'100%',padding:'9px',borderRadius:8,border:'1px solid rgba(229,80,80,0.3)',background:'rgba(229,80,80,0.06)',color:'#E55050',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s',display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
                   <Icon name="x" size={12} color="#E55050"/> Annuler la commande
                 </button>
               )}
@@ -1496,30 +1536,19 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
                   En cours de traitement · Annulation non disponible
                 </div>
               )}
-
-              {b.status==='done' && (
-                <div style={{background:'rgba(34,197,94,0.06)',border:'1px solid rgba(34,197,94,0.2)',borderRadius:8,padding:'10px 14px',display:'flex',alignItems:'center',gap:10}}>
-                  <Icon name="check" size={16} color="#22C55E"/>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:'#22C55E'}}>Visuels livrés</div>
-                    {b.done_at && <div style={{fontSize:10,color:C.sec}}>{new Date(b.done_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</div>}
-                  </div>
-                </div>
-              )}
-
-              {b.status==='probleme_agence' && (
-                <div style={{background:'rgba(229,80,80,0.06)',border:'1px solid rgba(229,80,80,0.2)',borderRadius:8,padding:'10px 14px',display:'flex',alignItems:'center',gap:10}}>
-                  <Icon name="x" size={16} color="#E55050"/>
-                  <div>
-                    <div style={{fontSize:12,fontWeight:700,color:'#E55050'}}>On a rencontré un souci avec cette demande</div>
-                    <div style={{fontSize:10,color:C.sec}}>Repasse une nouvelle demande, ou contacte-nous si besoin.</div>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
       </div>
+      {cancelConfirm && (
+        <ConfirmModal
+          title="Annuler cette commande ?"
+          message={`Ta demande pour "${cancelConfirm.nom}" sera annulée. Cette action est définitive.`}
+          confirmLabel="Annuler la commande" cancelLabel="Garder ma commande" danger={true}
+          onCancel={()=>setCancelConfirm(null)}
+          onConfirm={()=>{ cancelCreatives(cancelConfirm); setCancelConfirm(null); }}
+        />
+      )}
     </div>
   );
 };
@@ -2022,7 +2051,7 @@ async function shareOrDownloadImage(url, filename, isMobile) {
   await downloadImageDirect(url, filename);
 }
 
-const Galerie = ({products, isDemo, setSection, isMobile}) => {
+const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null);
@@ -2031,6 +2060,8 @@ const Galerie = ({products, isDemo, setSection, isMobile}) => {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDownloading, setBulkDownloading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const weeks = ['S1','S2','S3','S4','S5'];
   // Cause profonde corrigée : CREA était une constante vide codée en dur (jamais remplie) —
@@ -2049,6 +2080,35 @@ const Galerie = ({products, isDemo, setSection, isMobile}) => {
   });
 
   const chips = filterMode==='angle' ? angleSet : filterMode==='date' ? weeks : [];
+
+  const confirmDeleteSelected = async () => {
+    setDeleting(true);
+    try {
+      // Grouper par produit — chaque appel serveur ne touche qu'un seul produit à la fois
+      const byProduct = {};
+      filtered.filter(c => selectedIds.includes(c.id)).forEach(c => {
+        (byProduct[c.productId] = byProduct[c.productId] || []).push(c.id);
+      });
+      for (const [productId, ids] of Object.entries(byProduct)) {
+        await fetch(`https://adstack-server.onrender.com/products/${productId}/delete-creatives`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({ creativeIds: ids })
+        });
+      }
+      // Mise à jour locale immédiate — pas besoin d'attendre un refetch complet
+      setProducts(prev => prev.map(p => ({
+        ...p,
+        creatives: (p.creatives||[]).filter(c => !selectedIds.includes(c.id))
+      })));
+      setSelectedIds([]);
+      setSelectMode(false);
+    } catch(e) {
+      console.error('Suppression créatives échouée :', e.message);
+    } finally {
+      setDeleting(false);
+      setDeleteConfirm(false);
+    }
+  };
 
   return (
     <div>
@@ -2088,6 +2148,11 @@ const Galerie = ({products, isDemo, setSection, isMobile}) => {
               }}
               style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit'}}>
               <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? 'Téléchargement…' : `Télécharger (${selectedIds.length})`}
+            </button>
+            <button disabled={!selectedIds.length || deleting}
+              onClick={() => setDeleteConfirm(true)}
+              style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:`1px solid ${selectedIds.length?'rgba(229,80,80,0.3)':C.border}`,background:selectedIds.length?'rgba(229,80,80,0.08)':'rgba(255,255,255,0.04)',color:selectedIds.length?'#E55050':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit'}}>
+              <Icon name="x" size={13} color={selectedIds.length?'#E55050':C.muted}/> Supprimer
             </button>
           </div>
         </div>
@@ -2210,6 +2275,15 @@ const Galerie = ({products, isDemo, setSection, isMobile}) => {
             <Icon name="x" size={16} color="#fff"/>
           </button>
         </div>
+      )}
+      {deleteConfirm && (
+        <ConfirmModal
+          title="Supprimer ces créatives ?"
+          message={`${selectedIds.length} créative${selectedIds.length>1?'s':''} ${selectedIds.length>1?'seront supprimées':'sera supprimée'} définitivement de ta galerie. Cette action est irréversible.`}
+          confirmLabel={deleting ? 'Suppression…' : 'Supprimer'} cancelLabel="Annuler" danger={true}
+          onCancel={()=>!deleting && setDeleteConfirm(false)}
+          onConfirm={confirmDeleteSelected}
+        />
       )}
     </div>
   );
@@ -2382,13 +2456,15 @@ const Copies = ({products, setSection}) => {
                             ))}
                           </div>
                           <div>
-                            <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase',marginBottom:10}}>Texte</div>
-                            <div style={cs({padding:'14px',position:'relative'})}>
-                              <pre style={{fontSize:12,color:C.text,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.description}</pre>
+                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
+                              <div style={{fontSize:10,color:C.sec,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase'}}>Texte</div>
                               <button onClick={()=>copy(angle.description,`body-${angle.numero}`)}
-                                style={{position:'absolute',top:10,right:10,padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
+                                style={{padding:'3px 10px',borderRadius:5,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
                                 {copied===`body-${angle.numero}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier tout'}
                               </button>
+                            </div>
+                            <div style={cs({padding:'14px'})}>
+                              <pre style={{fontSize:12,color:C.text,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.description}</pre>
                             </div>
                           </div>
                         </div>
@@ -3509,7 +3585,8 @@ export default function Platform() {
       for (let i=0; i<3; i++) {
         try {
           const r = await fetch('https://adstack-server.onrender.com/commandes/'+brief.id+'/delete', {
-            method:'POST', headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(12000)
+            method:'POST', headers:{'Content-Type':'application/json'}, signal:AbortSignal.timeout(12000),
+            body: JSON.stringify({ source: 'client_cancel' })
           });
           if (r.ok) break;
         } catch(e) { await new Promise(res=>setTimeout(res,2000)); }
@@ -3849,7 +3926,7 @@ const views = {
               return;
             }
             setCreativesTarget(p); }}/>,
-    galerie: <Galerie products={products} isDemo={isDemo} setSection={setSection} isMobile={isMobile}/>,
+    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
