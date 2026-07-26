@@ -329,7 +329,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
 .prodv2-syn-meta{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.5px}
 .prodv2-syn-arrow{color:var(--t3);font-size:11px;transition:transform .2s}
 .prodv2-syn.open .prodv2-syn-arrow{transform:rotate(90deg)}
-.prodv2-syn-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;color:var(--t2);white-space:pre-wrap;max-height:480px;overflow:auto}
+.prodv2-syn-body{display:none;padding:0 16px 16px;border-top:1px solid var(--border);font-size:11.5px;line-height:1.7;color:var(--t2);max-height:480px;overflow:auto}
 .prodv2-syn.open .prodv2-syn-body{display:block;padding-top:14px}
 
 /* Onglets angles */
@@ -912,7 +912,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
         <!-- Synthèse en accordéon -->
         <div class="prodv2-syn" id="prodv2Syn">
           <div class="prodv2-syn-head" onclick="prodv2ToggleSyn()">
-            <div class="prodv2-syn-title"><span class="prodv2-syn-arrow">›</span> Synthèse S0→S7 · 1 persona · <span id="prodv2SynAnglesCount">3</span> angles</div>
+            <div class="prodv2-syn-title"><span class="prodv2-syn-arrow">›</span> Données Marché · <span id="prodv2SynAnglesCount">3</span> angles</div>
             <div class="prodv2-syn-meta" id="prodv2SynMeta">—</div>
           </div>
           <div class="prodv2-syn-body" id="prodv2SynBody"></div>
@@ -2260,6 +2260,67 @@ function prodv2SplitSynthesisAndMarche(raw) {
   return { synthesisText, marche };
 }
 
+// Rendu HTML lisible des données marché — remplace l'affichage de la synthèse brute dans la
+// vue production (ce qui intéresse Amvr ici : créatives + résumé marché + ad copies, pas le
+// texte technique S0-S8 destiné aux autres agents). Repli sur la synthèse brute si l'extraction
+// JSON a échoué (ne jamais perdre l'information), et lien debug pour la consulter au besoin.
+function prodv2RenderMarcheSummary(marche, synthesisText) {
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+  const debugBlock = `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+    <span style="cursor:pointer;color:var(--t3);font-size:10.5px;text-decoration:underline" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';">Voir la synthèse brute (debug — destinée aux autres agents, pas au client)</span>
+    <pre style="display:none;margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.6;color:var(--t2);white-space:pre-wrap;max-height:320px;overflow:auto">${esc(synthesisText)}</pre>
+  </div>`;
+
+  if (!marche) {
+    return `<div style="color:var(--red);font-size:11.5px;margin-bottom:10px">⚠ Extraction Données Marché échouée pour ce batch (voir console) — synthèse brute ci-dessous en repli.</div>
+      <pre style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;color:var(--t2);white-space:pre-wrap">${esc(synthesisText)}</pre>`;
+  }
+
+  const p = marche.positionnement || {};
+  const persona = marche.persona || {};
+  const angles = marche.angles || [];
+  const insights = marche.insights || [];
+
+  const statRow = (label, val) => `<div><div style="font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px">${esc(label)}</div><div style="font-size:12.5px;color:var(--t1);font-weight:600">${esc(val || '—')}</div></div>`;
+
+  const anglesHtml = angles.map((a,i) => `
+    <div style="padding:10px 0;border-bottom:${i<angles.length-1?'1px solid var(--border)':'none'}">
+      <div style="font-size:12px;font-weight:700;color:var(--t1);margin-bottom:3px">${i+1}. ${esc(a.nom)}</div>
+      <div style="font-size:11px;color:var(--t2);line-height:1.5">${esc(a.formulation_simple)}</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:3px">${esc(a.moteur)}</div>
+    </div>`).join('');
+
+  const insightsHtml = insights.map(ins => `<div style="font-size:11px;color:var(--t2);padding:4px 0;line-height:1.5">→ ${esc(ins.t)}</div>`).join('');
+
+  const concDirects = (p.concurrents_directs||[]).join(', ') || '—';
+  const concIndirects = (p.concurrents_indirects||[]).length ? (p.concurrents_indirects||[]).join(', ') : null;
+
+  return `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:16px">
+      ${statRow('Taille marché', p.taille_marche_personnes)}
+      ${statRow('Valeur', p.taille_marche_revenus)}
+      ${statRow('Tendance', p.taux_croissance)}
+      ${statRow('Concurrence', p.concurrence)}
+    </div>
+    <div style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:6px"><span style="color:var(--t3)">Concurrents directs :</span> ${esc(concDirects)}</div>
+    ${concIndirects ? `<div style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:6px"><span style="color:var(--t3)">Indirects :</span> ${esc(concIndirects)}</div>` : ''}
+    <div style="font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:14px"><span style="color:var(--t3)">Positionnement prix :</span> ${esc(p.positionnement_prix)}</div>
+
+    <div style="padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:14px">
+      <div style="font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:4px">${esc(persona.nom)}${persona.age ? ', ' + esc(persona.age) : ''}</div>
+      <div style="font-size:11px;color:var(--t2);margin-bottom:6px">${esc(persona.role)}${persona.ville ? ' · ' + esc(persona.ville) : ''}</div>
+      ${persona.quote ? `<div style="font-size:11px;color:var(--t2);font-style:italic;border-left:2px solid var(--blue);padding-left:8px">"${esc(persona.quote)}"</div>` : ''}
+    </div>
+
+    <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Angles (${angles.length})</div>
+    ${anglesHtml}
+
+    ${insights.length ? `<div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin:14px 0 4px">Insights</div>${insightsHtml}` : ''}
+
+    ${debugBlock}
+  `;
+}
+
 function prodv2ExtractAngles(synthesis, nbAngles=3) {
   // Looks for lines starting with "Angle 1", "Angle 2", ... "Angle N"
   // Retourne TOUS les angles trouvés (pas tronqué à nbAngles) — nécessaire en renouvellement,
@@ -2423,11 +2484,12 @@ async function prodv2Launch() {
     // Mode remplacement (pas accumulation) : S2 ne contient QUE les angles de cette commande —
     // plus besoin de ne garder que les N derniers, ils sont tous nouveaux par construction.
     prodv2State.angles = prodv2ExtractAngles(synthesisText, nbAngles);
-    prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
+    prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(synthesisText.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
 
-    // Show synthesis in accordion
-    document.getElementById('prodv2SynBody').textContent = synthesis;
-    document.getElementById('prodv2SynMeta').textContent = `${Math.round(synthesis.length/1000)}K · ${Math.round((Date.now()-prodv2State.startTime)/1000)}s`;
+    // Résumé Données Marché (lisible) à la place de la synthèse brute — la synthèse reste
+    // consultable via le lien debug ajouté par prodv2RenderMarcheSummary, pour dépannage seulement.
+    document.getElementById('prodv2SynBody').innerHTML = prodv2RenderMarcheSummary(marche, synthesisText);
+    document.getElementById('prodv2SynMeta').textContent = `${Math.round(synthesisText.length/1000)}K · ${Math.round((Date.now()-prodv2State.startTime)/1000)}s`;
     // Update tab labels with angle previews
     document.querySelectorAll('.prodv2-angle-tab').forEach((el,i) => {
       const angle = prodv2State.angles[i] || ('Angle ' + (i+1));
@@ -6215,7 +6277,7 @@ async function prodv2CheckResume() {
     document.getElementById('prodv2DelivSection').style.display = '';
 
     if (prodv2State.synthesis) {
-      document.getElementById('prodv2SynBody').textContent = prodv2State.synthesis;
+      document.getElementById('prodv2SynBody').innerHTML = prodv2RenderMarcheSummary(prodv2State.marche, prodv2State.synthesis);
       prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(prodv2State.synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
     }
     document.querySelectorAll('.prodv2-angle-tab').forEach((el,i) => {
