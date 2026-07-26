@@ -2334,9 +2334,15 @@ function prodv2ExtractAngles(synthesis, nbAngles=3) {
     if(m) {
       if(current) angles.push(current);
       current = { idx: parseInt(m[1])-1, text: m[2].trim() };
+    } else if(line.match(/^\s*→/)) {
+      // Cause profonde corrigée (angle affiché avec toute la justification technique dans AdBoard) :
+      // les lignes "→ Moteur dominant / → Formulation de l'angle" qui suivent le titre dans le
+      // format imposé à l'Analyste étaient auparavant ajoutées au nom de l'angle. On arrête ici
+      // la capture dès qu'on rencontre ce marqueur — le nom d'angle reste juste le titre court.
+      if(current) { angles.push(current); current = null; }
     } else if(current && line.trim() && !line.match(/^S\d\s*[—–-]/)) {
-      // Append continuation lines (max ~3 lines)
-      if(current.text.length < 400) current.text += ' ' + line.trim();
+      // Append continuation lines (max ~3 lignes, cas rare où le titre déborde sur 2 lignes)
+      if(current.text.length < 120) current.text += ' ' + line.trim();
     } else if(line.match(/^S[3-9]\s*[—–-]/)) {
       if(current) { angles.push(current); current = null; break; }
     }
@@ -2551,7 +2557,20 @@ async function prodv2Launch() {
           if (prodAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
           const idx = a*3 + c;
           const ctPositionInAngle = c;
-          await prodv2GenerateOneCreativeWithRetry(idx, a, ctPositionInAngle, ctPick[idx], prodAbortController.signal);
+          // Cause profonde corrigée (créative bloquée en "attente", bouton régénérer inactif,
+          // production entière stoppée avant la dernière créative) : avant, une erreur sur UNE
+          // créative après épuisement des tentatives remontait jusqu'au catch global de
+          // sequentialPromise plus bas — qui n'appelle jamais prodv2MarkCreativeError pour CETTE
+          // créative précise, et qui arrête la boucle avant les créatives suivantes. Chaque
+          // créative est maintenant isolée : un échec marque SA carte en erreur (bouton régénérer
+          // activé) et laisse la boucle continuer vers les créatives suivantes.
+          try {
+            await prodv2GenerateOneCreativeWithRetry(idx, a, ctPositionInAngle, ctPick[idx], prodAbortController.signal);
+          } catch(err) {
+            if (err.name === 'AbortError' && prodAbortController.signal.aborted) throw err; // vraie annulation : on arrête tout
+            console.error(`Erreur créative ${idx+1} :`, err);
+            prodv2MarkCreativeError(idx, err.message || 'Erreur inconnue');
+          }
           creativesDone++;
           prodv2SetAgentState(2, 'active', `${creativesDone} / ${nbCreativesTotal} créatives générées`, Math.round(creativesDone/nbCreativesTotal*100));
           prodv2AutosaveDeliverables();
@@ -2768,7 +2787,7 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
   const copywriterSystem = COMP_FILES['COMPETENCE_COPYWRITER_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
   // Consigne durcie : pas de markdown gras autour des labels, pas de labels AIDA visibles
-  const userPrompt = `SYNTHÈSE COMPLÈTE :\n${prodv2State.synthesis}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGÉNÈRE LE COPY POUR L'ANGLE ${angleIdx+1} UNIQUEMENT :\n${angle}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFORMAT STRICT (RESPECTE-LE EXACTEMENT, sinon le parsing échoue) :\n\nHOOK 1: <texte du hook>\nHOOK 2: <texte du hook>\nHOOK 3: <texte du hook>\nHOOK 4: <texte du hook>\nHOOK 5: <texte du hook>\nDESCRIPTION:\n[ATTENTION] <1 phrase d'accroche qui nomme la douleur exacte du persona>\n[INTÉRÊT] <1-2 phrases qui expliquent le problème et introduisent le mécanisme produit>\n[DÉSIR] <1-2 phrases de bénéfices concrets, avec une donnée chiffrée si disponible dans la synthèse>\n[ACTION] <1 phrase de CTA avec l'offre si disponible (prix, livraison) — sinon slogan fort>\n\nINTERDIT ABSOLU :\n- N'utilise PAS de markdown autour des labels (PAS de **HOOK 1:**, PAS de **DESCRIPTION:**)\n- N'utilise PAS de titre/intro avant la liste (PAS de "### ANGLE 1", PAS de "Voici les hooks")\n- Garde les labels [ATTENTION] [INTÉRÊT] [DÉSIR] [ACTION] EXACTEMENT comme indiqués — ils servent au parsing\n- Chaque section = 1-2 phrases maximum. Pas de blocs longs\n- Démarre TA RÉPONSE directement par "HOOK 1:" — aucun préambule\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  const userPrompt = `SYNTHÈSE COMPLÈTE :\n${prodv2State.synthesis}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGÉNÈRE LE COPY POUR L'ANGLE ${angleIdx+1} UNIQUEMENT :\n${angle}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFORMAT STRICT (RESPECTE-LE EXACTEMENT, sinon le parsing échoue) :\n\nHOOK 1: <texte du hook>\nHOOK 2: <texte du hook>\nHOOK 3: <texte du hook>\nHOOK 4: <texte du hook>\nHOOK 5: <texte du hook>\nDESCRIPTION:\n[ATTENTION] <1 phrase d'accroche qui nomme la douleur exacte du persona>\n[INTÉRÊT] <1-2 phrases qui expliquent le problème et introduisent le mécanisme produit>\n[DÉSIR] <OBLIGATOIRE : 3 à 4 bullet points, un par ligne, chacun commençant par "• " suivi d'un emoji pertinent puis du bénéfice concret (avec une donnée chiffrée si disponible dans la synthèse) — jamais un paragraphe de phrases suivies, jamais moins de 3 bullet points, jamais zéro emoji>\n[ACTION] <1 phrase de CTA — si une offre/promo est active dans le brief (ex: "2 achetés = 1 offert"), mentionne-la explicitement ici pour environ 1 génération sur 5 (pas systématiquement, pour garder de la variété) ; sinon CTA avec le prix/livraison, ou un slogan fort>\n\nEXEMPLE DE BLOC [DÉSIR] ATTENDU (structure à respecter, pas le contenu) :\n[DÉSIR]\n• 🌿 Une formule 100% naturelle qui nourrit la fibre en profondeur\n• ⚡ Des résultats visibles dès les premières semaines d'utilisation\n• 💧 Une texture non grasse qui pénètre instantanément\n\nINTERDIT ABSOLU :\n- N'utilise PAS de markdown autour des labels (PAS de **HOOK 1:**, PAS de **DESCRIPTION:**)\n- N'utilise PAS de titre/intro avant la liste (PAS de "### ANGLE 1", PAS de "Voici les hooks")\n- Garde les labels [ATTENTION] [INTÉRÊT] [DÉSIR] [ACTION] EXACTEMENT comme indiqués — ils servent au parsing\n- ATTENTION/INTÉRÊT/ACTION restent en 1-2 phrases courantes (pas de bullet points) — SEUL [DÉSIR] est en bullet points, ne mélange pas les styles\n- Démarre TA RÉPONSE directement par "HOOK 1:" — aucun préambule\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   // 12 000 tokens — Gemini 2.5 Pro utilise ~3-4k tokens pour "thinking" avant de générer,
   // avec 4000 max il ne lui reste que ~1000 pour le texte → description tronquée
@@ -3880,6 +3899,7 @@ Le champ "marque" du brief peut légitimement arriver vide. Ce n'est pas une err
 → Palette de marque (couleurs exactes observées sur le produit/packaging)
 → Typographie de marque (famille, poids, personnalité visuelle)
 → Offre & pricing : prix de vente affiché (devise locale, depuis lien_page_produit si fourni), prix barré, réduction, bundle/pack, BOGO/cadeau, livraison (fait neutre, jamais un argument différenciant — voir S4), garantie/retour, urgence affichée
+→ Le brief peut contenir un champ "promo" (offre en cours renseignée directement par le client — ex : "2 achetés = 1 offert") : c'est une source FIABLE et prioritaire, à noter explicitement ici même si elle n'apparaît pas sur la page produit scrapée. Si ce champ est vide, ne rien inventer à sa place.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 2 — S1 : SÉLECTION ET VALIDATION DU PERSONA
@@ -4115,9 +4135,9 @@ FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante s
     }
   ],
   "insights": [
-    {"icon": "target", "t": "1 conseil actionnable court et concret pour améliorer les prochaines créatives ou l'offre, basé sur une vraie donnée de S0-S8"},
-    {"icon": "trending", "t": "1 autre conseil actionnable, différent du premier"},
-    {"icon": "alert", "t": "1 point de vigilance ou risque à surveiller, basé sur une vraie objection/peur trouvée en S5"}
+    {"icon": "target", "t": "1 conseil actionnable COURT ET CONCRET QUE LE CLIENT LUI-MÊME PEUT APPLIQUER (sa stratégie, son prix, son offre, son service client, sa description produit, son stock...) — JAMAIS une consigne sur comment produire les visuels/créatives publicitaires, c'est le travail de l'agence, pas du client. Basé sur une vraie donnée de S0-S8"},
+    {"icon": "trending", "t": "1 autre conseil actionnable par le client lui-même, différent du premier, même restriction"},
+    {"icon": "alert", "t": "1 point de vigilance ou risque à surveiller (marché, concurrence, objection client) — basé sur une vraie donnée trouvée en S5, jamais une note de production"}
   ]
 }
 
@@ -4643,6 +4663,7 @@ Le moteur de l'angle (peur/désir/douleur, voir S2) infuse les 4 temps ci-dessou
 → Solution Aware : ~60% du poids visuel/textuel sur la peur (ce qui se passe si le problème n'est pas réglé correctement, pourquoi les solutions actuelles ne suffisent pas) — 40% sur désir/douleur. Les TEMPS 1 et 2 portent l'essentiel de ce poids.
 → Product Aware : dosage plus équilibré (~50/50) — la peur reste présente mais partagée avec la preuve/différenciation concrète du produit.
 → Most Aware : ~60% du poids sur désir (la vie une fois le problème résolu) + urgence/offre — 40% sur peur/douleur en rappel bref. Les TEMPS 3 et 4 portent l'essentiel de ce poids.
+⚠️ OFFRE EN COURS — OBLIGATOIRE SI PRÉSENTE : si S0 mentionne une offre active fournie par le client (champ "promo" du brief, ex : "2 achetés = 1 offert", un bundle, une réduction) ET que le niveau de conscience imposé pour CETTE créative est Most Aware : cette offre DOIT apparaître explicitement dans le texte visible de la créative (headline, callout, ou CTA) — ce n'est plus une option "si pertinent", c'est un fait commercial réel que le client a spécifiquement renseigné et qui constitue souvent son avantage concurrentiel le plus direct. Ne jamais l'omettre au niveau Most Aware si elle existe en S0. Aux niveaux Solution/Product Aware, elle reste optionnelle (mention brève possible, jamais imposée).
 Ce dosage s'applique autant au VISUEL (ce qui est montré, l'expression du persona, l'ambiance) qu'au TEXTE des zones — les deux doivent porter le même dosage, pas seulement l'un des deux.
 
 Quelle que soit l'architecture du CT (split, bandes, scène unique, podcast, screenshot, etc.), les 4 ÉLÉMENTS PSYCHOLOGIQUES suivants doivent être présents dans le contenu, dans l'ordre de lecture RÉEL de CE CT précis :
@@ -4855,6 +4876,7 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 □ ⛔ TRANSFERT D'INTENTION (RÈGLE #0sexies) : chaque élément narratif fort d'IMAGE 2 (comparaison concurrentielle, personnage secondaire, symbole) a été vérifié contre S1/S4/S5 de ce persona — abandonné s'il n'est justifié par aucune donnée réelle de la synthèse ?
 □ La ligne TRANSFERT INTENTION du bloc META est cohérente avec ce qui apparaît réellement dans PROMPT_GEMINI (si « NON, abandonné », l'élément ne doit PAS apparaître dans les zones) ?
 □ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : SI brief.marque contient un vrai nom, les INSTRUCTIONS GEMINI ADDITIONNELLES contiennent la ligne de distinction vendeur/produit avec ce vrai nom substitué (jamais un placeholder littéral non remplacé, jamais "la marque" en toutes lettres à la place d'un nom réel) ? SI brief.marque est vide, cette ligne est absente et aucun mot générique ("la marque", "le vendeur"...) ne la remplace ?
+⚠️ ERREUR RÉELLE DÉJÀ OBSERVÉE À NE JAMAIS REPRODUIRE : écrire dans une zone "Le nom de la marque 'la marque' est écrit en texte..." ou "→ Nom de marque : Le nom 'la marque' est intégré en TEXTE en bas au centre" — ici "la marque" a été traité comme si c'était un vrai nom propre à afficher sur la créative, alors que c'est un terme générique qui n'existe dans aucun brief réel. Si tu t'apprêtes à écrire les mots "la marque" (ou "le vendeur", "la boutique") ENTRE GUILLEMETS comme texte à afficher sur l'image — ARRÊTE-TOI : c'est le signal exact de cette erreur. Soit brief.marque contient un vrai nom (utilise-le), soit il est vide (n'écris aucune zone marque du tout, pas même avec un mot générique à sa place).
 □ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : le produit est décrit dans chaque zone par "(IMAGE 1 — fidélité absolue, même étiquette, même couleurs, même texte visible sur le packaging)" et JAMAIS par "(le flacon [nom quelconque])", que ce nom soit réel ou générique ?
 □ Produit (IMAGE 1) intégré de manière fidèle au packaging et au mode d'intégration du CT (IMAGE 2 ignoré pour son produit, gardé pour sa structure) ?
 □ Si brief.marque contient un vrai nom (pas [AUCUNE MARQUE FOURNIE]) ET qu'IMAGE 2 a une zone marque : ce nom apparaît en TEXTE dans cette zone, aucun logo image (IMAGE 3) référencé ? Si brief.marque est vide/absent, AUCUN nom de marque n'apparaît nulle part, même si IMAGE 2 a une zone marque disponible ?
@@ -5821,6 +5843,10 @@ async function prodv2LoadBriefFromCommande(b) {
     utilite: b.product.utilite || '',
     couleurs: b.product.couleurs || [],
     quantite: b.quantity || 9,
+    // Cause profonde corrigée : ce champ existe dans la fiche produit AdBoard depuis le début,
+    // mais n'était jamais extrait ici — aucun agent (Analyste, Creative Image, Copywriter) n'en
+    // avait donc jamais connaissance, malgré une vraie offre renseignée par le client.
+    promo: b.product.promo || '',
     // Jusqu'ici jamais transmis à l'Analyste malgré son existence côté AdBoard — la Source 6
     // (page produit officielle) et la logique "n'invente pas de marque sans lien" en dépendent.
     lien_page_produit: b.product.lien_page_produit || '',
