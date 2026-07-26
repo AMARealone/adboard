@@ -1099,50 +1099,48 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
   const canIncrease = qty + 9 <= max;
   const canDecrease = qty > 9;
 
-  const font = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
-
   return (
-    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20,fontFamily:font}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'26px 24px',maxWidth:380,width:'100%',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)',position:'relative',fontFamily:font}}>
+    <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden',background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',borderRadius:16,padding:'26px 24px',maxWidth:380,width:'100%',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)'}}>
+        <div style={{position:'absolute',top:-50,right:-30,width:170,height:170,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.16), transparent 70%)',pointerEvents:'none'}}/>
 
         {/* Bouton fermer */}
-        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontFamily:font}}><Icon name="x" size={14}/></button>
+        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={14}/></button>
 
         {/* Header */}
-        <div style={{marginBottom:20,paddingRight:32}}>
-          <h3 style={{fontSize:16,fontWeight:700,color:C.text,margin:'0 0 3px',fontFamily:font}}>Demander des visuels</h3>
-          <p style={{fontSize:12,color:C.sec,margin:0,fontFamily:font}}>Pour <strong style={{color:C.text}}>{product.nom}</strong></p>
+        <div style={{position:'relative',marginBottom:22,paddingRight:32}}>
+          <h3 style={{fontSize:16,fontWeight:800,color:C.text,margin:'0 0 3px'}}>Demander des visuels</h3>
+          <p style={{fontSize:12,color:C.sec,margin:0}}>Pour <strong style={{color:C.text}}>{product.nom}</strong></p>
         </div>
 
-        {/* Jauge semaine */}
-        <div style={{background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`,borderRadius:10,padding:'12px 14px',marginBottom:24}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:7}}>
-            <span style={{fontSize:11,color:C.sec,fontWeight:600,fontFamily:font}}>Disponibles cette semaine</span>
-            <span style={{fontSize:20,fontWeight:800,color:max>0?C.accent:C.muted,fontFamily:font}}>{max}</span>
+        {/* Jauge semaine — hero, citation à bordure latérale au lieu d'un encart fermé */}
+        <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:26}}>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:6}}>Disponibles cette semaine</div>
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:28,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{max}</div>
+          <div style={{marginTop:10,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:220}}>
+            <div style={{height:'100%',borderRadius:2,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
           </div>
-          <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-            <div style={{height:'100%',borderRadius:3,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
-          </div>
-          <div style={{fontSize:10,color:C.muted,marginTop:4,fontFamily:font}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
+          <div style={{fontSize:10,color:C.muted,marginTop:8}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
         </div>
 
         {/* Compteur */}
-        <div style={{marginBottom:24}}>
-          <div style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:14,fontFamily:font}}>Nombre de visuels à recevoir</div>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:24}}>
-            <button onClick={()=>canDecrease&&setQty(q=>q-9)} style={{width:44,height:44,borderRadius:10,border:`1px solid ${canDecrease?C.border:'rgba(255,255,255,0.05)'}`,background:canDecrease?'rgba(255,255,255,0.07)':'rgba(255,255,255,0.02)',color:canDecrease?C.text:C.muted,fontSize:24,cursor:canDecrease?'pointer':'not-allowed',fontFamily:font,display:'flex',alignItems:'center',justifyContent:'center'}}>−</button>
-            <div style={{textAlign:'center',minWidth:70}}>
-              <div style={{fontSize:40,fontWeight:800,color:C.text,lineHeight:1,fontFamily:font}}>{qty}</div>
-              <div style={{fontSize:11,color:C.sec,marginTop:4,fontFamily:font}}>visuels</div>
+        <div style={{position:'relative',marginBottom:26}}>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:16,textAlign:'center'}}>Nombre de visuels à recevoir</div>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:26}}>
+            <button onClick={()=>canDecrease&&setQty(q=>q-9)} style={{width:42,height:42,borderRadius:'50%',border:`1px solid ${canDecrease?'rgba(255,255,255,0.14)':'rgba(255,255,255,0.05)'}`,background:canDecrease?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)',color:canDecrease?C.text:C.muted,fontSize:20,cursor:canDecrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.15s'}}>−</button>
+            <div style={{textAlign:'center',minWidth:76}}>
+              <div style={{fontFamily:"'DM Mono',monospace",fontSize:42,fontWeight:800,lineHeight:1,
+                background:'linear-gradient(90deg, #ffffff 0%, #9fbcff 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>{qty}</div>
+              <div style={{fontSize:11,color:C.sec,marginTop:5}}>visuels</div>
             </div>
-            <button onClick={()=>canIncrease&&setQty(q=>q+9)} style={{width:44,height:44,borderRadius:10,border:`1px solid ${canIncrease?C.accent:'rgba(255,255,255,0.05)'}`,background:canIncrease?C.accentS:'rgba(255,255,255,0.02)',color:canIncrease?C.accent:C.muted,fontSize:24,cursor:canIncrease?'pointer':'not-allowed',fontFamily:font,display:'flex',alignItems:'center',justifyContent:'center'}}>+</button>
+            <button onClick={()=>canIncrease&&setQty(q=>q+9)} style={{width:42,height:42,borderRadius:'50%',border:'none',background:canIncrease?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.02)',color:canIncrease?'#fff':C.muted,fontSize:20,cursor:canIncrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:canIncrease?'0 4px 14px rgba(45,127,249,0.3)':'none',transition:'all 0.15s'}}>+</button>
           </div>
         </div>
 
         {/* Boutons */}
-        <div style={{display:'flex',gap:10}}>
-          <button onClick={onClose} style={{flex:1,padding:'12px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:font}}>Annuler</button>
-          <button onClick={()=>max>0&&onConfirm(qty)} disabled={max===0} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':C.accent,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:font}}>
+        <div style={{position:'relative',display:'flex',gap:10}}>
+          <button onClick={onClose} style={{flex:1,padding:'12px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
+          <button onClick={()=>max>0&&onConfirm(qty)} disabled={max===0} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:'inherit',boxShadow:max===0?'none':'0 4px 16px rgba(45,127,249,0.3)'}}>
             {max===0 ? 'Aucun visuel disponible' : `Confirmer · ${qty} visuels`}
           </button>
         </div>
@@ -1833,35 +1831,47 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     <div>
       {/* ── Jauge images publicitaires ── */}
       {subscription?.active ? (
-        <div style={{marginBottom:18,padding:'14px 16px',borderRadius:10,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
-          <div style={{flex:1,minWidth:160}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
-              <span style={{fontSize:11,color:C.sec,fontWeight:600}}>Images publicitaires disponibles</span>
-              <span style={{fontSize:16,fontWeight:800,color:credits.available>0?C.accent:C.muted}}>{credits.available}</span>
+        <div style={{position:'relative',overflow:'hidden',marginBottom:18,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'22px 24px'}}>
+          <div style={{position:'absolute',top:-50,right:-30,width:170,height:170,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.16), transparent 70%)',pointerEvents:'none'}}/>
+          <div style={{position:'relative',display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:16,flexWrap:'wrap'}}>
+            <div style={{flex:1,minWidth:180}}>
+              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Images publicitaires disponibles</div>
+              <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+                <span style={{
+                  fontFamily:"'DM Mono',monospace",fontSize:38,fontWeight:800,letterSpacing:'-0.5px',lineHeight:1,
+                  background: credits.available>0 ? 'linear-gradient(90deg, #ffffff 0%, #9fbcff 100%)' : 'none',
+                  WebkitBackgroundClip: credits.available>0 ? 'text' : undefined,
+                  WebkitTextFillColor: credits.available>0 ? 'transparent' : undefined,
+                  backgroundClip: credits.available>0 ? 'text' : undefined,
+                  color: credits.available>0 ? undefined : C.muted,
+                }}>{credits.available}</span>
+                <span style={{fontSize:12,color:C.muted}}>/ {credits.total} accumulées</span>
+              </div>
+              <div style={{marginTop:14,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:280}}>
+                <div style={{height:'100%',borderRadius:2,background:credits.available>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.12)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
+              </div>
+              <div style={{fontSize:10.5,color:C.muted,marginTop:8}}>{credits.used} déjà utilisées</div>
             </div>
-            <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)'}}>
-              <div style={{height:'100%',borderRadius:3,background:credits.available>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
-            </div>
-            <div style={{fontSize:10,color:C.muted,marginTop:4}}>{credits.used} utilisées · {credits.total} accumulées au total</div>
+            {credits.available === 0 && (
+              <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
+                {nextCreditDate ? `Prochaines images le ${nextCreditDate}` : 'Prochaines images la semaine prochaine'}
+              </div>
+            )}
           </div>
-          {credits.available === 0 && (
-            <div style={{fontSize:11,color:C.muted,padding:'6px 12px',borderRadius:7,background:'rgba(255,255,255,0.09)',border:`1px solid ${C.border}`}}>
-              {nextCreditDate ? `Prochaines images disponibles le ${nextCreditDate}` : 'Prochaines images disponibles la semaine prochaine'}
-            </div>
-          )}
         </div>
       ) : (
-        <div style={{marginBottom:18,padding:'16px 18px',borderRadius:12,background:'linear-gradient(135deg, rgba(91,141,239,0.16), rgba(91,141,239,0.06))',border:`1px solid rgba(91,141,239,0.35)`,display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
-          <div style={{flex:1,minWidth:160,display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:32,height:32,borderRadius:9,background:'rgba(91,141,239,0.18)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <Icon name="bolt" size={15} color={C.accent}/>
+        <div style={{position:'relative',overflow:'hidden',marginBottom:18,background:'linear-gradient(160deg, #141b2e 0%, #0d0f16 100%)',border:'1px solid rgba(91,141,239,0.3)',borderRadius:16,padding:'20px 24px',display:'flex',alignItems:'center',gap:16,flexWrap:'wrap'}}>
+          <div style={{position:'absolute',top:-50,right:-30,width:170,height:170,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.22), transparent 70%)',pointerEvents:'none'}}/>
+          <div style={{position:'relative',flex:1,minWidth:180,display:'flex',alignItems:'center',gap:12}}>
+            <div style={{width:36,height:36,borderRadius:10,background:'rgba(91,141,239,0.18)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon name="bolt" size={16} color={C.accent}/>
             </div>
             <div>
-              <div style={{fontSize:13,fontWeight:700,color:C.text}}>Images publicitaires</div>
+              <div style={{fontSize:14,fontWeight:800,color:C.text}}>Images publicitaires</div>
               <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonne-toi pour recevoir tes visuels chaque semaine</div>
             </div>
           </div>
-          <button onClick={()=>setSection && setSection('tarifs')} style={{padding:'9px 18px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',boxShadow:'0 4px 14px rgba(91,141,239,0.35)'}}>
+          <button onClick={()=>setSection && setSection('tarifs')} style={{position:'relative',padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(45,127,249,0.35)'}}>
             Voir les offres
           </button>
         </div>
@@ -1873,19 +1883,20 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
           <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos visuels — livrés en 48h.</p>
         </div>
-        <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+        <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
           <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
         </button>
       </div>
 
       {products.length === 0 && (
-        <div style={{borderRadius:16,border:`1px solid ${C.border}`,background:C.card,padding:'60px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:12,textAlign:'center',marginBottom:14}}>
-          <div style={{width:44,height:44,borderRadius:12,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.accent}}>
+        <div style={{position:'relative',overflow:'hidden',borderRadius:16,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',padding:'60px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:12,textAlign:'center',marginBottom:14}}>
+          <div style={{position:'absolute',top:-60,left:'50%',transform:'translateX(-50%)',width:220,height:220,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
+          <div style={{position:'relative',width:44,height:44,borderRadius:12,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.accent}}>
             <Icon name="box" size={20}/>
           </div>
-          <div style={{fontSize:17,fontWeight:700,color:C.text}}>Aucun produit pour l'instant</div>
-          <div style={{fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 48h.</div>
-          <button onClick={openNew} style={{marginTop:6,padding:'10px 20px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+          <div style={{position:'relative',fontSize:17,fontWeight:700,color:C.text}}>Aucun produit pour l'instant</div>
+          <div style={{position:'relative',fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 48h.</div>
+          <button onClick={openNew} style={{position:'relative',marginTop:6,padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7,boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
             <Icon name="plus" size={14} color="#fff"/> Ajouter mon premier produit
           </button>
         </div>
@@ -3928,31 +3939,33 @@ export default function Platform() {
       </p>
 
       {envoye ? (
-        <div style={{textAlign:'center',padding:'40px 20px',borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`}}>
-          <div style={{width:48,height:48,borderRadius:12,background:'rgba(34,197,94,0.14)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
+        <div style={{position:'relative',overflow:'hidden',textAlign:'center',padding:'40px 20px',borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.borderM}`}}>
+          <div style={{position:'absolute',top:-50,left:'50%',transform:'translateX(-50%)',width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle, rgba(34,197,94,0.12), transparent 70%)',pointerEvents:'none'}}/>
+          <div style={{position:'relative',width:48,height:48,borderRadius:12,background:'rgba(34,197,94,0.14)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
             <Icon name="check" size={22} color="#22C55E"/>
           </div>
-          <p style={{fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Merci pour ton message !</p>
-          <p style={{fontSize:12.5,color:C.sec,marginBottom:18}}>C'est bien pris en compte.</p>
-          <button onClick={()=>setEnvoye(false)} style={{padding:'9px 20px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>
+          <p style={{position:'relative',fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Merci pour ton message !</p>
+          <p style={{position:'relative',fontSize:12.5,color:C.sec,marginBottom:18}}>C'est bien pris en compte.</p>
+          <button onClick={()=>setEnvoye(false)} style={{position:'relative',padding:'9px 20px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>
             Envoyer un autre commentaire
           </button>
         </div>
       ) : (
-        <div style={{borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:20}}>
+        <div style={{position:'relative',overflow:'hidden',borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.borderM}`,padding:22}}>
+          <div style={{position:'absolute',top:-50,right:-30,width:170,height:170,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
           <textarea
             value={texte}
             onChange={e => setTexte(e.target.value)}
             placeholder="Écris ton commentaire ici..."
             rows={6}
             maxLength={2000}
-            style={{width:'100%',padding:'12px 14px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:16,fontFamily:'inherit',resize:'vertical',outline:'none'}}
+            style={{position:'relative',width:'100%',padding:'12px 14px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.03)',color:C.text,fontSize:16,fontFamily:'inherit',resize:'vertical',outline:'none',boxSizing:'border-box'}}
           />
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
+          <div style={{position:'relative',display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:6}}>
             <span style={{fontSize:11,color:C.muted}}>{texte.length}/2000</span>
           </div>
-          {error && <div style={{marginTop:10,padding:'10px 14px',borderRadius:8,background:'rgba(229,80,80,0.1)',border:'1px solid rgba(229,80,80,0.3)',color:'#E55050',fontSize:12}}>{error}</div>}
-          <button onClick={envoyer} disabled={submitting} style={{marginTop:14,padding:'12px 26px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13.5,cursor:submitting?'default':'pointer',fontFamily:'inherit',opacity:submitting?0.6:1}}>
+          {error && <div style={{position:'relative',marginTop:10,padding:'10px 14px',borderRadius:8,background:'rgba(229,80,80,0.1)',border:'1px solid rgba(229,80,80,0.3)',color:'#E55050',fontSize:12}}>{error}</div>}
+          <button onClick={envoyer} disabled={submitting} style={{position:'relative',marginTop:14,padding:'12px 26px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13.5,cursor:submitting?'default':'pointer',fontFamily:'inherit',opacity:submitting?0.6:1,boxShadow:'0 4px 16px rgba(45,127,249,0.3)'}}>
             {submitting ? 'Envoi...' : 'Envoyer'}
           </button>
         </div>
