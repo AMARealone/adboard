@@ -312,6 +312,17 @@ const Logo = ({size=28}) => (
   </div>
 );
 
+// Marque visuelle propre à Ava (assistante) — volontairement distincte du logo AdStack (flèche
+// de croissance). Motif radar/pulse : cœur plein + deux arcs partiels désaxés, évoque une
+// présence "à l'écoute" plutôt que de recycler l'identité de la marque.
+const AvaMark = ({size=20}) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="9" fill="#5B8DEF"/>
+    <circle cx="50" cy="50" r="24" fill="none" stroke="#5B8DEF" strokeWidth="6" strokeLinecap="round" strokeDasharray="72 250" transform="rotate(-35 50 50)" opacity="0.85"/>
+    <circle cx="50" cy="50" r="38" fill="none" stroke="#5B8DEF" strokeWidth="5" strokeLinecap="round" strokeDasharray="55 300" transform="rotate(150 50 50)" opacity="0.45"/>
+  </svg>
+);
+
 const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
   const filled = name==='sparkle' || name==='bolt';
   const paths = {
@@ -406,7 +417,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
     ? {
         position:'fixed',top:0,left:0,height:'100%',zIndex:500,
         width: mobileOpen ? 'min(80vw,272px)' : 52,
-        background:C.sidebar,
+        background:'linear-gradient(180deg, #10131c 0%, #0a0c12 100%)',
         borderRight:`1px solid ${C.border}`,
         display:'flex',flexDirection:'column',overflow:'hidden',
         transition:'width 0.22s cubic-bezier(.4,0,.2,1)',
@@ -429,7 +440,10 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       ) : (
         /* Mode étendu : logo + titre + bouton fermer */
         <>
-          <Logo size={28}/>
+          <div style={{position:'relative',flexShrink:0}}>
+            <div style={{position:'absolute',inset:-6,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.25), transparent 70%)',pointerEvents:'none'}}/>
+            <div style={{position:'relative'}}><Logo size={28}/></div>
+          </div>
           <div style={{overflow:'hidden',flex:1}}>
             <div style={{fontSize:14,fontWeight:800,color:C.text,lineHeight:1,whiteSpace:'nowrap'}}>AdBoard</div>
             <div style={{fontSize:9,color:C.sec,letterSpacing:'1px',textTransform:'uppercase',whiteSpace:'nowrap'}}>AdStack</div>
@@ -510,6 +524,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           color:active===n.id?C.accent:(isTarifs?'#5B8DEF':C.sec),
           fontSize:12,fontWeight:isTarifs?700:600,fontFamily:'inherit',
           borderLeft:active===n.id?`2px solid ${C.accent}`:'2px solid transparent',
+          boxShadow:active===n.id?'0 0 16px rgba(45,127,249,0.15), inset 0 0 0 1px rgba(45,127,249,0.1)':'none',
           transition:'all 0.15s',textAlign:'left',marginBottom:1,whiteSpace:'nowrap',
         }}>
           {isTarifs && (
@@ -591,17 +606,22 @@ const EMPTY_PRODUCT = {
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
 const Field = ({label, k, required, textarea, placeholder, type='text', form, setForm, errors, C}) => {
   const err = errors?.[k];
+  const [focused, setFocused] = useState(false);
   const common = {
     value: form[k] || '',
     onChange: e => setForm(f=>({...f,[k]:e.target.value})),
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
     placeholder: placeholder || '',
     style:{
-      width:'100%', padding:'8px 10px', borderRadius:7,
-      background:'rgba(255,255,255,0.07)',
-      border:`1px solid ${err?C.accent:C.border}`,
+      width:'100%', padding:'9px 11px', borderRadius:8,
+      background: focused ? 'rgba(45,127,249,0.05)' : 'rgba(255,255,255,0.04)',
+      border:`1px solid ${err?C.accent:focused?'rgba(45,127,249,0.5)':C.border}`,
+      boxShadow: focused ? '0 0 0 3px rgba(45,127,249,0.1)' : 'none',
       color:C.text,
       fontSize:13,
-      fontFamily:'inherit', outline:'none', resize:'vertical',
+      fontFamily:'inherit', outline:'none', resize:'vertical', boxSizing:'border-box',
+      transition:'border-color 0.15s, box-shadow 0.15s, background 0.15s',
       WebkitAppearance:'none', WebkitTextSizeAdjust:'100%',
     },
   };
@@ -1610,12 +1630,14 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   return (
     <>
     <div
-      style={cs({overflow:'hidden',display:'flex',flexDirection:'column',transition:'border-color 0.15s, transform 0.15s'})}
-      onMouseEnter={e=>{setHovered(true); e.currentTarget.style.borderColor=C.borderM; e.currentTarget.style.transform='translateY(-2px)';}}
-      onMouseLeave={e=>{setHovered(false); e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)';}}
+      style={{position:'relative',overflow:'hidden',display:'flex',flexDirection:'column',borderRadius:14,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',transition:'border-color 0.2s, transform 0.2s, box-shadow 0.2s'}}
+      onMouseEnter={e=>{setHovered(true); e.currentTarget.style.borderColor='rgba(45,127,249,0.35)'; e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 12px 32px rgba(45,127,249,0.12)';}}
+      onMouseLeave={e=>{setHovered(false); e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none';}}
     >
       <div style={{aspectRatio:'4/5',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
         {!p.photo && <Icon name="box" size={32} color={C.muted}/>}
+        {/* Voile dégradé bas — meilleure lisibilité du badge de statut, plus tech qu'un fond plat */}
+        <div style={{position:'absolute',bottom:0,left:0,right:0,height:'45%',background:'linear-gradient(transparent, rgba(0,0,0,0.55))',pointerEvents:'none'}}/>
         {p.logo && (
           <div style={{position:'absolute',bottom:8,left:8,width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:4}}>
             <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
@@ -1887,29 +1909,37 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{position:'fixed',top:0,bottom:0,left:isMobile?52:0,right:0,background:'rgba(0,0,0,0.75)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}>
-          <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:460,maxHeight:'82vh',overflow:'auto',borderRadius:12,background:C.card,border:`1px solid ${C.borderM}`,padding:'16px 16px 20px',boxShadow:'0 24px 64px rgba(0,0,0,0.6)'}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-              <h2 style={{fontSize:16,fontWeight:700,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
-              <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden auto',width:'100%',maxWidth:460,maxHeight:'82vh',borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.borderM}`,padding:'22px 20px 24px',boxShadow:'0 24px 64px rgba(0,0,0,0.6)'}}>
+            <div style={{position:'absolute',top:-60,right:-40,width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
+            <div style={{position:'relative',display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22}}>
+              <h2 style={{fontSize:16,fontWeight:800,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
+              <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                 <Icon name="x" size={14}/>
               </button>
             </div>
 
-            <div style={{marginBottom:12,display:'flex',alignItems:'center',gap:12}}>
+            <div style={{position:'relative',marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
               <input ref={photoRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e,'photo')}/>
-              <div onClick={()=>photoRef.current?.click()} style={{width:72,height:72,flexShrink:0,borderRadius:10,border:`2px dashed ${errors.photo?C.accent:C.border}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.055)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
-                {!form.photo && <Icon name="upload" size={18} color={C.sec}/>}
+              <div onClick={()=>photoRef.current?.click()}
+                style={{width:80,height:80,flexShrink:0,borderRadius:14,border:`1.5px dashed ${errors.photo?C.accent:'rgba(255,255,255,0.16)'}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.04)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'border-color 0.2s'}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(45,127,249,0.5)'}
+                onMouseLeave={e=>e.currentTarget.style.borderColor=errors.photo?C.accent:'rgba(255,255,255,0.16)'}
+              >
+                {!form.photo && <Icon name="upload" size={20} color={C.sec}/>}
               </div>
               <div>
-                <div style={{fontSize:12,fontWeight:600,color:C.text,marginBottom:3}}>Photo du produit<span style={{color:C.accent}}> *</span></div>
-                <div style={{fontSize:11,color:C.sec}}>Cliquez pour uploader</div>
+                <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Photo du produit<span style={{color:C.accent}}> *</span></div>
+                <div style={{fontSize:11,color:C.muted}}>Cliquez pour uploader</div>
               </div>
             </div>
 
-            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+            <div style={{position:'relative',display:'flex',flexDirection:'column',gap:18}}>
 
               <div>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.06em',color:C.muted,textTransform:'uppercase',marginBottom:8}}>Identité</div>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
+                  <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Identité</div>
+                </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
@@ -1919,16 +1949,22 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 </div>
               </div>
 
-              <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.06em',color:C.muted,textTransform:'uppercase',marginBottom:8}}>Vente</div>
+              <div>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
+                  <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Vente</div>
+                </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   <Field label="Lien de la page produit" k="lien" placeholder="https://..." form={form} setForm={setForm} errors={errors} C={C}/>
                   <Field label="Offre promo en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
                 </div>
               </div>
 
-              <div style={{borderTop:`1px solid ${C.border}`,paddingTop:16}}>
-                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.06em',color:C.muted,textTransform:'uppercase',marginBottom:8}}>Ciblage créatif</div>
+              <div>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
+                  <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Ciblage créatif</div>
+                </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   <Field label="Cible principale" k="cible" textarea placeholder="Femme +25ans Dakar, Teint métisse..." form={form} setForm={setForm} errors={errors} C={C}/>
                   <Field label="Utilité principale" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
@@ -1939,7 +1975,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                       {[1,2,3].map(n => {
                         const key = `couleur${n}`;
                         return form[key]
-                          ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.09)'}}>
+                          ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)'}}>
                               <input type="color" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:28,height:28,borderRadius:5,border:'none',cursor:'pointer',padding:0,background:'none'}}/>
                               <span style={{fontSize:10,color:C.sec,fontFamily:'monospace'}}>{form[key].toUpperCase()}</span>
                               <button type="button" onClick={()=>setForm(f=>({...f,[key]:''}))} style={{width:14,height:14,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.15)',color:C.sec,fontSize:9,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={8} color={C.sec}/></button>
@@ -1957,12 +1993,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             </div>
 
             {Object.keys(errors).length>0 && (
-              <div style={{marginTop:14,padding:'10px 14px',borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.accent}}>
+              <div style={{position:'relative',marginTop:16,padding:'10px 14px',borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.accent}}>
                 Merci de renseigner les champs marqués d'un astérisque.
               </div>
             )}
 
-            <button onClick={submit} style={{width:'100%',marginTop:18,padding:'12px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7}}>
+            <button onClick={submit} style={{position:'relative',width:'100%',marginTop:20,padding:'13px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 4px 16px rgba(45,127,249,0.3)'}}>
               <Icon name="check" size={14} color="#fff"/> {editingId ? 'Enregistrer les modifications' : 'Créer le produit'}
             </button>
           </div>
@@ -2135,13 +2171,16 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
       </div>
 
       {selectMode && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:14,padding:'10px 14px',borderRadius:9,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
-          <button onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(c=>c.id))}
-            style={{fontSize:11.5,fontWeight:600,color:C.accent,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
-            {selectedIds.length === filtered.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-          </button>
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <span style={{fontSize:11.5,color:C.sec}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>
+        <div style={{display:'flex',flexDirection:isMobile?'column':'row',alignItems:isMobile?'stretch':'center',justifyContent:'space-between',gap:10,marginBottom:14,padding:'12px 14px',borderRadius:9,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+            <button onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(c=>c.id))}
+              style={{fontSize:11.5,fontWeight:600,color:C.accent,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
+              {selectedIds.length === filtered.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+            </button>
+            {isMobile && <span style={{fontSize:11.5,color:C.sec}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>}
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+            {!isMobile && <span style={{fontSize:11.5,color:C.sec,flexShrink:0}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>}
             <button disabled={!selectedIds.length || bulkDownloading}
               onClick={async () => {
                 setBulkDownloading(true);
@@ -2152,12 +2191,12 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
                 }
                 setBulkDownloading(false);
               }}
-              style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit'}}>
-              <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? 'Téléchargement…' : `Télécharger (${selectedIds.length})`}
+              style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+              <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? '…' : `Télécharger (${selectedIds.length})`}
             </button>
             <button disabled={!selectedIds.length || deleting}
               onClick={() => setDeleteConfirm(true)}
-              style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:`1px solid ${selectedIds.length?'rgba(229,80,80,0.3)':C.border}`,background:selectedIds.length?'rgba(229,80,80,0.08)':'rgba(255,255,255,0.04)',color:selectedIds.length?'#E55050':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit'}}>
+              style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:`1px solid ${selectedIds.length?'rgba(229,80,80,0.3)':C.border}`,background:selectedIds.length?'rgba(229,80,80,0.08)':'rgba(255,255,255,0.04)',color:selectedIds.length?'#E55050':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
               <Icon name="x" size={13} color={selectedIds.length?'#E55050':C.muted}/> Supprimer
             </button>
           </div>
@@ -2359,7 +2398,7 @@ const Copies = ({products, setSection}) => {
                 <Icon name="search" size={26} color={C.muted}/>
                 <div style={{fontSize:12,color:C.sec,marginTop:10}}>Aucun résultat pour "{query}"</div>
               </div>
-            : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(2,1fr)',gap:10}}>
+            : <div style={{display:'grid',gridTemplateColumns:isMobile?'minmax(0,1fr)':'repeat(2,minmax(0,1fr))',gap:10}}>
                 {filtered.map(p => {
                   const total = (p.deliveries||[]).reduce((n,d)=>n+d.angles.length,0);
                   return (
@@ -2549,7 +2588,7 @@ const Marche = ({products, isDemo, setSection}) => {
               <Icon name="search" size={26} color={C.muted}/>
               <div style={{fontSize:12,color:C.sec,marginTop:10}}>Aucun résultat pour "{query}"</div>
             </div>
-          : <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(2,1fr)',gap:10}}>
+          : <div style={{display:'grid',gridTemplateColumns:isMobile?'minmax(0,1fr)':'repeat(2,minmax(0,1fr))',gap:10}}>
               {filtered.map(p => (
                 <button key={p.id} onClick={() => pick(p)}
                   style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,border:`1px solid ${C.border}`,background:C.card,cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.15s',width:'100%'}}
@@ -2875,12 +2914,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
           {/* Header */}
           <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
             <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(145deg,#141C33,#0B0F1A)',border:'1px solid rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <svg width="20" height="20" viewBox="0 0 100 100">
-                <g transform="translate(50,50)">
-                  <path d="M -21 17 L -21 6 L -7.5 -12 L 6 4 L 21 -19 L 21 -8" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M 12 -19 L 21 -19 L 21 -10" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-                </g>
-              </svg>
+              <AvaMark size={20}/>
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Inter',sans-serif"}}>Ava</div>
@@ -2957,12 +2991,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       }}
       onMouseEnter={e=>e.currentTarget.style.transform='scale(1.08)'}
       onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-        <svg width="26" height="26" viewBox="0 0 100 100">
-          <g transform="translate(50,50)">
-            <path d="M -21 17 L -21 6 L -7.5 -12 L 6 4 L 21 -19 L 21 -8" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-            <path d="M 12 -19 L 21 -19 L 21 -10" fill="none" stroke="#5B8DEF" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
-          </g>
-        </svg>
+        <AvaMark size={30}/>
         {showNudge && (
           <span style={{position:'absolute',top:-2,right:-2,width:20,height:20,borderRadius:'50%',background:'#E55050',color:'#fff',fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #0A0C11',boxShadow:'0 0 8px rgba(229,80,80,0.6)'}}>
             1
@@ -3797,9 +3826,14 @@ export default function Platform() {
       html,body,#root{margin:0;padding:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;}
       html,body{font-family:'Inter',sans-serif;}
       input,textarea,select{touch-action:manipulation;font-size:16px !important;font-family:'Inter',sans-serif;}
-      *{overscroll-behavior-y:contain;}
     `; // iOS zoom fix: Safari zoome si font-size<16px + fix rebond blanc PWA standalone
        // + police Inter posée sur html/body : les popups en createPortal (document.body) sortent
+       // Cause profonde corrigée (bug de scroll bloqué au survol des cartes) : la règle
+       // "*{overscroll-behavior-y:contain;}" s'appliquait à CHAQUE élément de la page, y compris
+       // les cartes avec overflow:hidden (ProductCard, cartes d'angle...) qui n'ont pourtant
+       // aucun contenu scrollable — piégeant le scroll dessus au lieu de le laisser remonter à la
+       // page. Le conteneur principal a déjà sa propre règle ciblée (overscrollBehaviorY inline
+       // plus bas) ; cette règle globale était redondante et strictement nuisible ailleurs.
        // de l'arbre React et n'héritaient donc pas de la police du conteneur principal.
     if (!document.getElementById('ios-zoom-fix')) document.head.appendChild(style);
     return () => { const s = document.getElementById('ios-zoom-fix'); if(s) s.remove(); };
