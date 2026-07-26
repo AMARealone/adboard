@@ -313,13 +313,12 @@ const Logo = ({size=28}) => (
 );
 
 // Marque visuelle propre à Ava (assistante) — volontairement distincte du logo AdStack (flèche
-// de croissance). Motif radar/pulse : cœur plein + deux arcs partiels désaxés, évoque une
-// présence "à l'écoute" plutôt que de recycler l'identité de la marque.
+// de croissance). Cœur plein + un seul anneau ouvert, épais et net — reste lisible même en
+// très petite taille (contrairement à un motif à plusieurs arcs fins, illisible une fois réduit).
 const AvaMark = ({size=20}) => (
   <svg width={size} height={size} viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="9" fill="#5B8DEF"/>
-    <circle cx="50" cy="50" r="24" fill="none" stroke="#5B8DEF" strokeWidth="6" strokeLinecap="round" strokeDasharray="72 250" transform="rotate(-35 50 50)" opacity="0.85"/>
-    <circle cx="50" cy="50" r="38" fill="none" stroke="#5B8DEF" strokeWidth="5" strokeLinecap="round" strokeDasharray="55 300" transform="rotate(150 50 50)" opacity="0.45"/>
+    <circle cx="50" cy="50" r="30" fill="none" stroke="#5B8DEF" strokeWidth="9" strokeLinecap="round" strokeDasharray="150 189" transform="rotate(-90 50 50)"/>
+    <circle cx="50" cy="50" r="11" fill="#5B8DEF"/>
   </svg>
 );
 
@@ -357,6 +356,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
     alerttriangle: <><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
     creditcard: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
     help: <><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2.5 3.2"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
+    chevron: <polyline points="6 9 12 15 18 9"/>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled?color:'none'} stroke={filled?'none':color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -407,6 +407,7 @@ const LockOverlay = () => (
 const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null, onOpenLogin=null, sectionBadges={}}) => {
   const showCollapsed = collapsed && !isMobile;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState({}); // {groupName: true} si replié — tout ouvert par défaut
 
   const navClick = (id) => {
     set(id);
@@ -507,11 +508,20 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       {NAV.map((n, i) => {
         const isTarifs = n.id === 'tarifs';
         const showGroupHeader = (i === 0 || NAV[i-1].group !== n.group) && !(showCollapsed || (isMobile && !mobileOpen));
+        const groupIsCollapsed = !!collapsedGroups[n.group];
+        if (groupIsCollapsed && !showGroupHeader) return null; // items masqués si le groupe est replié
         return (
         <Fragment key={n.id}>
         {showGroupHeader && (
-          <div style={{padding:'14px 10px 6px',fontSize:10,fontWeight:700,letterSpacing:'0.6px',textTransform:'uppercase',color:C.muted}}>{n.group}</div>
+          <button onClick={() => setCollapsedGroups(g => ({...g, [n.group]: !g[n.group]}))}
+            style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 10px 6px',background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+            <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.6px',textTransform:'uppercase',color:C.muted}}>{n.group}</span>
+            <span style={{display:'flex',transform:groupIsCollapsed?'rotate(-90deg)':'rotate(0deg)',transition:'transform 0.2s'}}>
+              <Icon name="chevron" size={11} color={C.muted} strokeWidth={2.2}/>
+            </span>
+          </button>
         )}
+        {!groupIsCollapsed && (
         <button onClick={() => navClick(n.id)} title={(showCollapsed || (isMobile && !mobileOpen)) ? n.label : undefined} style={{
           width:'100%',display:'flex',alignItems:'center',justifyContent:(showCollapsed || (isMobile && !mobileOpen))?'center':'flex-start',
           gap:(showCollapsed || (isMobile && !mobileOpen))?0:10,padding:(showCollapsed || (isMobile && !mobileOpen))?'10px 0':'9px 10px',
@@ -563,6 +573,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             </span>
           )}
         </button>
+        )}
         </Fragment>
       );})}
     </nav>
@@ -1352,12 +1363,15 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 
       {/* Toggle notifications push */}
       {pushStatus !== 'unsupported' && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'14px 16px',borderRadius:10,background:C.card,border:`1px solid ${C.border}`,marginBottom:20,flexWrap:'wrap'}}>
-          <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}>
-            <Icon name="bell" size={16} color={pushStatus==='enabled'?C.accent:C.sec}/>
+        <div style={{position:'relative',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'16px 18px',borderRadius:14,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,marginBottom:20,flexWrap:'wrap'}}>
+          <div style={{position:'absolute',top:-40,right:-20,width:130,height:130,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
+          <div style={{position:'relative',display:'flex',alignItems:'center',gap:12,minWidth:0}}>
+            <div style={{width:34,height:34,borderRadius:10,background:pushStatus==='enabled'?C.accentS:'rgba(255,255,255,0.05)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+              <Icon name="bell" size={15} color={pushStatus==='enabled'?C.accent:C.sec}/>
+            </div>
             <div>
-              <div style={{fontSize:12.5,fontWeight:600,color:C.text}}>Notifications push</div>
-              <div style={{fontSize:10.5,color:C.muted}}>
+              <div style={{fontSize:12.5,fontWeight:700,color:C.text}}>Notifications push</div>
+              <div style={{fontSize:10.5,color:C.muted,marginTop:1}}>
                 {pushStatus==='denied' ? 'Bloquées dans les réglages de ton navigateur' :
                  pushStatus==='enabled' ? 'Activées sur cet appareil' :
                  pushStatus==='checking' ? 'Vérification...' :
@@ -1365,13 +1379,13 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
               </div>
             </div>
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
+          <div style={{position:'relative',display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
             <button
               onClick={togglePush}
               disabled={pushLoading || pushStatus==='denied' || pushStatus==='checking'}
               style={{
                 width:42,height:24,borderRadius:12,border:'none',position:'relative',
-                background: pushStatus==='enabled' ? C.accent : 'rgba(255,255,255,0.15)',
+                background: pushStatus==='enabled' ? `linear-gradient(135deg, ${C.accent}, #2D6FE0)` : 'rgba(255,255,255,0.15)',
                 cursor: (pushStatus==='denied'||pushStatus==='checking') ? 'not-allowed' : 'pointer',
                 opacity: pushStatus==='denied' ? 0.5 : 1,
                 transition:'background 0.2s', flexShrink:0,
@@ -1387,25 +1401,26 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
       )}
 
       {!notifications.length ? (
-        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
-          <div style={{width:44,height:44,borderRadius:12,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.accent}}>
+        <div style={{position:'relative',overflow:'hidden',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px solid ${C.border}`,borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)'}}>
+          <div style={{position:'absolute',top:-60,left:'50%',transform:'translateX(-50%)',width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.1), transparent 70%)',pointerEvents:'none'}}/>
+          <div style={{position:'relative',width:44,height:44,borderRadius:12,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.accent}}>
             <Icon name="bell" size={20}/>
           </div>
-          <div style={{fontSize:15,fontWeight:700,color:C.text}}>Aucune notification</div>
-          <div style={{fontSize:12,color:C.sec}}>Vos notifications apparaîtront ici</div>
+          <div style={{position:'relative',fontSize:15,fontWeight:700,color:C.text}}>Aucune notification</div>
+          <div style={{position:'relative',fontSize:12,color:C.sec}}>Vos notifications apparaîtront ici</div>
         </div>
       ) : (
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {notifications.map(n => (
-            <div key={n.id} style={{display:'flex',alignItems:'flex-start',gap:12,padding:'14px 16px',borderRadius:10,background:n.read?'transparent':C.accentS,border:`1px solid ${n.read?C.border:'rgba(45,127,249,0.2)'}`,transition:'background .2s'}}>
-              <div style={{width:36,height:36,borderRadius:9,background:`${COLORS[n.type]||C.accent}18`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>
-                <Icon name={NOTIF_ICONS[n.type]||'bell'} size={16} color={COLORS[n.type]||C.accent}/>
+            <div key={n.id} style={{position:'relative',display:'flex',alignItems:'flex-start',gap:12,padding:'14px 16px',borderRadius:12,background:n.read?'rgba(255,255,255,0.02)':'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${n.read?C.border:'rgba(45,127,249,0.25)'}`,borderLeft:`2px solid ${n.read?C.border:(COLORS[n.type]||C.accent)}`,transition:'background .2s'}}>
+              <div style={{flexShrink:0,marginTop:1,color:COLORS[n.type]||C.accent}}>
+                <Icon name={NOTIF_ICONS[n.type]||'bell'} size={15}/>
               </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:13,color:C.text,lineHeight:1.4,marginBottom:3}}>{n.message}</div>
                 <div style={{fontSize:10,color:C.muted}}>{new Date(n.created_at).toLocaleString('fr-FR')}</div>
               </div>
-              <button onClick={()=>onDeleteOne(n.id)} title="Supprimer" style={{width:22,height:22,borderRadius:5,border:`1px solid ${C.border}`,background:'transparent',color:C.muted,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={10}/></button>
+              <button onClick={()=>onDeleteOne(n.id)} title="Supprimer" style={{width:22,height:22,borderRadius:6,border:'none',background:'transparent',color:C.muted,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={10}/></button>
             </div>
           ))}
         </div>
@@ -2104,6 +2119,31 @@ async function shareOrDownloadImage(url, filename, isMobile) {
   await downloadImageDirect(url, filename);
 }
 
+// Version groupée — sur mobile, tente UN SEUL partage natif avec toutes les images sélectionnées
+// (le menu natif "Enregistrer dans Photos" les prend alors toutes en une fois), au lieu de
+// forcer des téléchargements de fichiers isolés dans le navigateur.
+async function shareOrDownloadMultiple(items, isMobile) {
+  if (isMobile && navigator.share && navigator.canShare) {
+    try {
+      const files = await Promise.all(items.map(async (item) => {
+        const response = await fetch(item.imageUrl);
+        const blob = await response.blob();
+        return new File([blob], `${item.angle}-${item.week}.jpg`.replace(/[^\w.-]+/g,'_'), { type: blob.type || 'image/jpeg' });
+      }));
+      if (navigator.canShare({ files })) {
+        await navigator.share({ files });
+        return;
+      }
+    } catch(e) { /* utilisateur a annulé, ou partage multi-fichiers non supporté — on retombe ci-dessous */ }
+  }
+  // Retombe sur un partage/téléchargement image par image (natif si possible sur mobile,
+  // téléchargement direct sur desktop)
+  for (const item of items) {
+    await shareOrDownloadImage(item.imageUrl, `${item.angle}-${item.week}.jpg`.replace(/[^\w.-]+/g,'_'), isMobile);
+    await new Promise(r => setTimeout(r, 350));
+  }
+}
+
 const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
@@ -2196,10 +2236,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
               onClick={async () => {
                 setBulkDownloading(true);
                 const items = filtered.filter(c => selectedIds.includes(c.id));
-                for (const item of items) {
-                  await downloadImageDirect(item.imageUrl, `${item.angle}-${item.week}.jpg`.replace(/[^\w.-]+/g,'_'));
-                  await new Promise(r => setTimeout(r, 350)); // laisse le temps au navigateur entre chaque téléchargement
-                }
+                await shareOrDownloadMultiple(items, isMobile);
                 setBulkDownloading(false);
               }}
               style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
@@ -2414,18 +2451,26 @@ const Copies = ({products, setSection}) => {
                   const total = (p.deliveries||[]).reduce((n,d)=>n+d.angles.length,0);
                   return (
                     <button key={p.id} onClick={()=>pick(p)}
-                      style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,border:`1px solid ${C.border}`,background:C.card,cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.15s',width:'100%'}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.borderM;e.currentTarget.style.background='rgba(255,255,255,0.05)';}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.card;}}
+                      style={{position:'relative',overflow:'hidden',display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:12,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.2s',width:'100%'}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(45,127,249,0.35)';e.currentTarget.style.boxShadow='0 8px 24px rgba(45,127,249,0.1)';}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.boxShadow='none';}}
                     >
-                      <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                      <div style={{width:48,height:48,borderRadius:10,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
                         {!p.photo && <Icon name="box" size={20} color={C.sec}/>}
                       </div>
                       <div style={{flex:1,overflow:'hidden'}}>
                         <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
-                        <div style={{fontSize:11,color:C.sec,marginTop:3}}>{p.pays||'—'} · {total} angle{total!==1?'s':''} livré{total!==1?'s':''}</div>
+                        <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4}}>
+                          <span style={{width:5,height:5,borderRadius:'50%',background:total>0?'#22C55E':C.muted,flexShrink:0}}/>
+                          <span style={{fontSize:11,color:C.sec}}>{p.pays||'—'} · {total>0 ? `${total} angle${total!==1?'s':''} livré${total!==1?'s':''}` : 'En attente'}</span>
+                        </div>
                       </div>
-                      {total>0 ? <Tag ch={`${total} A`} color="white"/> : <Tag ch="En attente" color="gray"/>}
+                      {total>0 && (
+                        <div style={{textAlign:'center',flexShrink:0}}>
+                          <div style={{fontFamily:"'DM Mono',monospace",fontSize:17,fontWeight:800,color:C.accent,lineHeight:1}}>{total}</div>
+                          <div style={{fontSize:8.5,color:C.muted,textTransform:'uppercase',letterSpacing:'0.4px',marginTop:2}}>angles</div>
+                        </div>
+                      )}
                     </button>
                   );
                 })}
@@ -2602,18 +2647,23 @@ const Marche = ({products, isDemo, setSection}) => {
           : <div style={{display:'grid',gridTemplateColumns:isMobile?'minmax(0,1fr)':'repeat(2,minmax(0,1fr))',gap:10}}>
               {filtered.map(p => (
                 <button key={p.id} onClick={() => pick(p)}
-                  style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,border:`1px solid ${C.border}`,background:C.card,cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.15s',width:'100%'}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor=C.borderM;e.currentTarget.style.background='rgba(255,255,255,0.05)';}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background=C.card;}}
+                  style={{position:'relative',overflow:'hidden',display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:12,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',cursor:'pointer',textAlign:'left',fontFamily:'inherit',transition:'all 0.2s',width:'100%'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(45,127,249,0.35)';e.currentTarget.style.boxShadow='0 8px 24px rgba(45,127,249,0.1)';}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.boxShadow='none';}}
                 >
-                  <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+                  <div style={{width:48,height:48,borderRadius:10,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
                     {!p.photo && <Icon name="box" size={20} color={C.sec}/>}
                   </div>
                   <div style={{flex:1,overflow:'hidden'}}>
                     <div style={{fontSize:13,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
-                    <div style={{fontSize:11,color:C.sec,marginTop:3}}>{p.pays||'—'} · {p.marche ? 'Données disponibles' : 'En attente'}</div>
+                    <div style={{display:'flex',alignItems:'center',gap:6,marginTop:4}}>
+                      <span style={{width:5,height:5,borderRadius:'50%',background:p.marche?'#22C55E':C.muted,flexShrink:0}}/>
+                      <span style={{fontSize:11,color:C.sec}}>{p.pays||'—'} · {p.marche ? 'Données disponibles' : 'En attente'}</span>
+                    </div>
                   </div>
-                  {p.marche ? <Tag ch="Data" color="white"/> : <Tag ch="En attente" color="gray"/>}
+                  {p.marche && (
+                    <div style={{flexShrink:0,color:'#22C55E'}}><Icon name="check" size={16}/></div>
+                  )}
                 </button>
               ))}
             </div>
@@ -3516,6 +3566,15 @@ export default function Platform() {
   }, [section]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
+
+  // Précharge chaque image de créative en arrière-plan dès qu'elle apparaît dans products —
+  // le navigateur la met en cache HTTP standard (aucune compression, qualité intacte). Résultat
+  // recherché : au moment où le client ouvre réellement la Galerie, l'image est déjà en cache,
+  // donc affichage instantané au lieu d'un chargement visible à chaque visite.
+  useEffect(() => {
+    const urls = products.flatMap(p => (p.creatives || []).map(c => c.imageUrl)).filter(Boolean);
+    urls.forEach(url => { const img = new Image(); img.src = url; });
+  }, [products]);
 
   // ── Badges "nouveau contenu" (Galerie/Ad Copies/Données Marché) — même principe que
   // Notifications : compare le total actuel au dernier total vu (localStorage), affiche
