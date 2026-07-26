@@ -895,7 +895,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
           </div>
           <div class="prodv2-agent pending" id="prodv2Agent4">
             <div class="prodv2-agent-head"><div class="prodv2-agent-badge">4</div><div class="prodv2-agent-name">Données Marché</div></div>
-            <div class="prodv2-agent-model">gemini-2.5-pro</div>
+            <div class="prodv2-agent-model">extrait de la réponse Analyste — pas un appel séparé</div>
             <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
             <div class="prodv2-agent-status">En attente</div>
           </div>
@@ -2236,6 +2236,30 @@ function prodv2PickCTs() {
 }
 
 // Extract angles from synthesis text (S2 section : 3 angles)
+// Sépare la réponse unique de l'Analyste en deux parties : la synthèse texte (S0-S8, pour
+// Creative Image / Copywriter) et le JSON données marché (pour le client, dans AdBoard).
+// Remplace l'ancien appel séparé au 4e agent — les deux sortent du même appel, garantissant
+// la cohérence entre les deux (même cible, mêmes angles, mêmes chiffres).
+function prodv2SplitSynthesisAndMarche(raw) {
+  const delimiter = '===DONNEES_MARCHE===';
+  const idx = raw.indexOf(delimiter);
+  if (idx === -1) {
+    console.warn('[Analyste] Délimiteur DONNEES_MARCHE introuvable — données marché absentes pour ce batch.');
+    return { synthesisText: raw, marche: null };
+  }
+  const synthesisText = raw.slice(0, idx).trim();
+  let jsonPart = raw.slice(idx + delimiter.length).trim();
+  // Tolérance : retire d'éventuels backticks/code fence si le modèle en a mis malgré la consigne
+  jsonPart = jsonPart.replace(/^```json\s*/i, '').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+  let marche = null;
+  try {
+    marche = JSON.parse(jsonPart);
+  } catch(e) {
+    console.error('[Analyste] JSON données marché invalide :', e.message, '\nContenu reçu :', jsonPart.slice(0, 500));
+  }
+  return { synthesisText, marche };
+}
+
 function prodv2ExtractAngles(synthesis, nbAngles=3) {
   // Looks for lines starting with "Angle 1", "Angle 2", ... "Angle N"
   // Retourne TOUS les angles trouvés (pas tronqué à nbAngles) — nécessaire en renouvellement,
@@ -2375,14 +2399,14 @@ async function prodv2Launch() {
         + _briefUrl + '\n\n'
       : '';
     // Nombre d'angles imposé explicitement — l'Analyste ne doit plus supposer 3 par défaut
-    const _nbAnglesHeader = `⚠️ NOMBRE D'ANGLES ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}distincts en S2 (en plus des existants recopiés si renouvellement, voir ci-dessous), ni plus ni moins, peu importe le nombre habituel.\n\n`;
+    const _nbAnglesHeader = `⚠️ NOMBRE D'ANGLES ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}distincts en S2, ni plus ni moins, peu importe le nombre habituel. ${prodv2State.renewalContext?.estRenouvellement ? "S2 ne contient QUE ces angles — ne recopie jamais les anciens dedans, ils restent seulement dans l'historique fourni plus bas pour éviter les répétitions." : ''}\n\n`;
 
     // ── Contexte de renouvellement — injecté uniquement si ce n'est pas la première commande
     // sur ce produit (voir MODE RENOUVELLEMENT dans le fichier de compétences) ──
     let _renewalHeader = '';
     const rctx = prodv2State.renewalContext;
     if (rctx?.estRenouvellement && rctx.syntheseExistante) {
-      _renewalHeader = `⚠️ COMMANDE DE RENOUVELLEMENT — CE N'EST PAS LA PREMIÈRE COMMANDE SUR CE PRODUIT :\nROTATION NÉCESSAIRE : ${rctx.rotationNecessaire ? 'OUI' : 'NON'}\n${rctx.personaActuel ? `PERSONA ACTUEL : ${rctx.personaActuel.nom || '?'} (${rctx.nbAnglesPersonaCourant} angle(s) déjà exploité(s) sur ce persona)` : ''}\n\nSYNTHÈSE EXISTANTE POUR CE PRODUIT :\n${rctx.syntheseExistante}\n\n(Voir section MODE RENOUVELLEMENT de tes instructions pour savoir exactement quoi faire de cette synthèse existante.)\n\n`;
+      _renewalHeader = `⚠️ COMMANDE DE RENOUVELLEMENT — CE N'EST PAS LA PREMIÈRE COMMANDE SUR CE PRODUIT :\nROTATION NÉCESSAIRE : ${rctx.rotationNecessaire ? 'OUI' : 'NON'}\n${rctx.cibleActuelle ? `CIBLE ACTUELLE (dernier lot livré) : ${rctx.cibleActuelle} (${rctx.nbAnglesCibleCourante} angle(s) déjà exploité(s) sur cette cible)` : ''}\n\nANGLES DÉJÀ EXPLOITÉS DANS L'HISTORIQUE DE CE PRODUIT (toutes cibles confondues — à ne JAMAIS reproduire, même après une rotation de cible) :\n${(rctx.anglesHistorique && rctx.anglesHistorique.length) ? rctx.anglesHistorique.map(n => `- ${n}`).join('\n') : '(aucun — vérifier quand même DONNÉES BRUTES pour éviter les évidences du marché)'}\n\nSYNTHÈSE EXISTANTE POUR CE PRODUIT :\n${rctx.syntheseExistante}\n\n(Voir section MODE RENOUVELLEMENT de tes instructions pour savoir exactement quoi faire de cette synthèse existante — notamment comparer le champ cible du BRIEF ci-dessous à la cible actuelle indiquée plus haut.)\n\n`;
     }
 
     const analysteParts = [
@@ -2392,12 +2416,13 @@ async function prodv2Launch() {
     if(prodv2State.logoB64) {
       analysteParts.push({ type:'image', source:{ type:'base64', media_type: prodv2State.logoMime, data: prodv2State.logoB64 } });
     }
-    const synthesis = await apiAnalysteSynthese(analysteSystem, analysteParts, 32000, prodv2State.brief, prodAbortController.signal);
-    prodv2State.synthesis = synthesis;
-    // Garde toujours les N DERNIERS angles trouvés (les plus récents) pour la génération de
-    // CETTE commande — sans effet si commande normale (il n'y en a que N au total), essentiel
-    // en renouvellement (la synthèse contient anciens + nouveaux, seuls les nouveaux comptent ici).
-    prodv2State.angles = prodv2ExtractAngles(synthesis, nbAngles).slice(-nbAngles);
+    const rawResponse = await apiAnalysteSynthese(analysteSystem, analysteParts, 32000, prodv2State.brief, prodAbortController.signal);
+    const { synthesisText, marche } = prodv2SplitSynthesisAndMarche(rawResponse);
+    prodv2State.synthesis = synthesisText;
+    prodv2State.marche = marche;
+    // Mode remplacement (pas accumulation) : S2 ne contient QUE les angles de cette commande —
+    // plus besoin de ne garder que les N derniers, ils sont tous nouveaux par construction.
+    prodv2State.angles = prodv2ExtractAngles(synthesisText, nbAngles);
     prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
 
     // Show synthesis in accordion
@@ -2485,39 +2510,20 @@ async function prodv2Launch() {
       );
     }
 
-    // ── Livrable Données Marché — 4e agent, en parallèle, jusqu'ici jamais câblé dans le
-    // pipeline réel malgré son existence. Nécessite un productId (donc une commande liée) —
-    // ignoré proprement pour les tests manuels sans ticket.
-    let marchePromise = Promise.resolve();
+    // Données marché — déjà extraites de la même réponse Analyste (voir prodv2SplitSynthesisAndMarche
+    // plus haut). Plus d'appel séparé à un 4e agent : garantit la cohérence par construction
+    // (même cible, mêmes angles, mêmes chiffres que S0-S8) et économise un appel complet.
     if (prodv2State.productId) {
-      prodv2SetAgentState(4, 'active', 'Analyse positionnement + persona + angles marché…', 20);
-      marchePromise = (async () => {
-        try {
-          const res = await fetch(SERVER + '/livrable-marche', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            signal: prodAbortController.signal,
-            body: JSON.stringify({
-              synthese: prodv2State.synthesis,
-              brief: prodv2State.brief,
-              productId: prodv2State.productId,
-              systemPrompt: COMP_FILES['COMPETENCE_LIVRABLE_MARCHE.md'] || ''
-            })
-          });
-          const d = await res.json();
-          if (d.error) throw new Error(d.error);
-          prodv2State.marche = d.marche;
-          prodv2SetAgentState(4, 'done', `Données marché prêtes · ${d.nouveaux_angles || 0} nouvel(aux) angle(s)`, 100);
-        } catch(err) {
-          if (err.name === 'AbortError') throw err;
-          console.error('Erreur Livrable Marché :', err);
-          prodv2SetAgentState(4, 'active', `Erreur : ${err.message}`, 0);
-        }
-      })();
+      if (prodv2State.marche) {
+        prodv2SetAgentState(4, 'done', `Données marché extraites · ${(prodv2State.marche.angles||[]).length} angle(s)`, 100);
+      } else {
+        prodv2SetAgentState(4, 'active', 'Échec extraction — voir console', 0);
+      }
     } else {
       prodv2SetAgentState(4, 'done', 'Ignoré — production hors commande (pas de produit lié)', 100);
     }
 
-    await Promise.all([...creativePromises, ...copyPromises, marchePromise]);
+    await Promise.all([...creativePromises, ...copyPromises]);
 
     prodv2SetAgentState(2, 'done', `${nbCreativesTotal} / ${nbCreativesTotal} créatives générées`, 100);
     prodv2SetAgentState(3, 'done', `${nbAngles} / ${nbAngles} sets ad copy générés`, 100);
@@ -3661,6 +3667,8 @@ Le persona lit cette pub en état de faible disponibilité cognitive (scroll pas
 RÈGLE #0quater — INTÉGRATION PRODUIT TOUJOURS SPÉCIFIÉE
 Le PRODUIT FOURNI doit TOUJOURS être visuellement intégré, jamais absent du cadre, même si le CT montre son produit absent (dans ce cas, choisir un mode d'intégration naturel qui s'ajoute à la scène sans changer son architecture). Spécifier UNIQUEMENT placement/échelle/rôle — ne jamais décrire l'apparence du produit (le PRODUIT FOURNI la donne directement à la génération).
 
+⚠️ CAS À RISQUE — PRODUIT EN CONTEXTE IMBRIQUÉ (capture d'écran de conversation/notification/story affichant une photo du produit à l'intérieur) : c'est structurellement plus difficile pour la fidélité (le modèle doit rendre une interface ET le produit fidèle en même temps, ce qui dilue l'attention). Dans ce cas, ne te contente jamais de la mention standard : ajoute dans la description de CETTE zone une phrase de fidélité dédiée et renforcée (ex : "reproduction fidèle à 100% du PRODUIT FOURNI, mêmes proportions, même étiquette, aucun détail modifié").
+
 RÈGLE HIÉRARCHIQUE — PRODUIT RÉEL > PRÉSENTATION PHYSIQUE DU CT
 Le FORMAT physique du produit du CT (gélule, flacon, sachet, crème...) n'est PAS structurel — c'est du contenu propre à ce CT. Si le CT montre une gélule et que le PRODUIT FOURNI est un flacon, tu décris le FLACON tenu/présenté de manière analogue — jamais la gélule. En cas de conflit entre fidélité produit et fidélité de présentation du CT, la fidélité produit gagne toujours.
 
@@ -3711,7 +3719,7 @@ INSTRUCTIONS GEMINI ADDITIONNELLES :
 → Format 4:5 strict, zéro bande noire
 → Qualité photographique : haute définition, netteté maximale, éclairage maîtrisé
 → Textes : uniquement ceux entre guillemets ci-dessus, langue S1
-→ Couleurs : EXCLUSIVEMENT la palette S0 (codes si identifiables) — jamais les couleurs du CT
+⚠️ RÈGLE CRITIQUE — TRADUCTION JAMAIS DÉLÉGUÉE : les textes entre guillemets doivent être écrits PAR TOI, DIRECTEMENT dans la langue S1, dans CE prompt — jamais en français (ou toute autre langue) accompagnés d'une instruction du type "traduction à appliquer", "langue X si spécifié", "à traduire". Une fois que le prompt part vers l'étape de génération d'image, il est TROP TARD pour une traduction fiable — un modèle de génération d'image traduit mal et de façon imprévisible (mélange de langues, mots inventés, script incorrect). Si S1 indique une langue que tu maîtrises moins bien, fais de ton mieux pour une traduction directe et fidèle toi-même plutôt que de reporter la tâche — ne laisse jamais un texte en français suivi d'une consigne de traduction.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GATE FINAL (silencieux — si un point échoue, réécris tout)
@@ -3747,21 +3755,43 @@ Tu reçois : un brief client (JSON), une photo produit, et un bloc DONNÉES BRUT
 MODE RENOUVELLEMENT — SI UNE SYNTHÈSE EXISTANTE T'EST FOURNIE (COMMANDE RÉPÉTÉE SUR LE MÊME PRODUIT)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Si ton input contient un bloc "SYNTHÈSE EXISTANTE POUR CE PRODUIT" — ce n'est pas ta première commande sur ce produit. Ne repars PAS de zéro. Deux cas, selon ce qu'indique le bloc "ROTATION NÉCESSAIRE" :
+Si ton input contient un bloc "SYNTHÈSE EXISTANTE POUR CE PRODUIT" — ce n'est pas ta première commande sur ce produit. Ne repars PAS de zéro à chaque fois, mais ne recopie pas non plus aveuglément l'ancien : ce mode se joue en 2 étapes obligatoires, DANS CET ORDRE.
 
-CAS A — ROTATION NÉCESSAIRE : NON (persona courant a encore de la marge, moins de 18 angles exploités) :
-→ Reprends EXACTEMENT le même persona (S1) que la synthèse existante — même nom, même profil, mêmes critères de validation. Ne le re-dérive pas, ne le modifie pas, ne le "améliore" pas. C'est la même personne tout le long de la vie de ce persona.
-→ Le bloc "ANGLES DÉJÀ EXPLOITÉS" liste les angles déjà utilisés (par leur nom) — construis UNIQUEMENT des angles NOUVEAUX, distincts de tous ceux listés, pour ce même persona. Un angle "nouveau" doit reposer sur un moteur (peur/désir/douleur) ou un mécanisme réellement différent — pas une reformulation d'un angle déjà listé avec d'autres mots.
-→ Utilise DONNÉES BRUTES (recherche fraîche) pour trouver ces nouveaux angles — le marché et les avis évoluent, de nouveaux verbatims/objections/désirs peuvent apparaître depuis la dernière analyse.
-→ Ton output reste une synthèse COMPLÈTE S0 à S8 (S0/S1/S4/S5/S6/S7/S8 peuvent rester proches de l'existant s'ils sont toujours valables — actualise-les seulement si DONNÉES BRUTES révèle un changement réel), mais S2 contient la liste COMPLÈTE des angles : ceux déjà existants (recopiés tels quels, ne les réécris pas) + les nouveaux que tu viens de construire.
+ÉTAPE 1 — RELECTURE OBLIGATOIRE DU BRIEF COURANT (avant toute décision sur les angles)
+Le brief que tu reçois pour CETTE commande peut différer du brief qui avait servi à la dernière synthèse — le client a pu modifier sa fiche produit entre-temps. Compare systématiquement, même si tu penses qu'il "n'y a probablement rien de neuf" :
+→ PRIX : si le prix du brief actuel diffère de celui de la synthèse existante (S0 offre, S4 pricing map) → mets à jour ces sections avec le nouveau prix. Le reste de S4 (concurrents, positionnement) n'a pas besoin d'être re-scrapé sauf si DONNÉES BRUTES apporte une info plus fraîche.
+→ LIEN DE PAGE PRODUIT : si un nouveau lien est fourni (ou un lien pour la première fois) → vérifie s'il révèle un nom de revendeur lisible (voir RÈGLE ANTI-AI-SLOP sur le nom de marque) et actualise si pertinent.
+→ CIBLE : voir ÉTAPE 2 ci-dessous — c'est le champ le plus structurant, traité à part.
+Cette relecture s'applique QUE la rotation soit nécessaire ou non (voir CAS A/B/C plus bas) — un changement de prix ne déclenche pas à lui seul une rotation de cible.
 
-CAS B — ROTATION NÉCESSAIRE : OUI (persona courant a déjà atteint le seuil) :
-→ Ce persona a été exploité au maximum de ce qu'il peut raisonnablement porter. Construis un NOUVEAU persona — élargi mais crédible, jamais un simple copier-coller avec un prénom différent. "Élargi" veut dire : un cercle plus large de personnes concernées par le même produit (ex : du persona initial très spécifique vers une variante socio-démographique voisine, un contexte d'usage adjacent, un déclencheur différent mais plausible pour ce même produit) — jamais un persona qui n'a plus de rapport crédible avec le produit.
-→ Ce nouveau persona doit valider les mêmes 4 critères (RÈGLE DE VALIDATION ci-dessous) indépendamment de l'ancien.
-→ Une fois ce nouveau persona posé, tu repars sur un compteur d'angles à zéro pour LUI — construis ses premiers angles comme pour une toute première commande (le bloc "ANGLES DÉJÀ EXPLOITÉS" de l'ancien persona ne le concerne pas, il peut réutiliser librement des mécanismes déjà vus sur l'ancien persona si pertinents pour lui).
-→ Signale ce changement explicitement dans S1 : commence la section persona par "NOUVEAU PERSONA (rotation depuis le persona précédent, seuil d'angles atteint) : ...".
+ÉTAPE 2 — GESTION DE LA CIBLE, PUIS DÉCISION DU CAS À APPLIQUER
+Le brief contient un champ "cible" (description courte que le client peut renseigner librement dans sa fiche produit, ou laisser vide). Applique cette logique, dans cet ordre :
 
-Si aucun bloc "SYNTHÈSE EXISTANTE POUR CE PRODUIT" n'est présent dans ton input : c'est une première commande sur ce produit, procède normalement (tout ce qui suit).
+a) Le brief actuel a un champ cible NON VIDE, et il DIFFÈRE du persona/cible de la synthèse existante (comparaison sur le sens, pas mot pour mot) → LE CLIENT IMPOSE UNE NOUVELLE CIBLE. Applique le CAS C ci-dessous, immédiatement, sans attendre un seuil d'angles — peu importe où en était le compteur de l'ancienne cible.
+b) Le brief actuel a un champ cible NON VIDE, et il correspond globalement à la cible déjà utilisée (le client n'a rien changé, ou a juste reformulé la même idée) → le persona de la synthèse existante reste la base valide. Passe à la vérification de rotation (CAS A ou CAS B selon le compteur d'angles fourni).
+c) Le brief actuel a un champ cible VIDE → le client n'a rien précisé pour CE batch. Ne réinvente PAS une cible différente sous prétexte que le champ est vide : la cible déjà établie dans la synthèse existante reste la base valide. Passe à la vérification de rotation (CAS A ou CAS B).
+Si c'est la première commande sur ce produit et que le champ cible est rempli : pars directement de cette description comme fondation du persona (ÉTAPE 2 ne s'applique qu'en renouvellement, mais cette règle de base s'applique aussi à une première commande) — le scraping sert à l'ENRICHIR (âge précis, ville, revenu, désirs/craintes réels) jamais à la contredire ou la remplacer par une cible différente que tu jugerais "meilleure".
+
+CAS A — MÊME CIBLE, ROTATION NON NÉCESSAIRE (moins de 18 angles exploités sur cette cible) :
+→ Reprends EXACTEMENT le même persona (S1) que la synthèse existante — même nom, même profil. Ne le re-dérive pas, ne le "améliore" pas.
+→ REMPLACEMENT, PAS ACCUMULATION : le bloc "ANGLES DÉJÀ EXPLOITÉS DANS L'HISTORIQUE" liste TOUS les angles déjà utilisés pour ce produit depuis le début (toutes cibles confondues, pas seulement la synthèse la plus récente) — construis exactement le nombre d'angles demandé pour CETTE commande, tous NOUVEAUX et distincts de TOUS les angles listés dans l'historique. Un angle "nouveau" doit reposer sur un moteur (peur/désir/douleur) ou un mécanisme réellement différent — pas une reformulation.
+→ Utilise DONNÉES BRUTES (recherche fraîche) pour trouver ces nouveaux angles — le marché et les avis évoluent.
+→ Ton output S2 contient UNIQUEMENT les angles de CETTE commande (le nombre exact demandé, ni plus ni moins) — les anciens angles ne sont PAS recopiés dans S2, ils restent seulement dans l'historique serveur pour éviter les répétitions. S0/S4/S5/S6/S7/S8 restent proches de l'existant s'ils sont toujours valables, actualisés uniquement si l'ÉTAPE 1 ou DONNÉES BRUTES révèle un changement réel.
+
+CAS B — MÊME CIBLE, ROTATION NÉCESSAIRE (seuil d'angles atteint pour cette cible) :
+→ Construis une NOUVELLE cible — élargie mais crédible à partir de l'actuelle (ex : cercle plus large de personnes concernées par le même produit, contexte d'usage adjacent, variante socio-démographique voisine) — jamais un persona qui n'a plus de rapport crédible avec le produit. Objectif explicite : permettre au client de mieux scaler.
+→ Ce nouveau persona doit valider les mêmes 4 critères (RÈGLE DE VALIDATION plus bas) indépendamment de l'ancien.
+→ Compteur d'angles reparti à zéro pour CETTE nouvelle cible — construis ses premiers angles comme pour une toute première commande sur elle (l'historique des angles de l'ancienne cible ne bloque rien pour la nouvelle, mais évite quand même les reprises trop littérales).
+→ Signale ce changement dans S1 : commence par "NOUVELLE CIBLE (rotation depuis la précédente, seuil d'angles atteint) : ...".
+
+CAS C — CIBLE IMPOSÉE PAR LE CLIENT (champ cible modifié dans le brief depuis la dernière synthèse) :
+→ Construis le persona à partir de CETTE description, quelle que soit son ampleur par rapport à l'ancienne (peut être plus large, plus étroite, ou juste différente — ce n'est pas une rotation de scaling, c'est une décision du client à respecter telle quelle).
+→ Le scraping sert à enrichir cette description (âge, ville, revenu, désirs/craintes réels) — jamais à la contredire.
+→ Compteur d'angles reparti à zéro pour cette cible (nouvelle, distincte de toute cible précédente pour ce produit).
+→ Signale ce changement dans S1 : commence par "NOUVELLE CIBLE (imposée par le client dans sa fiche produit) : ...".
+→ Construis les angles comme pour une première commande sur cette cible — pas de recopie de l'ancienne synthèse au-delà de S0 (produit) qui reste valable.
+
+Si aucun bloc "SYNTHÈSE EXISTANTE POUR CE PRODUIT" n'est présent dans ton input : c'est une première commande sur ce produit, procède normalement (tout ce qui suit), en respectant la règle de cible imposée mentionnée ci-dessus si le champ est rempli.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE ANTI-AI-SLOP — NON NÉGOCIABLE
@@ -3969,6 +3999,63 @@ Cherche dans DONNÉES BRUTES la section "## TAILLE ET CROISSANCE DU MARCHÉ" et 
 → Niveau de sophistication du marché : combien de concurrents sérieux existent, depuis combien de temps cette catégorie est vendue dans ce pays, marché vierge ou saturé — 2-3 phrases avec les noms de concurrents trouvés en S4
 Si aucune donnée chiffrée n'est trouvée nulle part, écris explicitement [AUCUNE DONNÉE DE TAILLE DE MARCHÉ TROUVÉE].
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÉTAPE 10 — DONNÉES MARCHÉ (LIVRABLE CLIENT, DANS CETTE MÊME RÉPONSE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Une fois S0 à S8 terminés, tu produis ICI, dans cette même réponse, un second bloc destiné cette fois au CLIENT (pas aux autres agents) : les données marché. Ce n'est pas un second appel, pas un second agent — c'est la suite immédiate de ton travail, sur les MÊMES données que tu viens d'analyser.
+
+⚠️ RÈGLE DE COHÉRENCE ABSOLUE : ce bloc doit être l'exacte traduction en langage simple de ce que tu viens d'écrire en S0-S8 — jamais une seconde opinion. La cible nommée ici doit être la MÊME que celle de S1 (même nom, même profil). Les angles listés ici doivent être EXACTEMENT ceux de S2, ni plus ni moins, dans le même ordre. Les chiffres (prix, taille de marché, concurrence) doivent être identiques à ceux de S0/S4/S8 — jamais une variante ou une reformulation qui changerait un chiffre ou un positionnement. Si S0-S8 dit "concurrence élevée à cause de X et Y", ce bloc ne doit jamais dire "concurrence modérée" ou citer d'autres concurrents que ceux déjà nommés en S4/S8.
+
+Écris pour un e-commerçant sans formation marketing — zéro jargon technique (jamais "peur/désir/douleur" tel quel, "awareness", "moteur dominant" — explique le concept en une phrase simple, ne le supprime pas juste parce que le mot est interdit), zéro phrase meta sur toi-même ou sur AdStack, toujours concret (chiffre exact, nom de concurrent réel) — jamais une généralité qui pourrait s'appliquer à n'importe quel produit. Ne résume JAMAIS en perdant la précision : si S0-S8 donne un chiffre, un nom, un pourcentage, il doit survivre ici. Si une donnée n'existe vraiment pas dans ce que tu as toi-même écrit en S0-S8, écris "Donnée non disponible pour l'instant" — ne jamais inventer.
+
+CONCURRENTS — DIRECTS ET INDIRECTS : le champ "concurrents_nommes" et la section positionnement doivent couvrir non seulement les concurrents directs (même produit, même catégorie) mais aussi les concurrents indirects — toute solution alternative qui répond au même problème/désir sans être le même type de produit (ex : pour un complément capillaire, un concurrent indirect est un shampoing traitant ou une clinique capillaire). Si DONNÉES BRUTES en mentionne, ils doivent apparaître ici distingués des concurrents directs.
+
+FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante seule sur sa propre ligne, puis le JSON juste après, rien d'autre après le JSON :
+
+===DONNEES_MARCHE===
+{
+  "positionnement": {
+    "taille_marche_personnes": "Chiffre ou estimation précise depuis S8, avec le raisonnement si c'est une estimation déduite, ou 'Donnée non disponible pour l'instant'",
+    "taille_marche_revenus": "Valeur chiffrée précise (devise locale/an) depuis S8, ou 'Donnée non disponible pour l'instant'",
+    "taux_croissance": "Chiffre en % si trouvé dans S8, sinon tendance qualitative précise sourcée sur un signal concret — jamais une phrase creuse",
+    "concurrence": "Faible" | "Moyenne" | "Élevée",
+    "concurrents_directs": ["Vrais noms de concurrents DIRECTS trouvés (même catégorie de produit), avec leur prix si connu"],
+    "concurrents_indirects": ["Vraies solutions alternatives qui répondent au même problème sans être le même produit, si trouvées dans DONNÉES BRUTES — sinon tableau vide"],
+    "concurrence_explication": "1-2 phrases expliquant ce niveau, en citant les concurrents nommés (directs et indirects)",
+    "positionnement_prix": "Comparaison chiffrée exacte : prix du client vs chaque concurrent nommé, pas une généralité",
+    "sophistication_marche": "1-2 phrases expliquant à quel stade est ce marché — reformule S8/S3 sans jargon",
+    "argument_principal": "L'USP/UMS principal en 1-2 phrases concrètes, expliquant CE QUI rend ce produit vraiment différent"
+  },
+  "persona": {
+    "nom": "MÊME nom que le persona de S1 — jamais un nom différent",
+    "role": "Métier ou rôle, en langage courant",
+    "age": "Âge",
+    "ville": "Ville précise (quartier si connu)",
+    "revenu": "Tranche de revenu approximative en langage simple",
+    "quote": "Une phrase que cette personne se dirait à elle-même, en 1ère personne",
+    "platforms": ["2 à 4 réseaux sociaux qu'elle utilise le plus"],
+    "comportement_social": "1-2 phrases sur comment cette personne utilise les réseaux sociaux et achète en ligne",
+    "desirs": ["2-3 désirs concrets et courts, depuis S1/S5"],
+    "craintes": ["2-3 craintes/objections concrètes et courtes, depuis S1/S5"]
+  },
+  "angles": [
+    {
+      "nom": "MÊME nom que dans S2 pour cet angle, tel quel — jamais reformulé différemment ici",
+      "moteur": "1 phrase simple : peur, désir ou douleur — lequel, et pourquoi",
+      "formulation_simple": "2-3 phrases expliquant l'idée de cet angle en langage simple, comme si on l'expliquait à un ami",
+      "niveaux_conscience": "1 phrase résumant les 3 déclinaisons de conscience de cet angle (Solution/Product/Most Aware) telles que S3 les décrit",
+      "levier_utilise": "1 phrase : sur quoi précisément cet angle s'appuie pour convaincre — concret, pas générique"
+    }
+  ],
+  "insights": [
+    {"icon": "target", "t": "1 conseil actionnable court et concret pour améliorer les prochaines créatives ou l'offre, basé sur une vraie donnée de S0-S8"},
+    {"icon": "trending", "t": "1 autre conseil actionnable, différent du premier"},
+    {"icon": "alert", "t": "1 point de vigilance ou risque à surveiller, basé sur une vraie objection/peur trouvée en S5"}
+  ]
+}
+
+⚠️ Le JSON doit être valide (aucun texte avant/après le bloc, pas de markdown, pas de backticks) — un programme en aval le parse directement.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GATE FINAL — INTERDICTIONS ABSOLUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3992,7 +4079,11 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Analyser le mauvais pays (GN ≠ Ghana, CI ≠ Chine)
 ❌ Prix en devise étrangère présenté comme prix local
 ❌ Section S2/S5/S7 où les 3 entrées sont en fait des reformulations d'une seule idée
-❌ S8 absent ou réduit à une phrase vague sans avoir vraiment cherché dans DONNÉES BRUTES et dans le S4 pricing map`;
+❌ S8 absent ou réduit à une phrase vague sans avoir vraiment cherché dans DONNÉES BRUTES et dans le S4 pricing map
+❌ Ligne "===DONNEES_MARCHE===" absente, mal orthographiée, ou du texte présent après le JSON qui la suit
+❌ Le JSON données marché contredit S0-S8 sur un point quelconque : nom de cible différent, angle absent ou renommé, chiffre de prix/marché/concurrence différent
+❌ Le nombre d'angles dans le JSON données marché ne correspond pas exactement au nombre d'angles dans S2
+❌ "concurrents_directs" ou "concurrents_indirects" contient un nom inventé, non trouvé dans DONNÉES BRUTES`;
 
 COMP_FILES['COMPETENCE_CREATIVE_PROD.md'] = `Tu génères la suite d'un prompt Gemini pour une static ad Meta Ads 4:5 — MODE PRODUCTION.
 Le bloc « IMAGE FOURNIE — PRODUIT » (et le bloc « IMAGE FOURNIE — LOGO » si présent) sont DÉJÀ fournis avant ton output.
@@ -4237,6 +4328,8 @@ Dans tous les cas, pour CHAQUE zone où le produit apparaît :
 → Ne JAMAIS décrire l'apparence du produit (couleur, forme, étiquette, texte du packaging) — IMAGE 2 fournit cela directement à l'étape de génération finale.
 
 Quand c'est cohérent avec la scène, privilégier un mode d'intégration qui renforce RÈGLE #0ter — ex : produit posé à portée de main sur le bureau renforce un message « utilisable au travail, en quelques secondes ».
+
+⚠️ CAS PARTICULIER À RISQUE DE FIDÉLITÉ ÉLEVÉ — PRODUIT EN CONTEXTE IMBRIQUÉ : si le CT montre le produit non pas directement dans la scène, mais À L'INTÉRIEUR d'un élément d'interface (capture d'écran de conversation, notification, story, écran de téléphone affiché dans le cadre) — c'est-à-dire une "photo du produit dans une photo" — c'est un cas structurellement plus difficile pour la fidélité : le modèle de génération d'image doit rendre à la fois une interface convaincante ET le produit fidèle en même temps, ce qui dilue l'attention portée au produit par rapport à un placement direct (tenu en main, posé sur une table). Dans CE cas précis, ne te contente jamais de la mention générique du produit : RÉPÈTE explicitement, DANS la description de cette zone spécifique, un rappel de fidélité complet — pas seulement "(IMAGE 1 — fidélité absolue)" mais une phrase dédiée du type : "Cette image envoyée dans la conversation est une reproduction fidèle à 100% du PRODUIT FOURNI — mêmes proportions, même étiquette, mêmes couleurs, aucun détail modifié, comme une vraie photo du produit prise en photo." Ce rappel renforcé s'ajoute à la mention standard, il ne la remplace pas.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE #0quinquies — DISTINCTION MARQUE VENDEUR vs MARQUE PRODUIT PHYSIQUE
@@ -4610,6 +4703,7 @@ INSTRUCTIONS GEMINI ADDITIONNELLES :
 → Format 4:5 strict, zéro bande noire
 → Qualité photographique : haute définition, netteté maximale, pas de flou parasite, éclairage maîtrisé — qualité d'utilisation publicitaire réelle (téléchargeable et déployable directement sur Meta Ads)
 → Textes : uniquement ceux entre guillemets ci-dessus, langue [S1]
+⚠️ RÈGLE CRITIQUE — TRADUCTION JAMAIS DÉLÉGUÉE : les textes entre guillemets doivent être écrits PAR TOI, DIRECTEMENT dans la langue S1, dans CE prompt — jamais en français (ou toute autre langue) accompagnés d'une instruction du type "traduction à appliquer", "langue X si spécifié", "à traduire". Une fois que le prompt part vers l'étape de génération d'image, il est TROP TARD pour une traduction fiable — un modèle de génération d'image traduit mal et de façon imprévisible (mélange de langues, mots inventés, script incorrect). Si S1 indique une langue que tu maîtrises moins bien, fais de ton mieux pour une traduction directe et fidèle toi-même plutôt que de reporter la tâche — ne laisse jamais un texte en français suivi d'une consigne de traduction.
 
 ═══ RÈGLES STRICTES POUR LE BLOC PROMPT_GEMINI ═══
 
@@ -5734,8 +5828,8 @@ async function prodv2LoadBriefFromCommande(b) {
     } else if (rctx.estRenouvellement) {
       banner.style.cssText = 'margin:12px 0;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
       banner.textContent = rctx.rotationNecessaire
-        ? `↻ Renouvellement pour ce produit — persona "${rctx.personaActuel?.nom || '?'}" a atteint ${rctx.nbAnglesPersonaCourant} angles : rotation vers une nouvelle cible élargie à cette génération.`
-        : `↻ Renouvellement pour ce produit — même persona "${rctx.personaActuel?.nom || '?'}" (${rctx.nbAnglesPersonaCourant}/18 angles exploités), nouveaux angles uniquement.`;
+        ? `↻ Renouvellement pour ce produit — cible "${rctx.cibleActuelle || '?'}" a atteint ${rctx.nbAnglesCibleCourante} angles : rotation vers une nouvelle cible élargie à cette génération.`
+        : `↻ Renouvellement pour ce produit — même cible "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante}/18 angles exploités), nouveaux angles uniquement.`;
     }
     if (banner.textContent) {
       const container = document.getElementById('prodv2BriefSection') || document.getElementById('viewProduction');
