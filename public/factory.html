@@ -6275,7 +6275,14 @@ async function prodv2CheckResume() {
   try {
     const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json());
     const b = briefs.find(x => x.id === marker.commandeId);
-    if (!b || (b.status !== 'in_production' && b.status !== 'pending')) { localStorage.removeItem('adstack_active_production'); return; }
+    // Cause profonde corrigée (créatives/synthèse "disparues définitivement" au retour sur
+    // Factory) : avant, un ticket déjà marqué "done" entre-temps (livré pendant que l'onglet
+    // était fermé, ou via un autre appareil) faisait abandonner TOUTE la restauration — rien ne
+    // se réaffichait, alors que les livrables existaient toujours côté serveur. On restaure
+    // maintenant aussi dans ce cas (en lecture, avec un message adapté), et on n'abandonne que
+    // si le ticket n'existe plus du tout ou a été annulé.
+    if (!b || b.status === 'cancelled' || b.status === 'probleme_agence') { localStorage.removeItem('adstack_active_production'); return; }
+    const dejaLivre = b.status === 'done';
     const d = b.deliverables || {};
     const nbCrea = d.creatives ? d.creatives.filter(c=>c && c.imgB64).length : 0;
     const nbCopy = d.copies ? d.copies.filter(Boolean).length : 0;
@@ -6293,10 +6300,16 @@ async function prodv2CheckResume() {
     const nbCreativesTotal = nbAngles * 3;
     prodv2BuildAngleUI(nbAngles);
 
+    // Une fois un ticket déjà livré affiché une fois, plus besoin de le restaurer aux prochains
+    // chargements — mais on garde le marqueur pour un ticket encore actif (pending/in_production).
+    if (dejaLivre) { try { localStorage.removeItem('adstack_active_production'); } catch(e) {} }
+
     // Bannière discrète — jamais bloquante, juste informative
     const banner = document.createElement('div');
     banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
-    banner.textContent = nbCrea || nbCopy
+    banner.textContent = dejaLivre
+      ? `✓ Cette commande a déjà été livrée au client — "${b.product?.nom || '?'}" (${nbCrea}/${nbCreativesTotal} créatives, ${nbCopy}/${nbAngles} sets ad copy). Affichage en lecture seule.`
+      : nbCrea || nbCopy
       ? `↻ État restauré après rechargement — "${b.product?.nom || '?'}" (${nbCrea}/${nbCreativesTotal} créatives, ${nbCopy}/${nbAngles} sets ad copy déjà sauvegardés). Rien n'a été perdu.`
       : `↻ Brief restauré après rechargement — "${b.product?.nom || '?'}". Aucune génération n'avait encore commencé.`;
     const container = document.getElementById('viewProduction');

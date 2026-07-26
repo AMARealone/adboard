@@ -1444,13 +1444,23 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   // donc continuer de tourner à l'écran bien après que le statut réel soit passé à "livré" côté
   // serveur, tant que le client ne rechargeait pas la page lui-même. Rafraîchit maintenant en
   // arrière-plan toutes les 25s tant qu'il y a une demande active à surveiller.
+  //
+  // Cause profonde corrigée (le minuteur semblait ne jamais s'arrêter même une fois livré) :
+  // onRefresh (une fonction recréée à CHAQUE rendu du composant parent, jamais mémoïsée) était
+  // dans le tableau de dépendances de cet effet — n'importe quel rendu non lié (chat, notifs,
+  // autre état ailleurs dans l'app) détruisait et recréait l'intervalle avant qu'il n'atteigne
+  // jamais 25 secondes. Le cycle ne se terminait donc quasiment jamais en pratique. On utilise
+  // maintenant des refs pour lire la valeur la plus récente sans jamais redéclencher l'effet.
+  const onRefreshRef = useRef(onRefresh);
+  const hasActiveRef = useRef(false);
+  onRefreshRef.current = onRefresh;
+  hasActiveRef.current = (allBriefs || []).some(b => b.status === 'pending' || b.status === 'in_production');
   useEffect(() => {
-    if (!onRefresh) return;
-    const hasActive = (allBriefs || []).some(b => b.status === 'pending' || b.status === 'in_production');
-    if (!hasActive) return;
-    const p = setInterval(() => onRefresh(), 25000);
+    const p = setInterval(() => {
+      if (hasActiveRef.current && onRefreshRef.current) onRefreshRef.current();
+    }, 25000);
     return () => clearInterval(p);
-  }, [onRefresh, allBriefs]);
+  }, []); // tableau vide intentionnel — l'intervalle est créé UNE FOIS, lit toujours l'état le plus récent via les refs
 
   const CANCEL_WIN = 12*60*60*1000;
   const DELIVERY_WIN = 48*60*60*1000;
@@ -3483,7 +3493,7 @@ export default function Platform() {
         counts[s] = s === 'galerie' ? totalCreatives : s === 'copies' ? totalAngles : totalMarche;
         localStorage.setItem('adstack_seen_counts', JSON.stringify(counts));
       }
-    } catch(e) {}
+    } catch(e) { console.warn('[refreshUserData] Échec du rafraîchissement :', e.message); }
   };
   const [isDemo, setIsDemo] = useState(false);
   const pendingPurchaseRef = useRef(false);
