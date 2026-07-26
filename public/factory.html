@@ -2431,6 +2431,11 @@ async function prodv2Launch() {
     return;
   }
   prodv2State.startTime = Date.now();
+  // Marque le VRAI démarrage de la génération (distinct de l'ouverture du ticket, voir /start côté
+  // serveur) — c'est CE marqueur qui sert désormais au contrôle "commande active ailleurs".
+  if (prodv2State.commandeId) {
+    fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/generation-started`, { method: 'POST' }).catch(()=>{});
+  }
   prodv2State.synthesis = null;
   prodv2State.angles = [];
   prodv2State.creatives = [];
@@ -2499,7 +2504,7 @@ async function prodv2Launch() {
 
     // ── ÉTAPES 2 & 3 EN PARALLÈLE : Creatives ×N et Copywriter ×nbAngles ──
     prodv2SetAgentState(2, 'running', 'Sélection des CTs adaptés à la synthèse…', 5);
-    const ctPick = await selectCTsForGeneration(synthesis, nbCreativesTotal, 'production', prodv2State.renewalContext?.ctsUtilisesDernierLot);
+    const ctPick = await selectCTsForGeneration(synthesisText, nbCreativesTotal, 'production', prodv2State.renewalContext?.ctsUtilisesDernierLot);
     if (ctPick.length === 0) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT.');
     console.log('[PROD] CTs selectionnes :', ctPick.map(function(id){ return CT_IMAGES[id+'_name'] || id; }).join(' / '));
 
