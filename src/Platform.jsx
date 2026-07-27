@@ -2709,134 +2709,231 @@ const Marche = ({products, isDemo, setSection}) => {
           </div>
         ) : (
           <>
-            {/* Positionnement marché */}
-            {m.positionnement && (
-              <div style={{position:'relative',overflow:'hidden',background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'24px',marginBottom:16}}>
-                <div style={{position:'absolute',top:-50,right:-40,width:180,height:180,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.14), transparent 70%)',pointerEvents:'none'}}/>
-                <div style={{position:'relative'}}>
-                  <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:20}}>Positionnement marché</div>
-
-                  {/* Stats en ligne fluide — plus de grille de mini-boîtes */}
-                  <div style={{display:'flex',flexWrap:'wrap',gap:isMobile?20:32,marginBottom:22}}>
-                    <div>
-                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Taille du marché</div>
-                      <div style={{fontSize:15,fontWeight:800,color:C.text,lineHeight:1.3,maxWidth:200}}>{m.positionnement.taille_marche_personnes}</div>
-                    </div>
-                    <div>
-                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Valeur estimée</div>
-                      <div style={{fontSize:15,fontWeight:800,color:C.text,lineHeight:1.3,maxWidth:200}}>{m.positionnement.taille_marche_revenus}</div>
-                    </div>
-                    <div>
-                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Tendance</div>
-                      <div style={{fontSize:15,fontWeight:800,color:C.text,lineHeight:1.3,maxWidth:200}}>{m.positionnement.taux_croissance}</div>
-                    </div>
-                    <div>
-                      <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:6}}>Concurrence</div>
-                      <div style={{fontSize:14,fontWeight:800,
-                        color: m.positionnement.concurrence==='Élevée' ? '#E55050' : m.positionnement.concurrence==='Moyenne' ? '#FFB547' : '#22C55E'}}>
-                        {m.positionnement.concurrence}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{fontSize:11.5,color:C.sec,lineHeight:1.6,marginBottom:18,maxWidth:520}}>{m.positionnement.concurrence_explication}</div>
-
-                  {/* Positionnement prix — citation à bordure latérale, sans emoji */}
-                  <div style={{borderLeft:`2px solid ${C.accent}`,paddingLeft:14}}>
-                    <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:5}}>Positionnement prix</div>
-                    <div style={{fontSize:12.5,color:C.text,lineHeight:1.6}}>{m.positionnement.positionnement_prix}</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Insights actionnables */}
-            {m.insights?.length > 0 && (
-              <div style={{position:'relative',background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'24px',marginBottom:16}}>
-                <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:16}}>Insights applicables</div>
-                <div style={{display:'flex',flexDirection:'column'}}>
-                  {m.insights.map((ins,idx) => (
-                    <div key={idx} style={{display:'flex',gap:12,alignItems:'flex-start',padding:'13px 0',borderBottom:idx<m.insights.length-1?'1px solid rgba(255,255,255,0.05)':'none'}}>
-                      <div style={{flexShrink:0,marginTop:1,color:C.accent}}><Icon name={ins.icon} size={15}/></div>
-                      <span style={{fontSize:12,color:C.sec,lineHeight:1.6}}>{ins.t}</span>
-                    </div>
-                  ))}
-                </div>
-                {isDemo && <LockOverlay/>}
-              </div>
-            )}
-
-            {/* Cibles — s'accumulent à chaque nouveau batch, la plus récente en premier */}
-            {m.cibles?.length > 0 && (
-              <div>
-                <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:14,display:'flex',alignItems:'center',gap:8}}>
-                  Cibles identifiées
-                  <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:'rgba(255,255,255,0.08)',color:C.sec,letterSpacing:0,textTransform:'none'}}>{m.cibles.length}</span>
-                </div>
-                <div style={{display:'flex',flexDirection:'column',gap:12}}>
-                  {[...m.cibles].reverse().map((cible, idx) => (
-                    <div key={cible.id||idx} style={{background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'22px 24px'}}>
-                      {cible.angle_utilise && (
-                        <div style={{fontSize:10.5,color:C.accent,fontWeight:700,marginBottom:14,padding:'4px 10px',borderRadius:6,background:'rgba(45,127,249,0.10)',display:'inline-block'}}>
-                          {cible.angle_utilise}
-                        </div>
-                      )}
-                      <div style={{display:'flex',gap:12,marginBottom:14}}>
-                        <div style={{width:44,height:44,borderRadius:10,flexShrink:0,background:'rgba(255,255,255,0.06)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                          <Icon name="person" size={20} color={C.text}/>
-                        </div>
-                        <div>
-                          <div style={{fontSize:14,fontWeight:700,color:C.text}}>{cible.nom}{cible.age ? `, ${cible.age} ans` : ''}</div>
-                          <div style={{fontSize:11,color:C.sec}}>{cible.role}{cible.ville ? ` · ${cible.ville}` : ''}</div>
-                          <div style={{fontSize:10,color:C.sec,marginTop:1}}>{cible.revenu}</div>
-                        </div>
-                      </div>
-                      {cible.quote && (
-                        <div style={{borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:14}}>
-                          <div style={{fontSize:12,color:C.sec,lineHeight:1.6,fontStyle:'italic'}}>"{cible.quote}"</div>
-                        </div>
-                      )}
-                      {cible.platforms?.length > 0 && (
-                        <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:14}}>
-                          {cible.platforms.map(pl => <Tag key={pl} ch={pl} color="gray"/>)}
-                        </div>
-                      )}
-                      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr',gap:14}}>
-                        {cible.desirs?.length > 0 && (
-                          <div>
-                            <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Ce qu'elle veut</div>
-                            {cible.desirs.map((d,i) => (
-                              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:11.5,color:C.text,lineHeight:1.6,marginBottom:4}}>
-                                <Icon name="check" size={12} color="#22C55E"/><span>{d}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {cible.craintes?.length > 0 && (
-                          <div>
-                            <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.5px',marginBottom:8}}>Ce qui la freine</div>
-                            {cible.craintes.map((cr,i) => (
-                              <div key={i} style={{display:'flex',gap:8,alignItems:'flex-start',fontSize:11.5,color:C.text,lineHeight:1.6,marginBottom:4}}>
-                                <Icon name="alerttriangle" size={12} color="#FFB547"/><span>{cr}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      {cible.comportement_social && (
-                        <div style={{fontSize:11.5,color:C.sec,lineHeight:1.6,marginTop:14,paddingTop:14,borderTop:`1px solid ${C.border}`,display:'flex',gap:8,alignItems:'flex-start'}}>
-                          <Icon name="phone" size={13} color={C.muted}/><span>{cible.comportement_social}</span>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <MarcheDossier m={m} selected={selected} isMobile={isMobile} isDemo={isDemo}/>
           </>
         )}
       </div>
     )}
   </div>
+  );
+};
+
+// Extrait un nombre depuis une chaîne de prix ("8 900 FCFA" → 8900) — retourne null si rien d'exploitable.
+function parsePrixNombre(str) {
+  if (typeof str === 'number') return str;
+  if (!str) return null;
+  const digits = String(str).replace(/[^\d]/g, '');
+  return digits ? parseInt(digits, 10) : null;
+}
+
+// Composant "dossier" — structure narrative continue (rail de chiffres + colonne de récit),
+// remplace l'ancien empilement de cartes séparées. Voir maquette validée.
+const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
+  const p = m.positionnement || {};
+  const persona = m.persona || {};
+  const angles = m.angles || [];
+  const insights = m.insights || [];
+  const deliveries = selected.deliveries || [];
+
+  // Historique des angles groupé par cible — construit depuis deliveries (source cumulative),
+  // jamais depuis m.angles seul (qui ne reflète que le dernier lot en mode remplacement).
+  const groupes = [];
+  deliveries.slice().reverse().forEach(d => {
+    const cibleNom = d.cible || 'Cible non identifiée';
+    const dernierGroupe = groupes[groupes.length - 1];
+    const groupe = (dernierGroupe && dernierGroupe.cible === cibleNom) ? dernierGroupe : (() => {
+      const g = { cible: cibleNom, items: [] };
+      groupes.push(g);
+      return g;
+    })();
+    (d.angles||[]).slice().reverse().forEach(a => groupe.items.push({ nom: a.nom, semaine: d.semaine, date: d.date }));
+  });
+  const cibleActuelleNom = groupes[0]?.cible;
+  const nbAnglesCibleActuelle = groupes[0]?.items?.length || 0;
+
+  // Échelle de prix — seulement si au moins un concurrent a un prix numérique connu
+  const prixVous = parsePrixNombre(selected.pricing);
+  const concurrentsAvecPrix = (p.concurrents_directs||[]).filter(c => c && (c.prix_fcfa != null));
+  const pointsLadder = prixVous != null
+    ? [{ nom:'Votre produit', prix:prixVous, you:true }, ...concurrentsAvecPrix.map(c=>({nom:c.nom, prix:c.prix_fcfa}))]
+    : [];
+  const minPrix = pointsLadder.length ? Math.min(...pointsLadder.map(x=>x.prix)) : 0;
+  const maxPrix = pointsLadder.length ? Math.max(...pointsLadder.map(x=>x.prix)) : 1;
+  const rangePrix = Math.max(1, maxPrix - minPrix);
+  const posPct = (prix) => 10 + ((prix - minPrix) / rangePrix) * 80; // marge 10-90% pour éviter les labels coupés au bord
+
+  const railItems = [
+    p.taille_marche_personnes && { n: p.taille_marche_personnes, l: 'taille de marché estimée', hero:true },
+    p.taux_croissance && { n: p.taux_croissance, l: 'tendance du marché', color:'#22C55E' },
+    concurrentsAvecPrix.length > 0 && { n: `${concurrentsAvecPrix.filter(c=>c.prix_fcfa < prixVous).length}/${concurrentsAvecPrix.length}`, l: 'concurrents moins chers' },
+    nbAnglesCibleActuelle > 0 && { n: `${nbAnglesCibleActuelle}/18`, l: 'angles exploités sur la cible actuelle' },
+  ].filter(Boolean);
+
+  return (
+    <div style={{position:'relative', overflowX:'hidden'}}>
+      <div style={{display: isMobile ? 'flex' : 'grid', gridTemplateColumns: isMobile ? undefined : '150px minmax(0,1fr)', minWidth:0, gap: isMobile ? 20 : 40, flexDirection: isMobile ? 'row' : undefined, overflowX: isMobile ? 'auto' : undefined, paddingBottom: isMobile ? 16 : 0, marginBottom: isMobile ? 20 : 0, borderBottom: isMobile ? `1px solid ${C.border}` : 'none', alignItems:'flex-start'}}>
+
+        {/* Rail de chiffres — bande horizontale scrollable sur mobile, colonne sticky sur desktop */}
+        <div style={{display:'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 26 : 24, position: isMobile ? 'static' : 'sticky', top: isMobile ? 0 : 20}}>
+          {railItems.map((it,i) => (
+            <div key={i} style={{flexShrink:0, minWidth: isMobile ? 118 : undefined}}>
+              <div style={{width:16, height:1, background:C.border, marginBottom:7}}/>
+              <div style={{fontFamily:"'DM Mono',monospace", fontSize:19, fontWeight:500, lineHeight:1,
+                color: it.color || undefined,
+                background: it.hero && !it.color ? 'linear-gradient(135deg,#fff,#9fbcff)' : undefined,
+                WebkitBackgroundClip: it.hero && !it.color ? 'text' : undefined,
+                WebkitTextFillColor: it.hero && !it.color ? 'transparent' : undefined,
+              }}>{it.n}</div>
+              <div style={{fontSize:10, color:C.muted, marginTop:5, lineHeight:1.4, maxWidth:120}}>{it.l}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Colonne narrative */}
+        <div style={{minWidth:0}}>
+
+          {/* 01 — Positionnement */}
+          {p.taille_marche_personnes && (
+            <div style={{padding: isMobile? '0 0 32px' : '0 0 36px', borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:9}}>01 — Positionnement</div>
+              <div style={{fontSize:12.5, color:C.sec, lineHeight:1.75, maxWidth:520}}>
+                Le marché pèse environ <b style={{color:C.text}}>{p.taille_marche_revenus}</b>{p.taux_croissance ? <> et progresse de <b style={{color:C.text}}>{p.taux_croissance}</b></> : ''}.
+                {p.concurrence && <> La concurrence y est <b style={{color: p.concurrence==='Élevée'?'#E55050':p.concurrence==='Moyenne'?'#FFB547':'#22C55E'}}>{p.concurrence.toLowerCase()}</b>{p.concurrence_explication ? ` — ${p.concurrence_explication}` : ''}</>}
+              </div>
+              {p.argument_principal && (
+                <div style={{marginTop:14, borderLeft:`2px solid ${C.accent}`, paddingLeft:13, fontSize:12, color:C.sec, lineHeight:1.6}}>{p.argument_principal}</div>
+              )}
+            </div>
+          )}
+
+          {/* 02 — Prix */}
+          {(pointsLadder.length > 1 || p.positionnement_prix) && (
+            <div style={{padding:'28px 0', borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:9}}>02 — Prix</div>
+              {p.positionnement_prix && <div style={{fontSize:12.5, color:C.sec, lineHeight:1.75, maxWidth:520, marginBottom: pointsLadder.length>1?24:0}}>{p.positionnement_prix}</div>}
+
+              {pointsLadder.length > 1 && (
+                isMobile ? (
+                  <div>
+                    {pointsLadder.sort((a,b)=>a.prix-b.prix).map((pt,i) => (
+                      <div key={i} style={{display:'flex', alignItems:'baseline', gap:10, marginBottom:12}}>
+                        <span style={{fontFamily:"'DM Mono',monospace", fontSize:13, color: pt.you?C.accent:C.text, fontWeight: pt.you?700:400}}>{pt.prix.toLocaleString('fr-FR')} F</span>
+                        <span style={{fontSize:11.5, color: pt.you?C.accent:C.sec, fontWeight: pt.you?700:400}}>{pt.you ? '— Votre produit' : `— ${pt.nom}`}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{position:'relative', height:2, background:C.border, margin:'50px 0 34px', overflow:'visible'}}>
+                    {pointsLadder.map((pt,i) => {
+                      const pct = posPct(pt.prix);
+                      // Près des bords, le texte centré déborderait — on ancre à gauche/droite selon la position
+                      const align = pct < 22 ? 'left' : pct > 78 ? 'right' : 'center';
+                      const infoStyle = align === 'left'
+                        ? { left:0, textAlign:'left' }
+                        : align === 'right'
+                        ? { right:0, textAlign:'right' }
+                        : { left:'50%', transform:'translateX(-50%)', textAlign:'center' };
+                      return (
+                        <div key={i} style={{position:'absolute', left:`${pct}%`, top:'50%', transform:'translate(-50%,-50%)', display:'flex', flexDirection:'column', alignItems:'center'}}>
+                          <div style={{position:'absolute', bottom: pt.you?undefined:20, top: pt.you?20:undefined, whiteSpace:'nowrap', ...infoStyle}}>
+                            <div style={{fontFamily:"'DM Mono',monospace", fontSize:12.5, color:C.text, fontWeight:500}}>{pt.prix.toLocaleString('fr-FR')} F</div>
+                            <div style={{fontSize:10, color: pt.you?C.accent:C.sec, fontWeight: pt.you?700:400, marginTop:2}}>{pt.you?'Votre produit':pt.nom}</div>
+                          </div>
+                          <div style={{width:11, height:11, borderRadius:'50%', border:`2px solid ${C.bg}`, background: pt.you?C.accent:'rgba(255,255,255,0.25)', boxShadow: pt.you?'0 0 0 4px rgba(91,141,239,0.18)':'none'}}/>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )
+              )}
+              {p.concurrents_indirects?.length > 0 && (
+                <div style={{marginTop:14, fontSize:11, color:C.muted}}><b style={{color:C.sec}}>Indirects : </b>{p.concurrents_indirects.join(', ')}</div>
+              )}
+            </div>
+          )}
+
+          {/* 03 — Cible actuelle */}
+          {persona.nom && (
+            <div style={{padding:'28px 0', borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:16}}>03 — Cible actuelle</div>
+              <div style={{display:'flex', alignItems:'baseline', gap:9, flexWrap:'wrap', marginBottom:14}}>
+                <span style={{fontSize:14.5, fontWeight:800, color:C.text}}>{persona.nom}</span>
+                <span style={{fontSize:11.5, color:C.muted}}>{persona.age && `${persona.age} ans · `}{persona.role}{persona.ville ? ` · ${persona.ville}` : ''}</span>
+              </div>
+              {persona.quote && (
+                <div style={{fontSize:16, fontWeight:600, lineHeight:1.5, color:C.text, borderLeft:`2px solid ${C.accent}`, paddingLeft:16, margin:'16px 0', maxWidth:480}}>"{persona.quote}"</div>
+              )}
+              <div style={{display:'flex', gap:isMobile?24:32, flexWrap:'wrap', marginTop:18}}>
+                {persona.desirs?.length > 0 && (
+                  <div>
+                    <div style={{fontSize:9.5, color:C.muted, textTransform:'uppercase', letterSpacing:'0.5px', fontWeight:700, marginBottom:8}}>Ce qu'elle veut</div>
+                    {persona.desirs.map((d,i)=>(<div key={i} style={{fontSize:12, color:C.text, marginBottom:5}}>→ {d}</div>))}
+                  </div>
+                )}
+                {persona.craintes?.length > 0 && (
+                  <div>
+                    <div style={{fontSize:9.5, color:C.muted, textTransform:'uppercase', letterSpacing:'0.5px', fontWeight:700, marginBottom:8}}>Ce qui la freine</div>
+                    {persona.craintes.map((cr,i)=>(<div key={i} style={{fontSize:12, color:C.text, marginBottom:5}}>→ {cr}</div>))}
+                  </div>
+                )}
+              </div>
+              {nbAnglesCibleActuelle > 0 && (
+                <div style={{display:'flex', alignItems:'center', gap:12, marginTop:24, fontSize:11.5, color:C.muted, flexWrap:'wrap'}}>
+                  <b style={{color:C.text, fontFamily:"'DM Mono',monospace", fontWeight:500}}>{nbAnglesCibleActuelle}/18</b> angles exploités sur cette cible
+                  <div style={{flex: isMobile?'1 0 100%':1, maxWidth: isMobile?'none':220, height:2, background:C.border, position:'relative'}}>
+                    <div style={{position:'absolute', left:0, top:0, height:'100%', width:`${Math.min(100,(nbAnglesCibleActuelle/18)*100)}%`, background:C.accent}}/>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 04 — Historique des angles, groupé par cible, scrollable */}
+          {groupes.length > 0 && (
+            <div style={{padding:'28px 0', borderBottom:`1px solid ${C.border}`}}>
+              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:9}}>04 — Historique des angles</div>
+              <div style={{fontSize:12.5, color:C.sec, lineHeight:1.75, marginBottom:18, maxWidth:520}}>Chaque angle appartient à une cible précise — jamais réutilisé tel quel pour une autre cible.</div>
+              <div style={{maxHeight:320, overflowY:'auto', paddingRight:6}}>
+                {groupes.map((g, gi) => (
+                  <div key={gi}>
+                    <div style={{position:'sticky', top:0, background:C.bg, padding:'7px 0', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px', color: gi===0?C.accent:C.muted, display:'flex', alignItems:'center', gap:8}}>
+                      {gi===0 ? 'Cible actuelle' : 'Cible précédente'} — {g.cible} ({g.items.length})
+                      <div style={{flex:1, height:1, background:C.border}}/>
+                    </div>
+                    {g.items.map((a,ai) => (
+                      <div key={ai} style={{display:'grid', gridTemplateColumns:'22px 1fr', gap:10, padding:'10px 0', borderBottom:`1px solid ${C.border}`}}>
+                        <div style={{fontFamily:"'DM Mono',monospace", fontSize:10, color:C.muted, paddingTop:2}}>{g.items.length-ai}</div>
+                        <div>
+                          <div style={{fontSize:12.5, fontWeight:700, color:C.text}}>{a.nom}</div>
+                          <div style={{fontFamily:"'DM Mono',monospace", fontSize:9.5, color:C.muted, marginTop:3}}>{a.semaine} · {a.date}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 05 — Recommandations */}
+          {insights.length > 0 && (
+            <div style={{position:'relative', padding:'28px 0'}}>
+              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:16}}>05 — Recommandations</div>
+              <div>
+                {insights.map((ins,i) => (
+                  <div key={i} style={{display: isMobile?'block':'grid', gridTemplateColumns: isMobile?undefined:'90px 1fr', gap: isMobile?6:20, padding:'18px 0', borderTop: i>0?`1px solid ${C.border}`:'none'}}>
+                    <div style={{flexShrink:0, color:C.accent}}><Icon name={ins.icon} size={15}/></div>
+                    <div style={{fontSize:12, color:C.sec, lineHeight:1.65, marginTop: isMobile?6:0}}>{ins.t}</div>
+                  </div>
+                ))}
+              </div>
+              {isDemo && <LockOverlay/>}
+            </div>
+          )}
+
+        </div>
+      </div>
+    </div>
   );
 };
 
