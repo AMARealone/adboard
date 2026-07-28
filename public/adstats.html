@@ -4569,8 +4569,10 @@ async function marquerCanalSms(id) {
 // fonction est appelée après plusieurs appels réseau (fill-demo-msg, fetchNiche...) — le temps
 // que tout ça se termine, la fenêtre de "geste utilisateur récent" exigée par l'API Clipboard
 // moderne (stricte sur Safari mobile en particulier) est dépassée, et la permission est refusée.
-// execCommand('copy') via un champ temporaire est une méthode plus ancienne mais qui ne dépend
-// pas de cette fenêtre de temps — elle sert de repli fiable quand l'API moderne échoue.
+// PREMIER repli tenté (execCommand + textarea hors écran) a lui aussi échoué : iOS Safari refuse
+// souvent la sélection de texte sur un élément positionné HORS du viewport visible (left:-9999px).
+// Le champ doit rester dans la zone visible (juste rendu invisible autrement) pour que la
+// sélection et la copie fonctionnent réellement sur iOS.
 async function copierTexteAvecRepli(texte) {
   try {
     await navigator.clipboard.writeText(texte);
@@ -4579,16 +4581,37 @@ async function copierTexteAvecRepli(texte) {
     try {
       const ta = document.createElement('textarea');
       ta.value = texte;
+      // Dans le viewport (pas de left:-9999px) — juste invisible et sans impact sur la mise
+      // en page. iOS Safari a besoin que l'élément soit réellement affiché pour sélectionner.
       ta.style.position = 'fixed';
-      ta.style.left = '-9999px';
       ta.style.top = '0';
+      ta.style.left = '0';
+      ta.style.width = '1px';
+      ta.style.height = '1px';
+      ta.style.padding = '0';
+      ta.style.border = 'none';
+      ta.style.opacity = '0.01';
+      ta.style.fontSize = '16px'; // évite le zoom automatique iOS au focus
+      ta.setAttribute('readonly', ''); // évite l'ouverture du clavier virtuel sur mobile
       document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
+      ta.contentEditable = true;
+      ta.readOnly = false;
+      const range = document.createRange();
+      range.selectNodeContents(ta);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+      ta.setSelectionRange(0, texte.length);
       const ok = document.execCommand('copy');
       document.body.removeChild(ta);
-      return ok;
+      if (ok) return true;
+      // Filet de sécurité ultime : si les deux méthodes précédentes échouent (observé en
+      // conditions réelles malgré le fix ci-dessus), une boîte de dialogue native garantit que
+      // le texte reste toujours récupérable — aucune API de copie en jeu, universellement fiable.
+      prompt('Copie ce texte manuellement (Ctrl+C / appui long puis Copier) :', texte);
+      return false;
     } catch(e2) {
+      prompt('Copie ce texte manuellement (Ctrl+C / appui long puis Copier) :', texte);
       return false;
     }
   }
