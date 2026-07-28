@@ -1388,6 +1388,17 @@ textarea::placeholder { color: var(--muted); }
 ═══════════════════════════════════════════════════ */
 @media (max-width: 768px) {
 
+  /* Cause profonde corrigée (débordement horizontal + boutons d'action inaccessibles sur
+     mobile) : .toolbar n'avait ni retour à la ligne ni défilement (recherche + pays + 4
+     boutons de filtre trop larges pour un écran étroit) ; .table-wrap utilisait overflow:hidden,
+     qui CACHE le surplus au lieu de permettre d'y accéder — les boutons d'action à droite du
+     tableau (WhatsApp, Instagram, SMS, Contacté...) étaient donc littéralement inatteignables,
+     pas juste débordants. */
+  .toolbar { flex-wrap: wrap; }
+  .toolbar .search-wrap { flex: 1 1 100%; }
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { min-width: 640px; } /* empêche les colonnes de s'écraser au point de devenir illisibles */
+
   /* ── Layout ── */
   .sidebar {
     position: fixed;
@@ -1448,6 +1459,9 @@ textarea::placeholder { color: var(--muted); }
     flex-wrap: wrap;
     gap: 6px;
   }
+  /* Neutralise les width:220px en style inline (Suivi/Leads) — sinon la barre de recherche
+     garde une largeur fixe même si sa ligne parente peut désormais s'enrouler. */
+  .page-header .search-wrap { width: 100% !important; flex: 1 1 100%; }
   .page-title { font-size: 18px; }
 
   /* ── Cards ── */
