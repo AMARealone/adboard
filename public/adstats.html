@@ -169,6 +169,7 @@ body {
 }
 
 /* ── SIDEBAR ── */
+#mob-topbar, #mob-overlay { display: none; }
 @keyframes waha-blink{0%,100%{opacity:1;box-shadow:0 0 0 0 currentColor}50%{opacity:.6;box-shadow:0 0 4px 2px currentColor}}
 .sidebar {
   position: fixed;
@@ -1539,6 +1540,18 @@ textarea::placeholder { color: var(--muted); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
 <body>
+
+<!-- ════ BARRE MOBILE (masquée sur desktop, voir CSS) ════ -->
+<!-- Cause profonde corrigée (sidebar inaccessible sur mobile) : ce bouton et cette barre
+     n'existaient nulle part dans le HTML — seul leur CSS était défini. Sans bouton, aucun
+     moyen d'appeler toggleSidebar() sur mobile, donc aucun accès à la navigation. -->
+<div id="mob-topbar">
+  <div id="mob-title">AdStats</div>
+  <div id="mob-menu-btn" onclick="toggleSidebar()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </div>
+</div>
+<div id="mob-overlay" onclick="closeSidebar()"></div>
 
 <!-- ════ SIDEBAR ════ -->
 <nav class="sidebar">
@@ -3096,8 +3109,12 @@ function renderLeads(data) {
       const _stored = notesObj['j' + j];
       const _isWA   = _stored && _stored.startsWith('https://wa.me/');
       const _numero = (p.lien_wa || '').replace('https://wa.me/', '').replace(/\D/g,'');
-      const _relanceTpls = (() => { try { return JSON.parse(localStorage.getItem('tpl_relances') || 'null'); } catch(e) { return null; } })()
-                        || (DB._config && DB._config.tpl_relances) || [];
+      // DB._config (synchronisé Supabase, toujours frais) en priorité — localStorage seulement
+      // en dernier repli si DB._config n'a rien. L'ordre inverse (avant) faisait gagner une
+      // valeur locale périmée sur la config à jour, dès qu'elle existait, même obsolète.
+      const _relanceTpls = (DB._config && DB._config.tpl_relances)
+                        || (() => { try { return JSON.parse(localStorage.getItem('tpl_relances') || 'null'); } catch(e) { return null; } })()
+                        || [];
       const _tpl = _relanceTpls[i] || '';
       const _msg = _tpl.replace(/\[Marque\]/g, p.nom_marque||'').replace(/\[Produit\]/g, p.produit||'').replace(/\[Pays\]/g, p.pays||'');
       const lien = _isWA ? _stored : (_numero ? 'https://wa.me/' + _numero + '?text=' + encodeURIComponent(_msg) : '#');
@@ -5274,7 +5291,12 @@ function removeIntro(idx) {
 // Générer les textes d'intro pour Instagram — pas de lien pré-rempli possible (contrairement à wa.me),
 // donc on ouvre juste le profil et on copie le texte pour un collage rapide.
 function getIntroTextsInstagram(prospect) {
-  const intros = JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
+  // Cause profonde corrigée (templates d'intro obsolètes sur Instagram) : cette fonction ne
+  // lisait QUE le localStorage du navigateur, jamais DB._config (la config synchronisée sur
+  // Supabase, mise à jour à chaque sauvegarde dans la page Templates). Si les templates ont été
+  // modifiés depuis un autre appareil, un autre navigateur, ou l'ancienne URL du CRM (localStorage
+  // propre à chaque domaine, jamais partagé), l'ancienne version restait affichée indéfiniment.
+  const intros = (DB._config && DB._config.tpl_intros) || JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
   return intros.map((tpl, i) => {
     const msg = tpl
       .replace(/\[Marque\]/g, prospect.nom_marque || '')
@@ -5352,7 +5374,7 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   } else {
     // Secours uniquement si aucune génération n'a encore eu lieu pour ce prospect —
     // substitution simple, ne gère que Marque/Produit/Pays.
-    const relanceTpls = JSON.parse(localStorage.getItem('tpl_relances') || 'null') || (DB._config && DB._config.tpl_relances) || [];
+    const relanceTpls = (DB._config && DB._config.tpl_relances) || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || [];
     const tpl = relanceTpls[relanceIndex] || '';
     const { phrase: paysPhrase } = resoudrePays(p.pays);
     msg = tpl.replace(/\[Marque\]/gi, p.nom_marque||'')
@@ -5390,8 +5412,8 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   if (texteGenere) {
     msg = texteGenere;
   } else {
-    const relanceTpls = JSON.parse(localStorage.getItem('tpl_relances') || 'null')
-                      || (DB._config && DB._config.tpl_relances) || [];
+    const relanceTpls = (DB._config && DB._config.tpl_relances)
+                      || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || [];
     const tpl = relanceTpls[relanceIndex] || '';
     const { phrase: paysPhrase } = resoudrePays(p.pays);
     msg = tpl.replace(/\[Marque\]/gi, p.nom_marque||'')
@@ -5421,7 +5443,8 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
 
 // Générer les liens WhatsApp avec les intros pour un prospect
 function getIntroLinks(prospect) {
-  const intros = JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
+  // Même cause profonde que getIntroTextsInstagram ci-dessus — DB._config en priorité.
+  const intros = (DB._config && DB._config.tpl_intros) || JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
   const numero = prospect.lien_wa.replace('https://wa.me/', '');
   return intros.map((tpl, i) => {
     const msg = tpl
