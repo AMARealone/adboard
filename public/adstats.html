@@ -1465,23 +1465,14 @@ textarea::placeholder { color: var(--muted); }
   .btn-red.btn-sm { padding: 6px 9px; }
 
   /* ── KPI strip dashboard ── */
-  /* Cause profonde corrigée : .kpi-strip est en display:grid, "flex-wrap" ci-dessus
-     n'avait donc aucun effet — c'est grid-template-columns qu'il fallait forcer.
-     !important nécessaire pour battre les overrides inline (ex: Acheteurs Starter, 3 colonnes). */
-  .kpi-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 0 !important; }
+  .kpi-strip { flex-wrap: wrap; gap: 0; }
   .kpi-cell {
-    border-right: none !important;
+    flex: 1 1 calc(50% - 1px);
+    min-width: 0;
+    border-right: none;
     border-bottom: 1px solid var(--border);
   }
-  .kpi-cell:nth-child(odd) { border-right: 1px solid var(--border) !important; }
-
-  /* ── Barres de filtres/recherche en en-tête (Prospects/Suivi/Leads/Contacts) ──
-     Débordaient horizontalement : plusieurs champs à largeur fixe sur une seule ligne
-     sans possibilité de retour à la ligne. ── */
-  .toolbar { flex-wrap: wrap; }
-  .search-wrap { width: 100% !important; }
-  .page-header select,
-  .page-header input[type="date"] { min-width: 0; flex: 1 1 auto; }
+  .kpi-cell:nth-child(odd) { border-right: 1px solid var(--border); }
 
   /* ── Dash cards grille ── */
   .dash-kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
@@ -1536,44 +1527,6 @@ textarea::placeholder { color: var(--muted); }
 
   /* ── Contacts : masquer colonnes moins importantes ── */
   .contact-row-meta { font-size: 10px; }
-
-  /* ── Tableaux : scroll horizontal au lieu de couper le contenu ── */
-  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  table { min-width: 560px; }
-
-  /* ── Graphiques Chart.js : hauteur maîtrisée, jamais écrasés ── */
-  canvas { max-height: 240px !important; }
-
-  /* ── Inputs : 16px minimum pour éviter le zoom automatique iOS au focus ── */
-  input, select, textarea { font-size: 16px !important; }
-
-  /* ── Cibles tactiles : boutons d'action des cartes à taille suffisante ── */
-  .card-actions button, .card-actions a { min-height: 38px; }
-
-  /* ── L'état "replié" (icônes seules) est une fonction desktop — ne doit jamais
-     s'appliquer au tiroir mobile, même si persisté en localStorage depuis le PC ── */
-  .sidebar.folded { width: 220px; }
-  .sidebar.folded .logo-text,
-  .sidebar.folded .logo-sub,
-  .sidebar.folded .nav-label,
-  .sidebar.folded .nav-item span,
-  .sidebar.folded .nav-count {
-    display: initial;
-  }
-  .sidebar.folded .nav-item { justify-content: flex-start; padding: inherit; }
-  .sidebar.folded .logo { justify-content: flex-start; padding: inherit; }
-  .main.folded { margin-left: 0 !important; }
-
-  /* ── Badge rythme Instagram : le bas d'écran est occupé par les boutons d'action
-     des cartes sur mobile — on le remonte sous la topbar plutôt que de masquer du contenu ── */
-  #igPacingBadge {
-    bottom: auto !important;
-    top: 54px !important;
-    right: 10px !important;
-    font-size: 10px !important;
-    padding: 5px 10px !important;
-    max-width: calc(100vw - 20px);
-  }
 }
 
 @media (max-width: 480px) {
@@ -1586,35 +1539,6 @@ textarea::placeholder { color: var(--muted); }
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 </head>
 <body>
-<div id="admin-auth-gate" style="position:fixed;inset:0;z-index:99999;background:#0b0e14;display:flex;align-items:center;justify-content:center;font-family:inherit;">
-  <div style="width:100%;max-width:360px;padding:32px;background:#12161f;border:1px solid rgba(255,255,255,.08);border-radius:14px;">
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="font-size:20px;font-weight:800;color:#fff;letter-spacing:-.3px;">AdStats</div>
-      <div style="font-size:12px;color:#8a93a6;margin-top:4px;">Accès administrateur</div>
-    </div>
-    <div id="admin-auth-error" style="display:none;background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#ff8080;font-size:12px;padding:9px 12px;border-radius:8px;margin-bottom:14px;"></div>
-    <input id="admin-auth-email" type="email" placeholder="Email" autocomplete="username" style="width:100%;box-sizing:border-box;padding:11px 13px;margin-bottom:9px;background:#1a1f2b;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;outline:none;">
-    <input id="admin-auth-password" type="password" placeholder="Mot de passe" autocomplete="current-password" style="width:100%;box-sizing:border-box;padding:11px 13px;margin-bottom:14px;background:#1a1f2b;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:13px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')adminAuthSubmitPassword()">
-    <button id="admin-auth-submit" onclick="adminAuthSubmitPassword()" style="width:100%;padding:11px;background:#2f6fed;border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;">Se connecter</button>
-    <div style="display:flex;align-items:center;gap:10px;margin:16px 0;">
-      <div style="flex:1;height:1px;background:rgba(255,255,255,.1);"></div>
-      <div style="font-size:11px;color:#8a93a6;">ou</div>
-      <div style="flex:1;height:1px;background:rgba(255,255,255,.1);"></div>
-    </div>
-    <button onclick="adminAuth.signInWithGoogle()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;">
-      <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Continuer avec Google
-    </button>
-    <div id="admin-auth-loading" style="display:none;text-align:center;color:#8a93a6;font-size:12px;margin-top:12px;">Connexion en cours…</div>
-  </div>
-</div>
-
-<!-- ════ TOPBAR MOBILE ════ (le CSS/JS l'attendaient déjà, il manquait juste ce bloc) -->
-<div id="mob-topbar" style="display:none;">
-  <div id="mob-menu-btn" onclick="toggleSidebar()">☰</div>
-  <div id="mob-title">AdStats</div>
-</div>
-<div id="mob-overlay" onclick="closeSidebar()"></div>
 
 <!-- ════ SIDEBAR ════ -->
 <nav class="sidebar">
@@ -1729,14 +1653,6 @@ textarea::placeholder { color: var(--muted); }
   </div>
 
   <div class="sidebar-toggle" onclick="toggleSidebarFold()" title="Replier / déplier la barre latérale">◂</div>
-  <div id="admin-account-badge" style="display:none;align-items:center;gap:9px;padding:10px 14px;border-top:1px solid rgba(255,255,255,.08);">
-    <div id="admin-account-avatar" style="width:28px;height:28px;border-radius:8px;flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#8a93a6;overflow:hidden;">?</div>
-    <div style="flex:1;overflow:hidden;">
-      <div id="admin-account-email" style="font-size:11px;font-weight:600;color:var(--text,#fff);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-      <div style="font-size:9px;color:var(--blue,#2f6fed);">Connecté</div>
-    </div>
-    <div onclick="if(confirm('Se déconnecter ?')){adminAuth.signOut().then(()=>location.reload());}" title="Se déconnecter" style="width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.07);color:#8a93a6;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;">✕</div>
-  </div>
 </nav>
 
 <!-- ════ MAIN ════ -->
@@ -1887,6 +1803,12 @@ textarea::placeholder { color: var(--muted); }
     <button id="f-instagram" class="fsel" onclick="toggleFiltreCanal('f-instagram')" style="cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s">
       📷 Instagram
     </button>
+    <button id="f-whatsapp" class="fsel" onclick="toggleFiltreCanal('f-whatsapp')" style="cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s">
+      💬 WhatsApp
+    </button>
+    <button id="f-sms" class="fsel" onclick="toggleFiltreCanal('f-sms')" style="cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s">
+      📩 SMS
+    </button>
     <button id="f-email" class="fsel" onclick="toggleFiltreCanal('f-email')" style="cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s">
       ✉️ Email
     </button>
@@ -1916,7 +1838,7 @@ textarea::placeholder { color: var(--muted); }
       <div class="page-title">Suivi prospection</div>
       <div class="page-sub">Cochez l'évolution — 3 cases cochées = bouton Lead disponible</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center">
       <div class="search-wrap" style="width:220px">
         <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
         <input type="text" placeholder="Rechercher un prospect..." id="suivi-search" oninput="filterSuivi()" style="font-size:13px">
@@ -1997,7 +1919,7 @@ textarea::placeholder { color: var(--muted); }
       <div class="page-title">Leads</div>
       <div class="page-sub">Génération automatique des 3 relances à partir de la mindmap</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <div style="display:flex;gap:8px;align-items:center">
       <div class="search-wrap" style="width:220px">
         <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
         <input type="text" placeholder="Rechercher un lead..." id="leads-search" oninput="filterLeads()" style="font-size:13px">
@@ -2199,181 +2121,22 @@ textarea::placeholder { color: var(--muted); }
 // ═══════════════════════════════════════
 const SB  = 'https://mifljhsusidgzelnswma.supabase.co/rest/v1';
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
-// CLAUDE_KEY retirée (secret exposé côté client, jamais utilisée nulle part dans ce fichier — code mort d'une ancienne version)
+const CLAUDE_KEY = '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';
 const GEMINI_KEY = ''; // ← Coller ta clé ici : https://aistudio.google.com/apikey
 
 
-let H = {
+const H = {
   'apikey': KEY,
   'Authorization': `Bearer ${KEY}`,
   'Content-Type': 'application/json',
 };
 // Header PATCH séparé — sans Prefer pour laisser Supabase confirmer silencieusement
-let H_PATCH = {
+const H_PATCH = {
   'apikey': KEY,
   'Authorization': `Bearer ${KEY}`,
   'Content-Type': 'application/json',
   'Prefer': 'return=minimal',
 };
-
-// ═══════════════════════════════════════
-// AUTH ADMIN — un seul compte autorisé (toi), même pattern que sbAuth d'AdBoard
-// ═══════════════════════════════════════
-const ADMIN_EMAIL = 'thefirstquality01@gmail.com'; 
-
-const adminAuth = {
-  getSession() { try { return JSON.parse(localStorage.getItem('admin_sb_session') || 'null'); } catch(e) { return null; } },
-  getUser() { try { return JSON.parse(localStorage.getItem('admin_sb_user') || 'null'); } catch(e) { return null; } },
-  _saveSession(d) {
-    const session = { access_token: d.access_token, refresh_token: d.refresh_token, expires_at: Date.now() + ((d.expires_in || 3600) * 1000) };
-    localStorage.setItem('admin_sb_session', JSON.stringify(session));
-    if (d.user) localStorage.setItem('admin_sb_user', JSON.stringify(d.user));
-  },
-  async signInWithPassword(email, password) {
-    const r = await fetch(`${SB.replace('/rest/v1','')}/auth/v1/token?grant_type=password`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY },
-      body: JSON.stringify({ email, password })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error_description || d.msg || 'Identifiants incorrects');
-    this._saveSession(d);
-    return d.user;
-  },
-  signInWithGoogle() {
-    const redirectTo = encodeURIComponent('https://adstackofficial.com/adstats');
-    window.location.href = `${SB.replace('/rest/v1','')}/auth/v1/authorize?provider=google&redirect_to=${redirectTo}&prompt=select_account`;
-  },
-  async handleOAuthCallback() {
-    const hash = window.location.hash;
-    if (!hash.includes('access_token')) return null;
-    const params = new URLSearchParams(hash.replace('#', ''));
-    const session = { access_token: params.get('access_token'), refresh_token: params.get('refresh_token'), expires_in: parseInt(params.get('expires_in') || '3600') };
-    history.replaceState(null, '', location.pathname); // nettoie le # de l'URL
-    const r = await fetch(`${SB.replace('/rest/v1','')}/auth/v1/user`, { headers: { Authorization: `Bearer ${session.access_token}`, apikey: KEY } });
-    const user = await r.json();
-    this._saveSession({ ...session, user });
-    return user;
-  },
-  async refreshSession() {
-    const session = this.getSession();
-    if (!session) return null;
-    if (session.expires_at && Date.now() < session.expires_at - 60000) return session;
-    const r = await fetch(`${SB.replace('/rest/v1','')}/auth/v1/token?grant_type=refresh_token`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY },
-      body: JSON.stringify({ refresh_token: session.refresh_token })
-    });
-    if (!r.ok) { await this.signOut(); return null; }
-    const d = await r.json();
-    this._saveSession(d);
-    return this.getSession();
-  },
-  async signOut() {
-    const session = this.getSession();
-    if (session?.access_token) {
-      await fetch(`${SB.replace('/rest/v1','')}/auth/v1/logout`, { method: 'POST', headers: { Authorization: `Bearer ${session.access_token}`, apikey: KEY } }).catch(()=>{});
-    }
-    localStorage.removeItem('admin_sb_session');
-    localStorage.removeItem('admin_sb_user');
-  }
-};
-
-function _showAuthGate(errorMsg) {
-  const gate = document.getElementById('admin-auth-gate');
-  if (gate) gate.style.display = 'flex';
-  const err = document.getElementById('admin-auth-error');
-  if (err) {
-    if (errorMsg) { err.textContent = errorMsg; err.style.display = 'block'; }
-    else err.style.display = 'none';
-  }
-  const loading = document.getElementById('admin-auth-loading');
-  if (loading) loading.style.display = 'none';
-}
-
-function _hideAuthGate() {
-  const gate = document.getElementById('admin-auth-gate');
-  if (gate) gate.style.display = 'none';
-}
-
-async function _checkAdminAndProceed(user, onSuccess) {
-  if (!user || (user.email || '').toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-    await adminAuth.signOut();
-    _showAuthGate("Ce compte n'est pas autorisé sur AdStats. Connecte-toi avec le compte administrateur.");
-    return;
-  }
-  _hideAuthGate();
-  _renderAccountBadge(user);
-  const session = adminAuth.getSession();
-  if (session) {
-    H.Authorization = 'Bearer ' + session.access_token;
-    H_PATCH.Authorization = 'Bearer ' + session.access_token;
-  }
-  // Cause profonde corrigée : refreshSession() n'était appelée qu'une fois, au chargement de
-  // la page. Si l'onglet restait ouvert plus longtemps que la durée de vie du token (~1h),
-  // rien ne le renouvelait — obligeant un F5 complet pour se reconnecter. Ce timer renouvelle
-  // en arrière-plan bien avant l'expiration, tant que l'onglet reste ouvert.
-  if (!window._adminSessionKeepAlive) {
-    window._adminSessionKeepAlive = setInterval(async () => {
-      try {
-        const fresh = await adminAuth.refreshSession();
-        if (fresh) {
-          H.Authorization = 'Bearer ' + fresh.access_token;
-          H_PATCH.Authorization = 'Bearer ' + fresh.access_token;
-        } else {
-          console.warn('[AdStats] Renouvellement de session échoué — reconnexion nécessaire à la prochaine action.');
-        }
-      } catch(e) { console.warn('[AdStats] Erreur renouvellement session :', e.message); }
-    }, 10 * 60 * 1000);
-  }
-  onSuccess();
-}
-
-function _renderAccountBadge(user) {
-  const badge = document.getElementById('admin-account-badge');
-  if (!badge) return;
-  badge.style.display = 'flex';
-  const avatarEl = document.getElementById('admin-account-avatar');
-  const avatarUrl = user.user_metadata?.avatar_url;
-  if (avatarEl) {
-    if (avatarUrl) avatarEl.innerHTML = `<img src="${avatarUrl}" style="width:100%;height:100%;object-fit:cover;">`;
-    else avatarEl.textContent = (user.user_metadata?.full_name || user.email || '?')[0].toUpperCase();
-  }
-  const emailEl = document.getElementById('admin-account-email');
-  if (emailEl) emailEl.textContent = user.user_metadata?.full_name || user.email;
-}
-
-async function adminAuthSubmitPassword() {
-  const email = document.getElementById('admin-auth-email').value.trim();
-  const password = document.getElementById('admin-auth-password').value;
-  if (!email || !password) { _showAuthGate('Renseigne ton email et ton mot de passe.'); return; }
-  const loading = document.getElementById('admin-auth-loading');
-  if (loading) loading.style.display = 'block';
-  try {
-    const user = await adminAuth.signInWithPassword(email, password);
-    await _checkAdminAndProceed(user, window._adminAuthOnSuccess);
-  } catch(e) {
-    _showAuthGate(e.message);
-  }
-}
-
-async function initAuthGate(onSuccess) {
-  window._adminAuthOnSuccess = onSuccess;
-  if (location.hash.includes('access_token')) {
-    try {
-      const user = await adminAuth.handleOAuthCallback();
-      await _checkAdminAndProceed(user, onSuccess);
-      return;
-    } catch(e) { _showAuthGate('Erreur de connexion : ' + e.message); return; }
-  }
-  let session = adminAuth.getSession();
-  if (session) {
-    session = await adminAuth.refreshSession();
-    if (session) {
-      await _checkAdminAndProceed(adminAuth.getUser(), onSuccess);
-      return;
-    }
-  }
-  _showAuthGate();
-}
 
 // ═══════════════════════════════════════
 // STATE
@@ -2434,16 +2197,7 @@ function toggleSidebarFold() {
   } catch(e) {}
 })();
 
-// ── URL par section (façon AdBoard) — mot-clé anglais après /adstats/ ──
-const SECTION_SLUGS = {
-  dashboard: 'dashboard', comportement: 'behavior', transactions: 'transactions',
-  utilisateurs: 'users', prospects: 'prospects', suivi: 'followup',
-  leads: 'leads', acheteurs: 'buyers', templates: 'templates',
-  prospection: 'prospecting', contacts: 'contacts', donnees: 'insights'
-};
-const SLUG_TO_SECTION = Object.fromEntries(Object.entries(SECTION_SLUGS).map(([k, v]) => [v, k]));
-
-function goTo(name, btn, _skipPush) {
+function goTo(name, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   const page = document.getElementById('page-' + name);
@@ -2461,32 +2215,10 @@ function goTo(name, btn, _skipPush) {
   if (name === 'transactions') renderTransactions();
   if (name === 'comportement') renderComportement();
   if (name === 'utilisateurs') renderUtilisateurs();
-
-  if (!_skipPush) {
-    const slug = SECTION_SLUGS[name] || name;
-    try {
-      if (location.pathname !== '/adstats/' + slug) {
-        history.pushState({ section: name }, '', '/adstats/' + slug);
-      }
-    } catch(e) {
-      // Contexte restreint (iframe sandbox, preview, etc.) — ne doit jamais bloquer la navigation.
-      console.warn('[AdStats] pushState indisponible dans ce contexte :', e.message);
-    }
-  }
 }
 
-// Navigation navigateur (précédent/suivant) — ne pas repousser un nouvel état, juste afficher
-window.addEventListener('popstate', () => {
-  const slug = location.pathname.replace(/^\/adstats\/?/, '').split('/')[0];
-  const name = SLUG_TO_SECTION[slug] || 'prospects';
-  const btn = document.querySelector(`.nav-item[onclick*="'${name}'"]`);
-  goTo(name, btn, true);
-});
-
 function restorePage() {
-  // Priorité à l'URL directe (ex: adstackofficial.com/adstats/followup) sur la session
-  const slugFromUrl = location.pathname.replace(/^\/adstats\/?/, '').split('/')[0];
-  const saved = SLUG_TO_SECTION[slugFromUrl] || sessionStorage.getItem('crm_page') || 'prospects';
+  const saved = sessionStorage.getItem('crm_page') || 'prospects';
   const btn = document.querySelector(`.nav-item[onclick*="'${saved}'"]`);
   goTo(saved, btn);
 }
@@ -2615,7 +2347,7 @@ function toggleFiltreCanal(id) {
   const btn = document.getElementById(id);
   const actif = btn.dataset.active === '1';
   btn.dataset.active = actif ? '0' : '1';
-  btn.style.background = actif ? '' : (id === 'f-instagram' ? 'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)' : 'var(--blue)');
+  btn.style.background = actif ? '' : (id === 'f-instagram' ? 'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)' : id === 'f-whatsapp' ? '#25D366' : id === 'f-sms' ? '#0EA5E9' : 'var(--blue)');
   btn.style.color = actif ? '' : '#fff';
   btn.style.borderColor = actif ? '' : 'transparent';
   filterP();
@@ -2626,6 +2358,8 @@ function filterP() {
   const pays = document.getElementById('f-pays')?.value || '';
   const score = document.getElementById('f-score')?.value || '';
   const veutInstagram = document.getElementById('f-instagram')?.dataset.active === '1';
+  const veutWhatsapp = document.getElementById('f-whatsapp')?.dataset.active === '1';
+  const veutSms = document.getElementById('f-sms')?.dataset.active === '1';
   const veutEmail = document.getElementById('f-email')?.dataset.active === '1';
 
   const data = DB.filter(p => p.statut === 'a_contacter').filter(p => {
@@ -2635,6 +2369,11 @@ function filterP() {
     if (score === 'mid'  && (p.score < 60 || p.score >= 80)) return false;
     if (score === 'low'  && p.score >= 60) return false;
     if (veutInstagram && !p.lien_instagram) return false;
+    // WhatsApp : numéro présent ET pas marqué invalide (voir marquerWhatsAppInvalide)
+    if (veutWhatsapp && (!p.lien_wa || p.whatsapp_invalide)) return false;
+    // SMS : n'importe quel numéro valide suffit, peu importe le statut WhatsApp — le numéro
+    // reste exploitable pour SMS même si WhatsApp a été marqué invalide sur ce prospect.
+    if (veutSms && !p.lien_wa) return false;
     if (veutEmail && !p.email) return false;
     return true;
   });
@@ -2665,15 +2404,19 @@ function filterP() {
       <td>
         <div style="display:flex;gap:6px">
           <div style="position:relative;display:inline-block" id="wa-wrap-${p.id}">
-            <button class="btn btn-wa btn-sm" ${p.lien_wa ? `onclick="toggleWaMenu('${p.id}',event)"` : 'disabled title="Pas de numéro de téléphone trouvé pour ce prospect"'} style="${p.lien_wa ? '' : 'background:var(--surface3);color:var(--muted);cursor:not-allowed;opacity:.5;'}">
+            <button class="btn btn-wa btn-sm" ${(p.lien_wa && !p.whatsapp_invalide) ? `onclick="toggleWaMenu('${p.id}',event)"` : `disabled title="${p.whatsapp_invalide ? 'WhatsApp marqué invalide pour ce prospect' : 'Pas de numéro de téléphone trouvé pour ce prospect'}"`} style="${(p.lien_wa && !p.whatsapp_invalide) ? '' : 'background:var(--surface3);color:var(--muted);cursor:not-allowed;opacity:.5;'}">
               WhatsApp ▾
             </button>
-            ${p.lien_wa ? `
+            ${(p.lien_wa && !p.whatsapp_invalide) ? `
             <div id="wa-menu-${p.id}" style="display:none;position:absolute;top:100%;left:0;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:6px;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,.4);margin-top:4px">
               ${getIntroLinks(p).map(l => `
-                <a href="${l.lien}" target="_blank" onclick="closeWaMenus()" style="display:block;padding:7px 12px;font-size:12px;font-weight:600;color:var(--text2);text-decoration:none;border-radius:6px;transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+                <a href="${l.lien}" target="_blank" onclick="closeWaMenus();marquerDernierCanal('${p.id}','whatsapp')" style="display:block;padding:7px 12px;font-size:12px;font-weight:600;color:var(--text2);text-decoration:none;border-radius:6px;transition:background .1s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
                   ${l.label}
                 </a>`).join('')}
+              <div style="border-top:1px solid var(--border2);margin:4px 0"></div>
+              <button onclick="marquerWhatsAppInvalide('${p.id}')" style="display:block;width:100%;text-align:left;padding:7px 12px;font-size:12px;font-weight:600;color:var(--red);background:transparent;border:none;border-radius:6px;cursor:pointer;transition:background .1s;font-family:var(--font)" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='transparent'">
+                🚫 Marquer WhatsApp invalide
+              </button>
             </div>` : ''}
           </div>
           <div style="position:relative;display:inline-block" id="ig-wrap-${p.id}">
@@ -2692,6 +2435,9 @@ function filterP() {
               </button>
             </div>` : ''}
           </div>
+          <button class="btn btn-sm" ${p.lien_wa ? `onclick="marquerCanalSms('${p.id}')" title="Numéro disponible pour SMS — fonctionnalité d'envoi à venir"` : 'disabled title="Pas de numéro de téléphone trouvé pour ce prospect"'} style="${p.lien_wa ? 'background:#0EA5E9;color:#fff;' : 'background:var(--surface3);color:var(--muted);cursor:not-allowed;opacity:.5;'}">
+            SMS
+          </button>
           <button class="btn btn-green btn-sm" onclick="markContacted('${p.id}')">Contacté</button>
           ${p.lien_ads ? `<a href="${p.lien_ads}" target="_blank" class="btn btn-ghost btn-sm">Ads</a>` : ''}
           <button class="btn btn-red btn-sm" onclick="deleteProspect('${p.id}')">Supprimer</button>
@@ -2702,9 +2448,30 @@ function filterP() {
 }
 
 async function markContacted(id) {
-  await patch(id, { statut: 'en_suivi', date_contact: new Date().toISOString() });
+  const p = DB.find(x => x.id === id);
+  // Cause profonde corrigée (canal Suivi/Leads pas fiable) : jusqu'ici, le canal affiché plus
+  // loin (Suivi, Leads) était deviné à l'affichage selon la présence de lien_instagram — faux
+  // si un prospect a les deux canaux, ou si Instagram existe mais que le contact a été fait par
+  // WhatsApp. On enregistre maintenant explicitement le DERNIER canal réellement cliqué (voir
+  // marquerDernierCanal, appelée depuis les boutons WhatsApp/Instagram/SMS eux-mêmes).
+  const canal = p?.dernier_canal_clique || (p?.lien_instagram ? 'instagram' : 'whatsapp'); // repli pour anciennes fiches
+  await patch(id, { statut: 'en_suivi', date_contact: new Date().toISOString(), canal_contact: canal });
+  // Cause profonde corrigée : c'est ICI, quand le message a réellement été envoyé sur Instagram
+  // et confirmé de retour dans le CRM, que le rythme d'envoi doit être mesuré — pas à l'ouverture
+  // du lien Instagram (voir ouvrirInstagramAvecRythme).
+  _igLastSendAt = Date.now();
+  localStorage.setItem('ig_last_send_at', String(_igLastSendAt));
+  _igPacingTick();
   toast('Marqué comme contacté');
   load();
+}
+
+// Mémorise le canal réellement utilisé (whatsapp/instagram/sms), pour que markContacted et les
+// sections Suivi/Leads sachent lequel afficher — jamais une supposition depuis les données.
+async function marquerDernierCanal(id, canal) {
+  const p = DB.find(x => x.id === id);
+  if (p) p.dernier_canal_clique = canal;
+  try { await patch(id, { dernier_canal_clique: canal }); } catch(e) {}
 }
 
 // ═══════════════════════════════════════
@@ -2846,7 +2613,7 @@ function renderSuivi(data) {
         + '<input id="lien-demo-'+pid+'" type="text" value="'+lien_demo+'" placeholder="Lien d\u00e9mo (auto via Factory)\u2026" oninput="saveLienDemo(\''+pid+'\',this.value)" onpaste="setTimeout(()=>extractProduitFromDemo(\''+pid+'\',this.value),300)" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:7px;padding:5px 9px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;">'
         + (produit_demo ? '<span style="font-size:10px;color:var(--blue);white-space:nowrap;" title="'+produit_demo+'">'+produit_demo+'</span>' : '')
       + '</div>'
-      + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(p.lien_instagram?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(p.lien_instagram?'📷 Envoyer Pitch + Démo (Instagram)':'📱 Envoyer Pitch + Démo')+'</button></div>'
+      + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(p.canal_contact==='instagram'?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(p.canal_contact==='instagram'?'📷 Envoyer Pitch + Démo (Instagram)':'📱 Envoyer Pitch + Démo (WhatsApp)')+'</button></div>'
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(demo_envoye?'#25D366':'var(--muted)')+';font-weight:'+(demo_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(demo_envoye?'checked':'')+' style="accent-color:#25D366;cursor:pointer;width:13px;height:13px" onchange="toggleDemoEnvoye(\''+pid+'\',this.checked)">'
         + 'D\u00e9mo envoy\u00e9e</label>'
@@ -2900,9 +2667,11 @@ async function sendDemoMsg(pid) {
     window._demoData = window._demoData || {};
     window._demoData[pid] = d;
   }
-  // lien_instagram n'est JAMAIS gardé depuis le cache — toujours relu à neuf depuis DB,
-  // au cas où le cache aurait été créé avant que ce champ soit correctement rempli.
-  { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = _pFresh?.lien_instagram || ''; }
+  // canal_contact (enregistré au moment du premier "Contacté") fait foi — jamais une
+  // supposition depuis la présence de lien_instagram, qui peut exister même si le contact
+  // initial a été fait par WhatsApp (cause du bug signalé : bascule vers le mauvais canal
+  // lors de la relance Pitch + Démo).
+  { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh?.canal_contact === 'instagram') ? (_pFresh?.lien_instagram || '') : ''; }
   // Le template n'est JAMAIS mis en cache avec le reste — toujours relu depuis la config actuelle,
   // même pour un prospect déjà préparé dans cette session (fix : template obsolète après modification).
   let _tpl = "Je posais la question car notre *Agence* aide des *marques* dans la niche *[Niche]* \u00e0 faire *2x plus de ventes*.\n\n*Uniquement* gr\u00e2ce \u00e0 des *IMAGES Publicitaires* bas\u00e9s sur :\n\n- Une analyse de votre march\u00e9 *\"[Pays]\"* pour d\u00e9finir et comprendre *la cible* qui ach\u00e8te vraiment vos Produits;\n\nVoici une *d\u00e9monstration gratuite* : *[lien_demo]*\npour *[Produit]*.\n\nAinsi qu'un aper\u00e7u de ce qu'on pourra mettre en place concr\u00e8tement pour vous !!!\n\nOn attend impatiemment votre avis !!!";
@@ -2964,7 +2733,7 @@ async function sendDemoMsg(pid) {
   } catch(e) {
     toast('Erreur : ' + e.message);
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = d.lien_instagram ? '📷 Envoyer Pitch + Démo (Instagram)' : '📱 Envoyer Pitch + Démo'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = d.lien_instagram ? '📷 Envoyer Pitch + Démo (Instagram)' : '📱 Envoyer Pitch + Démo (WhatsApp)'; }
   }
 }
 
@@ -3330,7 +3099,9 @@ function renderLeads(data) {
       const _tpl = _relanceTpls[i] || '';
       const _msg = _tpl.replace(/\[Marque\]/g, p.nom_marque||'').replace(/\[Produit\]/g, p.produit||'').replace(/\[Pays\]/g, p.pays||'');
       const lien = _isWA ? _stored : (_numero ? 'https://wa.me/' + _numero + '?text=' + encodeURIComponent(_msg) : '#');
-      const _viaInstagram = !!p.lien_instagram;
+      // canal_contact (enregistré au premier contact) fait foi — jamais la simple présence de
+      // lien_instagram, qui peut exister même si le contact a été fait par WhatsApp/SMS.
+      const _viaInstagram = p.canal_contact === 'instagram';
 
       let btnStyle = 'display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none;border:1px solid;transition:all .15s;white-space:nowrap;';
       let badgeStyle = 'font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.4px;';
@@ -3624,11 +3395,7 @@ async function renderApiCosts() {
   const toEl   = document.getElementById('dash-date-to');
   const from   = fromEl ? fromEl.value : '';
   const to     = toEl   ? toEl.value   : '';
-  // Cause profonde corrigée : cette requête sommait TOUT (démo, production, tests d'agents
-  // confondus) — les tests manuels et les vraies productions client faussaient le "coût
-  // d'acquisition" affiché ici. Ne compte désormais que démo + prospecteur + génération de
-  // messages (tous catégorisés comme coûts d'acquisition réels) — production et tests exclus.
-  let query = `${SB}/api_usage_log?select=cout_usd,created_at&source=in.(demo,prospecteur)`;
+  let query = `${SB}/api_usage_log?select=cout_usd,created_at`;
   if (from || to) {
     if (from) query += `&created_at=gte.${from}T00:00:00`;
     if (to)   query += `&created_at=lte.${to}T23:59:59`;
@@ -3972,14 +3739,14 @@ async function genMessages(html) {
   let templates = DEFAULT_RELANCES;
   try {
     const _cr = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
-    if (!_cr.ok) throw new Error(`Lecture config templates : HTTP ${_cr.status}`);
-    const _rows = await _cr.json();
-    if (_rows.length) {
-      const _cfg = JSON.parse(_rows[0].notes || '{}');
-      if (_cfg.tpl_relances) templates = _cfg.tpl_relances;
+    if (_cr.ok) {
+      const _rows = await _cr.json();
+      if (_rows.length) {
+        const _cfg = JSON.parse(_rows[0].notes || '{}');
+        if (_cfg.tpl_relances) templates = _cfg.tpl_relances;
+      }
     }
   } catch(e) {
-    console.warn('[genMessages] Lecture config Supabase échouée, fallback localStorage :', e.message);
     templates = JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
   }
   // Ancien format (5 relances) encore enregistré quelque part → périmé, on force les nouveaux templates
@@ -4742,6 +4509,29 @@ async function marquerInstagramInvalide(id) {
   toast(`Instagram retiré pour ${nom}`);
 }
 
+// Cause profonde à éviter absolument (contrairement à l'Instagram ci-dessus) : on ne touche
+// JAMAIS à lien_wa ici, car c'est le SEUL endroit où le numéro brut est stocké (numero =
+// lien_wa sans le préfixe wa.me, utilisé partout dans le fichier) — le vider détruirait le
+// numéro nécessaire pour le futur canal SMS. On se contente d'un indicateur séparé.
+async function marquerWhatsAppInvalide(id) {
+  const p = DB.find(x => x.id === id);
+  const nom = p?.nom_marque || 'ce prospect';
+  if (!confirm(`Marquer le WhatsApp de ${nom} comme invalide ? Il ne sera plus proposé via ce canal — le numéro reste disponible pour le SMS (le reste de la fiche est conservé).`)) return;
+  if (p) p.whatsapp_invalide = true;
+  await patch(id, { whatsapp_invalide: true });
+  closeWaMenus();
+  render();
+  toast(`WhatsApp retiré pour ${nom} — numéro conservé pour SMS`);
+}
+
+// Bouton SMS — pour l'instant, marque simplement que ce numéro est disponible pour une future
+// campagne SMS et enregistre le canal (utile une fois "Contacté" cliqué). N'envoie rien : le
+// canal SMS n'est pas encore automatisé, ce bouton sert de repère visuel pour le moment.
+async function marquerCanalSms(id) {
+  await marquerDernierCanal(id, 'sms');
+  toast('Numéro marqué disponible pour SMS');
+}
+
 function openM(id)  { document.getElementById(id).classList.add('open'); }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -4765,7 +4555,7 @@ function _igPacingBadge() {
   if (!el) {
     el = document.createElement('div');
     el.id = 'igPacingBadge';
-    el.style.cssText = 'position:fixed;bottom:20px;right:20px;z-index:9999;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;font-family:inherit;transition:background .3s,color .3s;box-shadow:0 2px 10px rgba(0,0,0,0.15);';
+    el.style.cssText = 'position:fixed;bottom:20px;left:20px;z-index:9999;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:600;font-family:inherit;transition:background .3s,color .3s;box-shadow:0 2px 10px rgba(0,0,0,0.15);';
     document.body.appendChild(el);
   }
   return el;
@@ -4789,18 +4579,18 @@ setInterval(_igPacingTick, 1000);
 _igPacingTick();
 
 // Enveloppe TOUS les points d'ouverture Instagram — remplace window.open(lien,'_blank') direct.
-// Si le dernier envoi date de moins de 45s, demande confirmation au lieu de bloquer :
+// Si le dernier "Contacté" date de moins de 45s, demande confirmation au lieu de bloquer :
 // certains cas (ex: rattraper un envoi raté) justifient de continuer quand même.
+// Cause profonde corrigée : le minuteur se déclenchait ici, à l'OUVERTURE du lien (avant même
+// d'avoir réellement envoyé un message sur Instagram) — pas au moment où l'envoi est confirmé
+// via le bouton "Contacté". La remise à zéro vit maintenant uniquement dans markContacted().
 function ouvrirInstagramAvecRythme(lien) {
   const elapsed = Date.now() - _igLastSendAt;
   if (_igLastSendAt && elapsed < IG_PACING_MS) {
     const reste = Math.ceil((IG_PACING_MS - elapsed) / 1000);
-    const continuer = confirm(`Dernier envoi Instagram il y a ${Math.round(elapsed/1000)}s seulement (recommandé : ${IG_PACING_MS/1000}s entre deux envois, pour limiter le risque de restriction). Continuer quand même ?`);
+    const continuer = confirm(`Dernier "Contacté" il y a ${Math.round(elapsed/1000)}s seulement (recommandé : ${IG_PACING_MS/1000}s entre deux messages, pour limiter le risque de restriction). Continuer quand même ?`);
     if (!continuer) return false;
   }
-  _igLastSendAt = Date.now();
-  localStorage.setItem('ig_last_send_at', String(_igLastSendAt));
-  _igPacingTick();
   window.open(lien, '_blank');
   return true;
 }
@@ -4818,7 +4608,7 @@ document.querySelectorAll('.modal-bg').forEach(o => {
 // ═══════════════════════════════════
 // GÉNÉRATEUR DÉMO
 // ═══════════════════════════════════
-// DEMO_KEY retirée (secret exposé côté client, jamais utilisée nulle part dans ce fichier — code mort d'une ancienne version)
+const DEMO_KEY = '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';
 let demoImgs = [];
 let demoBriefHTML = '';
 let demoBriefName = '';
@@ -5099,24 +4889,20 @@ async function loadTemplates() {
   let cfg_demo_msg = '';
   try {
     const r = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
-    // Cause profonde corrigée : un rejet HTTP (RLS, permissions...) ne lève PAS d'exception
-    // fetch — r.ok=false passait inaperçu, ni erreur ni fallback localStorage déclenché,
-    // les templates par défaut (périmés) restaient utilisés sans que rien ne le signale.
-    if (!r.ok) throw new Error(`Lecture config templates : HTTP ${r.status}`);
-    const rows = await r.json();
-    if (rows.length) {
-      const cfg = JSON.parse(rows[0].notes || '{}');
-      if (cfg.tpl_intros)    intros    = cfg.tpl_intros;
-      if (cfg.tpl_relances)  relances  = cfg.tpl_relances;
-      if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
-      if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
-      DB._config = cfg;
-      // Sync localStorage pour lecture rapide (genMessages, getIntroLinks, getIntroTextsInstagram)
-      localStorage.setItem('tpl_relances', JSON.stringify(relances));
-      if (cfg.tpl_intros) localStorage.setItem('tpl_intros', JSON.stringify(intros));
+    if (r.ok) {
+      const rows = await r.json();
+      if (rows.length) {
+        const cfg = JSON.parse(rows[0].notes || '{}');
+        if (cfg.tpl_intros)    intros    = cfg.tpl_intros;
+        if (cfg.tpl_relances)  relances  = cfg.tpl_relances;
+        if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
+        if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
+        DB._config = cfg;
+        // Sync localStorage pour genMessages (lecture rapide)
+        localStorage.setItem('tpl_relances', JSON.stringify(relances));
+      }
     }
   } catch(e) {
-    console.warn('[loadTemplates] Lecture config Supabase échouée, fallback localStorage :', e.message);
     // Fallback localStorage
     intros    = JSON.parse(localStorage.getItem('tpl_intros')   || 'null') || DEFAULT_INTROS;
     relances  = JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
@@ -5132,11 +4918,8 @@ async function loadTemplates() {
   let dbTemplates = [];
   try {
     const rDb = await fetch(`${SB}/templates?select=*`, { headers: H });
-    if (!rDb.ok) throw new Error(`Lecture table templates : HTTP ${rDb.status}`);
-    dbTemplates = await rDb.json();
-  } catch(e) {
-    console.warn('[loadTemplates] Lecture table templates échouée :', e.message);
-  }
+    if (rDb.ok) dbTemplates = await rDb.json();
+  } catch(e) {}
   const parCle = {};
   dbTemplates.forEach(t => { parCle[t.cle] = t; });
 
@@ -5384,15 +5167,7 @@ async function saveAllTemplates() {
   try {
     // Vérifier si la ligne config existe
     const r = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
-    // Cause profonde corrigée : un rejet HTTP était traité comme "aucune ligne config
-    // n'existe encore", ce qui pouvait créer une DEUXIÈME ligne config en double au lieu
-    // de mettre à jour la vraie — source de templates qui ne se mettent jamais à jour.
-    if (!r.ok) {
-      toast('Erreur lecture config (HTTP ' + r.status + ') — sauvegarde annulée, réessaie');
-      console.error('[Templates] Lecture config échouée avant sauvegarde:', r.status);
-      return;
-    }
-    const rows = await r.json();
+    const rows = r.ok ? await r.json() : [];
     if (rows.length) {
       // PATCH ligne existante
       const pr = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, {
@@ -5497,8 +5272,7 @@ function removeIntro(idx) {
 // Générer les textes d'intro pour Instagram — pas de lien pré-rempli possible (contrairement à wa.me),
 // donc on ouvre juste le profil et on copie le texte pour un collage rapide.
 function getIntroTextsInstagram(prospect) {
-  // Priorité : config Supabase (DB._config, source de vérité) → cache localStorage → défaut
-  const intros = (DB._config && DB._config.tpl_intros) || JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
+  const intros = JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
   return intros.map((tpl, i) => {
     const msg = tpl
       .replace(/\[Marque\]/g, prospect.nom_marque || '')
@@ -5532,6 +5306,7 @@ async function openInstagramIntro(id, variantIndex) {
   } catch(e) {
     toast('Impossible de copier automatiquement — copie le texte manuellement');
   }
+  marquerDernierCanal(id, 'instagram');
   ouvrirInstagramAvecRythme(p.lien_instagram);
   closeIgMenus();
 }
@@ -5644,8 +5419,7 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
 
 // Générer les liens WhatsApp avec les intros pour un prospect
 function getIntroLinks(prospect) {
-  // Priorité : config Supabase (DB._config, source de vérité) → cache localStorage → défaut
-  const intros = (DB._config && DB._config.tpl_intros) || JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
+  const intros = JSON.parse(localStorage.getItem('tpl_intros') || 'null') || DEFAULT_INTROS;
   const numero = prospect.lien_wa.replace('https://wa.me/', '');
   return intros.map((tpl, i) => {
     const msg = tpl
@@ -5665,19 +5439,16 @@ window.addEventListener('message', (e) => {
   }
 });
 
-initAuthGate(() => {
-  load().then(() => { restorePage(); setTimeout(checkWAHAStatus, 2000); });
-  loadTemplates();
-});
+load().then(() => { restorePage(); setTimeout(checkWAHAStatus, 2000); });
 
 // ── Mobile sidebar ──
 function toggleSidebar() {
-  document.querySelector('.sidebar')?.classList.toggle('open');
-  document.getElementById('mob-overlay')?.classList.toggle('show');
+  document.querySelector('.sidebar').classList.toggle('open');
+  document.getElementById('mob-overlay').classList.toggle('show');
 }
 function closeSidebar() {
-  document.querySelector('.sidebar')?.classList.remove('open');
-  document.getElementById('mob-overlay')?.classList.remove('show');
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('mob-overlay').classList.remove('show');
 }
 
 // Compteurs mobiles
@@ -5690,6 +5461,7 @@ function updateMobCounts() {
   el.textContent = ac + ' · ' + sv + ' · ' + ld;
 }
 // setInterval(load) retiré — provoquait des resets d'état
+loadTemplates();
 </script>
 </body>
 </html>
