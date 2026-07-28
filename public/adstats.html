@@ -2753,8 +2753,8 @@ async function sendDemoMsg(pid) {
     }
     msg = msg.replace(/\n/g, '\n');
     if (d.lien_instagram) {
-      try { await navigator.clipboard.writeText(msg); toast('Texte copié — colle-le (Ctrl+V) dans la conversation Instagram'); }
-      catch(e) { toast('Impossible de copier automatiquement — copie le texte manuellement'); }
+      const copie = await copierTexteAvecRepli(msg);
+      toast(copie ? 'Texte copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
       ouvrirInstagramAvecRythme(d.lien_instagram);
     } else {
       window.open('https://wa.me/'+d.numero.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
@@ -4565,6 +4565,35 @@ async function marquerCanalSms(id) {
   toast('Numéro marqué disponible pour SMS');
 }
 
+// Cause profonde corrigée (copie refusée sur mobile après un pitch+démo Instagram) : la vraie
+// fonction est appelée après plusieurs appels réseau (fill-demo-msg, fetchNiche...) — le temps
+// que tout ça se termine, la fenêtre de "geste utilisateur récent" exigée par l'API Clipboard
+// moderne (stricte sur Safari mobile en particulier) est dépassée, et la permission est refusée.
+// execCommand('copy') via un champ temporaire est une méthode plus ancienne mais qui ne dépend
+// pas de cette fenêtre de temps — elle sert de repli fiable quand l'API moderne échoue.
+async function copierTexteAvecRepli(texte) {
+  try {
+    await navigator.clipboard.writeText(texte);
+    return true;
+  } catch(e) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = texte;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      return ok;
+    } catch(e2) {
+      return false;
+    }
+  }
+}
+
 function openM(id)  { document.getElementById(id).classList.add('open'); }
 function closeM(id) { document.getElementById(id).classList.remove('open'); }
 
@@ -5338,12 +5367,8 @@ async function openInstagramIntro(id, variantIndex) {
   if (!p || !p.lien_instagram) return;
   const textes = getIntroTextsInstagram(p);
   const texte = textes[variantIndex]?.texte || '';
-  try {
-    await navigator.clipboard.writeText(texte);
-    toast('Texte copié — colle-le (Ctrl+V) dans la conversation Instagram');
-  } catch(e) {
-    toast('Impossible de copier automatiquement — copie le texte manuellement');
-  }
+  const copie = await copierTexteAvecRepli(texte);
+  toast(copie ? 'Texte copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
   marquerDernierCanal(id, 'instagram');
   ouvrirInstagramAvecRythme(p.lien_instagram);
   closeIgMenus();
@@ -5446,12 +5471,8 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
     toast(`Variable non remplie : ${_placeholderRestant[0]} — clique d'abord sur "Générer les messages" pour ce prospect`);
     return;
   }
-  try {
-    await navigator.clipboard.writeText(msg);
-    toast('Texte de relance copié — colle-le (Ctrl+V) dans la conversation Instagram');
-  } catch(e) {
-    toast('Impossible de copier automatiquement — copie le texte manuellement');
-  }
+  const copie = await copierTexteAvecRepli(msg);
+  toast(copie ? 'Texte de relance copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
   ouvrirInstagramAvecRythme(p.lien_instagram);
 }
 
