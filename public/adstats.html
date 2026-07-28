@@ -2858,7 +2858,7 @@ async function extractProduitFromDemo(id, url) {
 
 function copyDemoLien(el) {
   const lien = decodeURIComponent(el.dataset.demoLien || '');
-  if (lien) { navigator.clipboard.writeText(lien); toast('Lien démo copié'); }
+  if (lien) { copierTexteAvecRepli(lien).then(ok => toast(ok ? 'Lien démo copié' : 'Copie automatique impossible — vois la boîte de dialogue')); }
 }
 async function toggleCheck(id, field, val) {
   const p = DB.find(x => x.id === id);
@@ -3987,18 +3987,7 @@ function copyProspectInfo(nom, pays, pageProduit) {
     'Pays : ' + pays,
     'Page produit : ' + (pageProduit || 'Non renseignée'),
   ].join('\n');
-  navigator.clipboard.writeText(text).then(() => {
-    toast('Infos copiées');
-  }).catch(() => {
-    // Fallback pour les navigateurs sans clipboard API
-    const el = document.createElement('textarea');
-    el.value = text;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    toast('Infos copiées');
-  });
+  copierTexteAvecRepli(text).then(ok => toast(ok ? 'Infos copiées' : 'Copie automatique impossible — vois la boîte de dialogue'));
 }
 
 async function patch(id, body) {
@@ -4089,17 +4078,7 @@ function copyProspectInfo(id) {
 
   const text = lines.join('\n');
 
-  navigator.clipboard.writeText(text).then(() => {
-    toast('Infos copiées');
-  }).catch(() => {
-    const el = document.createElement('textarea');
-    el.value = text;
-    document.body.appendChild(el);
-    el.select();
-    document.execCommand('copy');
-    document.body.removeChild(el);
-    toast('Infos copiées');
-  });
+  copierTexteAvecRepli(text).then(ok => toast(ok ? 'Infos copiées' : 'Copie automatique impossible — vois la boîte de dialogue'));
 }
 
 async function renderContacts() {
