@@ -1484,8 +1484,22 @@ function handleDemoGenPhoto(input) {
     demoGenPhotoB64 = full.split(',')[1];
     document.getElementById('demoGenPhotoEmpty').style.display = 'none';
     document.getElementById('demoGenPhotoPreview').style.display = 'inline-block';
-    document.getElementById('demoGenPhotoImg').src = full;
+    const imgEl = document.getElementById('demoGenPhotoImg');
+    // Cause probable identifiée (photo qui "ne charge pas" sur mobile, notamment iPhone) :
+    // les photos HEIC ne sont pas toujours décodables par <img> selon le navigateur — le
+    // fichier EST bien chargé en mémoire (demoGenPhotoB64 prêt pour la génération), mais
+    // l'aperçu visuel reste blanc/cassé sans qu'aucune erreur ne soit montrée. On détecte
+    // maintenant cet échec de décodage pour prévenir clairement plutôt que rester silencieux.
+    imgEl.onerror = () => {
+      document.getElementById('demoGenPhotoName').textContent = (file.name || 'Photo') + ' — chargée (aperçu non disponible pour ce format)';
+      imgEl.style.display = 'none';
+    };
+    imgEl.onload = () => { imgEl.style.display = ''; };
+    imgEl.src = full;
     document.getElementById('demoGenPhotoName').textContent = file.name || '';
+  };
+  reader.onerror = () => {
+    toast('Impossible de lire ce fichier — réessaie avec une autre photo');
   };
   reader.readAsDataURL(file);
   input.value = '';
