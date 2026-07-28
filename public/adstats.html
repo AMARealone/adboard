@@ -5444,13 +5444,18 @@ window.addEventListener('message', (e) => {
 load().then(() => { restorePage(); setTimeout(checkWAHAStatus, 2000); });
 
 // ── Mobile sidebar ──
+// Cause profonde corrigée (listes vides sur adstats — le crash empêchait TOUT le reste du script
+// de s'exécuter, dont le chargement des données) : l'élément #mob-overlay a son CSS défini mais
+// n'existe pas dans le HTML de cette page — .classList sur null faisait planter la fonction
+// silencieusement dès le premier appel automatique au chargement (restorePage → goTo →
+// closeSidebar), bloquant tout le code qui suit dans la même chaîne de promesses.
 function toggleSidebar() {
-  document.querySelector('.sidebar').classList.toggle('open');
-  document.getElementById('mob-overlay').classList.toggle('show');
+  document.querySelector('.sidebar')?.classList.toggle('open');
+  document.getElementById('mob-overlay')?.classList.toggle('show');
 }
 function closeSidebar() {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.getElementById('mob-overlay').classList.remove('show');
+  document.querySelector('.sidebar')?.classList.remove('open');
+  document.getElementById('mob-overlay')?.classList.remove('show');
 }
 
 // Compteurs mobiles
