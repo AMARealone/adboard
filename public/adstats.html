@@ -2476,6 +2476,18 @@ function filterP() {
   }).join('');
 }
 
+// Détermine si le canal d'un prospect est Instagram — canal_contact fait foi s'il existe
+// (enregistré au moment du "Contacté"), MAIS pour les prospects contactés AVANT la mise en
+// place de ce suivi (canal_contact vide/absent), on se rabat sur l'ancienne heuristique
+// (présence d'un lien Instagram) plutôt que de basculer à tort vers WhatsApp par défaut.
+// Cause profonde corrigée : un premier fix avait remplacé cette heuristique par une vérification
+// stricte SANS repli, cassant l'affichage pour tous les prospects déjà en Suivi/Leads avant le
+// fix (leur canal_contact est resté vide, jamais rétroactivement rempli).
+function estCanalInstagram(p) {
+  if (p.canal_contact) return p.canal_contact === 'instagram';
+  return !!p.lien_instagram;
+}
+
 async function markContacted(id) {
   const p = DB.find(x => x.id === id);
   // Cause profonde corrigée (canal Suivi/Leads pas fiable) : jusqu'ici, le canal affiché plus
@@ -2642,7 +2654,7 @@ function renderSuivi(data) {
         + '<input id="lien-demo-'+pid+'" type="text" value="'+lien_demo+'" placeholder="Lien d\u00e9mo (auto via Factory)\u2026" oninput="saveLienDemo(\''+pid+'\',this.value)" onpaste="setTimeout(()=>extractProduitFromDemo(\''+pid+'\',this.value),300)" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:7px;padding:5px 9px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;">'
         + (produit_demo ? '<span style="font-size:10px;color:var(--blue);white-space:nowrap;" title="'+produit_demo+'">'+produit_demo+'</span>' : '')
       + '</div>'
-      + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(p.canal_contact==='instagram'?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(p.canal_contact==='instagram'?'📷 Envoyer Pitch + Démo (Instagram)':'📱 Envoyer Pitch + Démo (WhatsApp)')+'</button></div>'
+      + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Pitch + Démo (Instagram)':'📱 Envoyer Pitch + Démo (WhatsApp)')+'</button></div>'
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(demo_envoye?'#25D366':'var(--muted)')+';font-weight:'+(demo_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(demo_envoye?'checked':'')+' style="accent-color:#25D366;cursor:pointer;width:13px;height:13px" onchange="toggleDemoEnvoye(\''+pid+'\',this.checked)">'
         + 'D\u00e9mo envoy\u00e9e</label>'
@@ -2707,7 +2719,7 @@ async function sendDemoMsg(pid) {
   // supposition depuis la présence de lien_instagram, qui peut exister même si le contact
   // initial a été fait par WhatsApp (cause du bug signalé : bascule vers le mauvais canal
   // lors de la relance Pitch + Démo).
-  { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh?.canal_contact === 'instagram') ? (_pFresh?.lien_instagram || '') : ''; }
+  { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh && estCanalInstagram(_pFresh)) ? (_pFresh?.lien_instagram || '') : ''; }
   // Le template n'est JAMAIS mis en cache avec le reste — toujours relu depuis la config actuelle,
   // même pour un prospect déjà préparé dans cette session (fix : template obsolète après modification).
   let _tpl = "Je posais la question car notre *Agence* aide des *marques* dans la niche *[Niche]* \u00e0 faire *2x plus de ventes*.\n\n*Uniquement* gr\u00e2ce \u00e0 des *IMAGES Publicitaires* bas\u00e9s sur :\n\n- Une analyse de votre march\u00e9 *\"[Pays]\"* pour d\u00e9finir et comprendre *la cible* qui ach\u00e8te vraiment vos Produits;\n\nVoici une *d\u00e9monstration gratuite* : *[lien_demo]*\npour *[Produit]*.\n\nAinsi qu'un aper\u00e7u de ce qu'on pourra mettre en place concr\u00e8tement pour vous !!!\n\nOn attend impatiemment votre avis !!!";
@@ -3144,7 +3156,7 @@ function renderLeads(data) {
       const lien = _isWA ? _stored : (_numero ? 'https://wa.me/' + _numero + '?text=' + encodeURIComponent(_msg) : '#');
       // canal_contact (enregistré au premier contact) fait foi — jamais la simple présence de
       // lien_instagram, qui peut exister même si le contact a été fait par WhatsApp/SMS.
-      const _viaInstagram = p.canal_contact === 'instagram';
+      const _viaInstagram = estCanalInstagram(p);
 
       let btnStyle = 'display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none;border:1px solid;transition:all .15s;white-space:nowrap;';
       let badgeStyle = 'font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;letter-spacing:.4px;';
