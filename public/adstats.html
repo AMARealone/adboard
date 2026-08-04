@@ -2685,6 +2685,13 @@ async function fetchNiche(produit) {
 }
 
 async function sendDemoMsg(pid) {
+  // Cause profonde corrigée (window.open bloqué sur mobile) : on ouvre une tab vide
+  // immédiatement au tap (avant tout await), puis on la redirige une fois le message prêt.
+  // Sur Instagram, window.open n'est pas utilisé donc le fix ne s'applique pas.
+  const _pCheck = DB.find(x => x.id === pid);
+  const _canalCheck = _pCheck?.canal_contact;
+  const _tabWa = (_canalCheck !== 'instagram') ? window.open('', '_blank') : null;
+
   let d = (window._demoData || {})[pid];
   if (!d) {
     const p = DB.find(x => x.id === pid);
@@ -2755,12 +2762,15 @@ async function sendDemoMsg(pid) {
     if (d.lien_instagram) {
       const copie = await copierTexteAvecRepli(msg);
       toast(copie ? 'Texte copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
+      if (_tabWa) { _tabWa.close(); } // on a ouvert une tab inutilement, on la referme
       ouvrirInstagramAvecRythme(d.lien_instagram);
     } else {
-      window.open('https://wa.me/'+d.numero.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+      const waUrl = 'https://wa.me/'+d.numero.replace(/\D/g,'')+'?text='+encodeURIComponent(msg);
+      if (_tabWa) { _tabWa.location.href = waUrl; } else { window.open(waUrl,'_blank'); }
     }
   } catch(e) {
     toast('Erreur : ' + e.message);
+    if (_tabWa) { try { _tabWa.close(); } catch(e2) {} }
   } finally {
     if (btn) { btn.disabled = false; btn.innerHTML = d.lien_instagram ? '📷 Envoyer Pitch + Démo (Instagram)' : '📱 Envoyer Pitch + Démo (WhatsApp)'; }
   }
@@ -5426,6 +5436,12 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
              .replace(/\[Pays\]/gi, paysPhrase);
   }
 
+  // Cause profonde corrigée (window.open bloqué sur mobile après await) : Safari iOS et Chrome
+  // Android bloquent window.open() appelé après un await comme "popup non sollicitée" — le
+  // navigateur ne peut plus confirmer que c'est une réponse directe à un geste utilisateur.
+  // On ouvre la fenêtre IMMÉDIATEMENT (avant le premier await), puis on redirige une fois le
+  // message prêt — l'onglet reste ouvert et reçoit l'URL finale.
+  const tab = window.open('', '_blank');
   const lienFinal = await construireLienRelance(relanceIndex, prospectId);
   // Remplacement robuste : couvre le texte "offers" actuel ET un éventuel ancien
   // template resté sur [lien_demo] — sinon un template pas à jour garde son vieux lien.
@@ -5433,17 +5449,35 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
            .replace(/\[lien_demo\]/gi, lienFinal)
            .replace(/\[lien\]/gi, lienFinal);
 
+  // Vérifié APRÈS la substitution du lien — sinon [lien_demo] se ferait toujours détecter
+  // à tort comme une variable manquante avant même d'avoir pu être remplacée.
   const _placeholderRestant = msg.match(/\[[^\]]{2,40}\]/);
   if (_placeholderRestant) {
     toast(`Variable non remplie : ${_placeholderRestant[0]} — clique d'abord sur "Générer les messages" pour ce prospect`);
+    if (tab) tab.close();
     return;
   }
-  window.open('https://wa.me/'+numero+'?text='+encodeURIComponent(msg), '_blank');
+
+  if (tab) {
+    tab.location.href = 'https://wa.me/'+numero+'?text='+encodeURIComponent(msg);
+  } else {
+    window.open('https://wa.me/'+numero+'?text='+encodeURIComponent(msg), '_blank');
+  }
 }
 
 async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   const p = DB.find(x => x.id === prospectId);
   if (!p || !p.lien_instagram) return;
+
+  // Même fix que relance WhatsApp — ouvrir la fenêtre Instagram AVANT tout await pour éviter
+  // le blocage popup mobile. ouvrirInstagramAvecRythme contient lui aussi un window.open, mais
+  // appelé après des await il sera bloqué par Safari/Chrome mobile. On pré-ouvre ici.
+  const elapsed = Date.now() - _igLastSendAt;
+  if (_igLastSendAt && elapsed < IG_PACING_MS) {
+    const continuer = confirm(`Dernier "Contacté" il y a ${Math.round(elapsed/1000)}s seulement. Continuer quand même ?`);
+    if (!continuer) return;
+  }
+  const tabIg = window.open(p.lien_instagram, '_blank');
 
   const notesObj = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
   const jour = RELANCE_JOURS_ENVOI[relanceIndex];
@@ -5471,11 +5505,11 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   const _placeholderRestant = msg.match(/\[[^\]]{2,40}\]/);
   if (_placeholderRestant) {
     toast(`Variable non remplie : ${_placeholderRestant[0]} — clique d'abord sur "Générer les messages" pour ce prospect`);
+    if (tabIg) tabIg.close();
     return;
   }
   const copie = await copierTexteAvecRepli(msg);
   toast(copie ? 'Texte de relance copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
-  ouvrirInstagramAvecRythme(p.lien_instagram);
 }
 
 // Générer les liens WhatsApp avec les intros pour un prospect
