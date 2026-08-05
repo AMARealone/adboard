@@ -5481,15 +5481,11 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   const p = DB.find(x => x.id === prospectId);
   if (!p || !p.lien_instagram) return;
 
-  // Même fix que relance WhatsApp — ouvrir la fenêtre Instagram AVANT tout await pour éviter
-  // le blocage popup mobile. ouvrirInstagramAvecRythme contient lui aussi un window.open, mais
-  // appelé après des await il sera bloqué par Safari/Chrome mobile. On pré-ouvre ici.
   const elapsed = Date.now() - _igLastSendAt;
   if (_igLastSendAt && elapsed < IG_PACING_MS) {
     const continuer = confirm(`Dernier "Contacté" il y a ${Math.round(elapsed/1000)}s seulement. Continuer quand même ?`);
     if (!continuer) return;
   }
-  const tabIg = window.open(p.lien_instagram, '_blank');
 
   const notesObj = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
   const jour = RELANCE_JOURS_ENVOI[relanceIndex];
@@ -5510,18 +5506,33 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
              .replace(/\b(en|au|à)\s+\[Pays\]/gi, paysPhrase)
              .replace(/\[Pays\]/gi, paysPhrase);
   }
-  const lienFinal = await construireLienRelance(relanceIndex, prospectId);
-  msg = msg.replace(/adstackofficial\.com\/adboard\/offers/gi, lienFinal)
-           .replace(/\[lien_demo\]/gi, lienFinal)
-           .replace(/\[lien\]/gi, lienFinal);
+
+  // Cause profonde corrigée (copie qui ne fonctionne plus après le fix précédent) : ouvrir
+  // Instagram avec window.open() déplace le focus vers le nouvel onglet — l'API de copie a
+  // besoin que la page appelante reste active pour fonctionner, donc copier APRÈS avoir ouvert
+  // la fenêtre échoue silencieusement. On calcule le lien long tout de suite (sans attendre le
+  // raccourcisseur, pas besoin d'await) pour pouvoir copier AVANT d'ouvrir Instagram — le
+  // raccourcissement (utile pour le comptage de clics) se fait ensuite en arrière-plan, sans
+  // bloquer le flux principal qui doit rester synchrone pour marcher sur mobile.
+  const campagne = ['j3', 'j10', 'j21'][relanceIndex] || 'relance';
+  const lienLong = `https://adstackofficial.com/adboard/offers?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
+  msg = msg.replace(/adstackofficial\.com\/adboard\/offers/gi, lienLong)
+           .replace(/\[lien_demo\]/gi, lienLong)
+           .replace(/\[lien\]/gi, lienLong);
+
   const _placeholderRestant = msg.match(/\[[^\]]{2,40}\]/);
   if (_placeholderRestant) {
     toast(`Variable non remplie : ${_placeholderRestant[0]} — clique d'abord sur "Générer les messages" pour ce prospect`);
-    if (tabIg) tabIg.close();
     return;
   }
+
   const copie = await copierTexteAvecRepli(msg);
   toast(copie ? 'Texte de relance copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
+  window.open(p.lien_instagram, '_blank');
+
+  // Raccourcissement en arrière-plan, purement pour le comptage de clics — n'affecte plus le
+  // texte déjà copié (aucun moyen fiable de le remettre à jour une fois le focus déplacé).
+  construireLienRelance(relanceIndex, prospectId).catch(() => {});
 }
 
 // Générer les liens WhatsApp avec les intros pour un prospect
