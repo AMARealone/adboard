@@ -2864,12 +2864,25 @@ async function remettreEnSuivi(id) {
   else toast('Lead remis en suivi');
 }
 
+// Cause profonde corrigée (nom de produit périmé dans le message Pitch+Démo, malgré un
+// changement de produit fait dans la fiche prospect après génération d'une nouvelle démo) :
+// deux bugs cumulés rendaient cette fonction totalement inopérante depuis longtemps —
+// 1) le domaine vérifié (adstack.duckdns.org/demos/) est un ancien prototype abandonné,
+//    remplacé depuis par adstackofficial.com/demo/ — la condition était donc TOUJOURS fausse,
+//    la fonction ne s'exécutait jamais, silencieusement.
+// 2) même corrigé, l'extraction lisait og:title ("Marque — Démo AdStack"), qui ne contient PAS
+//    le nom du produit — elle aurait extrait "Démo AdStack" au lieu du vrai produit.
+// Utilise maintenant la même extraction fiable que /fill-demo-msg côté serveur (lecture directe
+// de <div class="prod">...</div> dans le HTML de la mindmap — jamais une déduction).
+// Et surtout : met à jour p.produit DIRECTEMENT (pas seulement notes.produit_demo, qui n'était
+// lu que par le seul flux Pitch+Démo) — pour que le bon produit apparaisse PARTOUT dans le CRM
+// dès qu'une démo révèle qu'il a changé, exactement comme demandé.
 async function extractProduitFromDemo(id, url) {
-  if (!url || !url.includes('adstack.duckdns.org/demos/')) return;
+  if (!url || !url.includes('/demo/')) return;
   try {
     const r = await fetch(url);
     const html = await r.text();
-    const m = html.match(/og:title[^>]*content="[^"]*[\u2014\-]\s*([^"]{3,60})"/i);
+    const m = html.match(/<div class="prod">([^<]{2,80})<\/div>/i);
     const produit = m ? m[1].trim() : '';
     if (!produit) return;
     const p = DB.find(x => x.id === id);
@@ -2878,7 +2891,14 @@ async function extractProduitFromDemo(id, url) {
     notes.produit_demo=produit; p.notes=JSON.stringify(notes);
     const inp=document.getElementById('lien-demo-'+id);
     if(inp) saveLienDemo(id,inp.value);
-    await patch(id,{notes:p.notes});
+    const _patchBody = { notes: p.notes };
+    if (p.produit !== produit) {
+      p.produit = produit;
+      _patchBody.produit = produit;
+      toast(`Produit mis à jour : "${produit}" (détecté depuis la démo)`);
+      render();
+    }
+    await patch(id, _patchBody);
   } catch(e) {}
 }
 
