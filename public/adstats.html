@@ -5515,19 +5515,15 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
     msg = msg.replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2');
   }
 
-  // Cause profonde corrigée (copie qui ne fonctionne plus après le fix précédent) : ouvrir
-  // Instagram avec window.open() déplace le focus vers le nouvel onglet — l'API de copie a
-  // besoin que la page appelante reste active pour fonctionner, donc copier APRÈS avoir ouvert
-  // la fenêtre échoue silencieusement. On calcule le lien long tout de suite (sans attendre le
-  // raccourcisseur, pas besoin d'await) pour pouvoir copier AVANT d'ouvrir Instagram — le
-  // raccourcissement (utile pour le comptage de clics) se fait ensuite en arrière-plan, sans
-  // bloquer le flux principal qui doit rester synchrone pour marcher sur mobile.
-  const campagne = ['j3', 'j10', 'j21'][relanceIndex] || 'relance';
-  const lienLong = `https://adstackofficial.com/adboard/offers?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
-  // Astérisques autour du lien retirées avant insertion — même raison que WhatsApp ci-dessus.
-  msg = msg.replace(/\*?adstackofficial\.com\/adboard\/offers\*?/gi, lienLong)
-           .replace(/\*?\[lien_demo\]\*?/gi, lienLong)
-           .replace(/\*?\[lien\]\*?/gi, lienLong);
+  // Cause profonde corrigée (copie qui ne fonctionnait plus) : ouvrir Instagram déplace le
+  // focus — copier après avoir ouvert la fenêtre échoue silencieusement. On raccourcit le lien
+  // D'ABORD (généralement <1s, un seul appel réseau simple — contrairement au flux précédent qui
+  // enchaînait plusieurs appels plus lourds), PUIS on copie, PUIS seulement on ouvre Instagram.
+  const lienFinal = await construireLienRelance(relanceIndex, prospectId);
+  // Astérisques autour du lien retirées avant insertion — perturbent l'auto-détection de lien.
+  msg = msg.replace(/\*?adstackofficial\.com\/adboard\/offers\*?/gi, lienFinal)
+           .replace(/\*?\[lien_demo\]\*?/gi, lienFinal)
+           .replace(/\*?\[lien\]\*?/gi, lienFinal);
 
   const _placeholderRestant = msg.match(/\[[^\]]{2,40}\]/);
   if (_placeholderRestant) {
@@ -5538,10 +5534,6 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   const copie = await copierTexteAvecRepli(msg);
   toast(copie ? 'Texte de relance copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
   window.open(p.lien_instagram, '_blank');
-
-  // Raccourcissement en arrière-plan, purement pour le comptage de clics — n'affecte plus le
-  // texte déjà copié (aucun moyen fiable de le remettre à jour une fois le focus déplacé).
-  construireLienRelance(relanceIndex, prospectId).catch(() => {});
 }
 
 // Générer les liens WhatsApp avec les intros pour un prospect
