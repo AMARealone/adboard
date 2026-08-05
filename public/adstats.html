@@ -4963,9 +4963,9 @@ const RELANCE_LABELS = ['Vu la démo ?', 'Tendance marché', 'Score & urgence'];
 const DEFAULT_INTROS = ["Bonjour *[Marque]*,\nje viens de voir votre pub pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nvotre pub sur *[Produit]*\nJe me demandais, est-ce vous qui l'avez créée ?", "Bonjour *[Marque]*,\nje suis tombé sur votre pub *[Produit]* en scrollant\nEst-ce vous qui êtes derrière ?", "Bonjour *[Marque]*, petite question\nLa pub *[Produit]* que je viens de voir,\nest-ce vous qui l'avez faite ?", "Bonjour *[Marque]*\nJe viens de voir votre pub avec *[Produit]*\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje regardais votre pub sur *[Produit]*. J'avais une question !\nEst-ce vous qui l'avez faites ?", "Bonjour *[Marque]*,\nj'ai vu votre pub pour *[Produit]* passer aujourd'hui\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje viens de consulter votre publicité pour *[Produit]*\nEst-ce vous qui l'avez réalisée ?", "Bonjour *[Marque]*,\nje suis tombé sur vos pubs, notamment celle pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nje viens de tomber sur votre pub avec *[Produit]* à l'instant\nEst-ce vous qui êtes derrière ?"];
 
 const DEFAULT_RELANCES = [
-  `Salut *[Marque]*\n\nVous avez *bien vu* la démo pour *[Produit]* ?\n\nCar on a pu identifier exactement ce qui pousse \n*[Persona prénom]* à commander, et qui n'est nul \nautre que *[Raison émotionnelle]*. \nPas le produit ! Vos prochaines *images pubs* peuvent parler \ndirectement à ça pour *vendre plus*.\n\nEt on peut le faire pour vous dès maintenant : *adstackofficial.com/adboard/offers*\n\nOu vous avez d'autres choses qui vous bloquent sur une collaboration ?`,
-  `Bonjour *[Marque]*\n\nSur la niche *[niche]* *[pays]*, les boutiques qui gagnent \ndu terrain en ce moment ont un point commun : \n\nElles ont une bonne diversité d'images pubs (angle, cible, concept).\nAinsi leur produit a une plus grande audience et domine les autres.\n\nEt cela peut être le cas de *[Produit]* aujourd'hui : *adstackofficial.com/adboard/offers*\n\nN'hésitez pas à nous dire si vous avez besoin de plus d'informations !`,
-  `Hello *[Marque]*\n\nSachez que ça nous a plu de vous avoir partagé ce \nque notre service peut mettre en place pour *[Produit]*\n\nVu son potentiel scoré à *[score]*/100, c'est presque \nurgent de l'exploiter de la meilleure des manières.\n\nEn tout cas le jour où vous serez prêt on sera là : *adstackofficial.com/adboard/offers*\n\nà la prochaine !!!`
+  `Salut *[Marque]*\n\nVous avez *bien vu* la démo pour *[Produit]* ?\n\nCar on a pu identifier exactement ce qui pousse \n*[Persona prénom]* à commander, et qui n'est nul \nautre que *[Raison émotionnelle]*. \nPas le produit ! Vos prochaines *images pubs* peuvent parler \ndirectement à ça pour *vendre plus*.\n\nEt on peut le faire pour vous dès maintenant : adstackofficial.com/adboard/offers\n\nOu vous avez d'autres choses qui vous bloquent sur une collaboration ?`,
+  `Bonjour *[Marque]*\n\nSur la niche *[niche]* *[pays]*, les boutiques qui gagnent \ndu terrain en ce moment ont un point commun : \n\nElles ont une bonne diversité d'images pubs (angle, cible, concept).\nAinsi leur produit a une plus grande audience et domine les autres.\n\nEt cela peut être le cas de *[Produit]* aujourd'hui : adstackofficial.com/adboard/offers\n\nN'hésitez pas à nous dire si vous avez besoin de plus d'informations !`,
+  `Hello *[Marque]*\n\nSachez que ça nous a plu de vous avoir partagé ce \nque notre service peut mettre en place pour *[Produit]*\n\nVu son potentiel scoré à *[score]*/100, c'est presque \nurgent de l'exploiter de la meilleure des manières.\n\nEn tout cas le jour où vous serez prêt on sera là : adstackofficial.com/adboard/offers\n\nà la prochaine !!!`
 ];
 
 async function loadTemplates() {
@@ -5446,6 +5446,10 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
              .replace(/\*\[pays\]\*/gi, '*' + paysPhrase + '*')
              .replace(/\b(en|au|à)\s+\[Pays\]/gi, paysPhrase)
              .replace(/\[Pays\]/gi, paysPhrase);
+    // Filet de sécurité (ex: "en au Cameroun") : quel que soit le template source exact, si
+    // deux prépositions se retrouvent collées après substitution, on ne garde que la 2e —
+    // plus proche du nom du pays, donc la bonne dans la quasi-totalité des cas.
+    msg = msg.replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2');
   }
 
   // Cause profonde corrigée (window.open bloqué sur mobile après await) : Safari iOS et Chrome
@@ -5457,9 +5461,12 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   const lienFinal = await construireLienRelance(relanceIndex, prospectId);
   // Remplacement robuste : couvre le texte "offers" actuel ET un éventuel ancien
   // template resté sur [lien_demo] — sinon un template pas à jour garde son vieux lien.
-  msg = msg.replace(/adstackofficial\.com\/adboard\/offers/gi, lienFinal)
-           .replace(/\[lien_demo\]/gi, lienFinal)
-           .replace(/\[lien\]/gi, lienFinal);
+  // Astérisques autour du lien retirées AVANT insertion : une URL entourée de *...* (gras
+  // WhatsApp) sans espace de séparation perturbe l'auto-détection de lien de WhatsApp — on
+  // a vu le symptôme exact (caractères parasites, lien tronqué) dans un message réel envoyé.
+  msg = msg.replace(/\*?adstackofficial\.com\/adboard\/offers\*?/gi, lienFinal)
+           .replace(/\*?\[lien_demo\]\*?/gi, lienFinal)
+           .replace(/\*?\[lien\]\*?/gi, lienFinal);
 
   // Vérifié APRÈS la substitution du lien — sinon [lien_demo] se ferait toujours détecter
   // à tort comme une variable manquante avant même d'avoir pu être remplacée.
@@ -5505,6 +5512,7 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
              .replace(/\*\[pays\]\*/gi, '*' + paysPhrase + '*')
              .replace(/\b(en|au|à)\s+\[Pays\]/gi, paysPhrase)
              .replace(/\[Pays\]/gi, paysPhrase);
+    msg = msg.replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2');
   }
 
   // Cause profonde corrigée (copie qui ne fonctionne plus après le fix précédent) : ouvrir
@@ -5516,9 +5524,10 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   // bloquer le flux principal qui doit rester synchrone pour marcher sur mobile.
   const campagne = ['j3', 'j10', 'j21'][relanceIndex] || 'relance';
   const lienLong = `https://adstackofficial.com/adboard/offers?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
-  msg = msg.replace(/adstackofficial\.com\/adboard\/offers/gi, lienLong)
-           .replace(/\[lien_demo\]/gi, lienLong)
-           .replace(/\[lien\]/gi, lienLong);
+  // Astérisques autour du lien retirées avant insertion — même raison que WhatsApp ci-dessus.
+  msg = msg.replace(/\*?adstackofficial\.com\/adboard\/offers\*?/gi, lienLong)
+           .replace(/\*?\[lien_demo\]\*?/gi, lienLong)
+           .replace(/\*?\[lien\]\*?/gi, lienLong);
 
   const _placeholderRestant = msg.match(/\[[^\]]{2,40}\]/);
   if (_placeholderRestant) {
