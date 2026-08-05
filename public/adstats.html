@@ -2731,12 +2731,17 @@ async function sendDemoMsg(pid) {
     let curLien = (document.getElementById('lien-demo-'+pid)||{}).value || '';
     if (!curLien) { toast('Lien démo manquant'); if (btn){btn.disabled=false;btn.innerHTML='📱 Envoyer Pitch + Démo';} return; }
     curLien += (curLien.includes('?') ? '&' : '?') + 'utm_source=crm&utm_medium=pitch_demo&utm_campaign=demo&utm_content=' + pid;
-    // Passe par le raccourcisseur (sans miniature — celle de la démo elle-même est déjà bonne)
-    // uniquement pour permettre le comptage de clic, comme les 3 autres messages.
+    // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp) : thumbnail:null
+    // faisait faire au raccourcisseur une redirection HTTP brute (302), sans aucune balise OG —
+    // WhatsApp ne suit pas cette redirection pour aller chercher les balises de la page de
+    // démo elle-même. Le nom du fichier miniature est le même slug que celui de l'URL de la
+    // démo (voir /fill-demo-msg côté serveur, qui fait la même extraction) — on le transmet
+    // maintenant explicitement pour que le lien court serve directement les bonnes balises OG.
+    const _slugDemo = curLien.split('/demo/')[1]?.split('?')[0]?.replace('.html', '') || null;
     try {
       const _rShort = await fetch('https://adstack-server.onrender.com/shorten', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ url: curLien, thumbnail: null, campagne: 'demo' })
+        body: JSON.stringify({ url: curLien, thumbnail: _slugDemo, campagne: 'demo' })
       });
       const _dShort = await _rShort.json();
       if (_dShort.short_url) curLien = _dShort.short_url;
@@ -5403,9 +5408,14 @@ async function openInstagramIntro(id, variantIndex) {
 async function construireLienRelance(relanceIndex, prospectId) {
   const campagne = ['j3', 'j10', 'j21'][relanceIndex] || 'relance';
   const baseUrl = `https://adstackofficial.com/adboard/offers?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
-  // J+3 garde la miniature par défaut d'AdBoard (thumbnail: null), mais passe quand même
-  // par le raccourcisseur — sinon pas de comptage de clic possible pour ce message précis.
-  const thumbnail = relanceIndex === 1 ? 'adstack_thumb_j10' : relanceIndex === 2 ? 'adstack_thumb_j21' : null;
+  // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp, y compris J+3) :
+  // thumbnail:null faisait faire au raccourcisseur une redirection HTTP brute (302), sans
+  // aucune balise OG — l'hypothèse "J+3 garde la miniature par défaut d'AdBoard via la
+  // redirection" ne tient pas, WhatsApp ne suit pas cette redirection pour lire les balises
+  // de la page finale. J+3 utilise maintenant aussi un nom de miniature explicite.
+  // ⚠️ Vérifier qu'un fichier "adstack_thumb_default.png" existe bien dans le bucket Supabase
+  // "demos" (même bucket que adstack_thumb_j10/j21) — sinon l'uploader une fois, comme les 2 autres.
+  const thumbnail = relanceIndex === 1 ? 'adstack_thumb_j10' : relanceIndex === 2 ? 'adstack_thumb_j21' : 'adstack_thumb_default';
   try {
     const r = await fetch('https://adstack-server.onrender.com/shorten', {
       method: 'POST', headers: {'Content-Type':'application/json'},
