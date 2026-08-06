@@ -1194,77 +1194,40 @@ const sbNotifications = {
 // ── Modal de connexion Google ──────────────────────────────────────────────
 const LoginModal = ({onClose, C, autoPrompt=false}) => {
   const font = "'Inter', -apple-system, BlinkMacSystemFont, sans-serif";
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!email || !password) { setError('Renseigne ton email et ton mot de passe.'); return; }
-    setLoading(true); setError('');
-    try {
-      await sbAuth.smartSignIn(email.trim(), password);
-      window.location.reload();
-    } catch(err) {
-      setError(err.message);
-      setLoading(false);
-    }
-  };
 
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontFamily:font}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:C.card,borderRadius:16,padding:'32px 28px',maxWidth:380,width:'100%',textAlign:'center',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)',position:'relative',fontFamily:font}}>
-        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={14}/></button>
-        <div style={{margin:'0 auto 16px',width:'fit-content'}}><Logo size={52}/></div>
-        <h2 style={{fontSize:18,fontWeight:700,color:C.text,margin:'0 0 8px',fontFamily:font}}>
-          {autoPrompt ? 'Ne perds pas ta progression' : 'Connectez-vous pour continuer'}
-        </h2>
-        {autoPrompt ? (
-          <div style={{textAlign:'left',margin:'0 0 20px',display:'flex',flexDirection:'column',gap:10}}>
-            <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
-              <span style={{color:C.accent,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
-              <span style={{fontSize:12.5,color:C.sec,lineHeight:1.5}}>Ton catalogue produits sauvegardé, accessible partout</span>
-            </div>
-            <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
-              <span style={{color:C.accent,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
-              <span style={{fontSize:12.5,color:C.sec,lineHeight:1.5}}>Sois informé en premier des nouveautés et bonus</span>
-            </div>
-            <div style={{display:'flex',alignItems:'flex-start',gap:9}}>
-              <span style={{color:C.accent,flexShrink:0,marginTop:1}}><Icon name="check" size={14}/></span>
-              <span style={{fontSize:12.5,color:C.sec,lineHeight:1.5}}>Accès direct à tes demandes de visuels</span>
-            </div>
-          </div>
-        ) : (
-          <p style={{fontSize:13,color:C.sec,lineHeight:1.5,margin:'0 0 20px',fontFamily:font}}>Votre catalogue produits sera sauvegardé et accessible depuis n'importe quel appareil.</p>
-        )}
+      <style>{`
+        @keyframes loginShine { 0%{ background-position:0% center; } 100%{ background-position:200% center; } }
+        @keyframes loginFloat1 { 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(14px,10px); } }
+        @keyframes loginFloat2 { 0%,100%{ transform:translate(0,0); } 50%{ transform:translate(-12px,-8px); } }
+      `}</style>
+      <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden',background:C.card,borderRadius:18,padding:'36px 30px 28px',maxWidth:380,width:'100%',textAlign:'center',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 90px rgba(0,0,0,0.7)',fontFamily:font}}>
+        <div style={{position:'absolute',top:-90,left:-60,width:220,height:220,borderRadius:'50%',pointerEvents:'none',filter:'blur(2px)',background:'radial-gradient(circle, rgba(91,141,239,0.30), transparent 70%)',animation:'loginFloat1 7s ease-in-out infinite'}}/>
+        <div style={{position:'absolute',bottom:-80,right:-50,width:200,height:200,borderRadius:'50%',pointerEvents:'none',filter:'blur(2px)',background:'radial-gradient(circle, rgba(139,92,246,0.22), transparent 70%)',animation:'loginFloat2 8s ease-in-out infinite'}}/>
 
-        {error && (
-          <div style={{background:'rgba(255,80,80,.1)',border:'1px solid rgba(255,80,80,.3)',color:'#ff8080',fontSize:11.5,padding:'8px 11px',borderRadius:8,marginBottom:12,lineHeight:1.5,textAlign:'left'}}>{error}</div>
-        )}
+        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:8,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1}}><Icon name="x" size={14}/></button>
 
-        <form onSubmit={submit}>
-          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" autoComplete="username"
-            style={{width:'100%',boxSizing:'border-box',padding:'11px 13px',marginBottom:8,background:'rgba(255,255,255,.05)',border:`1px solid ${C.borderM}`,borderRadius:9,color:C.text,fontSize:13,fontFamily:font,outline:'none'}}/>
-          <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Mot de passe" autoComplete="current-password"
-            style={{width:'100%',boxSizing:'border-box',padding:'11px 13px',marginBottom:10,background:'rgba(255,255,255,.05)',border:`1px solid ${C.borderM}`,borderRadius:9,color:C.text,fontSize:13,fontFamily:font,outline:'none'}}/>
-          <button type="submit" disabled={loading}
-            style={{width:'100%',padding:'12px 16px',borderRadius:10,border:'none',background:C.accent,color:'#fff',fontSize:13,fontWeight:700,cursor:loading?'default':'pointer',fontFamily:font,marginBottom:10,opacity:loading?0.7:1}}>
-            {loading ? 'Connexion…' : 'Continuer'}
+        <div style={{position:'relative'}}>
+          <div style={{margin:'0 auto 20px',width:'fit-content'}}><Logo size={52}/></div>
+          <h2 style={{fontSize:21,fontWeight:800,lineHeight:1.25,margin:'0 0 10px',letterSpacing:'-0.01em',fontFamily:font,
+            background:'linear-gradient(90deg,#5B8DEF,#8B5CF6,#5B8DEF)',backgroundSize:'200% auto',
+            WebkitBackgroundClip:'text',backgroundClip:'text',WebkitTextFillColor:'transparent',
+            animation:'loginShine 4s linear infinite'}}>
+            Premier Pas Vers La Performance Publicitaire
+          </h2>
+          <p style={{fontSize:13.5,color:C.sec,lineHeight:1.55,margin:'0 0 26px',maxWidth:300,marginLeft:'auto',marginRight:'auto',fontFamily:font}}>
+            Demande et accède facilement à tout ce que notre équipe aura produit pour toi.
+          </p>
+
+          <button onClick={sbAuth.signInWithGoogle} style={{width:'100%',padding:'14px 16px',borderRadius:11,border:'1px solid rgba(255,255,255,0.14)',background:'#fff',color:'#1a1a1a',fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:font,display:'flex',alignItems:'center',justifyContent:'center',gap:10,marginBottom:12,transition:'transform .15s ease, box-shadow .15s ease'}}
+            onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-1px)';e.currentTarget.style.boxShadow='0 8px 24px rgba(255,255,255,0.15)';}}
+            onMouseLeave={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow='none';}}>
+            <svg width="19" height="19" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Se Connecter Avec Google
           </button>
-        </form>
-
-        <div style={{display:'flex',alignItems:'center',gap:8,margin:'4px 0 12px'}}>
-          <div style={{flex:1,height:1,background:C.borderM}}/>
-          <div style={{fontSize:10.5,color:C.sec}}>ou</div>
-          <div style={{flex:1,height:1,background:C.borderM}}/>
+          <button onClick={onClose} style={{width:'100%',padding:10,borderRadius:10,border:'none',background:'transparent',color:C.muted,fontSize:12,cursor:'pointer',fontFamily:font}}>Pas maintenant</button>
         </div>
-
-        <button onClick={sbAuth.signInWithGoogle} style={{width:'100%',padding:'12px 16px',borderRadius:10,border:`1px solid rgba(255,255,255,0.15)`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:font,display:'flex',alignItems:'center',justifyContent:'center',gap:10,marginBottom:10}}>
-          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-          Continuer avec Google
-        </button>
-        <button onClick={onClose} style={{width:'100%',padding:'10px',borderRadius:10,border:'none',background:'transparent',color:C.sec,fontSize:12,cursor:'pointer',fontFamily:font}}>Pas maintenant</button>
       </div>
     </div>
   );
@@ -1945,16 +1908,23 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
       {showForm && (
         <div onClick={() => setShowForm(false)} style={{position:'fixed',top:0,bottom:0,left:isMobile?52:0,right:0,background:'rgba(0,0,0,0.75)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}>
-          <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden auto',width:'100%',maxWidth:460,maxHeight:'82vh',borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.borderM}`,padding:'22px 20px 24px',boxShadow:'0 24px 64px rgba(0,0,0,0.6)'}}>
+          <style>{`
+            @keyframes revealOptional { from{ opacity:0; max-height:0; } to{ opacity:1; max-height:900px; } }
+          `}</style>
+          <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden',width:'100%',maxWidth:460,maxHeight:'82vh',borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.borderM}`,boxShadow:'0 24px 64px rgba(0,0,0,0.6)',display:'flex',flexDirection:'column'}}>
             <div style={{position:'absolute',top:-60,right:-40,width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
-            <div style={{position:'relative',display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:22}}>
+
+            {/* En-tête — fixe, hors zone de scroll */}
+            <div style={{position:'relative',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'22px 20px 16px',flexShrink:0}}>
               <h2 style={{fontSize:16,fontWeight:800,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
               <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                 <Icon name="x" size={14}/>
               </button>
             </div>
 
-            <div style={{position:'relative',marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
+            {/* Zone scrollable — photo + champs uniquement, jamais le bouton */}
+            <div style={{position:'relative',overflow:'hidden auto',padding:'0 20px',flex:1}}>
+            <div style={{marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
               <input ref={photoRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e,'photo')}/>
               <div onClick={()=>photoRef.current?.click()}
                 style={{width:80,height:80,flexShrink:0,borderRadius:14,border:`1.5px dashed ${errors.photo?C.accent:'rgba(255,255,255,0.16)'}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.04)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'border-color 0.2s'}}
@@ -1969,12 +1939,15 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               </div>
             </div>
 
-            <div style={{position:'relative',display:'flex',flexDirection:'column',gap:18}}>
+            {(() => {
+              const requisRemplis = !!(form.photo && form.nom && form.pricing && form.pays);
+              return (
+            <div style={{display:'flex',flexDirection:'column',gap:18}}>
 
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
                   <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Identité</div>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Identité — 3 infos et c'est parti</div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
@@ -1985,25 +1958,34 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 </div>
               </div>
 
+              {!requisRemplis && (
+                <div style={{fontSize:11,color:C.muted,display:'flex',alignItems:'center',gap:6,padding:'2px 2px 0'}}>
+                  <Icon name="sparkle" size={12} color={C.muted}/> Photo + ces 3 infos suffisent pour créer votre produit — le reste est facultatif
+                </div>
+              )}
+
+              <div style={{overflow:'hidden',...(requisRemplis ? {animation:'revealOptional 0.5s ease forwards'} : {maxHeight:0,opacity:0,margin:0})}}>
+              <div style={{display:'flex',flexDirection:'column',gap:18}}>
+
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
-                  <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Vente</div>
+                  <div style={{width:5,height:5,borderRadius:'50%',background:C.muted}}/>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Vente <span style={{textTransform:'none',fontWeight:400,opacity:.7}}>(optionnel)</span></div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <Field label="Lien de la page produit" k="lien" placeholder="https://..." form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="Offre promo en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Lien de la page produit (optionnel)" k="lien" placeholder="https://..." form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Offre promo en cours (optionnel)" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
                 </div>
               </div>
 
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
-                  <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Ciblage créatif</div>
+                  <div style={{width:5,height:5,borderRadius:'50%',background:C.muted}}/>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Ciblage créatif <span style={{textTransform:'none',fontWeight:400,opacity:.7}}>(optionnel)</span></div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <Field label="Cible principale" k="cible" textarea placeholder="Femme +25ans Dakar, Teint métisse..." form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="Utilité principale" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Cible principale (optionnel)" k="cible" textarea placeholder="Femme +25ans Dakar, Teint métisse..." form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Utilité principale (optionnel)" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
                   <div>
                     <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque <span style={{fontWeight:400,opacity:.6}}>(pour vos visuels Meta Ads · optionnel)</span></label>
                     <div style={{fontSize:10,color:C.muted,marginBottom:8}}>Si vous en ajoutez, minimum 2 couleurs, jusqu'à 3 — utilisées dans vos créatives publicitaires</div>
@@ -2026,17 +2008,27 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 </div>
               </div>
 
+              </div>
+              </div>
+
             </div>
+              );
+            })()}
 
             {Object.keys(errors).length>0 && (
-              <div style={{position:'relative',marginTop:16,padding:'10px 14px',borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.accent}}>
+              <div style={{marginTop:16,padding:'10px 14px',borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.accent}}>
                 Merci de renseigner les champs marqués d'un astérisque.
               </div>
             )}
+            <div style={{height:16}}/>
+            </div>
 
-            <button onClick={submit} style={{position:'relative',width:'100%',marginTop:20,padding:'13px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 4px 16px rgba(45,127,249,0.3)'}}>
-              <Icon name="check" size={14} color="#fff"/> {editingId ? 'Enregistrer les modifications' : 'Créer le produit'}
-            </button>
+            {/* Bouton — hors zone de scroll, toujours visible */}
+            <div style={{position:'relative',padding:'14px 20px 20px',flexShrink:0,borderTop:`1px solid ${C.border}`}}>
+              <button onClick={submit} style={{width:'100%',padding:'13px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 4px 16px rgba(45,127,249,0.3)'}}>
+                <Icon name="check" size={14} color="#fff"/> {editingId ? 'Enregistrer les modifications' : 'Créer le produit'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -3509,7 +3501,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
 };
 
 // ── Vue Démo : charge la mindmap dans un iframe ──────────────────────────────
-const DemoPreview = ({slug, setSection}) => {
+const DemoPreview = ({slug, setSection, user}) => {
   const [showCta, setShowCta] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -3553,8 +3545,27 @@ const DemoPreview = ({slug, setSection}) => {
             }
           `}</style>
           <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
-            onClick={() => setSection && setSection('tarifs')}>
-            <Icon name="sparkle" size={13} color="#fff"/> Découvrir nos offres
+            onClick={() => {
+              let visiteTarifs = false;
+              try { visiteTarifs = !!localStorage.getItem('adstack_visited_tarifs'); } catch(e) {}
+              if (!visiteTarifs) { setSection && setSection('tarifs'); return; }
+              // Déjà visité les tarifs — priorité à la création de produit (action la plus
+              // importante) plutôt que de le renvoyer une 2e fois vers les offres.
+              if (user) {
+                setSection && setSection('produits');
+                setTimeout(() => window.dispatchEvent(new Event('openProductForm')), 200);
+              } else {
+                try { localStorage.setItem('adstack_pending_product_form', '1'); } catch(e) {}
+                sbAuth.signInWithGoogle();
+              }
+            }}>
+            {(() => {
+              let visiteTarifs = false;
+              try { visiteTarifs = !!localStorage.getItem('adstack_visited_tarifs'); } catch(e) {}
+              return visiteTarifs
+                ? <><Icon name="plus" size={13} color="#fff"/> Ajouter Un Produit</>
+                : <><Icon name="sparkle" size={13} color="#fff"/> Découvrir Nos Offres</>;
+            })()}
             <button onClick={e=>{e.stopPropagation();setDismissed(true);}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={9} color="#fff"/></button>
           </div>
         </div>
@@ -3660,6 +3671,7 @@ export default function Platform() {
   // Événement AddToCart — dès que la section Tarifs devient active
   useEffect(() => {
     if (section === 'tarifs') {
+      try { localStorage.setItem('adstack_visited_tarifs', '1'); } catch(e) {}
       try { window.fbq && window.fbq('track', 'AddToCart', { content_name: 'Voir les offres' }); } catch(e) {}
       // Tracking léger pour le nudge push "vu Tarifs sans payer"
       if (user?.id) {
@@ -3735,7 +3747,7 @@ export default function Platform() {
       if (!isIOS && !deferredInstallPrompt.current) return;
       setShowInstallPrompt(true);
       try { localStorage.setItem('adstack_install_prompted', '1'); } catch(e) {}
-    }, 30000);
+    }, 45000);
     return () => clearTimeout(t);
   }, []);
   const lancerInstallation = async () => {
@@ -3746,7 +3758,7 @@ export default function Platform() {
     setShowInstallPrompt(false);
   };
 
-  // ── Auto-prompt connexion Google après 40s (nouveau visiteur non connecté) ──
+  // ── Auto-prompt connexion Google après 60s (nouveau visiteur non connecté) ──
   useEffect(() => {
     if (user) return;
     try {
@@ -3754,11 +3766,12 @@ export default function Platform() {
     } catch(e) {}
     const t = setTimeout(() => {
       if (!sbAuth.getUser()) {
+        setShowInstallPrompt(false); // jamais deux bandeaux/popups en même temps à l'écran
         setLoginAutoPrompt(true);
         setShowLogin(true);
         try { localStorage.setItem('adstack_login_prompted', '1'); } catch(e) {}
       }
-    }, 40000);
+    }, 60000);
     return () => clearTimeout(t);
   }, [user]);
 
@@ -3778,7 +3791,7 @@ export default function Platform() {
         setShowInstallPrompt(false); // jamais deux bandeaux en bas de l'écran en même temps
         setShowPushPriming(true);
       }
-    }, 70000);
+    }, 90000);
     return () => clearTimeout(t);
   }, [user]);
   const activerNotifications = async () => {
@@ -3837,7 +3850,7 @@ export default function Platform() {
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
 
-  // ── Formulaire pré-achat : à chaque visite, après 5 min, tant qu'il n'a jamais été rempli
+  // ── Formulaire pré-achat : à chaque visite, après 2 min, tant qu'il n'a jamais été rempli
   // ET qu'il n'a pas déjà d'abonnement actif — vérifié à neuf au moment du déclenchement,
   // pas au chargement de la page, pour éviter de le montrer à quelqu'un qui vient tout
   // juste de passer client entre-temps. ──
@@ -3854,7 +3867,7 @@ export default function Platform() {
         }
       } catch(e) {}
       setShowPrepurchaseForm(true);
-    }, 5 * 60 * 1000);
+    }, 2 * 60 * 1000);
     return () => clearTimeout(t);
   }, []);
 
@@ -3918,6 +3931,13 @@ export default function Platform() {
               else triggerChariowCheckout(pendingPlan, pendingCycle, u, window);
             }, 400);
           }
+        }
+        // Reprise automatique de l'ouverture du formulaire produit si la connexion a été
+        // déclenchée par le bouton "Ajouter Un Produit" (CTA démo, une fois les tarifs visités).
+        if (localStorage.getItem('adstack_pending_product_form')) {
+          localStorage.removeItem('adstack_pending_product_form');
+          setSection('produits');
+          setTimeout(() => window.dispatchEvent(new Event('openProductForm')), 400);
         }
       } catch(e) {}
       // Rafraîchir le token avant de charger les données
@@ -4141,7 +4161,7 @@ export default function Platform() {
 };
 
 const views = {
-    demo: <DemoPreview slug={demoSlug} setSection={setSection}/>,
+    demo: <DemoPreview slug={demoSlug} setSection={setSection} user={user}/>,
     produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
