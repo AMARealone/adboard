@@ -1525,13 +1525,13 @@ function copyDemoGenLink() {
 // ── Sélection intelligente des CTs pour génération complète ──
 async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
   const ids = Object.keys(CT_IMAGES).filter(function(k) {
-    return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta');
+    return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta') && !k.endsWith('_awareness') && !k.endsWith('_styleTags');
   });
   if (ids.length === 0) return [];
   if (ids.length <= count) return ids.sort(function() { return Math.random() - 0.5; });
 
   const ctList = ids.map(function(id) {
-    return { id: id, name: CT_IMAGES[id + '_name'] || id, meta: CT_IMAGES[id + '_meta'] || '' };
+    return { id: id, name: CT_IMAGES[id + '_name'] || id, meta: CT_IMAGES[id + '_meta'] || '', awareness: CT_IMAGES[id + '_awareness'] || [], styleTags: CT_IMAGES[id + '_styleTags'] || [] };
   });
 
   try {
@@ -2233,15 +2233,9 @@ function prodv2SetAgentState(idx, state, statusText, progressPct) {
   if(typeof progressPct === 'number') el.querySelector('.prodv2-progress-fill').style.width = progressPct + '%';
 }
 
-// Pick 9 different CTs from CT_IMAGES (3 per angle, all unique).
-function prodv2PickCTs() {
-  const ctKeys = Object.keys(CT_IMAGES || {}).filter(k => !k.endsWith('_mime'));
-  if(ctKeys.length < 9) {
-    return ctKeys.slice(0,9); // fallback : moins de 9 dispos
-  }
-  const shuffled = ctKeys.slice().sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, 9);
-}
+// prodv2PickCTs() retirée — confirmée morte, jamais appelée. La sélection réelle en
+// production passe par selectCTsForGeneration(..., 'production', ...), qui active la
+// logique intelligente (niveaux de conscience, diversification, rotation) côté serveur.
 
 // Extract angles from synthesis text (S2 section : 3 angles)
 // Sépare la réponse unique de l'Analyste en deux parties : la synthèse texte (S0-S8, pour
@@ -4994,6 +4988,8 @@ async function _ctGetAll() {
       name: meta.name || id,
       addedAt: meta.addedAt || 0,
       meta: meta.meta || '',
+      awareness: meta.awareness || [],
+      styleTags: meta.styleTags || [],
       mime: entry.mime || 'image/jpeg',
       url: _ctPublicUrl(entry.imgName),
     });
@@ -5022,7 +5018,7 @@ async function _ctPut(rec) {
   var jsonResp = await fetch(`${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/${_CT_BUCKET}/${rec.id}.json`, {
     method: 'POST',
     headers: { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F, 'Content-Type': 'application/json', 'x-upsert': 'true' },
-    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '' })
+    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [] })
   });
   if (!jsonResp.ok) throw new Error('Upload métadonnées Supabase échoué : HTTP ' + jsonResp.status);
   return rec;
@@ -5092,10 +5088,19 @@ async function renderCTSelector() {
     CT_IMAGES[rec.id + '_name'] = rec.name;
     CT_IMAGES[rec.id + '_addedAt'] = rec.addedAt;
     CT_IMAGES[rec.id + '_meta'] = rec.meta || '';
+    CT_IMAGES[rec.id + '_awareness'] = rec.awareness || [];
+    CT_IMAGES[rec.id + '_styleTags'] = rec.styleTags || [];
 
-    var ct = { id: rec.id, name: rec.name };
+    var ct = { id: rec.id, name: rec.name, meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [] };
     var btn = document.createElement('button');
     btn.style.cssText = 'display:flex;flex-direction:column;width:84px;flex-shrink:0;background:var(--bg2);border:1px solid var(--border1);border-radius:8px;overflow:hidden;cursor:pointer;padding:0;';
+    // Meta + balises visibles au survol — pas assez de place pour un texte permanent dans
+    // ces petites cartes (84px). La galerie complète, elle, les affiche en clair.
+    var titreParts = [ct.name];
+    if (ct.meta) titreParts.push(ct.meta);
+    if (ct.awareness.length) titreParts.push('Conscience : ' + ct.awareness.join('/'));
+    if (ct.styleTags.length) titreParts.push('Style : ' + ct.styleTags.join(', '));
+    btn.title = titreParts.join('\n');
 
     var img = document.createElement('img');
     img.src = CT_IMAGES[ct.id];
@@ -5164,12 +5169,38 @@ async function renderGallery() {
     nameEl.style.cssText = 'font-size:11px;font-weight:600;color:var(--t1);line-height:1.4;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;';
     nameEl.textContent = rec.name;
 
+    info.appendChild(nameEl);
+
+    // Meta (mécanisme psychologique) — jusqu'ici généré mais jamais affiché nulle part.
+    if (rec.meta) {
+      var metaEl = document.createElement('div');
+      metaEl.style.cssText = 'font-size:9.5px;color:var(--blue);margin-top:4px;line-height:1.4;font-style:italic;';
+      metaEl.textContent = rec.meta;
+      info.appendChild(metaEl);
+    }
+
+    // Balises niveau de conscience + style — affichage sous forme de petites pastilles.
+    var toutesBalises = [].concat(
+      (rec.awareness || []).map(function(a){ return { txt: a, color: '#8B5CF6' }; }),
+      (rec.styleTags || []).map(function(s){ return { txt: s, color: 'var(--t3)' }; })
+    );
+    if (toutesBalises.length) {
+      var balisesEl = document.createElement('div');
+      balisesEl.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;';
+      toutesBalises.forEach(function(b) {
+        var pill = document.createElement('span');
+        pill.style.cssText = 'font-size:8.5px;padding:2px 6px;border-radius:20px;background:rgba(255,255,255,0.08);color:' + b.color + ';white-space:nowrap;';
+        pill.textContent = '#' + b.txt;
+        balisesEl.appendChild(pill);
+      });
+      info.appendChild(balisesEl);
+    }
+
     var dateEl = document.createElement('div');
     dateEl.style.cssText = 'font-size:10px;color:var(--t3);margin-top:5px;';
     var d = new Date(rec.addedAt);
     dateEl.textContent = d.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'});
 
-    info.appendChild(nameEl);
     info.appendChild(dateEl);
 
     // Bouton supprimer
@@ -5245,15 +5276,19 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
     var data = await resp.json();
     var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
     var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
+    var awareness = data.awareness || [];
+    var styleTags = data.styleTags || [];
     if (!name) throw new Error('Nom vide');
 
     // Juste le nom/meta changent — pas de b64/mime ici, donc _ctPut ne re-uploade PAS
     // l'image, seulement le .json de métadonnées (voir _ctPut).
-    await _ctPut({ id: id, name: name, meta: meta, addedAt: CT_IMAGES[id + '_addedAt'] || Date.now() });
+    await _ctPut({ id: id, name: name, meta: meta, awareness: awareness, styleTags: styleTags, addedAt: CT_IMAGES[id + '_addedAt'] || Date.now() });
 
     // Mettre à jour mémoire
     CT_IMAGES[id + '_name'] = name;
     CT_IMAGES[id + '_meta'] = meta;
+    CT_IMAGES[id + '_awareness'] = awareness;
+    CT_IMAGES[id + '_styleTags'] = styleTags;
 
     // Mettre à jour UI
     if (nameEl) { nameEl.textContent = name; nameEl.style.color = 'var(--t1)'; }
@@ -5309,12 +5344,18 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
       var data = await resp.json();
       var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
       var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
+      var awareness = data.awareness || [];
+      var styleTags = data.styleTags || [];
       if (!name) throw new Error('Nom vide reçu du serveur');
       rec.name = name;
       rec.meta = meta;
+      rec.awareness = awareness;
+      rec.styleTags = styleTags;
       await _ctPut(rec);
       CT_IMAGES[rec.id + '_name'] = name;
       CT_IMAGES[rec.id + '_meta'] = meta;
+      CT_IMAGES[rec.id + '_awareness'] = awareness;
+      CT_IMAGES[rec.id + '_styleTags'] = styleTags;
       succes++;
     } catch(e) {
       echecs++;
