@@ -3189,7 +3189,7 @@ const PLANS = [
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Pour tester vos produits sereinement et obtenir vos premières ventes rentables, sans brûler votre budget.',
-    ctaText:'Testez Sans Risque',
+    ctaText:'Vendez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
     monthly: { price:39900, priceBarre:60000, prixImg:1108, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
     annual:  { price:29900, priceBarre:39900, prixImg:830,  delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
