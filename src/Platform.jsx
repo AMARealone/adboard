@@ -3188,21 +3188,24 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
 const PLANS = [
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
-    tagline:'Pour faire multiplier les ventes de votre produit, sans rechute.',
+    tagline:'Pour tester vos produits sereinement et obtenir vos premières ventes rentables, sans brûler votre budget.',
+    ctaText:'Testez Sans Risque',
     imagesPerWeek: 9, produitsPerWeek: '1',
     monthly: { price:39900, priceBarre:60000, prixImg:1108, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
     annual:  { price:29900, priceBarre:39900, prixImg:830,  delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
-    tagline:'Pour dominer votre marché et positionner votre marque comme référence.',
+    tagline:'Pour dominer votre marché, écraser vos coûts d\'acquisition et positionner votre marque en leader.',
+    ctaText:'Dominez Votre Marché',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
     monthly: { price:69900, priceBarre:120000, prixImg:970, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
     annual:  { price:54900, priceBarre:69900,  prixImg:762, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
-    tagline:'Pour exploiter plusieurs marchés en simultané et amener vos revenus à un autre niveau.',
+    tagline:'L\'arsenal complet pour inonder de multiples marchés en simultané et faire exploser votre ROAS.',
+    ctaText:'Explosez Votre Croissance',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
     monthly: { price:109900, priceBarre:240000, prixImg:763, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
     annual:  { price:79900,  priceBarre:109900, prixImg:554, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
@@ -3375,11 +3378,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         <div style={{fontSize:11,color:C.sec,fontWeight:700,letterSpacing:'2px',textTransform:'uppercase',marginBottom:10}}>
           Nos Tarifs
         </div>
-        <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.1,letterSpacing:'-0.5px'}}>
-          <span className="headline-gradient">Télécharge. Publie. Vends.</span>
+        <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.15,letterSpacing:'-0.5px'}}>
+          <span className="headline-gradient">Des Images Qui Vendent.</span> Chaque Semaine, Sans Effort.
         </h1>
         <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:480}}>
-          Moins de temps sur Canva et ChatGPT — plus de temps à scaler ton business.
+          Arrêtez de chercher quoi publier. Recevez chaque semaine toute une stratégie de contenu publicitaire performant : <strong style={{color:C.text}}>visuels, copywriting et données marché.</strong>
         </p>
       </div>
 
@@ -3403,6 +3406,14 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         </p>
       </div>
 
+      {/* ── Garantie — visible, pas une mention en petit ── */}
+      <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.22)`,marginBottom:20,flexWrap:'wrap'}}>
+        <span style={{width:30,height:30,borderRadius:9,background:'rgba(45,127,249,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="lock" size={15} color={C.accent}/></span>
+        <div style={{fontSize:12.5,color:C.text,lineHeight:1.4}}>
+          <strong style={{color:C.accent}}>Satisfait ou 100% remboursé.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
+        </div>
+      </div>
+
       {/* ── Plan cards ── */}
       <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20}}>
         {PLANS.map(p => {
@@ -3417,13 +3428,19 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           const cycleData = annual ? p.annual : p.monthly;
+          const visuelsLabel = p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
+                              : p.id === 'pro' ? `${p.imagesPerWeek} Visuels Haute Performance`
+                              : `${p.imagesPerWeek} Visuels Multi-Angles`;
           const features = [
-            `${p.imagesPerWeek} Images Publicitaires Livrées / Semaine`,
-            `${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''} / Semaine`,
-            'Données Marchés Hebdomadaire : Cibles, Concurrents, Tendances',
-            'Titres et Descriptions à mettre dans la Campagne',
-            'Assistant IA dispo 7j/7',
-            `Livraison en ${cycleData.delivery} chaque semaine`,
+            { icon:'image',   bold:visuelsLabel,             rest: p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine' },
+            { icon:'box',     bold:`${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive') },
+            { icon:'grid',    bold:'Galerie Créative',        rest:'— tous vos visuels centralisés' },
+            { icon:'chart',   bold:'Marché analysé',          rest:'chaque semaine : cibles, concurrents & tendances' },
+            { icon:'document',bold:'Textes publicitaires',    rest:'prêts à copier-coller (Ad Copies)' },
+            { icon:'sparkle', bold:'Assistant IA',            rest:'stratégique, disponible 7j/7' },
+            { icon:'upload',  bold:'Import produits',         rest:'simple et rapide' },
+            { icon:'clock',   bold:'Suivi de production',     rest:'en temps réel' },
+            { icon:'bolt',    bold:`Prêtes en ${cycleData.delivery}`, rest:'chaque semaine' },
           ];
           return (
             <div key={p.id}
@@ -3469,11 +3486,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
 
-              <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:10}}>
+              <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:13}}>
                 {features.map((f,j) => (
-                  <div key={j} style={{display:'flex',alignItems:'flex-start',gap:9}}>
-                    <span style={{flexShrink:0,marginTop:1,color:p.color}}><Icon name="check" size={13}/></span>
-                    <div style={{fontSize:12,color:C.sec,lineHeight:1.4}}>{f}</div>
+                  <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
+                    <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={f.icon} size={12} color={p.color}/></span>
+                    <div style={{fontSize:12,color:C.sec,lineHeight:1.45}}><strong style={{color:C.text,fontWeight:700}}>{f.bold}</strong> {f.rest}</div>
                   </div>
                 ))}
               </div>
@@ -3504,15 +3521,14 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                         ? (<>Downgrade <Icon name="arrow" size={13} color="#fff"/></>)
                         : isUpgrade
                           ? (<>Upgrade <Icon name="arrow" size={13} color="#fff"/></>)
-                          : (<>Commencer maintenant <Icon name="arrow" size={13} color="#fff"/></>)
+                          : (<>{p.ctaText} <Icon name="arrow" size={13} color="#fff"/></>)
                 }
               </button>
 
               {/* Reassurance */}
               {!isCurrent && (
-                <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted,lineHeight:1.5}}>
-                  <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span><br/>
-                  <span style={{color:C.sec}}>Satisfait ou 100% remboursé</span>
+                <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
+                  <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
                 </div>
               )}
             </div>
