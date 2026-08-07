@@ -3851,22 +3851,33 @@ export default function Platform() {
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
 
-  // ── Formulaire pré-achat : à chaque visite, après 2 min, tant qu'il n'a jamais été rempli
-  // ET qu'il n'a pas déjà d'abonnement actif — vérifié à neuf au moment du déclenchement,
-  // pas au chargement de la page, pour éviter de le montrer à quelqu'un qui vient tout
-  // juste de passer client entre-temps. ──
+  // ── Formulaire pré-achat : à chaque session, après 2 min, tant qu'il n'a jamais été
+  // VALIDÉ (soumis) ET qu'il n'a JAMAIS pris d'offre (active ou expirée) — vérifié à neuf
+  // au moment du déclenchement, pas au chargement de la page, pour éviter de le montrer à
+  // quelqu'un qui vient tout juste de passer client entre-temps. ──
   useEffect(() => {
     try {
       if (localStorage.getItem('adstack_prepurchase_form_done')) return;
+      // Cause profonde corrigée (réapparaît dans la même visite après un simple abandon) :
+      // rien ne mémorisait qu'il avait déjà été montré durant cette session précise — seule
+      // la VALIDATION posait un flag permanent. sessionStorage comble cet intermédiaire :
+      // remis à zéro à chaque nouvelle session (comportement voulu), mais empêche toute
+      // réapparition tant qu'on reste dans la même.
+      if (sessionStorage.getItem('adstack_prepurchase_shown_session')) return;
     } catch(e) {}
     const t = setTimeout(async () => {
       try {
         const session = await sbAuth.refreshSession();
         if (session) {
           const freshSub = await sbSubs.load(session);
-          if (freshSub?.active) return; // déjà abonné — jamais ce popup
+          // Cause profonde corrigée (popup montré à un abonnement expiré) : sbSubs.load()
+          // renvoie un objet non-null même pour un abonnement expiré (juste active:false) —
+          // seul un utilisateur n'ayant JAMAIS souscrit reçoit null. Vérifier .active
+          // seul laissait passer quiconque avait déjà été client mais dont l'offre a expiré.
+          if (freshSub) return; // déjà pris une offre un jour (active ou non) — jamais ce popup
         }
       } catch(e) {}
+      try { sessionStorage.setItem('adstack_prepurchase_shown_session', '1'); } catch(e) {}
       setShowPrepurchaseForm(true);
     }, 2 * 60 * 1000);
     return () => clearTimeout(t);
