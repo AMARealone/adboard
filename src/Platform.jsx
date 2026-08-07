@@ -1915,11 +1915,30 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             <div style={{position:'absolute',top:-60,right:-40,width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
 
             {/* En-tête — fixe, hors zone de scroll */}
-            <div style={{position:'relative',display:'flex',justifyContent:'space-between',alignItems:'center',padding:'22px 20px 16px',flexShrink:0}}>
-              <h2 style={{fontSize:16,fontWeight:800,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
-              <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <Icon name="x" size={14}/>
-              </button>
+            <div style={{position:'relative',flexShrink:0}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'22px 20px 14px'}}>
+                <h2 style={{fontSize:16,fontWeight:800,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
+                <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <Icon name="x" size={14}/>
+                </button>
+              </div>
+              {/* Jauge — se remplit avec chaque champ complété, sans jamais dire explicitement
+                  "plus vous remplissez, mieux c'est" (implicite via le copywriting + la jauge). */}
+              {(() => {
+                const champs = [form.photo, form.nom, form.pricing, form.pays, form.lien, form.promo, form.cible, form.utilite];
+                const remplis = champs.filter(Boolean).length;
+                const pct = Math.round((remplis / champs.length) * 100);
+                return (
+                  <div style={{padding:'0 20px 16px'}}>
+                    <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
+                      <div style={{height:'100%',width:pct+'%',borderRadius:3,background:`linear-gradient(90deg, ${C.accent}, #8B5CF6)`,transition:'width 0.4s cubic-bezier(.4,0,.2,1)'}}/>
+                    </div>
+                    <div style={{fontSize:10,color:C.muted,marginTop:6}}>
+                      {pct < 100 ? `Fiche ${pct}% complète — chaque détail affine vos futures créatives` : 'Fiche complète — parfait pour un travail sur-mesure'}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Zone scrollable — photo + champs uniquement, jamais le bouton */}
@@ -1947,7 +1966,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
                   <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Identité — 3 infos et c'est parti</div>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Les 3 essentiels</div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
@@ -1960,35 +1979,39 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
               {!requisRemplis && (
                 <div style={{fontSize:11,color:C.muted,display:'flex',alignItems:'center',gap:6,padding:'2px 2px 0'}}>
-                  <Icon name="sparkle" size={12} color={C.muted}/> Photo + ces 3 infos suffisent pour créer votre produit — le reste est facultatif
+                  <Icon name="sparkle" size={12} color={C.muted}/> Photo + ces 3 infos, et votre produit est créé
                 </div>
               )}
 
               <div style={{overflow:'hidden',...(requisRemplis ? {animation:'revealOptional 0.5s ease forwards'} : {maxHeight:0,opacity:0,margin:0})}}>
-              <div style={{display:'flex',flexDirection:'column',gap:18}}>
+              <div style={{display:'flex',flexDirection:'column',gap:16}}>
 
-              <div>
-                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
-                  <div style={{width:5,height:5,borderRadius:'50%',background:C.muted}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Vente <span style={{textTransform:'none',fontWeight:400,opacity:.7}}>(optionnel)</span></div>
+              {/* Lien de la page produit — mis en avant, distinct des autres champs optionnels.
+                  Pas obligatoire, mais très utile en production : source d'informations riches
+                  et personnalisées sur le produit réel. */}
+              <div style={{padding:'12px 14px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.25)`}}>
+                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                  <Icon name="sparkle" size={13} color={C.accent}/>
+                  <div style={{fontSize:11.5,fontWeight:700,color:C.text}}>Lien de la page produit</div>
+                  <span style={{fontSize:9,color:C.muted,fontWeight:400}}>(optionnel, mais précieux)</span>
                 </div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <Field label="Lien de la page produit (optionnel)" k="lien" placeholder="https://..." form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="Offre promo en cours (optionnel)" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
-                </div>
+                <input value={form.lien||''} onChange={e=>setForm(f=>({...f,lien:e.target.value}))} placeholder="https://..."
+                  style={{width:'100%',boxSizing:'border-box',padding:'9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
+                <div style={{fontSize:10,color:C.muted,marginTop:6}}>Notre équipe y puise des détails que vous n'auriez pas pensé à mentionner.</div>
               </div>
 
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
                   <div style={{width:5,height:5,borderRadius:'50%',background:C.muted}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Ciblage créatif <span style={{textTransform:'none',fontWeight:400,opacity:.7}}>(optionnel)</span></div>
+                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Pour aller plus loin</div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <Field label="Cible principale (optionnel)" k="cible" textarea placeholder="Femme +25ans Dakar, Teint métisse..." form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="Utilité principale (optionnel)" k="utilite" textarea placeholder="À quoi sert ce produit, quel problème il résout..." form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Offre promo en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Qui achète ce produit ?" k="cible" textarea placeholder="Ex : Femme, 25-40 ans, Dakar" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="À quoi il sert" k="utilite" textarea placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
                   <div>
-                    <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque <span style={{fontWeight:400,opacity:.6}}>(pour vos visuels Meta Ads · optionnel)</span></label>
-                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>Si vous en ajoutez, minimum 2 couleurs, jusqu'à 3 — utilisées dans vos créatives publicitaires</div>
+                    <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque</label>
+                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>2 ou 3 couleurs, utilisées dans vos visuels</div>
                     <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                       {[1,2,3].map(n => {
                         const key = `couleur${n}`;
@@ -3501,16 +3524,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
 };
 
 // ── Vue Démo : charge la mindmap dans un iframe ──────────────────────────────
-const DemoPreview = ({slug, setSection, user}) => {
-  const [showCta, setShowCta] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-
-  useEffect(() => {
-    if (!slug) return;
-    const t = setTimeout(() => setShowCta(true), 30000);
-    return () => clearTimeout(t);
-  }, [slug]);
-
+const DemoPreview = ({slug}) => {
   if (!slug) return (
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:'100%',gap:16,padding:40,textAlign:'center'}}>
       <Icon name="eye" size={48} color={C.muted}/>
@@ -3528,48 +3542,6 @@ const DemoPreview = ({slug, setSection, user}) => {
         title="Démo AdStack"
         allow="fullscreen"
       />
-      {/* Bouton flottant — apparaît après 30s */}
-      {showCta && !dismissed && (
-        <div style={{
-          position:'fixed', bottom:88, left:'50%', transform:'translateX(-50%)',
-          zIndex:8000, animation:'ctaFloat 0.6s cubic-bezier(.34,1.56,.64,1) forwards',
-        }}>
-          <style>{`
-            @keyframes ctaFloat {
-              from { opacity:0; transform:translateX(-50%) translateY(20px); }
-              to   { opacity:1; transform:translateX(-50%) translateY(0); }
-            }
-            @keyframes ctaPulse {
-              0%,100% { box-shadow:0 6px 28px rgba(45,127,249,0.55); }
-              50%      { box-shadow:0 6px 36px rgba(45,127,249,0.80); }
-            }
-          `}</style>
-          <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
-            onClick={() => {
-              let visiteTarifs = false;
-              try { visiteTarifs = !!localStorage.getItem('adstack_visited_tarifs'); } catch(e) {}
-              if (!visiteTarifs) { setSection && setSection('tarifs'); return; }
-              // Déjà visité les tarifs — priorité à la création de produit (action la plus
-              // importante) plutôt que de le renvoyer une 2e fois vers les offres.
-              if (user) {
-                setSection && setSection('produits');
-                setTimeout(() => window.dispatchEvent(new Event('openProductForm')), 200);
-              } else {
-                try { localStorage.setItem('adstack_pending_product_form', '1'); } catch(e) {}
-                sbAuth.signInWithGoogle();
-              }
-            }}>
-            {(() => {
-              let visiteTarifs = false;
-              try { visiteTarifs = !!localStorage.getItem('adstack_visited_tarifs'); } catch(e) {}
-              return visiteTarifs
-                ? <><Icon name="plus" size={13} color="#fff"/> Ajouter Un Produit</>
-                : <><Icon name="sparkle" size={13} color="#fff"/> Découvrir Nos Offres</>;
-            })()}
-            <button onClick={e=>{e.stopPropagation();setDismissed(true);}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={9} color="#fff"/></button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -3671,7 +3643,6 @@ export default function Platform() {
   // Événement AddToCart — dès que la section Tarifs devient active
   useEffect(() => {
     if (section === 'tarifs') {
-      try { localStorage.setItem('adstack_visited_tarifs', '1'); } catch(e) {}
       try { window.fbq && window.fbq('track', 'AddToCart', { content_name: 'Voir les offres' }); } catch(e) {}
       // Tracking léger pour le nudge push "vu Tarifs sans payer"
       if (user?.id) {
@@ -3722,6 +3693,17 @@ export default function Platform() {
   // permet réellement). Sur iOS, Apple n'expose AUCUNE API pour déclencher ça par code —
   // c'est une vraie limite plateforme, pas un manque d'effort : on ne peut qu'afficher des
   // instructions manuelles aussi claires que possible. ──
+  // ── CTA global "Découvrir Nos Offres" — se déclenche après 15s passées sur la page démo,
+  // mais reste affiché PARTOUT ensuite (toutes sections), tant que le prospect ne le ferme
+  // pas explicitement (croix). Fermeture persistée — ne réapparaît jamais après ça. ──
+  const [showOffersCta, setShowOffersCta] = useState(false);
+  useEffect(() => {
+    if (section !== 'demo' || showOffersCta) return;
+    try { if (localStorage.getItem('adstack_offers_cta_dismissed')) return; } catch(e) {}
+    const t = setTimeout(() => setShowOffersCta(true), 15000);
+    return () => clearTimeout(t);
+  }, [section, showOffersCta]);
+
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const deferredInstallPrompt = useRef(null);
   const [canAutoInstall, setCanAutoInstall] = useState(false);
@@ -3931,13 +3913,6 @@ export default function Platform() {
               else triggerChariowCheckout(pendingPlan, pendingCycle, u, window);
             }, 400);
           }
-        }
-        // Reprise automatique de l'ouverture du formulaire produit si la connexion a été
-        // déclenchée par le bouton "Ajouter Un Produit" (CTA démo, une fois les tarifs visités).
-        if (localStorage.getItem('adstack_pending_product_form')) {
-          localStorage.removeItem('adstack_pending_product_form');
-          setSection('produits');
-          setTimeout(() => window.dispatchEvent(new Event('openProductForm')), 400);
         }
       } catch(e) {}
       // Rafraîchir le token avant de charger les données
@@ -4161,7 +4136,7 @@ export default function Platform() {
 };
 
 const views = {
-    demo: <DemoPreview slug={demoSlug} setSection={setSection} user={user}/>,
+    demo: <DemoPreview slug={demoSlug}/>,
     produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
@@ -4257,6 +4232,19 @@ const views = {
     </div>
     <Chatbot user={user} subscription={subscription} products={products} credits={computeCredits(subscription,allBriefs)} allBriefs={allBriefs} briefs={briefs} section={section} setSection={setSection} priceCtx={priceCtx} openProductForm={()=>{setSection('produits'); setTimeout(()=>window.dispatchEvent(new Event('openProductForm')),100);}} onOpenPayment={(productId)=>setPaymentProductId(productId)} />
     {showLogin && <LoginModal onClose={()=>setShowLogin(false)} C={C} autoPrompt={loginAutoPrompt}/>}
+    {showOffersCta && (
+      <div style={{position:'fixed', bottom:88, left:'50%', transform:'translateX(-50%)', zIndex:8000, animation:'ctaFloat 0.6s cubic-bezier(.34,1.56,.64,1) forwards'}}>
+        <style>{`
+          @keyframes ctaFloat { from{ opacity:0; transform:translateX(-50%) translateY(20px); } to{ opacity:1; transform:translateX(-50%) translateY(0); } }
+          @keyframes ctaPulse { 0%,100%{ box-shadow:0 6px 28px rgba(45,127,239,0.55); } 50%{ box-shadow:0 6px 36px rgba(45,127,249,0.80); } }
+        `}</style>
+        <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
+          onClick={() => setSection('tarifs')}>
+          <Icon name="sparkle" size={13} color="#fff"/> Découvrir Nos Offres
+          <button onClick={e=>{e.stopPropagation(); setShowOffersCta(false); try{localStorage.setItem('adstack_offers_cta_dismissed','1');}catch(e){}}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={9} color="#fff"/></button>
+        </div>
+      </div>
+    )}
     {showInstallPrompt && (
       <div style={{position:'fixed',left:12,right:12,bottom: isMobile ? 88 : 96,zIndex:550,maxWidth:420,margin:'0 auto',borderRadius:14,background:'#12151C',border:'1px solid rgba(255,255,255,0.14)',padding:'14px 16px',boxShadow:'0 12px 40px rgba(0,0,0,0.5)',display:'flex',alignItems:'center',gap:12,animation:'toastIn .3s cubic-bezier(.34,1.56,.64,1)'}}>
         <div style={{width:36,height:36,borderRadius:10,background:'rgba(91,141,239,0.14)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
