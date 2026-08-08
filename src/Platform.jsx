@@ -842,7 +842,7 @@ const sbSubs = {
   async load(session) {
     if (!session?.access_token) return null;
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&limit=1`,
+      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&order=started_at.desc&limit=1`,
       { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` } }
     );
     if (!r.ok) return null;
@@ -3351,7 +3351,7 @@ const Faq = () => {
 
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, onOpenPayment=null}) => {
   const isMobile = useIsMobile();
-  const [annual, setAnnual] = useState(true); // activé par défaut sur annuel
+  const [annual, setAnnual] = useState(false); // par défaut sur mensuel
   const onCta = async (plan) => {
     const cycle = plan.isPack ? 'once' : (annual ? 'annual' : 'monthly');
     const cycleData = plan[cycle];
@@ -3364,7 +3364,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
     const popup = window.open('', '_blank') || window;
     triggerChariowCheckout(plan, cycle, user, popup);
   };
-  const userPlan = subscription?.plan;
+  const userPlan = subscription?.active ? subscription?.plan : null;
 
   // Inject gradient animation CSS
   useEffect(() => {
@@ -3442,13 +3442,16 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
       )}
 
       {/* ── Plan cards ── */}
-      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'1fr 1fr 1fr',gap:14,marginBottom:20}}>
+      <div style={isMobile
+        ? {display:'flex',flexDirection:'column',gap:14,marginBottom:20}
+        : {display:'flex',flexDirection:'row',gap:14,marginBottom:20,overflowX:'auto',paddingBottom:8}
+      }>
         {PLANS.map(p => {
           const selectedCycle = annual ? 'annual' : 'monthly';
           const sameTier = userPlan === p.id;
           // Abonnements créés avant l'ajout du cycle annuel → toujours mensuel historiquement
           const currentCycle = subscription?.cycle || 'monthly';
-          const isCurrent = sameTier && (p.isPack || currentCycle === selectedCycle);
+          const isCurrent = subscription?.active && sameTier && (p.isPack || currentCycle === selectedCycle);
           const isCycleUpsell = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'annual';   // même palier, passer à l'annuel
           const isCycleDowngradeCycle = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
           const PLAN_ORDER = { discovery:0, starter:1, pro:2, scale:3 };
@@ -3457,13 +3460,13 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           // Le pack Discovery n'a pas de cycle mensuel/annuel — toujours son propre prix "once",
           // peu importe l'état du toggle global de la page.
           const cycleData = p.isPack ? p.once : (annual ? p.annual : p.monthly);
-          const visuelsLabel = p.id === 'discovery' ? `${p.imagesPerWeek} Visuels`
+          const visuelsLabel = p.id === 'discovery' ? `${p.imagesPerWeek} Visuels livrés`
                               : p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
                               : p.id === 'pro' ? `${p.imagesPerWeek} Visuels Haute Performance`
                               : `${p.imagesPerWeek} Visuels Multi-Angles`;
           const features = [
-            { icon:'image',   bold:visuelsLabel,             rest: p.isPack ? 'inclus, à utiliser librement (2 produits max)' : (p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine') },
-            { icon:'box',     bold:`${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.isPack ? 'au choix' : (p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive')) },
+            { icon:'image',   bold:visuelsLabel,             rest: p.isPack ? '(angles et concepts variés)' : (p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine') },
+            { icon:'box',     bold: p.isPack ? `Jusqu'à ${p.produitsPerWeek.replace("Jusqu'à ",'')} Produits` : `${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.isPack ? 'Couverts' : (p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive')) },
             { icon:'grid',    bold:'Galerie Créative',        rest:'— tous vos visuels centralisés' },
             { icon:'chart',   bold:'Marché analysé',          rest:'chaque semaine : cibles, concurrents & tendances' },
             { icon:'document',bold:'Textes publicitaires',    rest:'prêts à copier-coller (Ad Copies)' },
@@ -3481,6 +3484,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 border:`1px solid ${isCurrent?'rgba(255,255,255,0.28)':p.best?'rgba(45,127,249,0.38)':C.border}`,
                 borderRadius:14, padding:'22px', display:'flex', flexDirection:'column',
                 position:'relative', transition:'transform 0.2s, box-shadow 0.2s',
+                ...(isMobile ? {} : {flex:'0 0 300px', width:300}),
               }}
               onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 14px 32px rgba(0,0,0,0.35)';}}
               onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none';}}
