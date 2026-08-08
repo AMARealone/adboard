@@ -583,17 +583,20 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
       {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
-        const nextPlanId = !subscription?.active ? 'starter' : subscription.plan === 'starter' ? 'pro' : 'scale';
+        const nextPlanId = !subscription?.active ? 'discovery'
+                          : subscription.plan === 'discovery' ? 'starter'
+                          : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
-        const cycleData = nextPlan.monthly;
+        const nextCycle = nextPlan.isPack ? 'once' : 'monthly';
+        const cycleData = nextPlan[nextCycle];
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
-            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
-            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
+            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images{nextPlan.isPack?' incluses':' / semaine'} · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}{!nextPlan.isPack && <span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span>}</div>
             <button onClick={() => {
-              const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-monthly`];
+              const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-${nextCycle}`];
               if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
               const popup = window.open('', '_blank') || window;
               popup.location.href = cycleData.checkout;
@@ -812,6 +815,15 @@ const sbSub = {
 // Calcule les images publicitaires disponibles dynamiquement
 function computeCredits(sub, allBriefs) {
   if (!sub || !sub.active) return { total: 0, used: 0, available: 0, nextCreditDate: null };
+  const used = allBriefs
+    .filter(b => b.status !== 'cancelled')
+    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
+  // Pack (Discovery) : total fixe, jamais de rechargement — contrairement à un abonnement
+  // classique qui accumule credits_per_week × semaines écoulées.
+  if (sub.type === 'pack') {
+    const total = sub.total_credits || 0;
+    return { total, used, available: Math.max(0, total - used), nextCreditDate: null };
+  }
   const started = new Date(sub.started_at);
   const now = new Date();
   // Rechargement à minuit (jour civil), pas à l'heure exacte de l'abonnement — plus prévisible pour l'utilisateur
@@ -821,9 +833,6 @@ function computeCredits(sub, allBriefs) {
   const daysElapsed = Math.floor((nowMidnight - startedMidnight) / msPerDay);
   const weeksActive = Math.floor(daysElapsed / 7) + 1;
   const total = weeksActive * sub.credits_per_week;
-  const used = allBriefs
-    .filter(b => b.status !== 'cancelled')
-    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
   const nextCreditDate = new Date(startedMidnight.getTime() + weeksActive * 7 * msPerDay);
   return { total, used, available: Math.max(0, total - used), nextCreditDate };
 }
@@ -851,13 +860,17 @@ const sbSubs = {
 // Calcule les images publicitaires disponibles dynamiquement
 function calcCredits(subscription, briefs) {
   if (!subscription || !subscription.active) return { earned: 0, used: 0, available: 0, plan: null };
+  const used = Object.values(briefs)
+    .filter(b => b.status !== 'cancelled')
+    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
+  if (subscription.type === 'pack') {
+    const earned = subscription.total_credits || 0;
+    return { earned, used, available: Math.max(0, earned - used), plan: subscription.plan };
+  }
   const now = Date.now();
   const started = new Date(subscription.started_at).getTime();
   const weeksActive = Math.floor((now - started) / (7 * 24 * 60 * 60 * 1000)) + 1;
   const earned = weeksActive * subscription.credits_per_week;
-  const used = Object.values(briefs)
-    .filter(b => b.status !== 'cancelled')
-    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
   return { earned, used, available: Math.max(0, earned - used), plan: subscription.plan };
 }
 
@@ -1581,7 +1594,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
     : null;
   if (subscription?.active && credits.available < 9) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
-      <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochain crédit le ${nextCreditDate}` : 'Crédits épuisés cette semaine'}
+      <Icon name="clock" size={13} color={C.muted}/> {subscription?.type === 'pack' ? 'Pack épuisé — passez à un abonnement pour continuer' : (nextCreditDate ? `Prochain crédit le ${nextCreditDate}` : 'Crédits épuisés cette semaine')}
     </div>
   );
   return (
@@ -3187,6 +3200,13 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
 
 const PLANS = [
   {
+    id:'discovery', name:'Conversion Discovery', color:C.gray, best:false, isPack:true,
+    tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
+    ctaText:'Testez Sans Engagement',
+    imagesPerWeek: 18, produitsPerWeek: 'Jusqu\'à 2',
+    once: { price:24900, priceBarre:40000, prixImg:1383, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+  },
+  {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Pour tester vos produits sereinement et obtenir vos premières ventes rentables, sans brûler votre budget.',
     ctaText:'Vendez Maintenant',
@@ -3213,6 +3233,7 @@ const PLANS = [
 ];
 
 const PLAN_CHECKOUT_IDS = {
+  'discovery-once':  'prd_ywk7ik14',
   'starter-monthly': 'prd_ljowq8',   'starter-annual': 'prd_wdya3v9h',
   'pro-monthly':     'prd_34w031',   'pro-annual':     'prd_lnp4ax0b',
   'scale-monthly':   'prd_9fi79y',   'scale-annual':   'prd_dn4fb72l',
@@ -3261,8 +3282,12 @@ const FAQ_ITEMS = [
     a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit chaque semaine vos visuels publicitaires (images Meta Ads), une analyse de votre marché cible, et des textes publicitaires prêts à l'emploi — livrés directement sur votre tableau de bord."
   },
   {
-    q: "Quelle est la différence entre les 3 formules ?",
-    a: "Conversion Starter (9 images/semaine, 1 produit), Conversion Pro (18 images/semaine, 2 produits), et Conversion Scale (36 images/semaine, 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
+    q: "Quelle est la différence entre les formules ?",
+    a: "Conversion Discovery (18 images incluses, achat unique sans engagement), Conversion Starter (9 images/semaine, 1 produit), Conversion Pro (18 images/semaine, 2 produits), et Conversion Scale (36 images/semaine, 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
+  },
+  {
+    q: "Conversion Discovery, comment ça marche exactement ?",
+    a: "C'est un achat unique, pas un abonnement : vous payez une fois, vous recevez 18 images à utiliser librement (en une ou plusieurs demandes, sur un ou deux produits), valables 3 mois. Contrairement aux autres formules, elles ne se renouvellent jamais automatiquement — une fois utilisées, vous pouvez passer à un abonnement classique pour continuer à en recevoir chaque semaine."
   },
   {
     q: "En combien de temps mes visuels sont-ils livrés ?",
@@ -3328,7 +3353,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
   const isMobile = useIsMobile();
   const [annual, setAnnual] = useState(true); // activé par défaut sur annuel
   const onCta = async (plan) => {
-    const cycle = annual ? 'annual' : 'monthly';
+    const cycle = plan.isPack ? 'once' : (annual ? 'annual' : 'monthly');
     const cycleData = plan[cycle];
     try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
     const productId = PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`];
@@ -3423,26 +3448,29 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const sameTier = userPlan === p.id;
           // Abonnements créés avant l'ajout du cycle annuel → toujours mensuel historiquement
           const currentCycle = subscription?.cycle || 'monthly';
-          const isCurrent = sameTier && currentCycle === selectedCycle;
-          const isCycleUpsell = sameTier && currentCycle !== selectedCycle && selectedCycle === 'annual';   // même palier, passer à l'annuel
-          const isCycleDowngradeCycle = sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
-          const PLAN_ORDER = { starter:1, pro:2, scale:3 };
+          const isCurrent = sameTier && (p.isPack || currentCycle === selectedCycle);
+          const isCycleUpsell = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'annual';   // même palier, passer à l'annuel
+          const isCycleDowngradeCycle = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
+          const PLAN_ORDER = { discovery:0, starter:1, pro:2, scale:3 };
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
-          const cycleData = annual ? p.annual : p.monthly;
-          const visuelsLabel = p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
+          // Le pack Discovery n'a pas de cycle mensuel/annuel — toujours son propre prix "once",
+          // peu importe l'état du toggle global de la page.
+          const cycleData = p.isPack ? p.once : (annual ? p.annual : p.monthly);
+          const visuelsLabel = p.id === 'discovery' ? `${p.imagesPerWeek} Visuels`
+                              : p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
                               : p.id === 'pro' ? `${p.imagesPerWeek} Visuels Haute Performance`
                               : `${p.imagesPerWeek} Visuels Multi-Angles`;
           const features = [
-            { icon:'image',   bold:visuelsLabel,             rest: p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine' },
-            { icon:'box',     bold:`${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive') },
+            { icon:'image',   bold:visuelsLabel,             rest: p.isPack ? 'inclus, à utiliser librement (2 produits max)' : (p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine') },
+            { icon:'box',     bold:`${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.isPack ? 'au choix' : (p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive')) },
             { icon:'grid',    bold:'Galerie Créative',        rest:'— tous vos visuels centralisés' },
             { icon:'chart',   bold:'Marché analysé',          rest:'chaque semaine : cibles, concurrents & tendances' },
             { icon:'document',bold:'Textes publicitaires',    rest:'prêts à copier-coller (Ad Copies)' },
             { icon:'sparkle', bold:'Assistant IA',            rest:'stratégique, disponible 7j/7' },
             { icon:'upload',  bold:'Import produits',         rest:'simple et rapide' },
             { icon:'clock',   bold:'Suivi de production',     rest:'en temps réel' },
-            { icon:'bolt',    bold:`Prêtes en ${cycleData.delivery}`, rest:'chaque semaine' },
+            { icon:'bolt',    bold:`Prêtes en ${cycleData.delivery}`, rest: p.isPack ? '' : 'chaque semaine' },
           ];
           return (
             <div key={p.id}
@@ -3478,7 +3506,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
 
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
                 <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
-                <span style={{fontSize:11,color:C.sec}}>/ mois</span>
+                {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
               </div>
 
               <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',background:`${p.color}18`,border:`1px solid ${p.color}38`}}>
