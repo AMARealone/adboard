@@ -5374,6 +5374,23 @@ async function loadTemplates() {
       </div>
     </div>
 
+    <!-- ═══ LIVRAISON ═══ -->
+    <div class="tpl-etape" data-etape="livraison">
+      <div class="tpl-etape-header" onclick="toggleTplEtape(this.parentElement)">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--white)">📦 Livraison</div>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:2px">Après achat — production et remise des livrables</div>
+        </div>
+        <span class="tpl-chevron" style="font-size:13px">▸</span>
+      </div>
+      <div class="tpl-etape-body">
+        <div class="tpl-groupe">
+          <div class="tpl-groupe-titre">✉️ Emails</div>
+          ${carteDb('email_livrables_prets', 'Livrables prêts')}
+        </div>
+      </div>
+    </div>
+
     <!-- ═══ RÉTENTION ═══ -->
     <div class="tpl-etape" data-etape="retention">
       <div class="tpl-etape-header" onclick="toggleTplEtape(this.parentElement)">
