@@ -276,6 +276,8 @@ body {
 .tpl-carte-header { padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; }
 .tpl-carte-body { max-height: 0; overflow: hidden; transition: max-height .2s ease; }
 .tpl-carte.open .tpl-carte-body { max-height: 600px; }
+.comp-collapse-body { max-height: 0; overflow: hidden; transition: max-height .25s ease; }
+.comp-collapse-body.open { max-height: 400px; }
 .tpl-carte.open .tpl-chevron { transform: rotate(90deg); }
 
 /* ── Barre latérale pliable (icônes seules) ── */
@@ -1732,20 +1734,30 @@ textarea::placeholder { color: var(--muted); }
 <!-- ── PAGE COMPORTEMENT UTILISATEUR ── -->
 <div class="page" id="page-comportement">
 
-  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:12px">
+  <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
     <div>
       <span style="font-size:19px;font-weight:600;color:var(--white)">Comportement utilisateur</span>
       <div style="font-size:12px;color:var(--muted);margin-top:2px">AdBoard — données Microsoft Clarity</div>
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="renderComportement()">Actualiser</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="comp-periode" onchange="renderComportement()" style="font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);outline:none">
+        <option value="7">7 derniers jours</option>
+        <option value="30" selected>30 derniers jours</option>
+        <option value="0">Toute la période</option>
+      </select>
+      <button class="btn btn-ghost btn-sm" onclick="renderComportement()">Actualiser</button>
+    </div>
   </div>
 
-  <div id="comp-hero" style="display:flex;align-items:center;margin-bottom:40px;overflow-x:auto"></div>
+  <div id="comp-hero" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:32px"></div>
 
-  <p class="dash-label-new">Répartition du trafic par page</p>
-  <div id="comp-pages" style="margin-bottom:36px"></div>
+  <p class="dash-label-new">Évolution des sessions</p>
+  <div id="comp-evolution" style="margin-bottom:32px"></div>
 
-  <p class="dash-label-new">Points de friction (clics de rage &amp; clics morts)</p>
+  <p class="dash-label-new">Détail par page — cliquez pour dérouler</p>
+  <div id="comp-pages" style="margin-bottom:32px"></div>
+
+  <p class="dash-label-new">Points de friction (clics de rage, clics morts &amp; scroll excessif)</p>
   <div id="comp-friction"></div>
 
 </div>
@@ -4287,75 +4299,145 @@ async function genererMarkdownFormulaire(source, titre) {
 }
 
 async function renderComportement() {
-  const heroEl     = document.getElementById('comp-hero');
+  const heroEl      = document.getElementById('comp-hero');
+  const evolEl      = document.getElementById('comp-evolution');
   const pagesEl     = document.getElementById('comp-pages');
   const frictionEl = document.getElementById('comp-friction');
   if (!heroEl) return;
   pagesEl.innerHTML = '<div style="font-size:12px;color:var(--muted)">Chargement...</div>';
+  evolEl.innerHTML = '';
 
   try {
-    const r = await fetch(`${SB}/clarity_snapshots?order=captured_at.desc&limit=500&select=*`, { headers: H });
-    const rows = await r.json();
+    const r = await fetch(`${SB}/clarity_snapshots?order=captured_at.desc&limit=1000&select=*`, { headers: H });
+    let rows = await r.json();
     if (!Array.isArray(rows) || !rows.length) {
       heroEl.innerHTML = '';
+      evolEl.innerHTML = '';
       pagesEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aucune donnée pour l\'instant — le premier relevé quotidien n\'a peut-être pas encore eu lieu.</div>';
       frictionEl.innerHTML = '';
       return;
     }
 
-    // Regrouper par page — cumul sur toute la période disponible (jusqu'à 500 derniers relevés).
+    // ── Filtre de période — répond directement à "31 sessions, mais depuis quand ?" ──
+    const jours = parseInt(document.getElementById('comp-periode')?.value || '30', 10);
+    if (jours > 0) {
+      const seuil = Date.now() - jours * 24 * 60 * 60 * 1000;
+      rows = rows.filter(row => row.captured_at && new Date(row.captured_at).getTime() >= seuil);
+    }
+    if (!rows.length) {
+      heroEl.innerHTML = '';
+      evolEl.innerHTML = '';
+      pagesEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Aucune donnée sur cette période.</div>';
+      frictionEl.innerHTML = '';
+      return;
+    }
+
+    // Regrouper par page — cumul + moyennes pondérées pour scroll/temps (pondérées par sessions,
+    // sinon une page à 2 sessions pèserait autant qu'une page à 200 dans la moyenne).
     const parPage = {};
     rows.forEach(row => {
       const url = row.url || 'inconnue';
-      if (!parPage[url]) parPage[url] = { url, rage: 0, dead: 0, quickback: 0, scroll_exces: 0, sessions: 0, visiteurs: 0 };
-      parPage[url].rage        += row.rage_click_count  || 0;
-      parPage[url].dead        += row.dead_click_count  || 0;
-      parPage[url].quickback   += row.quickback_click   || 0;
-      parPage[url].scroll_exces+= row.excessive_scroll  || 0;
-      parPage[url].sessions    += row.traffic_sessions  || 0;
-      parPage[url].visiteurs   += row.visiteurs_uniques || 0;
+      if (!parPage[url]) parPage[url] = { url, rage:0, dead:0, quickback:0, scroll_exces:0, sessions:0, visiteurs:0, scrollPondere:0, engagePondere:0 };
+      const p = parPage[url];
+      p.rage         += row.rage_click_count  || 0;
+      p.dead         += row.dead_click_count  || 0;
+      p.quickback    += row.quickback_click   || 0;
+      p.scroll_exces += row.excessive_scroll  || 0;
+      p.sessions     += row.traffic_sessions  || 0;
+      p.visiteurs    += row.visiteurs_uniques || 0;
+      p.scrollPondere  += (row.scroll_depth || 0)     * (row.traffic_sessions || 0);
+      p.engagePondere  += (row.engagement_time || 0)  * (row.traffic_sessions || 0);
     });
-    const pages = Object.values(parPage);
+    const pages = Object.values(parPage).map(p => ({
+      ...p,
+      scrollMoyen: p.sessions > 0 ? Math.round(p.scrollPondere / p.sessions) : 0,
+      engageMoyen: p.sessions > 0 ? Math.round(p.engagePondere / p.sessions) : 0,
+    }));
     const totalSessions  = pages.reduce((s,p) => s + p.sessions, 0);
     const totalVisiteurs = pages.reduce((s,p) => s + p.visiteurs, 0);
     const totalRage = pages.reduce((s,p) => s + p.rage, 0);
     const totalDead = pages.reduce((s,p) => s + p.dead, 0);
+    const totalQuickback = pages.reduce((s,p) => s + p.quickback, 0);
+    const totalScrollExces = pages.reduce((s,p) => s + p.scroll_exces, 0);
+    const engageMoyenGlobal = totalSessions > 0
+      ? Math.round(pages.reduce((s,p) => s + p.engagePondere, 0) / totalSessions) : 0;
+    const scrollMoyenGlobal = totalSessions > 0
+      ? Math.round(pages.reduce((s,p) => s + p.scrollPondere, 0) / totalSessions) : 0;
+    const formatTemps = (sec) => sec >= 60 ? Math.floor(sec/60) + 'min ' + Math.round(sec%60) + 's' : Math.round(sec) + 's';
 
-    // ── Hero KPI ──
-    const etape = (val, label, accent) =>
-      '<div><p style="font-size:32px;font-weight:600;margin:0;color:' + (accent ? 'var(--blue)' : 'var(--white)') + '">' + val + '</p>'
-      + '<p style="font-size:12px;color:var(--muted);margin:4px 0 0">' + label + '</p></div>';
-    const fleche = '<i class="ti ti-chevron-right" style="font-size:18px;color:var(--border2);margin:0 20px" aria-hidden="true"></i>';
-    heroEl.innerHTML = etape(totalVisiteurs, 'Visiteurs uniques', false) + fleche
-                      + etape(totalSessions, 'Sessions', false) + fleche
-                      + etape(totalRage + totalDead, 'Points de friction', true);
+    // ── KPI — période toujours affichée à côté du nombre, jamais un chiffre nu sans contexte ──
+    const labelPeriode = jours > 0 ? `${jours} derniers jours` : 'toute la période';
+    const kpi = (val, label, accent) =>
+      `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+        <p style="font-size:24px;font-weight:700;margin:0;color:${accent?'var(--blue)':'var(--white)'}">${val}</p>
+        <p style="font-size:11px;color:var(--muted);margin:4px 0 0">${label}</p>
+      </div>`;
+    heroEl.innerHTML = kpi(totalVisiteurs, `Visiteurs uniques · ${labelPeriode}`, false)
+                      + kpi(totalSessions, `Sessions · ${labelPeriode}`, false)
+                      + kpi(formatTemps(engageMoyenGlobal), 'Temps moyen passé', false)
+                      + kpi(scrollMoyenGlobal + '%', 'Scroll moyen sur la page', false)
+                      + kpi(totalRage + totalDead + totalQuickback + totalScrollExces, 'Points de friction', true);
 
-    // ── Répartition du trafic par page (triée par volume) ──
+    // ── Évolution jour par jour — pour situer une variation dans le temps (ex: pic après une
+    // relance J+3), plutôt qu'un total figé sans mémoire de ce qui s'est passé quand. ──
+    const parJour = {};
+    rows.forEach(row => {
+      if (!row.captured_at) return;
+      const jour = row.captured_at.slice(0,10);
+      parJour[jour] = (parJour[jour]||0) + (row.traffic_sessions||0);
+    });
+    const joursTries = Object.entries(parJour).sort((a,b) => a[0].localeCompare(b[0]));
+    const maxJour = Math.max(...joursTries.map(([,v])=>v), 1);
+    evolEl.innerHTML = !joursTries.length ? '' : `
+      <div style="display:flex;align-items:flex-end;gap:3px;height:70px;padding:8px 0">
+        ${joursTries.map(([jour, val]) => `
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end" title="${jour} : ${val} session(s)">
+            <div style="width:100%;max-width:22px;background:var(--blue);border-radius:3px 3px 0 0;height:${Math.max(Math.round(val/maxJour*100),val>0?4:0)}%;opacity:${val>0?1:0.15}"></div>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9.5px;color:var(--muted);margin-top:2px">
+        <span>${joursTries[0][0]}</span>${joursTries.length>1?`<span>${joursTries[joursTries.length-1][0]}</span>`:''}
+      </div>`;
+
+    // ── Détail par page — repliable, tout le détail (scroll/temps/friction) dedans ──
     const pagesParTrafic = [...pages].sort((a,b) => b.sessions - a.sessions);
-    const maxSessions = Math.max(...pagesParTrafic.map(p => p.sessions), 1);
     pagesEl.innerHTML = pagesParTrafic.map((p, idx) => {
       const pct = totalSessions > 0 ? Math.round(p.sessions/totalSessions*100) : 0;
       const nomCourt = (p.url || '').replace(/^https?:\/\/(www\.)?adstackofficial\.com/, '') || '/';
-      return '<div style="display:flex;align-items:center;padding:10px 0;' + (idx < pagesParTrafic.length-1 ? 'border-bottom:0.5px solid var(--border)' : '') + '">'
-        + '<span style="font-size:12px;width:160px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + p.url + '">' + nomCourt + '</span>'
-        + '<div style="flex:1;height:4px;background:var(--surface2);border-radius:2px;margin-right:14px"><div style="width:' + Math.round(p.sessions/maxSessions*100) + '%;height:100%;background:var(--blue);border-radius:2px"></div></div>'
-        + '<span style="font-size:12px;color:var(--muted);width:80px">' + p.sessions + ' sessions</span>'
-        + '<span style="font-size:13px;font-weight:600;color:var(--blue);width:50px;text-align:right">' + pct + '%</span>'
-        + '</div>';
+      const idUniq = 'comp-page-' + idx;
+      return `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;overflow:hidden">
+        <div style="display:flex;align-items:center;padding:12px 16px;cursor:pointer" onclick="document.getElementById('${idUniq}').classList.toggle('open')">
+          <span style="font-size:12px;width:150px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${p.url}">${nomCourt}</span>
+          <div style="flex:1;height:4px;background:var(--surface3);border-radius:2px;margin-right:14px"><div style="width:${pct}%;height:100%;background:var(--blue);border-radius:2px"></div></div>
+          <span style="font-size:12px;color:var(--muted);width:90px">${p.sessions} sessions</span>
+          <span style="font-size:13px;font-weight:600;color:var(--blue);width:44px;text-align:right">${pct}%</span>
+          <i class="ti ti-chevron-down" style="font-size:15px;color:var(--muted);margin-left:8px;transition:transform .15s"></i>
+        </div>
+        <div id="${idUniq}" class="comp-collapse-body" style="padding:0 16px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:4px 0 14px;border-top:0.5px solid var(--border)">
+            <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:var(--white)">${p.visiteurs}</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Visiteurs uniques</p></div>
+            <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:var(--white)">${formatTemps(p.engageMoyen)}</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Temps moyen</p></div>
+            <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:var(--white)">${p.scrollMoyen}%</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Scroll moyen</p></div>
+            <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:${(p.rage+p.dead)>0?'var(--blue)':'var(--white)'}">${p.rage+p.dead+p.quickback+p.scroll_exces}</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Points de friction</p></div>
+          </div>
+        </div>
+      </div>`;
     }).join('');
 
-    // ── Friction — pages triées par rage+dead clicks, les plus problématiques en premier ──
-    const pagesParFriction = [...pages].filter(p => p.rage + p.dead > 0).sort((a,b) => (b.rage+b.dead) - (a.rage+a.dead));
+    // ── Friction — pages triées par volume de friction, détail des 4 types désormais visible ──
+    const pagesParFriction = [...pages].filter(p => p.rage+p.dead+p.quickback+p.scroll_exces > 0).sort((a,b) => (b.rage+b.dead+b.quickback+b.scroll_exces) - (a.rage+a.dead+a.quickback+a.scroll_exces));
     frictionEl.innerHTML = !pagesParFriction.length
-      ? '<div style="font-size:12px;color:var(--muted);padding:8px 0">Aucun point de friction relevé pour l\'instant — bon signe.</div>'
+      ? '<div style="font-size:12px;color:var(--muted);padding:8px 0">Aucun point de friction relevé sur cette période — bon signe.</div>'
       : pagesParFriction.map(p => {
           const nomCourt = (p.url || '').replace(/^https?:\/\/(www\.)?adstackofficial\.com/, '') || '/';
           return '<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px">'
             + '<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px">' + nomCourt + '</div>'
-            + '<div style="display:flex;gap:20px;font-size:12px;color:var(--text2)">'
+            + '<div style="display:flex;gap:16px;font-size:12px;color:var(--text2);flex-wrap:wrap">'
             + '<span>🔥 ' + p.rage + ' clic' + (p.rage!==1?'s':'') + ' de rage</span>'
             + '<span>💀 ' + p.dead + ' clic' + (p.dead!==1?'s':'') + ' mort' + (p.dead!==1?'s':'') + '</span>'
             + '<span>↩️ ' + p.quickback + ' quick-back' + (p.quickback!==1?'s':'') + '</span>'
+            + '<span>📜 ' + p.scroll_exces + ' scroll' + (p.scroll_exces!==1?'s':'') + ' excessif' + (p.scroll_exces!==1?'s':'') + '</span>'
             + '</div></div>';
         }).join('');
   } catch(e) {
