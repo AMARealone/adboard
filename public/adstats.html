@@ -4199,7 +4199,7 @@ async function genererMarkdownChatbot() {
   const r = await fetch(`${SB}/chat_messages?order=session_id.asc,created_at.asc&select=session_id,role,content,created_at`, { headers: H });
   const rows = await r.json();
   if (!Array.isArray(rows) || !rows.length) {
-    return { md: '# Verbatim Chatbot Ava\n\n_Aucune conversation pour l\'instant._\n', n: 0 };
+    return { md: '# Verbatim Chatbot Ava\n\n_Aucune conversation pour l\'instant._\n', n: 0, groupes: [] };
   }
   const parSession = {};
   rows.forEach(row => {
@@ -4208,23 +4208,36 @@ async function genererMarkdownChatbot() {
   });
   const sessions = Object.entries(parSession);
   let md = `# Verbatim Chatbot Ava\n\n_Généré le ${new Date().toLocaleString('fr-FR')} — ${sessions.length} conversation(s)_\n\n---\n\n`;
+  const groupes = [];
   for (const [sessionId, msgs] of sessions) {
-    const date = msgs[0]?.created_at ? new Date(msgs[0].created_at).toLocaleString('fr-FR') : '';
+    const dateObj = msgs[0]?.created_at ? new Date(msgs[0].created_at) : null;
+    const date = dateObj ? dateObj.toLocaleString('fr-FR') : '';
     md += `## Session ${(sessionId||'').slice(0,8)} — ${date}\n\n`;
     msgs.forEach(m => {
       const qui = m.role === 'user' ? '**Visiteur**' : '**Ava**';
       md += `${qui} : ${mdEchapper(m.content)}\n\n`;
     });
     md += `---\n\n`;
+    groupes.push({
+      id: sessionId,
+      label: 'Session ' + (sessionId||'').slice(0,8),
+      date: dateObj ? dateObj.getTime() : 0,
+      dateAffichee: date,
+      entries: msgs.map(m => ({
+        speaker: m.role === 'user' ? 'Visiteur' : 'Ava',
+        speakerColor: m.role === 'user' ? 'var(--blue)' : 'var(--text)',
+        texte: m.content,
+      })),
+    });
   }
-  return { md, n: sessions.length };
+  return { md, n: sessions.length, groupes };
 }
 
 async function genererMarkdownFormulaire(source, titre) {
   const r = await fetch(`${SB}/data_insights?source=eq.${source}&order=email.asc,created_at.asc&select=email,question,answer,created_at`, { headers: H });
   const rows = await r.json();
   if (!Array.isArray(rows) || !rows.length) {
-    return { md: `# ${titre}\n\n_Aucune réponse pour l'instant._\n`, n: 0 };
+    return { md: `# ${titre}\n\n_Aucune réponse pour l'instant._\n`, n: 0, groupes: [] };
   }
   const parPersonne = {};
   rows.forEach(row => {
@@ -4234,15 +4247,29 @@ async function genererMarkdownFormulaire(source, titre) {
   });
   const personnes = Object.entries(parPersonne);
   let md = `# ${titre}\n\n_Généré le ${new Date().toLocaleString('fr-FR')} — ${personnes.length} répondant(s)_\n\n---\n\n`;
+  const groupes = [];
   for (const [email, reponses] of personnes) {
-    const date = reponses[0]?.created_at ? new Date(reponses[0].created_at).toLocaleString('fr-FR') : '';
+    const dateObj = reponses[0]?.created_at ? new Date(reponses[0].created_at) : null;
+    const date = dateObj ? dateObj.toLocaleString('fr-FR') : '';
     md += `## ${email.startsWith('anonyme_') ? 'Anonyme' : email} — ${date}\n\n`;
     reponses.forEach(rp => {
       md += `**Q :** ${mdEchapper(rp.question)}\n**R :** ${mdEchapper(rp.answer)}\n\n`;
     });
     md += `---\n\n`;
+    const entries = [];
+    reponses.forEach(rp => {
+      entries.push({ speaker: 'Q', speakerColor: 'var(--muted)', texte: rp.question });
+      entries.push({ speaker: 'R', speakerColor: 'var(--blue)', texte: rp.answer });
+    });
+    groupes.push({
+      id: email,
+      label: email.startsWith('anonyme_') ? 'Anonyme' : email,
+      date: dateObj ? dateObj.getTime() : 0,
+      dateAffichee: date,
+      entries,
+    });
   }
-  return { md, n: personnes.length };
+  return { md, n: personnes.length, groupes };
 }
 
 async function renderComportement() {
@@ -4336,6 +4363,84 @@ function toggleApercuMd(id) {
   if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
 }
 
+// ── Mini-liste de mots vides français, pour ne pas polluer le calcul de fréquence ──
+const _MOTS_VIDES_FR = new Set(['alors','avec','avoir','bien','cela','comme','dans','donc','elle',
+  'etre','faire','juste','leur','mais','même','meme','nous','pour','plus','quand','quel','quelle',
+  'sont','sous','tous','toute','tres','très','vais','vers','voir','vous','votre','vraiment','aussi',
+  'être','peut','fait','deja','déjà','encore','depuis','pendant','ainsi','cette','ceci','cela','donc',
+  'the','and','for','you','your','with','have','this','that','from','are'].map(w=>w));
+
+function _topMotsCles(textes, n=10) {
+  const freq = {};
+  textes.forEach(t => {
+    (t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9\s]/g,' ').split(/\s+/).forEach(mot => {
+        if (mot.length < 4 || _MOTS_VIDES_FR.has(mot)) return;
+        freq[mot] = (freq[mot]||0) + 1;
+      });
+  });
+  return Object.entries(freq).sort((a,b)=>b[1]-a[1]).slice(0,n);
+}
+
+// Composant unifié — recherche, tri par date, mots-clés fréquents. Même logique pour les 4
+// sources (chatbot + 3 formulaires) : chacune fournit juste ses "groupes" déjà normalisés.
+function _renderGroupesDonnees(conteneurId, groupes, options={}) {
+  const cont = document.getElementById(conteneurId);
+  if (!cont) return;
+  const state = window._donneesState = window._donneesState || {};
+  state[conteneurId] = state[conteneurId] || { q:'', tri:'recent' };
+  const st = state[conteneurId];
+
+  const tousTextes = groupes.flatMap(g => g.entries.map(e=>e.texte));
+  const motsCles = _topMotsCles(tousTextes);
+
+  const dessiner = () => {
+    const q = st.q.trim().toLowerCase();
+    let filtres = !q ? groupes : groupes.filter(g =>
+      g.label.toLowerCase().includes(q) || g.entries.some(e => (e.texte||'').toLowerCase().includes(q))
+    );
+    filtres = [...filtres].sort((a,b) => st.tri === 'recent' ? (b.date||0)-(a.date||0) : (a.date||0)-(b.date||0));
+
+    const motsClesHtml = motsCles.length ? `
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
+        ${motsCles.map(([mot,c]) => `<button onclick="document.getElementById('q-${conteneurId}').value='${mot}';document.getElementById('q-${conteneurId}').dispatchEvent(new Event('input'))" style="font-size:10.5px;padding:4px 10px;border-radius:20px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-family:inherit">${mot} <span style="color:var(--muted)">×${c}</span></button>`).join('')}
+      </div>` : '';
+
+    const listeHtml = !filtres.length
+      ? '<div style="padding:24px;text-align:center;color:var(--muted);font-size:12.5px">Aucun résultat</div>'
+      : filtres.map(g => `
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px">
+            <div style="font-size:12.5px;font-weight:700;color:var(--white)">${g.label}</div>
+            <div style="font-size:10.5px;color:var(--muted)">${g.dateAffichee||''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${g.entries.map(e => `
+              <div style="font-size:12.5px;line-height:1.55;color:var(--text2)">
+                ${e.speaker ? `<span style="font-weight:700;color:${e.speakerColor||'var(--text)'}">${e.speaker} :</span> ` : ''}${(e.texte||'').replace(/</g,'&lt;')}
+              </div>`).join('')}
+          </div>
+        </div>`).join('');
+
+    cont.querySelector('.donnees-liste').innerHTML = motsClesHtml + listeHtml;
+  };
+
+  cont.innerHTML = `
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+      <input id="q-${conteneurId}" type="text" placeholder="Rechercher un mot-clé..." value="${st.q}"
+        style="flex:1;min-width:180px;background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-size:12.5px;font-family:inherit;outline:none">
+      <select id="tri-${conteneurId}" style="background:var(--surface3);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;font-family:inherit">
+        <option value="recent" ${st.tri==='recent'?'selected':''}>Plus récent d'abord</option>
+        <option value="ancien" ${st.tri==='ancien'?'selected':''}>Plus ancien d'abord</option>
+      </select>
+    </div>
+    <div class="donnees-liste"></div>`;
+
+  document.getElementById(`q-${conteneurId}`).oninput = (e) => { st.q = e.target.value; dessiner(); };
+  document.getElementById(`tri-${conteneurId}`).onchange = (e) => { st.tri = e.target.value; dessiner(); };
+  dessiner();
+}
+
 async function renderDonnees() {
   const conteneur = document.getElementById('donnees-cartes');
   conteneur.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:13px">Chargement...</div>';
@@ -4354,20 +4459,20 @@ async function renderDonnees() {
     conteneur.innerHTML = SOURCES.map((s, i) => {
       window._mdCache[s.id] = resultats[i].md;
       return `
-      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:16px 18px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px">
           <div>
             <div style="font-size:14px;font-weight:700;color:var(--white)">${s.titre}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">${resultats[i].n} entrée(s) — ${s.fichier}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px">${resultats[i].n} entrée(s)</div>
           </div>
-          <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost btn-sm" onclick="toggleApercuMd('apercu-${s.id}')">👁 Voir</button>
-            <button class="btn btn-primary btn-sm" onclick="telechargerMarkdown('${s.fichier}', window._mdCache['${s.id}'])">⬇ Télécharger</button>
-          </div>
+          <button class="btn btn-ghost btn-sm" onclick="telechargerMarkdown('${s.fichier}', window._mdCache['${s.id}'])">⬇ Télécharger en .md</button>
         </div>
-        <pre id="apercu-${s.id}" style="display:none;margin-top:14px;max-height:400px;overflow:auto;background:#060609;border-radius:8px;padding:14px;font-size:12px;line-height:1.6;color:#a0a8b0;white-space:pre-wrap;word-break:break-word">${resultats[i].md.replace(/</g,'&lt;')}</pre>
+        <div id="donnees-${s.id}"></div>
       </div>`;
     }).join('');
+
+    // Chaque source construit ses "groupes" normalisés, même structure pour les 4.
+    SOURCES.forEach((s, i) => _renderGroupesDonnees('donnees-' + s.id, resultats[i].groupes || []));
   } catch(e) {
     conteneur.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px">Erreur de chargement : ' + e.message + '</div>';
   }
