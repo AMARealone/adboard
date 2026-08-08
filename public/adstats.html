@@ -1935,9 +1935,23 @@ textarea::placeholder { color: var(--muted); }
     <div class="page-title">Données</div>
     <button class="btn btn-ghost btn-sm" onclick="renderDonnees()">🔄 Actualiser</button>
   </div>
-  <div class="page-sub" style="margin-bottom:16px">3 sources brutes, toujours à jour — pensées pour être exploitées par une IA plus tard (format Markdown)</div>
+  <div class="page-sub" style="margin-bottom:16px">4 sources brutes, toujours à jour — pensées pour être exploitées par une IA plus tard (format Markdown)</div>
 
   <div id="donnees-cartes" style="display:flex;flex-direction:column;gap:14px"></div>
+</div>
+
+<div class="page" id="page-donnees-detail">
+  <div class="page-header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <button class="btn btn-ghost btn-sm" onclick="fermerDetailDonnees()">← Retour</button>
+      <div class="page-title" id="donnees-detail-titre" style="margin:0"></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <span id="donnees-detail-n" style="font-size:11px;color:var(--muted);align-self:center"></span>
+      <button class="btn btn-ghost btn-sm" id="donnees-detail-dl">⬇ Télécharger en .md</button>
+    </div>
+  </div>
+  <div id="donnees-detail-corps"></div>
 </div>
 
 <div class="page" id="page-leads">
@@ -4455,27 +4469,48 @@ async function renderDonnees() {
   try {
     const resultats = await Promise.all(SOURCES.map(s => s.generer()));
     window._mdCache = window._mdCache || {};
+    window._donneesSources = {}; // pour que "Voir" puisse retrouver titre/fichier/groupes sans tout recharger
 
     conteneur.innerHTML = SOURCES.map((s, i) => {
       window._mdCache[s.id] = resultats[i].md;
+      window._donneesSources[s.id] = { titre: s.titre, fichier: s.fichier, groupes: resultats[i].groupes || [] };
       return `
-      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-          <div>
-            <div style="font-size:14px;font-weight:700;color:var(--white)">${s.titre}</div>
-            <div style="font-size:11px;color:var(--muted);margin-top:2px">${resultats[i].n} entrée(s)</div>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="telechargerMarkdown('${s.fichier}', window._mdCache['${s.id}'])">⬇ Télécharger en .md</button>
+      <div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:16px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;cursor:pointer" onclick="ouvrirDetailDonnees('${s.id}')">
+        <div>
+          <div style="font-size:14px;font-weight:700;color:var(--white)">${s.titre}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${resultats[i].n} entrée(s)</div>
         </div>
-        <div id="donnees-${s.id}"></div>
+        <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();ouvrirDetailDonnees('${s.id}')">Voir →</button>
       </div>`;
     }).join('');
-
-    // Chaque source construit ses "groupes" normalisés, même structure pour les 4.
-    SOURCES.forEach((s, i) => _renderGroupesDonnees('donnees-' + s.id, resultats[i].groupes || []));
   } catch(e) {
     conteneur.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px">Erreur de chargement : ' + e.message + '</div>';
   }
+}
+
+// Ouvre la page de détail dédiée pour UNE source — vraie navigation (comme changer de section
+// dans la sidebar), pas un simple dépliant inline. Réutilise les données déjà chargées par
+// renderDonnees(), pas de nouvel appel réseau nécessaire.
+function ouvrirDetailDonnees(sourceId) {
+  const src = (window._donneesSources || {})[sourceId];
+  if (!src) return;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-donnees-detail').classList.add('active');
+  document.getElementById('donnees-detail-titre').textContent = src.titre;
+  document.getElementById('donnees-detail-n').textContent = src.groupes.length + ' entrée(s)';
+  document.getElementById('donnees-detail-dl').onclick = () => telechargerMarkdown(src.fichier, window._mdCache[sourceId]);
+  document.getElementById('donnees-detail-corps').innerHTML = '<div id="donnees-detail-groupes"></div>';
+  _renderGroupesDonnees('donnees-detail-groupes', src.groupes);
+  const t = document.getElementById('mob-title');
+  if (t) t.textContent = src.titre;
+  if (window.innerWidth <= 768) closeSidebar();
+}
+
+function fermerDetailDonnees() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-donnees').classList.add('active');
+  const t = document.getElementById('mob-title');
+  if (t) t.textContent = 'Données';
 }
 
 async function renderTransactions() {

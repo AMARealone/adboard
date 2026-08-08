@@ -3759,18 +3759,22 @@ export default function Platform() {
     setShowInstallPrompt(false);
   };
 
-  // ── Auto-prompt connexion Google après 60s (nouveau visiteur non connecté) ──
+  // ── Auto-prompt connexion Google après 60s (à CHAQUE session tant que non connecté) ──
+  // Cause profonde corrigée (popup jamais revu après la 1ère fois) : localStorage mémorisait
+  // "déjà montré" de façon permanente, sur l'appareil, pour toujours — dès la 1ère apparition,
+  // il ne réapparaissait plus jamais, même sur une toute nouvelle session sans connexion.
+  // sessionStorage se remet à zéro à chaque nouvelle session, ce qui est le comportement voulu.
   useEffect(() => {
     if (user) return;
     try {
-      if (localStorage.getItem('adstack_login_prompted')) return;
+      if (sessionStorage.getItem('adstack_login_prompted_session')) return;
     } catch(e) {}
     const t = setTimeout(() => {
       if (!sbAuth.getUser()) {
         setShowInstallPrompt(false); // jamais deux bandeaux/popups en même temps à l'écran
         setLoginAutoPrompt(true);
         setShowLogin(true);
-        try { localStorage.setItem('adstack_login_prompted', '1'); } catch(e) {}
+        try { sessionStorage.setItem('adstack_login_prompted_session', '1'); } catch(e) {}
       }
     }, 60000);
     return () => clearTimeout(t);
