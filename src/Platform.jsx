@@ -3202,33 +3202,33 @@ const PLANS = [
   {
     id:'discovery', name:'Conversion Discovery', color:C.gray, best:false, isPack:true,
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
-    ctaText:'Testez Sans Engagement',
-    imagesPerWeek: 18, produitsPerWeek: 'Jusqu\'à 2',
-    once: { price:24900, priceBarre:40000, prixImg:1383, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    ctaText:'Vendez Maintenant',
+    imagesPerWeek: 9, produitsPerWeek: '1',
+    once: { price:9900, priceBarre:15000, prixImg:1100, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
   },
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Pour tester vos produits sereinement et obtenir vos premières ventes rentables, sans brûler votre budget.',
     ctaText:'Vendez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    monthly: { price:39900, priceBarre:60000, prixImg:1108, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    annual:  { price:29900, priceBarre:39900, prixImg:830,  delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:29900, priceBarre:40000, prixImg:830, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    annual:  { price:24900, priceBarre:29900, prixImg:691, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Pour dominer votre marché, écraser vos coûts d\'acquisition et positionner votre marque en leader.',
     ctaText:'Dominez Votre Marché',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
-    monthly: { price:69900, priceBarre:120000, prixImg:970, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    annual:  { price:54900, priceBarre:69900,  prixImg:762, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:54900, priceBarre:80000, prixImg:762, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    annual:  { price:44900, priceBarre:54900, prixImg:623, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'L\'arsenal complet pour inonder de multiples marchés en simultané et faire exploser votre ROAS.',
     ctaText:'Explosez Votre Croissance',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
-    monthly: { price:109900, priceBarre:240000, prixImg:763, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    annual:  { price:79900,  priceBarre:109900, prixImg:554, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:79900, priceBarre:160000, prixImg:554, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    annual:  { price:64900, priceBarre:79900,  prixImg:450, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -3460,20 +3460,29 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           // Le pack Discovery n'a pas de cycle mensuel/annuel — toujours son propre prix "once",
           // peu importe l'état du toggle global de la page.
           const cycleData = p.isPack ? p.once : (annual ? p.annual : p.monthly);
-          const visuelsLabel = p.id === 'discovery' ? `${p.imagesPerWeek} Visuels livrés`
-                              : p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
+          const visuelsLabel = p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
                               : p.id === 'pro' ? `${p.imagesPerWeek} Visuels Haute Performance`
                               : `${p.imagesPerWeek} Visuels Multi-Angles`;
-          const features = [
-            { icon:'image',   bold:visuelsLabel,             rest: p.isPack ? '(angles et concepts variés)' : (p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine') },
-            { icon:'box',     bold: p.isPack ? `Jusqu'à ${p.produitsPerWeek.replace("Jusqu'à ",'')} Produits` : `${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.isPack ? 'Couverts' : (p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive')) },
+          // Discovery : texte exact fourni, sans reformulation — liste volontairement plus
+          // courte que les autres offres (pas d'Assistant IA ni d'Import produits sur ce pack).
+          const features = p.isPack ? [
+            { icon:'image',   bold:`${p.imagesPerWeek} Visuels Stratégique Livrés`, rest:'' },
+            { icon:'box',     bold:`${p.produitsPerWeek} Produit Couvert`, rest:'' },
+            { icon:'grid',    bold:'Galerie Créative',        rest:'(tous vos visuels centralisés)' },
+            { icon:'chart',   bold:'Marché Analysé',          rest:': Cibles, Concurrents & Tendances' },
+            { icon:'document',bold:'Titres & Descriptions',   rest:'exacts à copier-coller (Ad Copies)' },
+            { icon:'clock',   bold:'Suivi de la production',  rest:'en temps réel' },
+            { icon:'bolt',    bold:`Vos publicités prêtes en ${cycleData.delivery}`, rest:'' },
+          ] : [
+            { icon:'image',   bold:visuelsLabel,             rest: p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine' },
+            { icon:'box',     bold:`${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive') },
             { icon:'grid',    bold:'Galerie Créative',        rest:'— tous vos visuels centralisés' },
             { icon:'chart',   bold:'Marché analysé',          rest:'chaque semaine : cibles, concurrents & tendances' },
             { icon:'document',bold:'Textes publicitaires',    rest:'prêts à copier-coller (Ad Copies)' },
             { icon:'sparkle', bold:'Assistant IA',            rest:'stratégique, disponible 7j/7' },
             { icon:'upload',  bold:'Import produits',         rest:'simple et rapide' },
             { icon:'clock',   bold:'Suivi de production',     rest:'en temps réel' },
-            { icon:'bolt',    bold:`Prêtes en ${cycleData.delivery}`, rest: p.isPack ? '' : 'chaque semaine' },
+            { icon:'bolt',    bold:`Prêtes en ${cycleData.delivery}`, rest:'chaque semaine' },
           ];
           return (
             <div key={p.id}
@@ -3982,49 +3991,83 @@ export default function Platform() {
         }
       } catch(e) {}
       // Rafraîchir le token avant de charger les données
-      sbAuth.refreshSession().then(session => {
-        if (!session) { setUser(null); return; }
-        Promise.all([
-          sbProducts.load(session),
-          sbSubs.load(session),
-        ]).then(([prods, sub]) => {
-          if (prods.length > 0) {
-            setProducts(prods);
-            sbBriefs.loadForProducts(session, prods.map(p=>p.id)).then(bs => {
-              setAllBriefs(bs);
-              const map = {};
-              bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
-              setBriefs(map);
-            });
-          }
-          setSubscription(sub);
-          if (sub?.expired) {
-            notify(`Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos visuels chaque semaine.`, 'warning');
-          }
-          // Événement Purchase — déclenché ici pour avoir le vrai montant du plan
-          if (pendingPurchaseRef.current && sub?.plan) {
-            pendingPurchaseRef.current = false;
-            const boughtPlan = PLANS.find(pl => pl.id === sub.plan);
-            try {
-              window.fbq && window.fbq('track', 'Purchase', {
-                currency: 'XOF',
-                value: boughtPlan?.price || 0,
-                content_name: boughtPlan?.name || sub.plan,
-              });
-            } catch(e) {}
-          }
-      // Charger notifications si pas encore chargées
-      if (notifications.length === 0) {
-        sbNotifications.load(session).then(notifs => {
-          if (notifs?.length) {
-            setNotifications(notifs);
-            setUnreadCount(notifs.filter(n => !n.read).length);
-          }
-        });
-      }
-        });
-      });
+      chargerDonneesUtilisateur();
     }
+  }, []);
+
+  // Extrait pour être réutilisable — appelé au montage ET quand l'onglet redevient visible
+  // (voir plus bas). Cause profonde corrigée (abonnement fraîchement acheté jamais reflété tant
+  // qu'on ne recharge pas complètement la page) : rien ne rafraîchissait subscription/produits/
+  // briefs si l'utilisateur revenait sur un onglet déjà ouvert après un paiement externe
+  // (Chariow) — la notification push arrivait bien (canal séparé), mais l'état affiché par
+  // l'app restait celui chargé au tout premier montage, potentiellement obsolète.
+  const chargerDonneesUtilisateur = () => {
+    sbAuth.refreshSession().then(session => {
+      if (!session) { setUser(null); return; }
+      Promise.all([
+        sbProducts.load(session),
+        sbSubs.load(session),
+      ]).then(([prods, sub]) => {
+        if (prods.length > 0) {
+          setProducts(prods);
+          sbBriefs.loadForProducts(session, prods.map(p=>p.id)).then(bs => {
+            setAllBriefs(bs);
+            const map = {};
+            bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
+            setBriefs(map);
+          });
+        }
+        setSubscription(sub);
+        if (sub?.expired) {
+          // Une seule fois par session — évite de re-notifier à chaque retour sur l'onglet
+          // tant qu'il reste réellement expiré (pas de nouvelle info à chaque fois).
+          let dejaNotifie = false;
+          try { dejaNotifie = !!sessionStorage.getItem('adstack_expired_notified_session'); } catch(e) {}
+          if (!dejaNotifie) {
+            notify(`Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos visuels chaque semaine.`, 'warning');
+            try { sessionStorage.setItem('adstack_expired_notified_session', '1'); } catch(e) {}
+          }
+        }
+        // Événement Purchase — déclenché ici pour avoir le vrai montant du plan
+        if (pendingPurchaseRef.current && sub?.plan) {
+          pendingPurchaseRef.current = false;
+          const boughtPlan = PLANS.find(pl => pl.id === sub.plan);
+          try {
+            window.fbq && window.fbq('track', 'Purchase', {
+              currency: 'XOF',
+              value: boughtPlan?.price || 0,
+              content_name: boughtPlan?.name || sub.plan,
+            });
+          } catch(e) {}
+        }
+        // Charger notifications si pas encore chargées
+        if (notifications.length === 0) {
+          sbNotifications.load(session).then(notifs => {
+            if (notifs?.length) {
+              setNotifications(notifs);
+              setUnreadCount(notifs.filter(n => !n.read).length);
+            }
+          });
+        }
+      });
+    });
+  };
+
+  // Rafraîchit tout dès que l'onglet redevient visible (retour depuis un autre onglet, une
+  // autre app, ou un paiement externe Chariow) — sinon l'app pouvait rester figée sur un état
+  // obsolète indéfiniment tant que la page n'était pas rechargée manuellement.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && sbAuth.getUser()) {
+        chargerDonneesUtilisateur();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
   }, []);
   const [priceCtx, setPriceCtx] = useState({ currency: 'XOF', rate: 1, ready: false });
 
