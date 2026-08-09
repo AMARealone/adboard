@@ -1448,7 +1448,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   useEffect(() => {
     const p = setInterval(() => {
       if (hasActiveRef.current && onRefreshRef.current) onRefreshRef.current();
-    }, 25000);
+    }, 10000);
     return () => clearInterval(p);
   }, []); // tableau vide intentionnel — l'intervalle est créé UNE FOIS, lit toujours l'état le plus récent via les refs
 
@@ -2842,14 +2842,15 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
         {/* Rail de chiffres — bande horizontale scrollable sur mobile, colonne sticky sur desktop */}
         <div style={{display:'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 26 : 24, position: isMobile ? 'static' : 'sticky', top: isMobile ? 0 : 20}}>
           {railItems.map((it,i) => (
-            <div key={i} style={{flexShrink:0, minWidth: isMobile ? 118 : undefined}}>
+            <div key={i} style={{flexShrink:0, minWidth: isMobile ? 118 : undefined, maxWidth:150}}>
               <div style={{width:16, height:1, background:C.border, marginBottom:7}}/>
-              <div style={{fontFamily:"'DM Mono',monospace", fontSize:19, fontWeight:500, lineHeight:1,
+              <div style={{fontFamily:"'DM Mono',monospace", fontSize: String(it.n).length > 12 ? 13 : 19, fontWeight:500, lineHeight:1.25,
                 color: it.color || undefined,
                 background: it.hero && !it.color ? 'linear-gradient(135deg,#fff,#9fbcff)' : undefined,
                 WebkitBackgroundClip: it.hero && !it.color ? 'text' : undefined,
                 WebkitTextFillColor: it.hero && !it.color ? 'transparent' : undefined,
-              }}>{it.n}</div>
+                display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden',
+              }} title={String(it.n)}>{it.n}</div>
               <div style={{fontSize:10, color:C.muted, marginTop:5, lineHeight:1.4, maxWidth:120}}>{it.l}</div>
             </div>
           ))}
@@ -2859,18 +2860,31 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
         <div style={{minWidth:0}}>
 
           {/* 01 — Positionnement */}
-          {p.taille_marche_personnes && (
+          {p.taille_marche_personnes && (() => {
+            // Un champ contenant "disponible"/"non trouvé" est un placeholder, pas une vraie
+            // valeur — ne doit jamais être injecté tel quel dans une phrase ("...pèse environ
+            // Donnée non disponible..."), sinon le gabarit produit un non-sens visible.
+            const estPlaceholder = (v) => !v || /disponible|non trouvé/i.test(v);
+            const tailleOk = !estPlaceholder(p.taille_marche_revenus);
+            const croissanceOk = !estPlaceholder(p.taux_croissance);
+            // Une phrase gabarit ("Le marché pèse environ X et progresse de Y") suppose des
+            // valeurs courtes — si l'agent a renvoyé une phrase longue à la place d'un chiffre,
+            // mieux vaut l'afficher seule plutôt que de la fondre dans une phrase déjà construite.
+            const croissanceLongue = croissanceOk && p.taux_croissance.length > 40;
+            return (
             <div style={{padding: isMobile? '0 0 32px' : '0 0 36px', borderBottom:`1px solid ${C.border}`}}>
               <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:9}}>01 — Positionnement</div>
               <div style={{fontSize:12.5, color:C.sec, lineHeight:1.75, maxWidth:520}}>
-                Le marché pèse environ <b style={{color:C.text}}>{p.taille_marche_revenus}</b>{p.taux_croissance ? <> et progresse de <b style={{color:C.text}}>{p.taux_croissance}</b></> : ''}.
-                {p.concurrence && <> La concurrence y est <b style={{color: p.concurrence==='Élevée'?'#E55050':p.concurrence==='Moyenne'?'#FFB547':'#22C55E'}}>{p.concurrence.toLowerCase()}</b>{p.concurrence_explication ? ` — ${p.concurrence_explication}` : ''}</>}
+                {tailleOk && <>Le marché pèse environ <b style={{color:C.text}}>{p.taille_marche_revenus}</b>{croissanceOk && !croissanceLongue ? <> et progresse de <b style={{color:C.text}}>{p.taux_croissance}</b></> : ''}. </>}
+                {croissanceOk && (!tailleOk || croissanceLongue) && <>{p.taux_croissance} </>}
+                {p.concurrence && <>La concurrence y est <b style={{color: p.concurrence==='Élevée'?'#E55050':p.concurrence==='Moyenne'?'#FFB547':'#22C55E'}}>{p.concurrence.toLowerCase()}</b>{p.concurrence_explication ? ` — ${p.concurrence_explication}` : ''}</>}
               </div>
               {p.argument_principal && (
                 <div style={{marginTop:14, borderLeft:`2px solid ${C.accent}`, paddingLeft:13, fontSize:12, color:C.sec, lineHeight:1.6}}>{p.argument_principal}</div>
               )}
             </div>
-          )}
+            );
+          })()}
 
           {/* 02 — Prix */}
           {(pointsLadder.length > 1 || p.positionnement_prix) && (

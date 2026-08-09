@@ -4111,7 +4111,7 @@ FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante s
 ===DONNEES_MARCHE===
 {
   "positionnement": {
-    "taille_marche_personnes": "Chiffre ou estimation précise depuis S8, avec le raisonnement si c'est une estimation déduite, ou 'Donnée non disponible pour l'instant'",
+    "taille_marche_personnes": "UNIQUEMENT un chiffre ou une fourchette courte depuis S8 (ex: '~50 000 personnes', '1,2M de foyers') — jamais de phrase explicative ni de raisonnement ici, ce champ s'affiche comme un gros chiffre isolé dans l'interface. Si estimation déduite, le raisonnement va dans 'sophistication_marche' ou 'concurrence_explication' plus bas, jamais ici. Si vraiment aucun chiffre possible : 'Donnée non disponible'.",
     "taille_marche_revenus": "Valeur chiffrée précise (devise locale/an) depuis S8, ou 'Donnée non disponible pour l'instant'",
     "taux_croissance": "Chiffre en % si trouvé dans S8, sinon tendance qualitative précise sourcée sur un signal concret — jamais une phrase creuse",
     "concurrence": "Faible" | "Moyenne" | "Élevée",
