@@ -4490,52 +4490,54 @@ const views = {
             // ── Envoyer le ticket vers Factory (avec wake-up Render) ──
             const p = creativesTarget;
             const pastBriefs = allBriefs.filter(b => b.product_id === p.id && b.status !== 'cancelled');
+            const webhookPayload = {
+              brief_id: brief.id,
+              user_id: user?.id,
+              user_email: user?.email,
+              plan: subscription?.plan || 'starter',
+              quantity: qty,
+              product: {
+                id: p.id,
+                nom: p.nom,
+                pricing: p.pricing,
+                pays: p.pays,
+                promo: p.promo || '',
+                cible: p.cible || '',
+                utilite: p.utilite || '',
+                couleur1: p.couleur1 || '',
+                couleur2: p.couleur2 || '',
+                couleur3: p.couleur3 || '',
+                photo_url: p.photo_url || null,
+                photo_base64: p.photo?.startsWith('data:') ? p.photo : null,
+                lien_page_produit: p.lien || null,
+                marque: p.marque || null,
+              },
+              history: {
+                batches_count: pastBriefs.length,
+                total_creatives_done: pastBriefs.reduce((s,b) => s+(b.credits_used||9), 0),
+              }
+            };
+            // Cause profonde corrigée : cette fonction avec retry (pensée pour le cas où Render
+            // dort et met du temps à répondre au 1er appel) existait mais n'était jamais
+            // réellement appelée — l'envoi utilisait un fetch séparé, une seule tentative, échec
+            // silencieux. Cette demande pouvait donc ne jamais arriver jusqu'à Factory sans que
+            // personne ne le sache.
             const sendWebhook = async (payload, retries=3) => {
               for (let i=0; i<retries; i++) {
                 try {
                   const r = await fetch('https://adstack-server.onrender.com/webhook/brief', {
-                    method:'POST', headers:{'Content-Type':'application/json'},
+                    method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'},
                     body: JSON.stringify(payload),
                     signal: AbortSignal.timeout(15000)
                   });
                   if (r.ok) return;
                 } catch(e) {
                   if (i < retries-1) await new Promise(res => setTimeout(res, 3000));
+                  else console.warn('[Webhook] Échec après', retries, 'tentatives:', e.message);
                 }
               }
             };
-            try {
-              fetch('https://adstack-server.onrender.com/webhook/brief', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' },
-                body: JSON.stringify({
-                  brief_id: brief.id,
-                  user_id: user?.id,
-                  user_email: user?.email,
-                  plan: subscription?.plan || 'starter',
-                  quantity: qty,
-                  product: {
-                    id: p.id,
-                    nom: p.nom,
-                    pricing: p.pricing,
-                    pays: p.pays,
-                    cible: p.cible || '',
-                    utilite: p.utilite || '',
-                    couleur1: p.couleur1 || '',
-                    couleur2: p.couleur2 || '',
-                    couleur3: p.couleur3 || '',
-                    photo_url: p.photo_url || null,
-                    photo_base64: p.photo?.startsWith('data:') ? p.photo : null,
-                    lien_page_produit: p.lien || null,
-                    marque: p.marque || null,
-                  },
-                  history: {
-                    batches_count: pastBriefs.length,
-                    total_creatives_done: pastBriefs.reduce((s,b) => s+(b.credits_used||9), 0),
-                  }
-                })
-              }).catch(e => console.warn('[Webhook] Factory non joignable:', e.message));
-            } catch(e) { console.warn('[Webhook]', e); }
+            sendWebhook(webhookPayload);
           }
           setCreativesTarget(null);
         }}
