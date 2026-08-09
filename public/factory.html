@@ -447,6 +447,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
 }
 @keyframes prodv2Blink36 { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
 .prodv2-timer36-blink { animation: prodv2Blink36 1s ease-in-out infinite; background: rgba(239,68,68,0.15) !important; color: #EF4444 !important; font-weight:700; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -843,6 +844,11 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
 </div>
 
 <div class="production-view prodv2" id="viewProduction">
+
+      <div id="prodv2ResumeBanner" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;display:flex;align-items:center;gap:8px;">
+        <span style="width:12px;height:12px;border:2px solid rgba(91,141,239,0.3);border-top-color:var(--blue);border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0;"></span>
+        Reprise d'une commande en cours — récupération des données déjà générées...
+      </div>
 
       <!-- 1. BRIEF LOADER -->
       <div class="prodv2-brief">
@@ -6242,6 +6248,11 @@ async function prodv2CheckResume() {
   let marker;
   try { marker = JSON.parse(localStorage.getItem('adstack_active_production') || 'null'); } catch(e) { return; }
   if (!marker || !marker.commandeId) return;
+  // Signal visible pendant la reprise — jusqu'ici totalement silencieux, l'écran vide "Glisse
+  // brief.json" pouvait rester affiché de longues secondes (Render qui se réveille) sans le
+  // moindre indice que quelque chose se passait réellement en arrière-plan.
+  const resumeBanner = document.getElementById('prodv2ResumeBanner');
+  if (resumeBanner) resumeBanner.style.display = 'flex';
   try {
     const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json());
     const b = briefs.find(x => x.id === marker.commandeId);
@@ -6251,7 +6262,7 @@ async function prodv2CheckResume() {
     // se réaffichait, alors que les livrables existaient toujours côté serveur. On restaure
     // maintenant aussi dans ce cas (en lecture, avec un message adapté), et on n'abandonne que
     // si le ticket n'existe plus du tout ou a été annulé.
-    if (!b || b.status === 'cancelled' || b.status === 'probleme_agence') { localStorage.removeItem('adstack_active_production'); return; }
+    if (!b || b.status === 'cancelled' || b.status === 'probleme_agence') { localStorage.removeItem('adstack_active_production'); if (resumeBanner) resumeBanner.style.display = 'none'; return; }
     const dejaLivre = b.status === 'done';
     const d = b.deliverables || {};
     const nbCrea = d.creatives ? d.creatives.filter(c=>c && c.imgB64).length : 0;
@@ -6275,6 +6286,7 @@ async function prodv2CheckResume() {
     if (dejaLivre) { try { localStorage.removeItem('adstack_active_production'); } catch(e) {} }
 
     // Bannière discrète — jamais bloquante, juste informative
+    if (resumeBanner) resumeBanner.style.display = 'none';
     const banner = document.createElement('div');
     banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
     banner.textContent = dejaLivre
@@ -6342,7 +6354,7 @@ async function prodv2CheckResume() {
 
     const launchBtn = document.getElementById('prodv2LaunchBtn');
     if (launchBtn) { launchBtn.textContent = 'Relancer la production'; launchBtn.disabled = false; }
-  } catch(e) { console.warn('[Reprise] Échec :', e.message); }
+  } catch(e) { console.warn('[Reprise] Échec :', e.message); if (resumeBanner) resumeBanner.style.display = 'none'; }
 }
 
 function showProduction(){
