@@ -2906,8 +2906,12 @@ async function prodv2RegenerateCrea(idx) {
   card.classList.remove('done','err');
   card.querySelector('.prodv2-crea-img').innerHTML = '<div class="prodv2-crea-img-empty"></div>';
   card.querySelector('.prodv2-crea-status').textContent = 'En cours';
+  // Cause profonde corrigée (régénération d'une créative précise bloquée à l'erreur
+  // "Failed to execute 'any' on 'AbortSignal'") : aucun signal n'était transmis du tout
+  // (undefined) — AbortSignal.any() exige un vrai AbortSignal dans son tableau, pas undefined.
+  const regenController = new AbortController();
   try {
-    await prodv2GenerateOneCreative(idx, c.angleIdx, c.ctIdx, c.ct);
+    await prodv2GenerateOneCreative(idx, c.angleIdx, c.ctIdx, c.ct, regenController.signal);
   } catch(err) {
     prodv2MarkCreativeError(idx, err.message);
   }
