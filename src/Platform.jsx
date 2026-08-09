@@ -583,8 +583,10 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
       {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
-        const nextPlanId = !subscription?.active ? 'discovery'
-                          : subscription.plan === 'discovery' ? 'starter'
+        // Discovery n'est jamais suggéré ici — seulement visible sur la page Nos Tarifs elle-même.
+        // Un client Discovery est traité comme "pas encore d'abonnement" pour ce bloc : la
+        // progression naturelle commence à Starter, jamais à Discovery.
+        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery') ? 'starter'
                           : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
@@ -1117,11 +1119,12 @@ const PaymentModal = ({ productId, userEmail, onClose }) => {
 };
 
 // ── Modal demande de créatives ─────────────────────────────────────────────
-const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
+const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, C}) => {
   const [qty, setQty] = useState(9);
   const max = credits.available;
   const canIncrease = qty + 9 <= max;
   const canDecrease = qty > 9;
+  const isPack = subscription?.type === 'pack';
 
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
@@ -1138,14 +1141,25 @@ const CreativesModal = ({product, credits, onConfirm, onClose, C}) => {
         </div>
 
         {/* Jauge semaine — hero, citation à bordure latérale au lieu d'un encart fermé */}
-        <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:26}}>
-          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:6}}>Disponibles cette semaine</div>
+        <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:14}}>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:6}}>{isPack ? 'Images disponibles' : 'Disponibles cette semaine'}</div>
           <div style={{fontFamily:"'DM Mono',monospace",fontSize:28,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{max}</div>
           <div style={{marginTop:10,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:220}}>
             <div style={{height:'100%',borderRadius:2,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
           </div>
           <div style={{fontSize:10,color:C.muted,marginTop:8}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
         </div>
+
+        {/* Upsell — Discovery uniquement, ouvre directement le paiement pour empiler d'autres images */}
+        {isPack && (
+          <button onClick={() => {
+            const productId = PLAN_CHECKOUT_IDS['discovery-once'];
+            if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
+          }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:22}}>
+            <Icon name="plus" size={12} color={C.accent}/> Augmentez vos demandes
+          </button>
+        )}
+        {!isPack && <div style={{marginBottom:26}}/>}
 
         {/* Compteur */}
         <div style={{position:'relative',marginBottom:26}}>
@@ -1585,18 +1599,33 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   );
 };
 
-const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, C}) => {
+const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, onOpenPayment, C}) => {
   const brief = briefs[p.id];
   const hasActiveBrief = brief && brief.status !== 'cancelled' && brief.status !== 'done' && brief.status !== 'probleme_agence';
   const credits = computeCredits(subscription, allBriefs);
   const nextCreditDate = credits.nextCreditDate
     ? credits.nextCreditDate.toLocaleDateString('fr-FR', { day:'numeric', month:'long' })
     : null;
-  if (subscription?.active && credits.available < 9) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
-      <Icon name="clock" size={13} color={C.muted}/> {subscription?.type === 'pack' ? 'Pack épuisé — passez à un abonnement pour continuer' : (nextCreditDate ? `Prochain crédit le ${nextCreditDate}` : 'Crédits épuisés cette semaine')}
-    </div>
-  );
+  if (subscription?.active && credits.available < 9) {
+    // Discovery épuisé : jamais "prochaine image dans une semaine" (ça n'existe pas pour un
+    // pack) — un vrai bouton qui ouvre directement le paiement pour en ajouter, empilable
+    // à l'infini. Phrase simple, sans jargon technique.
+    if (subscription?.type === 'pack') {
+      return (
+        <button onClick={() => {
+          const productId = PLAN_CHECKOUT_IDS['discovery-once'];
+          if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
+        }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+          <Icon name="plus" size={13} color="#fff"/> Rechargez vos images
+        </button>
+      );
+    }
+    return (
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
+        <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochain crédit le ${nextCreditDate}` : 'Crédits épuisés cette semaine'}
+      </div>
+    );
+  }
   return (
     <div style={{display:'flex',flexDirection:'column',gap:6}}>
       {hasActiveBrief && (
@@ -1678,7 +1707,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
         </div>
       </div>
       <div style={{padding:'0 16px 16px'}}>
-        <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} C={C}/>
+        <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} onOpenPayment={onOpenPayment} C={C}/>
       </div>
     </div>
 
@@ -1696,7 +1725,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   );
 };
 
-const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}, setSection}) => {
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}, setSection, onOpenPayment}) => {
   // Recalculer les crédits en temps réel depuis allBriefs
   const credits = computeCredits(subscription, allBriefs);
   const nextCreditDate = credits.nextCreditDate
@@ -4252,7 +4281,7 @@ export default function Platform() {
 
 const views = {
     demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onAskCreatives={(p)=>{ 
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
             // Limite anti-abus : max 36 images / 4 demandes par fenêtre glissante de 24h (tous produits confondus)
@@ -4437,6 +4466,8 @@ const views = {
       <CreativesModal
         product={creativesTarget}
         credits={computeCredits(subscription, allBriefs)}
+        subscription={subscription}
+        onOpenPayment={(productId)=>setPaymentProductId(productId)}
         C={C}
         onClose={()=>setCreativesTarget(null)}
         onConfirm={async (qty) => {

@@ -3120,7 +3120,7 @@ function renderLeads(data) {
 
 
   function getScore(jDep, prochainJ) {
-    if (prochainJ === null) return 999;
+    if (prochainJ === null) return -9999; // terminé — score le plus bas, tout en bas du tri décroissant
     if (jDep > prochainJ) return jDep - prochainJ; // retard = jours de retard (priorité max)
     if (jDep === prochainJ) return 0;               // aujourd'hui
     return -(prochainJ - jDep);                     // futur = négatif pour trier après
