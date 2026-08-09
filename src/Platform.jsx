@@ -1883,9 +1883,18 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               <div style={{fontSize:10.5,color:C.muted,marginTop:8}}>{credits.used} déjà utilisées</div>
             </div>
             {credits.available === 0 && (
-              <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
-                {nextCreditDate ? `Prochaines images le ${nextCreditDate}` : 'Prochaines images la semaine prochaine'}
-              </div>
+              subscription?.type === 'pack' ? (
+                <button onClick={() => {
+                  const productId = PLAN_CHECKOUT_IDS['discovery-once'];
+                  if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
+                }} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,color:'#fff',padding:'8px 14px',borderRadius:8,background:C.accent,border:'none',cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                  <Icon name="plus" size={12} color="#fff"/> Rechargez vos images
+                </button>
+              ) : (
+                <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
+                  {nextCreditDate ? `Prochaines images le ${nextCreditDate}` : 'Prochaines images la semaine prochaine'}
+                </div>
+              )
             )}
           </div>
         </div>
