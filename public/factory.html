@@ -5974,6 +5974,7 @@ function voirBrief(id, btn) {
           ${row('Produit', `<strong style="font-size:15px;">${b.product?.nom}</strong>`)}
           ${row('Quantité commandée', `<span style="color:var(--blue);font-weight:700;font-size:16px;">${b.quantity} visuels</span>`)}
           ${row('Prix · Pays', `${b.product?.pricing||'—'} · ${b.product?.pays||'—'}`)}
+          ${row('Offre promo en cours', b.product?.promo)}
           ${row('Cible', b.product?.cible)}
           ${row('Utilité', b.product?.utilite)}
           ${couleurs.length ? `<div style="padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Couleurs</div><div style="display:flex;gap:6px;">${couleurs.map(col=>`<div style="width:28px;height:28px;border-radius:6px;background:${col};border:2px solid rgba(255,255,255,0.15);" title="${col}"></div>`).join('')}</div></div>` : ''}
