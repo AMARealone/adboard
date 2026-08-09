@@ -3202,7 +3202,7 @@ const PLANS = [
   {
     id:'discovery', name:'Conversion Discovery', color:C.gray, best:false, isPack:true,
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
-    ctaText:'Vendez Maintenant',
+    ctaText:'Testez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
     once: { price:9900, priceBarre:15000, prixImg:1100, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
   },
@@ -3349,7 +3349,7 @@ const Faq = () => {
   );
 };
 
-const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, onOpenPayment=null}) => {
+const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, credits=null, onOpenPayment=null}) => {
   const isMobile = useIsMobile();
   const [annual, setAnnual] = useState(false); // par défaut sur mensuel
   const onCta = async (plan) => {
@@ -3498,8 +3498,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 14px 32px rgba(0,0,0,0.35)';}}
               onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none';}}
             >
-              {/* Badge */}
-              {isCurrent && (
+              {/* Badge — masqué si le pack est épuisé (il a "déjà tout reçu de nous", ce n'est
+                  plus vraiment "son plan actuel" au sens où on l'entend pour un abonnement) */}
+              {isCurrent && !(p.isPack && (credits?.available || 0) <= 0) && (
                 <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,0.9)',color:'#0A0A0E',fontSize:9,fontWeight:900,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
                   VOTRE PLAN ACTUEL
                 </div>
@@ -3517,9 +3518,12 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 {convertPrice(cycleData.priceBarre)}
               </div>
 
-              <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6}}>
+              <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
                 <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
+                {!p.isPack && annual && (
+                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan annuel</span>
+                )}
               </div>
 
               <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',background:`${p.color}18`,border:`1px solid ${p.color}38`}}>
@@ -3555,7 +3559,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 }}
               >
                 {isCurrent
-                  ? (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
+                  ? (p.isPack && (credits?.available || 0) > 0)
+                    ? (<>Augmentez Vos Demandes <Icon name="arrow" size={13} color="#fff"/></>)
+                    : (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
                   : isCycleUpsell
                     ? (<>Passer à l'annuel <Icon name="arrow" size={13} color="#fff"/></>)
                     : isCycleDowngradeCycle
@@ -4274,7 +4280,7 @@ const views = {
     galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
-    tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
+    tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     faq: <Faq/>,
     commentaires: <Commentaires user={user}/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData}/>,
