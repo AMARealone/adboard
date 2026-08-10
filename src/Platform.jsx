@@ -2828,9 +2828,13 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
   const rangePrix = Math.max(1, maxPrix - minPrix);
   const posPct = (prix) => 10 + ((prix - minPrix) / rangePrix) * 80; // marge 10-90% pour éviter les labels coupés au bord
 
+  // Un champ contenant "disponible"/"non trouvé" est un placeholder, jamais une vraie donnée —
+  // ne doit jamais s'afficher comme si c'en était une (voir aussi le même filtre en S01 plus haut).
+  const estPlaceholderMarche = (v) => !v || /disponible|non trouvé/i.test(v);
+
   const railItems = [
-    p.taille_marche_personnes && { n: p.taille_marche_personnes, l: 'taille de marché estimée', hero:true },
-    p.taux_croissance && { n: p.taux_croissance, l: 'tendance du marché', color:'#22C55E' },
+    !estPlaceholderMarche(p.taille_marche_personnes) && { n: p.taille_marche_personnes, l: 'taille de marché estimée', hero:true },
+    !estPlaceholderMarche(p.taux_croissance) && { n: p.taux_croissance, l: 'tendance du marché', color:'#22C55E' },
     concurrentsAvecPrix.length > 0 && { n: `${concurrentsAvecPrix.filter(c=>c.prix_fcfa < prixVous).length}/${concurrentsAvecPrix.length}`, l: 'concurrents moins chers' },
     nbAnglesCibleActuelle > 0 && { n: `${nbAnglesCibleActuelle}/18`, l: 'angles exploités sur la cible actuelle' },
   ].filter(Boolean);
