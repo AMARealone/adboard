@@ -3087,6 +3087,18 @@ async function prodv2SendClient() {
       method: 'POST', headers: {'ngrok-skip-browser-warning':'1'}
     });
     if (!r.ok) throw new Error('HTTP ' + r.status);
+    const result = await r.json().catch(() => ({}));
+    // Cause profonde corrigée (bouton verrouillé sur "✓ Envoyé" même quand l'envoi était
+    // partiel, sans aucun moyen de renvoyer les créatives manquantes) : le serveur renvoie
+    // maintenant le compte réel poussé vs attendu — on ne verrouille en succès QUE si tout est
+    // vraiment passé, sinon on prévient clairement et on laisse le bouton actif pour réessayer.
+    const push = result?.push;
+    if (push && push.pushedCount < push.expectedCount) {
+      alert(`⚠️ Envoi partiel : ${push.pushedCount}/${push.expectedCount} créatives réellement transmises à AdBoard. Clique à nouveau sur "Envoyer au client" pour renvoyer — les créatives déjà bien reçues ne seront pas dupliquées.`);
+      if (btn) { btn.disabled = false; btn.textContent = `⚠️ Renvoyer (${push.pushedCount}/${push.expectedCount})`; }
+      loadCommandes();
+      return;
+    }
     if (btn) { btn.textContent = '✓ Envoyé au client'; }
     try { localStorage.removeItem('adstack_active_production'); } catch(e) {}
     alert('✅ Envoyé au client.');
@@ -5877,7 +5889,11 @@ async function prodv2LoadBriefFromCommande(b) {
     else { prodv2State.productMime = 'image/png'; prodv2State.productB64 = photoData; }
   } else if (b.product.photo_url) {
     try {
-      const imgResp = await fetch(b.product.photo_url);
+      // Cause profonde corrigée (reprise de commande bloquée indéfiniment au rafraîchissement,
+      // bandeau "Reprise en cours" qui ne disparaît jamais) : cette requête n'avait aucune limite
+      // de temps — un simple ralentissement réseau sur cette image bloquait tout le reste de la
+      // fonction, y compris le masquage du bandeau, sans la moindre erreur visible.
+      const imgResp = await fetch(b.product.photo_url, { signal: AbortSignal.timeout(15000) });
       if (!imgResp.ok) throw new Error('HTTP ' + imgResp.status);
       const blob = await imgResp.blob();
       const dataUrl = await new Promise((resolve, reject) => {
@@ -5901,7 +5917,7 @@ async function prodv2LoadBriefFromCommande(b) {
   prodv2State.renewalContext = null;
   if (prodv2State.productId) {
     try {
-      const rc = await fetch(`https://adstack-server.onrender.com/products/${prodv2State.productId}/renewal-context`, {headers:{'ngrok-skip-browser-warning':'1'}});
+      const rc = await fetch(`https://adstack-server.onrender.com/products/${prodv2State.productId}/renewal-context`, {headers:{'ngrok-skip-browser-warning':'1'}, signal: AbortSignal.timeout(15000)});
       prodv2State.renewalContext = await rc.json();
     } catch(e) {
       console.warn('[Renouvellement] Récupération du contexte échouée :', e.message);
@@ -6283,7 +6299,7 @@ async function prodv2CheckResume() {
   const resumeBanner = document.getElementById('prodv2ResumeBanner');
   if (resumeBanner) resumeBanner.style.display = 'flex';
   try {
-    const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json());
+    const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}, signal: AbortSignal.timeout(15000)}).then(r=>r.json());
     const b = briefs.find(x => x.id === marker.commandeId);
     // Cause profonde corrigée (créatives/synthèse "disparues définitivement" au retour sur
     // Factory) : avant, un ticket déjà marqué "done" entre-temps (livré pendant que l'onglet
