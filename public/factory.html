@@ -2300,7 +2300,7 @@ function prodv2RenderMarcheSummary(marche, synthesisText) {
 
   const insightsHtml = insights.map(ins => `<div style="font-size:11px;color:var(--t2);padding:4px 0;line-height:1.5">→ ${esc(ins.t)}</div>`).join('');
 
-  const concDirects = (p.concurrents_directs||[]).join(', ') || '—';
+  const concDirects = (p.concurrents_directs||[]).map(c => typeof c === 'string' ? c : (c?.nom || '')).filter(Boolean).join(', ') || '—';
   const concIndirects = (p.concurrents_indirects||[]).length ? (p.concurrents_indirects||[]).join(', ') : null;
 
   return `
@@ -2581,7 +2581,16 @@ async function prodv2Launch() {
           }
           creativesDone++;
           prodv2SetAgentState(2, 'active', `${creativesDone} / ${nbCreativesTotal} créatives générées`, Math.round(creativesDone/nbCreativesTotal*100));
-          prodv2AutosaveDeliverables();
+          // Cause profonde corrigée (créatives manquantes en fin de batch, "9 demandées, 5
+          // reçues") : cette sauvegarde ré-envoyait le brief ENTIER (photo + TOUTES les
+          // créatives déjà accumulées) après CHAQUE créative individuelle — la charge grossit
+          // à chaque appel, jusqu'à dépasser le délai que Supabase tolère pour une écriture
+          // (statement timeout), perdant silencieusement les dernières créatives du batch.
+          // Espacé à tous les 3 créatives + toujours sur la dernière — garde une vraie
+          // protection contre la perte de données sans multiplier les écritures lourdes.
+          if (creativesDone % 3 === 0 || creativesDone === nbCreativesTotal) {
+            prodv2AutosaveDeliverables();
+          }
         }
       }
     };

@@ -2354,7 +2354,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
         </div>
         <input
           value={query} onChange={e=>setQuery(e.target.value)}
-          placeholder="Rechercher par angle, semaine..."
+          placeholder="Rechercher par angle, batch..."
           style={{width:'100%',padding:'11px 14px 11px 38px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none',transition:'border-color 0.15s'}}
           onFocus={e=>e.target.style.borderColor=C.borderM}
           onBlur={e=>e.target.style.borderColor=C.border}
@@ -2375,7 +2375,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
           {chips.map(ch => (
             <button key={ch} onClick={() => setActiveChip(activeChip===ch?null:ch)}
               style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${activeChip===ch?C.borderM:C.border}`,cursor:'pointer',background:activeChip===ch?'rgba(255,255,255,0.09)':'transparent',color:activeChip===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
-              {filterMode==='date' ? `Semaine ${ch.replace('S','')}` : ch}
+              {filterMode==='date' ? `Batch ${ch.replace(/^[SB]/,'')}` : ch}
             </button>
           ))}
         </div>
@@ -2396,7 +2396,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
             )}
             <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))'}}>
               <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.angle}</div>
-              <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Semaine {c.week.replace('S','')}</div>
+              <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Batch {c.week.replace(/^[SB]/,'')}</div>
             </div>
           </div>
         ))}
@@ -2432,7 +2432,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
             <div style={{padding:'14px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:C.text}}>{selected.angle}</div>
-                <div style={{fontSize:11,color:C.sec}}>Semaine {selected.week.replace('S','')}</div>
+                <div style={{fontSize:11,color:C.sec}}>Batch {selected.week.replace(/^[SB]/,'')}</div>
               </div>
               <button onClick={() => shareOrDownloadImage(selected.imageUrl, `${selected.angle}-${selected.week}.jpg`.replace(/[^\w.-]+/g,'_'), isMobile)}
                 style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -2470,7 +2470,7 @@ const Copies = ({products, setSection}) => {
   };
 
   const allAngles = selected
-    ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date})))
+    ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, idUnique:`${d.semaine}-${a.numero}`})))
     : [];
 
   const filtered = products.filter(p => p.nom.toLowerCase().includes(query.toLowerCase()));
@@ -2588,11 +2588,11 @@ const Copies = ({products, setSection}) => {
                 <div style={{fontSize:10,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:8}}>Aller à l'angle</div>
                 <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                   {allAngles.map(a => (
-                    <button key={a.numero} onClick={()=>scrollTo(a.numero)} title={`Angle ${a.numero} · ${a.nom}`}
+                    <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}`}
                       style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
                       onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
-                    >A{a.numero}</button>
+                    >A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
                   ))}
                 </div>
               </div>
@@ -2604,14 +2604,14 @@ const Copies = ({products, setSection}) => {
                     <div style={{height:1,flex:1,background:C.border}}/>
                     <div style={{display:'flex',alignItems:'center',gap:7,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,flexShrink:0}}>
                       <Icon name="clock" size={11} color={C.sec}/>
-                      <span style={{fontSize:11,color:C.sec,fontWeight:600,whiteSpace:'nowrap'}}>Semaine {delivery.semaine} · {delivery.date}</span>
+                      <span style={{fontSize:11,color:C.sec,fontWeight:600,whiteSpace:'nowrap'}}>Batch {delivery.semaine.replace(/^[SB]/,'')} · {delivery.date}</span>
                     </div>
                     <div style={{height:1,flex:1,background:C.border}}/>
                   </div>
 
                   <div style={{display:'flex',flexDirection:'column',gap:16}}>
                     {delivery.angles.map(angle => (
-                      <div key={angle.numero} ref={el=>{angleRefs.current[angle.numero]=el;}} style={{
+                      <div key={`${delivery.semaine}-${angle.numero}`} ref={el=>{angleRefs.current[`${delivery.semaine}-${angle.numero}`]=el;}} style={{
                         position:'relative', overflow:'hidden', scrollMarginTop:16,
                         background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',
                         border:`1px solid ${C.border}`, borderRadius:16, padding:'24px 24px 22px',
