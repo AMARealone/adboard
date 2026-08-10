@@ -2828,10 +2828,16 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
     // Parsing tolérant : Gemini varie parfois le format malgré la consigne stricte — crochets
     // [ATTENTION], gras **ATTENTION :**, ou avec préfixe "Bloc 1 — ATTENTION" comme dans les
     // exemples du fichier de compétences. On accepte toutes ces variantes à l'extraction.
-    const aAttn = rawDesc.match(/\*{0,2}\s*(?:Bloc\s*1\s*[—-]\s*)?\[?ATTENTION\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?\[?INT(?:ÉRÊT|ERET)\]?|$)/i);
-    const aIntr = rawDesc.match(/\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?\[?INT(?:ÉRÊT|ERET)\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?\[?D(?:ÉS|ES)IR\]?|$)/i);
-    const aDesir= rawDesc.match(/\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?\[?D(?:ÉS|ES)IR\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?\[?ACTION\]?|$)/i);
-    const aAct  = rawDesc.match(/\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?\[?ACTION\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+)$/i);
+    // Cause profonde corrigée (bullet coupé en plein milieu, ex: "...pour une" puis saut de
+    // ligne parasite puis "profonde.") : la détection de fin de bloc ne demandait rien pour
+    // distinguer un vrai label ("ACTION :") d'une occurrence normale du même mot dans le texte
+    // ("une action profonde") — n'importe quelle phrase contenant ce mot coupait le parsing au
+    // mauvais endroit. On exige maintenant que le label soit en DÉBUT DE LIGNE, jamais au milieu
+    // d'une phrase — c'est la seule façon fiable de distinguer un vrai label d'un mot normal.
+    const aAttn = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*1\s*[—-]\s*)?\[?ATTENTION\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?\[?INT(?:ÉRÊT|ERET)\]?\s*\*{0,2}\s*[:：]|$)/i);
+    const aIntr = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?\[?INT(?:ÉRÊT|ERET)\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?\[?D(?:ÉS|ES)IR\]?\s*\*{0,2}\s*[:：]|$)/i);
+    const aDesir= rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?\[?D(?:ÉS|ES)IR\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?\[?ACTION\]?\s*\*{0,2}\s*[:：]|$)/i);
+    const aAct  = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?\[?ACTION\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+)$/i);
     if(aAttn && aIntr && aDesir && aAct) {
       // Cause profonde corrigée : les labels ne servent qu'à structurer la génération de
       // Gemini — ils ne doivent JAMAIS apparaître dans le texte final copié dans Ads Manager.
