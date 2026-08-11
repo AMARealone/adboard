@@ -6151,8 +6151,8 @@ async function prodv2LoadBriefFromCommande(b) {
     } else if (rctx.estRenouvellement) {
       banner.style.cssText = 'margin:12px 0;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
       banner.textContent = rctx.rotationNecessaire
-        ? `↻ Renouvellement pour ce produit — cible "${rctx.cibleActuelle || '?'}" a atteint ${rctx.nbAnglesCibleCourante} angles : rotation vers une nouvelle cible élargie à cette génération.`
-        : `↻ Renouvellement pour ce produit — même cible "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante}/18 angles exploités), nouveaux angles uniquement.`;
+        ? `↻ Renouvellement pour ce produit — dernière cible utilisée : "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante} angles déjà exploités, seuil atteint). Si tu gardes la même cible, une rotation vers une cible élargie sera proposée. Si tu as changé la cible dans la fiche produit, elle sera prise en compte à la place.`
+        : `↻ Renouvellement pour ce produit — dernière cible utilisée : "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante}/18 angles déjà exploités sur elle). Si tu as changé la cible dans la fiche produit, la nouvelle sera utilisée à la place — ceci n'est qu'un rappel du dernier lot, pas une décision déjà prise.`;
     }
     if (banner.textContent) {
       const container = document.getElementById('prodv2BriefSection') || document.getElementById('viewProduction');
