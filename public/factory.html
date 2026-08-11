@@ -4162,8 +4162,8 @@ FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante s
 {
   "positionnement": {
     "taille_marche_personnes": "UNIQUEMENT un chiffre ou une fourchette courte depuis S8 (ex: '~50 000 personnes', '1,2M de foyers') — jamais de phrase explicative ni de raisonnement ici, ce champ s'affiche comme un gros chiffre isolé dans l'interface. Si estimation (voir règle CHIFFRES MANQUANTS plus haut), l'étiqueter clairement (ex: '~50 000 (estimation)') — le raisonnement détaillé va dans 'sophistication_marche' ou 'concurrence_explication', jamais ici. 'Donnée non disponible' seulement en tout dernier recours.",
-    "taille_marche_revenus": "Valeur chiffrée précise (devise locale/an) depuis S8, ou une estimation clairement étiquetée (voir règle CHIFFRES MANQUANTS) — 'Donnée non disponible' seulement en tout dernier recours",
-    "taux_croissance": "Chiffre en % si trouvé dans S8, sinon tendance qualitative précise sourcée sur un signal concret — jamais une phrase creuse",
+    "taille_marche_revenus": "UNIQUEMENT une valeur chiffrée courte (devise locale/an), ex: '485M FCFA', '2,3Mds FCFA' — jamais une phrase, jamais de contexte explicatif, ce champ s'affiche seul comme un chiffre isolé dans l'interface. Une estimation reste juste un chiffre avec '(estimation)' accolé, ex: '~120M FCFA (estimation)' — jamais une phrase complète. 'Donnée non disponible' seulement en tout dernier recours (voir règle CHIFFRES MANQUANTS).",
+    "taux_croissance": "UNIQUEMENT un pourcentage court, ex: '+8%/an', ex: '+8% (estimation)' si déduit — jamais une phrase qualitative même sourcée, ce champ s'affiche seul comme un chiffre isolé dans l'interface. Si vraiment aucun pourcentage n'est trouvable ni estimable, 'Donnée non disponible' plutôt qu'une phrase.",
     "concurrence": "Faible" | "Moyenne" | "Élevée",
     "concurrents_directs": [{"nom": "Vrai nom de marque/produit concurrent DIRECT trouvé (même catégorie)", "prix_fcfa": 12000, "prix_texte": "12 000 FCFA (devise locale d'origine si différente, ex: '15 USD')"}],
     "concurrents_indirects": ["Vraies solutions alternatives qui répondent au même problème sans être le même produit, si trouvées dans DONNÉES BRUTES — sinon tableau vide"],
@@ -6305,6 +6305,22 @@ async function prodv2CheckResume() {
   // moindre indice que quelque chose se passait réellement en arrière-plan.
   const resumeBanner = document.getElementById('prodv2ResumeBanner');
   if (resumeBanner) resumeBanner.style.display = 'flex';
+  // Filet de sécurité GLOBAL — malgré 2 correctifs précédents (timeouts sur chaque fetch
+  // individuel), le bandeau restait parfois bloqué indéfiniment, cause exacte non confirmée avec
+  // certitude. Plutôt que de chercher un 3e point précis sans preuve solide, on garantit
+  // maintenant que ce bandeau ne peut JAMAIS rester bloqué plus de 20s, quelle que soit la cause
+  // interne — le reste de la fonction tourne toujours, mais l'utilisateur n'est plus jamais
+  // laissé devant un écran figé sans explication.
+  const timeoutGlobal = setTimeout(() => {
+    if (resumeBanner && resumeBanner.style.display !== 'none') {
+      console.error('[Reprise] Délai de 20s dépassé — abandon forcé, cause exacte à investiguer si ça se reproduit.');
+      resumeBanner.style.display = 'none';
+      const err = document.createElement('div');
+      err.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#f87171;font-size:12px;';
+      err.textContent = '⚠️ La reprise a pris trop de temps. Réessaie de rafraîchir, ou recharge le brief manuellement.';
+      resumeBanner.parentElement?.insertBefore(err, resumeBanner);
+    }
+  }, 20000);
   try {
     const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}, signal: AbortSignal.timeout(15000)}).then(r=>r.json());
     const b = briefs.find(x => x.id === marker.commandeId);
@@ -6314,7 +6330,7 @@ async function prodv2CheckResume() {
     // se réaffichait, alors que les livrables existaient toujours côté serveur. On restaure
     // maintenant aussi dans ce cas (en lecture, avec un message adapté), et on n'abandonne que
     // si le ticket n'existe plus du tout ou a été annulé.
-    if (!b || b.status === 'cancelled' || b.status === 'probleme_agence') { localStorage.removeItem('adstack_active_production'); if (resumeBanner) resumeBanner.style.display = 'none'; return; }
+    if (!b || b.status === 'cancelled' || b.status === 'probleme_agence') { clearTimeout(timeoutGlobal); localStorage.removeItem('adstack_active_production'); if (resumeBanner) resumeBanner.style.display = 'none'; return; }
     const dejaLivre = b.status === 'done';
     const d = b.deliverables || {};
     const nbCrea = d.creatives ? d.creatives.filter(c=>c && c.imgB64).length : 0;
@@ -6338,6 +6354,7 @@ async function prodv2CheckResume() {
     if (dejaLivre) { try { localStorage.removeItem('adstack_active_production'); } catch(e) {} }
 
     // Bannière discrète — jamais bloquante, juste informative
+    clearTimeout(timeoutGlobal);
     if (resumeBanner) resumeBanner.style.display = 'none';
     const banner = document.createElement('div');
     banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
@@ -6406,7 +6423,7 @@ async function prodv2CheckResume() {
 
     const launchBtn = document.getElementById('prodv2LaunchBtn');
     if (launchBtn) { launchBtn.textContent = 'Relancer la production'; launchBtn.disabled = false; }
-  } catch(e) { console.warn('[Reprise] Échec :', e.message); if (resumeBanner) resumeBanner.style.display = 'none'; }
+  } catch(e) { console.warn('[Reprise] Échec :', e.message); clearTimeout(timeoutGlobal); if (resumeBanner) resumeBanner.style.display = 'none'; }
 }
 
 function showProduction(){

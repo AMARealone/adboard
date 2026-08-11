@@ -2236,7 +2236,19 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   // Cause profonde corrigée : CREA était une constante vide codée en dur (jamais remplie) —
   // la galerie affichait des rectangles de dégradé factices, jamais les vraies créatives déjà
   // livrées par Factory. Dérivé maintenant depuis products (real Supabase products.creatives).
-  const realCreatives = products.flatMap(p => p.creatives || []);
+  // Date réelle de livraison par créative (via son batch), pas juste l'ordre d'ajout au
+  // tableau — sinon le batch le plus récent d'un produit reste coincé après les anciens du
+  // MÊME produit, alors qu'un batch plus ancien d'un AUTRE produit passait devant par hasard
+  // d'ordre. Construit une correspondance ticketId (préfixe de l'id créative) → date du batch.
+  const dateParTicket = {};
+  products.forEach(p => (p.deliveries||[]).forEach(d => {
+    if (d.ticketId) dateParTicket[d.ticketId] = d.created_at || 0;
+  }));
+  const dateCreative = (c) => {
+    const ticketId = c.id ? c.id.split('_').slice(0,-1).join('_') : null;
+    return (ticketId && dateParTicket[ticketId]) ? new Date(dateParTicket[ticketId]).getTime() : 0;
+  };
+  const realCreatives = products.flatMap(p => p.creatives || []).sort((a,b) => dateCreative(b) - dateCreative(a));
   const angleSet = [...new Set(realCreatives.map(c => c.angle))];
 
   const filtered = realCreatives.filter(c => {
