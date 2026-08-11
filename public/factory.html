@@ -2986,11 +2986,12 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
 
   // d.imageData = base64 PNG, d.meta = description, d.chosenAngle, d.prompt
   const imgB64 = d.imageData;
+  const imageMime = d.imageMime || 'image/png';
   const desc = (d.meta && d.meta.length > 5) ? d.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${angleIdx+1}`;
-  prodv2State.creatives[idx] = { ...prodv2State.creatives[idx], imgB64, desc, status:'done', imageMime: d.imageMime || 'image/png' };
 
+  // Affichage immédiat avec le base64 — pas d'attente réseau supplémentaire pour voir le résultat
   card.classList.add('done');
-  card.querySelector('.prodv2-crea-img').innerHTML = `<img src="data:${d.imageMime || 'image/png'};base64,${imgB64}" alt="Créative ${idx+1}">`;
+  card.querySelector('.prodv2-crea-img').innerHTML = `<img src="data:${imageMime};base64,${imgB64}" alt="Créative ${idx+1}">`;
   card.querySelector('.prodv2-crea-status').textContent = 'Prêt';
   card.querySelector('.prodv2-crea-desc').style.color = '';
   card.querySelector('.prodv2-crea-desc').style.fontStyle = '';
@@ -3000,6 +3001,31 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   btns[0].onclick = () => prodv2DownloadCrea(idx);
   btns[1].disabled = false;
   btns[1].onclick = () => prodv2RegenerateCrea(idx);
+
+  // Cause profonde corrigée (statement timeout persistant à la sauvegarde, malgré une écriture
+  // déjà ciblée) : le vrai poids venait de la TAILLE du contenu — accumuler les images en base64
+  // directement dans deliverables grossissait la ligne à chaque créative, jusqu'à devenir trop
+  // lourde pour Supabase peu importe quelles colonnes étaient réécrites. Chaque créative est
+  // maintenant uploadée vers le Storage DÈS SA GÉNÉRATION — seul un lien léger (quelques dizaines
+  // d'octets) est ensuite gardé en mémoire et sauvegardé, jamais l'image elle-même.
+  let creativeUrl = null;
+  if (prodv2State.briefSource === 'commande' && prodv2State.commandeId) {
+    try {
+      const rUp = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/upload-creative-now`, {
+        method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+        body: JSON.stringify({ imgB64, mime: imageMime, index: idx })
+      });
+      const dUp = await rUp.json();
+      if (dUp.ok && dUp.url) creativeUrl = dUp.url;
+    } catch(e) { console.warn(`[Upload immédiat] Créative ${idx} — échoué, conservée en base64 en secours :`, e.message); }
+  }
+
+  // Si l'upload a réussi : stocke le LIEN (léger) pour la sauvegarde, jamais le base64.
+  // Si l'upload a échoué (réseau, serveur endormi) : garde le base64 en secours plutôt que de
+  // perdre la créative — moins optimal pour la sauvegarde, mais jamais une perte de données.
+  prodv2State.creatives[idx] = creativeUrl
+    ? { ...prodv2State.creatives[idx], url: creativeUrl, imgB64: null, desc, status:'done', imageMime }
+    : { ...prodv2State.creatives[idx], imgB64, desc, status:'done', imageMime };
 }
 
 function prodv2MarkCreativeError(idx, errMsg) {
@@ -3164,10 +3190,11 @@ function prodv2CopyAllHooks(angleIdx) {
 
 function prodv2DownloadCrea(idx) {
   const c = prodv2State.creatives[idx];
-  if(!c || !c.imgB64) return;
+  if(!c || (!c.url && !c.imgB64)) return;
   const a = document.createElement('a');
-  a.href = 'data:image/png;base64,' + c.imgB64;
+  a.href = c.url || ('data:image/png;base64,' + c.imgB64);
   a.download = `creative_angle${c.angleIdx+1}_${c.ct}.png`;
+  a.target = '_blank'; // nécessaire pour un lien externe (Storage) — sans ça certains navigateurs naviguent au lieu de télécharger
   document.body.appendChild(a); a.click(); a.remove();
 }
 
@@ -3194,7 +3221,7 @@ function prodv2ExportZip() {
 }
 
 function prodv2OpenManualSend() {
-  if (!prodv2State.creatives.some(c => c && c.imgB64) && !prodv2State.copies.some(c => c)) {
+  if (!prodv2State.creatives.some(c => c && (c.imgB64 || c.url)) && !prodv2State.copies.some(c => c)) {
     alert('Aucun livrable généré pour l\'instant — rien à envoyer.');
     return;
   }
@@ -3317,7 +3344,7 @@ async function prodv2SendClient() {
     alert("Cette production n'est pas liée à une commande AdBoard — rien à envoyer automatiquement.");
     return;
   }
-  if (!prodv2State.creatives.some(c => c && c.imgB64) && !prodv2State.copies.some(c => c)) {
+  if (!prodv2State.creatives.some(c => c && (c.imgB64 || c.url)) && !prodv2State.copies.some(c => c)) {
     alert('Aucun livrable généré pour l\'instant — rien à envoyer.');
     return;
   }
@@ -6608,7 +6635,7 @@ async function prodv2CheckResume() {
     if (!b || b.status === 'cancelled' || b.status === 'probleme_agence') { clearTimeout(timeoutGlobal); localStorage.removeItem('adstack_active_production'); if (resumeBanner) resumeBanner.style.display = 'none'; return; }
     const dejaLivre = b.status === 'done';
     const d = b.deliverables || {};
-    const nbCrea = d.creatives ? d.creatives.filter(c=>c && c.imgB64).length : 0;
+    const nbCrea = d.creatives ? d.creatives.filter(c=>c && (c.imgB64 || c.url)).length : 0;
     const nbCopy = d.copies ? d.copies.filter(Boolean).length : 0;
 
     await prodv2LoadBriefFromCommande(b);
@@ -6674,7 +6701,7 @@ async function prodv2CheckResume() {
         card.className = 'prodv2-crea' + (item.status === 'done' ? ' done' : '');
         card.id = 'prodv2Crea_' + idx;
         card.innerHTML = `
-          <div class="prodv2-crea-img">${item.imgB64 ? `<img src="data:${item.imageMime||'image/png'};base64,${item.imgB64}" alt="Créative ${idx+1}">` : '<div class="prodv2-crea-img-empty"></div>'}</div>
+          <div class="prodv2-crea-img">${item.url ? `<img src="${item.url}" alt="Créative ${idx+1}">` : item.imgB64 ? `<img src="data:${item.imageMime||'image/png'};base64,${item.imgB64}" alt="Créative ${idx+1}">` : '<div class="prodv2-crea-img-empty"></div>'}</div>
           <div class="prodv2-crea-body">
             <div class="prodv2-crea-meta">
               <div class="prodv2-crea-ct">${item.ct || '?'}</div>
