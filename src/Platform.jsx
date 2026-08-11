@@ -2252,10 +2252,22 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   const realCreatives = products.flatMap(p => p.creatives || []).sort((a,b) => dateCreative(b) - dateCreative(a));
   const angleSet = [...new Set(realCreatives.map(c => c.angle))];
   // "Batch" — anciennement affiché sous le nom "Date", ce qui prêtait à confusion avec la vraie
-  // date de livraison (voir le nouveau filtre "Date" en dessous). Liste dérivée des vraies
-  // créatives présentes (avant : liste codée en dur ['S1'...'S5'], ne reflétait jamais la réalité).
-  const batchSet = [...new Set(realCreatives.map(c => c.week).filter(Boolean))]
-    .sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+  // date de livraison (voir le nouveau filtre "Date" en dessous).
+  // Cause profonde corrigée (collision "Batch 1" entre deux produits différents) : le numéro de
+  // batch est attribué PAR PRODUIT côté serveur (B1, B2... recommence à 1 pour chaque nouveau
+  // produit) — dans cette vue qui mélange TOUS les produits, deux "B1" de produits différents
+  // fusionnaient en un seul filtre, mélangeant leurs créatives. La clé de filtrage est
+  // maintenant qualifiée par produit ; seul le LIBELLÉ affiché reste "Batch 1", accompagné du
+  // nom du produit pour lever toute ambiguïté visuelle.
+  const nomProduitParId = {};
+  products.forEach(p => { nomProduitParId[p.id] = p.nom; });
+  const batchKey = (c) => `${c.productId}::${c.week}`;
+  const batchLabelParKey = {};
+  realCreatives.forEach(c => {
+    if (c.week) batchLabelParKey[batchKey(c)] = `Batch ${c.week.replace(/^[SB]/,'')} · ${nomProduitParId[c.productId] || '?'}`;
+  });
+  const batchSet = Object.keys(batchLabelParKey)
+    .sort((a,b) => batchLabelParKey[a].localeCompare(batchLabelParKey[b], undefined, {numeric:true}));
   // Nouveau filtre Cible — chaque créative porte maintenant sa cible d'origine (voir serveur).
   // Les créatives livrées avant ce fix n'ont pas ce champ — regroupées sous un intitulé honnête
   // plutôt que d'être silencieusement exclues du filtre.
@@ -2267,7 +2279,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
     const q = query.trim().toLowerCase();
     if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q) && !(c.cible||'').toLowerCase().includes(q)) return false;
     if (filterMode==='angle' && activeChip && c.angle!==activeChip) return false;
-    if (filterMode==='batch' && activeChip && c.week!==activeChip) return false;
+    if (filterMode==='batch' && activeChip && batchKey(c)!==activeChip) return false;
     if (filterMode==='cible' && activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
     if (filterMode==='date') {
       const t = dateCreative(c);
@@ -2426,7 +2438,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
             <button key={ch} onClick={() => setActiveChip(activeChip===ch?null:ch)}
               style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${activeChip===ch?C.borderM:C.border}`,cursor:'pointer',background:activeChip===ch?'rgba(255,255,255,0.09)':'transparent',color:activeChip===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}
               title={ch}>
-              {filterMode==='batch' ? `Batch ${ch.replace(/^[SB]/,'')}` : ch}
+              {filterMode==='batch' ? batchLabelParKey[ch] : ch}
             </button>
           ))}
         </div>
