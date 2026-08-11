@@ -3106,9 +3106,23 @@ async function prodv2SendClient() {
       loadCommandes();
       return;
     }
+    // Confirmation complète et vérifiée — pas juste "envoyé", mais précisément CE qui a été
+    // confirmé transmis à AdBoard : créatives, ad copies, ET données marché séparément, pour
+    // avoir une vraie visibilité sans avoir accès au compte du client.
+    if (push && (!push.adCopiesOk || !push.marcheOk)) {
+      const manques = [];
+      if (!push.adCopiesOk) manques.push(`ad copies (${push.adCopiesCount}/${push.adCopiesAttendu} sets confirmés)`);
+      if (!push.marcheOk) manques.push('données marché');
+      alert(`⚠️ Créatives bien transmises (${push.pushedCount}/${push.expectedCount}), mais problème détecté sur : ${manques.join(', ')}. Clique à nouveau sur "Envoyer au client" pour réessayer.`);
+      if (btn) { btn.disabled = false; btn.textContent = '⚠️ Renvoyer'; }
+      loadCommandes();
+      return;
+    }
     if (btn) { btn.textContent = '✓ Envoyé au client'; }
     try { localStorage.removeItem('adstack_active_production'); } catch(e) {}
-    alert('✅ Envoyé au client.');
+    alert(push
+      ? `✅ Envoyé et confirmé au client :\n• ${push.pushedCount}/${push.expectedCount} créatives\n• ${push.adCopiesCount}/${push.adCopiesAttendu} sets ad copy\n• Données marché ✓`
+      : '✅ Envoyé au client.');
     loadCommandes();
   } catch(e) {
     alert("Erreur lors de l'envoi : " + e.message);
@@ -6345,7 +6359,13 @@ async function prodv2CheckResume() {
 
     setMode('prod'); showProduction();
 
-    const nbAngles = prodv2GetAngleCount();
+    // Cause profonde corrigée (contenu déjà généré qui "s'efface" au rechargement) :
+    // prodv2GetAngleCount() se base sur la quantité de LA DEMANDE ACTUELLE (ex: 9 → 3 angles),
+    // pas sur le nombre réel d'angles dans les données restaurées. Si la restauration porte sur
+    // plusieurs batches accumulés (ex: 6 ou 9 angles au total), les conteneurs construits étaient
+    // bien trop petits — tout ce qui dépassait les 3 premiers angles était silencieusement perdu,
+    // jamais affiché malgré des données parfaitement valides en mémoire.
+    const nbAngles = Math.max(prodv2GetAngleCount(), prodv2State.angles.length, Math.ceil(prodv2State.creatives.length / 3), prodv2State.copies.length);
     const nbCreativesTotal = nbAngles * 3;
     prodv2BuildAngleUI(nbAngles);
 

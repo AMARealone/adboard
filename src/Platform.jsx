@@ -818,7 +818,7 @@ const sbSub = {
 function computeCredits(sub, allBriefs) {
   if (!sub || !sub.active) return { total: 0, used: 0, available: 0, nextCreditDate: null };
   const used = allBriefs
-    .filter(b => b.status !== 'cancelled')
+    .filter(b => b.status !== 'cancelled' && b.status !== 'probleme_agence')
     .reduce((sum, b) => sum + (b.credits_used || 9), 0);
   // Pack (Discovery) : total fixe, jamais de rechargement — contrairement à un abonnement
   // classique qui accumule credits_per_week × semaines écoulées.
@@ -863,7 +863,7 @@ const sbSubs = {
 function calcCredits(subscription, briefs) {
   if (!subscription || !subscription.active) return { earned: 0, used: 0, available: 0, plan: null };
   const used = Object.values(briefs)
-    .filter(b => b.status !== 'cancelled')
+    .filter(b => b.status !== 'cancelled' && b.status !== 'probleme_agence')
     .reduce((sum, b) => sum + (b.credits_used || 9), 0);
   if (subscription.type === 'pack') {
     const earned = subscription.total_credits || 0;
@@ -4326,7 +4326,7 @@ const views = {
             // Limite anti-abus : max 36 images / 4 demandes par fenêtre glissante de 24h (tous produits confondus)
             const now = Date.now();
             const WIN_24H = 24*60*60*1000;
-            const recentBriefs = allBriefs.filter(b => b.status !== 'cancelled' && (now - new Date(b.created_at).getTime()) < WIN_24H);
+            const recentBriefs = allBriefs.filter(b => b.status !== 'cancelled' && b.status !== 'probleme_agence' && (now - new Date(b.created_at).getTime()) < WIN_24H);
             const recentImages = recentBriefs.reduce((sum,b) => sum + (b.quantity || b.credits_used || 9), 0);
             if (recentBriefs.length >= 4 || recentImages >= 36) {
               const oldest = recentBriefs.reduce((o,b) => !o || new Date(b.created_at) < new Date(o.created_at) ? b : o, null);
@@ -4519,7 +4519,7 @@ const views = {
 
             // ── Envoyer le ticket vers Factory (avec wake-up Render) ──
             const p = creativesTarget;
-            const pastBriefs = allBriefs.filter(b => b.product_id === p.id && b.status !== 'cancelled');
+            const pastBriefs = allBriefs.filter(b => b.product_id === p.id && b.status !== 'cancelled' && b.status !== 'probleme_agence');
             const webhookPayload = {
               brief_id: brief.id,
               user_id: user?.id,
