@@ -2798,7 +2798,7 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
   const copywriterSystem = COMP_FILES['COMPETENCE_COPYWRITER_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
   // Consigne durcie : pas de markdown gras autour des labels, pas de labels AIDA visibles
-  const userPrompt = `SYNTHÈSE COMPLÈTE :\n${prodv2State.synthesis}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGÉNÈRE LE COPY POUR L'ANGLE ${angleIdx+1} UNIQUEMENT :\n${angle}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFORMAT STRICT (RESPECTE-LE EXACTEMENT, sinon le parsing échoue) :\n\nHOOK 1: <texte du hook>\nHOOK 2: <texte du hook>\nHOOK 3: <texte du hook>\nHOOK 4: <texte du hook>\nHOOK 5: <texte du hook>\nDESCRIPTION:\n[ATTENTION] <1 phrase d'accroche qui nomme la douleur exacte du persona>\n[INTÉRÊT] <1-2 phrases qui expliquent le problème et introduisent le mécanisme produit>\n[DÉSIR] <OBLIGATOIRE : 3 à 4 bullet points, un par ligne, chacun commençant par "• " suivi d'un emoji pertinent puis du bénéfice concret (avec une donnée chiffrée si disponible dans la synthèse) — jamais un paragraphe de phrases suivies, jamais moins de 3 bullet points, jamais zéro emoji>\n[ACTION] <1 phrase de CTA — si une offre/promo est active dans le brief (ex: "2 achetés = 1 offert"), mentionne-la explicitement ici pour environ 1 génération sur 5 (pas systématiquement, pour garder de la variété) ; sinon CTA avec le prix/livraison, ou un slogan fort>\n\nEXEMPLE DE BLOC [DÉSIR] ATTENDU (structure à respecter, pas le contenu) :\n[DÉSIR]\n• 🌿 Une formule 100% naturelle qui nourrit la fibre en profondeur\n• ⚡ Des résultats visibles dès les premières semaines d'utilisation\n• 💧 Une texture non grasse qui pénètre instantanément\n\nINTERDIT ABSOLU :\n- N'utilise PAS de markdown autour des labels (PAS de **HOOK 1:**, PAS de **DESCRIPTION:**)\n- N'utilise PAS de titre/intro avant la liste (PAS de "### ANGLE 1", PAS de "Voici les hooks")\n- Garde les labels [ATTENTION] [INTÉRÊT] [DÉSIR] [ACTION] EXACTEMENT comme indiqués — ils servent au parsing\n- ATTENTION/INTÉRÊT/ACTION restent en 1-2 phrases courantes (pas de bullet points) — SEUL [DÉSIR] est en bullet points, ne mélange pas les styles\n- Démarre TA RÉPONSE directement par "HOOK 1:" — aucun préambule\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  const userPrompt = `SYNTHÈSE COMPLÈTE :\n${prodv2State.synthesis}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGÉNÈRE LE COPY POUR L'ANGLE ${angleIdx+1} UNIQUEMENT :\n${angle}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFORMAT STRICT (RESPECTE-LE EXACTEMENT, sinon le parsing échoue) :\n\nHOOK 1: <texte du hook>\nHOOK 2: <texte du hook>\nHOOK 3: <texte du hook>\nHOOK 4: <texte du hook>\nHOOK 5: <texte du hook>\nDESCRIPTION:\n[BLOC1] <ATTENTION — 1 phrase d'accroche qui nomme la douleur exacte du persona>\n[BLOC2] <INTÉRÊT — 1-2 phrases qui expliquent le problème et introduisent le mécanisme produit>\n[BLOC3] <DÉSIR — OBLIGATOIRE : 3 à 4 bullet points, un par ligne, chacun commençant par "• " suivi d'un emoji pertinent puis du bénéfice concret (avec une donnée chiffrée si disponible dans la synthèse) — jamais un paragraphe de phrases suivies, jamais moins de 3 bullet points, jamais zéro emoji>\n[BLOC4] <ACTION — 1 phrase de CTA — si une offre/promo est active dans le brief (ex: "2 achetés = 1 offert"), mentionne-la explicitement ici pour environ 1 génération sur 5 (pas systématiquement, pour garder de la variété) ; sinon CTA avec le prix/livraison, ou un slogan fort>\n\nEXEMPLE DE BLOC [BLOC3] ATTENDU (structure à respecter, pas le contenu) :\n[BLOC3]\n• 🌿 Une formule 100% naturelle qui nourrit la fibre en profondeur\n• ⚡ Des résultats visibles dès les premières semaines d'utilisation\n• 💧 Une texture non grasse qui pénètre instantanément\n\nINTERDIT ABSOLU :\n- N'utilise PAS de markdown autour des labels (PAS de **HOOK 1:**, PAS de **DESCRIPTION:**)\n- N'utilise PAS de titre/intro avant la liste (PAS de "### ANGLE 1", PAS de "Voici les hooks")\n- Garde les labels [BLOC1] [BLOC2] [BLOC3] [BLOC4] EXACTEMENT comme indiqués, MOT POUR MOT, quelle que soit la langue du marché (S0) — ils servent UNIQUEMENT au parsing technique, ne les traduis JAMAIS, ne les remplace JAMAIS par ATTENTION/INTEREST/DESIRE/ACTION ou toute autre langue. Seul le CONTENU à l'intérieur des blocs est dans la langue du marché.\n- BLOC1/BLOC2/BLOC4 restent en 1-2 phrases courantes (pas de bullet points) — SEUL BLOC3 est en bullet points, ne mélange pas les styles\n- Démarre TA RÉPONSE directement par "HOOK 1:" — aucun préambule\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   // 12 000 tokens — Gemini 2.5 Pro utilise ~3-4k tokens pour "thinking" avant de générer,
   // avec 4000 max il ne lui reste que ~1000 pour le texte → description tronquée
@@ -2834,10 +2834,17 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
     // ("une action profonde") — n'importe quelle phrase contenant ce mot coupait le parsing au
     // mauvais endroit. On exige maintenant que le label soit en DÉBUT DE LIGNE, jamais au milieu
     // d'une phrase — c'est la seule façon fiable de distinguer un vrai label d'un mot normal.
-    const aAttn = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*1\s*[—-]\s*)?\[?ATTENTION\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?\[?INT(?:ÉRÊT|ERET)\]?\s*\*{0,2}\s*[:：]|$)/i);
-    const aIntr = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?\[?INT(?:ÉRÊT|ERET)\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?\[?D(?:ÉS|ES)IR\]?\s*\*{0,2}\s*[:：]|$)/i);
-    const aDesir= rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?\[?D(?:ÉS|ES)IR\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?\[?ACTION\]?\s*\*{0,2}\s*[:：]|$)/i);
-    const aAct  = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?\[?ACTION\]?\s*\*{0,2}\s*[:：]?\s*([\s\S]+)$/i);
+    // Cause profonde corrigée (texte dupliqué/empilé de façon chaotique dans la description) :
+    // les labels étaient en français (ATTENTION/INTÉRÊT/DÉSIR/ACTION) même pour un marché en
+    // anglais — Gemini écrivait alors "INTEREST"/"DESIRE" (anglais) au lieu de "INTÉRÊT"/"DÉSIR",
+    // que le parsing ne reconnaissait jamais, faisant échouer toute la découpe en 4 blocs et
+    // retomber sur un texte brut mal structuré. Les labels sont maintenant des marqueurs neutres
+    // (BLOC1-4) qui ne dépendent d'aucune langue — tolérance conservée pour les anciens labels
+    // français/anglais en filet de sécurité si jamais Gemini s'en écarte encore.
+    const aAttn = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*1\s*[—-]\s*)?(?:\[(?:BLOC1|ATTENTION)\]|(?:BLOC1|ATTENTION)\s*[:：])\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?(?:\[(?:BLOC2|INT(?:ÉRÊT|ERET))\]|(?:BLOC2|INT(?:ÉRÊT|ERET))\s*[:：])|$)/i);
+    const aIntr = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*2\s*[—-]\s*)?(?:\[(?:BLOC2|INT(?:ÉRÊT|ERET))\]|(?:BLOC2|INT(?:ÉRÊT|ERET))\s*[:：])\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?(?:\[(?:BLOC3|D(?:ÉS|ES)IRE?)\]|(?:BLOC3|D(?:ÉS|ES)IRE?)\s*[:：])|$)/i);
+    const aDesir= rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*3\s*[—-]\s*)?(?:\[(?:BLOC3|D(?:ÉS|ES)IRE?)\]|(?:BLOC3|D(?:ÉS|ES)IRE?)\s*[:：])\s*([\s\S]+?)(?=(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?(?:\[(?:BLOC4|ACTION)\]|(?:BLOC4|ACTION)\s*[:：])|$)/i);
+    const aAct  = rawDesc.match(/(?:^|\n)\s*\*{0,2}\s*(?:Bloc\s*4\s*[—-]\s*)?(?:\[(?:BLOC4|ACTION)\]|(?:BLOC4|ACTION)\s*[:：])\s*([\s\S]+)$/i);
     if(aAttn && aIntr && aDesir && aAct) {
       // Cause profonde corrigée : les labels ne servent qu'à structurer la génération de
       // Gemini — ils ne doivent JAMAIS apparaître dans le texte final copié dans Ads Manager.
@@ -3317,18 +3324,18 @@ La description = le corps du post Meta Ads (texte long sous le titre). Elle suit
 
 LONGUEUR CIBLE : 70 à 130 mots — assez pour porter une réaction émotionnelle complète, assez court pour ne jamais perdre le lecteur. Si ta description dépasse 130 mots, tu as ajouté du gras inutile — coupe.
 
-STRUCTURE — 4 BLOCS séparés par des sauts de ligne :
+STRUCTURE — 4 BLOCS séparés par des sauts de ligne. Les labels [BLOC1] [BLOC2] [BLOC3] [BLOC4] servent UNIQUEMENT au parsing technique — ils ne sont JAMAIS traduits, JAMAIS adaptés à la langue du marché, même pour un brief en anglais ou toute autre langue. Le CONTENU à l'intérieur de chaque bloc, lui, est bien dans la langue du marché (S0).
 
-**Bloc 1 — ATTENTION (1 phrase, max 15 mots) :**
+**[BLOC1] — ATTENTION (1 phrase, max 15 mots) :**
 Une accroche qui nomme la douleur ou le déclencheur précis du moteur de l'angle mobilisé — pas un slogan, une situation concrète. Peut contenir un emoji en début ou fin.
 
-**Bloc 2 — INTÉRÊT (1 à 2 phrases courtes) :**
+**[BLOC2] — INTÉRÊT (1 à 2 phrases courtes) :**
 Tu valides ce que le persona pense déjà ("oui, tu as raison de penser que…") puis tu introduis le produit nommé comme la pièce manquante. Connecte la douleur à l'élément différenciant S4 sans tout expliquer — rappel, pas cours magistral.
 
-**Bloc 3 — DÉSIR (3 bullets, chacun 1 ligne courte avec emoji en début) :**
+**[BLOC3] — DÉSIR (3 bullets, chacun 1 ligne courte avec emoji en début) :**
 Trois preuves/avantages distinctifs depuis S4 (USP / UMS / preuves de la pricing map / avantages atypiques de la marque). Chaque bullet est UNE ligne — pas de paragraphes dans les bullets. L'emoji en début sert de puce visuelle ET de signal sémantique.
 
-**Bloc 4 — ACTION (1 phrase + 1 ligne CTA) :**
+**[BLOC4] — ACTION (1 phrase + 1 ligne CTA) :**
 ⛔ RÈGLE OFFRE/PRIX : si le brief contient un pricing ou une offre promo, elle apparaît UNIQUEMENT dans ce bloc 4 — jamais dans les blocs 1, 2 ou 3. La logique est : construire d'abord la valeur perçue (blocs 1/2/3), puis activer l'offre avec FOMO quand la valeur est à son maximum. Mettre l'offre avant la valeur = brûler l'attention sur le prix avant que le persona soit convaincu.
 
 La phrase finale mobilise un levier de conversion adapté à la synthèse :
