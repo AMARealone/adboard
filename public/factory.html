@@ -1670,47 +1670,211 @@ async function runFullDemo() {
 
     const masterCreative = COMP_FILES['MASTER_CREATIVE.md'] || '';
 
+    // Cause profonde corrigée (coût financier réel — "je dois tout regénérer à cause d'une
+    // créative") : la boucle des 3 créatives n'avait qu'un SEUL try englobant — l'échec d'UNE
+    // seule créative (429 rate limit, coupure réseau vers Render qui dort, etc.) faisait
+    // planter TOUTE la boucle, perdant même les créatives DÉJÀ réussies avant elle. Chaque
+    // créative est maintenant isolée : un échec est marqué comme tel et n'affecte jamais les
+    // autres, avec 2 tentatives automatiques avant d'abandonner (les erreurs 429/réseau sont
+    // presque toujours passagères, un simple réessai après une courte pause suffit souvent).
     const creatives = [];
+    const echecsCreatives = [];
     for (let i = 0; i < chosenCTs.length; i++) {
       if (demoAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
       const ct = chosenCTs[i];
       const ctDisplayName = CT_IMAGES[ct+'_name'] || ct;
       log(`2/3 · Creative Image — concept ${i+1}/3 (${ctDisplayName})...`);
       const ctMime = CT_IMAGES[ct + '_mime'] || 'image/jpeg';
-      let ctB64;
-      try {
-        ctB64 = await compressImg(await _ctGetBase64(ct), ctMime);
-      } catch(eCt) {
-        throw new Error(`Récupération du CT (${ct}) depuis Supabase échouée : ${eCt.message}`);
-      }
 
-      const prompt = `Applique tes 4 phases : décode le CT, comprends le nouveau contexte (produit fourni + synthèse), transpose l'intention (pas la surface) au nouveau contexte, puis auto-critique comme un directeur créatif avant d'écrire le prompt final.\n\nSYNTHÈSE :\n${synthese}`;
-
-      let res;
-      try {
-        res = await fetch(SERVER + '/generate-image-gemini', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          signal: demoAbortController.signal,
-          body: JSON.stringify({
-            prompt,
-            systemInstruction: masterCreative,
-            ctBase64: ctB64,
-            ctMime: 'image/jpeg',
-            productBase64: productImgB64,
-            productMime: 'image/jpeg'
-          })
-        });
-      } catch(eServer) {
-        if (eServer.name === 'AbortError') throw eServer;
-        throw new Error(`Appel serveur (${SERVER}) échoué — vérifie que le serveur Render est bien réveillé : ${eServer.message}`);
+      let succes = false;
+      let derniereErreur = null;
+      for (let tentative = 1; tentative <= 3 && !succes; tentative++) {
+        try {
+          if (demoAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
+          const ctB64 = await compressImg(await _ctGetBase64(ct), ctMime);
+          const prompt = `Applique tes 4 phases : décode le CT, comprends le nouveau contexte (produit fourni + synthèse), transpose l'intention (pas la surface) au nouveau contexte, puis auto-critique comme un directeur créatif avant d'écrire le prompt final.\n\nSYNTHÈSE :\n${synthese}`;
+          const res = await fetch(SERVER + '/generate-image-gemini', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            signal: demoAbortController.signal,
+            body: JSON.stringify({
+              prompt,
+              systemInstruction: masterCreative,
+              ctBase64: ctB64,
+              ctMime: 'image/jpeg',
+              productBase64: productImgB64,
+              productMime: 'image/jpeg'
+            })
+          });
+          const genData = await res.json();
+          if (genData.error) throw new Error(genData.error);
+          creatives.push(genData.imageData);
+          log(`✓ Concept ${i+1}/3 généré (${ct})`, 'ok');
+          succes = true;
+        } catch(eCreative) {
+          if (eCreative.name === 'AbortError') throw eCreative; // vraie annulation, jamais réessayée
+          derniereErreur = eCreative;
+          if (tentative < 3) {
+            log(`⚠️ Concept ${i+1}/3 : échec tentative ${tentative} (${eCreative.message.slice(0,80)}) — nouvel essai dans 5s...`);
+            await new Promise(r => setTimeout(r, 5000));
+          }
+        }
       }
-      const genData = await res.json();
-      if(genData.error) throw new Error(`Creative Image (${ct}) : ${genData.error}`);
-      creatives.push(genData.imageData);
-      log(`✓ Concept ${i+1}/3 généré (${ct})`, 'ok');
+      if (!succes) {
+        log(`✗ Concept ${i+1}/3 (${ct}) définitivement échoué après 3 tentatives : ${derniereErreur?.message || '?'}`, 'err');
+        creatives.push(null); // préserve la position dans le tableau — la 3e créative reste "concept 3", pas "concept 2"
+        echecsCreatives.push({ index: i, ct, ctDisplayName, error: derniereErreur?.message || 'Erreur inconnue' });
+      }
     }
 
+    // Si au moins une créative a définitivement échoué, on n'avance PAS vers le mindmap (qui a
+    // besoin des 3 images) — mais on garde tout ce qui a déjà réussi en mémoire, accessible pour
+    // un renvoi ciblé qui ne regénère QUE les échecs, sans jamais repayer les créatives réussies.
+    if (echecsCreatives.length > 0) {
+      window._demoPartialState = { synthese, chosenCTs, masterCreative, productImgB64, creatives, prospectInfo, demoGenPhotoB64, demoGenPhotoMime };
+      const err = new Error(`${echecsCreatives.length}/3 créative(s) définitivement échouée(s) après plusieurs tentatives.`);
+      err.isPartialFailure = true;
+      throw err;
+    }
+
+    // Étape mindmap + suite extraite dans resumeDemoAfterCreatives() — réutilisée par la reprise
+    await resumeDemoAfterCreatives({ synthese, prospectInfo, creatives });
+  } catch(e) {
+    if (demoAbortController && demoAbortController.signal.aborted) {
+      log('⏹ Génération annulée.', 'warn');
+    } else if (e.isPartialFailure) {
+      // Cause profonde corrigée (coût financier réel) : au lieu de tout faire recommencer,
+      // un bouton permet de ne régénérer QUE les créatives échouées — celles déjà réussies
+      // restent en mémoire (window._demoPartialState) et ne sont jamais repayées.
+      log('✗ ' + e.message, 'err');
+      const retryDiv = document.createElement('div');
+      retryDiv.style.cssText = 'margin-top:10px;';
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'btn btn-primary btn-sm';
+      retryBtn.textContent = '↻ Réessayer uniquement les créatives échouées';
+      retryBtn.onclick = () => retryFailedDemoCreatives();
+      retryDiv.appendChild(retryBtn);
+      statusEl.appendChild(retryDiv);
+    } else {
+      log('✗ Erreur : ' + (e.message || String(e)), 'err');
+    }
+  } finally {
+    window._demoRunning = false;
+    demoAbortController = null;
+    btn.disabled = false;
+    btn.textContent = 'Générer la démo complète';
+    const cancelBtn = document.getElementById('demoGenCancelBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+  }
+}
+
+// Reprend une génération démo interrompue par un échec partiel — ne régénère QUE les créatives
+// qui ont vraiment échoué (window._demoPartialState.creatives garde les autres intactes), avant
+// de reprendre normalement à l'étape mindmap. Évite de repayer des créatives déjà réussies.
+async function retryFailedDemoCreatives() {
+  const state = window._demoPartialState;
+  if (!state) { alert('État de reprise introuvable — relance une génération complète.'); return; }
+  if (window._demoRunning) return;
+  window._demoRunning = true;
+
+  const btn = document.getElementById('demoGenBtn');
+  const statusEl = document.getElementById('demoGenStatus');
+  btn.disabled = true;
+  demoAbortController = new AbortController();
+  const cancelBtn = document.getElementById('demoGenCancelBtn');
+  if (cancelBtn) cancelBtn.style.display = 'block';
+
+  const log = (msg, cls) => {
+    const d = document.createElement('div');
+    if(cls) d.className = cls;
+    d.textContent = msg;
+    statusEl.appendChild(d);
+    statusEl.scrollTop = statusEl.scrollHeight;
+  };
+  log('↻ Reprise — régénération des créatives échouées uniquement...');
+
+  try {
+    const { synthese, chosenCTs, masterCreative, productImgB64, creatives } = state;
+    for (let i = 0; i < chosenCTs.length; i++) {
+      if (creatives[i]) continue; // déjà réussie précédemment — jamais retouchée, jamais repayée
+      if (demoAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
+      const ct = chosenCTs[i];
+      const ctDisplayName = CT_IMAGES[ct+'_name'] || ct;
+      const ctMime = CT_IMAGES[ct + '_mime'] || 'image/jpeg';
+      log(`Creative Image — concept ${i+1}/3 (${ctDisplayName})...`);
+
+      let succes = false, derniereErreur = null;
+      for (let tentative = 1; tentative <= 3 && !succes; tentative++) {
+        try {
+          const ctB64 = await compressImg(await _ctGetBase64(ct), ctMime);
+          const prompt = `Applique tes 4 phases : décode le CT, comprends le nouveau contexte (produit fourni + synthèse), transpose l'intention (pas la surface) au nouveau contexte, puis auto-critique comme un directeur créatif avant d'écrire le prompt final.\n\nSYNTHÈSE :\n${synthese}`;
+          const res = await fetch(SERVER + '/generate-image-gemini', {
+            method: 'POST', headers: {'Content-Type': 'application/json'}, signal: demoAbortController.signal,
+            body: JSON.stringify({ prompt, systemInstruction: masterCreative, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productImgB64, productMime: 'image/jpeg' })
+          });
+          const genData = await res.json();
+          if (genData.error) throw new Error(genData.error);
+          creatives[i] = genData.imageData;
+          log(`✓ Concept ${i+1}/3 généré (${ct})`, 'ok');
+          succes = true;
+        } catch(eCreative) {
+          if (eCreative.name === 'AbortError') throw eCreative;
+          derniereErreur = eCreative;
+          if (tentative < 3) { log(`⚠️ Nouvel échec, réessai dans 5s...`); await new Promise(r => setTimeout(r, 5000)); }
+        }
+      }
+      if (!succes) {
+        const err = new Error(`Concept ${i+1}/3 (${ct}) toujours en échec : ${derniereErreur?.message || '?'}`);
+        err.isPartialFailure = true;
+        window._demoPartialState = state; // conserve l'état pour un nouveau réessai
+        throw err;
+      }
+    }
+
+    // Toutes les créatives sont maintenant prêtes — on peut poursuivre normalement.
+    log('✓ Toutes les créatives sont prêtes — reprise de la génération démo (mindmap)...', 'ok');
+    await resumeDemoAfterCreatives(state);
+  } catch(e) {
+    if (demoAbortController && demoAbortController.signal.aborted) {
+      log('⏹ Génération annulée.', 'warn');
+    } else if (e.isPartialFailure) {
+      log('✗ ' + e.message, 'err');
+      const retryDiv = document.createElement('div');
+      retryDiv.style.cssText = 'margin-top:10px;';
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'btn btn-primary btn-sm';
+      retryBtn.textContent = '↻ Réessayer uniquement les créatives échouées';
+      retryBtn.onclick = () => retryFailedDemoCreatives();
+      retryDiv.appendChild(retryBtn);
+      statusEl.appendChild(retryDiv);
+    } else {
+      log('✗ Erreur : ' + (e.message || String(e)), 'err');
+    }
+  } finally {
+    window._demoRunning = false;
+    demoAbortController = null;
+    btn.disabled = false;
+    btn.textContent = 'Générer la démo complète';
+    if (cancelBtn) cancelBtn.style.display = 'none';
+  }
+}
+
+
+// Étape 3/3 (mindmap) et suite — extraite pour être appelée à la fois par la génération démo
+// normale ET par la reprise après échec partiel (retryFailedDemoCreatives), sans dupliquer ~300
+// lignes de logique. state contient tout le contexte nécessaire (creatives déjà générées incluses).
+async function resumeDemoAfterCreatives(state) {
+  const { synthese, prospectInfo, creatives } = state;
+  const statusEl = document.getElementById('demoGenStatus');
+  const resultEl = document.getElementById('demoGenResult');
+  const placeholderEl = document.getElementById('demoGenPlaceholder');
+  const log = (msg, cls) => {
+    const d = document.createElement('div');
+    if(cls) d.className = cls;
+    d.textContent = msg;
+    statusEl.appendChild(d);
+    statusEl.scrollTop = statusEl.scrollHeight;
+  };
     // ── 3/3 — MINDMAP DÉMO : JSON + personnalisation du template ──
     log('3/3 · Mindmap — extraction JSON et personnalisation...');
     const mindmapAgent = AGENTS_DEMO[2];
@@ -2006,20 +2170,7 @@ async function runFullDemo() {
     resultEl.style.display = 'flex';
     statusEl.style.display = 'none';
 
-  } catch(e) {
-    if (demoAbortController && demoAbortController.signal.aborted) {
-      log('⏹ Génération annulée.', 'warn');
-    } else {
-      log('✗ Erreur : ' + (e.message || String(e)), 'err');
-    }
-  } finally {
-    window._demoRunning = false;
-    demoAbortController = null;
-    btn.disabled = false;
-    btn.textContent = 'Générer la démo complète';
-    const cancelBtn = document.getElementById('demoGenCancelBtn');
-    if (cancelBtn) cancelBtn.style.display = 'none';
-  }
+
 }
 
 async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal, isTest=false) {
