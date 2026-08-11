@@ -1059,8 +1059,17 @@ const SERVER = 'https://adstack-server.onrender.com';
 // AbortController manuel + setTimeout, une technique bien plus ancienne et largement supportée.
 function fetchAvecTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timer));
+  // Cause profonde corrigée (message cryptique "signal is aborted without reason" dans les
+  // logs, difficile à distinguer d'une vraie panne réseau) : controller.abort() sans argument
+  // produit ce message générique du navigateur. Une raison explicite est donnée maintenant,
+  // et l'erreur est réécrite pour être immédiatement compréhensible en cas de vrai timeout.
+  const timer = setTimeout(() => controller.abort(`Timeout après ${timeoutMs/1000}s — le serveur n'a pas répondu à temps (probablement en train de se réveiller)`), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal })
+    .catch(e => {
+      if (controller.signal.aborted) throw new Error(controller.signal.reason || `Timeout après ${timeoutMs/1000}s`);
+      throw e;
+    })
+    .finally(() => clearTimeout(timer));
 }
 // ── Supabase (file d'attente démos) ──
 // Cache en mémoire des CT (id -> URL publique, + _mime/_name/_addedAt par clé dérivée) —
