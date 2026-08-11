@@ -1626,6 +1626,19 @@ async function runFullDemo() {
     statusEl.scrollTop = statusEl.scrollHeight;
   };
 
+  // Cause profonde corrigée (rafraîchir la page pendant/après une démo effaçait tout, y compris
+  // un lien déjà uploadé de façon permanente sur Supabase Storage) : création d'une session
+  // dédiée dès le démarrage, sauvegardée régulièrement, retrouvable après un rechargement.
+  let demoSessionId = null;
+  try {
+    const rSession = await fetch(SERVER + '/demo-sessions', { method: 'POST' });
+    const dSession = await rSession.json();
+    if (dSession.id) {
+      demoSessionId = dSession.id;
+      localStorage.setItem('adstack_active_demo', demoSessionId);
+    }
+  } catch(e) { console.warn('[Demo Session] Création échouée, la démo continuera sans persistance :', e.message); }
+
   try {
     // ── 1/3 — STRATÈGE : synthèse S0→S7 ──
     log('1/3 · Stratège — analyse du marché et construction de la synthèse...');
@@ -1651,6 +1664,7 @@ async function runFullDemo() {
     ];
     const synthese = await apiSynthesize(stratSystem, stratParts, stratAgent.maxTokens || 32000, true, demoAbortController.signal);
     log('✓ Synthèse générée (' + synthese.length + ' caractères)', 'ok');
+    demoSessionAutosave(demoSessionId, { synthese, prospectInfo, productImgB64 });
 
     // Stocker la synthèse pour affichage dans le panel collapsible
     const _sp = document.getElementById('synthesePanel');
@@ -1710,6 +1724,7 @@ async function runFullDemo() {
           if (genData.error) throw new Error(genData.error);
           creatives.push(genData.imageData);
           log(`✓ Concept ${i+1}/3 généré (${ct})`, 'ok');
+          demoSessionAutosave(demoSessionId, { synthese, prospectInfo, productImgB64, creatives, chosenCTs });
           succes = true;
         } catch(eCreative) {
           if (eCreative.name === 'AbortError') throw eCreative; // vraie annulation, jamais réessayée
@@ -1731,14 +1746,14 @@ async function runFullDemo() {
     // besoin des 3 images) — mais on garde tout ce qui a déjà réussi en mémoire, accessible pour
     // un renvoi ciblé qui ne regénère QUE les échecs, sans jamais repayer les créatives réussies.
     if (echecsCreatives.length > 0) {
-      window._demoPartialState = { synthese, chosenCTs, masterCreative, productImgB64, creatives, prospectInfo, demoGenPhotoB64, demoGenPhotoMime };
+      window._demoPartialState = { synthese, chosenCTs, masterCreative, productImgB64, creatives, prospectInfo, demoGenPhotoB64, demoGenPhotoMime, demoSessionId };
       const err = new Error(`${echecsCreatives.length}/3 créative(s) définitivement échouée(s) après plusieurs tentatives.`);
       err.isPartialFailure = true;
       throw err;
     }
 
     // Étape mindmap + suite extraite dans resumeDemoAfterCreatives() — réutilisée par la reprise
-    await resumeDemoAfterCreatives({ synthese, prospectInfo, creatives });
+    await resumeDemoAfterCreatives({ synthese, prospectInfo, creatives, demoSessionId });
   } catch(e) {
     if (demoAbortController && demoAbortController.signal.aborted) {
       log('⏹ Génération annulée.', 'warn');
@@ -1794,7 +1809,7 @@ async function retryFailedDemoCreatives() {
   log('↻ Reprise — régénération des créatives échouées uniquement...');
 
   try {
-    const { synthese, chosenCTs, masterCreative, productImgB64, creatives } = state;
+    const { synthese, chosenCTs, masterCreative, productImgB64, creatives, prospectInfo, demoSessionId } = state;
     for (let i = 0; i < chosenCTs.length; i++) {
       if (creatives[i]) continue; // déjà réussie précédemment — jamais retouchée, jamais repayée
       if (demoAbortController.signal.aborted) throw new DOMException('Annulé', 'AbortError');
@@ -1816,6 +1831,7 @@ async function retryFailedDemoCreatives() {
           if (genData.error) throw new Error(genData.error);
           creatives[i] = genData.imageData;
           log(`✓ Concept ${i+1}/3 généré (${ct})`, 'ok');
+          demoSessionAutosave(demoSessionId, { synthese, prospectInfo, productImgB64, creatives, chosenCTs });
           succes = true;
         } catch(eCreative) {
           if (eCreative.name === 'AbortError') throw eCreative;
@@ -1864,7 +1880,7 @@ async function retryFailedDemoCreatives() {
 // normale ET par la reprise après échec partiel (retryFailedDemoCreatives), sans dupliquer ~300
 // lignes de logique. state contient tout le contexte nécessaire (creatives déjà générées incluses).
 async function resumeDemoAfterCreatives(state) {
-  const { synthese, prospectInfo, creatives } = state;
+  const { synthese, prospectInfo, creatives, demoSessionId } = state;
   const statusEl = document.getElementById('demoGenStatus');
   const resultEl = document.getElementById('demoGenResult');
   const placeholderEl = document.getElementById('demoGenPlaceholder');
@@ -2148,6 +2164,15 @@ async function resumeDemoAfterCreatives(state) {
     document.getElementById('demoGenIframe').src = URL.createObjectURL(blob);
     document.getElementById('demoGenLink').value = saveData.url;
     demoGenLastUrl = saveData.url;
+    // Session marquée terminée — le lien permanent (déjà sur Supabase Storage) est retrouvable
+    // après un rechargement, plus besoin du marqueur "session active" pour cette démo.
+    if (demoSessionId) {
+      await demoSessionAutosave(demoSessionId, { synthese, prospectInfo, creatives }, 'done', saveData.url);
+      try {
+        if (localStorage.getItem('adstack_active_demo') === demoSessionId) localStorage.removeItem('adstack_active_demo');
+        localStorage.setItem('adstack_last_demo_url', saveData.url);
+      } catch(e) {}
+    }
     // ── Sync CRM si démo générée depuis la file d'attente ──
     if (_queueItem && saveData.url) {
       try {
@@ -2532,6 +2557,28 @@ function prodv2AutosaveDeliverables() {
       });
     } catch(e) { console.warn('[Commande] Autosave échoué :', e.message); }
   }, 800);
+}
+
+// ── Autosave de session démo — même principe que prodv2AutosaveDeliverables, adapté au mode
+// démo (pas de commande/ticket, une session dédiée créée au démarrage de runFullDemo). ──
+let _demoAutosaveTimer = null;
+function demoSessionAutosave(demoSessionId, state, status, finalUrl) {
+  if (!demoSessionId) return; // session jamais créée (échec réseau au démarrage) — pas de persistance possible
+  clearTimeout(_demoAutosaveTimer);
+  return new Promise(resolve => {
+    _demoAutosaveTimer = setTimeout(async () => {
+      try {
+        const body = { state };
+        if (status) body.status = status;
+        if (finalUrl !== undefined) body.finalUrl = finalUrl;
+        await fetch(`${SERVER}/demo-sessions/${demoSessionId}/save`, {
+          method: 'POST', headers: {'Content-Type':'application/json'},
+          body: JSON.stringify(body)
+        });
+      } catch(e) { console.warn('[Demo Session] Autosave échoué :', e.message); }
+      resolve();
+    }, status === 'done' ? 0 : 500); // sauvegarde finale immédiate, jamais débounced
+  });
 }
 
 // ── Nombre d'angles dynamique selon la quantité commandée ──
@@ -6651,6 +6698,108 @@ function showDemoGen(){
   // Deselect any pipeline agent
   document.querySelectorAll('.sidebar-agent').forEach(a => a.classList.remove('active'));
   _pushFactoryUrl('demo');
+  demoCheckResume();
+}
+
+// ── Reprise de session démo au chargement/rafraîchissement — même principe que
+// prodv2CheckResume() pour la production. Deux cas : session terminée (juste réafficher le
+// lien permanent déjà sur Supabase Storage) ou session interrompue en cours de génération
+// (réafficher la synthèse + créatives déjà réussies, avec possibilité de reprendre).
+async function demoCheckResume() {
+  if (window._demoRunning) return; // génération déjà active dans cette session, ne rien écraser
+  let sessionId;
+  try { sessionId = localStorage.getItem('adstack_active_demo'); } catch(e) { return; }
+  if (!sessionId) return;
+
+  const statusEl = document.getElementById('demoGenStatus');
+  const resultEl = document.getElementById('demoGenResult');
+  const placeholderEl = document.getElementById('demoGenPlaceholder');
+  const log = (msg, cls) => {
+    const d = document.createElement('div');
+    if(cls) d.className = cls;
+    d.textContent = msg;
+    statusEl.appendChild(d);
+    statusEl.scrollTop = statusEl.scrollHeight;
+  };
+
+  try {
+    const r = await fetch(`${SERVER}/demo-sessions/${sessionId}`, { signal: AbortSignal.timeout(15000) });
+    if (!r.ok) { try { localStorage.removeItem('adstack_active_demo'); } catch(e){} return; }
+    const session = await r.json();
+    const state = session.state || {};
+
+    if (session.status === 'done' && session.final_url) {
+      // Cas simple — la démo est déjà terminée et son HTML permanent existe sur Supabase
+      // Storage. On réaffiche juste le lien + l'aperçu, rien à régénérer.
+      if (state.synthese) {
+        const _sp = document.getElementById('synthesePanel');
+        const _sc = document.getElementById('syntheseContent');
+        const _scc = document.getElementById('syntheseCharCount');
+        if (_sp && _sc) { _sp.style.display=''; _sc.textContent = state.synthese; if (_scc) _scc.textContent = state.synthese.length + ' caractères'; }
+      }
+      document.getElementById('demoGenLink').value = session.final_url;
+      demoGenLastUrl = session.final_url;
+      try {
+        const htmlRes = await fetch(session.final_url, { signal: AbortSignal.timeout(15000) });
+        if (htmlRes.ok) {
+          const html = await htmlRes.text();
+          const blob = new Blob([html], {type:'text/html'});
+          document.getElementById('demoGenIframe').src = URL.createObjectURL(blob);
+        } else {
+          document.getElementById('demoGenIframe').src = session.final_url;
+        }
+      } catch(e) { document.getElementById('demoGenIframe').src = session.final_url; }
+      if(placeholderEl) placeholderEl.style.display = 'none';
+      resultEl.style.display = 'flex';
+      statusEl.style.display = 'none';
+      try { localStorage.removeItem('adstack_active_demo'); } catch(e) {} // reprise faite, plus besoin du marqueur
+      return;
+    }
+
+    // Cas interrompu — génération en cours coupée par un rafraîchissement. On réaffiche ce qui
+    // existe déjà (synthèse, créatives réussies) avec un vrai bouton pour reprendre, sans jamais
+    // avoir à repayer ce qui a déjà été généré.
+    const nbCreatives = (state.creatives || []).filter(Boolean).length;
+    if (!state.synthese && nbCreatives === 0) { try { localStorage.removeItem('adstack_active_demo'); } catch(e){} return; } // rien à reprendre
+
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = '';
+    if(placeholderEl) placeholderEl.style.display = 'none';
+    log(`↻ Reprise d'une démo interrompue — ${state.synthese ? 'synthèse déjà générée' : 'pas encore de synthèse'}${nbCreatives ? `, ${nbCreatives}/3 créative(s) déjà réussie(s)` : ''}.`);
+    if (state.synthese) {
+      const _sp = document.getElementById('synthesePanel');
+      const _sc = document.getElementById('syntheseContent');
+      const _scc = document.getElementById('syntheseCharCount');
+      if (_sp && _sc) { _sp.style.display=''; _sc.textContent = state.synthese; if (_scc) _scc.textContent = state.synthese.length + ' caractères'; }
+    }
+    const reprendreDiv = document.createElement('div');
+    reprendreDiv.style.cssText = 'margin-top:10px;';
+    const reprendreBtn = document.createElement('button');
+    reprendreBtn.className = 'btn btn-primary btn-sm';
+    reprendreBtn.textContent = '↻ Reprendre cette démo — sans repayer ce qui existe déjà';
+    reprendreBtn.onclick = async () => {
+      // masterCreative n'est jamais persisté (déjà disponible localement via COMP_FILES, pas
+      // besoin d'alourdir la session) — reconstruit ici à chaque reprise.
+      const masterCreative = COMP_FILES['MASTER_CREATIVE.md'] || '';
+      let chosenCTs = state.chosenCTs;
+      let creatives = state.creatives || [];
+      // Cas limite : interruption avant même la sélection des CT (juste après la synthèse,
+      // aucune créative encore tentée) — retryFailedDemoCreatives() suppose que les CT sont
+      // déjà choisis. On les sélectionne ici avant de continuer, sans repayer la synthèse.
+      if (!chosenCTs || !chosenCTs.length) {
+        reprendreBtn.disabled = true; reprendreBtn.textContent = 'Sélection des CT...';
+        try {
+          chosenCTs = await selectCTsForGeneration(state.synthese, 3, 'demo');
+          creatives = [];
+        } catch(e) { alert('Sélection des CT échouée : ' + e.message); reprendreBtn.disabled = false; reprendreBtn.textContent = '↻ Reprendre cette démo — sans repayer ce qui existe déjà'; return; }
+      }
+      window._demoPartialState = { ...state, masterCreative, chosenCTs, creatives, demoSessionId: sessionId };
+      if (creatives.filter(Boolean).length >= 3) resumeDemoAfterCreatives(window._demoPartialState);
+      else retryFailedDemoCreatives();
+    };
+    reprendreDiv.appendChild(reprendreBtn);
+    statusEl.appendChild(reprendreDiv);
+  } catch(e) { console.warn('[Demo Session] Reprise échouée :', e.message); }
 }
 
 let pipelineExpanded = false;
