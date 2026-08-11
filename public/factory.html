@@ -2946,6 +2946,29 @@ function prodv2MarkCreativeError(idx, errMsg) {
 }
 
 async function prodv2GenerateOneCopy(angleIdx, signal) {
+  // Cause profonde corrigée (description vide sur un angle — "Gemini n'a pas suivi le format") :
+  // budget de tokens largement suffisant (12000, alors qu'une génération réussie n'en utilise
+  // qu'environ 300), donc pas une coupure — un écart de génération isolé. Plutôt que d'accepter
+  // silencieusement un message de repli visible par le client, on retente automatiquement une
+  // fois avant d'abandonner — une nouvelle tentative suffit presque toujours sur ce genre d'écart.
+  for (let tentative = 1; tentative <= 2; tentative++) {
+    const { hooks, description } = await prodv2GenerateOneCopyAttempt(angleIdx, signal);
+    if (description && description !== '(description vide — Gemini n\'a pas suivi le format)') {
+      prodv2State.copies[angleIdx] = { hooks, description };
+      prodv2RenderCopy(angleIdx);
+      prodv2AutosaveDeliverables();
+      return;
+    }
+    if (tentative < 2) console.warn(`[Copywriter] Description vide pour l'angle ${angleIdx+1}, nouvelle tentative...`);
+  }
+  // Les 2 tentatives ont échoué — on accepte le repli, mais au moins ce n'était pas la 1ère fois venue.
+  const { hooks, description } = await prodv2GenerateOneCopyAttempt(angleIdx, signal);
+  prodv2State.copies[angleIdx] = { hooks, description };
+  prodv2RenderCopy(angleIdx);
+  prodv2AutosaveDeliverables();
+}
+
+async function prodv2GenerateOneCopyAttempt(angleIdx, signal) {
   const copywriterSystem = COMP_FILES['COMPETENCE_COPYWRITER_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
   // Consigne durcie : pas de markdown gras autour des labels, pas de labels AIDA visibles
@@ -3020,9 +3043,7 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
   if (description) description = stripAidaLabels(description);
   if(!description) description = '(description vide — Gemini n\'a pas suivi le format)';
 
-  prodv2State.copies[angleIdx] = { hooks, description };
-  prodv2RenderCopy(angleIdx);
-  prodv2AutosaveDeliverables();
+  return { hooks, description };
 }
 
 function prodv2RenderCopy(angleIdx) {
@@ -3251,6 +3272,16 @@ async function prodv2SendClient() {
     // maintenant le compte réel poussé vs attendu — on ne verrouille en succès QUE si tout est
     // vraiment passé, sinon on prévient clairement et on laisse le bouton actif pour réessayer.
     const push = result?.push;
+    // Cause profonde corrigée ("6 sur 9 considéré comme complet") : ce cas est DIFFÉRENT d'un
+    // envoi partiel — ici, les créatives manquantes n'ont jamais été sauvegardées du tout
+    // (échec de sauvegarde en cours de génération), donc "renvoyer" ne les fera jamais
+    // apparaître. Il faut les régénérer dans Factory, pas juste retenter l'envoi.
+    if (push && push.manqueVsQuantiteDemandee) {
+      alert(`⚠️ Seulement ${push.expectedCount}/${push.quantiteDemandee} créatives ont été sauvegardées — les ${push.quantiteDemandee - push.expectedCount} manquantes n'ont jamais été enregistrées (probablement une sauvegarde en échec pendant la génération). Retourne dans le ticket et clique sur "Relancer" pour régénérer les manquantes — un simple renvoi ne suffira pas, elles n'existent nulle part.`);
+      if (btn) { btn.disabled = false; btn.textContent = `⚠️ ${push.expectedCount}/${push.quantiteDemandee} seulement`; }
+      loadCommandes();
+      return;
+    }
     if (push && push.pushedCount < push.expectedCount) {
       alert(`⚠️ Envoi partiel : ${push.pushedCount}/${push.expectedCount} créatives réellement transmises à AdBoard. Clique à nouveau sur "Envoyer au client" pour renvoyer — les créatives déjà bien reçues ne seront pas dupliquées.`);
       if (btn) { btn.disabled = false; btn.textContent = `⚠️ Renvoyer (${push.pushedCount}/${push.expectedCount})`; }
