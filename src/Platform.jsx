@@ -2224,6 +2224,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null);
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
   const [selected, setSelected] = useState(null);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectMode, setSelectMode] = useState(false);
@@ -2232,7 +2234,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  const weeks = ['S1','S2','S3','S4','S5'];
   // Cause profonde corrigée : CREA était une constante vide codée en dur (jamais remplie) —
   // la galerie affichait des rectangles de dégradé factices, jamais les vraies créatives déjà
   // livrées par Factory. Dérivé maintenant depuis products (real Supabase products.creatives).
@@ -2250,17 +2251,33 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   };
   const realCreatives = products.flatMap(p => p.creatives || []).sort((a,b) => dateCreative(b) - dateCreative(a));
   const angleSet = [...new Set(realCreatives.map(c => c.angle))];
+  // "Batch" — anciennement affiché sous le nom "Date", ce qui prêtait à confusion avec la vraie
+  // date de livraison (voir le nouveau filtre "Date" en dessous). Liste dérivée des vraies
+  // créatives présentes (avant : liste codée en dur ['S1'...'S5'], ne reflétait jamais la réalité).
+  const batchSet = [...new Set(realCreatives.map(c => c.week).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, undefined, {numeric:true}));
+  // Nouveau filtre Cible — chaque créative porte maintenant sa cible d'origine (voir serveur).
+  // Les créatives livrées avant ce fix n'ont pas ce champ — regroupées sous un intitulé honnête
+  // plutôt que d'être silencieusement exclues du filtre.
+  const CIBLE_INCONNUE = 'Cible non identifiée (livrée avant ce fix)';
+  const cibleSet = [...new Set(realCreatives.map(c => c.cible || CIBLE_INCONNUE))];
 
   const filtered = realCreatives.filter(c => {
     if (selectedProduct && c.productId !== selectedProduct) return false;
     const q = query.trim().toLowerCase();
-    if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q)) return false;
+    if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q) && !(c.cible||'').toLowerCase().includes(q)) return false;
     if (filterMode==='angle' && activeChip && c.angle!==activeChip) return false;
-    if (filterMode==='date' && activeChip && c.week!==activeChip) return false;
+    if (filterMode==='batch' && activeChip && c.week!==activeChip) return false;
+    if (filterMode==='cible' && activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
+    if (filterMode==='date') {
+      const t = dateCreative(c);
+      if (dateDebut && t < new Date(dateDebut).getTime()) return false;
+      if (dateFin && t > new Date(dateFin).getTime() + 86400000) return false; // inclut toute la journée de fin
+    }
     return true;
   });
 
-  const chips = filterMode==='angle' ? angleSet : filterMode==='date' ? weeks : [];
+  const chips = filterMode==='angle' ? angleSet : filterMode==='batch' ? batchSet : filterMode==='cible' ? cibleSet : [];
 
   const confirmDeleteSelected = async () => {
     setDeleting(true);
@@ -2373,8 +2390,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
         />
       </div>
 
-      <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18}}>
-        {[['tous','Tous','grid'],['date','Date','calendar'],['angle','Angle','tag']].map(([id,label,icon]) => (
+      <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18, flexWrap:'wrap'}}>
+        {[['tous','Tous','grid'],['batch','Batch','card'],['date','Date','calendar'],['angle','Angle','tag'],['cible','Cible','person']].map(([id,label,icon]) => (
           <button key={id} onClick={() => {setFilterMode(id); setActiveChip(null);}}
             style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
@@ -2382,12 +2399,34 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
         ))}
       </div>
 
-      {filterMode!=='tous' && (
+      {filterMode==='date' && (
+        <div style={{display:'flex',gap:10,alignItems:'center',marginBottom:18,flexWrap:'wrap'}}>
+          <div style={{display:'flex',flexDirection:'column',gap:3}}>
+            <span style={{fontSize:10,color:C.muted,textTransform:'uppercase',letterSpacing:.5}}>Du</span>
+            <input type="date" value={dateDebut} onChange={e=>setDateDebut(e.target.value)}
+              style={{padding:'7px 10px',borderRadius:7,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none'}}/>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:3}}>
+            <span style={{fontSize:10,color:C.muted,textTransform:'uppercase',letterSpacing:.5}}>Au</span>
+            <input type="date" value={dateFin} onChange={e=>setDateFin(e.target.value)}
+              style={{padding:'7px 10px',borderRadius:7,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none'}}/>
+          </div>
+          {(dateDebut || dateFin) && (
+            <button onClick={()=>{setDateDebut('');setDateFin('');}}
+              style={{alignSelf:'flex-end',padding:'7px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+              Effacer
+            </button>
+          )}
+        </div>
+      )}
+
+      {(filterMode==='angle' || filterMode==='batch' || filterMode==='cible') && (
         <div style={{display:'flex',gap:6,marginBottom:18,flexWrap:'wrap'}}>
           {chips.map(ch => (
             <button key={ch} onClick={() => setActiveChip(activeChip===ch?null:ch)}
-              style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${activeChip===ch?C.borderM:C.border}`,cursor:'pointer',background:activeChip===ch?'rgba(255,255,255,0.09)':'transparent',color:activeChip===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
-              {filterMode==='date' ? `Batch ${ch.replace(/^[SB]/,'')}` : ch}
+              style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${activeChip===ch?C.borderM:C.border}`,cursor:'pointer',background:activeChip===ch?'rgba(255,255,255,0.09)':'transparent',color:activeChip===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}
+              title={ch}>
+              {filterMode==='batch' ? `Batch ${ch.replace(/^[SB]/,'')}` : ch}
             </button>
           ))}
         </div>
@@ -2445,6 +2484,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:C.text}}>{selected.angle}</div>
                 <div style={{fontSize:11,color:C.sec}}>Batch {selected.week.replace(/^[SB]/,'')}</div>
+                {selected.cible && <div style={{fontSize:10.5,color:C.muted,marginTop:2}}>{selected.cible}</div>}
               </div>
               <button onClick={() => shareOrDownloadImage(selected.imageUrl, `${selected.angle}-${selected.week}.jpg`.replace(/[^\w.-]+/g,'_'), isMobile)}
                 style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -2482,7 +2522,7 @@ const Copies = ({products, setSection}) => {
   };
 
   const allAngles = selected
-    ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, idUnique:`${d.semaine}-${a.numero}`})))
+    ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, cible:d.cible, idUnique:`${d.semaine}-${a.numero}`})))
     : [];
 
   const filtered = products.filter(p => p.nom.toLowerCase().includes(query.toLowerCase()));
@@ -2600,7 +2640,7 @@ const Copies = ({products, setSection}) => {
                 <div style={{fontSize:10,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:8}}>Aller à l'angle</div>
                 <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                   {allAngles.map(a => (
-                    <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}`}
+                    <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}`}
                       style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
                       onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
                       onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
@@ -2611,12 +2651,19 @@ const Copies = ({products, setSection}) => {
 
               {/* Deliveries + Angles */}
               {(selected.deliveries||[]).map(delivery => (
-                <div key={delivery.semaine} style={{marginBottom:28}}>
+                <div key={delivery.ticketId || delivery.semaine} style={{marginBottom:28}}>
                   <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
                     <div style={{height:1,flex:1,background:C.border}}/>
-                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,flexShrink:0}}>
+                    <div style={{display:'flex',alignItems:'center',gap:7,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,flexShrink:0,maxWidth:'80%'}}>
                       <Icon name="clock" size={11} color={C.sec}/>
                       <span style={{fontSize:11,color:C.sec,fontWeight:600,whiteSpace:'nowrap'}}>Batch {delivery.semaine.replace(/^[SB]/,'')} · {delivery.date}</span>
+                      {delivery.cible && (
+                        <>
+                          <span style={{color:C.border}}>·</span>
+                          <Icon name="person" size={11} color={C.sec}/>
+                          <span style={{fontSize:11,color:C.sec,fontWeight:600,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}} title={delivery.cible}>{delivery.cible}</span>
+                        </>
+                      )}
                     </div>
                     <div style={{height:1,flex:1,background:C.border}}/>
                   </div>
