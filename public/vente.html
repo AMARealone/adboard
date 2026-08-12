@@ -1,0 +1,1467 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>AdStack — Agence de créatives publicitaires Meta Ads</title>
+
+    <!-- Miniature de marque -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="AdStack — Agence de créatives publicitaires Meta Ads">
+    <meta property="og:description" content="Images publicitaires basées sur une vraie analyse de marché. Livrées chaque semaine.">
+    <meta property="og:image" content="https://mifljhsusidgzelnswma.supabase.co/storage/v1/object/public/demos/adstack_thumb_main.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:site_name" content="AdStack">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="AdStack — Agence de créatives publicitaires Meta Ads">
+    <meta name="twitter:description" content="Images publicitaires basées sur une vraie analyse de marché. Livrées chaque semaine.">
+    <meta name="twitter:image" content="https://mifljhsusidgzelnswma.supabase.co/storage/v1/object/public/demos/adstack_thumb_main.png">
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+
+    <!-- PWA / Ajout à l'écran d'accueil -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-title" content="AdStack">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#0B0F1A">
+    <meta name="application-name" content="AdStack">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Microsoft Clarity -->
+    <script type="text/javascript">
+      (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      })(window, document, "clarity", "script", "xgd6800ey3");
+    </script>
+
+    <!-- Meta Pixel -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '1425042735803143');
+      fbq('track', 'PageView');
+    </script>
+
+    <!-- Attribution CRM — capture le prospect et le message d'origine (démo/J+3/J+10/J+21)
+         dès l'arrivée, avant même toute interaction. Reprise à l'identique d'adboard.html :
+         c'est justement CETTE page que visitent les prospects relancés par le CRM. -->
+    <script>
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var prospectId = params.get('utm_content');
+        var campagne   = params.get('utm_campaign');
+        if (prospectId && campagne) {
+          try {
+            localStorage.setItem('crm_attribution', JSON.stringify({
+              prospect_id: prospectId,
+              campagne: campagne,
+              capture_le: new Date().toISOString()
+            }));
+          } catch(e) {}
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=1425042735803143&ev=PageView&noscript=1"
+    /></noscript>
+<!-- ════════════════════════════════════════════════════
+     ADSTACK — PAGE DE VENTE COMPLÈTE — PRIX MIS À JOUR
+     Starter: 29.900 | Pro: 59.900 | Scale: 99.900
+════════════════════════════════════════════════════ -->
+<script>
+var ADSTACK_CONFIG = {
+  prix_starter:        "29.900",
+  prix_starter_barre:  "45.000",
+  prix_starter_img:    "830",
+  prix_standard:       "59.900",
+  prix_standard_barre: "90.000",
+  prix_standard_img:   "624",
+  prix_scale:          "99.900",
+  prix_scale_barre:    "150.000",
+  prix_scale_img:      "520",
+  url_starter:  "https://ecomaster.mychariow.shop/prd_ljowq8/checkout",
+  url_standard: "https://ecomaster.mychariow.shop/prd_34w031/checkout",
+  url_scale:    "https://ecomaster.mychariow.shop/prd_9fi79y/checkout",
+  demo_url:     "https://thefirstquality01.systeme.io/formsdemo",
+  webhook:      "https://script.google.com/macros/s/AKfycby-Znkb9OiajxzZrriH-ve-QZERbuwgN-yBYDOMTzsaoMTGSN_bCZ6CSmZB1xn5Ou7eEQ/exec",
+  chatbot_api_key: "YOUR_API_KEY_HERE",
+  code_promo:    "CREA1",
+  remise_promo:  "10"
+};
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body,.adstack-hero-v2,.wu-section,.wi-section,.fd-section,.transform-section,.cvr,.travaux-section,.process-section,.avis-section,.reviews-section,.faq-section,.pricing-section,.sp-hero,.exemple-section,.ads-footer{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+.wu-title,.wi-title,.tf-title,.cvr-title,.tv-title,.proc-headline,.faq-title,.pr-title,.sol-v2-headline,.avis-title{font-size:30px!important;font-weight:900!important;letter-spacing:-.8px!important;line-height:1.12!important;color:#fff!important}
+@media(min-width:600px){.wu-title,.wi-title,.tf-title,.cvr-title,.tv-title,.proc-headline,.faq-title,.pr-title,.sol-v2-headline,.avis-title{font-size:38px!important}}
+.wu-section p:not(.wu-card-sub):not(.wu-attr-label),.wi-sub,.tf-sub,.cvr-sub,.tv-sub,.proc-sub,.faq-sub,.avis-subtitle{font-size:14px!important;color:#5A5D65!important;line-height:1.6!important}
+.wu-card-sub,.proc-step-desc,.cvr-item-desc,.rvw-text,.faq-a-text{font-size:13px!important;line-height:1.65!important}
+.wu-label,.wi-label,.avis-label,.rvw-label,.pr-label,.cvr-label,.proc-label,.fd-label{display:none!important}
+.adstack-nav{width:100vw;position:relative;left:50%;margin-left:-50vw;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 5%;background:#0A0A0E;border-bottom:1px solid rgba(255,255,255,0.07);box-sizing:border-box;z-index:999}
+.nav-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.nav-logo img{height:30px;width:auto;display:block}
+.nav-logo-name{font-size:16px;font-weight:900;letter-spacing:-.4px;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:nav-grad 3s ease infinite}
+@keyframes nav-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.nav-right{display:flex;align-items:center;gap:8px}
+.nav-cart{display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none;background:rgba(31,182,255,0.06);border:1px solid rgba(31,182,255,0.2);border-radius:50px;padding:7px 13px;transition:background .2s,border-color .2s}
+.nav-cart:hover{background:rgba(31,182,255,0.12);border-color:rgba(31,182,255,0.4)}
+.nav-cart svg{width:16px;height:16px;fill:none;stroke:#1FB6FF;flex-shrink:0}
+.nav-cart-label{font-size:11px;font-weight:800;color:#1FB6FF!important;letter-spacing:.3px;white-space:nowrap;text-transform:uppercase}
+.nav-menu-wrap{position:relative}
+.nav-menu-btn{width:36px;height:36px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-direction:column;gap:4px;padding:0;flex-shrink:0;transition:background .2s,border-color .2s}
+.nav-menu-btn span{display:block;width:16px;height:1.5px;background:#9EA1A8;border-radius:2px;transition:transform .2s ease,opacity .2s ease}
+.nav-menu-btn.open span:nth-child(1){transform:translateY(5.5px) rotate(45deg)}
+.nav-menu-btn.open span:nth-child(2){opacity:0}
+.nav-menu-btn.open span:nth-child(3){transform:translateY(-5.5px) rotate(-45deg)}
+.nav-dropdown{position:absolute;top:46px;right:0;background:rgba(13,13,26,0.97);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:6px;min-width:200px;box-shadow:0 20px 50px rgba(0,0,0,0.7);display:none;z-index:9999}
+.nav-dropdown.open{display:block;animation:nav-drop-in .18s ease}
+@keyframes nav-drop-in{from{opacity:0;transform:translateY(-8px) scale(0.97)}to{opacity:1;transform:none}}
+.nav-drop-item{display:flex;align-items:center;gap:10px;padding:10px 14px;font-size:13px;font-weight:600;color:#7C8087!important;border-radius:9px;cursor:pointer;text-decoration:none;transition:background .15s,color .15s}
+.nav-drop-item:hover{background:rgba(31,182,255,0.07);color:#fff!important}
+a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:none!important;position:absolute!important;bottom:-9999px!important}
+#made-with-systeme-io,.s-io-badge{display:none!important;opacity:0!important;visibility:hidden!important;height:0!important;width:0!important;pointer-events:none!important}
+</style>
+<nav class="adstack-nav">
+  <a class="nav-logo" href="#"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" width="80" height="28"><span class="nav-logo-name">AdStack</span></a>
+  <div class="nav-right">
+    <a class="nav-cart" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:29900});setTimeout(function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});},150);">
+      <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.43H6"/></svg>
+      <span class="nav-cart-label">Voir Offres</span>
+    </a>
+    <div class="nav-menu-wrap">
+      <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
+      <div class="nav-dropdown" id="navDrop">
+        <a class="nav-drop-item" href="#pourquoi-nous" onclick="event.preventDefault();document.getElementById('pourquoi-nous').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
+        <a class="nav-drop-item" href="#pourquoi-images" onclick="event.preventDefault();document.getElementById('pourquoi-images').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Pourquoi des images</a>
+        <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:29900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
+        <a class="nav-drop-item" href="#faq" onclick="event.preventDefault();var el=document.getElementById('faq');if(el)el.scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
+      </div>
+    </div>
+  </div>
+</nav>
+<div style="display:none"><script>document.addEventListener('click',function(e){var drop=document.getElementById('navDrop');var btn=document.querySelector('.nav-menu-btn');if(drop&&!drop.contains(e.target)&&btn&&!btn.contains(e.target)){drop.classList.remove('open');if(btn)btn.classList.remove('open');}});</script></div>
+<style>
+.adstack-hero-v2{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;color:#fff;overflow:hidden;padding:0 0 40px;contain:layout style}
+.hero-body{width:92%;max-width:480px;margin:0 auto;text-align:center;padding:8px 0 10px;z-index:2;box-sizing:border-box;overflow:hidden}
+.hero-tags-row{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.hero-tag{border-radius:50px;padding:5px 10px;font-size:10px;font-weight:700;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,0.4);display:inline-flex;align-items:center;gap:5px}
+.hero-tag-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.hero-tag-1{background:#0C1828;border:1.5px solid rgba(31,182,255,0.4);color:#1FB6FF;transform:rotate(-2deg);animation:float1 4s ease-in-out infinite}
+.hero-tag-1 .hero-tag-dot{background:#1FB6FF;box-shadow:0 0 6px rgba(31,182,255,0.7)}
+.hero-tag-2{background:#1C1706;border:1.5px solid rgba(255,185,0,0.4);color:#FFB900;transform:rotate(2deg);animation:float2 3.5s ease-in-out infinite}
+.hero-tag-2 .hero-tag-dot{background:#FFB900;box-shadow:0 0 6px rgba(255,185,0,0.7)}
+.hero-tag-3{background:#071812;border:1.5px solid rgba(50,255,126,0.4);color:#32FF7E;transform:rotate(-1deg);animation:float3 5s ease-in-out infinite}
+.hero-tag-3 .hero-tag-dot{background:#32FF7E;box-shadow:0 0 6px rgba(50,255,126,0.7)}
+@keyframes float1{0%,100%{transform:rotate(-2deg) translateY(0)}50%{transform:rotate(-2deg) translateY(-6px)}}
+@keyframes float2{0%,100%{transform:rotate(2deg) translateY(0)}50%{transform:rotate(2deg) translateY(-5px)}}
+@keyframes float3{0%,100%{transform:rotate(-1deg) translateY(0)}50%{transform:rotate(-1deg) translateY(5px)}}
+.hero-headline{font-size:34px;font-weight:900;line-height:1.1;letter-spacing:-1px;color:#fff;margin:0 0 14px;word-break:keep-all;overflow-wrap:break-word}
+.hero-headline em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200% 200%;animation:hero-grad 3s ease infinite}
+.hero-subhead{font-size:14px;line-height:1.55;color:#6A6D75;margin:0 auto 24px;max-width:320px}
+.hero-subhead strong{color:#C8CAD0;font-weight:700}
+@keyframes hero-glow-pulse{0%,100%{box-shadow:0 6px 24px rgba(31,182,255,0.38),inset 0 1px 0 rgba(255,255,255,0.18)}50%{box-shadow:0 10px 36px rgba(31,182,255,0.6),inset 0 1px 0 rgba(255,255,255,0.18)}}
+@keyframes shimmer{0%{transform:translateX(-100%) skewX(-15deg)}60%{transform:translateX(250%) skewX(-15deg)}100%{transform:translateX(250%) skewX(-15deg)}}
+.cta-button{position:relative;display:inline-block;background:linear-gradient(135deg,#1FB6FF 0%,#0B5CFF 60%,#1FB6FF 100%);background-size:200% 100%;color:#fff;font-size:16px;font-weight:800;text-align:center;padding:17px 52px 17px 28px;border-radius:50px;border:none;letter-spacing:.3px;overflow:hidden;cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;transition:transform .2s ease,box-shadow .2s ease;animation:hero-glow-pulse 2.2s ease-in-out infinite;touch-action:manipulation}
+.cta-button::before{content:'';position:absolute;top:0;left:0;width:40%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:translateX(-100%) skewX(-15deg);animation:shimmer 2.4s ease-in-out infinite;pointer-events:none}
+.cta-button::after{content:'→';position:absolute;right:22px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.8;transition:transform .2s,opacity .2s}
+.cta-button:hover{animation:none;box-shadow:0 12px 40px rgba(31,182,255,0.6);transform:translateY(-2px)}
+.cta-button:hover::after{transform:translateY(-50%) translateX(4px);opacity:1}
+.cta-button:active{transform:scale(0.97);animation:none}
+.hero-urgency{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:12px;margin-bottom:4px;font-size:12px;font-weight:600;color:#5A5D65}
+.hero-urgency-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:#EF4444;box-shadow:0 0 6px rgba(239,68,68,0.7);animation:blink-dot 1.8s ease-in-out infinite}
+@keyframes blink-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(1.3)}}
+.hero-stars-block{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.hero-stars{display:flex;align-items:center;gap:3px}
+.hero-star{font-size:24px;color:#1FB6FF;line-height:1;filter:drop-shadow(0 0 6px rgba(31,182,255,0.55))}
+.hero-proof-row{display:flex;align-items:center;gap:10px}
+.hero-avatars{display:flex;align-items:center}
+.hero-avatar{width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid #0A0A0E;margin-left:-8px}
+.hero-avatars .hero-avatar:first-child{margin-left:0}
+.hero-proof-text{font-size:13px;font-weight:600;color:#5A5D65}
+.hero-proof-text strong{color:#9EA1A8;font-weight:700}
+@media(prefers-reduced-motion:no-preference){
+.hero-headline,.hero-subhead,.cta-button,.hero-stars-block{opacity:0;transform:translateY(16px);animation:fadeUp .5s ease-out forwards}
+.hero-headline{animation-delay:.12s}.hero-subhead{animation-delay:.18s}.cta-button{animation-delay:.24s}.hero-stars-block{animation-delay:.30s}
+.hero-tag-1{opacity:0;animation:tagIn .4s ease-out .4s forwards,float1 4s ease-in-out .8s infinite}
+.hero-tag-2{opacity:0;animation:tagIn .4s ease-out .5s forwards,float2 3.5s ease-in-out .9s infinite}
+.hero-tag-3{opacity:0;animation:tagIn .4s ease-out .6s forwards,float3 5s ease-in-out 1s infinite}}
+@keyframes fadeUp{to{opacity:1;transform:none}}
+@keyframes tagIn{to{opacity:1}}
+@keyframes hero-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@media(min-width:600px){.hero-headline{font-size:48px}}
+@media(prefers-reduced-motion:reduce){.hero-tag-1,.hero-tag-2,.hero-tag-3{animation:none!important;opacity:1}}
+</style>
+<div class="adstack-hero-v2">
+  <div class="hero-body">
+    <div class="hero-tags-row">
+      <div class="hero-tag hero-tag-1"><span class="hero-tag-dot"></span>Analyse de Marché</div>
+      <div class="hero-tag hero-tag-2"><span class="hero-tag-dot"></span>Images Publicitaires</div>
+      <div class="hero-tag hero-tag-3"><span class="hero-tag-dot"></span>Livraison 48h</div>
+    </div>
+    <h1 class="hero-headline">Des <em>Créatives Images</em> Basés Sur La Psychologie, <em>Conçu Pour Vendre</em></h1>
+    <p class="hero-subhead">Nous créons des publicités images à fort taux de conversion pour les e-commerçants prêts à passer au niveau supérieur</p>
+    <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Pack AdStack'});">Consultez Nos Offres</button>
+    <div class="hero-urgency"><span class="hero-urgency-dot"></span>5 places encore disponibles aujourd'hui</div>
+    <div class="hero-stars-block">
+      <div class="hero-stars"><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span></div>
+      <div class="hero-proof-row">
+        <div class="hero-avatars">
+          <img class="hero-avatar" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69a39967490e3_AVIS7.png" alt="" width="28" height="28">
+          <img class="hero-avatar" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69a399835e57c_AVIS8.png" alt="" width="28" height="28">
+          <img class="hero-avatar" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69a399174e2b4_AVIS5.png" alt="" width="28" height="28">
+        </div>
+        <div class="hero-proof-text"><strong>5/5</strong> avis sur +300 E-commerçants</div>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+.sp-hero{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:28px 0;color:#fff;overflow:hidden;contain:layout style;border-top:1px solid rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.05)}
+.sp-track-wrap{overflow:hidden;position:relative}
+.sp-track-wrap::before,.sp-track-wrap::after{content:'';position:absolute;top:0;bottom:0;width:60px;z-index:2;pointer-events:none}
+.sp-track-wrap::before{left:0;background:linear-gradient(90deg,#0A0A0E,transparent)}
+.sp-track-wrap::after{right:0;background:linear-gradient(-90deg,#0A0A0E,transparent)}
+.sp-track{display:flex;gap:14px;width:max-content;animation:sp-scroll 18s linear infinite;will-change:transform}
+.sp-track-wrap:hover .sp-track{animation-play-state:paused}
+@keyframes sp-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.sp-item{display:flex;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap;padding:0 24px}
+.sp-item-num{font-size:22px;font-weight:900;letter-spacing:-.5px;line-height:1;background:linear-gradient(90deg,#1FB6FF,#2EF2E8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sp-item-label{font-size:13px;font-weight:600;color:#fff;text-transform:uppercase;letter-spacing:1px;line-height:1.2}
+.sp-item-sep{width:1px;height:20px;background:rgba(255,255,255,0.1);flex-shrink:0}
+.exemple-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:32px 0 36px;overflow:hidden;contain:layout style}
+.exemple-row{display:flex;gap:10px;width:max-content;margin-bottom:10px}
+.exemple-row-1{animation:ex-scroll-l 28s linear infinite}
+.exemple-row-2{animation:ex-scroll-r 28s linear infinite}
+.exemple-row:hover{animation-play-state:paused}
+@keyframes ex-scroll-l{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes ex-scroll-r{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.exemple-card{width:130px;aspect-ratio:4/5;border-radius:12px;overflow:hidden;flex-shrink:0;background:#111318;box-shadow:0 6px 20px rgba(0,0,0,0.5);transition:transform .3s ease,box-shadow .3s ease}
+.exemple-card img{width:100%;height:100%;object-fit:cover;display:block}
+.exemple-card:hover{transform:scale(1.05);box-shadow:0 12px 32px rgba(0,0,0,0.7),0 0 0 2px rgba(31,182,255,0.2)}
+@media(min-width:600px){.exemple-card{width:160px}.exemple-row{gap:12px}}
+@media(prefers-reduced-motion:reduce){.exemple-row-1,.exemple-row-2{animation:none}}
+</style>
+<section class="sp-hero">
+  <div class="sp-track-wrap"><div class="sp-track">
+    <div class="sp-item"><div class="sp-item-num">+3000</div><div class="sp-item-label">Créatives livrées</div></div><div class="sp-item-sep"></div>
+    <div class="sp-item"><div class="sp-item-num">48h</div><div class="sp-item-label">Délai de livraison</div></div><div class="sp-item-sep"></div>
+    <div class="sp-item"><div class="sp-item-num">+15</div><div class="sp-item-label">Niches maîtrisées</div></div><div class="sp-item-sep"></div>
+    <div class="sp-item"><div class="sp-item-num">4:5</div><div class="sp-item-label">Format optimisé Meta</div></div><div class="sp-item-sep"></div>
+    <div class="sp-item"><div class="sp-item-num">+3000</div><div class="sp-item-label">Créatives livrées</div></div><div class="sp-item-sep"></div>
+    <div class="sp-item"><div class="sp-item-num">48h</div><div class="sp-item-label">Délai de livraison</div></div><div class="sp-item-sep"></div>
+    <div class="sp-item"><div class="sp-item-num">+15</div><div class="sp-item-label">Niches maîtrisées</div></div><div class="sp-item-sep"></div>
+    <div class="sp-item"><div class="sp-item-num">4:5</div><div class="sp-item-label">Format optimisé Meta</div></div>
+  </div></div>
+</section>
+<section class="exemple-section" id="exemple">
+  <div style="overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
+    <div class="exemple-row exemple-row-1">
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7da6d2c4d71.65870729_DEMO1.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7de499e7255.82247645_IMAGE3.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db0b4b0cd7.66540436_DEMO5.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dde36858c3.51602699_DEMO39.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db69509017.76096981_DEMO14.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7ddbf972198.05380784_DEMO36.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7da6d2c4d71.65870729_DEMO1.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7de499e7255.82247645_IMAGE3.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db0b4b0cd7.66540436_DEMO5.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dde36858c3.51602699_DEMO39.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db69509017.76096981_DEMO14.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7ddbf972198.05380784_DEMO36.png" loading="lazy" alt=""></div>
+    </div>
+  </div>
+  <div style="overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
+    <div class="exemple-row exemple-row-2">
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dbb452d076.16131025_DEMO16.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dd7cf13fd3.41258798_DEMO30.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dcc5683259.48582094_DEMO22.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dd27b92d68.35182228_DEMO25.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dc3aa04441.53858799_DEMO19.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dce5411911.19132311_DEMO23.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dbb452d076.16131025_DEMO16.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dd7cf13fd3.41258798_DEMO30.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dcc5683259.48582094_DEMO22.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dd27b92d68.35182228_DEMO25.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dc3aa04441.53858799_DEMO19.png" loading="lazy" alt=""></div>
+      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dce5411911.19132311_DEMO23.png" loading="lazy" alt=""></div>
+    </div>
+  </div>
+</section>
+<style>
+.sol-v2-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 48px;color:#fff;overflow:hidden;contain:layout style}
+.sol-v2-inner{width:88%;max-width:520px;margin:0 auto}
+.sol-v2-headline{font-size:32px;font-weight:900;line-height:1.1;letter-spacing:-1px;color:#fff;margin:0 0 20px}
+.sol-v2-headline em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:sol-grad 3s ease infinite}
+@keyframes sol-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.sol-v2-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid rgba(255,255,255,0.06);margin-bottom:36px}
+.sol-v2-item{padding:18px 0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:3px}
+.sol-v2-item:nth-child(odd){padding-right:20px;border-right:1px solid rgba(255,255,255,0.06)}
+.sol-v2-item:nth-child(even){padding-left:20px}
+.sol-v2-item-title{font-size:14px;font-weight:700;color:#fff;line-height:1.3}
+.sol-v2-img-slot{width:100%;aspect-ratio:191/100;background:#111318;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
+.sol-v2-img-slot img{width:100%;height:100%;object-fit:cover;display:block}
+.wu-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
+.wu-inner{width:88%;max-width:480px;margin:0 auto}
+.wu-header{margin-bottom:28px;text-align:center}
+.wu-title{font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff;margin:0}
+.wu-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:wu-grad 3s ease infinite}
+@keyframes wu-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.wu-stack{display:flex;flex-direction:column;gap:12px}
+.wu-card{border-radius:18px;padding:22px 20px;position:relative;overflow:hidden}
+.wu-card-hero{background:linear-gradient(135deg,#0E2A40 0%,#0A1E35 100%);border:1.5px solid rgba(31,182,255,0.35);box-shadow:0 8px 32px rgba(31,182,255,0.12)}
+.wu-card-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(31,182,255,0.6),transparent)}
+.wu-card-alt{background:#0F1118;border:1px solid rgba(255,255,255,0.07)}
+.wu-card-brand{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.wu-card-brand-name{font-size:20px;font-weight:900;letter-spacing:1px;color:#fff}
+.wu-card-title{font-size:16px;font-weight:800;color:#fff;margin-bottom:4px}
+.wu-card-sub{font-size:13px;color:#4A4D55;line-height:1.45;margin-bottom:20px}
+.wu-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.wu-attr{display:flex;align-items:center;gap:10px}
+.wu-check{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.wu-check-on-hero{background:rgba(255,255,255,0.15);backdrop-filter:blur(4px)}
+.wu-check-on-hero svg{stroke:#fff}
+.wu-check-on{background:#1a2a3a;border:1.5px solid rgba(31,182,255,0.4)}
+.wu-check-on svg{stroke:#1FB6FF}
+.wu-check-off{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)}
+.wu-check-off svg{stroke:#3A3D45}
+.wu-attr-label{font-size:13px;font-weight:600;line-height:1.2}
+.wu-attr-label-hero{color:#fff}
+.wu-attr-label-on{color:#C8CAD0}
+.wu-attr-label-off{color:#3A3D45}
+</style>
+<section class="sol-v2-section" id="solution">
+  <div class="sol-v2-inner">
+    <h2 class="sol-v2-headline">Il suffit d'<em>une créative winner</em> pour changer tes résultats. On te livre <em>le volume pour trouver la tienne.</em></h2>
+    <div class="sol-v2-grid">
+      <div class="sol-v2-item"><div class="sol-v2-item-title">Gagnez du temps</div></div>
+      <div class="sol-v2-item"><div class="sol-v2-item-title">Testez de nouveaux angles</div></div>
+      <div class="sol-v2-item"><div class="sol-v2-item-title">Recevez du volume</div></div>
+      <div class="sol-v2-item"><div class="sol-v2-item-title">Ressemble à une vraie marque</div></div>
+      <div class="sol-v2-item"><div class="sol-v2-item-title">Anticipez la production de créa</div></div>
+      <div class="sol-v2-item"><div class="sol-v2-item-title">100% Basés Sur Votre Marché</div></div>
+    </div>
+    <div class="sol-v2-img-slot">
+      <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69bccd483ed5b0.39185580_ANGLE2-CREA2-FORMATPAYSAGE31.png" alt="" width="480" height="600" loading="lazy">
+    </div>
+  </div>
+</section>
+<section class="wu-section" id="pourquoi-nous">
+  <div class="wu-inner">
+    <div class="wu-header"><h2 class="wu-title">Pas comme les autres.<br><em>Meilleur que les autres.</em></h2></div>
+    <div class="wu-stack">
+      <div class="wu-card wu-card-hero">
+        <div class="wu-card-brand">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" style="height:32px;width:auto;object-fit:contain;flex-shrink:0">
+          <div class="wu-card-brand-name">AdStack</div>
+        </div>
+        <div class="wu-grid">
+          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Rapidité</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Stratégie</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Volume</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Qualité</span></div>
+        </div>
+      </div>
+      <div class="wu-card wu-card-alt">
+        <div class="wu-card-title">Freelance</div><div class="wu-card-sub">Souvent lent, sans stratégie Meta Ads, pas scalable.</div>
+        <div class="wu-grid">
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Rapidité</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Stratégie</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Volume</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Qualité</span></div>
+        </div>
+      </div>
+      <div class="wu-card wu-card-alt">
+        <div class="wu-card-title">Canva / Faire soi-même</div><div class="wu-card-sub">Rapide à produire, mais zéro angle marketing et zéro data.</div>
+        <div class="wu-grid">
+          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Rapidité</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Stratégie</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Volume</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Qualité</span></div>
+        </div>
+      </div>
+      <div class="wu-card wu-card-alt">
+        <div class="wu-card-title">Agence généraliste</div><div class="wu-card-sub">Chère, lente et pas spécialisée e-commerce africain.</div>
+        <div class="wu-grid">
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Rapidité</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Stratégie</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Volume</span></div>
+          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Qualité</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+.transform-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
+.tf-header{width:88%;max-width:520px;margin:0 auto 40px;text-align:center}
+.tf-title{font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff!important;margin-bottom:12px}
+.tf-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:tf-grad 3s ease infinite}
+@keyframes tf-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.tf-sub{font-size:14px;color:#5A5D65!important;line-height:1.6;max-width:380px;margin:0 auto}
+.tf-scene{width:88%;max-width:520px;margin:0 auto;position:relative;display:flex;flex-direction:column;align-items:center;gap:0}
+.tf-before{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px}
+.tf-product-wrap{position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center}
+.tf-product-wrap::before{content:'';position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(31,182,255,0.08) 0%,transparent 70%);animation:tf-pulse-ring 3s ease-in-out infinite}
+@keyframes tf-pulse-ring{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.1);opacity:1}}
+.tf-product-img{width:140px;height:140px;object-fit:contain;display:block;filter:drop-shadow(0 8px 24px rgba(31,182,255,0.2));animation:tf-float 4s ease-in-out infinite}
+@keyframes tf-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.tf-connector{display:flex;flex-direction:column;align-items:center;gap:0;padding:8px 0;position:relative}
+.tf-connector-line{width:2px;height:40px;background:linear-gradient(to bottom,rgba(31,182,255,0.4),transparent);position:relative;overflow:hidden}
+.tf-connector-line::after{content:'';position:absolute;top:-100%;left:0;width:100%;height:100%;background:linear-gradient(to bottom,transparent,#1FB6FF,transparent);animation:tf-flow 1.5s ease-in-out infinite}
+@keyframes tf-flow{from{top:-100%}to{top:100%}}
+.tf-logo-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,#0F1118,#13151C);border:1px solid rgba(31,182,255,0.25);box-shadow:0 0 24px rgba(31,182,255,0.15),0 4px 16px rgba(0,0,0,0.5);animation:tf-logo-pulse 2.5s ease-in-out infinite}
+@keyframes tf-logo-pulse{0%,100%{box-shadow:0 0 24px rgba(31,182,255,0.15),0 4px 16px rgba(0,0,0,0.5)}50%{box-shadow:0 0 40px rgba(31,182,255,0.35),0 4px 20px rgba(0,0,0,0.5)}}
+.tf-orbit{position:absolute;inset:-14px;border-radius:50%;border:1px dashed rgba(31,182,255,0.15);animation:tf-orbit-spin 8s linear infinite}
+.tf-orbit-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:#1FB6FF;box-shadow:0 0 8px rgba(31,182,255,0.8);top:-3px;left:calc(50% - 3px)}
+@keyframes tf-orbit-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.tf-logo-img{width:38px;height:auto;display:block;object-fit:contain}
+.tf-process-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1FB6FF;margin-top:4px}
+.tf-after{display:flex;flex-direction:column;align-items:center;gap:10px}
+.tf-creatives{display:flex;flex-direction:row;gap:12px;align-items:flex-start}
+.tf-creative-card{position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 12px 32px rgba(0,0,0,0.6);opacity:0;transform:translateY(20px) scale(0.92);transition:border-color .3s ease,transform .3s ease}
+.tf-creative-card.visible{animation:tf-card-in .5s ease-out forwards}
+.tf-creative-card:nth-child(1){animation-delay:.1s;width:90px}
+.tf-creative-card:nth-child(2){animation-delay:.25s;width:100px;margin-top:-12px;z-index:2}
+.tf-creative-card:nth-child(3){animation-delay:.4s;width:90px}
+@keyframes tf-card-in{to{opacity:1;transform:translateY(0) scale(1)}}
+.tf-creative-card:hover{transform:translateY(-4px) scale(1.03)!important;border-color:rgba(31,182,255,0.3)}
+.tf-creative-img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+@media(min-width:600px){.tf-title{font-size:34px}.tf-creative-card:nth-child(1){width:110px}.tf-creative-card:nth-child(2){width:124px}.tf-creative-card:nth-child(3){width:110px}}
+.wi-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
+.wi-inner{width:88%;max-width:480px;margin:0 auto}
+.wi-title{font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff;margin:0 0 10px}
+.wi-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:wi-grad 3s ease infinite}
+@keyframes wi-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.wi-sub{font-size:14px;color:#4A4D55;line-height:1.6;margin:0 0 28px}
+.wi-table-wrap{overflow:hidden;margin-bottom:16px}
+.wi-thead{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,0.07)}
+.wi-th{padding:12px 8px;font-size:11px;font-weight:800;text-align:center;letter-spacing:.3px;border-right:1px solid rgba(255,255,255,0.05)}
+.wi-th:last-child{border-right:none}
+.wi-th-criteria{color:#3A3D45;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.wi-th-video{color:#4A4D55}
+.wi-th-adstack{color:#1FB6FF;background:rgba(31,182,255,0.05);position:relative}
+.wi-th-adstack::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#1FB6FF,#0B5CFF)}
+.wi-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,0.05)}
+.wi-row:last-child{border-bottom:none}
+.wi-td{padding:13px 8px;font-size:12px;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(255,255,255,0.05);line-height:1.35}
+.wi-td:last-child{border-right:none}
+.wi-td-crit{font-size:12px;font-weight:700;color:#6A6D75;text-align:left;justify-content:flex-start;padding-left:12px}
+.wi-td-video{color:#3A3D45;font-weight:500}
+.wi-td-adstack{color:#fff;font-weight:700}
+.wi-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-weight:900;line-height:1}
+.wi-icon-yes{color:#1FB6FF;font-size:18px}
+.wi-icon-no{color:#EF4444;font-size:15px}
+.wi-icon-mid{color:#fff;font-size:20px;font-weight:300;letter-spacing:-2px}
+</style>
+<section class="transform-section" id="transformation">
+  <div class="tf-header">
+    <h2 class="tf-title">Ton produit, <em>fidèle à lui-même</em> dans chaque créative.</h2>
+    <p class="tf-sub">On part de tes photos. Ton produit dans les créatives — exact, fidèle, reconnaissable.</p>
+  </div>
+  <div class="tf-scene">
+    <div class="tf-before">
+      <div class="tf-product-wrap">
+        <img class="tf-product-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69be9ff583c5c9.05722768_Forever_MACA-removebg-preview.png" alt="Produit">
+      </div>
+    </div>
+    <div class="tf-connector">
+      <div class="tf-connector-line"></div>
+      <div class="tf-logo-wrap">
+        <div class="tf-orbit"><div class="tf-orbit-dot"></div></div>
+        <img class="tf-logo-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack">
+      </div>
+      <div class="tf-process-label">AdStack Process</div>
+      <div class="tf-connector-line" style="background:linear-gradient(to bottom,transparent,rgba(31,182,255,0.4))"></div>
+    </div>
+    <div class="tf-after">
+      <div class="tf-creatives" id="tfCreatives">
+        <div class="tf-creative-card"><img class="tf-creative-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69bcc4cc8122b4.55979498_ANGLE331.png" alt=""></div>
+        <div class="tf-creative-card"><img class="tf-creative-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69be9fba29e780.89711468_ANGLE231.png" alt=""></div>
+        <div class="tf-creative-card"><img class="tf-creative-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b61688e18895.93001385_IMAGE1.png" alt=""></div>
+      </div>
+    </div>
+  </div>
+</section>
+<div style="display:none"><script>(function(){var cards=document.querySelectorAll('#tfCreatives .tf-creative-card');if(!cards.length)return;var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){cards.forEach(function(c){c.classList.add('visible');});observer.disconnect();}});},{threshold:0.3});observer.observe(document.querySelector('.tf-after'));})();</script></div>
+<section class="wi-section" id="pourquoi-images">
+  <div class="wi-inner">
+    <h2 class="wi-title" style="text-align:center">La vidéo, c'est bien.<br><em>L'image qui convertit, c'est mieux.</em></h2>
+    <p class="wi-sub" style="text-align:center">Sur Meta Ads, ce n'est pas le format qui vend — c'est l'angle. Et avec le bon angle, une image bat une vidéo à 9 reprises sur 10.</p>
+    <div class="wi-table-wrap">
+      <div class="wi-thead">
+        <div class="wi-th" style="border-right:1px solid rgba(255,255,255,0.05)"></div>
+        <div class="wi-th wi-th-video">Vidéo</div>
+        <div class="wi-th wi-th-adstack">✦ Image</div>
+      </div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Délai de prod.</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Volume / lancement</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Chargement mobile</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Coût de prod.</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Itération rapide</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Algo Meta (CBO)</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-mid">—</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Stop scroll</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-mid">—</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+      <div class="wi-row"><div class="wi-td wi-td-crit">Analyse incluse</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+    </div>
+  </div>
+</section>
+<style>
+.fd-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:64px 0 72px;color:#fff;overflow:hidden;contain:layout style;text-align:center}
+.fd-inner{width:88%;max-width:420px;margin:0 auto;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center}
+.fd-photo-wrap{position:relative;margin-bottom:28px}
+.fd-photo-clip{width:220px;height:240px;clip-path:polygon(50% 0%,90% 15%,100% 50%,85% 88%,50% 100%,15% 88%,0% 50%,10% 15%);overflow:hidden;background:#1a1a2e;position:relative}
+.fd-photo-clip img{width:100%;height:100%;object-fit:cover;object-position:top center;display:block}
+.fd-photo-glow{position:absolute;inset:-12px;clip-path:polygon(50% 0%,90% 15%,100% 50%,85% 88%,50% 100%,15% 88%,0% 50%,10% 15%);background:linear-gradient(135deg,rgba(31,182,255,0.25),rgba(11,92,255,0.15));z-index:-1;animation:fd-glow-pulse 3s ease-in-out infinite}
+@keyframes fd-glow-pulse{0%,100%{opacity:.7;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+.fd-name{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:28px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1.1;margin-bottom:6px}
+.fd-role{font-size:13px;color:#4A4D55;font-weight:400;margin-bottom:22px;letter-spacing:.2px}
+.fd-brand{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:32px;font-weight:900;letter-spacing:3px;text-transform:uppercase;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;background-size:200% 200%;animation:fd-grad 3s ease infinite;margin-bottom:28px}
+@keyframes fd-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.fd-divider{width:40px;height:2px;background:linear-gradient(90deg,#1FB6FF,#0B5CFF);border-radius:2px;margin:0 auto 28px}
+.fd-quote{font-size:16px;line-height:1.7;color:#6A6D75;font-weight:300;max-width:360px;margin-bottom:8px}
+.fd-highlight{display:inline;background:#32FF7E;color:#0A0A0E;font-weight:500;padding:2px 6px;border-radius:4px;-webkit-text-fill-color:#0A0A0E}
+.cvr{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;padding:52px 0 60px;background:#0A0A0E;overflow:hidden;width:100vw;position:relative;left:50%;margin-left:-50vw}
+.cvr-wrap{width:88%;max-width:520px;margin:0 auto}
+.cvr-title{font-size:32px;font-weight:900;line-height:1.1;letter-spacing:-1px;color:#fff!important;margin-bottom:12px}
+.cvr-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:cvr-grad 3s ease infinite}
+@keyframes cvr-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.cvr-sub{font-size:14px;color:#5A5D65!important;line-height:1.55;margin:0 0 48px;max-width:380px}
+.cvr-items{display:flex;flex-direction:column;gap:52px}
+.cvr-item-img{width:100%;aspect-ratio:16/9;background:#111318;border-radius:16px;overflow:hidden;margin-bottom:20px;border:1px solid rgba(255,255,255,0.06)}
+.cvr-item-img img{width:100%;height:100%;object-fit:cover;display:block}
+.cvr-item-num{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1FB6FF!important;opacity:.6;margin-bottom:6px}
+.cvr-item-title{font-size:22px;font-weight:900;color:#fff!important;letter-spacing:-.5px;line-height:1.15;margin-bottom:8px}
+.cvr-item-desc{font-size:14px;color:#5A5D65!important;line-height:1.65}
+.cvr-item-desc strong{color:#C8CAD0!important;font-weight:700}
+@media(min-width:600px){.cvr-title{font-size:40px}.cvr-item-title{font-size:26px}}
+</style>
+<section class="fd-section">
+  <div class="fd-inner">
+    <div class="fd-photo-wrap">
+      <div class="fd-photo-glow"></div>
+      <div class="fd-photo-clip">
+        <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dec301c88c53.74672606_FOUNDER.png" alt="Moussa Diallo — Founder AdStack" style="width:100%;height:100%;object-fit:cover;object-position:top center;display:block">
+      </div>
+    </div>
+    <div class="fd-name">Moussa Diallo</div>
+    <div class="fd-role">Fondateur &amp; Directeur Créatif</div>
+    <div class="fd-brand">AdStack</div>
+    <div class="fd-divider"></div>
+    <p class="fd-quote">En Afrique francophone, les e-commerçants ont de bons produits mais de mauvaises créatives. J'ai construit AdStack pour changer ça. <span class="fd-highlight">AdStack est l'agence qui fait vendre.</span></p>
+  </div>
+</section>
+<section class="cvr" id="ce-que-vous-recevez">
+  <div class="cvr-wrap">
+    <h2 class="cvr-title">Tout ce qu'il faut pour lancer <em>une campagne qui performe.</em></h2>
+    <p class="cvr-sub">Livré en 48h sur WhatsApp. Zéro effort de ta part. Zéro perte de temps.</p>
+    <div class="cvr-items">
+      <div class="cvr-item">
+        <div class="cvr-item-img"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b37a674e6984.44097226_1.png" alt="Créatives organisées" loading="lazy"></div>
+        <div class="cvr-item-num">01</div>
+        <div class="cvr-item-title">Tes créatives, classées par angle</div>
+        <p class="cvr-item-desc">9 images publicitaires / semaine. Chaque semaine, 9 nouvelles images dans ton Drive — <strong>prêtes à tester immédiatement</strong> dans tes campagnes Meta Ads.</p>
+      </div>
+      <div class="cvr-item">
+        <div class="cvr-item-img"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b37a67498fd1.08897046_2.png" alt="Récap analyse de marché" loading="lazy"></div>
+        <div class="cvr-item-num">02</div>
+        <div class="cvr-item-title">Récapitulatif de l'Analyse de Marché</div>
+        <p class="cvr-item-desc">La cible identifiée, les angles retenus, le raisonnement derrière chaque choix créatif. Tu sais <strong>exactement pourquoi chaque image a été construite</strong> — et sur quelle donnée de marché.</p>
+      </div>
+      <div class="cvr-item">
+        <div class="cvr-item-img"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b37a67515ea1.70966682_3.png" alt="Titres et descriptions Meta" loading="lazy"></div>
+        <div class="cvr-item-num">03</div>
+        <div class="cvr-item-title">Titres &amp; Descriptions prêts à coller sur Meta</div>
+        <p class="cvr-item-desc">Écrits pour <strong>déclencher le clic</strong>. Tu copie-colles, tu lances. Tu n'écris rien, tu ne cherches rien.</p>
+      </div>
+      <div class="cvr-item">
+        <div class="cvr-item-img"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7e824a285f8.48617453_Designsanstitre-2026-04-09T175541.419.png" alt="Guide campagne Meta Ads" loading="lazy"></div>
+        <div class="cvr-item-num">04</div>
+        <div class="cvr-item-title">Guide : Structurer Ta Campagne + Analyser Tes Résultats</div>
+        <p class="cvr-item-desc">Comment monter ta campagne CBO, quels indicateurs regarder, comment lire tes résultats et savoir <strong>quoi couper et quoi scaler</strong>. Tout ce qu'il faut pour ne pas brûler ton budget.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+.travaux-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden}
+.tv2-container{width:88%;max-width:960px;margin:0 auto}
+.tv2-title-block{text-align:center;margin-bottom:32px}
+.tv2-headline{font-size:32px;font-weight:900;line-height:1.1;letter-spacing:-1px;color:#fff;margin-bottom:10px}
+.tv2-headline em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:tv2-grad 3s ease infinite}
+@keyframes tv2-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.tv2-sub{font-size:14px;color:#5A5D65;line-height:1.55;max-width:360px;margin:0 auto}
+.tv2-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:480px){.tv2-grid{grid-template-columns:repeat(2,1fr);gap:8px}}
+.tv2-cell{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid rgba(255,255,255,0.07);background:#0F1118;transition:transform .28s ease,border-color .28s ease;will-change:transform;opacity:0;animation:tv2-fadeUp .4s ease-out both}
+.tv2-cell:hover{transform:scale(1.03);border-color:rgba(31,182,255,0.3);z-index:2}
+.tv2-ratio{width:100%;position:relative;padding-bottom:125%}
+.tv2-ratio img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s ease}
+.tv2-cell:hover .tv2-ratio img{transform:scale(1.04)}
+.tv2-ov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.88) 0%,transparent 55%);opacity:0;transition:opacity .24s ease;display:flex;flex-direction:column;justify-content:flex-end;padding:10px;z-index:3}
+.tv2-cell:hover .tv2-ov{opacity:1}
+.tv2-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#1FB6FF;background:rgba(31,182,255,0.13);border:1px solid rgba(31,182,255,0.3);padding:2px 8px;border-radius:4px;display:inline-block;width:fit-content;margin-bottom:4px}
+.tv2-title{font-size:11px;font-weight:800;color:#fff;line-height:1.3}
+@keyframes tv2-fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<section class="travaux-section" id="travaux">
+  <div class="tv2-container">
+    <div class="tv2-title-block">
+      <h2 class="tv2-headline">Nos <em>travaux récents</em></h2>
+      <p class="tv2-sub">Découvre quelques exemples de ce qu'on livre. Ton produit mérite le même niveau — ou mieux.</p>
+    </div>
+    <div class="tv2-grid">
+      <div class="tv2-cell" style="animation-delay:0.03s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b0ef3fbde69_PORTFOLIO-45.png" alt="Compléments" loading="eager">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Compléments</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.07s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b0ef3fcaf8b_PORTFOLIO-451.png" alt="Compléments" loading="eager">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Compléments</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.11s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b0ef3fd06da_PORTFOLIO-452.png" alt="Compléments" loading="eager">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Compléments</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.15s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b0f7d42a8f7_PORTFOLIO-453.png" alt="Cosmétiques" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Cosmétiques</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.19s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b0f7d423f56_PORTFOLIO-454.png" alt="Cosmétiques" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Cosmétiques</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.23s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b0f7d42a82e_PORTFOLIO-455.png" alt="Cosmétiques" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Cosmétiques</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.27s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b1013e316b5_PORTFOLIO-456.png" alt="E-book" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">E-book</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.31s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b1013e37ca0_PORTFOLIO-457.png" alt="E-book" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">E-book</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.35s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b1013e347d4_PORTFOLIO-458.png" alt="E-book" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">E-book</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.39s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b109e1365f6_PORTFOLIO-459.png" alt="Électronique" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Électronique</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.43s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b109e13b241_PORTFOLIO-4510.png" alt="Électronique" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Électronique</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.47s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b109e135949_PORTFOLIO-4511.png" alt="Électronique" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Électronique</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.51s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b11278a42d6_PORTFOLIO-4512.png" alt="Habillement" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Habillement</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.55s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b11278a888b_PORTFOLIO-4513.png" alt="Habillement" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Habillement</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+      <div class="tv2-cell" style="animation-delay:0.59s">
+        <div class="tv2-ratio">
+          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b11278a1a96_PORTFOLIO-4514.png" alt="Habillement" loading="lazy">
+          <div class="tv2-ov">
+            <span class="tv2-tag">Habillement</span>
+            <div class="tv2-title">Post · 4:5</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+.process-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
+.proc-wrap{width:88%;max-width:520px;margin:0 auto}
+.proc-headline{font-size:32px;font-weight:900;line-height:1.1;letter-spacing:-1px;color:#fff!important;margin-bottom:10px}
+.proc-headline em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:proc-grad 3s ease infinite}
+@keyframes proc-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.proc-sub{font-size:14px;color:#5A5D65!important;line-height:1.55;margin:0 0 32px}
+.proc-scroll-outer{overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -6%;padding:0 6%}
+.proc-scroll-outer::-webkit-scrollbar{display:none}
+.proc-steps{display:flex;flex-direction:row;gap:14px;width:max-content;padding-bottom:8px;padding-right:36px;align-items:stretch}
+.proc-step{width:290px;flex-shrink:0;background:#0F1118;border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px 16px;display:flex;flex-direction:column;gap:14px;align-self:stretch}
+.proc-step-header{display:flex;align-items:flex-start;gap:14px}
+.proc-step-dot{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#fff!important;flex-shrink:0;box-shadow:0 0 14px rgba(31,182,255,0.35)}
+.proc-step-label{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1FB6FF!important;margin-bottom:3px}
+.proc-step-title{font-size:19px;font-weight:900;color:#fff!important;letter-spacing:-.4px;line-height:1.15}
+.proc-step-desc{font-size:13px;color:#5A5D65!important;line-height:1.6;margin:0}
+.proc-step-desc strong{color:#C8CAD0!important;font-weight:700}
+.proc-pay-mock{background:#13151C;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.proc-mock-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#0F1118;border:1px solid rgba(255,255,255,0.05);border-radius:8px}
+.proc-mock-row-label{font-size:11px;font-weight:600;color:#fff!important}
+.proc-mock-row-price{font-size:12px;font-weight:900;color:#1FB6FF!important}
+.proc-mock-divider{height:1px;background:rgba(255,255,255,0.05)}
+.proc-mock-btn{background:linear-gradient(135deg,#1FB6FF,#0B5CFF);border-radius:8px;padding:11px;font-size:12px;font-weight:800;color:#fff!important;text-align:center;box-shadow:0 4px 14px rgba(31,182,255,0.3)}
+.proc-brief-mock{background:#13151C;border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.proc-mock-field{background:#0F1118;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:11px 12px;font-size:11px;color:#3A3D45!important;font-family:inherit}
+.proc-mock-field-filled{background:#0F1118;border:1px solid rgba(31,182,255,0.2);border-radius:8px;padding:11px 12px;font-size:11px;color:#9EA1A8!important;font-family:inherit}
+.proc-img-stack{position:relative;height:190px}
+.proc-stack-card{position:absolute;width:48%;aspect-ratio:4/5;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 10px 24px rgba(0,0,0,0.6)}
+.proc-stack-card img{width:100%;height:100%;object-fit:cover;display:block}
+.proc-stack-card:nth-child(1){left:0;top:12px;transform:rotate(-4deg);z-index:1}
+.proc-stack-card:nth-child(2){left:26%;top:0;z-index:3}
+.proc-stack-card:nth-child(3){left:52%;top:12px;transform:rotate(4deg);z-index:1}
+.proc-wa-badge{display:inline-flex;align-items:center;gap:7px;background:rgba(37,211,102,0.07);border:1px solid rgba(37,211,102,0.2);border-radius:50px;padding:7px 12px;font-size:11px;font-weight:700;color:#25D366!important}
+@media(min-width:700px){.proc-scroll-outer{overflow-x:visible;margin:0;padding:0}.proc-steps{display:flex;flex-direction:row;gap:16px;width:auto;padding-right:0}.proc-step{width:auto;flex:1}.proc-headline{font-size:40px}}
+</style>
+<section class="process-section" id="comment">
+  <div class="proc-wrap">
+    <h2 class="proc-headline">Simple comme <em>bonjour.</em></h2>
+    <p class="proc-sub">3 étapes. Zéro réunion. Zéro aller-retour. Tes créatives arrivent pendant que tu dors.</p>
+    <div class="proc-scroll-outer"><div class="proc-steps">
+      <div class="proc-step">
+        <div class="proc-step-header"><div class="proc-step-dot">1</div><div><div class="proc-step-label">Étape 1</div><div class="proc-step-title">Tu t'abonnes.<br>C'est tout.</div></div></div>
+        <p class="proc-step-desc">Choisis ton offre et règle en <strong>moins de 2 minutes</strong> via Wave, Orange Money ou carte. Résiliable à tout moment.</p>
+        <div class="proc-pay-mock"><div class="proc-mock-row"><span class="proc-mock-row-label">Abonnement mensuel · 9 img/sem</span><span class="proc-mock-row-price">✓</span></div><div class="proc-mock-divider"></div><div class="proc-mock-btn">S'abonner maintenant →</div></div>
+      </div>
+      <div class="proc-step">
+        <div class="proc-step-header"><div class="proc-step-dot">2</div><div><div class="proc-step-label">Étape 2</div><div class="proc-step-title">Tu remplis<br>le brief.</div></div></div>
+        <p class="proc-step-desc">Un formulaire de <strong>5 minutes</strong> — photos du produit, cible, infos de base. On s'occupe du reste.</p>
+        <div class="proc-brief-mock"><div class="proc-mock-field-filled">Crème hydratante au karité 🌿</div><div class="proc-mock-field-filled">Femmes 25-40 ans, peau sèche</div><div class="proc-mock-field">Ajoute tes photos produit...</div><div class="proc-mock-btn">Envoyer le brief →</div></div>
+      </div>
+      <div class="proc-step">
+        <div class="proc-step-header"><div class="proc-step-dot">3</div><div><div class="proc-step-label">Étape 3</div><div class="proc-step-title">Tu reçois tout<br>sur WhatsApp.</div></div></div>
+        <p class="proc-step-desc">En <strong>moins de 48h</strong>, un lien Drive arrive sur ton WhatsApp. Tout organisé par angle, prêt à uploader sur Meta.</p>
+        <div class="proc-img-stack"><div class="proc-stack-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b63f71333423.74628423_IMAGE4.png" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b63fd35087a9.67924125_IMAGE9.png" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b63ff7972dd5.45261272_IMAGE10.png" alt="" loading="lazy"></div></div>
+        <div class="proc-wa-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>Livraison WhatsApp garantie en 48h</div>
+      </div>
+    </div></div>
+  </div>
+</section>
+<style>
+.avis-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden}
+.avis-section::before,.avis-section::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:3;pointer-events:none}
+.avis-section::before{left:0;background:linear-gradient(90deg,#0A0A0E,transparent)}
+.avis-section::after{right:0;background:linear-gradient(270deg,#0A0A0E,transparent)}
+.avis-header{text-align:center;margin-bottom:36px;padding:0 5%;position:relative;z-index:2}
+.avis-title{font-size:26px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff;margin-bottom:10px}
+.avis-title span{background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:avis-grad 3s ease infinite}
+@keyframes avis-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.avis-subtitle{font-size:14px;color:#5A5D65;line-height:1.55;margin:0}
+.avis-track-wrap{display:flex;flex-direction:column;gap:14px;overflow:hidden}
+.avis-track{display:flex;gap:14px;width:max-content;will-change:transform}
+.avis-track--left{animation:avis-scroll-left 28s linear infinite}
+.avis-track--right{animation:avis-scroll-right 28s linear infinite}
+@keyframes avis-scroll-left{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes avis-scroll-right{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
+.avis-track:hover{animation-play-state:paused}
+.avis-card{flex-shrink:0;width:260px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:#0F1118;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.avis-card:hover{transform:scale(1.04);border-color:rgba(31,182,255,0.3);box-shadow:0 8px 32px rgba(31,182,255,0.15)}
+.avis-card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
+@media(min-width:768px){.avis-title{font-size:32px}.avis-card{width:320px}}
+/* ══ OFFER CARDS — design unifié catalogue ══ */
+.offers-section-lp{padding:0 4% 48px;width:100%;box-sizing:border-box;background:#0A0A0E}
+.offers-grid-lp{display:grid;grid-template-columns:1fr;gap:16px;max-width:100%;margin:0 auto;box-sizing:border-box}
+@media(min-width:768px){.offers-grid-lp{grid-template-columns:repeat(3,1fr);max-width:1000px}}
+.offer-card-lp{background:#0F1118;border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:border-color .25s,transform .25s;opacity:0;transform:translateY(24px);animation:cardIn-lp .5s ease-out forwards}
+.offer-card-lp:nth-child(1){animation-delay:.05s}
+.offer-card-lp:nth-child(2){animation-delay:.15s}
+.offer-card-lp:nth-child(3){animation-delay:.25s}
+@keyframes cardIn-lp{to{opacity:1;transform:translateY(0)}}
+.offer-card-lp::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(31,182,255,0.4),transparent);opacity:0;transition:opacity .25s}
+.offer-card-lp:hover{border-color:rgba(31,182,255,0.3);transform:translateY(-4px)}
+.offer-card-lp:hover::before{opacity:1}
+.lp-pack-name{font-size:18px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;background:linear-gradient(120deg,#1FB6FF,#0B5CFF,#2EF2E8);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite}
+.lp-pack-type{font-size:11px;font-weight:600;color:#5A5D65;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px}
+.lp-card-divider{height:1px;background:rgba(255,255,255,0.07);margin:16px 0}
+.lp-price-main{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
+.lp-price-amount{font-size:36px;font-weight:900;letter-spacing:-2px;color:#fff;line-height:1}
+.lp-price-currency{font-size:14px;font-weight:700;color:#1FB6FF}
+.lp-price-old{font-size:13px;color:#3A3D45;text-decoration:line-through;margin-bottom:6px}
+.lp-price-img{display:inline-block;font-size:10px;font-weight:800;color:#1FB6FF;background:rgba(31,182,255,0.08);border:1px solid rgba(31,182,255,0.2);padding:3px 9px;border-radius:20px;letter-spacing:.5px}
+.lp-volume-block{background:rgba(31,182,255,0.05);border:1px solid rgba(31,182,255,0.12);border-radius:12px;padding:12px 14px;margin:14px 0;display:flex;align-items:center;gap:12px}
+.lp-volume-num{font-size:28px;font-weight:900;color:#1FB6FF;letter-spacing:-1px;line-height:1;flex-shrink:0}
+.lp-volume-label{font-size:12px;font-weight:700;color:#fff;line-height:1.4}
+.lp-volume-sub{font-size:11px;color:#5A5D65;display:block;margin-top:2px}
+.lp-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin:14px 0;flex:1}
+.lp-features li{position:relative;padding-left:22px;font-size:13px;font-weight:600;color:#5A5D65;line-height:1.5}
+.lp-features li::before{content:'✓';position:absolute;left:0;top:0;color:#1FB6FF;font-size:13px;font-weight:900}
+.lp-features li span{color:#fff;font-weight:700}
+.lp-cta-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:15px 20px;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff!important;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.3px;border:none;border-radius:12px;cursor:pointer;text-decoration:none;text-align:center;box-shadow:0 6px 20px rgba(31,182,255,0.3);transition:opacity .2s,transform .2s,box-shadow .2s;margin-top:16px;position:relative;overflow:hidden}
+.lp-cta-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:skewX(-15deg);animation:shimmer-lp 2.5s infinite}
+@keyframes shimmer-lp{0%{left:-100%}100%{left:200%}}
+.lp-cta-btn:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 10px 30px rgba(31,182,255,0.45)}
+.lp-card-proof{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.lp-proof-pay{font-size:12px;font-weight:600;color:#3A3D45;display:flex;align-items:center;gap:5px}
+.lp-proof-pay svg{flex-shrink:0}
+.lp-proof-guarantee{font-size:13px;font-weight:800;color:#32FF7E;display:flex;align-items:center;gap:5px}
+.lp-trust-block{margin-top:28px;text-align:center;padding:24px 16px;border-top:1px solid rgba(255,255,255,0.06);max-width:1000px;margin-left:auto;margin-right:auto}
+.lp-trust-title{font-size:18px;font-weight:900;color:#fff!important;margin:0 0 12px;letter-spacing:-.3px}
+.lp-trust-text{font-size:14px;color:#5A5D65;line-height:1.7;max-width:560px;margin:0 auto}
+@keyframes pr-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+</style>
+
+<section class="avis-section" id="avis">
+  <div class="avis-header">
+    <h2 class="avis-title">Ils ont lancé.<br><span>Ils ont vendu.</span></h2>
+    <p class="avis-subtitle">Des e-commerçants africains qui nous font confiance chaque semaine.</p>
+  </div>
+  <div class="avis-track-wrap">
+    <div class="avis-track avis-track--left">
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad763c049c1.44625564_AVISANTOFFRE.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad771819b07.80011924_AVISANTOFFRE1.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7b17d76c6.18633110_AVISANTOFFRE2.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7bd691008.28286865_AVISANTOFFRE3.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7d0def0a9.16522460_AVISANTOFFRE4.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad763c049c1.44625564_AVISANTOFFRE.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad771819b07.80011924_AVISANTOFFRE1.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7b17d76c6.18633110_AVISANTOFFRE2.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7bd691008.28286865_AVISANTOFFRE3.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7d0def0a9.16522460_AVISANTOFFRE4.png" alt="" loading="lazy"></div>
+    </div>
+    <div class="avis-track avis-track--right">
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7e11c8591.19406375_AVISANTOFFRE5.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7ee2ce9b1.36469035_AVISANTOFFRE6.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7f7bc1080.39912569_AVISANTOFFRE7.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8025c9e45.31571436_AVISANTOFFRE8.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8137ee0d4.76360669_AVISANTOFFRE9.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7e11c8591.19406375_AVISANTOFFRE5.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7ee2ce9b1.36469035_AVISANTOFFRE6.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7f7bc1080.39912569_AVISANTOFFRE7.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8025c9e45.31571436_AVISANTOFFRE8.png" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8137ee0d4.76360669_AVISANTOFFRE9.png" alt="" loading="lazy"></div>
+    </div>
+  </div>
+</section>
+
+
+<!-- SECTION PRICING -->
+<div id="nos-offres" style="background:#0A0A0E;padding:52px 0 0;width:100vw;position:relative;left:50%;margin-left:-50vw;box-sizing:border-box">
+  <div style="text-align:center;margin-bottom:28px;padding:0 4%">
+    <h2 style="font-size:clamp(24px,5vw,38px);font-weight:900;letter-spacing:-1px;color:#fff;margin-bottom:10px">Prêt à lancer des <span style="background:linear-gradient(120deg,#1FB6FF,#0B5CFF,#2EF2E8);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite">créatives qui convertissent ?</span></h2>
+    <p style="font-size:14px;color:#5A5D65;line-height:1.55;margin:0 0 16px">Lancez votre prochaine campagne performante sans effort</p>
+    <div style="overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)"><div style="display:flex;gap:0;width:max-content;animation:pr-ticker-scroll 18s linear infinite"><span style="font-size:12px;font-weight:700;color:#5A5D65;padding:0 28px;white-space:nowrap">✦ Paiement sécurisé</span><span style="font-size:12px;font-weight:700;color:#5A5D65;padding:0 28px;white-space:nowrap">✦ Livraison WhatsApp 48h</span><span style="font-size:12px;font-weight:700;color:#5A5D65;padding:0 28px;white-space:nowrap">✦ Satisfait ou remboursé</span><span style="font-size:12px;font-weight:700;color:#5A5D65;padding:0 28px;white-space:nowrap">✦ Paiement sécurisé</span><span style="font-size:12px;font-weight:700;color:#5A5D65;padding:0 28px;white-space:nowrap">✦ Livraison WhatsApp 48h</span><span style="font-size:12px;font-weight:700;color:#5A5D65;padding:0 28px;white-space:nowrap">✦ Satisfait ou remboursé</span></div></div>
+  </div>
+
+  <section class="offers-section-lp">
+    <div class="offers-grid-lp">
+
+      <!-- STARTER -->
+      <div class="offer-card-lp">
+        <div class="lp-pack-name">Conversion Starter</div>
+        <div class="lp-pack-type">Abonnement mensuel</div>
+        <div class="lp-card-divider"></div>
+        <div style="margin-bottom:6px">
+          <div class="lp-price-main"><span class="lp-price-amount" data-fcfa="29900">29.900</span><span class="lp-price-currency">FCFA<span style="font-size:11px;font-weight:700;color:#1FB6FF">/MOIS</span></span></div>
+          <div class="lp-price-old" data-fcfa="45000">45.000 FCFA</div>
+          <span class="lp-price-img" data-fcfa="830">≈ 830 FCFA / image</span>
+        </div>
+        <div class="lp-card-divider"></div>
+        <div class="lp-volume-block"><div class="lp-volume-num">9</div><div class="lp-volume-label"><strong>Images Livrées / Semaine</strong><span class="lp-volume-sub">1 Produit Couvert · 36 images/mois</span></div></div>
+        <ul class="lp-features">
+          <li>Analyse De Marché Hebdomadaire <span>(Cibles, Concurrents, Tendances)</span></li>
+          <li>Titres et Descriptions à mettre dans la Campagne</li>
+          <li>Livraison en 48h</li>
+        </ul>
+        <button onclick="handleCheckout()" class="lp-cta-btn">Passez Au Paiement →</button>
+        <div class="lp-card-proof">
+          <div class="lp-proof-pay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Paiement Mobile Money sécurisé</div>
+          <div class="lp-proof-guarantee"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Satisfait ou 100% remboursé</div>
+        </div>
+      </div>
+
+      <!-- STANDARD -->
+      <div class="offer-card-lp">
+        <div class="lp-pack-name">Conversion Pro</div>
+        <div class="lp-pack-type">Abonnement mensuel</div>
+        <div class="lp-card-divider"></div>
+        <div style="margin-bottom:6px">
+          <div class="lp-price-main"><span class="lp-price-amount" data-fcfa="59900">59.900</span><span class="lp-price-currency">FCFA<span style="font-size:11px;font-weight:700;color:#1FB6FF">/MOIS</span></span></div>
+          <div class="lp-price-old" data-fcfa="90000">90.000 FCFA</div>
+          <span class="lp-price-img" data-fcfa="624">≈ 624 FCFA / image</span>
+        </div>
+        <div class="lp-card-divider"></div>
+        <div class="lp-volume-block"><div class="lp-volume-num">24</div><div class="lp-volume-label"><strong>Images Livrées / Semaine</strong><span class="lp-volume-sub">1 à 2 Produits Couverts · 96 images/mois</span></div></div>
+        <ul class="lp-features">
+          <li>Analyse De Marché Hebdomadaire <span>(Cibles, Concurrents, Tendances)</span></li>
+          <li>Titres et Descriptions à mettre dans la Campagne</li>
+          <li>Livraison en 48h</li>
+        </ul>
+        <button onclick="handleCheckoutStandard()" class="lp-cta-btn">Passez Au Paiement →</button>
+        <div class="lp-card-proof">
+          <div class="lp-proof-pay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Paiement Mobile Money sécurisé</div>
+          <div class="lp-proof-guarantee"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Satisfait ou 100% remboursé</div>
+        </div>
+      </div>
+
+      <!-- SCALE -->
+      <div class="offer-card-lp">
+        <div class="lp-pack-name">Conversion Scale</div>
+        <div class="lp-pack-type">Abonnement mensuel</div>
+        <div class="lp-card-divider"></div>
+        <div style="margin-bottom:6px">
+          <div class="lp-price-main"><span class="lp-price-amount" data-fcfa="99900">99.900</span><span class="lp-price-currency">FCFA<span style="font-size:11px;font-weight:700;color:#1FB6FF">/MOIS</span></span></div>
+          <div class="lp-price-old" data-fcfa="150000">150.000 FCFA</div>
+          <span class="lp-price-img" data-fcfa="520">≈ 520 FCFA / image</span>
+        </div>
+        <div class="lp-card-divider"></div>
+        <div class="lp-volume-block"><div class="lp-volume-num">48</div><div class="lp-volume-label"><strong>Images Livrées / Semaine</strong><span class="lp-volume-sub">1 à 4 Produits Couverts · 192 images/mois</span></div></div>
+        <ul class="lp-features">
+          <li>Analyse De Marché Hebdomadaire <span>(Cibles, Concurrents, Tendances)</span></li>
+          <li>Titres et Descriptions à mettre dans la Campagne</li>
+          <li>Livraison en 48h</li>
+        </ul>
+        <button onclick="handleCheckoutScale()" class="lp-cta-btn">Passez Au Paiement →</button>
+        <div class="lp-card-proof">
+          <div class="lp-proof-pay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Paiement Mobile Money sécurisé</div>
+          <div class="lp-proof-guarantee"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Satisfait ou 100% remboursé</div>
+        </div>
+      </div>
+
+    </div>
+    <div class="lp-trust-block">
+      <div style="font-size:32px;margin-bottom:10px;line-height:1"><svg width="40" height="44" viewBox="0 0 40 44" fill="none"><path d="M20 2L4 9V20C4 30 11 39 20 42C29 39 36 30 36 20V9L20 2Z" fill="rgba(31,182,255,0.1)" stroke="#1FB6FF" stroke-width="1.5"/><path d="M13 21L18 26L27 17" stroke="#1FB6FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+      <h3 class="lp-trust-title">Aucun risque. Zéro stress.</h3>
+      <p class="lp-trust-text">Si tes créatives ne te donnent pas entière satisfaction, on retravaille jusqu'à ce que ce soit parfait — ou on te rembourse intégralement. Pas de discussion.</p>
+    </div>
+  </section>
+</div>
+<div style="display:none"><script>
+function handleCheckout(){var url=ADSTACK_CONFIG.url_starter;if(typeof fbq!=='undefined'){fbq('track','InitiateCheckout',{content_name:'Conversion Starter AdStack',currency:'XOF',value:29900});setTimeout(function(){window.location.href=url;},300);}else{window.location.href=url;}}
+function handleCheckoutStandard(){var url=ADSTACK_CONFIG.url_standard;if(typeof fbq!=='undefined'){fbq('track','InitiateCheckout',{content_name:'Conversion Pro AdStack',currency:'XOF',value:59900});setTimeout(function(){window.location.href=url;},300);}else{window.location.href=url;}}
+function handleCheckoutScale(){var url=ADSTACK_CONFIG.url_scale;if(typeof fbq!=='undefined'){fbq('track','InitiateCheckout',{content_name:'Conversion Scale AdStack',currency:'XOF',value:99900});setTimeout(function(){window.location.href=url;},300);}else{window.location.href=url;}}
+</script></div>
+
+<style>
+.reviews-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:48px 0 52px;color:#fff;overflow:hidden;contain:layout style}
+.rvw-container{width:88%;max-width:680px;margin:0 auto}
+.rvw-label{text-align:center;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#3A3D45;margin-bottom:24px}
+.rvw-rows{display:flex;flex-direction:column;gap:12px}
+.rvw-scroll-outer{overflow:hidden}
+.rvw-row{display:flex;flex-direction:row;gap:12px;width:max-content;padding-bottom:4px}
+.rvw-scroll-r .rvw-row{animation:rvw-scroll-r 35s linear infinite}
+.rvw-scroll-l .rvw-row{animation:rvw-scroll-l 35s linear infinite}
+@keyframes rvw-scroll-l{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+@keyframes rvw-scroll-r{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
+.rvw-scroll-outer:hover .rvw-row{animation-play-state:paused}
+.rvw-card{width:280px;flex-shrink:0;background:#0F1118;border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:10px;transition:border-color .25s}
+.rvw-card:hover{border-color:rgba(255,255,255,0.14)}
+.rvw-header{display:flex;align-items:center;justify-content:space-between}
+.rvw-stars{font-size:12px;color:#F5A623;letter-spacing:1px}
+.rvw-pack{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:#5A5D65;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);padding:3px 8px;border-radius:5px}
+.rvw-stat{font-size:12px;font-weight:700;color:#9EA1A8;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:6px;padding:5px 10px;display:inline-flex;align-items:center;gap:6px}
+.rvw-stat strong{color:#fff;font-weight:900}
+.rvw-text{font-size:12px;color:#6A6D75;line-height:1.65;margin:0;flex:1}
+.rvw-text strong{color:#C8CAD0;font-weight:700}
+.rvw-footer{display:flex;align-items:center;gap:10px;border-top:1px solid rgba(255,255,255,0.05);padding-top:10px}
+.rvw-avatar{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,0.1);overflow:hidden;flex-shrink:0}
+.rvw-avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.rvw-name{font-size:12px;font-weight:700;color:#C8CAD0}
+.rvw-date{font-size:11px;color:#3A3D45;margin-top:2px}
+.faq-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
+.faq-container{width:88%;max-width:520px;margin:0 auto}
+.faq-title{font-size:32px;font-weight:900;line-height:1.1;letter-spacing:-1px;color:#fff!important;margin:0 0 10px}
+.faq-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:faq-grad 3s ease infinite}
+@keyframes faq-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.faq-sub{font-size:14px;color:#5A5D65!important;margin:0 0 36px;line-height:1.5}
+.faq-list{display:flex;flex-direction:column;gap:8px}
+.faq-item{background:#0F1118;border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;opacity:0;transform:translateY(12px);transition:border-color .25s,opacity .4s ease-out,transform .4s ease-out}
+.faq-item.is-visible{opacity:1;transform:translateY(0)}
+.faq-item.open{border-color:rgba(31,182,255,0.22)}
+.faq-question{width:100%;background:none;border:none;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;touch-action:manipulation}
+.faq-q-text{font-size:14px;font-weight:700;color:#fff!important;line-height:1.35;flex:1}
+.faq-icon{width:24px;height:24px;min-width:24px;border-radius:50%;background:rgba(31,182,255,0.08);border:1px solid rgba(31,182,255,0.2);display:flex;align-items:center;justify-content:center;color:#1FB6FF!important;font-size:16px;font-weight:300;line-height:1;transition:transform .25s;flex-shrink:0}
+.faq-item.open .faq-icon{transform:rotate(45deg);background:rgba(31,182,255,0.15)}
+.faq-answer{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(0.4,0,0.2,1)}
+.faq-item.open .faq-answer{max-height:400px}
+.faq-answer-inner{padding:12px 18px 18px;border-top:1px solid rgba(255,255,255,0.05)}
+.faq-a-text{font-size:13px;color:#5A5D65!important;line-height:1.7;margin:0}
+.faq-a-text strong{color:#C8CAD0!important;font-weight:700}
+.faq-a-text .hl{color:#1FB6FF!important;font-weight:600}
+.faq-a-text .hl-g{color:#32FF7E!important;font-weight:600}
+.faq-a-text .hl-r{color:#FF4757!important;font-weight:600}
+.upsell-nudge{display:block;position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(120px);z-index:9998;transition:transform .4s cubic-bezier(0.4,0,0.2,1),opacity .4s ease;opacity:0;pointer-events:none;width:calc(100% - 32px);max-width:340px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+.upsell-nudge.visible{transform:translateX(-50%) translateY(0);opacity:1;pointer-events:auto}
+.upsell-nudge-inner{position:relative}
+.upsell-main-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;background:linear-gradient(135deg,#1FB6FF 0%,#0B5CFF 60%,#1FB6FF 100%);background-size:200% 100%;color:#fff!important;font-size:14px;font-weight:800;padding:15px 22px;border-radius:50px;border:none;cursor:pointer;font-family:inherit;letter-spacing:.3px;white-space:nowrap;overflow:hidden;position:relative;box-shadow:0 6px 24px rgba(31,182,255,0.45),0 2px 8px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.2);animation:nudge-glow 2.2s ease-in-out infinite;-webkit-appearance:none;appearance:none;text-align:center}
+@keyframes nudge-glow{0%,100%{box-shadow:0 6px 24px rgba(31,182,255,0.4),0 0 0 0 rgba(31,182,255,0.15)}50%{box-shadow:0 8px 32px rgba(31,182,255,0.65),0 0 0 6px rgba(31,182,255,0)}}
+.upsell-close{position:absolute;top:-8px;right:-8px;width:22px;height:22px;background:#13151C;border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#5A5D65;cursor:pointer;z-index:3;-webkit-appearance:none;appearance:none;transition:all .2s}
+.upsell-close:hover{background:rgba(255,71,87,0.15);border-color:rgba(255,71,87,0.3);color:#FF4757}
+.ads-footer{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;border-top:1px solid rgba(255,255,255,0.06);color:#fff;overflow:hidden}
+.ads-footer-inner{width:88%;max-width:520px;margin:0 auto;position:relative;z-index:2;padding:48px 0 28px}
+.ads-footer-brand{margin-bottom:36px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.ads-footer-logo{display:flex;align-items:center;gap:9px;text-decoration:none;margin-bottom:12px}
+.ads-footer-logo-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1}
+.ads-footer-logo-name span{background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:footer-grad 3s ease infinite}
+@keyframes footer-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.ads-footer-tagline{font-size:12px;color:#4E525C;line-height:1.55;max-width:280px;margin-bottom:18px}
+.ads-footer-socials{display:flex;gap:8px}
+.ads-footer-social{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;text-decoration:none;color:#4E525C;transition:background .2s,border-color .2s,color .2s}
+.ads-footer-social:hover{background:rgba(31,182,255,0.1);border-color:rgba(31,182,255,0.3);color:#1FB6FF}
+.ads-footer-cols{display:grid;grid-template-columns:1fr 1fr;gap:28px 16px;margin-bottom:36px}
+.ads-footer-col-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#3A3D45;margin-bottom:12px}
+.ads-footer-col-links{display:flex;flex-direction:column;gap:10px}
+.ads-footer-col-links a{font-size:13px;color:#5A5D65;text-decoration:none;line-height:1.3;transition:color .18s}
+.ads-footer-col-links a:hover{color:#fff}
+.ads-footer-bottom{padding-top:20px;border-top:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:8px}
+.ads-footer-copy{font-size:11px;color:#3A3D45;line-height:1.5}
+.ads-footer-address{display:flex;align-items:center;gap:5px;font-size:11px;color:#3A3D45}
+</style>
+<section class="reviews-section" id="temoignages">
+  <div class="rvw-container">
+    <div class="rvw-rows">
+      <div class="rvw-scroll-outer rvw-scroll-l"><div class="rvw-row">
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Avant je passais mes soirées sur Canva à zéro résultat. AdStack m'a livré <strong>9 créatives classées par angle en moins de 48h</strong>. Je lance directement — zéro bricolage. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffc6c70_1.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Moussa D.</div><div class="rvw-date">Compléments · Dakar 🇸🇳</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Livré en moins de 48h, tout classé par angle et prêt à uploader. <strong>Je ne touche plus à la création visuelle</strong> — je me concentre uniquement sur les ventes. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffcb164_3.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Ibrahima S.</div><div class="rvw-date">Cosmétiques · Thiès 🇸🇳</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><div class="rvw-stat"><strong>Winner trouvé</strong> — J+5</div><p class="rvw-text">« Avec 3 angles testés en même temps, j'ai identifié ce qui performait en 5 jours. <strong>Avant ça me prenait des mois et un budget brûlé.</strong> »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffc05f6_4.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Aya K.</div><div class="rvw-date">Compléments · Bouaké 🇨🇮</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Les angles parlaient directement à mes clients. <strong>Les créatives ressemblaient à ce qu'on voit chez les grandes marques</strong> — pas à un truc fait maison. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffc613a_6.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Yao B.</div><div class="rvw-date">Cosmétiques · San-Pédro 🇨🇮</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Avant je passais mes soirées sur Canva à zéro résultat. AdStack m'a livré <strong>9 créatives classées par angle en moins de 48h</strong>. Je lance directement — zéro bricolage. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffc6c70_1.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Moussa D.</div><div class="rvw-date">Compléments · Dakar 🇸🇳</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Livré en moins de 48h, tout classé par angle et prêt à uploader. <strong>Je ne touche plus à la création visuelle</strong> — je me concentre uniquement sur les ventes. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffcb164_3.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Ibrahima S.</div><div class="rvw-date">Cosmétiques · Thiès 🇸🇳</div></div></div></div>
+      </div></div>
+      <div class="rvw-scroll-outer rvw-scroll-r"><div class="rvw-row">
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><div class="rvw-stat"><strong>Récap Analyse</strong> — révélateur</div><p class="rvw-text">« Le récap de l'analyse m'a montré exactement qui était ma vraie cible. <strong>J'avais ciblé les mauvaises personnes depuis des mois</strong> — corriger ça a tout changé. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffbf346_9.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Omar F.</div><div class="rvw-date">E-book · Kaolack 🇸🇳</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Images livrées le lendemain matin, classées par angle. <strong>Mon produit est reconnaissable dans chaque créative</strong> — exactement comme en vrai. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffc6e99_10.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Bamba S.</div><div class="rvw-date">Compléments · Korhogo 🇨🇮</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Avec les créatives classées par angle, <strong>chaque test était structuré et les résultats lisibles</strong>. J'ai compris en une semaine ce qui marchait. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b2153092e6b_8.png" alt="" width="32" height="32"></div><div><div class="rvw-name">N'Goran T.</div><div class="rvw-date">Électronique · Yamoussoukro 🇨🇮</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><div class="rvw-stat"><strong>Récap Analyse</strong> — révélateur</div><p class="rvw-text">« Le récap de l'analyse m'a montré exactement qui était ma vraie cible. <strong>J'avais ciblé les mauvaises personnes depuis des mois</strong> — corriger ça a tout changé. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffbf346_9.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Omar F.</div><div class="rvw-date">E-book · Kaolack 🇸🇳</div></div></div></div>
+        <div class="rvw-card"><div class="rvw-header"><div class="rvw-stars">★★★★★</div><span class="rvw-pack">Conversion Motor</span></div><p class="rvw-text">« Images livrées le lendemain matin, classées par angle. <strong>Mon produit est reconnaissable dans chaque créative</strong> — exactement comme en vrai. »</p><div class="rvw-footer"><div class="rvw-avatar"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b214ffc6e99_10.png" alt="" width="32" height="32"></div><div><div class="rvw-name">Bamba S.</div><div class="rvw-date">Compléments · Korhogo 🇨🇮</div></div></div></div>
+      </div></div>
+    </div>
+  </div>
+</section>
+<section class="faq-section" id="faq">
+  <div class="faq-container">
+    <h2 class="faq-title">Ce que tu te demandes <em>sûrement.</em></h2>
+    <p class="faq-sub">Réponses directes. Sans blabla.</p>
+    <div class="faq-list" id="faqList">
+      <div class="faq-item open"><button class="faq-question"><span class="faq-q-text">Est-ce que mes créatives vont vraiment performer ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl">① Analyse de marché réelle</span> — on part des données de ton marché, pas d'une intuition.<br><br><span class="hl">② Plusieurs angles testés en simultané</span> — plus de chances qu'un winner sorte vite.<br><br><span class="hl">③ Feed &amp; Story inclus</span> — tous les placements Meta couverts.<br><br><span class="hl">④ Textes &amp; titres fournis</span> — accroches prêtes à coller pour maximiser le taux de clic.</p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est quoi la différence avec un freelance ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-r">Freelance : 3 visuels en 5 jours, sans stratégie.</span><br><br>AdStack : <strong>9 créatives en 48h</strong>, organisées par angle, prêtes à upload. <span class="hl">Même budget. Bien plus de volume.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je dois faire quoi de mon côté ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Un formulaire de 5 minutes.</span> C'est tout.<br><br>Tu t'abonnes, tu remplis le brief, on s'occupe du reste chaque semaine. <strong>Zéro réunion. Zéro aller-retour. Zéro friction.</strong></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est pour moi si je débute sur Meta Ads ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Honnêtement, non.</strong><br><br>AdStack est fait pour les e-commerçants qui ont <span class="hl">déjà des campagnes actives</span>. <span class="hl-r">Si tu n'as pas encore lancé ta première pub</span>, commence par là d'abord.</p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Comment je reçois mes créatives ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Sur WhatsApp + Google Drive en moins de 48h.</strong><br><br>Tout organisé par angle — Feed et Story séparés. <span class="hl">Tu uploades direct sur Meta Ads Manager.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Est-ce que vous respectez les couleurs de ma marque ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui — et tu as le choix.</span><br><br>Dans le brief, tu peux nous indiquer tes couleurs. Si tu n'en as pas, <span class="hl">on sélectionne les couleurs qui conviennent le mieux à ton produit et ton marché.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est un abonnement ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui. Nos offres sont des abonnements mensuels.</span><br><br>Résiliable à tout moment, <strong>sans contrat ni engagement longue durée.</strong> Tu peux arrêter quand tu veux.</p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Et si je ne suis pas satisfait ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Satisfait ou 100% remboursé.</span><br><br>Si tes créatives ne te conviennent pas, on retravaille — ou on te rembourse intégralement. <strong>Zéro risque.</strong></p></div></div></div>
+    </div>
+  </div>
+</section>
+<div style="display:none"><script>(function(){var list=document.getElementById('faqList');if(list){list.addEventListener('click',function(e){var btn=e.target.closest('.faq-question');if(!btn)return;var item=btn.closest('.faq-item');var isOpen=item.classList.contains('open');list.querySelectorAll('.faq-item.open').forEach(function(el){el.classList.remove('open');});if(!isOpen)item.classList.add('open');});}var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('is-visible');obs.unobserve(entry.target);}});},{threshold:0.08});document.querySelectorAll('.faq-item').forEach(function(el,i){el.style.transitionDelay=(i*0.06)+'s';obs.observe(el);});})();</script></div>
+<div class="upsell-nudge" id="upsellNudge">
+  <div class="upsell-nudge-inner">
+    <button class="upsell-main-btn" id="upsellBtn"><span>Consultez Nos Offres →</span></button>
+    <button class="upsell-close" id="upsellClose" aria-label="Fermer">×</button>
+  </div>
+</div>
+<div style="display:none"><script>(function(){var nudge=document.getElementById('upsellNudge');var btn=document.getElementById('upsellBtn');var closeBtn=document.getElementById('upsellClose');if(!nudge||!btn)return;var dismissed=false;var eventFired=false;btn.addEventListener('click',function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(!eventFired){eventFired=true;if(typeof fbq!=='undefined'){fbq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:29900});}}});closeBtn.addEventListener('click',function(){dismissed=true;nudge.classList.remove('visible');});function onScroll(){if(dismissed)return;var scrolled=window.scrollY||window.pageYOffset;if(scrolled>window.innerHeight*0.85){nudge.classList.add('visible');}else{nudge.classList.remove('visible');}}window._upsellScroll=onScroll;window.addEventListener('scroll',onScroll,{passive:true});})();</script></div>
+<!-- ════ CHATBOT — Ava AdStack ════ -->
+<style>
+  #as-chat-btn {
+    position: fixed; bottom: 90px; right: 20px; z-index: 9999;
+    width: 60px; height: 60px; border-radius: 50%; border: none; cursor: pointer;
+    background: linear-gradient(135deg, #1FB6FF 0%, #0B5CFF 100%);
+    box-shadow: 0 4px 20px rgba(31,182,255,0.55);
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s, box-shadow 0.2s; padding: 0; overflow: visible;
+  }
+  #as-chat-btn:hover { transform: scale(1.07); box-shadow: 0 6px 28px rgba(31,182,255,0.75); }
+  #as-chat-btn .as-ring {
+    position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(31,182,255,0.5);
+    animation: as-ring-pulse 2.4s ease-out infinite; pointer-events: none;
+  }
+  @keyframes as-ring-pulse { 0%{transform:scale(1);opacity:0.7} 100%{transform:scale(1.5);opacity:0} }
+  #as-question-bubble {
+    position: fixed; bottom: 164px; right: 20px; z-index: 9997;
+    background: #13131A; border: 1px solid rgba(31,182,255,0.3);
+    border-radius: 18px 18px 4px 18px;
+    padding: 10px 14px; font-size: 13px; font-weight: 600; color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.5); display: none; white-space: nowrap;
+    animation: as-bubble-in 0.3s ease-out;
+  }
+  @keyframes as-bubble-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  #as-chat-bubble {
+    position: fixed; bottom: 164px; right: 20px; z-index: 9998;
+    background: #13131A; border: 1px solid rgba(31,182,255,0.22);
+    border-radius: 18px; width: 320px; height: 500px;
+    display: none; flex-direction: column; overflow: hidden;
+    box-shadow: 0 16px 56px rgba(0,0,0,0.65);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    transform-origin: bottom right;
+  }
+  #as-chat-bubble.open { display: flex; }
+  #as-chat-header {
+    background: #0D0D14; border-bottom: 1px solid rgba(31,182,255,0.12);
+    padding: 11px 13px; display: flex; align-items: center; gap: 9px; flex-shrink: 0;
+  }
+  .as-avatar-wrap { width: 38px; height: 38px; border-radius: 50%; border: 2px solid rgba(31,182,255,0.4); overflow: hidden; flex-shrink: 0; background: #1a1a2e; display: flex; align-items: center; justify-content: center; }
+  .as-header-info { flex: 1; min-width: 0; }
+  .as-header-name { font-size: 13px; font-weight: 700; color: #fff; }
+  .as-header-sub  { font-size: 10px; color: #32FF7E; display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+  .as-status-dot  { width: 5px; height: 5px; border-radius: 50%; background: #32FF7E; animation: as-blink 2s infinite; flex-shrink: 0; }
+  @keyframes as-blink { 0%,100%{opacity:1}50%{opacity:.35} }
+  #as-close-btn { background:none; border:none; cursor:pointer; color:#4A4D55; font-size:19px; padding:0; line-height:1; flex-shrink:0; }
+  #as-close-btn:hover { color:#fff; }
+  #as-messages { flex:1; overflow-y:auto; padding:12px 11px; display:flex; flex-direction:column; gap:9px; scrollbar-width:thin; scrollbar-color:#2A2A35 transparent; }
+  #as-messages::-webkit-scrollbar { width:3px; }
+  #as-messages::-webkit-scrollbar-thumb { background:#2A2A35; border-radius:3px; }
+  .as-msg { display:flex; gap:7px; max-width:94%; }
+  .as-msg.user { align-self:flex-end; flex-direction:row-reverse; }
+  .as-msg-bubble { padding:9px 12px; border-radius:12px; font-size:13px; line-height:1.5; }
+  .as-msg.bot  .as-msg-bubble { background:#1E1E2C; color:#C8CAD0; border-bottom-left-radius:4px; }
+  .as-msg.user .as-msg-bubble { background:linear-gradient(135deg,#1FB6FF,#0B5CFF); color:#fff; border-bottom-right-radius:4px; }
+  .as-msg-av { width:26px; height:26px; border-radius:50%; border:1.5px solid rgba(31,182,255,0.3); overflow:hidden; flex-shrink:0; margin-top:2px; background:#1a1a2e; display:flex; align-items:center; justify-content:center; }
+  .as-typing { display:flex; align-items:center; gap:4px; padding:9px 12px; }
+  .as-typing span { width:6px; height:6px; border-radius:50%; background:#3A3D45; animation:as-bounce 1.2s infinite; }
+  .as-typing span:nth-child(2){animation-delay:.2s} .as-typing span:nth-child(3){animation-delay:.4s}
+  @keyframes as-bounce { 0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)} }
+  #as-suggestions { padding:0 11px 8px; display:flex; flex-wrap:wrap; gap:6px; flex-shrink:0; }
+  .as-sugg { background:#1E1E2C; border:1px solid rgba(31,182,255,0.18); color:#1FB6FF; border-radius:20px; padding:5px 11px; font-size:11px; font-weight:600; cursor:pointer; font-family:inherit; white-space:nowrap; transition:background .15s; }
+  .as-sugg:hover { background:rgba(31,182,255,0.1); }
+  .as-cta-row { display:flex; flex-direction:column; gap:6px; margin-top:9px; }
+  .as-cta-offre { display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg,#1FB6FF,#0B5CFF); color:#fff; border-radius:10px; padding:9px 14px; font-size:12px; font-weight:800; cursor:pointer; border:none; font-family:inherit; width:100%; box-shadow:0 4px 14px rgba(31,182,255,0.35); }
+  .as-cta-offre:hover { opacity:.88; }
+  .as-cta-checkout { display:flex; align-items:center; justify-content:center; gap:7px; background:linear-gradient(135deg,#32FF7E,#0BBF5A); color:#0A0A0E; border-radius:10px; padding:9px 14px; font-size:12px; font-weight:800; cursor:pointer; border:none; font-family:inherit; width:100%; box-shadow:0 4px 14px rgba(50,255,126,0.35); text-decoration:none; }
+  .as-cta-checkout:hover { opacity:.88; }
+  #as-input-row { padding:9px 11px; border-top:1px solid rgba(31,182,255,0.1); display:flex; gap:7px; align-items:center; background:#0D0D14; flex-shrink:0; }
+  #as-input { flex:1; background:#1C1C28; border:1px solid rgba(31,182,255,0.15); border-radius:20px; padding:8px 13px; color:#fff; font-size:16px; outline:none; font-family:inherit; resize:none; line-height:1.4; transform:translateZ(0); }
+  #as-input::placeholder { color:#3A3D45; }
+  #as-input:focus { border-color:rgba(31,182,255,0.4); }
+  #as-send-btn { width:34px; height:34px; border-radius:50%; border:none; cursor:pointer; background:linear-gradient(135deg,#1FB6FF,#0B5CFF); display:flex; align-items:center; justify-content:center; flex-shrink:0; padding:0; }
+  #as-send-btn:hover { transform:scale(1.08); }
+  #as-send-btn svg { width:15px; height:15px; fill:#fff; }
+  #as-send-btn:disabled { opacity:.4; cursor:not-allowed; }
+  #as-notif-badge { position:fixed; bottom:136px; right:16px; z-index:10000; background:#EF4444; color:#fff; border-radius:50%; width:18px; height:18px; font-size:10px; font-weight:800; display:none; align-items:center; justify-content:center; font-family:-apple-system,sans-serif; box-shadow:0 2px 8px rgba(239,68,68,0.5); }
+</style>
+
+<button id="as-chat-btn" onclick="asToggle()" title="Discuter avec Ava"><span class="as-ring"></span></button>
+<div id="as-notif-badge">1</div>
+<div id="as-question-bubble">Une question ? 💬</div>
+
+<div id="as-chat-bubble">
+  <div id="as-chat-header">
+    <div class="as-avatar-wrap" id="as-header-avatar"></div>
+    <div class="as-header-info">
+      <div class="as-header-name">Ava · AdStack</div>
+      <div class="as-header-sub"><span class="as-status-dot"></span>Disponible · répond en quelques secondes</div>
+    </div>
+    <button id="as-close-btn" onclick="asToggle()">✕</button>
+  </div>
+  <div id="as-messages"></div>
+  <div id="as-suggestions"></div>
+  <div id="as-input-row">
+    <textarea id="as-input" rows="1" placeholder="Écris ta question…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();asSend();}"></textarea>
+    <button id="as-send-btn" onclick="asSend()"><svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg></button>
+  </div>
+</div>
+
+<div style="display:none"><script>
+var AS_CHAT_ENDPOINT = 'https://adstack-server.onrender.com/chat-vente';
+var AS_WEBHOOK = ADSTACK_CONFIG.webhook;
+var AS_CODE_PROMO = ADSTACK_CONFIG.code_promo;
+
+var AS_CHECKOUT = {
+  starter:  ADSTACK_CONFIG.url_starter,
+  standard: ADSTACK_CONFIG.url_standard,
+  scale:    ADSTACK_CONFIG.url_scale
+};
+
+// Ancien prompt système client (AS_SYSTEM) retiré — la logique de conversation vit maintenant
+// côté serveur dans /chat-vente (server_v5_45.js), avec les prix sourcés sur OFFERS au lieu
+// d'être recopiés en dur ici. Le contenu utile (paiement, garantie, process) a été repris là-bas.
+
+var asHistory   = [];
+var asOpen      = false;
+var asLoading   = false;
+var asMsgCount  = 0;
+var asSessionId = 'as_' + Date.now();
+var asPromoShown = false;
+var asHotness   = 0;
+
+var AS_AVATAR_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60" width="26" height="26"><circle cx="30" cy="30" r="30" fill="#0B5CFF"/><ellipse cx="30" cy="16" rx="21" ry="19" fill="#1FB6FF"/><ellipse cx="12" cy="32" rx="6" ry="11" fill="#1FB6FF"/><ellipse cx="48" cy="32" rx="6" ry="11" fill="#1FB6FF"/><ellipse cx="30" cy="37" rx="15" ry="17" fill="#7B4A2D"/><ellipse cx="30" cy="23" rx="15" ry="8" fill="#1FB6FF"/><path d="M21 33 Q24 29 27 33" stroke="#1A0800" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M33 33 Q36 29 39 33" stroke="#1A0800" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M29 38 Q30 40 31 38" stroke="#5C2E10" stroke-width="1" fill="none" stroke-linecap="round"/><path d="M24 43 Q30 49 36 43" stroke="#5C2E10" stroke-width="2" fill="none" stroke-linecap="round"/></svg>';
+
+function asInjectAvatars() {
+  var ha = document.getElementById('as-header-avatar');
+  if (ha) ha.innerHTML = AS_AVATAR_SVG;
+  var btn = document.getElementById('as-chat-btn');
+  if (btn) {
+    var ring = btn.querySelector('.as-ring');
+    btn.innerHTML = '';
+    if (ring) btn.appendChild(ring);
+    var tmp = document.createElement('div');
+    tmp.innerHTML = AS_AVATAR_SVG.replace('width="26" height="26"', 'width="44" height="44"');
+    btn.appendChild(tmp.firstChild);
+  }
+}
+
+function asToggle() {
+  asOpen = !asOpen;
+  var bubble = document.getElementById('as-chat-bubble');
+  var qBubble = document.getElementById('as-question-bubble');
+  if (asOpen) {
+    bubble.style.display = 'flex';
+    if (qBubble) qBubble.style.display = 'none';
+    document.getElementById('as-notif-badge').style.display = 'none';
+    if (asHistory.length === 0) asInit();
+  } else { bubble.style.display = 'none'; }
+}
+
+function asInit() {
+  asAppendMsg('bot', "Salut 👋 Je suis Ava. T'as une question sur nos offres ou tu veux savoir ce qu'on peut faire pour ton produit ?");
+  setTimeout(asShowSuggestions, 400);
+}
+
+function asShowSuggestions() {
+  var el = document.getElementById('as-suggestions');
+  el.innerHTML = '';
+  ["C'est quoi AdStack ?", "Le prix ?", "Ça marche vraiment ?", "Quelle offre pour moi ?"].forEach(function(s) {
+    var btn = document.createElement('button');
+    btn.className = 'as-sugg'; btn.textContent = s;
+    btn.onclick = function(){ el.innerHTML=''; asSubmit(s); };
+    el.appendChild(btn);
+  });
+}
+
+function asDetectHotness(text) {
+  var hot = /je (veux|prends|m.abonne|paie|vais|suis intéressé)|c.est bon|je fonce|ok je|on y va|comment (je paie|m.abonner|passer|acheter)/i;
+  var medium = /intéressant|pas mal|pourquoi pas|j.hésite|je réfléchis|peut-être/i;
+  if (hot.test(text)) asHotness += 3;
+  else if (medium.test(text)) asHotness += 1;
+}
+
+function asGetCheckoutForContext() {
+  var allMsgs = asHistory.map(function(m){ return m.content; }).join(' ').toLowerCase();
+  var mentionsScale = /\bscale\b|4 produit|48 image|99[.\s]?900|99900/i.test(allMsgs);
+  var mentionsPro   = /\bpro\b|24 image|2 produit|59[.\s]?900|59900/i.test(allMsgs);
+  if (mentionsScale && !mentionsPro) return {url: AS_CHECKOUT.scale, name: 'Conversion Scale'};
+  if (mentionsPro && !mentionsScale) return {url: AS_CHECKOUT.standard, name: 'Conversion Pro'};
+  return {url: AS_CHECKOUT.starter, name: 'Conversion Starter'};
+}
+
+function asAppendMsg(role, text, showOffre, showCheckout, showPromo) {
+  var msgs = document.getElementById('as-messages');
+  var wrap = document.createElement('div'); wrap.className = 'as-msg ' + role;
+  if (role === 'bot') { var av = document.createElement('div'); av.className = 'as-msg-av'; av.innerHTML = AS_AVATAR_SVG; wrap.appendChild(av); }
+  var bubble = document.createElement('div'); bubble.className = 'as-msg-bubble'; bubble.textContent = text;
+  if (showOffre || showCheckout || showPromo) {
+    var ctaRow = document.createElement('div'); ctaRow.className = 'as-cta-row';
+    if (showOffre) { var btnO = document.createElement('button'); btnO.className = 'as-cta-offre'; btnO.innerHTML = '📦 Voir les offres'; btnO.onclick = function() { asToggle(); var el = document.getElementById('nos-offres'); if (el) el.scrollIntoView({ behavior: 'smooth' }); }; ctaRow.appendChild(btnO); }
+    if (showCheckout) { var co = asGetCheckoutForContext(); var btnC = document.createElement('a'); btnC.className = 'as-cta-checkout'; btnC.href = co.url; btnC.target = '_blank'; btnC.innerHTML = '💳 S\'abonner — ' + co.name; ctaRow.appendChild(btnC); }
+    if (showPromo && !asPromoShown) { asPromoShown = true; var promoDiv = document.createElement('div'); promoDiv.style.cssText = 'background:rgba(255,215,0,0.07);border:1px solid rgba(255,215,0,0.25);border-radius:10px;padding:9px 14px;text-align:center;'; promoDiv.innerHTML = '<div style="font-size:10px;font-weight:700;color:#FFD700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;">Code promo</div><div style="font-size:18px;font-weight:900;color:#FFD700;letter-spacing:3px;">' + AS_CODE_PROMO + '</div><div style="font-size:11px;color:#9EA1A8;margin-top:3px;">−10% sur ton abonnement</div>'; ctaRow.appendChild(promoDiv); }
+    bubble.appendChild(ctaRow);
+  }
+  wrap.appendChild(bubble); msgs.appendChild(wrap); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function asShowTyping() {
+  var msgs = document.getElementById('as-messages');
+  var el = document.createElement('div'); el.className = 'as-msg bot'; el.id = 'as-typing';
+  var av = document.createElement('div'); av.className = 'as-msg-av'; av.innerHTML = AS_AVATAR_SVG;
+  var b = document.createElement('div'); b.className = 'as-msg-bubble';
+  var t = document.createElement('div'); t.className = 'as-typing'; t.innerHTML = '<span></span><span></span><span></span>';
+  b.appendChild(t); el.appendChild(av); el.appendChild(b); msgs.appendChild(el); msgs.scrollTop = msgs.scrollHeight;
+}
+function asRemoveTyping() { var el=document.getElementById('as-typing'); if(el) el.remove(); }
+
+function asSend() {
+  var inp = document.getElementById('as-input'); var text = inp.value.trim();
+  if (!text || asLoading) return; inp.value = ''; inp.style.height = ''; asSubmit(text);
+}
+
+async function asSubmit(text) {
+  if (!text || asLoading) return;
+  document.getElementById('as-suggestions').innerHTML = '';
+  asAppendMsg('user', text);
+  var historyBeforeThisTurn = asHistory.slice();   // snapshot AVANT d'ajouter le tour courant, envoyé comme "history" au serveur
+  asHistory.push({ role: 'user', content: text });
+  asDetectHotness(text);
+  asMsgCount++;
+  asLoading = true;
+  document.getElementById('as-send-btn').disabled = true;
+  var waitTime = Math.floor(Math.random() * 3000) + 3000;
+  asShowTyping();
+  try {
+    var res = await fetch(AS_CHAT_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: text,
+        history: historyBeforeThisTurn,
+        session_id: asSessionId,
+        context: {
+          language: (navigator.language || 'fr').startsWith('fr') ? 'fr' : 'en',
+          currency: 'XOF',
+          currencyRate: 1
+        }
+      })
+    });
+    var data = await res.json();
+    setTimeout(function() {
+      asRemoveTyping();
+      if (!res.ok) { asAppendMsg('bot', "Petit souci de connexion — regarde les offres sur la page en attendant !", true, false, false); }
+      else {
+        var reply = data.reply;
+        asHistory.push({ role: 'model', content: reply });
+        var showOffre    = /offre|voir les offres|juste en dessous/i.test(reply) && asHotness < 3;
+        var showCheckout = asHotness >= 3 || /s.abonner|commander|lien.*paiement|checkout/i.test(reply);
+        var showPromo    = /CREA1|code promo|réduction|10%/i.test(reply) && !asPromoShown;
+        asAppendMsg('bot', reply, showOffre, showCheckout, showPromo);
+        asSendData('message');
+      }
+      asLoading = false; document.getElementById('as-send-btn').disabled = false;
+    }, waitTime);
+  } catch(e) {
+    setTimeout(function() { asRemoveTyping(); asAppendMsg('bot', "Petit souci de connexion — regarde les offres sur la page !", true, false, false); asLoading = false; document.getElementById('as-send-btn').disabled = false; }, waitTime);
+  }
+}
+
+function asSendData(trigger) {
+  if (!AS_WEBHOOK || asHistory.length === 0) return;
+  var payload = { session: asSessionId, trigger: trigger, timestamp: new Date().toISOString(), totalMessages: asMsgCount, hotness: asHotness, promoShown: asPromoShown, allMessages: asHistory.map(function(m){ return m.role+': '+m.content; }).join(' || ') };
+  fetch(AS_WEBHOOK, { method: 'POST', mode: 'no-cors', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).catch(function(){});
+}
+
+window.addEventListener('beforeunload', function() { if (asMsgCount > 0) asSendData('exit'); });
+
+(function init() {
+  asInjectAvatars();
+  setTimeout(function() { if (!asOpen) document.getElementById('as-notif-badge').style.display = 'flex'; }, 4000);
+  setTimeout(function() { if (!asOpen) { var qb = document.getElementById('as-question-bubble'); qb.style.display = 'block'; setTimeout(function() { qb.style.display = 'none'; }, 30000); } }, 30000);
+  var inp = document.getElementById('as-input');
+  if (inp) { inp.addEventListener('input', function() { this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 80) + 'px'; }); }
+})();
+</script></div>
+
+<div style="display:none"><script>
+(async function(){try{const geo=await fetch('https://ipapi.co/json/').then(r=>r.json());const currency=(geo.currency||'XOF').toUpperCase();if(currency==='XOF')return;const ratesData=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json').then(r=>r.json());const rate=ratesData.xof[currency.toLowerCase()];if(!rate)return;const NO_DECIMALS=['XOF','XAF','GNF','KMF','DJF','RWF','BIF','UGX','TZS','MGA','JPY','KRW','VND','CLP','PYG','IDR','MMK'];const hasDecimals=!NO_DECIMALS.includes(currency);const decimals=hasDecimals?2:0;const CHARIOW_COEFF=1.0245;function smartRound(value){if(!hasDecimals)return Math.round(value);const floor=Math.floor(value);const target=floor+0.90;return value<=target?target:floor+1.90;}function fmt(fcfaAmount,noRound){const raw=fcfaAmount*rate*CHARIOW_COEFF;const final=noRound?raw:smartRound(raw);return new Intl.NumberFormat(undefined,{style:'currency',currency:currency,minimumFractionDigits:decimals,maximumFractionDigits:decimals}).format(final);}document.querySelectorAll('[data-fcfa]').forEach(function(el){const fcfa=parseFloat(el.dataset.fcfa);if(el.classList.contains('pr-unit')||el.classList.contains('lp-price-img')){el.textContent='\u2248 '+fmt(fcfa,true)+' / image';}else{el.textContent=fmt(fcfa);}});document.querySelectorAll('.lp-price-currency').forEach(function(el){var inner=el.querySelector('span');if(inner){el.innerHTML=currency+'<span style="font-size:11px;font-weight:700;color:#1FB6FF">'+inner.textContent+'</span>';}else{el.textContent=currency;}});
+    document.querySelectorAll('.pr-price sub').forEach(function(el){var txt=el.textContent;if(txt.includes('FCFA/MOIS'))el.textContent=currency+'/MOIS';else if(txt.includes('FCFA'))el.textContent=currency;});}catch(e){}})();
+</script></div>
+<footer class="ads-footer">
+  <div class="ads-footer-inner">
+    <div class="ads-footer-brand">
+      <a href="#" class="ads-footer-logo">
+        <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" height="32" style="height:32px;width:auto;display:block">
+        <div class="ads-footer-logo-name">Ad<span>Stack</span></div>
+      </a>
+      <p class="ads-footer-tagline">Des créatives images Meta Ads livrées en 48h sur WhatsApp. Volume, vitesse, performance — pour l'e-commerçant africain.</p>
+      <div class="ads-footer-socials">
+        <a href="https://www.instagram.com/adstack_" class="ads-footer-social" aria-label="Instagram" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="ads-footer-cols">
+      <div class="ads-footer-col">
+        <div class="ads-footer-col-title">Explorer</div>
+        <div class="ads-footer-col-links">
+          <a href="#travaux" onclick="event.preventDefault();document.getElementById('travaux').scrollIntoView({behavior:'smooth'})">Travaux récents</a>
+          <a href="#pourquoi-nous" onclick="event.preventDefault();document.getElementById('pourquoi-nous').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
+          <a href="#ce-que-vous-recevez" onclick="event.preventDefault();document.getElementById('ce-que-vous-recevez').scrollIntoView({behavior:'smooth'})">Ce que vous recevez</a>
+          <a href="#comment" onclick="event.preventDefault();document.getElementById('comment').scrollIntoView({behavior:'smooth'})">Comment ça marche</a>
+          <a href="#faq" onclick="event.preventDefault();document.getElementById('faq').scrollIntoView({behavior:'smooth'})">FAQ</a>
+        </div>
+      </div>
+      <div class="ads-footer-col">
+        <div class="ads-footer-col-title">Nos Offres</div>
+        <div class="ads-footer-col-links">
+          <a href="#nos-offres" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">Conversion Starter</a>
+          <a href="#nos-offres" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">Conversion Pro</a>
+          <a href="#nos-offres" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">Conversion Scale</a>
+        </div>
+      </div>
+    </div>
+    <div class="ads-footer-bottom">
+      <p class="ads-footer-copy">© AdStack 2026. Tous droits réservés. — Livraison garantie en 48h ou remboursé.</p>
+      <div class="ads-footer-address"><svg width="10" height="12" viewBox="0 0 12 14" fill="none"><path d="M6 1C3.79 1 2 2.79 2 5C2 8.5 6 13 6 13C6 13 10 8.5 10 5C10 2.79 8.21 1 6 1ZM6 6.5C5.17 6.5 4.5 5.83 4.5 5C4.5 4.17 5.17 3.5 6 3.5C6.83 3.5 7.5 4.17 7.5 5C7.5 5.83 6.83 6.5 6 6.5Z" fill="#3A3D45"/></svg>Quality First — Sénégal, Dakar, Rufisque</div>
+    </div>
+  </div>
+</footer>
+
+  </body>
+</html>

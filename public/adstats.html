@@ -5721,7 +5721,12 @@ async function openInstagramIntro(id, variantIndex) {
 // miniature dédiée pour J+10/J+21 (J+3 garde la miniature par défaut d'AdBoard).
 async function construireLienRelance(relanceIndex, prospectId) {
   const campagne = ['j3', 'j10', 'j21'][relanceIndex] || 'relance';
-  const baseUrl = `https://adstackofficial.com/adboard/offers?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
+  // J+3 et J+10 redirigent maintenant vers la page de vente (adstackofficial.com/) au lieu
+  // de la section Nos Tarifs dans AdBoard — décision explicite d'Amvr (le temps de "chauffer"
+  // le lead avant de l'envoyer directement sur une page de paiement). J+21 reste inchangé,
+  // vers /adboard/offers (dernière relance, plus directe puisque déjà bien réchauffé).
+  const destination = relanceIndex === 2 ? 'https://adstackofficial.com/adboard/offers' : 'https://adstackofficial.com/';
+  const baseUrl = `${destination}?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
   // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp, y compris J+3) :
   // thumbnail:null faisait faire au raccourcisseur une redirection HTTP brute (302), sans
   // aucune balise OG — l'hypothèse "J+3 garde la miniature par défaut d'AdBoard via la

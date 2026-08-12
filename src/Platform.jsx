@@ -315,10 +315,20 @@ const Logo = ({size=28}) => (
 // Marque visuelle propre à Ava (assistante) — volontairement distincte du logo AdStack (flèche
 // de croissance). Cœur plein + un seul anneau ouvert, épais et net — reste lisible même en
 // très petite taille (contrairement à un motif à plusieurs arcs fins, illisible une fois réduit).
+// Icône portée depuis le widget de la page de vente (ex-"Amina") — identité visuelle
+// unifiée entre AdBoard et la page de vente, remplace l'ancien rond abstrait jugé trop vague.
 const AvaMark = ({size=20}) => (
-  <svg width={size} height={size} viewBox="0 0 100 100">
-    <circle cx="50" cy="50" r="30" fill="none" stroke="#5B8DEF" strokeWidth="9" strokeLinecap="round" strokeDasharray="150 189" transform="rotate(-90 50 50)"/>
-    <circle cx="50" cy="50" r="11" fill="#5B8DEF"/>
+  <svg width={size} height={size} viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="30" cy="30" r="30" fill="#0B5CFF"/>
+    <ellipse cx="30" cy="16" rx="21" ry="19" fill="#1FB6FF"/>
+    <ellipse cx="12" cy="32" rx="6" ry="11" fill="#1FB6FF"/>
+    <ellipse cx="48" cy="32" rx="6" ry="11" fill="#1FB6FF"/>
+    <ellipse cx="30" cy="37" rx="15" ry="17" fill="#7B4A2D"/>
+    <ellipse cx="30" cy="23" rx="15" ry="8" fill="#1FB6FF"/>
+    <path d="M21 33 Q24 29 27 33" stroke="#1A0800" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M33 33 Q36 29 39 33" stroke="#1A0800" strokeWidth="2" fill="none" strokeLinecap="round"/>
+    <path d="M29 38 Q30 40 31 38" stroke="#5C2E10" strokeWidth="1" fill="none" strokeLinecap="round"/>
+    <path d="M24 43 Q30 49 36 43" stroke="#5C2E10" strokeWidth="2" fill="none" strokeLinecap="round"/>
   </svg>
 );
 
@@ -3216,6 +3226,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       <style>{`
         @keyframes aminaIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
         @keyframes aminaPulse{0%,100%{box-shadow:0 4px 20px rgba(45,127,249,0.5)}50%{box-shadow:0 4px 28px rgba(45,127,249,0.8)}}
+        @keyframes avaRingPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+        .ava-launcher-ring{position:absolute;inset:-4px;border-radius:50%;border:2px solid rgba(31,182,255,0.5);animation:avaRingPulse 2.4s ease-out infinite;pointer-events:none}
         .amina-msg strong{font-weight:700;color:#fff}
         .amina-bubble::-webkit-scrollbar{width:4px}
         .amina-bubble::-webkit-scrollbar-track{background:transparent}
@@ -3228,20 +3240,20 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
         <div style={{
           position:'fixed', bottom: isMobile?16:90, right: isMobile?8:20,
           width: isMobile?'calc(100vw - 16px)':380, height: isMobile?'72vh':540,
-          background:'#0C0D14', border:'1px solid rgba(255,255,255,0.08)',
+          background:'#13131A', border:'1px solid rgba(31,182,255,0.22)',
           borderRadius:16, zIndex:9998,
           display:'flex', flexDirection:'column', overflow:'hidden',
           boxShadow:'0 24px 64px rgba(0,0,0,0.7)',
           animation:'aminaIn .25s cubic-bezier(.34,1.56,.64,1)'
         }}>
           {/* Header */}
-          <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(255,255,255,0.07)',flexShrink:0}}>
-            <div style={{width:36,height:36,borderRadius:'50%',background:'linear-gradient(145deg,#141C33,#0B0F1A)',border:'1px solid rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-              <AvaMark size={20}/>
+          <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:'1px solid rgba(31,182,255,0.12)',flexShrink:0}}>
+            <div style={{width:36,height:36,borderRadius:'50%',background:'#1a1a2e',border:'2px solid rgba(31,182,255,0.4)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
+              <AvaMark size={22}/>
             </div>
             <div style={{flex:1}}>
               <div style={{fontSize:13,fontWeight:800,color:'#fff',fontFamily:"'Inter',sans-serif"}}>Ava</div>
-              <div style={{fontSize:10,color:'#22C55E',fontWeight:600}}>● En ligne</div>
+              <div style={{fontSize:10,color:'#32FF7E',fontWeight:600}}>● Disponible · répond en quelques secondes</div>
             </div>
             <button onClick={()=>setOpen(false)} style={{width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.06)',color:'rgba(255,255,255,0.4)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={13} color="rgba(255,255,255,0.4)"/></button>
           </div>
@@ -3255,17 +3267,17 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
                 <div key={i} style={{display:'flex',flexDirection:'column',alignItems:isUser?'flex-end':'flex-start',gap:6,animation:'aminaIn .2s ease'}}>
                   <div className="amina-msg" style={{
                     maxWidth:'82%', padding:'9px 12px', borderRadius: isUser?'14px 14px 4px 14px':'14px 14px 14px 4px',
-                    background: isUser ? 'linear-gradient(135deg,#5B8DEF,#0B3D91)' : 'rgba(255,255,255,0.07)',
-                    color: isUser?'#fff':'rgba(255,255,255,0.88)', fontSize:12.5, lineHeight:1.55,
+                    background: isUser ? 'linear-gradient(135deg,#1FB6FF,#0B5CFF)' : '#1E1E2C',
+                    color: isUser?'#fff':'#C8CAD0', fontSize:12.5, lineHeight:1.55,
                     fontFamily:"'Inter',sans-serif",
                   }} dangerouslySetInnerHTML={{__html: text}}/>
                   {buttons.length > 0 && (
                     <div style={{display:'flex',flexWrap:'wrap',gap:6,maxWidth:'82%'}}>
                       {buttons.map((b, j) => (
                         <button key={j} onClick={()=>handleAction(b)}
-                          style={{padding:'6px 12px',borderRadius:20,border:'1px solid rgba(45,127,249,0.4)',background:'rgba(45,127,249,0.1)',color:'#5B8DEF',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",transition:'all 0.15s'}}
-                          onMouseEnter={e=>{e.currentTarget.style.background='rgba(45,127,249,0.2)';e.currentTarget.style.borderColor='rgba(45,127,249,0.7)';}}
-                          onMouseLeave={e=>{e.currentTarget.style.background='rgba(45,127,249,0.1)';e.currentTarget.style.borderColor='rgba(45,127,249,0.4)';}}>
+                          style={{padding:'6px 12px',borderRadius:20,border:'1px solid rgba(31,182,255,0.4)',background:'rgba(31,182,255,0.1)',color:'#1FB6FF',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:"'Inter',sans-serif",transition:'all 0.15s'}}
+                          onMouseEnter={e=>{e.currentTarget.style.background='rgba(31,182,255,0.2)';e.currentTarget.style.borderColor='rgba(31,182,255,0.7)';}}
+                          onMouseLeave={e=>{e.currentTarget.style.background='rgba(31,182,255,0.1)';e.currentTarget.style.borderColor='rgba(31,182,255,0.4)';}}>
                           {BTN_LABELS[b] || b.split(':').pop()}
                         </button>
                       ))}
@@ -3295,7 +3307,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
               style={{flex:1,padding:'9px 12px',borderRadius:10,border:'1px solid rgba(255,255,255,0.1)',background:'rgba(255,255,255,0.10)',color:'#fff',fontSize:12,fontFamily:"'Inter',sans-serif",outline:'none',transition:'border-color .2s, box-shadow .2s'}}
             />
             <button onClick={send} disabled={!input.trim()||loading}
-              style={{width:36,height:36,borderRadius:10,border:'none',background:input.trim()&&!loading?'linear-gradient(135deg,#1FB6FF,#5B8DEF)':'rgba(255,255,255,0.12)',color:'#fff',cursor:input.trim()&&!loading?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .2s'}}>
+              style={{width:36,height:36,borderRadius:10,border:'none',background:input.trim()&&!loading?'linear-gradient(135deg,#1FB6FF,#0B5CFF)':'rgba(255,255,255,0.12)',color:'#fff',cursor:input.trim()&&!loading?'pointer':'default',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,transition:'all .2s'}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
           </div>
@@ -3305,16 +3317,17 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       {/* Floating button */}
       <button onClick={()=>{setOpen(o=>!o); setShowNudge(false);}} style={{
         position:'fixed', bottom:isMobile?16:20, right:isMobile?16:20,
-        width:56, height:56, borderRadius:'50%', border:'2px solid rgba(255,255,255,0.12)',
-        background:'linear-gradient(145deg,#141C33,#0B0F1A)',
+        width:60, height:60, borderRadius:'50%', border:'none',
+        background:'linear-gradient(135deg,#1FB6FF 0%,#0B5CFF 100%)',
         color:'#fff', cursor:'pointer', zIndex:9999,
         display:open?'none':'flex', alignItems:'center', justifyContent:'center',
-        boxShadow:'0 8px 28px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)',
-        transition:'transform .2s',
+        boxShadow:'0 4px 20px rgba(31,182,255,0.55)',
+        transition:'transform .2s, box-shadow .2s',
       }}
-      onMouseEnter={e=>e.currentTarget.style.transform='scale(1.08)'}
-      onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}>
-        <AvaMark size={30}/>
+      onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.07)';e.currentTarget.style.boxShadow='0 6px 28px rgba(31,182,255,0.75)';}}
+      onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 4px 20px rgba(31,182,255,0.55)';}}>
+        <span className="ava-launcher-ring"/>
+        <AvaMark size={34}/>
         {showNudge && (
           <span style={{position:'absolute',top:-2,right:-2,width:20,height:20,borderRadius:'50%',background:'#E55050',color:'#fff',fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #0A0C11',boxShadow:'0 0 8px rgba(229,80,80,0.6)'}}>
             1
