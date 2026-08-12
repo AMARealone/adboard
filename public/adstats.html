@@ -2865,16 +2865,71 @@ async function saveLienDemo(id, lien) {
     const saved = c.tpl_demo_msg || ls;
     if (saved) tpl = saved;
   } catch(e) {}
-  const prod = (()=>{ let n={}; try{n=JSON.parse(p.notes||'{}')}catch(e){} return n.produit_demo||p.produit||''; })();
-  const msg = tpl.replace(/\[nom marque\]/gi,p.nom_marque||'').replace(/\[Produit\]/gi,prod).replace(/\[lien_demo\]/gi,lien||'[lien_demo]').replace(/\\n/g,'\n');
+
   const wbEl = document.getElementById('wa-btn-interesse-'+id);
-  if (wbEl) wbEl.innerHTML = waButton(numero, msg, 'Envoyer la démo WhatsApp','',true);
+  // Repli immédiat — substitution simple, affichée tout de suite pendant que Gemini lit la
+  // mindmap en tâche de fond. Sert aussi de filet de sécurité si la lecture Gemini échoue.
+  const prodRepli = (()=>{ let n={}; try{n=JSON.parse(p.notes||'{}')}catch(e){} return n.produit_demo||p.produit||''; })();
+  const msgRepli = tpl.replace(/\[nom marque\]/gi,p.nom_marque||'').replace(/\[Produit\]/gi,prodRepli).replace(/\[lien_demo\]/gi,lien||'[lien_demo]').replace(/\\n/g,'\n');
+  if (wbEl) wbEl.innerHTML = waButton(numero, msgRepli, 'Envoyer la démo WhatsApp','',true);
+
   clearTimeout(_saveLienDemoDebounce[id]);
   _saveLienDemoDebounce[id] = setTimeout(async()=>{
     let notes={}; try{notes=JSON.parse(p.notes||'{}')}catch(e){}
     notes.lien_demo=lien; p.notes=JSON.stringify(notes);
     await patch(id,{notes:p.notes});
     if(p.statut==='lead') renderLeads(DB.filter(x=>x.statut==='lead'));
+
+    // Cause profonde corrigée (message Pitch+Démo utilisant un produit périmé) : la
+    // substitution simple se basait sur un champ stocké sur la fiche prospect, qui peut avoir
+    // changé depuis (démo régénérée pour un autre produit). La vraie mindmap générée, elle,
+    // contient toujours l'info exacte et à jour — on la lit maintenant via Gemini, comme pour
+    // les relances J+3/J+10/J+21, au lieu de faire confiance à un champ potentiellement obsolète.
+    if (!lien || !/^https?:\/\//i.test(lien)) return; // pas de lien valide, rien à lire
+    try {
+      const htmlRes = await fetch(lien, { signal: AbortSignal.timeout(15000) });
+      if (!htmlRes.ok) return; // échec silencieux — le repli déjà affiché reste valable
+      const html = await htmlRes.text();
+      const briefText = (() => {
+        const sansScriptsEtStyles = html
+          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
+          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ');
+        const d = document.createElement('div');
+        d.innerHTML = sansScriptsEtStyles;
+        return (d.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 8000);
+      })();
+      const prompt = 'Tu es expert copywriter WhatsApp pour e-commerce africain francophone.\n\n'
+        + 'Lis et comprends ENTIÈREMENT le brief ci-dessous avant de remplir quoi que ce soit.\n\n'
+        + 'BRIEF ADSTACK (mindmap complète du prospect) :\n' + briefText + '\n\n'
+        + 'TEMPLATE À REMPLIR :\n' + tpl + '\n\n'
+        + 'VARIABLES À EXTRAIRE DU BRIEF ET INJECTER :\n'
+        + '- [nom marque] = nom de la marque/boutique\n'
+        + '- [Produit] = nom du produit — utilise TOUJOURS celui du brief ci-dessus, jamais une supposition, c\'est la source de vérité la plus à jour\n'
+        + '- [lien_demo] = ne JAMAIS remplacer ce crochet, laisse-le tel quel, il sera substitué séparément par le code\n\n'
+        + 'RÈGLE ABSOLUE : aucun texte entre crochets du type [Xxx] (sauf [lien_demo], à laisser tel quel) ne doit JAMAIS apparaître dans le résultat final.\n'
+        + 'CONSIGNES : CONSERVE tous les *astérisques*, ne modifie pas les liens, garde le ton du template.\n\n'
+        + 'Retourne UNIQUEMENT ce JSON valide : {"marque":"...","produit":"...","message":"..."}';
+      const res = await fetch(PROSP_API + '/gen-messages', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt }), signal: AbortSignal.timeout(30000)
+      });
+      const d = await res.json();
+      if (!res.ok || !d.text) return;
+      const raw = d.text.replace(/```json|```/g, '').trim();
+      const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
+      const vars = JSON.parse(raw.slice(a, b + 1));
+      if (!vars.message) return;
+      const msgFinal = vars.message.replace(/\[lien_demo\]/gi, lien).replace(/\\n/g, '\n');
+      // Ne remplace le bouton QUE si le champ lien n'a pas changé entre-temps (utilisateur qui
+      // aurait déjà collé un autre lien pendant que Gemini traitait celui-ci).
+      const inputActuel = document.getElementById('lien-demo-'+id);
+      if (inputActuel && inputActuel.value !== lien) return;
+      if (wbEl) wbEl.innerHTML = waButton(numero, msgFinal, 'Envoyer la démo WhatsApp','',true);
+      // Met aussi à jour le produit sur la fiche si Gemini en a trouvé un plus précis/à jour.
+      if (vars.produit) { notes.produit_demo = vars.produit; p.notes = JSON.stringify(notes); await patch(id,{notes:p.notes}); }
+    } catch(e) {
+      console.warn('[Demo Msg] Lecture mindmap via Gemini échouée, repli simple conservé :', e.message);
+    }
   },700);
 }
 
