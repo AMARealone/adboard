@@ -780,7 +780,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <div class="proc-scroll-outer"><div class="proc-steps">
       <div class="proc-step">
         <div class="proc-step-header"><div class="proc-step-dot">1</div><div><div class="proc-step-label">Étape 1</div><div class="proc-step-title">Tu t'abonnes.<br>C'est tout.</div></div></div>
-        <p class="proc-step-desc">Choisis ton offre et règle en <strong>moins de 2 minutes</strong> via Wave, Orange Money ou carte. Résiliable à tout moment.</p>
+        <p class="proc-step-desc">Choisis ton offre et règle en <strong>moins de 2 minutes</strong>, paiement sécurisé. Résiliable à tout moment.</p>
         <div class="proc-pay-mock"><div class="proc-mock-row"><span class="proc-mock-row-label">Abonnement mensuel · 9 img/sem</span><span class="proc-mock-row-price">✓</span></div><div class="proc-mock-divider"></div><div class="proc-mock-btn">S'abonner maintenant →</div></div>
       </div>
       <div class="proc-step">
@@ -823,40 +823,34 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .offers-grid-lp{display:grid;grid-template-columns:1fr;gap:16px;max-width:100%;margin:0 auto;box-sizing:border-box}
 @media(min-width:768px){.offers-grid-lp{grid-template-columns:repeat(4,1fr);max-width:1200px}}
 .offer-card-lp.lp-best{background:linear-gradient(180deg,rgba(31,182,255,0.10),rgba(31,182,255,0.02));border-color:rgba(31,182,255,0.4)}
-.lp-best-badge{position:absolute;top:0;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#1FB6FF,#0B5CFF);color:#fff;font-size:9px;font-weight:900;padding:4px 14px;border-radius:0 0 8px 8px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
-.offer-card-lp{background:#0F1118;border:1px solid rgba(255,255,255,0.07);border-radius:20px;padding:28px 24px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:border-color .25s,transform .25s;opacity:0;transform:translateY(24px);animation:cardIn-lp .5s ease-out forwards}
+.offer-card-lp{background:#0F1118;border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:22px;display:flex;flex-direction:column;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s;opacity:0;transform:translateY(24px);animation:cardIn-lp .5s ease-out forwards}
 .offer-card-lp:nth-child(1){animation-delay:.05s}
 .offer-card-lp:nth-child(2){animation-delay:.15s}
 .offer-card-lp:nth-child(3){animation-delay:.25s}
+.offer-card-lp:nth-child(4){animation-delay:.35s}
 @keyframes cardIn-lp{to{opacity:1;transform:translateY(0)}}
-.offer-card-lp::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(31,182,255,0.4),transparent);opacity:0;transition:opacity .25s}
-.offer-card-lp:hover{border-color:rgba(31,182,255,0.3);transform:translateY(-4px)}
-.offer-card-lp:hover::before{opacity:1}
-.lp-pack-name{font-size:18px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;background:linear-gradient(120deg,#1FB6FF,#0B5CFF,#2EF2E8);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite}
-.lp-pack-type{font-size:11px;font-weight:600;color:#5A5D65;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px}
-.lp-card-divider{height:1px;background:rgba(255,255,255,0.07);margin:16px 0}
-.lp-price-main{display:flex;align-items:baseline;gap:6px;margin-bottom:3px}
-.lp-price-amount{font-size:36px;font-weight:900;letter-spacing:-2px;color:#fff;line-height:1}
-.lp-price-currency{font-size:14px;font-weight:700;color:#1FB6FF}
-.lp-price-old{font-size:13px;color:#3A3D45;text-decoration:line-through;margin-bottom:6px}
-.lp-price-img{display:inline-block;font-size:10px;font-weight:800;color:#1FB6FF;background:rgba(31,182,255,0.08);border:1px solid rgba(31,182,255,0.2);padding:3px 9px;border-radius:20px;letter-spacing:.5px}
-.lp-volume-block{background:rgba(31,182,255,0.05);border:1px solid rgba(31,182,255,0.12);border-radius:12px;padding:12px 14px;margin:14px 0;display:flex;align-items:center;gap:12px}
-.lp-volume-num{font-size:28px;font-weight:900;color:#1FB6FF;letter-spacing:-1px;line-height:1;flex-shrink:0}
-.lp-volume-label{font-size:12px;font-weight:700;color:#fff;line-height:1.4}
-.lp-volume-sub{font-size:11px;color:#5A5D65;display:block;margin-top:2px}
-.lp-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin:14px 0;flex:1}
-.lp-features li{position:relative;padding-left:22px;font-size:13px;font-weight:600;color:#5A5D65;line-height:1.5}
-.lp-features li::before{content:'✓';position:absolute;left:0;top:0;color:#1FB6FF;font-size:13px;font-weight:900}
-.lp-features li span{color:#fff;font-weight:700}
-.lp-cta-btn{display:flex;align-items:center;justify-content:center;width:100%;padding:15px 20px;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff!important;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.3px;border:none;border-radius:12px;cursor:pointer;text-decoration:none;text-align:center;box-shadow:0 6px 20px rgba(31,182,255,0.3);transition:opacity .2s,transform .2s,box-shadow .2s;margin-top:16px;position:relative;overflow:hidden}
-.lp-cta-btn::before{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:skewX(-15deg);animation:shimmer-lp 2.5s infinite}
-@keyframes shimmer-lp{0%{left:-100%}100%{left:200%}}
+.offer-card-lp:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(0,0,0,0.35)}
+.lp-best-badge{position:absolute;top:0;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#1FB6FF,#0B5CFF);color:#fff;font-size:9px;font-weight:900;padding:3px 14px;border-radius:0 0 7px 7px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
+.lp-pack-name{font-size:12px;font-weight:700;letter-spacing:.3px;margin-bottom:4px;margin-top:0}
+.offer-card-lp.lp-best .lp-pack-name{margin-top:8px}
+.lp-pack-type{font-size:11px;color:#B8BAC0;line-height:1.4;margin-bottom:10px;min-height:28px}
+.lp-card-divider{height:1px;background:rgba(255,255,255,0.08);margin-bottom:16px}
+.lp-price-old{font-size:11px;color:#5A5D65;text-decoration:line-through;margin-bottom:2px}
+.lp-price-main{display:flex;align-items:baseline;gap:4px;margin-bottom:6px;flex-wrap:wrap}
+.lp-price-amount{font-size:28px;font-weight:800;color:#fff;line-height:1}
+.lp-price-currency{font-size:14px;font-weight:700;color:#fff}
+.lp-annual-pill{font-size:9px;font-weight:800;color:#1FB6FF;background:rgba(31,182,255,0.12);padding:2px 7px;border-radius:20px;letter-spacing:.3px;text-transform:uppercase}
+.lp-price-img{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;margin-bottom:18px;width:fit-content;font-size:11px;font-weight:800}
+.lp-price-img span:last-child{font-size:10px;font-weight:400}
+.lp-features{list-style:none;display:flex;flex-direction:column;gap:13px;margin:0 0 20px;flex:1}
+.lp-features li{display:flex;align-items:flex-start;gap:10px}
+.lp-feat-icon{flex-shrink:0;margin-top:1px;width:22px;height:22px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.lp-feat-text{font-size:12px;color:#8A8D95;line-height:1.45}
+.lp-feat-text strong{color:#fff;font-weight:700}
+.lp-cta-btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:12px;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff!important;font-family:inherit;font-size:13px;font-weight:700;border:none;border-radius:9px;cursor:pointer;text-decoration:none;text-align:center;box-shadow:0 4px 16px rgba(31,182,255,0.35);transition:opacity .2s,transform .2s,box-shadow .2s}
 .lp-cta-btn:hover{opacity:.9;transform:translateY(-2px);box-shadow:0 10px 30px rgba(31,182,255,0.45)}
-.lp-card-proof{margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
-.lp-proof-pay{font-size:12px;font-weight:600;color:#3A3D45;display:flex;align-items:center;gap:5px}
-.lp-proof-pay svg{flex-shrink:0}
-.lp-proof-guarantee{font-size:13px;font-weight:800;color:#32FF7E;display:flex;align-items:center;gap:5px}
-.lp-trust-block{margin-top:28px;text-align:center;padding:24px 16px;border-top:1px solid rgba(255,255,255,0.06);max-width:1000px;margin-left:auto;margin-right:auto}
+.lp-card-proof{margin-top:10px;text-align:center;font-size:10px;color:#5A5D65;display:flex;align-items:center;justify-content:center;gap:4px}
+.lp-trust-block{margin-top:28px;text-align:center;padding:24px 16px;border-top:1px solid rgba(255,255,255,0.06);max-width:1200px;margin-left:auto;margin-right:auto}
 .lp-trust-title{font-size:18px;font-weight:900;color:#fff!important;margin:0 0 12px;letter-spacing:-.3px}
 .lp-trust-text{font-size:14px;color:#5A5D65;line-height:1.7;max-width:560px;margin:0 auto}
 @keyframes pr-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
@@ -947,46 +941,80 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 // PLANS dans Platform.jsx. Si les offres changent un jour, répercuter ici aussi (pas de sync
 // automatique entre les trois pour l'instant).
 var LP_OFFERS = [
-  { id:'discovery', name:'Conversion Discovery', type:'Achat unique', isPack:true, color:'#1FB6FF',
+  { id:'discovery', name:'Conversion Discovery', isPack:true, color:'#1FB6FF',
+    tagline:'Suffisant pour voir une nette amélioration de tes résultats, avant de t\'engager sur le mois.',
+    ctaText:'Testez Maintenant',
     once:{ price:9900, priceBarre:15000, prixImg:1100, delivery:'48h', productId:'prd_ywk7ik14' },
     imagesPerWeek:9, produitsPerWeek:'1' },
-  { id:'starter', name:'Conversion Starter', type:'Abonnement', isPack:false, color:'#1FB6FF',
+  { id:'starter', name:'Conversion Starter', isPack:false, color:'#1FB6FF',
+    tagline:'Pour tester ton produit sereinement et obtenir tes premières ventes rentables, sans brûler ton budget.',
+    ctaText:'Vendez Maintenant',
     monthly:{ price:29900, priceBarre:40000, prixImg:830, delivery:'48h', productId:'prd_ljowq8' },
     annual:{ price:24900, priceBarre:29900, prixImg:691, delivery:'24h', productId:'prd_wdya3v9h' },
     imagesPerWeek:9, produitsPerWeek:'1', visuelsLabel:'9 Visuels' },
-  { id:'pro', name:'Conversion Pro', type:'Abonnement', isPack:false, color:'#1FB6FF', best:true,
+  { id:'pro', name:'Conversion Pro', isPack:false, color:'#1FB6FF', best:true,
+    tagline:'Pour dominer ton marché, écraser tes coûts d\'acquisition et positionner ta marque en leader.',
+    ctaText:'Dominez Votre Marché',
     monthly:{ price:54900, priceBarre:80000, prixImg:762, delivery:'48h', productId:'prd_34w031' },
     annual:{ price:44900, priceBarre:54900, prixImg:623, delivery:'24h', productId:'prd_lnp4ax0b' },
     imagesPerWeek:18, produitsPerWeek:'1 à 2', visuelsLabel:'18 Visuels Haute Performance' },
-  { id:'scale', name:'Conversion Scale', type:'Abonnement', isPack:false, color:'#1FB6FF',
+  { id:'scale', name:'Conversion Scale', isPack:false, color:'#1FB6FF',
+    tagline:'L\'arsenal complet pour inonder plusieurs marchés en simultané et faire exploser ton ROAS.',
+    ctaText:'Explosez Votre Croissance',
     monthly:{ price:79900, priceBarre:160000, prixImg:554, delivery:'48h', productId:'prd_9fi79y' },
     annual:{ price:64900, priceBarre:79900, prixImg:450, delivery:'24h', productId:'prd_dn4fb72l' },
     imagesPerWeek:36, produitsPerWeek:'1 à 4', visuelsLabel:'36 Visuels Multi-Angles' },
 ];
 var lpAnnual = false;
 
+// Formatage intelligent : point comme séparateur de milliers (9.900, pas 9 900 ni 9,900) —
+// utilisé pour TOUS les prix de la page (prix principal, prix barré, prix/image).
+function lpFmt(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+
+// Icônes reprises d'AdBoard (mêmes noms par feature, traits simples équivalents).
+var LP_ICONS = {
+  image:   '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>',
+  box:     '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/>',
+  grid:    '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
+  chart:   '<line x1="4" y1="20" x2="4" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="20" y1="20" x2="20" y2="14"/>',
+  document:'<path d="M6 2h9l5 5v15H6z"/><path d="M15 2v5h5"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>',
+  clock:   '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 16 14"/>',
+  upload:  '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M4 20h16"/>',
+};
+var LP_ICONS_FILLED = {
+  sparkle: '<path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5z"/>',
+  bolt:    '<polygon points="13 2 4 14 11 14 10 22 20 10 13 10 13 2"/>',
+};
+function lpIcon(name, color) {
+  if (LP_ICONS_FILLED[name]) return '<svg width="12" height="12" viewBox="0 0 24 24" fill="' + color + '">' + LP_ICONS_FILLED[name] + '</svg>';
+  return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (LP_ICONS[name]||'') + '</svg>';
+}
+
+// Features EXACTES d'AdBoard (mêmes libellés, même icône par ligne) — seule différence :
+// tutoiement au lieu du vouvoiement, pour matcher le reste de la page de vente.
 function lpFeatures(o, cycleData) {
   if (o.isPack) {
     return [
-      o.imagesPerWeek + ' Visuels Stratégique Livrés',
-      o.produitsPerWeek + ' Produit Couvert',
-      'Galerie Créative <span>(tous vos visuels centralisés)</span>',
-      'Marché Analysé <span>: Cibles, Concurrents & Tendances</span>',
-      'Titres & Descriptions <span>exacts à copier-coller (Ad Copies)</span>',
-      'Suivi de la production <span>en temps réel</span>',
-      'Vos publicités prêtes en ' + cycleData.delivery,
+      { icon:'image', bold:o.imagesPerWeek + ' Visuels Stratégique Livrés', rest:'' },
+      { icon:'box', bold:o.produitsPerWeek + ' Produit Couvert', rest:'' },
+      { icon:'grid', bold:'Galerie Créative', rest:'(tous tes visuels centralisés)' },
+      { icon:'chart', bold:'Marché Analysé', rest:': Cibles, Concurrents & Tendances' },
+      { icon:'document', bold:'Titres & Descriptions', rest:'exacts à copier-coller (Ad Copies)' },
+      { icon:'clock', bold:'Suivi de la production', rest:'en temps réel' },
+      { icon:'bolt', bold:'Tes publicités prêtes en ' + cycleData.delivery, rest:'' },
     ];
   }
+  var produitsRest = o.id==='starter' ? '/ semaine' : (o.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive');
   return [
-    o.visuelsLabel + ' <span>livrés / semaine</span>',
-    o.produitsPerWeek + ' Produit' + (o.produitsPerWeek!=='1'?'s':'') + ' <span>/ semaine</span>',
-    'Galerie Créative <span>— tous vos visuels centralisés</span>',
-    'Marché analysé <span>chaque semaine : cibles, concurrents & tendances</span>',
-    'Textes publicitaires <span>prêts à copier-coller (Ad Copies)</span>',
-    'Assistant IA <span>stratégique, disponible 7j/7</span>',
-    'Import produits <span>simple et rapide</span>',
-    'Suivi de production <span>en temps réel</span>',
-    'Prêtes en ' + cycleData.delivery + ' <span>chaque semaine</span>',
+    { icon:'image', bold:o.visuelsLabel, rest: o.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine' },
+    { icon:'box', bold:o.produitsPerWeek + ' Produit' + (o.produitsPerWeek!=='1'?'s':''), rest:produitsRest },
+    { icon:'grid', bold:'Galerie Créative', rest:'— tous tes visuels centralisés' },
+    { icon:'chart', bold:'Marché analysé', rest:'chaque semaine : cibles, concurrents & tendances' },
+    { icon:'document', bold:'Textes publicitaires', rest:'prêts à copier-coller (Ad Copies)' },
+    { icon:'sparkle', bold:'Assistant IA', rest:'stratégique, disponible 7j/7' },
+    { icon:'upload', bold:'Import produits', rest:'simple et rapide' },
+    { icon:'clock', bold:'Suivi de production', rest:'en temps réel' },
+    { icon:'bolt', bold:'Prêtes en ' + cycleData.delivery, rest:'chaque semaine' },
   ];
 }
 
@@ -998,25 +1026,23 @@ function lpRenderOffers() {
     var features = lpFeatures(o, cycleData);
     html += '<div class="offer-card-lp' + (o.best ? ' lp-best' : '') + '">';
     if (o.best) html += '<div class="lp-best-badge">Recommandé</div>';
-    html += '<div class="lp-pack-name">' + o.name + '</div>';
-    html += '<div class="lp-pack-type">' + o.type + (o.isPack ? '' : (lpAnnual ? ' annuel' : ' mensuel')) + '</div>';
+    html += '<div class="lp-pack-name" style="color:' + o.color + '">' + o.name + '</div>';
+    html += '<div class="lp-pack-type">' + o.tagline + '</div>';
+    html += '<div class="lp-price-old" data-fcfa="' + cycleData.priceBarre + '">' + lpFmt(cycleData.priceBarre) + ' FCFA</div>';
+    html += '<div class="lp-price-main"><span class="lp-price-amount" data-fcfa="' + cycleData.price + '">' + lpFmt(cycleData.price) + '</span><span class="lp-price-currency">FCFA' + (o.isPack ? '' : '<span style="font-size:11px;color:#8A8D95">/mois</span>') + '</span>' + (!o.isPack && lpAnnual ? '<span class="lp-annual-pill">Plan annuel</span>' : '') + '</div>';
+    html += '<div class="lp-price-img" style="background:' + o.color + '18;border:1px solid ' + o.color + '38"><span data-fcfa="' + cycleData.prixImg + '" style="color:' + o.color + '">' + lpFmt(cycleData.prixImg) + ' FCFA</span><span style="color:#8A8D95"> / image</span></div>';
     html += '<div class="lp-card-divider"></div>';
-    html += '<div style="margin-bottom:6px">';
-    html += '<div class="lp-price-main"><span class="lp-price-amount" data-fcfa="' + cycleData.price + '">' + cycleData.price.toLocaleString('fr-FR') + '</span><span class="lp-price-currency">FCFA' + (o.isPack ? '' : '<span style="font-size:11px;font-weight:700;color:#1FB6FF">/MOIS</span>') + '</span></div>';
-    html += '<div class="lp-price-old" data-fcfa="' + cycleData.priceBarre + '">' + cycleData.priceBarre.toLocaleString('fr-FR') + ' FCFA</div>';
-    html += '<span class="lp-price-img" data-fcfa="' + cycleData.prixImg + '">≈ ' + cycleData.prixImg + ' FCFA / image</span>';
-    html += '</div><div class="lp-card-divider"></div>';
     html += '<ul class="lp-features">';
-    features.forEach(function(f) { html += '<li>' + f + '</li>'; });
+    features.forEach(function(f) { html += '<li><span class="lp-feat-icon" style="background:' + o.color + '18">' + lpIcon(f.icon, o.color) + '</span><span class="lp-feat-text"><strong>' + f.bold + '</strong> ' + f.rest + '</span></li>'; });
     html += '</ul>';
-    html += '<button onclick="lpOpenCheckout(\'' + cycleData.productId + '\',\'' + o.name.replace(/'/g,"\\'") + '\',' + cycleData.price + ')" class="lp-cta-btn">Passez Au Paiement →</button>';
-    html += '<div class="lp-card-proof"><div class="lp-proof-pay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Paiement Mobile Money sécurisé</div><div class="lp-proof-guarantee"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Satisfait ou 100% remboursé</div></div>';
+    html += '<button onclick="lpOpenCheckout(\'' + cycleData.productId + '\',\'' + o.name.replace(/'/g,"\\'") + '\',' + cycleData.price + ')" class="lp-cta-btn">' + o.ctaText + ' →</button>';
+    html += '<div class="lp-card-proof"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Paiement sécurisé</div>';
     html += '</div>';
   });
   grid.innerHTML = html;
   // Réapplique la conversion de devise (data-fcfa) sur les cartes qui viennent d'être injectées —
   // le convertisseur ne tourne qu'une fois au chargement initial, sinon.
-  if (typeof lpApplyCurrency === 'function') lpApplyCurrency();
+  if (typeof window.lpApplyCurrency === 'function') window.lpApplyCurrency();
 }
 
 function lpToggleCycle() {
@@ -1031,9 +1057,24 @@ function lpToggleCycle() {
 function lpOpenCheckout(productId, offerName, price) {
   if (typeof fbq !== 'undefined') fbq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
   document.querySelectorAll('script[src*="chariowcdn"]').forEach(function(s) { s.remove(); });
-  var widget = document.getElementById('lp-chariow-widget');
-  widget.setAttribute('data-product-id', productId);
-  widget.innerHTML = '';
+  // Recrée le noeud DOM du widget à neuf à chaque ouverture, au lieu de réutiliser le même
+  // élément — reproduit exactement le key={productId} de React côté AdBoard, qui force un
+  // remontage complet à chaque changement de produit. Réutiliser le même noeud (juste vidé
+  // + attribut changé) laisse probablement un état interne accroché à l'ancien noeud que
+  // innerHTML='' ne nettoie pas (ça vide les enfants, jamais le noeud lui-même) — très
+  // probablement la cause du petit rectangle blanc qui ne s'affichait pas entièrement.
+  var oldWidget = document.getElementById('lp-chariow-widget');
+  var newWidget = document.createElement('div');
+  newWidget.id = 'lp-chariow-widget';
+  newWidget.setAttribute('data-product-id', productId);
+  newWidget.setAttribute('data-store-domain', 'shop.adstackofficial.com');
+  newWidget.setAttribute('data-style', 'frame');
+  newWidget.setAttribute('data-border-style', 'rounded');
+  newWidget.setAttribute('data-cta-width', 'xs');
+  newWidget.setAttribute('data-cta-animation', 'none');
+  newWidget.setAttribute('data-locale', 'fr');
+  newWidget.setAttribute('data-background-color', '#FFFFFF');
+  oldWidget.parentNode.replaceChild(newWidget, oldWidget);
   document.getElementById('lp-payment-overlay').style.display = 'flex';
   if (!document.querySelector('link[href*="chariowcdn"]')) {
     var link = document.createElement('link');
@@ -1157,12 +1198,13 @@ lpRenderOffers();
     <p class="faq-sub">Réponses directes. Sans blabla.</p>
     <div class="faq-list" id="faqList">
       <div class="faq-item open"><button class="faq-question"><span class="faq-q-text">Est-ce que mes créatives vont vraiment performer ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl">① Analyse de marché réelle</span> — on part des données de ton marché, pas d'une intuition.<br><br><span class="hl">② Plusieurs angles testés en simultané</span> — plus de chances qu'un winner sorte vite.<br><br><span class="hl">③ Feed &amp; Story inclus</span> — tous les placements Meta couverts.<br><br><span class="hl">④ Textes &amp; titres fournis</span> — accroches prêtes à coller pour maximiser le taux de clic.</p></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est quoi la différence avec un freelance ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-r">Freelance : 3 visuels en 5 jours, sans stratégie.</span><br><br>AdStack : <strong>9 créatives en 48h</strong>, organisées par angle, prêtes à upload. <span class="hl">Même budget. Bien plus de volume.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est quoi AdBoard exactement ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">La plateforme AdStack, ton espace client.</span><br><br>Tu ajoutes tes produits, et notre équipe produit chaque semaine tes visuels publicitaires, une analyse de ton marché cible et des textes publicitaires prêts à l'emploi — <span class="hl">livrés directement dans ton tableau de bord.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Quelle est la différence entre les offres ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Discovery</strong> (9 images, achat unique sans engagement), <strong>Starter</strong> (9 images/semaine, 1 produit), <strong>Pro</strong> (18 images/semaine, 1 à 2 produits), <strong>Scale</strong> (36 images/semaine, 1 à 4 produits).<br><br><span class="hl">Plus l'offre est élevée, plus tu reçois de visuels par semaine et plus tu peux gérer de produits en simultané.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Conversion Discovery, comment ça marche ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Un achat unique, pas un abonnement.</span><br><br>Tu payes une fois, tu reçois 9 images à utiliser librement, valables 3 mois. Contrairement aux autres offres, elles ne se renouvellent jamais automatiquement — une fois utilisées, tu peux passer à un abonnement classique pour continuer à en recevoir chaque semaine.</p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je dois faire quoi de mon côté ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Te connecter à AdBoard et importer ton produit.</span> C'est tout.<br><br>Tu t'abonnes, tu te connectes avec Google, tu ajoutes ton produit — on s'occupe du reste chaque semaine. <strong>Zéro réunion. Zéro aller-retour. Zéro friction.</strong></p></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est pour moi si je débute sur Meta Ads ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Honnêtement, non.</strong><br><br>AdStack est fait pour les e-commerçants qui ont <span class="hl">déjà des campagnes actives</span>. <span class="hl-r">Si tu n'as pas encore lancé ta première pub</span>, commence par là d'abord.</p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Comment je reçois mes créatives ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Directement dans AdBoard, ton espace client, en moins de 48h.</strong><br><br>Tout organisé par produit et par angle — Feed et Story séparés, avec suivi de production en temps réel. <span class="hl">Tu uploades direct sur Meta Ads Manager.</span></p></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Est-ce que vous respectez les couleurs de ma marque ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui — et tu as le choix.</span><br><br>Dans le brief, tu peux nous indiquer tes couleurs. Si tu n'en as pas, <span class="hl">on sélectionne les couleurs qui conviennent le mieux à ton produit et ton marché.</span></p></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est un abonnement ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui. Nos offres sont des abonnements mensuels.</span><br><br>Résiliable à tout moment, <strong>sans contrat ni engagement longue durée.</strong> Tu peux arrêter quand tu veux.</p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Comment fonctionne l'analyse de marché ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Pour chaque produit, <span class="hl-g">notre équipe analyse ton marché cible</span> (pays, concurrence, persona) et te fournit une synthèse claire pour orienter tes campagnes — <span class="hl">visible dans l'onglet Données Marché d'AdBoard.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est un abonnement ? Je peux arrêter ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui, un abonnement mensuel — résiliable à tout moment.</span><br><br>Sans contrat ni engagement longue durée. Tu peux aussi changer de formule quand tu veux depuis AdBoard, <strong>le changement prend effet immédiatement.</strong></p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Et si je ne suis pas satisfait ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Satisfait ou 100% remboursé.</span><br><br>Si tes créatives ne te conviennent pas, on retravaille — ou on te rembourse intégralement. <strong>Zéro risque.</strong></p></div></div></div>
     </div>
   </div>
