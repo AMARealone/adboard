@@ -1737,7 +1737,7 @@ textarea::placeholder { color: var(--muted); }
   <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
     <div>
       <span style="font-size:19px;font-weight:600;color:var(--white)">Comportement utilisateur</span>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px">AdBoard — données Microsoft Clarity</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">AdBoard + Page de vente — données Microsoft Clarity (même projet)</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <select id="comp-periode" onchange="renderComportement()" style="font-size:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);outline:none">
@@ -4427,11 +4427,17 @@ async function renderComportement() {
         <p style="font-size:24px;font-weight:700;margin:0;color:${accent?'var(--blue)':'var(--white)'}">${val}</p>
         <p style="font-size:11px;color:var(--muted);margin:4px 0 0">${label}</p>
       </div>`;
-    heroEl.innerHTML = kpi(totalVisiteurs, `Visiteurs uniques · ${labelPeriode}`, false)
+    heroEl.innerHTML = kpi(totalVisiteurs, `Visiteurs (cumul quotidien) · ${labelPeriode}`, false)
                       + kpi(totalSessions, `Sessions · ${labelPeriode}`, false)
                       + kpi(formatTemps(engageMoyenGlobal), 'Temps moyen passé', false)
                       + kpi(scrollMoyenGlobal + '%', 'Scroll moyen sur la page', false)
                       + kpi(totalRage + totalDead + totalQuickback + totalScrollExces, 'Points de friction', true);
+    if (jours !== 1) {
+      heroEl.innerHTML += `<div style="grid-column:1/-1;font-size:11px;color:var(--muted);line-height:1.5;padding:2px 2px 0">
+        ⚠️ "Visiteurs" est la somme des visiteurs uniques <strong>de chaque jour pris séparément</strong> — un même visiteur revenant plusieurs jours dans la période est compté à chaque fois.
+        L'API publique de Clarity ne permet pas la déduplication au-delà de 3 jours glissants ; le vrai tableau de bord Clarity (qui a accès aux données brutes) affichera donc un nombre plus bas pour "7 derniers jours" ou plus. "Sessions" n'a pas ce problème (chaque session est un événement distinct).
+      </div>`;
+    }
 
     // ── Évolution jour par jour — pour situer une variation dans le temps (ex: pic après une
     // relance J+3), plutôt qu'un total figé sans mémoire de ce qui s'est passé quand. ──
@@ -4471,7 +4477,7 @@ async function renderComportement() {
         </div>
         <div id="${idUniq}" class="comp-collapse-body" style="padding:0 16px">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;padding:4px 0 14px;border-top:0.5px solid var(--border)">
-            <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:var(--white)">${p.visiteurs}</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Visiteurs uniques</p></div>
+            <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:var(--white)">${p.visiteurs}</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Visiteurs (cumul quotidien)</p></div>
             <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:var(--white)">${formatTemps(p.engageMoyen)}</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Temps moyen</p></div>
             <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:var(--white)">${p.scrollMoyen}%</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Scroll moyen</p></div>
             <div><p style="font-size:16px;font-weight:700;margin:6px 0 0;color:${(p.rage+p.dead)>0?'var(--blue)':'var(--white)'}">${p.rage+p.dead+p.quickback+p.scroll_exces}</p><p style="font-size:10px;color:var(--muted);margin:2px 0 0">Points de friction</p></div>
@@ -5721,10 +5727,10 @@ async function openInstagramIntro(id, variantIndex) {
 // miniature dédiée pour J+10/J+21 (J+3 garde la miniature par défaut d'AdBoard).
 async function construireLienRelance(relanceIndex, prospectId) {
   const campagne = ['j3', 'j10', 'j21'][relanceIndex] || 'relance';
-  // Reste sur /adboard/offers pour les 3 relances (J+3, J+10, J+21) tant que la page de vente
-  // n'est pas terminée — à rebasculer sur adstackofficial.com/ une fois qu'Amvr confirme que
-  // la page est prête (cf. discussion : ne pas router de vrai trafic dessus prématurément).
-  const baseUrl = `https://adstackofficial.com/adboard/offers?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
+  // Page de vente terminée et validée par Amvr — les 3 relances (J+3, J+10, J+21) redirigent
+  // maintenant vers adstackofficial.com/ au lieu de /adboard/offers. Miniatures, UTM et
+  // mécanisme de shortlink inchangés — seule la destination finale change.
+  const baseUrl = `https://adstackofficial.com/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
   // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp, y compris J+3) :
   // thumbnail:null faisait faire au raccourcisseur une redirection HTTP brute (302), sans
   // aucune balise OG — l'hypothèse "J+3 garde la miniature par défaut d'AdBoard via la
