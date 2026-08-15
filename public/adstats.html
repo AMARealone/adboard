@@ -2281,7 +2281,13 @@ function restorePage() {
 // ═══════════════════════════════════════
 // LOAD
 // ═══════════════════════════════════════
+let _loadEnCours = null;
 async function load() {
+  if (_loadEnCours) return _loadEnCours;
+  _loadEnCours = _loadImpl();
+  try { await _loadEnCours; } finally { _loadEnCours = null; }
+}
+async function _loadImpl() {
   try {
     // limit explicite : sans lui, PostgREST plafonne silencieusement à 1000 lignes par
     // défaut — au-delà de ce volume, triés en ordre croissant, ce sont justement les
@@ -2530,7 +2536,7 @@ async function markContacted(id) {
   localStorage.setItem('ig_last_send_at', String(_igLastSendAt));
   _igPacingTick();
   toast('Marqué comme contacté');
-  load();
+  render();
 }
 
 // Mémorise le canal réellement utilisé (whatsapp/instagram/sms), pour que markContacted et les
@@ -3119,7 +3125,7 @@ async function remettreAContacter(id) {
   // Supprimer la demande de démo en attente si elle existe
   try { await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H }); } catch(e) {}
   toast('Remis dans "À contacter"');
-  load();
+  render();
 }
 
 async function toLead(id) {
@@ -3131,7 +3137,7 @@ async function toLead(id) {
   try { await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H }); } catch(e) {}
   if (_demoPollers[id]) { clearInterval(_demoPollers[id]); delete _demoPollers[id]; }
   toast('Passé en Lead');
-  load();
+  render();
 }
 
 // ═══════════════════════════════════════
@@ -3391,7 +3397,7 @@ function renderAcheteurs(data) {
 async function toStandard(id) {
   await patch(id, { statut: 'standard', offre_achetee: 'standard' });
   toast('Passé en Standard');
-  load();
+  render();
 }
 
 // ═══════════════════════════════════════
@@ -4103,7 +4109,7 @@ async function confirmAchat() {
   await patch(achatId, { statut: 'acheteur', offre_achetee: 'starter', j_plus_achat: achatSel });
   closeM('m-achat');
   toast('Converti en Acheteur Starter');
-  load();
+  render();
 }
 
 // ═══════════════════════════════════════
@@ -4124,7 +4130,17 @@ async function patch(id, body) {
       const r = await fetch(`${SB}/prospects?id=eq.${id}`, {
         method: 'PATCH', headers: H_PATCH, body: JSON.stringify(body)
       });
-      if (r.ok) return true;
+      if (r.ok) {
+        // Synchronise l'état local — évite d'avoir à retélécharger les ~20000 lignes/toutes
+        // colonnes de /prospects juste pour refléter un changement d'un seul champ. Cause
+        // profonde d'une grosse partie de l'egress Supabase (6+ Go/2 semaines pour 103 Mo de
+        // storage total et 3 MAU réels) : chaque action (marquer contacté, passer en lead,
+        // sauvegarder une photo...) rechargeait la table entière au lieu de mettre à jour la
+        // ligne concernée en mémoire.
+        const local = DB.find(p => p.id === id);
+        if (local) Object.assign(local, body);
+        return true;
+      }
       console.error('PATCH failed:', r.status, await r.text());
     } catch(e) {
       console.error('PATCH error attempt', attempt, e);
@@ -4167,7 +4183,7 @@ async function uploadImageProduit(id, event) {
 
     await patch(id, { image_produit: publicUrl });
     toast('Photo sauvegardée');
-    load();
+    render();
 
   } catch(e) {
     toast('Erreur upload : ' + e.message);
@@ -4180,7 +4196,7 @@ async function supprimerImage(id) {
   if (!confirm('Supprimer la photo produit ?')) return;
   await patch(id, { image_produit: null });
   toast('Photo supprimée');
-  load();
+  render();
 }
 
 function openImageUpload(id) {
