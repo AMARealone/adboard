@@ -5813,7 +5813,15 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   // Astérisques autour du lien retirées AVANT insertion : une URL entourée de *...* (gras
   // WhatsApp) sans espace de séparation perturbe l'auto-détection de lien de WhatsApp — on
   // a vu le symptôme exact (caractères parasites, lien tronqué) dans un message réel envoyé.
-  msg = msg.replace(/\*?adstackofficial\.com\/adboard\/offers\*?/gi, lienFinal)
+  // Remplacement du lien — volontairement TRÈS tolérant. Le texte utilisé ici peut venir de
+  // Gemini ("Générer les messages", texteGenere) qui écrit le domaine de façon libre dans sa
+  // rédaction (juste "adstackofficial.com", avec ou sans https://, www., ou un chemin) — pas
+  // garanti d'écrire exactement "adstackofficial.com/adboard/offers". Cause profonde du lien
+  // brut sans UTM ni miniature vu par Amvr : l'ancienne regex ne matchait QUE ce texte exact,
+  // ratait silencieusement toute autre formulation, et lienFinal n'était alors inséré nulle
+  // part. On capture maintenant TOUTE occurrence du domaine, avec un chemin optionnel, entourée
+  // d'astérisques optionnelles, et on remplace tout le bloc capturé par le vrai lien construit.
+  msg = msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*]*)?\*?/gi, lienFinal)
            .replace(/\*?\[lien_demo\]\*?/gi, lienFinal)
            .replace(/\*?\[lien\]\*?/gi, lienFinal);
 
@@ -5870,7 +5878,7 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   // enchaînait plusieurs appels plus lourds), PUIS on copie, PUIS seulement on ouvre Instagram.
   const lienFinal = await construireLienRelance(relanceIndex, prospectId);
   // Astérisques autour du lien retirées avant insertion — perturbent l'auto-détection de lien.
-  msg = msg.replace(/\*?adstackofficial\.com\/adboard\/offers\*?/gi, lienFinal)
+  msg = msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*]*)?\*?/gi, lienFinal)
            .replace(/\*?\[lien_demo\]\*?/gi, lienFinal)
            .replace(/\*?\[lien\]\*?/gi, lienFinal);
 
