@@ -3941,22 +3941,48 @@ async function genMessages(html) {
       d.innerHTML = htmlSansScriptsEtStyles;
       return (d.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 8000);
     })();
+    // Liste de variables 100% dynamique — lit les templates ACTUELS (chargés juste au-dessus
+    // depuis Supabase/localStorage, donc déjà les templates modifiés par Amvr) et n'instruit
+    // Gemini que sur les crochets [Xxx] qui apparaissent VRAIMENT dedans. Cause profonde
+    // corrigée : avant, une liste fixe de 7 variables (dont [niche]) était toujours envoyée,
+    // même quand une template avait été mise à jour pour ne plus les utiliser — Gemini
+    // "cherchait" alors des choses non demandées, gaspillant un appel et créant la confusion
+    // vue dans les logs Render. Le principe reste : template libre, on ne remplit QUE ce qui
+    // y est vraiment écrit, jamais un travail caché sur une variable absente.
+    const DEFS_VARIABLES = {
+      'marque':               'nom de la marque/boutique',
+      'produit':              'nom du produit',
+      'pays':                 'le PAYS EN TOUTES LETTRES avec la bonne préposition française ("au Sénégal", "en Côte d\'Ivoire", "en RD Congo", "à Madagascar"...) — JAMAIS un code ou sigle (jamais "SN", "RDC", "CI")',
+      'persona prénom':       'prénom seul du persona',
+      'raison émotionnelle':  'ce qui pousse vraiment ce persona à acheter, déduit du contexte (3-5 mots)',
+      'score':                'chiffre seul du score',
+      'niche':                'grande catégorie (ex: cosmétiques, santé, mode)',
+    };
+    const _texteTemplatesComplet = templates.join('\n');
+    const _placeholdersPresents = [...new Set(
+      (_texteTemplatesComplet.match(/\[([^\]]{2,40})\]/g) || []).map(m => m.slice(1, -1).toLowerCase())
+    )];
+    const _lignesVariables = _placeholdersPresents
+      .map(ph => {
+        const def = DEFS_VARIABLES[ph];
+        return def ? `- [${ph}] = ${def}` : `- [${ph}] = déduis la valeur la plus plausible du contexte du brief`;
+      })
+      .join('\n');
+    const _aUnLienBrut = /adstackofficial\.com/i.test(_texteTemplatesComplet) && !/\[lien\]/i.test(_texteTemplatesComplet);
+
     const prompt = 'Tu es expert copywriter WhatsApp pour e-commerce africain francophone.\n\n'
       + 'Lis et comprends ENTIÈREMENT le brief ci-dessous avant de remplir quoi que ce soit — ne fais pas une extraction robotique champ par champ, comprends le contexte global (marché, persona, ce qui le pousse à acheter) comme le ferait un vrai copywriter.\n\n'
       + 'BRIEF ADSTACK (mindmap complète du prospect) :\n' + briefText + '\n\n'
       + 'TEMPLATES (' + templates.length + ' messages à remplir) :\n' + templates.map((t, i) => '--- TEMPLATE ' + (i+1) + ' ---\n' + t).join('\n\n') + '\n\n'
-      + 'VARIABLES À EXTRAIRE DU BRIEF ET INJECTER DANS CHAQUE TEMPLATE :\n'
-      + '- [Marque] = nom de la marque/boutique\n'
-      + '- [Produit] = nom du produit\n'
-      + '- [pays] ou [Pays] = le PAYS EN TOUTES LETTRES avec la bonne préposition française ("au Sénégal", "en Côte d\'Ivoire", "en RD Congo", "à Madagascar"...) — JAMAIS un code ou sigle (jamais "SN", "RDC", "CI")\n'
-      + '- [Persona prénom] = prénom seul du persona\n'
-      + '- [Raison émotionnelle] = ce qui pousse vraiment ce persona à acheter, déduit du contexte (3-5 mots)\n'
-      + '- [score] = chiffre seul du score\n'
-      + '- [niche] = grande catégorie (ex: cosmétiques, santé, mode)\n'
-      + '- numero_wa = numéro WhatsApp chiffres seulement\n\n'
-      + 'RÈGLE ABSOLUE : aucun texte entre crochets du type [Xxx] ne doit JAMAIS apparaître dans le résultat final — chaque crochet DOIT être remplacé par du texte réel. Si une info exacte n\'est pas écrite noir sur blanc dans le brief (ex: le persona n\'a pas de prénom explicite), déduis la valeur la plus plausible du contexte plutôt que de laisser le crochet vide — un copywriter humain ne laisserait jamais "[Persona prénom]" dans un message envoyé à un client.\n'
+      + (_lignesVariables
+          ? 'VARIABLES À EXTRAIRE DU BRIEF ET INJECTER — UNIQUEMENT celles listées ci-dessous, qui sont les seules réellement présentes dans les templates ci-dessus. N\'en invente aucune autre, et ne va chercher aucune information qui ne correspond à AUCUNE de ces variables :\n' + _lignesVariables + '\n\n'
+          : 'Ces templates ne contiennent aucune variable entre crochets [Xxx] à extraire du brief — contente-toi de les personnaliser dans l\'esprit du brief sans rien y ajouter de spécifique inventé.\n\n')
+      + 'RÈGLE ABSOLUE SUR LE LIEN : ' + (_aUnLienBrut
+          ? 'les templates contiennent l\'adresse "adstackofficial.com" écrite en clair — recopie-la EXACTEMENT caractère pour caractère, sans jamais la reformuler, la raccourcir, l\'abréger ou changer le texte autour dans lequel elle apparaît. Un lien réécrit différemment casse le suivi de clics.'
+          : 'si un template contient [lien] ou [lien_demo], NE LES REMPLACE JAMAIS — laisse ces crochets EXACTEMENT tels quels, ils seront substitués séparément par le code après coup.') + '\n\n'
+      + 'RÈGLE ABSOLUE : aucun texte entre crochets du type [Xxx] ne doit JAMAIS apparaître dans le résultat final' + (_aUnLienBrut ? '' : ' (sauf [lien]/[lien_demo], à laisser tels quels comme précisé ci-dessus)') + ' — chaque autre crochet DOIT être remplacé par du texte réel. Si une info exacte n\'est pas écrite noir sur blanc dans le brief (ex: le persona n\'a pas de prénom explicite), déduis la valeur la plus plausible du contexte plutôt que de laisser le crochet vide — un copywriter humain ne laisserait jamais "[Persona prénom]" dans un message envoyé à un client.\n'
       + 'Exemple : si le brief décrit "une mère active de 30-40 ans qui veut regagner confiance en elle", [Persona prénom] pourrait devenir "Awa" ou "Fatou" (prénom plausible dans ce marché) et [Raison émotionnelle] pourrait devenir "regagner confiance en elle".\n\n'
-      + 'CONSIGNES : CONSERVE tous les *astérisques*, ne modifie pas les liens, garde le ton de chaque template.\n\n'
+      + 'CONSIGNES : CONSERVE tous les *astérisques*, garde le ton de chaque template.\n\n'
       + 'Retourne UNIQUEMENT ce JSON valide (marque/produit/pays_code utiles pour mettre à jour la fiche du prospect — pays_code = code ISO 2 lettres du pays trouvé) :\n'
       + '{"marque":"...","produit":"...","pays_code":"...","numero_wa":"...","messages":["msg1","msg2","msg3"]}';
     const res = await fetch(PROSP_API + '/gen-messages', {
@@ -3987,9 +4013,11 @@ async function genMessages(html) {
     if (_placeholdersOublies.length) {
       console.warn('[genMessages] Placeholders non remplis, tentative de rattrapage:', _placeholdersOublies);
       try {
+        const _nomsOublies = [...new Set(_placeholdersOublies.map(p => p.slice(1, -1).toLowerCase()))];
+        const _champsJson = _nomsOublies.map(n => `"${n}":"..."`).join(',');
         const _promptRattrapage = 'Voici le brief d\'un prospect e-commerce :\n' + briefText
-          + '\n\nDonne UNIQUEMENT ce JSON, sans aucun texte autour, avec des valeurs réelles et plausibles déduites du brief (jamais de crochets, jamais vide — si l\'info exacte n\'est pas écrite noir sur blanc, déduis la valeur la plus probable) :\n'
-          + '{"Persona prénom":"...","Raison émotionnelle":"3 à 5 mots","score":"chiffre seul","niche":"1-2 mots","pays":"pays en toutes lettres avec préposition (ex: au Sénégal)"}';
+          + '\n\nDonne UNIQUEMENT ce JSON, sans aucun texte autour, avec des valeurs réelles et plausibles déduites du brief (jamais de crochets, jamais vide — si l\'info exacte n\'est pas écrite noir sur blanc, déduis la valeur la plus probable). Ne renvoie QUE les champs suivants, ce sont les seuls qui manquent réellement :\n'
+          + '{' + _champsJson + '}';
         const _resRattrapage = await fetch(PROSP_API + '/gen-messages', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -4000,15 +4028,21 @@ async function genMessages(html) {
         const _rawRattrapage = (_dRattrapage.text || '').replace(/```json|```/g, '').trim();
         const _a2 = _rawRattrapage.indexOf('{'), _b2 = _rawRattrapage.lastIndexOf('}');
         const _valeurs = JSON.parse(_rawRattrapage.slice(_a2, _b2 + 1));
+        // Table de correspondance insensible à la casse (Gemini peut renvoyer "Score" alors
+        // qu'on a demandé "score") — évite un remplacement raté juste à cause de la casse.
+        const _valeursMinuscules = {};
+        Object.keys(_valeurs).forEach(k => { _valeursMinuscules[k.toLowerCase()] = _valeurs[k]; });
 
-        vars.messages = vars.messages.map(m => m
-          .replace(/\[Persona prénom\]/gi, _valeurs['Persona prénom'] || '')
-          .replace(/\[Raison émotionnelle\]/gi, _valeurs['Raison émotionnelle'] || '')
-          .replace(/\[score\]/gi, _valeurs['score'] || '')
-          .replace(/\[niche\]/gi, _valeurs['niche'] || '')
-          .replace(/\b(en|au|à)\s+\[pays\]/gi, _valeurs['pays'] || '')
-          .replace(/\[pays\]/gi, _valeurs['pays'] || '')
-        );
+        vars.messages = vars.messages.map(m => {
+          let out = m;
+          _nomsOublies.forEach(nom => {
+            const valeur = _valeursMinuscules[nom] || '';
+            const rx = new RegExp('\\[' + nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\]', 'gi');
+            out = out.replace(rx, valeur);
+            if (nom === 'pays') out = out.replace(/\b(en|au|à)\s+\[pays\]/gi, valeur);
+          });
+          return out;
+        });
         _placeholdersOublies = vars.messages.map(m => (m.match(/\[[^\]]{2,40}\]/g) || [])).flat();
         console.log('[genMessages] Rattrapage effectué, crochets restants après coup:', _placeholdersOublies);
       } catch(eRattrapage) {
