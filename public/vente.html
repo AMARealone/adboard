@@ -1160,6 +1160,20 @@ var LP_PREPURCHASE_QUESTIONS = [
   "Qu'est-ce que tu serais prêt à changer pour vraiment débloquer tes ventes ?",
   "Pourquoi c'est important pour toi de régler ça maintenant ?",
 ];
+// Même principe que côté AdBoard : réponses "voix ICP" en placeholder gris, jamais annoncées
+// comme "exemple", pour guider quelqu'un qui bloque devant un champ vide.
+var LP_PREPURCHASE_PLACEHOLDERS = [
+  "Je passe des heures à essayer de créer des visuels moi-même, et ils ne ressemblent jamais à ce que je vois chez les grandes marques…",
+  "Je vends dans plusieurs pays, avec des publicités qui ne s'épuisent jamais et tournent en continu…",
+  "J'ai essayé Canva et des freelances, mais c'était long et le résultat ne convertissait pas vraiment…",
+  "Avoir un flux régulier de nouvelles créatives chaque semaine, sans devoir y penser…",
+  "Je pourrais me concentrer sur les commandes et le service client au lieu de designer des pubs…",
+  "J'ai peur que les visuels ne correspondent pas à mon produit ou à mon marché…",
+  "Mes publicités s'essoufflent après quelques jours, je n'ai pas assez de nouveaux angles à tester…",
+  "J'ai regardé du côté des agences, mais c'était soit trop cher, soit trop lent…",
+  "Investir un peu plus dans la qualité de mes créatives plutôt que de tout faire moi-même…",
+  "Parce que chaque jour sans bonnes créatives, c'est des ventes en moins…",
+];
 var lpPrepurchaseAnswers = Array(LP_PREPURCHASE_QUESTIONS.length).fill('');
 
 function lpPrepurchaseInit() {
@@ -1190,20 +1204,45 @@ function lpPrepurchaseRenderTeaser() {
 }
 
 function lpPrepurchaseRenderForm(erreur) {
+  var answered = lpPrepurchaseAnswers.filter(function(a){ return a && a.trim(); }).length;
+  var pct = Math.round((answered / LP_PREPURCHASE_QUESTIONS.length) * 100);
   var html = '<div class="lp-pp-form">' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
       '<div><h2 class="lp-pp-title">Réponds à 10 questions, obtiens -10%</h2>' +
       '<p class="lp-pp-sub">Termine de répondre à ces 10 questions pour obtenir ton code de réduction.</p></div>' +
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-close">✕</button>' +
-    '</div><div style="display:flex;flex-direction:column;gap:14px;margin-top:18px">';
+    '</div>' +
+    '<div style="margin-top:16px;margin-bottom:2px">' +
+      '<div style="position:relative;height:8px;border-radius:99px;background:rgba(255,255,255,0.08)">' +
+        '<div id="lp-pp-gauge-fill" style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;border-radius:99px;background:linear-gradient(90deg,#1FB6FF,#7B4AE0);transition:width .3s ease"></div>' +
+        '<div id="lp-pp-gauge-gift" style="position:absolute;right:-2px;top:50%;transform:translate(50%,-50%);width:26px;height:26px;border-radius:50%;background:' + (pct>=100?'linear-gradient(135deg,#F5C518,#F59E0B)':'#13131A') + ';border:2px solid ' + (pct>=100?'#F5C518':'rgba(255,255,255,0.15)') + ';display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .3s ease' + (pct>=100?';box-shadow:0 0 12px rgba(245,197,24,0.6)':'') + '">🎁</div>' +
+      '</div>' +
+      '<div id="lp-pp-gauge-count" style="font-size:10.5px;color:#8A8D95;margin-top:8px;text-align:right">' + answered + '/' + LP_PREPURCHASE_QUESTIONS.length + ' — plus que ' + (LP_PREPURCHASE_QUESTIONS.length-answered) + ' pour débloquer ton code</div>' +
+    '</div>' +
+    '<div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">';
   LP_PREPURCHASE_QUESTIONS.forEach(function(q, i) {
     html += '<div><label class="lp-pp-label">' + (i+1) + '. ' + q + ' <span style="color:#E55050">*</span></label>' +
-      '<textarea rows="2" class="lp-pp-textarea" oninput="lpPrepurchaseAnswers[' + i + ']=this.value"></textarea></div>';
+      '<textarea rows="2" class="lp-pp-textarea" placeholder="' + LP_PREPURCHASE_PLACEHOLDERS[i].replace(/"/g,'&quot;') + '" oninput="lpPrepurchaseAnswers[' + i + ']=this.value;lpPrepurchaseUpdateGauge()">' + (lpPrepurchaseAnswers[i]||'') + '</textarea></div>';
   });
   html += '</div>';
   if (erreur) html += '<div class="lp-pp-error">' + erreur + '</div>';
   html += '<button onclick="lpPrepurchaseSubmit()" id="lp-pp-submit-btn" class="lp-pp-submit">Valider et obtenir mon code</button></div>';
   document.getElementById('lp-prepurchase-content').innerHTML = html;
+}
+
+function lpPrepurchaseUpdateGauge() {
+  var answered = lpPrepurchaseAnswers.filter(function(a){ return a && a.trim(); }).length;
+  var pct = Math.round((answered / LP_PREPURCHASE_QUESTIONS.length) * 100);
+  var fill = document.getElementById('lp-pp-gauge-fill');
+  var gift = document.getElementById('lp-pp-gauge-gift');
+  var count = document.getElementById('lp-pp-gauge-count');
+  if (fill) fill.style.width = pct + '%';
+  if (gift) {
+    gift.style.background = pct>=100 ? 'linear-gradient(135deg,#F5C518,#F59E0B)' : '#13131A';
+    gift.style.border = '2px solid ' + (pct>=100 ? '#F5C518' : 'rgba(255,255,255,0.15)');
+    gift.style.boxShadow = pct>=100 ? '0 0 12px rgba(245,197,24,0.6)' : 'none';
+  }
+  if (count) count.textContent = answered + '/' + LP_PREPURCHASE_QUESTIONS.length + (answered>=LP_PREPURCHASE_QUESTIONS.length ? ' — code débloqué ✓' : ' — plus que ' + (LP_PREPURCHASE_QUESTIONS.length-answered) + ' pour débloquer ton code');
 }
 
 function lpPrepurchaseRenderCode(code) {

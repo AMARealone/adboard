@@ -903,6 +903,22 @@ const PREPURCHASE_QUESTIONS = [
   "Pourquoi c'est important pour toi de régler ça maintenant ?",
 ];
 
+// Exemples de réponses "voix ICP" affichés en placeholder gris — jamais annoncés comme
+// "exemple", juste une réponse plausible pour guider quelqu'un qui bloque devant un champ
+// vide face à une question assez précise. Terminés par "…" pour signaler qu'il peut développer.
+const PREPURCHASE_PLACEHOLDERS = [
+  "Je passe des heures à essayer de créer des visuels moi-même, et ils ne ressemblent jamais à ce que je vois chez les grandes marques…",
+  "Je vends dans plusieurs pays, avec des publicités qui ne s'épuisent jamais et tournent en continu…",
+  "J'ai essayé Canva et des freelances, mais c'était long et le résultat ne convertissait pas vraiment…",
+  "Avoir un flux régulier de nouvelles créatives chaque semaine, sans devoir y penser…",
+  "Je pourrais me concentrer sur les commandes et le service client au lieu de designer des pubs…",
+  "J'ai peur que les visuels ne correspondent pas à mon produit ou à mon marché…",
+  "Mes publicités s'essoufflent après quelques jours, je n'ai pas assez de nouveaux angles à tester…",
+  "J'ai regardé du côté des agences, mais c'était soit trop cher, soit trop lent…",
+  "Investir un peu plus dans la qualité de mes créatives plutôt que de tout faire moi-même…",
+  "Parce que chaque jour sans bonnes créatives, c'est des ventes en moins…",
+];
+
 const POSTPURCHASE_QUESTIONS = [
   "Avant qu'on te contacte, tu connaissais déjà des solutions comme la nôtre ?",
   "Qu'est-ce qui a fait la différence pour toi, ce qui t'a décidé à te lancer ?",
@@ -1043,7 +1059,21 @@ const InsightForm = ({ mode, user, onClose, C }) => {
               {closeBtn}
             </div>
 
-            <div style={{display:'flex',flexDirection:'column',gap:14,marginTop:18}}>
+            {isPre && (() => {
+              const answered = answers.slice(0, questions.length).filter(a => a.trim()).length;
+              const pct = Math.round((answered / questions.length) * 100);
+              return (
+                <div style={{marginTop:16,marginBottom:2}}>
+                  <div style={{position:'relative',height:8,borderRadius:99,background:'rgba(255,255,255,0.08)',overflow:'visible'}}>
+                    <div style={{position:'absolute',left:0,top:0,bottom:0,width:pct+'%',borderRadius:99,background:`linear-gradient(90deg, ${C.accent}, #7B4AE0)`,transition:'width .3s ease'}}/>
+                    <div style={{position:'absolute',right:-2,top:'50%',transform:'translate(50%,-50%)',width:26,height:26,borderRadius:'50%',background: pct>=100 ? 'linear-gradient(135deg,#F5C518,#F59E0B)' : C.card,border:`2px solid ${pct>=100?'#F5C518':C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,transition:'all .3s ease',boxShadow: pct>=100 ? '0 0 12px rgba(245,197,24,0.6)' : 'none'}}>🎁</div>
+                  </div>
+                  <div style={{fontSize:10.5,color:C.muted,marginTop:8,textAlign:'right'}}>{answered}/{questions.length} — plus que {questions.length-answered} pour débloquer ton code</div>
+                </div>
+              );
+            })()}
+
+            <div style={{display:'flex',flexDirection:'column',gap:14,marginTop:14}}>
               {questions.map((q, i) => (
                 <div key={i}>
                   <label style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:6,display:'block',lineHeight:1.4}}>
@@ -1052,6 +1082,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
                   <textarea
                     value={answers[i]}
                     onChange={e => { const a=[...answers]; a[i]=e.target.value; setAnswers(a); }}
+                    placeholder={isPre ? PREPURCHASE_PLACEHOLDERS[i] : ''}
                     rows={2}
                     style={inputStyle}
                   />
