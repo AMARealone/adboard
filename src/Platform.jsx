@@ -3586,7 +3586,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         ? {display:'flex',flexDirection:'column',gap:14,marginBottom:20}
         : {display:'flex',flexDirection:'row',gap:14,marginBottom:20,overflowX:'auto',paddingBottom:8}
       }>
-        {PLANS.map(p => {
+        {PLANS.filter(p => p.id !== 'discovery').map(p => {
           const selectedCycle = annual ? 'annual' : 'monthly';
           const sameTier = userPlan === p.id;
           // Abonnements créés avant l'ajout du cycle annuel → toujours mensuel historiquement
@@ -3725,6 +3725,24 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           );
         })}
       </div>
+
+      {/* Downsell Discovery — repositionné en bas de la grille, pour tester sans engagement
+          mensuel. Repris du style mis en place sur la page de vente. */}
+      {(() => {
+        const discovery = PLANS.find(pl => pl.id === 'discovery');
+        if (!discovery) return null;
+        const d = discovery.once;
+        return (
+          <div style={{maxWidth:420,margin:'8px auto 20px',background:C.card,border:`1px solid ${C.accent}30`,borderRadius:18,padding:'26px 24px',textAlign:'center'}}>
+            <div style={{fontSize:32,fontWeight:900,color:C.accent,marginBottom:10,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>{convertPrice(d.price)}</div>
+            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt pour un abonnement mensuel ?</div>
+            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Obtiens <strong style={{color:C.text}}>{discovery.imagesPerWeek} visuels stratégiques</strong> pour seulement <strong style={{color:C.text}}>{convertPrice(d.price)}</strong> — et vois les résultats sur ton produit.</p>
+            <button onClick={() => onCta(discovery)} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:13,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontSize:13,fontWeight:700,border:'none',borderRadius:99,cursor:'pointer'}}>
+              Tester avec {discovery.name} <Icon name="arrow" size={13} color="#fff"/>
+            </button>
+          </div>
+        );
+      })()}
     </div>
   );
 };
