@@ -151,7 +151,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <div class="nav-menu-wrap">
       <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
       <div class="nav-dropdown" id="navDrop">
-        <a class="nav-drop-item" href="#pourquoi-nous" onclick="event.preventDefault();document.getElementById('pourquoi-nous').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
+        <a class="nav-drop-item" href="#comparatif" onclick="event.preventDefault();document.getElementById('comparatif').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
         <a class="nav-drop-item" href="#pourquoi-images" onclick="event.preventDefault();document.getElementById('pourquoi-images').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Pourquoi des images</a>
         <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:29900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
         <a class="nav-drop-item" href="#faq" onclick="event.preventDefault();var el=document.getElementById('faq');if(el)el.scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
@@ -335,7 +335,6 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .sol-v2-item-title{font-size:14px;font-weight:700;color:#fff;line-height:1.3}
 .sol-v2-img-slot{width:100%;aspect-ratio:191/100;background:#111318;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
 .sol-v2-img-slot img{width:100%;height:100%;object-fit:cover;display:block}
-.wu-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
 .wu-inner{width:88%;max-width:480px;margin:0 auto}
 .wu-header{margin-bottom:28px;text-align:center}
 .wu-title{font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff;margin:0}
@@ -380,88 +379,104 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     </div>
   </div>
 </section>
-<section class="wu-section" id="pourquoi-nous">
-  <div class="wu-inner">
-    <div class="wu-header"><h2 class="wu-title">Pas comme les autres.<br><em>Meilleur que les autres.</em></h2></div>
-    <div class="wu-stack">
-      <div class="wu-card wu-card-hero">
-        <div class="wu-card-brand">
-          <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" style="height:32px;width:auto;object-fit:contain;flex-shrink:0">
-          <div class="wu-card-brand-name">AdStack</div>
-        </div>
-        <div class="wu-grid">
-          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Rapidité</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Stratégie</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Volume</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-on-hero"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-hero">Qualité</span></div>
-        </div>
+
+<!-- ═══ NOUVELLE SECTION — AdStack vs faire soi-même (PREMIER JET, à valider) ═══
+     Compare face à la vraie alternative de cet ICP (IA généraliste + freelance),
+     pas "l'agence classique" comme sur les pages US de référence. -->
+<style>
+.vs-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:48px 0 56px;color:#fff;overflow:hidden}
+.vs-wrap{width:88%;max-width:640px;margin:0 auto}
+.vs-title{font-size:clamp(22px,5vw,32px);font-weight:900;letter-spacing:-1px;color:#fff;line-height:1.2;text-align:center;margin-bottom:10px}
+.vs-sub{font-size:13.5px;color:#8A8D95;text-align:center;max-width:440px;margin:0 auto 28px;line-height:1.6}
+.vs-table{border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden}
+.vs-row{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;font-size:11.5px}
+.vs-row.head{background:rgba(255,255,255,0.04);font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#8A8D95}
+.vs-row:not(.head){border-top:1px solid rgba(255,255,255,0.07)}
+.vs-cell{padding:12px 8px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35}
+.vs-cell:first-child{justify-content:flex-start;text-align:left;color:#C8CAD0;font-weight:600}
+.vs-row.head .vs-cell:nth-child(4){color:#1FB6FF}
+.vs-cell.win{background:rgba(31,182,255,0.07)}
+.vs-icon{font-weight:900;font-size:13px}
+.vs-icon.no{color:#4A4D55}
+.vs-icon.mid{color:#8A8D95}
+.vs-icon.yes{color:#1FB6FF}
+@media(max-width:480px){.vs-row{font-size:10px}.vs-cell{padding:10px 4px}}
+</style>
+<section class="vs-section" id="comparatif">
+  <div class="vs-wrap">
+    <h2 class="vs-title">AdStack vs le faire toi-même</h2>
+    <p class="vs-sub">Avant de t'abonner, sois honnête avec toi-même sur ce qui a déjà été essayé — et pourquoi ça n'a pas suffi.</p>
+    <div class="vs-table">
+      <div class="vs-row head">
+        <div class="vs-cell"></div>
+        <div class="vs-cell">IA générale</div>
+        <div class="vs-cell">Freelance</div>
+        <div class="vs-cell">AdStack</div>
       </div>
-      <div class="wu-card wu-card-alt">
-        <div class="wu-card-title">Freelance</div><div class="wu-card-sub">Souvent lent, sans stratégie Meta Ads, pas scalable.</div>
-        <div class="wu-grid">
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Rapidité</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Stratégie</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Volume</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Qualité</span></div>
-        </div>
+      <div class="vs-row">
+        <div class="vs-cell">Analyse de marché avant chaque création</div>
+        <div class="vs-cell"><span class="vs-icon no">✕</span></div>
+        <div class="vs-cell"><span class="vs-icon mid">~</span></div>
+        <div class="vs-cell win"><span class="vs-icon yes">✓</span></div>
       </div>
-      <div class="wu-card wu-card-alt">
-        <div class="wu-card-title">Canva / Faire soi-même</div><div class="wu-card-sub">Rapide à produire, mais zéro angle marketing et zéro data.</div>
-        <div class="wu-grid">
-          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Rapidité</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Stratégie</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Volume</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Qualité</span></div>
-        </div>
+      <div class="vs-row">
+        <div class="vs-cell">Plusieurs angles différents à chaque fois</div>
+        <div class="vs-cell"><span class="vs-icon no">✕</span></div>
+        <div class="vs-cell"><span class="vs-icon mid">~</span></div>
+        <div class="vs-cell win"><span class="vs-icon yes">✓</span></div>
       </div>
-      <div class="wu-card wu-card-alt">
-        <div class="wu-card-title">Agence généraliste</div><div class="wu-card-sub">Chère, lente et pas spécialisée e-commerce africain.</div>
-        <div class="wu-grid">
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Rapidité</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Stratégie</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-off"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M3 3L11 11M11 3L3 11"/></svg></div><span class="wu-attr-label wu-attr-label-off">Volume</span></div>
-          <div class="wu-attr"><div class="wu-check wu-check-on"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 7L5.5 10.5L12 3.5"/></svg></div><span class="wu-attr-label wu-attr-label-on">Qualité</span></div>
-        </div>
+      <div class="vs-row">
+        <div class="vs-cell">Nouveau visuel chaque semaine, sans y penser</div>
+        <div class="vs-cell"><span class="vs-icon no">✕</span></div>
+        <div class="vs-cell"><span class="vs-icon mid">~</span></div>
+        <div class="vs-cell win"><span class="vs-icon yes">✓</span></div>
+      </div>
+      <div class="vs-row">
+        <div class="vs-cell">Ton temps personnel dessus</div>
+        <div class="vs-cell"><span class="vs-icon no">Des heures</span></div>
+        <div class="vs-cell"><span class="vs-icon mid">Aller-retours</span></div>
+        <div class="vs-cell win"><span class="vs-icon yes">2 clics</span></div>
       </div>
     </div>
   </div>
 </section>
+
+<!-- ═══ NOUVELLE SECTION — Accentuation de la douleur ═══ -->
 <style>
-.transform-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
-.tf-header{width:88%;max-width:520px;margin:0 auto 40px;text-align:center}
-.tf-title{font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff!important;margin-bottom:12px}
-.tf-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:tf-grad 3s ease infinite}
-@keyframes tf-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-.tf-sub{font-size:14px;color:#5A5D65!important;line-height:1.6;max-width:380px;margin:0 auto}
-.tf-scene{width:88%;max-width:520px;margin:0 auto;position:relative;display:flex;flex-direction:column;align-items:center;gap:0}
-.tf-before{position:relative;display:flex;flex-direction:column;align-items:center;gap:10px}
-.tf-product-wrap{position:relative;width:160px;height:160px;display:flex;align-items:center;justify-content:center}
-.tf-product-wrap::before{content:'';position:absolute;inset:-20px;border-radius:50%;background:radial-gradient(circle,rgba(31,182,255,0.08) 0%,transparent 70%);animation:tf-pulse-ring 3s ease-in-out infinite}
-@keyframes tf-pulse-ring{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.1);opacity:1}}
-.tf-product-img{width:140px;height:140px;object-fit:contain;display:block;filter:drop-shadow(0 8px 24px rgba(31,182,255,0.2));animation:tf-float 4s ease-in-out infinite}
-@keyframes tf-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-.tf-connector{display:flex;flex-direction:column;align-items:center;gap:0;padding:8px 0;position:relative}
-.tf-connector-line{width:2px;height:40px;background:linear-gradient(to bottom,rgba(31,182,255,0.4),transparent);position:relative;overflow:hidden}
-.tf-connector-line::after{content:'';position:absolute;top:-100%;left:0;width:100%;height:100%;background:linear-gradient(to bottom,transparent,#1FB6FF,transparent);animation:tf-flow 1.5s ease-in-out infinite}
-@keyframes tf-flow{from{top:-100%}to{top:100%}}
-.tf-logo-wrap{position:relative;display:flex;align-items:center;justify-content:center;width:60px;height:60px;border-radius:16px;background:linear-gradient(135deg,#0F1118,#13151C);border:1px solid rgba(31,182,255,0.25);box-shadow:0 0 24px rgba(31,182,255,0.15),0 4px 16px rgba(0,0,0,0.5);animation:tf-logo-pulse 2.5s ease-in-out infinite}
-@keyframes tf-logo-pulse{0%,100%{box-shadow:0 0 24px rgba(31,182,255,0.15),0 4px 16px rgba(0,0,0,0.5)}50%{box-shadow:0 0 40px rgba(31,182,255,0.35),0 4px 20px rgba(0,0,0,0.5)}}
-.tf-orbit{position:absolute;inset:-14px;border-radius:50%;border:1px dashed rgba(31,182,255,0.15);animation:tf-orbit-spin 8s linear infinite}
-.tf-orbit-dot{position:absolute;width:6px;height:6px;border-radius:50%;background:#1FB6FF;box-shadow:0 0 8px rgba(31,182,255,0.8);top:-3px;left:calc(50% - 3px)}
-@keyframes tf-orbit-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-.tf-logo-img{width:38px;height:auto;display:block;object-fit:contain}
-.tf-process-label{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:#1FB6FF;margin-top:4px}
-.tf-after{display:flex;flex-direction:column;align-items:center;gap:10px}
-.tf-creatives{display:flex;flex-direction:row;gap:12px;align-items:flex-start}
-.tf-creative-card{position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.08);box-shadow:0 12px 32px rgba(0,0,0,0.6);opacity:0;transform:translateY(20px) scale(0.92);transition:border-color .3s ease,transform .3s ease}
-.tf-creative-card.visible{animation:tf-card-in .5s ease-out forwards}
-.tf-creative-card:nth-child(1){animation-delay:.1s;width:90px}
-.tf-creative-card:nth-child(2){animation-delay:.25s;width:100px;margin-top:-12px;z-index:2}
-.tf-creative-card:nth-child(3){animation-delay:.4s;width:90px}
-@keyframes tf-card-in{to{opacity:1;transform:translateY(0) scale(1)}}
-.tf-creative-card:hover{transform:translateY(-4px) scale(1.03)!important;border-color:rgba(31,182,255,0.3)}
-.tf-creative-img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
-@media(min-width:600px){.tf-title{font-size:34px}.tf-creative-card:nth-child(1){width:110px}.tf-creative-card:nth-child(2){width:124px}.tf-creative-card:nth-child(3){width:110px}}
+.pain-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:48px 0 56px;color:#fff;overflow:hidden}
+.pain-wrap{width:88%;max-width:520px;margin:0 auto}
+.pain-title{font-size:clamp(22px,5vw,32px);font-weight:900;letter-spacing:-1px;color:#fff;line-height:1.2;text-align:center;margin-bottom:36px}
+.pain-grid{display:flex;flex-direction:column;gap:16px}
+.pain-item{display:flex;gap:14px;align-items:flex-start;padding:16px;background:#0F1118;border:1px solid rgba(229,80,80,0.12);border-radius:14px}
+.pain-icon{width:36px;height:36px;border-radius:10px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.pain-item-title{font-size:14.5px;font-weight:800;color:#fff;margin-bottom:3px}
+.pain-item-text{font-size:12.5px;color:#8A8D95;line-height:1.55}
+</style>
+<section class="pain-section" id="douleur">
+  <div class="pain-wrap">
+    <h2 class="pain-title">Tu connais déjà cette sensation.</h2>
+    <div class="pain-grid">
+      <div class="pain-item">
+        <div class="pain-icon">💸</div>
+        <div><div class="pain-item-title">Ton budget pub part en fumée</div><p class="pain-item-text">Sur des visuels qui ne convertissent jamais assez pour rentabiliser la dépense.</p></div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-icon">⏳</div>
+        <div><div class="pain-item-title">Tes heures y passent</div><p class="pain-item-text">Entre Canva, les prompts ChatGPT et les essais-erreurs — au lieu de gérer ton business.</p></div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-icon">🎲</div>
+        <div><div class="pain-item-title">Zéro visibilité sur la suite</div><p class="pain-item-text">Tu ne sais jamais quand la prochaine créative arrivera, ni si elle sera bonne.</p></div>
+      </div>
+      <div class="pain-item">
+        <div class="pain-icon">🤖</div>
+        <div><div class="pain-item-title">L'IA généraliste te déçoit, encore</div><p class="pain-item-text">Un rendu générique qui ne ressemble jamais vraiment à ton produit ni à ton marché.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
 .wi-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
 .wi-inner{width:88%;max-width:480px;margin:0 auto}
 .wi-title{font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff;margin:0 0 10px}
@@ -488,36 +503,6 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .wi-icon-no{color:#EF4444;font-size:15px}
 .wi-icon-mid{color:#fff;font-size:20px;font-weight:300;letter-spacing:-2px}
 </style>
-<section class="transform-section" id="transformation">
-  <div class="tf-header">
-    <h2 class="tf-title">Ton produit, <em>fidèle à lui-même</em> dans chaque créative.</h2>
-    <p class="tf-sub">On part de tes photos. Ton produit dans les créatives — exact, fidèle, reconnaissable.</p>
-  </div>
-  <div class="tf-scene">
-    <div class="tf-before">
-      <div class="tf-product-wrap">
-        <img class="tf-product-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69be9ff583c5c9.05722768_Forever_MACA-removebg-preview.png" alt="Produit">
-      </div>
-    </div>
-    <div class="tf-connector">
-      <div class="tf-connector-line"></div>
-      <div class="tf-logo-wrap">
-        <div class="tf-orbit"><div class="tf-orbit-dot"></div></div>
-        <img class="tf-logo-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack">
-      </div>
-      <div class="tf-process-label">AdStack Process</div>
-      <div class="tf-connector-line" style="background:linear-gradient(to bottom,transparent,rgba(31,182,255,0.4))"></div>
-    </div>
-    <div class="tf-after">
-      <div class="tf-creatives" id="tfCreatives">
-        <div class="tf-creative-card"><img class="tf-creative-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69bcc4cc8122b4.55979498_ANGLE331.png" alt=""></div>
-        <div class="tf-creative-card"><img class="tf-creative-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69be9fba29e780.89711468_ANGLE231.png" alt=""></div>
-        <div class="tf-creative-card"><img class="tf-creative-img" src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69b61688e18895.93001385_IMAGE1.png" alt=""></div>
-      </div>
-    </div>
-  </div>
-</section>
-<div style="display:none"><script>(function(){var cards=document.querySelectorAll('#tfCreatives .tf-creative-card');if(!cards.length)return;var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){cards.forEach(function(c){c.classList.add('visible');});observer.disconnect();}});},{threshold:0.3});observer.observe(document.querySelector('.tf-after'));})();</script></div>
 <section class="wi-section" id="pourquoi-images">
   <div class="wi-inner">
     <h2 class="wi-title" style="text-align:center">La vidéo, c'est bien.<br><em>L'image qui convertit, c'est mieux.</em></h2>
@@ -1556,6 +1541,7 @@ lpPrepurchaseInit();
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Comment fonctionne l'analyse de marché ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Pour chaque produit, <span class="hl-g">notre équipe analyse ton marché cible</span> (pays, concurrence, persona) et te fournit une synthèse claire pour orienter tes campagnes — <span class="hl">visible dans l'onglet Données Marché d'AdBoard.</span></p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est un abonnement ? Je peux arrêter ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui, un abonnement mensuel — résiliable à tout moment.</span><br><br>Sans contrat ni engagement longue durée. Tu peux aussi changer de formule quand tu veux depuis AdBoard, <strong>le changement prend effet immédiatement.</strong></p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Et si je ne suis pas satisfait ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Satisfait ou 100% remboursé.</span><br><br>Si tes créatives ne te conviennent pas, on retravaille — ou on te rembourse intégralement. <strong>Zéro risque.</strong></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je peux pas juste utiliser ChatGPT ou Gemini moi-même ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Tu peux essayer — beaucoup l'ont déjà fait avant de venir chez nous.</span><br><br>Le souci, c'est que ces outils <strong>ne connaissent ni ton marché, ni ton persona, ni la psychologie derrière un angle qui convertit</strong> — ils génèrent une image jolie, pas une stratégie. <span class="hl">On construit chaque visuel sur une vraie analyse, pas un prompt générique.</span></p></div></div></div>
     </div>
   </div>
 </section>
@@ -1860,6 +1846,21 @@ window.lpApplyCurrency = function(){};
     window.lpApplyCurrency();
   }catch(e){}})();
 </script></div>
+
+<!-- ═══ NOUVELLE SECTION — CTA final ═══ -->
+<style>
+.final-cta-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:linear-gradient(180deg,#0A0A0E,#0D1420);padding:56px 0 60px;color:#fff;text-align:center;overflow:hidden}
+.final-cta-title{font-size:clamp(24px,6vw,36px);font-weight:900;letter-spacing:-1px;color:#fff;line-height:1.2;margin-bottom:14px;max-width:480px;margin-left:auto;margin-right:auto}
+.final-cta-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF,#0B5CFF,#2EF2E8);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite}
+.final-cta-sub{font-size:14px;color:#8A8D95;max-width:400px;margin:0 auto 26px;line-height:1.6}
+.final-cta-btn{display:inline-flex;align-items:center;gap:8px;padding:16px 32px;border-radius:12px;border:none;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 8px 28px rgba(31,182,255,0.4);text-decoration:none}
+</style>
+<section class="final-cta-section" id="final-cta">
+  <h2 class="final-cta-title">Prêt à arrêter de <em>deviner</em> ?</h2>
+  <p class="final-cta-sub">Choisis ton offre, connecte-toi à AdBoard, reçois tes premières créatives sous 48h.</p>
+  <a href="#nos-offres" class="final-cta-btn" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:29900});document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});">Consultez Nos Offres →</a>
+</section>
+
 <footer class="ads-footer">
   <div class="ads-footer-inner">
     <div class="ads-footer-brand">
@@ -1879,7 +1880,7 @@ window.lpApplyCurrency = function(){};
         <div class="ads-footer-col-title">Explorer</div>
         <div class="ads-footer-col-links">
           <a href="#travaux" onclick="event.preventDefault();document.getElementById('travaux').scrollIntoView({behavior:'smooth'})">Travaux récents</a>
-          <a href="#pourquoi-nous" onclick="event.preventDefault();document.getElementById('pourquoi-nous').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
+          <a href="#comparatif" onclick="event.preventDefault();document.getElementById('comparatif').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
           <a href="#ce-que-vous-recevez" onclick="event.preventDefault();document.getElementById('ce-que-vous-recevez').scrollIntoView({behavior:'smooth'})">Ce que vous recevez</a>
           <a href="#comment" onclick="event.preventDefault();document.getElementById('comment').scrollIntoView({behavior:'smooth'})">Comment ça marche</a>
           <a href="#faq" onclick="event.preventDefault();document.getElementById('faq').scrollIntoView({behavior:'smooth'})">FAQ</a>
