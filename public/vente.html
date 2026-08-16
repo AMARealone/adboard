@@ -151,7 +151,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <div class="nav-menu-wrap">
       <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
       <div class="nav-dropdown" id="navDrop">
-        <a class="nav-drop-item" href="#comparatif" onclick="event.preventDefault();document.getElementById('comparatif').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
+        <a class="nav-drop-item" href="#solution" onclick="event.preventDefault();document.getElementById('solution').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
         <a class="nav-drop-item" href="#pourquoi-images" onclick="event.preventDefault();document.getElementById('pourquoi-images').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Pourquoi des images</a>
         <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:29900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
         <a class="nav-drop-item" href="#faq" onclick="event.preventDefault();var el=document.getElementById('faq');if(el)el.scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
@@ -333,7 +333,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .sol-v2-item:nth-child(odd){padding-right:20px;border-right:1px solid rgba(255,255,255,0.06)}
 .sol-v2-item:nth-child(even){padding-left:20px}
 .sol-v2-item-title{font-size:14px;font-weight:700;color:#fff;line-height:1.3}
-.sol-v2-img-slot{width:100%;aspect-ratio:191/100;background:#111318;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
+.sol-v2-img-slot{width:100%;aspect-ratio:8/5;background:#111318;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.06)}
 .sol-v2-img-slot img{width:100%;height:100%;object-fit:cover;display:block}
 .wu-inner{width:88%;max-width:480px;margin:0 auto}
 .wu-header{margin-bottom:28px;text-align:center}
@@ -365,7 +365,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 </style>
 <section class="sol-v2-section" id="solution">
   <div class="sol-v2-inner">
-    <h2 class="sol-v2-headline">"Mais moi j'ai ChatGPT…" tes concurrents l'ont aussi et <em>la saturation tue ton business.</em> C'est pourquoi nous produisons du personnalisé pour <em>vendre et croître en 48h</em> 👇🏾</h2>
+    <h2 class="sol-v2-headline">"Mais moi j'ai ChatGPT…" tes concurrents l'ont aussi et <em>la saturation tuera ton business.</em> C'est pourquoi nous produisons du personnalisé pour <em>vendre et croître en 48h</em> 👇🏾</h2>
     <div class="sol-v2-grid">
       <div class="sol-v2-item"><div class="sol-v2-item-title">100% Basés Sur Ton Marché</div></div>
       <div class="sol-v2-item"><div class="sol-v2-item-title">Réduis Ton CPA</div></div>
@@ -375,134 +375,11 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
       <div class="sol-v2-item"><div class="sol-v2-item-title">Une Équipe D'Experts Dédiée À Toi</div></div>
     </div>
     <div class="sol-v2-img-slot">
-      <img src="/assets/vente/adboard-galerie-creatives.jpg" alt="Galerie Créatives dans AdBoard" width="1600" height="900" loading="lazy">
+      <img src="/assets/vente/adboard-galerie-creatives-v2.jpg" alt="Galerie Créatives dans AdBoard" width="1600" height="1000" loading="lazy">
     </div>
   </div>
 </section>
 
-<!-- ═══ NOUVELLE SECTION — AdStack vs faire soi-même (PREMIER JET, à valider) ═══
-     Compare face à la vraie alternative de cet ICP (IA généraliste + freelance),
-     pas "l'agence classique" comme sur les pages US de référence. -->
-<style>
-.vs-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:48px 0 56px;color:#fff;overflow:hidden}
-.vs-wrap{width:88%;max-width:640px;margin:0 auto}
-.vs-title{font-size:clamp(22px,5vw,32px);font-weight:900;letter-spacing:-1px;color:#fff;line-height:1.2;text-align:center;margin-bottom:10px}
-.vs-sub{font-size:13.5px;color:#8A8D95;text-align:center;max-width:440px;margin:0 auto 28px;line-height:1.6}
-.vs-table{border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden}
-.vs-row{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;font-size:11.5px}
-.vs-row.head{background:rgba(255,255,255,0.04);font-weight:800;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#8A8D95}
-.vs-row:not(.head){border-top:1px solid rgba(255,255,255,0.07)}
-.vs-cell{padding:12px 8px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.35}
-.vs-cell:first-child{justify-content:flex-start;text-align:left;color:#C8CAD0;font-weight:600}
-.vs-row.head .vs-cell:nth-child(4){color:#1FB6FF}
-.vs-cell.win{background:rgba(31,182,255,0.07)}
-.vs-icon{font-weight:900;font-size:13px}
-.vs-icon.no{color:#4A4D55}
-.vs-icon.mid{color:#8A8D95}
-.vs-icon.yes{color:#1FB6FF}
-@media(max-width:480px){.vs-row{font-size:10px}.vs-cell{padding:10px 4px}}
-</style>
-<section class="vs-section" id="comparatif">
-  <div class="vs-wrap">
-    <h2 class="vs-title">AdStack vs le faire toi-même</h2>
-    <p class="vs-sub">Avant de t'abonner, sois honnête avec toi-même sur ce qui a déjà été essayé — et pourquoi ça n'a pas suffi.</p>
-    <div class="vs-table">
-      <div class="vs-row head">
-        <div class="vs-cell"></div>
-        <div class="vs-cell">IA générale</div>
-        <div class="vs-cell">Freelance</div>
-        <div class="vs-cell">AdStack</div>
-      </div>
-      <div class="vs-row">
-        <div class="vs-cell">Analyse de marché avant chaque création</div>
-        <div class="vs-cell"><span class="vs-icon no">✕</span></div>
-        <div class="vs-cell"><span class="vs-icon mid">~</span></div>
-        <div class="vs-cell win"><span class="vs-icon yes">✓</span></div>
-      </div>
-      <div class="vs-row">
-        <div class="vs-cell">Plusieurs angles différents à chaque fois</div>
-        <div class="vs-cell"><span class="vs-icon no">✕</span></div>
-        <div class="vs-cell"><span class="vs-icon mid">~</span></div>
-        <div class="vs-cell win"><span class="vs-icon yes">✓</span></div>
-      </div>
-      <div class="vs-row">
-        <div class="vs-cell">Nouveau visuel chaque semaine, sans y penser</div>
-        <div class="vs-cell"><span class="vs-icon no">✕</span></div>
-        <div class="vs-cell"><span class="vs-icon mid">~</span></div>
-        <div class="vs-cell win"><span class="vs-icon yes">✓</span></div>
-      </div>
-      <div class="vs-row">
-        <div class="vs-cell">Ton temps personnel dessus</div>
-        <div class="vs-cell"><span class="vs-icon no">Des heures</span></div>
-        <div class="vs-cell"><span class="vs-icon mid">Aller-retours</span></div>
-        <div class="vs-cell win"><span class="vs-icon yes">2 clics</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ NOUVELLE SECTION — Accentuation de la douleur ═══ -->
-<style>
-.pain-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:48px 0 56px;color:#fff;overflow:hidden}
-.pain-wrap{width:88%;max-width:520px;margin:0 auto}
-.pain-title{font-size:clamp(22px,5vw,32px);font-weight:900;letter-spacing:-1px;color:#fff;line-height:1.2;text-align:center;margin-bottom:36px}
-.pain-grid{display:flex;flex-direction:column;gap:16px}
-.pain-item{display:flex;gap:14px;align-items:flex-start;padding:16px;background:#0F1118;border:1px solid rgba(229,80,80,0.12);border-radius:14px}
-.pain-icon{width:36px;height:36px;border-radius:10px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
-.pain-item-title{font-size:14.5px;font-weight:800;color:#fff;margin-bottom:3px}
-.pain-item-text{font-size:12.5px;color:#8A8D95;line-height:1.55}
-</style>
-<section class="pain-section" id="douleur">
-  <div class="pain-wrap">
-    <h2 class="pain-title">Tu connais déjà cette sensation.</h2>
-    <div class="pain-grid">
-      <div class="pain-item">
-        <div class="pain-icon">💸</div>
-        <div><div class="pain-item-title">Ton budget pub part en fumée</div><p class="pain-item-text">Sur des visuels qui ne convertissent jamais assez pour rentabiliser la dépense.</p></div>
-      </div>
-      <div class="pain-item">
-        <div class="pain-icon">⏳</div>
-        <div><div class="pain-item-title">Tes heures y passent</div><p class="pain-item-text">Entre Canva, les prompts ChatGPT et les essais-erreurs — au lieu de gérer ton business.</p></div>
-      </div>
-      <div class="pain-item">
-        <div class="pain-icon">🎲</div>
-        <div><div class="pain-item-title">Zéro visibilité sur la suite</div><p class="pain-item-text">Tu ne sais jamais quand la prochaine créative arrivera, ni si elle sera bonne.</p></div>
-      </div>
-      <div class="pain-item">
-        <div class="pain-icon">🤖</div>
-        <div><div class="pain-item-title">L'IA généraliste te déçoit, encore</div><p class="pain-item-text">Un rendu générique qui ne ressemble jamais vraiment à ton produit ni à ton marché.</p></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<style>
-.wi-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
-.wi-inner{width:88%;max-width:480px;margin:0 auto}
-.wi-title{font-size:28px;font-weight:900;line-height:1.15;letter-spacing:-.8px;color:#fff;margin:0 0 10px}
-.wi-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:wi-grad 3s ease infinite}
-@keyframes wi-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-.wi-sub{font-size:14px;color:#4A4D55;line-height:1.6;margin:0 0 28px}
-.wi-table-wrap{overflow:hidden;margin-bottom:16px}
-.wi-thead{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,0.07)}
-.wi-th{padding:12px 8px;font-size:11px;font-weight:800;text-align:center;letter-spacing:.3px;border-right:1px solid rgba(255,255,255,0.05)}
-.wi-th:last-child{border-right:none}
-.wi-th-criteria{color:#3A3D45;font-size:10px;letter-spacing:1px;text-transform:uppercase}
-.wi-th-video{color:#4A4D55}
-.wi-th-adstack{color:#1FB6FF;background:rgba(31,182,255,0.05);position:relative}
-.wi-th-adstack::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#1FB6FF,#0B5CFF)}
-.wi-row{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:1px solid rgba(255,255,255,0.05)}
-.wi-row:last-child{border-bottom:none}
-.wi-td{padding:13px 8px;font-size:12px;text-align:center;display:flex;align-items:center;justify-content:center;border-right:1px solid rgba(255,255,255,0.05);line-height:1.35}
-.wi-td:last-child{border-right:none}
-.wi-td-crit{font-size:12px;font-weight:700;color:#6A6D75;text-align:left;justify-content:flex-start;padding-left:12px}
-.wi-td-video{color:#3A3D45;font-weight:500}
-.wi-td-adstack{color:#fff;font-weight:700}
-.wi-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;font-weight:900;line-height:1}
-.wi-icon-yes{color:#1FB6FF;font-size:18px}
-.wi-icon-no{color:#EF4444;font-size:15px}
-.wi-icon-mid{color:#fff;font-size:20px;font-weight:300;letter-spacing:-2px}
-</style>
 <section class="wi-section" id="pourquoi-images">
   <div class="wi-inner">
     <h2 class="wi-title" style="text-align:center">La vidéo, c'est bien.<br><em>L'image qui convertit, c'est mieux.</em></h2>
@@ -1880,7 +1757,7 @@ window.lpApplyCurrency = function(){};
         <div class="ads-footer-col-title">Explorer</div>
         <div class="ads-footer-col-links">
           <a href="#travaux" onclick="event.preventDefault();document.getElementById('travaux').scrollIntoView({behavior:'smooth'})">Travaux récents</a>
-          <a href="#comparatif" onclick="event.preventDefault();document.getElementById('comparatif').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
+          <a href="#solution" onclick="event.preventDefault();document.getElementById('solution').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
           <a href="#ce-que-vous-recevez" onclick="event.preventDefault();document.getElementById('ce-que-vous-recevez').scrollIntoView({behavior:'smooth'})">Ce que vous recevez</a>
           <a href="#comment" onclick="event.preventDefault();document.getElementById('comment').scrollIntoView({behavior:'smooth'})">Comment ça marche</a>
           <a href="#faq" onclick="event.preventDefault();document.getElementById('faq').scrollIntoView({behavior:'smooth'})">FAQ</a>
