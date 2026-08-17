@@ -831,16 +831,14 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 @keyframes avis-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .avis-subtitle{font-size:14px;color:#5A5D65;line-height:1.55;margin:0}
 .avis-track-wrap{display:flex;flex-direction:column;gap:14px;overflow:hidden}
-.avis-track{display:flex;gap:14px;width:max-content;will-change:transform}
-.avis-track--left{animation:avis-scroll-left 28s linear infinite}
-.avis-track--right{animation:avis-scroll-right 28s linear infinite}
+.avis-track{display:flex;gap:16px;width:max-content;will-change:transform}
+.avis-track--single{animation:avis-scroll-left 42s linear infinite}
 @keyframes avis-scroll-left{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
-@keyframes avis-scroll-right{0%{transform:translateX(-50%)}100%{transform:translateX(0)}}
 .avis-track:hover{animation-play-state:paused}
-.avis-card{flex-shrink:0;width:260px;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:#0F1118;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
+.avis-card{flex-shrink:0;width:200px;aspect-ratio:3/4;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:#0F1118;box-shadow:0 4px 20px rgba(0,0,0,0.4);transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease}
 .avis-card:hover{transform:scale(1.04);border-color:rgba(31,182,255,0.3);box-shadow:0 8px 32px rgba(31,182,255,0.15)}
 .avis-card img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;user-select:none;-webkit-user-drag:none}
-@media(min-width:768px){.avis-title{font-size:32px}.avis-card{width:320px}}
+@media(min-width:768px){.avis-title{font-size:32px}.avis-card{width:250px}}
 /* ══ OFFER CARDS — design unifié catalogue ══ */
 .offers-section-lp{padding:0 4% 48px;width:100%;box-sizing:border-box;background:#0A0A0E}
 .offers-grid-lp{display:grid;grid-template-columns:1fr;gap:16px;max-width:100%;margin:0 auto;box-sizing:border-box}
@@ -895,29 +893,17 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <p class="avis-subtitle">Des e-commerçants africains qui nous font confiance chaque semaine.</p>
   </div>
   <div class="avis-track-wrap">
-    <div class="avis-track avis-track--left">
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad763c049c1.44625564_AVISANTOFFRE.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad771819b07.80011924_AVISANTOFFRE1.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7b17d76c6.18633110_AVISANTOFFRE2.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7bd691008.28286865_AVISANTOFFRE3.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7d0def0a9.16522460_AVISANTOFFRE4.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad763c049c1.44625564_AVISANTOFFRE.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad771819b07.80011924_AVISANTOFFRE1.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7b17d76c6.18633110_AVISANTOFFRE2.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7bd691008.28286865_AVISANTOFFRE3.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7d0def0a9.16522460_AVISANTOFFRE4.png" alt="" loading="lazy"></div>
-    </div>
-    <div class="avis-track avis-track--right">
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7e11c8591.19406375_AVISANTOFFRE5.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7ee2ce9b1.36469035_AVISANTOFFRE6.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7f7bc1080.39912569_AVISANTOFFRE7.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8025c9e45.31571436_AVISANTOFFRE8.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8137ee0d4.76360669_AVISANTOFFRE9.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7e11c8591.19406375_AVISANTOFFRE5.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7ee2ce9b1.36469035_AVISANTOFFRE6.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad7f7bc1080.39912569_AVISANTOFFRE7.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8025c9e45.31571436_AVISANTOFFRE8.png" alt="" loading="lazy"></div>
-      <div class="avis-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69dad8137ee0d4.76360669_AVISANTOFFRE9.png" alt="" loading="lazy"></div>
+    <div class="avis-track avis-track--single">
+      <div class="avis-card"><img src="/assets/vente/trust/trust-01.jpg" alt="Résultat client — 28 achats en 1 semaine" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-02.jpg" alt="Résultat client — 21 achats en 3 jours" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-03.jpg" alt="Résultat client — 49 achats en 2 semaines" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-04.jpg" alt="Résultat client — 24 achats en 5 jours" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-05.jpg" alt="Résultat client — 11 achats" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-01.jpg" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-02.jpg" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-03.jpg" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-04.jpg" alt="" loading="lazy"></div>
+      <div class="avis-card"><img src="/assets/vente/trust/trust-05.jpg" alt="" loading="lazy"></div>
     </div>
   </div>
 </section>
