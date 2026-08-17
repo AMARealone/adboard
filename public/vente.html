@@ -1902,5 +1902,31 @@ window.lpApplyCurrency = function(){};
   </div>
 </footer>
 
+<style>
+/* ═══ COHÉRENCE FINALE — taille uniforme de tous les titres/sous-titres de section ═══
+   Ajoutée en toute fin de fichier pour l'emporter sur les règles dispersées et parfois
+   contradictoires (!important) écrites au fil des sections. Exclut volontairement le H1
+   de la hero section (toujours le plus gros élément de la page, distinct des sections) et
+   les petits labels internes (badges de carte, captions) qui ne sont pas des titres de section. */
+.sol-v2-headline,.wc-title,.mkt-title,.cvr-title,.aa-title,.avis-title,.wi-title,
+.proc-headline,.faq-title,.final-cta-title,.wu-title{
+  font-size:26px!important;
+  font-weight:900!important;
+  letter-spacing:-0.8px!important;
+  line-height:1.22!important;
+}
+@media(min-width:600px){
+  .sol-v2-headline,.wc-title,.mkt-title,.cvr-title,.aa-title,.avis-title,.wi-title,
+  .proc-headline,.faq-title,.final-cta-title,.wu-title{
+    font-size:34px!important;
+    line-height:1.15!important;
+  }
+}
+/* Sous-titres — déjà globalement cohérents à 14px, alignés ici pour les rares exceptions */
+.aa-sub,.cvr-sub,.faq-sub,.final-cta-sub,.mkt-sub,.proc-sub,.tv2-sub,.wc-sub,.wi-sub,.wu-card-sub{
+  font-size:14px!important;
+  line-height:1.6!important;
+}
+</style>
   </body>
 </html>
