@@ -1394,43 +1394,104 @@ lpPrepurchaseInit();
 .ads-footer-address{display:flex;align-items:center;gap:5px;font-size:11px;color:#3A3D45}
 </style>
 <style>
-.wi-inner{width:88%;max-width:560px;margin:0 auto}
-.wi-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:wi-grad 3s ease infinite}
-@keyframes wi-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
-.wi-sub{font-size:14px;color:#5A5D65;line-height:1.6;max-width:440px;margin:12px auto 32px}
-.wi-table-wrap{border:1px solid rgba(255,255,255,0.1);border-radius:14px;overflow:hidden}
-.wi-thead{display:grid;grid-template-columns:1.4fr 1fr 1fr;background:rgba(255,255,255,0.04)}
-.wi-th{padding:12px 10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#8A8D95;text-align:center}
-.wi-th-adstack{color:#1FB6FF}
-.wi-row{display:grid;grid-template-columns:1.4fr 1fr 1fr;border-top:1px solid rgba(255,255,255,0.07)}
-.wi-td{padding:12px 10px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:12px}
-.wi-td-crit{justify-content:flex-start;text-align:left;color:#C8CAD0;font-weight:600}
-.wi-td-adstack{background:rgba(31,182,255,0.06)}
-.wi-icon{font-weight:900;font-size:14px}
-.wi-icon-no{color:#E55050}
-.wi-icon-mid{color:#8A8D95}
-.wi-icon-yes{color:#1FB6FF}
-@media(max-width:420px){.wi-th,.wi-td{padding:10px 6px;font-size:10.5px}}
+.hc-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 56px;color:#fff;overflow:hidden}
+.hc-wrap{width:88%;max-width:900px;margin:0 auto}
+.hc-eyebrow{display:flex;align-items:center;justify-content:center;gap:8px;font-size:11px;color:#5A5D65;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:14px}
+.hc-eyebrow::before{content:'';width:18px;height:1px;background:#5A5D65}
+.hc-title{font-size:26px;font-weight:900;letter-spacing:-0.8px;line-height:1.22;color:#fff;text-align:center;margin-bottom:14px}
+.hc-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:hc-grad 3s ease infinite}
+@keyframes hc-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.hc-sub{font-size:14px;color:#8A8D95;text-align:center;max-width:480px;margin:0 auto 30px;line-height:1.6}
+.hc-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid rgba(255,255,255,0.1);position:relative}
+.hc-table{border-collapse:collapse;min-width:780px;width:100%}
+.hc-table th,.hc-table td{padding:14px 14px;text-align:left;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,0.07);white-space:normal;vertical-align:middle}
+.hc-table th{font-size:12px;font-weight:800;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.1)}
+.hc-crit-col{position:sticky;left:0;z-index:2;background:#0A0A0E;min-width:130px;color:#C8CAD0;font-weight:700;box-shadow:2px 0 8px rgba(0,0,0,0.35)}
+.hc-table th.hc-crit-col{background:#101218}
+.hc-adstack-col{position:sticky;left:130px;z-index:2;background:#0F1B26;color:#fff;font-weight:600;min-width:140px;box-shadow:2px 0 8px rgba(0,0,0,0.35)}
+.hc-table th.hc-adstack-col{background:#132434;color:#1FB6FF}
+.hc-other-col{min-width:140px;color:#8A8D95}
+.hc-row-title{font-size:12.5px}
+.hc-scroll-hint{text-align:center;font-size:10.5px;color:#5A5D65;margin-top:10px}
 </style>
-<section class="wi-section" id="pourquoi-images">
-  <div class="wi-inner">
-    <h2 class="wi-title" style="text-align:center">La vidéo, c'est bien.<br><em>L'image qui convertit, c'est mieux.</em></h2>
-    <p class="wi-sub" style="text-align:center">Sur Meta Ads, ce n'est pas le format qui vend — c'est l'angle. Et avec le bon angle, une image bat une vidéo à 9 reprises sur 10.</p>
-    <div class="wi-table-wrap">
-      <div class="wi-thead">
-        <div class="wi-th" style="border-right:1px solid rgba(255,255,255,0.05)"></div>
-        <div class="wi-th wi-th-video">Vidéo</div>
-        <div class="wi-th wi-th-adstack">✦ Image</div>
-      </div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Délai de prod.</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Volume / lancement</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Chargement mobile</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Coût de prod.</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Itération rapide</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Algo Meta (CBO)</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-mid">—</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Stop scroll</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-mid">—</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
-      <div class="wi-row"><div class="wi-td wi-td-crit">Analyse incluse</div><div class="wi-td wi-td-video"><span class="wi-icon wi-icon-no">✕</span></div><div class="wi-td wi-td-adstack"><span class="wi-icon wi-icon-yes">✓</span></div></div>
+<section class="hc-section" id="comparatif-honnete">
+  <div class="hc-wrap">
+    <div class="hc-eyebrow">Le comparatif honnête</div>
+    <h2 class="hc-title">Le même résultat, <em>sans les vrais coûts cachés.</em></h2>
+    <p class="hc-sub">Comment un abonnement AdStack se compare vraiment aux façons habituelles d'obtenir des créatives publicitaires — sans enjoliver personne, pas même nous.</p>
+    <div class="hc-scroll">
+      <table class="hc-table">
+        <thead>
+          <tr>
+            <th class="hc-crit-col"></th>
+            <th class="hc-adstack-col">AdStack</th>
+            <th class="hc-other-col">Outils (Canva, ChatGPT, Gemini)</th>
+            <th class="hc-other-col">Vidéo Production</th>
+            <th class="hc-other-col">Freelance</th>
+            <th class="hc-other-col">Équipe interne</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="hc-crit-col hc-row-title">Coût mensuel estimé</td>
+            <td class="hc-adstack-col">à partir de <span data-fcfa="29900">29.900 FCFA</span></td>
+            <td class="hc-other-col">~<span data-fcfa="9000">9.000 FCFA</span></td>
+            <td class="hc-other-col">~<span data-fcfa="150000">150.000 FCFA</span> à <span data-fcfa="590000">590.000 FCFA</span></td>
+            <td class="hc-other-col">~<span data-fcfa="30000">30.000 FCFA</span> à <span data-fcfa="90000">90.000 FCFA</span></td>
+            <td class="hc-other-col">~<span data-fcfa="150000">150.000 FCFA</span> à <span data-fcfa="400000">400.000 FCFA</span>+</td>
+          </tr>
+          <tr>
+            <td class="hc-crit-col hc-row-title">Premières créatives sous</td>
+            <td class="hc-adstack-col">48h</td>
+            <td class="hc-other-col">Immédiat (c'est toi qui les fais)</td>
+            <td class="hc-other-col">1 à 4 semaines</td>
+            <td class="hc-other-col">Jours à semaines</td>
+            <td class="hc-other-col">Immédiat une fois recruté — le recrutement, lui, prend des semaines</td>
+          </tr>
+          <tr>
+            <td class="hc-crit-col hc-row-title">Volume mensuel réaliste</td>
+            <td class="hc-adstack-col">9 à 36+ selon l'offre</td>
+            <td class="hc-other-col">Illimité en théorie — limité par ton temps en pratique</td>
+            <td class="hc-other-col">2 à 8 vidéos</td>
+            <td class="hc-other-col">Limité à sa disponibilité, souvent un à la fois</td>
+            <td class="hc-other-col">Limité à la cadence d'une seule personne</td>
+          </tr>
+          <tr>
+            <td class="hc-crit-col hc-row-title">Analyse de marché incluse</td>
+            <td class="hc-adstack-col"><span style="color:#1FB6FF;font-weight:800">Oui, chaque semaine</span></td>
+            <td class="hc-other-col"><span style="color:#E55050">Non</span></td>
+            <td class="hc-other-col">Rarement</td>
+            <td class="hc-other-col">Rarement</td>
+            <td class="hc-other-col">Seulement si la personne est formée pour</td>
+          </tr>
+          <tr>
+            <td class="hc-crit-col hc-row-title">Angles psychologiques distincts</td>
+            <td class="hc-adstack-col">3 minimum, systématique</td>
+            <td class="hc-other-col">Limités par ta propre créativité du moment</td>
+            <td class="hc-other-col">Variable selon le prestataire</td>
+            <td class="hc-other-col">Variable selon sa compétence</td>
+            <td class="hc-other-col">Variable selon sa formation</td>
+          </tr>
+          <tr>
+            <td class="hc-crit-col hc-row-title">Sans brief ni réunion</td>
+            <td class="hc-adstack-col"><span style="color:#1FB6FF;font-weight:800">Oui</span> — 2 clics</td>
+            <td class="hc-other-col">—</td>
+            <td class="hc-other-col"><span style="color:#E55050">Non</span> — briefs réguliers</td>
+            <td class="hc-other-col"><span style="color:#E55050">Non</span> — aller-retours fréquents</td>
+            <td class="hc-other-col"><span style="color:#E55050">Non</span> — management continu</td>
+          </tr>
+          <tr>
+            <td class="hc-crit-col hc-row-title">Sans engagement</td>
+            <td class="hc-adstack-col"><span style="color:#1FB6FF;font-weight:800">Oui</span>, résiliable à tout moment</td>
+            <td class="hc-other-col"><span style="color:#1FB6FF">Oui</span></td>
+            <td class="hc-other-col">Souvent des contrats de 3 à 12 mois</td>
+            <td class="hc-other-col"><span style="color:#1FB6FF">Oui</span>, généralement par projet</td>
+            <td class="hc-other-col"><span style="color:#E55050">Non</span> — contrat de travail</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
+    <p class="hc-scroll-hint">← Fais glisser pour voir toutes les colonnes →</p>
   </div>
 </section>
 
