@@ -3375,31 +3375,31 @@ const PLANS = [
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
     ctaText:'Testez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    once: { price:9900, priceBarre:15000, prixImg:1100, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    once: { price:12900, priceBarre:20000, prixImg:1433, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
   },
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Pour tester vos produits sereinement et obtenir vos premières ventes rentables, sans brûler votre budget.',
     ctaText:'Vendez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    monthly: { price:29900, priceBarre:40000, prixImg:830, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    annual:  { price:24900, priceBarre:29900, prixImg:691, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:39900, priceBarre:80000, prixImg:1108, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    annual:  { price:29900, priceBarre:40000, prixImg:831, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Pour dominer votre marché, écraser vos coûts d\'acquisition et positionner votre marque en leader.',
     ctaText:'Dominez Votre Marché',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
-    monthly: { price:54900, priceBarre:80000, prixImg:762, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    annual:  { price:44900, priceBarre:54900, prixImg:623, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:79900, priceBarre:160000, prixImg:1110, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    annual:  { price:59900, priceBarre:80000, prixImg:832, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'L\'arsenal complet pour inonder de multiples marchés en simultané et faire exploser votre ROAS.',
     ctaText:'Explosez Votre Croissance',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
-    monthly: { price:79900, priceBarre:160000, prixImg:554, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    annual:  { price:64900, priceBarre:79900,  prixImg:450, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:119900, priceBarre:320000, prixImg:833, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    annual:  { price:89900, priceBarre:120000,  prixImg:624, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -3695,11 +3695,6 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 {!p.isPack && annual && (
                   <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan annuel</span>
                 )}
-              </div>
-
-              <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,marginBottom:18,width:'fit-content',background:`${p.color}18`,border:`1px solid ${p.color}38`}}>
-                <span style={{fontSize:11,fontWeight:800,fontFamily:"'DM Mono',monospace",color:p.color}}>{convertPrice(cycleData.prixImg)}</span>
-                <span style={{fontSize:10,color:C.sec}}>/ image</span>
               </div>
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
