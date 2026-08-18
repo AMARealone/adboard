@@ -1153,16 +1153,16 @@ var LP_PREPURCHASE_QUESTIONS = [
 // Même principe que côté AdBoard : réponses "voix ICP" en placeholder gris, jamais annoncées
 // comme "exemple", pour guider quelqu'un qui bloque devant un champ vide.
 var LP_PREPURCHASE_PLACEHOLDERS = [
-  "Je passe des heures à essayer de créer des visuels moi-même, et ils ne ressemblent jamais à ce que je vois chez les grandes marques…",
-  "Je vends dans plusieurs pays, avec des publicités qui ne s'épuisent jamais et tournent en continu…",
-  "J'ai essayé Canva et des freelances, mais c'était long et le résultat ne convertissait pas vraiment…",
-  "Avoir un flux régulier de nouvelles créatives chaque semaine, sans devoir y penser…",
-  "Je pourrais me concentrer sur les commandes et le service client au lieu de designer des pubs…",
-  "J'ai peur que les visuels ne correspondent pas à mon produit ou à mon marché…",
-  "Mes publicités s'essoufflent après quelques jours, je n'ai pas assez de nouveaux angles à tester…",
-  "J'ai regardé du côté des agences, mais c'était soit trop cher, soit trop lent…",
-  "Investir un peu plus dans la qualité de mes créatives plutôt que de tout faire moi-même…",
-  "Parce que chaque jour sans bonnes créatives, c'est des ventes en moins…",
+  "Je perds trop de temps sur mes visuels…",
+  "Vendre dans plusieurs pays sans y penser…",
+  "Canva, freelances… rien n'a vraiment marché…",
+  "Des créatives fraîches chaque semaine, sans effort…",
+  "Plus de temps pour mes clients, enfin…",
+  "Peur que ça colle pas à mon marché…",
+  "Mes pubs s'essoufflent trop vite…",
+  "Les agences, trop cher ou trop lentes…",
+  "Investir dans la qualité, pas mon temps…",
+  "Chaque jour sans pub, c'est des ventes perdues…",
 ];
 var lpPrepurchaseAnswers = Array(LP_PREPURCHASE_QUESTIONS.length).fill('');
 
@@ -1175,7 +1175,7 @@ function lpPrepurchaseInit() {
     try { sessionStorage.setItem('adstack_prepurchase_shown_session', '1'); } catch(e) {}
     lpPrepurchaseRenderTeaser();
     document.getElementById('lp-prepurchase-overlay').style.display = 'flex';
-  }, 60 * 1000);
+  }, 120 * 1000);
 }
 
 function lpPrepurchaseClose() {
@@ -1202,7 +1202,7 @@ function lpPrepurchaseRenderForm(erreur) {
       '<p class="lp-pp-sub">Termine de répondre à ces 10 questions pour obtenir ton code de réduction.</p></div>' +
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-close">✕</button>' +
     '</div>' +
-    '<div style="margin-top:16px;margin-bottom:2px">' +
+    '<div style="position:sticky;top:0;z-index:5;background:#13131A;margin:0 -26px;padding:16px 26px 10px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
       '<div style="position:relative;height:8px;border-radius:99px;background:rgba(255,255,255,0.08)">' +
         '<div id="lp-pp-gauge-fill" style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;border-radius:99px;background:linear-gradient(90deg,#1FB6FF,#7B4AE0);transition:width .3s ease"></div>' +
         '<div id="lp-pp-gauge-gift" style="position:absolute;right:-2px;top:50%;transform:translate(50%,-50%);width:26px;height:26px;border-radius:50%;background:' + (pct>=100?'linear-gradient(135deg,#F5C518,#F59E0B)':'#13131A') + ';border:2px solid ' + (pct>=100?'#F5C518':'rgba(255,255,255,0.15)') + ';display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .3s ease' + (pct>=100?';box-shadow:0 0 12px rgba(245,197,24,0.6)':'') + '">🎁</div>' +
@@ -1298,8 +1298,9 @@ lpPrepurchaseInit();
 .lp-pp-form{border-radius:16px;background:#13131A;border:1px solid rgba(255,255,255,0.1);padding:26px}
 .lp-pp-title{font-size:17px;font-weight:700;color:#fff;margin:0}
 .lp-pp-sub{font-size:12.5px;color:#8A8D95;margin-top:6px;line-height:1.5}
-.lp-pp-label{font-size:12.5px;font-weight:600;color:#fff;margin-bottom:6px;display:block;line-height:1.4}
-.lp-pp-textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#fff;font-size:16px;font-family:inherit;resize:vertical;outline:none}
+.lp-pp-label{font-size:13.5px;font-weight:600;color:#fff;margin-bottom:6px;display:block;line-height:1.4}
+.lp-pp-textarea{width:100%;padding:10px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:#fff;font-size:13.5px;font-family:inherit;resize:vertical;outline:none}
+.lp-pp-textarea::placeholder{font-size:13.5px;color:#5A5D65}
 .lp-pp-error{margin-top:14px;padding:10px 14px;border-radius:8px;background:rgba(229,80,80,0.1);border:1px solid rgba(229,80,80,0.3);color:#E55050;font-size:12px}
 .lp-pp-submit{width:100%;margin-top:18px;padding:13px;border-radius:9px;border:none;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit}
 .lp-pp-check{width:52px;height:52px;border-radius:14px;background:rgba(34,197,94,0.14);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#22C55E;font-size:24px;font-weight:900}
@@ -1996,5 +1997,55 @@ window.lpApplyCurrency = function(){};
   line-height:1.6!important;
 }
 </style>
+<!-- ═══ Widget trust screens — apparaît/disparaît en boucle, coin bas-gauche pour ne pas
+     empiler avec le chat (bas-droite) ni la barre upsell (centrée bas). Sur la page de vente,
+     se relance à chaque visite — seule la fermeture (croix) l'arrête pour la session en cours. ═══ -->
+<style>
+#lp-trust-widget{position:fixed;bottom:100px;left:14px;z-index:9500;opacity:0;visibility:hidden;transform:translateY(10px) scale(0.92);transition:opacity .4s ease,transform .4s ease,visibility 0s linear .4s;pointer-events:none}
+#lp-trust-widget.visible{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition:opacity .4s ease,transform .4s ease,visibility 0s linear 0s}
+.lp-trust-card{position:relative;width:104px;aspect-ratio:3/4;border-radius:14px;overflow:hidden;box-shadow:0 0 20px 3px rgba(31,182,255,0.5),0 8px 22px rgba(0,0,0,0.55);border:2px solid rgba(31,182,255,0.55)}
+.lp-trust-card img{width:100%;height:100%;object-fit:cover;display:block}
+.lp-trust-close{position:absolute;top:4px;right:4px;width:19px;height:19px;border-radius:50%;background:rgba(0,0,0,0.65);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;pointer-events:auto;line-height:1}
+@media(min-width:768px){.lp-trust-card{width:130px}}
+</style>
+<div id="lp-trust-widget">
+  <div class="lp-trust-card">
+    <img id="lp-trust-widget-img" src="" alt="">
+    <button class="lp-trust-close" onclick="lpTrustDismiss()" aria-label="Fermer">✕</button>
+  </div>
+</div>
+<div style="display:none"><script>
+(function(){
+  var TRUST_IMAGES = ['/assets/vente/trust/trust-01.jpg','/assets/vente/trust/trust-02.jpg','/assets/vente/trust/trust-03.jpg','/assets/vente/trust/trust-04.jpg','/assets/vente/trust/trust-05.jpg'];
+  var idx = 0, dismissed = false, cycleTimer = null, hideTimer = null;
+
+  function showNext(){
+    if (dismissed) return;
+    var wrap = document.getElementById('lp-trust-widget');
+    var img = document.getElementById('lp-trust-widget-img');
+    img.src = TRUST_IMAGES[idx % TRUST_IMAGES.length];
+    idx++;
+    wrap.classList.add('visible');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function(){
+      if (!dismissed) wrap.classList.remove('visible');
+    }, 5000); // visible 5s, puis se cache jusqu'au prochain cycle (10s d'intervalle total)
+  }
+
+  window.lpTrustDismiss = function(){
+    dismissed = true;
+    clearInterval(cycleTimer);
+    clearTimeout(hideTimer);
+    document.getElementById('lp-trust-widget').classList.remove('visible');
+  };
+
+  setTimeout(function(){
+    if (dismissed) return;
+    showNext();
+    cycleTimer = setInterval(showNext, 10000);
+  }, 3000); // petit délai avant le premier passage, pour ne pas surgir immédiatement au chargement
+})();
+</script></div>
+
   </body>
 </html>

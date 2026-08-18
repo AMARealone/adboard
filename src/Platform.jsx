@@ -907,16 +907,16 @@ const PREPURCHASE_QUESTIONS = [
 // "exemple", juste une réponse plausible pour guider quelqu'un qui bloque devant un champ
 // vide face à une question assez précise. Terminés par "…" pour signaler qu'il peut développer.
 const PREPURCHASE_PLACEHOLDERS = [
-  "Je passe des heures à essayer de créer des visuels moi-même, et ils ne ressemblent jamais à ce que je vois chez les grandes marques…",
-  "Je vends dans plusieurs pays, avec des publicités qui ne s'épuisent jamais et tournent en continu…",
-  "J'ai essayé Canva et des freelances, mais c'était long et le résultat ne convertissait pas vraiment…",
-  "Avoir un flux régulier de nouvelles créatives chaque semaine, sans devoir y penser…",
-  "Je pourrais me concentrer sur les commandes et le service client au lieu de designer des pubs…",
-  "J'ai peur que les visuels ne correspondent pas à mon produit ou à mon marché…",
-  "Mes publicités s'essoufflent après quelques jours, je n'ai pas assez de nouveaux angles à tester…",
-  "J'ai regardé du côté des agences, mais c'était soit trop cher, soit trop lent…",
-  "Investir un peu plus dans la qualité de mes créatives plutôt que de tout faire moi-même…",
-  "Parce que chaque jour sans bonnes créatives, c'est des ventes en moins…",
+  "Je perds trop de temps sur mes visuels…",
+  "Vendre dans plusieurs pays sans y penser…",
+  "Canva, freelances… rien n'a vraiment marché…",
+  "Des créatives fraîches chaque semaine, sans effort…",
+  "Plus de temps pour mes clients, enfin…",
+  "Peur que ça colle pas à mon marché…",
+  "Mes pubs s'essoufflent trop vite…",
+  "Les agences, trop cher ou trop lentes…",
+  "Investir dans la qualité, pas mon temps…",
+  "Chaque jour sans pub, c'est des ventes perdues…",
 ];
 
 const POSTPURCHASE_QUESTIONS = [
@@ -984,7 +984,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
 
   // Champs anti-zoom mobile : iOS Safari zoome automatiquement sur tout champ dont la taille
   // de police calculée est sous 16px — donc jamais en dessous, peu importe le design voulu.
-  const inputStyle = {width:'100%',padding:'10px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:16,fontFamily:'inherit',resize:'vertical',outline:'none'};
+  const inputStyle = {width:'100%',padding:'10px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:13.5,fontFamily:'inherit',resize:'vertical',outline:'none'};
 
   const closeBtn = (
     <button onClick={onClose} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -1063,7 +1063,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
               const answered = answers.slice(0, questions.length).filter(a => a.trim()).length;
               const pct = Math.round((answered / questions.length) * 100);
               return (
-                <div style={{marginTop:16,marginBottom:2}}>
+                <div style={{position:'sticky',top:0,zIndex:5,background:C.card,margin:'0 -26px',padding:'16px 26px 10px',borderBottom:`1px solid ${C.border}`}}>
                   <div style={{position:'relative',height:8,borderRadius:99,background:'rgba(255,255,255,0.08)',overflow:'visible'}}>
                     <div style={{position:'absolute',left:0,top:0,bottom:0,width:pct+'%',borderRadius:99,background:`linear-gradient(90deg, ${C.accent}, #7B4AE0)`,transition:'width .3s ease'}}/>
                     <div style={{position:'absolute',right:-2,top:'50%',transform:'translate(50%,-50%)',width:26,height:26,borderRadius:'50%',background: pct>=100 ? 'linear-gradient(135deg,#F5C518,#F59E0B)' : C.card,border:`2px solid ${pct>=100?'#F5C518':C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,transition:'all .3s ease',boxShadow: pct>=100 ? '0 0 12px rgba(245,197,24,0.6)' : 'none'}}>🎁</div>
@@ -1076,7 +1076,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
             <div style={{display:'flex',flexDirection:'column',gap:14,marginTop:14}}>
               {questions.map((q, i) => (
                 <div key={i}>
-                  <label style={{fontSize:12.5,fontWeight:600,color:C.text,marginBottom:6,display:'block',lineHeight:1.4}}>
+                  <label style={{fontSize:13.5,fontWeight:600,color:C.text,marginBottom:6,display:'block',lineHeight:1.4}}>
                     {i+1}. {q}{isPre && <span style={{color:'#E55050'}}> *</span>}
                   </label>
                   <textarea
@@ -4118,6 +4118,36 @@ export default function Platform() {
     return () => clearTimeout(t);
   }, []);
 
+  // ── Widget trust screens — n'apparaît QUE lors de la toute première session sur cet appareil
+  // (généralement quand le prospect atterrit via un lien de démo). Le flag localStorage est posé
+  // dès le déclenchement du cycle, pas seulement à la fermeture — sinon quelqu'un qui quitte
+  // l'onglet sans cliquer la croix le reverrait à sa prochaine visite, ce qui n'est pas voulu. ──
+  const TRUST_IMAGES = ['/assets/vente/trust/trust-01.jpg','/assets/vente/trust/trust-02.jpg','/assets/vente/trust/trust-03.jpg','/assets/vente/trust/trust-04.jpg','/assets/vente/trust/trust-05.jpg'];
+  const [trustVisible, setTrustVisible] = useState(false);
+  const [trustSrc, setTrustSrc] = useState('');
+  const trustDismissedRef = useRef(false);
+  const trustIdxRef = useRef(0);
+  useEffect(() => {
+    try { if (localStorage.getItem('adstack_trust_seen')) return; } catch(e) {}
+    let cycleTimer, hideTimer;
+    const showNext = () => {
+      if (trustDismissedRef.current) return;
+      setTrustSrc(TRUST_IMAGES[trustIdxRef.current % TRUST_IMAGES.length]);
+      trustIdxRef.current++;
+      setTrustVisible(true);
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => { if (!trustDismissedRef.current) setTrustVisible(false); }, 5000);
+    };
+    const startTimer = setTimeout(() => {
+      if (trustDismissedRef.current) return;
+      try { localStorage.setItem('adstack_trust_seen', '1'); } catch(e) {}
+      showNext();
+      cycleTimer = setInterval(showNext, 10000);
+    }, 3000);
+    return () => { clearTimeout(startTimer); clearTimeout(hideTimer); clearInterval(cycleTimer); };
+  }, []);
+  const trustDismiss = () => { trustDismissedRef.current = true; setTrustVisible(false); };
+
   // Vérifie si un achat vient de se conclure (appelé après fermeture de la modale de paiement)
   const checkRecentPurchase = async () => {
     try {
@@ -4282,7 +4312,11 @@ export default function Platform() {
 
   const convertPrice = (fcfa) => {
     const { currency, rate, ready } = priceCtx;
-    if (!ready || currency === 'XOF') return fcfa.toLocaleString('fr-FR') + ' FCFA';
+    // XAF (Afrique centrale) et XOF (Afrique de l'ouest) portent le même nom "FCFA" — sans ce
+    // traitement commun, XAF passait par Intl.NumberFormat qui l'affiche "FCFA 53" (mot avant
+    // le chiffre), à l'inverse de la convention du site ("53.000 FCFA") — source du "doublon"
+    // visuel du mot FCFA quand affiché près d'un autre prix.
+    if (!ready || currency === 'XOF' || currency === 'XAF') return fcfa.toLocaleString('fr-FR') + ' FCFA';
     const CHARIOW_COEFF = 1.035; // +3.5% pour rester légèrement au-dessus de Chariow
     const NO_DECIMALS = ['XOF','XAF','GNF','KMF','DJF','RWF','BIF','UGX','TZS','MGA','JPY','KRW','VND','CLP','PYG','IDR','MMK'];
     const hasDecimals = !NO_DECIMALS.includes(currency);
@@ -4587,6 +4621,20 @@ const views = {
 
     {paymentProductId && (
       <PaymentModal productId={paymentProductId} userEmail={user?.email} onClose={()=>{ setPaymentProductId(null); checkRecentPurchase(); }}/>
+    )}
+
+    {trustSrc && (
+      <div style={{
+        position:'fixed', bottom:100, left:14, zIndex:550,
+        opacity: trustVisible?1:0, visibility: trustVisible?'visible':'hidden',
+        transform: trustVisible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.92)',
+        transition: trustVisible ? 'opacity .4s ease,transform .4s ease' : 'opacity .4s ease,transform .4s ease,visibility 0s linear .4s',
+      }}>
+        <div style={{position:'relative',width: isMobile?112:150,aspectRatio:'3/4',borderRadius:14,overflow:'hidden',boxShadow:'0 0 20px 3px rgba(31,182,255,0.5),0 8px 22px rgba(0,0,0,0.55)',border:'2px solid rgba(31,182,255,0.55)'}}>
+          <img src={trustSrc} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+          <button onClick={trustDismiss} aria-label="Fermer" style={{position:'absolute',top:4,right:4,width:20,height:20,borderRadius:'50%',background:'rgba(0,0,0,0.65)',border:'none',color:'#fff',fontSize:11,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}>✕</button>
+        </div>
+      </div>
     )}
 
     {showPrepurchaseForm && (
