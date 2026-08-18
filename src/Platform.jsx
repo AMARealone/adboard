@@ -4630,8 +4630,8 @@ const views = {
         transform: trustVisible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.92)',
         transition: trustVisible ? 'opacity .4s ease,transform .4s ease' : 'opacity .4s ease,transform .4s ease,visibility 0s linear .4s',
       }}>
-        <div style={{position:'relative',width: isMobile?112:150,aspectRatio:'3/4',borderRadius:14,overflow:'hidden',boxShadow:'0 0 20px 3px rgba(31,182,255,0.5),0 8px 22px rgba(0,0,0,0.55)',border:'2px solid rgba(31,182,255,0.55)'}}>
-          <img src={trustSrc} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+        <div style={{position:'relative',width: isMobile?134:180,aspectRatio:'3/4',borderRadius:14,overflow:'hidden',background:'#0F1118',boxShadow:'0 0 20px 3px rgba(31,182,255,0.5),0 8px 22px rgba(0,0,0,0.55)',border:'2px solid rgba(31,182,255,0.55)'}}>
+          <img src={trustSrc} alt="" style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}/>
           <button onClick={trustDismiss} aria-label="Fermer" style={{position:'absolute',top:4,right:4,width:20,height:20,borderRadius:'50%',background:'rgba(0,0,0,0.65)',border:'none',color:'#fff',fontSize:11,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}>✕</button>
         </div>
       </div>
