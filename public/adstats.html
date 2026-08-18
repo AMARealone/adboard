@@ -2606,6 +2606,7 @@ function renderSuivi(data) {
 
   const CHECKS = [
     { k:'a_repondu',     l:'A répondu' },
+    { k:'interesse',     l:'Intéressé' },
     { k:'lead_qualifie', l:'Lead qualifié' },
   ];
 
@@ -2618,7 +2619,7 @@ function renderSuivi(data) {
   data = sorted;
 
   el.innerHTML = data.map(p => {
-    const allOk = p.a_repondu && p.lead_qualifie;
+    const allOk = p.a_repondu && p.interesse && p.lead_qualifie;
     const dateStr = p.date_contact ? new Date(p.date_contact).toLocaleDateString('fr-FR') : '—';
 
     return `<div class="card">
@@ -2656,13 +2657,42 @@ function renderSuivi(data) {
     </div>`;
   }).join('');
 
-    // ── Bloc pitch + démo : s'affiche directement dès que a_repondu est coché ──
+    // ── Bloc Pitch : s'affiche dès que "A répondu" est coché. Message simple, une seule
+    // variable [Produit] (issue des infos par défaut du prospect — la mindmap n'existe pas
+    // encore à ce stade, elle ne sera produite qu'après confirmation d'intérêt). ──
   data.forEach(p => {
     const elR = document.getElementById('wa-reponse-' + p.id);
     if (!elR) return;
     if (!p.a_repondu) { elR.innerHTML = ''; return; }
     const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0];
     if (!numero && !p.lien_instagram) { elR.innerHTML = ''; return; }
+    const pid = p.id;
+    let _pNotesR = {}; try { _pNotesR = JSON.parse(p.notes||'{}'); } catch(e) {}
+    const pitch_envoye = _pNotesR.pitch_envoye || false;
+    let _tplPitch = "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*\ud83d\udcb5 gr\u00e2ce \u00e0 :\n\n\ud83d\udc49\ud83c\udffe Une vraie strat\u00e9gie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous int\u00e9ress\u00e9 par une *D\u00c9MONSTRATION* sur votre [Produit] ?";
+    try { const _c=DB._config||{}; if(_c.tpl_pitch) _tplPitch=_c.tpl_pitch; } catch(e) {}
+    window._pitchData = window._pitchData || {};
+    window._pitchData[pid] = { numero: numero, produit: p.produit || '', pays: p.pays || '', marque: p.nom_marque || '', tpl: _tplPitch };
+    elR.innerHTML =
+      '<div style="margin:10px 0 0;padding:10px 12px;background:rgba(31,182,255,.05);border:1px solid rgba(31,182,255,.2);border-radius:8px;">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);">R\u00e9ponse \u2014 Pitch</div>'
+      + '</div>'
+      + '<div id="wa-btn-pitch-'+pid+'"><button id="btn-send-pitch-'+pid+'" onclick="sendPitchMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'var(--blue)')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Pitch (Instagram)':'📱 Envoyer Pitch (WhatsApp)')+'</button></div>'
+      + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(pitch_envoye?'var(--blue)':'var(--muted)')+';font-weight:'+(pitch_envoye?'700':'400')+'">'
+        + '<input type="checkbox" '+(pitch_envoye?'checked':'')+' style="accent-color:var(--blue);cursor:pointer;width:13px;height:13px" onchange="togglePitchEnvoye(\''+pid+'\',this.checked)">'
+        + 'Pitch envoy\u00e9</label>'
+      + '</div>';
+  });
+
+    // ── Bloc D\u00e9mo : s'affiche seulement une fois "Int\u00e9ress\u00e9" coch\u00e9 — plus tôt que ça,
+    // aucune démo n'a été demandée à Factory, donc rien à envoyer. ──
+  data.forEach(p => {
+    const elD = document.getElementById('wa-demo-' + p.id);
+    if (!elD) return;
+    if (!p.interesse) { elD.innerHTML = ''; return; }
+    const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0];
+    if (!numero && !p.lien_instagram) { elD.innerHTML = ''; return; }
     const pid = p.id;
     let _pNotes = {}; try { _pNotes = JSON.parse(p.notes||'{}'); } catch(e) {}
     const demo_envoye  = _pNotes.demo_envoye  || false;
@@ -2671,22 +2701,22 @@ function renderSuivi(data) {
     const demoStatut = lien_demo
       ? '<span style="font-size:10px;font-weight:700;color:#25D366;">\u2713 D\u00e9mo pr\u00eate</span>'
       : '<span id="demo-wait-'+pid+'" style="font-size:10px;color:var(--muted);">\u23f3 En attente Factory\u2026 <button onclick="refreshDemoLink(\''+pid+'\');" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:10px;padding:0;font-family:var(--font);">\u21bb Actualiser</button></span>';
-    let _tpl = "Je posais la question car notre *Agence* aide des *marques* dans la niche *[Niche]* \u00e0 faire *2x plus de ventes*.\n\n*Uniquement* gr\u00e2ce \u00e0 des *IMAGES Publicitaires* bas\u00e9s sur :\n\n- Une analyse de votre march\u00e9 *\"[Pays]\"* pour d\u00e9finir et comprendre *la cible* qui ach\u00e8te vraiment vos Produits;\n\nVoici une *d\u00e9monstration gratuite* : *[lien_demo]*\npour *[Produit]*.\n\nAinsi qu'un aper\u00e7u de ce qu'on pourra mettre en place concr\u00e8tement pour vous !!!\n\nOn attend impatiemment votre avis !!!";
+    let _tpl = "Voici l'*aper\u00e7u concret* de notre m\u00e9thode sur votre [Produit] \ud83d\udc47\ud83c\udffd:\n\n[lien_demo]\n\nH\u00e2te de recevoir votre avis ?";
     try { const _c=DB._config||{}; if(_c.tpl_demo_msg) _tpl=_c.tpl_demo_msg; } catch(e) {}
     // Stocker données pour sendDemoMsg
     window._demoData = window._demoData || {};
     window._demoData[pid] = { numero: numero, produit: produit_demo || p.produit || '', pays: p.pays || '', marque: p.nom_marque || '', tpl: _tpl };
-    elR.innerHTML =
+    elD.innerHTML =
       '<div style="margin:10px 0 0;padding:10px 12px;background:rgba(37,211,102,.05);border:1px solid rgba(37,211,102,.2);border-radius:8px;">'
       + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-        + '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#25D366;">R\u00e9ponse \u2014 Pitch + D\u00e9mo</div>'
+        + '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#25D366;">Int\u00e9ress\u00e9 \u2014 D\u00e9mo</div>'
         + demoStatut
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">'
         + '<input id="lien-demo-'+pid+'" type="text" value="'+lien_demo+'" placeholder="Lien d\u00e9mo (auto via Factory)\u2026" oninput="saveLienDemo(\''+pid+'\',this.value)" onpaste="setTimeout(()=>extractProduitFromDemo(\''+pid+'\',this.value),300)" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:7px;padding:5px 9px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;">'
         + (produit_demo ? '<span style="font-size:10px;color:var(--blue);white-space:nowrap;" title="'+produit_demo+'">'+produit_demo+'</span>' : '')
       + '</div>'
-      + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Pitch + Démo (Instagram)':'📱 Envoyer Pitch + Démo (WhatsApp)')+'</button></div>'
+      + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Démo (Instagram)':'📱 Envoyer Démo (WhatsApp)')+'</button></div>'
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(demo_envoye?'#25D366':'var(--muted)')+';font-weight:'+(demo_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(demo_envoye?'checked':'')+' style="accent-color:#25D366;cursor:pointer;width:13px;height:13px" onchange="toggleDemoEnvoye(\''+pid+'\',this.checked)">'
         + 'D\u00e9mo envoy\u00e9e</label>'
@@ -2728,6 +2758,86 @@ async function fetchNiche(produit) {
   return _nicheFetching[key];
 }
 
+async function togglePitchEnvoye(id, val) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  let s = {};
+  try { s = JSON.parse(p.notes || '{}'); } catch(e) {}
+  s.pitch_envoye = val;
+  p.notes = JSON.stringify(s);
+  filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
+  await patch(id, { notes: p.notes });
+  const lbl = document.querySelector(`[onchange="togglePitchEnvoye('${id}',this.checked)"]`)?.parentElement;
+  if (lbl) {
+    lbl.style.color = val ? 'var(--blue)' : 'var(--muted)';
+    lbl.style.fontWeight = val ? '700' : '400';
+  }
+}
+
+async function sendPitchMsg(pid) {
+  // Même fix que sendDemoMsg (window.open bloqué sur mobile si fait après un await)
+  const _pCheck = DB.find(x => x.id === pid);
+  const _canalCheck = _pCheck?.canal_contact;
+  const _tabWa = (_canalCheck !== 'instagram') ? window.open('', '_blank') : null;
+
+  let d = (window._pitchData || {})[pid];
+  if (!d) {
+    const p = DB.find(x => x.id === pid);
+    const btnEl = document.getElementById('btn-send-pitch-' + pid);
+    if (!p && !btnEl) { toast('Données introuvables — actualise la page'); return; }
+    const numero = (p?.lien_wa || btnEl?.dataset?.numero || '').replace('https://wa.me/','').split('?')[0];
+    d = { numero, produit: p?.produit || '', pays: p?.pays || btnEl?.dataset?.pays || '', marque: p?.nom_marque || '', lien_instagram: p?.lien_instagram || '' };
+    window._pitchData = window._pitchData || {};
+    window._pitchData[pid] = d;
+  }
+  { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh && estCanalInstagram(_pFresh)) ? (_pFresh?.lien_instagram || '') : ''; }
+  // Toujours relire le template actuel — jamais mis en cache, même pour un prospect déjà
+  // préparé dans cette session (même logique que sendDemoMsg, même raison : fix templates périmés).
+  let _tpl = "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*💵 grâce à :\n\n👉🏾 Une vraie stratégie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous intéressé par une *DÉMONSTRATION* sur votre [Produit] ?";
+  try { const _c = DB._config || {}; if (_c.tpl_pitch) _tpl = _c.tpl_pitch; } catch(e) {}
+  d.tpl = _tpl;
+  const btn = document.getElementById('btn-send-pitch-' + pid);
+  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Préparation…'; }
+  try {
+    // Lien vers la page de vente — pas encore de démo à ce stade (le prospect n'a pas encore
+    // confirmé son intérêt), donc rien à raccourcir de spécifique à lui hormis le tracking.
+    // Miniature réutilisée : la même que J+3 (adstack_thumb_default), comme demandé.
+    let curLien = 'https://adstackofficial.com/?utm_source=crm&utm_medium=pitch&utm_campaign=pitch&utm_content=' + pid;
+    try {
+      const _rShort = await fetch('https://adstack-server.onrender.com/shorten', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ url: curLien, thumbnail: 'adstack_thumb_default', campagne: 'pitch' })
+      });
+      const _dShort = await _rShort.json();
+      if (_dShort.short_url) curLien = _dShort.short_url;
+    } catch(e) {}
+
+    // Pas de Gemini ici — une seule variable [Produit], substitution directe. Les infos par
+    // défaut du prospect font foi à ce stade (la mindmap n'existe pas encore, elle ne sera
+    // produite qu'après confirmation d'intérêt — voir sendDemoMsg pour ce cas-là).
+    let msg = d.tpl.replace(/\[Produit\]/gi, d.produit || 'votre produit');
+    msg = msg.replace(/\[lien\]/gi, curLien);
+    if (!/adstackofficial\.com|\[lien\]/i.test(d.tpl)) msg += '\n\n' + curLien;
+
+    const numeroFinal = d.numero || (document.getElementById('btn-send-pitch-'+pid)||{}).dataset?.numero || '';
+    if (d.lien_instagram) {
+      await copierTexteAvecRepli(msg);
+      window.open(d.lien_instagram, '_blank');
+      toast('Message copié — colle-le dans Instagram');
+    } else if (numeroFinal) {
+      const paysCode = d.pays || (document.getElementById('btn-send-pitch-'+pid)||{}).dataset?.pays || '';
+      const url = 'https://wa.me/' + numeroFinal + '?text=' + encodeURIComponent(msg);
+      if (_tabWa) _tabWa.location.href = url; else window.open(url, '_blank');
+    } else {
+      toast('Numéro WhatsApp introuvable');
+    }
+  } catch(e) {
+    toast('Erreur envoi pitch : ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = (estCanalInstagram(_pCheck)?'📷 Envoyer Pitch (Instagram)':'📱 Envoyer Pitch (WhatsApp)'); }
+  }
+}
+
 async function sendDemoMsg(pid) {
   // Cause profonde corrigée (window.open bloqué sur mobile) : on ouvre une tab vide
   // immédiatement au tap (avant tout await), puis on la redirige une fois le message prêt.
@@ -2754,15 +2864,15 @@ async function sendDemoMsg(pid) {
   { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh && estCanalInstagram(_pFresh)) ? (_pFresh?.lien_instagram || '') : ''; }
   // Le template n'est JAMAIS mis en cache avec le reste — toujours relu depuis la config actuelle,
   // même pour un prospect déjà préparé dans cette session (fix : template obsolète après modification).
-  let _tpl = "Je posais la question car notre *Agence* aide des *marques* dans la niche *[Niche]* \u00e0 faire *2x plus de ventes*.\n\n*Uniquement* gr\u00e2ce \u00e0 des *IMAGES Publicitaires* bas\u00e9s sur :\n\n- Une analyse de votre march\u00e9 *\"[Pays]\"* pour d\u00e9finir et comprendre *la cible* qui ach\u00e8te vraiment vos Produits;\n\nVoici une *d\u00e9monstration gratuite* : *[lien_demo]*\npour *[Produit]*.\n\nAinsi qu'un aper\u00e7u de ce qu'on pourra mettre en place concr\u00e8tement pour vous !!!\n\nOn attend impatiemment votre avis !!!";
+  let _tpl = "Voici l'*aper\u00e7u concret* de notre m\u00e9thode sur votre [Produit] \ud83d\udc47\ud83c\udffd:\n\n[lien_demo]\n\nH\u00e2te de recevoir votre avis ?";
   try { const _c = DB._config || {}; if (_c.tpl_demo_msg) _tpl = _c.tpl_demo_msg; } catch(e) {}
   d.tpl = _tpl;
   const btn = document.getElementById('btn-send-demo-' + pid);
   if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Préparation…'; }
   try {
     let curLien = (document.getElementById('lien-demo-'+pid)||{}).value || '';
-    if (!curLien) { toast('Lien démo manquant'); if (btn){btn.disabled=false;btn.innerHTML='📱 Envoyer Pitch + Démo';} return; }
-    curLien += (curLien.includes('?') ? '&' : '?') + 'utm_source=crm&utm_medium=pitch_demo&utm_campaign=demo&utm_content=' + pid;
+    if (!curLien) { toast('Lien démo manquant'); if (btn){btn.disabled=false;btn.innerHTML='📱 Envoyer Démo';} return; }
+    curLien += (curLien.includes('?') ? '&' : '?') + 'utm_source=crm&utm_medium=demo&utm_campaign=demo&utm_content=' + pid;
     // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp) : thumbnail:null
     // faisait faire au raccourcisseur une redirection HTTP brute (302), sans aucune balise OG —
     // WhatsApp ne suit pas cette redirection pour aller chercher les balises de la page de
@@ -2821,7 +2931,7 @@ async function sendDemoMsg(pid) {
     toast('Erreur : ' + e.message);
     if (_tabWa) { try { _tabWa.close(); } catch(e2) {} }
   } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = d.lien_instagram ? '📷 Envoyer Pitch + Démo (Instagram)' : '📱 Envoyer Pitch + Démo (WhatsApp)'; }
+    if (btn) { btn.disabled = false; btn.innerHTML = d.lien_instagram ? '📷 Envoyer Démo (Instagram)' : '📱 Envoyer Démo (WhatsApp)'; }
   }
 }
 
@@ -3006,8 +3116,11 @@ async function toggleCheck(id, field, val) {
     filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
     return;
   }
-  // Quand a_repondu passe à true → créer une demande de démo en Factory (si pas déjà existante)
-  if (field === 'a_repondu' && val === true && p) {
+  // Quand interesse passe à true → créer une demande de démo en Factory (si pas déjà existante)
+  // Déplacé depuis a_repondu : la démo ne doit être produite qu'après confirmation d'intérêt
+  // au pitch, pas dès la simple réponse (qui ne signifie plus "veut une démo" dans le nouveau
+  // funnel Contacté → Réponse → Intéressé → Lead).
+  if (field === 'interesse' && val === true && p) {
     try {
       // Vérifier qu'il n'y a pas déjà une demo en_attente pour ce prospect
       const check = await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente&select=id`, { headers: H });
@@ -3035,8 +3148,8 @@ async function toggleCheck(id, field, val) {
     pollDemoLink(id);
   }
 
-  // Quand a_repondu repasse à false → retirer la démo en attente de la Factory
-  if (field === 'a_repondu' && val === false && p) {
+  // Quand interesse repasse à false → retirer la démo en attente de la Factory
+  if (field === 'interesse' && val === false && p) {
     try {
       await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H });
       toast('Démo retirée de la file Factory');
