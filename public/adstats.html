@@ -2773,6 +2773,7 @@ async function togglePitchEnvoye(id, val) {
   let s = {};
   try { s = JSON.parse(p.notes || '{}'); } catch(e) {}
   s.pitch_envoye = val;
+  if (val && !s.pitch_envoye_at) s.pitch_envoye_at = new Date().toISOString();
   p.notes = JSON.stringify(s);
   filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
   await patch(id, { notes: p.notes });
@@ -3182,6 +3183,7 @@ async function toggleDemoEnvoye(id, val) {
   let s = {};
   try { s = JSON.parse(p.notes || '{}'); } catch(e) {}
   s.demo_envoye = val;
+  if (val && !s.demo_envoye_at) s.demo_envoye_at = new Date().toISOString();
   p.notes = JSON.stringify(s);
   // Re-render immédiat
   filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
@@ -3820,20 +3822,38 @@ async function renderDashboard() {
   } catch(e) { console.warn('chart-acheteurs:', e.message); }
 
   // ── PERFORMANCE PAR MESSAGE (pitch / démo / J+3 / J+10 / J+21) ──
+  // Même filtre de période que les clics (from/to ou dashPeriod), appliqué cette fois aux
+  // messages envoyés et aux achats — jusque-là ces deux métriques comptaient TOUT l'historique
+  // sans tenir compte du filtre actif, ce qui donnait des ratios incohérents (ex: 1 achat de
+  // toujours divisé par 2 clics d'hier seulement = 50%, un chiffre qui ne voulait rien dire).
+  const _dansPeriodeDash = (dateStr) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    if (from || to) {
+      if (from && d < new Date(from + 'T00:00:00')) return false;
+      if (to   && d > new Date(to + 'T23:59:59'))   return false;
+      return true;
+    }
+    if (dashPeriod >= 9999) return true;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - dashPeriod); cutoff.setHours(0,0,0,0);
+    return d >= cutoff;
+  };
   // Achats rattachés à une étape via p.j_plus_achat ("J+3"/"J+10"/"J+21", champ fiable posé au
-  // moment où Amvr confirme un achat) — jstatus_ (localStorage) n'était en réalité jamais écrit
-  // nulle part, donc ce comptage était systématiquement à 0 avant.
+  // moment où Amvr confirme un achat), filtrés sur p.date_achat.
   const jc = { 3:0, 10:0, 21:0 };
-  DB.forEach(p => { if (p.j_plus_achat === 'J+3') jc[3]++; else if (p.j_plus_achat === 'J+10') jc[10]++; else if (p.j_plus_achat === 'J+21') jc[21]++; });
-  // Messages envoyés par étape — pitch_envoye/demo_envoye/jX_envoye, tous posés dans notes.
+  DB.forEach(p => {
+    if (!_dansPeriodeDash(p.date_achat)) return;
+    if (p.j_plus_achat === 'J+3') jc[3]++; else if (p.j_plus_achat === 'J+10') jc[10]++; else if (p.j_plus_achat === 'J+21') jc[21]++;
+  });
+  // Messages envoyés par étape — pitch_envoye/demo_envoye/jX_envoye, filtrés sur leur _at.
   const envoyes = { pitch:0, demo:0, j3:0, j10:0, j21:0 };
   DB.forEach(p => {
     let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch(e) {}
-    if (n.pitch_envoye) envoyes.pitch++;
-    if (n.demo_envoye)  envoyes.demo++;
-    if (n.j3_envoye)    envoyes.j3++;
-    if (n.j10_envoye)   envoyes.j10++;
-    if (n.j21_envoye)   envoyes.j21++;
+    if (n.pitch_envoye && _dansPeriodeDash(n.pitch_envoye_at)) envoyes.pitch++;
+    if (n.demo_envoye  && _dansPeriodeDash(n.demo_envoye_at))  envoyes.demo++;
+    if (n.j3_envoye    && _dansPeriodeDash(n.j3_envoye_at))    envoyes.j3++;
+    if (n.j10_envoye   && _dansPeriodeDash(n.j10_envoye_at))   envoyes.j10++;
+    if (n.j21_envoye   && _dansPeriodeDash(n.j21_envoye_at))   envoyes.j21++;
   });
   const jpEl = document.getElementById('dash-jplus');
   if (jpEl) {
@@ -3885,7 +3905,7 @@ async function renderDashboard() {
       // ── VUE D'ENSEMBLE CLICS — messages envoyés / clics / acheteurs, avec CTR global ──
       const totalEnvoyes = lignes.reduce((s,l) => s+l.envoyes, 0);
       const totalClics = lignes.reduce((s,l) => s+l.clics, 0);
-      const totalAcheteurs = DB.filter(p => p.statut === 'acheteur').length;
+      const totalAcheteurs = DB.filter(p => p.statut === 'acheteur' && _dansPeriodeDash(p.date_achat)).length;
       const ctrGlobal = totalEnvoyes > 0 ? (totalClics/totalEnvoyes*100).toFixed(1) : '—';
       const ovEl = document.getElementById('dash-clics-overview');
       if (ovEl) {
@@ -4156,7 +4176,7 @@ function selAchat(j, el) {
 }
 
 async function confirmAchat() {
-  await patch(achatId, { statut: 'acheteur', offre_achetee: 'starter', j_plus_achat: achatSel });
+  await patch(achatId, { statut: 'acheteur', offre_achetee: 'starter', j_plus_achat: achatSel, date_achat: new Date().toISOString() });
   closeM('m-achat');
   toast('Converti en Acheteur Starter');
   render();
@@ -5903,6 +5923,7 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
     const jourEnvoi = RELANCE_JOURS_ENVOI[relanceIndex];
     const s = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
     s['j' + jourEnvoi + '_envoye'] = true;
+    s['j' + jourEnvoi + '_envoye_at'] = new Date().toISOString();
     p.notes = JSON.stringify(s);
     await patch(prospectId, { notes: p.notes });
   } catch(e) { console.warn('Marquage envoi relance échoué:', e.message); }
@@ -5958,6 +5979,7 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
     const jourEnvoi = RELANCE_JOURS_ENVOI[relanceIndex];
     const s = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
     s['j' + jourEnvoi + '_envoye'] = true;
+    s['j' + jourEnvoi + '_envoye_at'] = new Date().toISOString();
     p.notes = JSON.stringify(s);
     await patch(prospectId, { notes: p.notes });
   } catch(e) { console.warn('Marquage envoi relance échoué:', e.message); }
