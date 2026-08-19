@@ -3781,13 +3781,14 @@ async function renderDashboard() {
 
   const c = cohorte.length;
   const r = cohorte.filter(p => p.a_repondu).length;
+  const i = cohorte.filter(p => p.interesse).length;
   const l = cohorte.filter(p => ['lead','acheteur','standard','scale'].includes(p.statut)).length;
   const a = cohorte.filter(p => ['acheteur','standard','scale'].includes(p.statut)).length;
   const pct = (n) => c > 0 ? Math.round(n/c*100) : 0;
 
   renderApiCosts();
 
-  // ── HERO FUNNEL — ligne continue, une seule couleur d'accent, 4 étapes avec % ──
+  // ── HERO FUNNEL — ligne continue, une seule couleur d'accent, 5 étapes avec % ──
   const heroEl = document.getElementById('dash-hero-funnel');
   if (heroEl) {
     const etape = (val, label, pourcent, accent) =>
@@ -3796,6 +3797,7 @@ async function renderDashboard() {
     const fleche = '<i class="ti ti-chevron-right" style="font-size:18px;color:var(--border2);margin:0 20px" aria-hidden="true"></i>';
     heroEl.innerHTML = etape(c, 'Contactés', 100, false) + fleche
                       + etape(r, 'Réponses',  pct(r), false) + fleche
+                      + etape(i, 'Intéressé', pct(i), false) + fleche
                       + etape(l, 'Leads',     pct(l), false) + fleche
                       + etape(a, 'Acheteurs', pct(a), true);
   }
