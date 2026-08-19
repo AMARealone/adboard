@@ -1719,6 +1719,9 @@ textarea::placeholder { color: var(--muted); }
 
   <div id="dash-hero-funnel" style="display:flex;align-items:center;margin-bottom:40px;overflow-x:auto"></div>
 
+  <p class="dash-label-new">Vue d'ensemble — messages, clics, acheteurs</p>
+  <div id="dash-clics-overview" style="margin-bottom:36px"></div>
+
   <p class="dash-label-new">Performance par message</p>
   <div id="dash-jplus" style="margin-bottom:36px"></div>
 
@@ -1904,6 +1907,12 @@ textarea::placeholder { color: var(--muted); }
       <div style="font-size:22px;font-weight:800;color:var(--blue)" id="sv-r">0</div>
       <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Réponses</div>
       <div style="font-size:11px;font-weight:700;color:var(--muted);margin-top:2px" id="sv-rp">—%</div>
+    </div>
+    <div style="color:var(--dimmed);padding:0 4px">›</div>
+    <div style="flex:1;padding:16px 20px;text-align:center;border-right:1px solid var(--border)">
+      <div style="font-size:22px;font-weight:800;color:var(--blue)" id="sv-i">0</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:4px">Intéressé</div>
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-top:2px" id="sv-ip">—%</div>
     </div>
     <div style="color:var(--dimmed);padding:0 4px">›</div>
     <div style="flex:1;padding:16px 20px;text-align:center">
@@ -2352,7 +2361,7 @@ function render() {
   // Base = tous les prospects contactés (toutes étapes sauf a_contacter)
   const sv_c = SV.length + LD.length + ACH.length + UP.length;
   const sv_r = DB.filter(p => p.a_repondu).length;
-  const sv_i = 0; // interesse supprimé du funnel
+  const sv_i = DB.filter(p => p.interesse).length;
   const sv_l = LD.length + ACH.length + UP.length;
 
   set('sv-c', sv_c);
@@ -3810,13 +3819,21 @@ async function renderDashboard() {
     }
   } catch(e) { console.warn('chart-acheteurs:', e.message); }
 
-  // ── PERFORMANCE PAR MESSAGE (démo / J+3 / J+10 / J+21) ──
-  const jc = {};
+  // ── PERFORMANCE PAR MESSAGE (pitch / démo / J+3 / J+10 / J+21) ──
+  // Achats rattachés à une étape via p.j_plus_achat ("J+3"/"J+10"/"J+21", champ fiable posé au
+  // moment où Amvr confirme un achat) — jstatus_ (localStorage) n'était en réalité jamais écrit
+  // nulle part, donc ce comptage était systématiquement à 0 avant.
+  const jc = { 3:0, 10:0, 21:0 };
+  DB.forEach(p => { if (p.j_plus_achat === 'J+3') jc[3]++; else if (p.j_plus_achat === 'J+10') jc[10]++; else if (p.j_plus_achat === 'J+21') jc[21]++; });
+  // Messages envoyés par étape — pitch_envoye/demo_envoye/jX_envoye, tous posés dans notes.
+  const envoyes = { pitch:0, demo:0, j3:0, j10:0, j21:0 };
   DB.forEach(p => {
-    try {
-      const st = JSON.parse(localStorage.getItem('jstatus_' + p.id) || '{}');
-      [3,10,21].forEach(j => { if (st['achat_j'+j]) jc[j] = (jc[j]||0)+1; });
-    } catch(e) {}
+    let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch(e) {}
+    if (n.pitch_envoye) envoyes.pitch++;
+    if (n.demo_envoye)  envoyes.demo++;
+    if (n.j3_envoye)    envoyes.j3++;
+    if (n.j10_envoye)   envoyes.j10++;
+    if (n.j21_envoye)   envoyes.j21++;
   });
   const jpEl = document.getElementById('dash-jplus');
   if (jpEl) {
@@ -3837,25 +3854,49 @@ async function renderDashboard() {
         linksData.forEach(l => { clicsParCampagne[l.campagne] = (clicsParCampagne[l.campagne]||0) + (l.clicks||0); });
       }
       const MESSAGES = [
-        { cle: 'demo', label: 'Démo',  achats: null },
-        { cle: 'j3',   label: 'J+3',   achats: jc[3]  || 0 },
-        { cle: 'j10',  label: 'J+10',  achats: jc[10] || 0 },
-        { cle: 'j21',  label: 'J+21',  achats: jc[21] || 0 },
+        { cle: 'pitch', label: 'Pitch', envoyes: envoyes.pitch, achats: null },
+        { cle: 'demo',  label: 'Démo',  envoyes: envoyes.demo,  achats: null },
+        { cle: 'j3',    label: 'J+3',   envoyes: envoyes.j3,    achats: jc[3]  },
+        { cle: 'j10',   label: 'J+10',  envoyes: envoyes.j10,   achats: jc[10] },
+        { cle: 'j21',   label: 'J+21',  envoyes: envoyes.j21,   achats: jc[21] },
       ];
       const lignes = MESSAGES.map(m => {
         const clics = clicsParCampagne[m.cle] || 0;
+        const ctr = m.envoyes > 0 ? (clics/m.envoyes)*100 : null;
         const conv = (m.achats !== null && clics > 0) ? (m.achats/clics)*100 : null;
-        return { label: m.label, clics, achats: m.achats, conv };
-      }).sort((x,y) => (y.conv||0) - (x.conv||0));
+        return { label: m.label, envoyes: m.envoyes, clics, achats: m.achats, ctr, conv };
+      });
       const maxClics = Math.max(...lignes.map(l => l.clics), 1);
-      jpEl.innerHTML = lignes.map((l, idx) =>
+      jpEl.innerHTML =
+        '<div style="display:flex;padding:0 0 8px;font-size:9.5px;color:var(--dimmed);text-transform:uppercase;letter-spacing:.5px">'
+        + '<span style="width:64px">Étape</span><span style="width:60px;text-align:right">Envoyés</span><span style="flex:1"></span><span style="width:70px;text-align:right">Clics</span><span style="width:50px;text-align:right">CTR</span>' + (lignes.some(l=>l.achats!==null) ? '<span style="width:55px;text-align:right">Conv.</span>' : '')
+        + '</div>'
+        + lignes.map((l, idx) =>
         '<div style="display:flex;align-items:center;padding:10px 0;' + (idx < lignes.length-1 ? 'border-bottom:0.5px solid var(--border)' : '') + '">'
         + '<span style="font-size:13px;width:64px;color:var(--text)">' + l.label + '</span>'
-        + '<div style="flex:1;height:4px;background:var(--surface2);border-radius:2px;margin-right:14px"><div style="width:' + Math.round(l.clics/maxClics*100) + '%;height:100%;background:var(--blue);border-radius:2px"></div></div>'
-        + '<span style="font-size:12px;color:var(--muted);width:70px">' + l.clics + ' clic' + (l.clics!==1?'s':'') + '</span>'
-        + '<span style="font-size:13px;font-weight:600;width:50px;text-align:right;color:' + (l.conv ? 'var(--blue)' : 'var(--muted)') + '">' + (l.conv !== null ? l.conv.toFixed(1)+'%' : '—') + '</span>'
+        + '<span style="font-size:12px;width:60px;text-align:right;color:var(--muted)">' + l.envoyes + '</span>'
+        + '<div style="flex:1;height:4px;background:var(--surface2);border-radius:2px;margin:0 10px"><div style="width:' + Math.round(l.clics/maxClics*100) + '%;height:100%;background:var(--blue);border-radius:2px"></div></div>'
+        + '<span style="font-size:12px;color:var(--muted);width:70px;text-align:right">' + l.clics + ' clic' + (l.clics!==1?'s':'') + '</span>'
+        + '<span style="font-size:12px;font-weight:600;width:50px;text-align:right;color:' + (l.ctr ? 'var(--blue)' : 'var(--muted)') + '">' + (l.ctr !== null ? l.ctr.toFixed(1)+'%' : '—') + '</span>'
+        + (l.achats !== null ? '<span style="font-size:12px;font-weight:600;width:55px;text-align:right;color:' + (l.conv ? 'var(--green)' : 'var(--muted)') + '">' + (l.conv !== null ? l.conv.toFixed(1)+'%' : '—') + '</span>' : (lignes.some(x=>x.achats!==null) ? '<span style="width:55px"></span>' : ''))
         + '</div>'
       ).join('');
+
+      // ── VUE D'ENSEMBLE CLICS — messages envoyés / clics / acheteurs, avec CTR global ──
+      const totalEnvoyes = lignes.reduce((s,l) => s+l.envoyes, 0);
+      const totalClics = lignes.reduce((s,l) => s+l.clics, 0);
+      const totalAcheteurs = DB.filter(p => p.statut === 'acheteur').length;
+      const ctrGlobal = totalEnvoyes > 0 ? (totalClics/totalEnvoyes*100).toFixed(1) : '—';
+      const ovEl = document.getElementById('dash-clics-overview');
+      if (ovEl) {
+        ovEl.innerHTML =
+          '<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">'
+          + '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalEnvoyes + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Messages envoyés</div></div>'
+          + '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--blue)">' + totalClics + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Clics</div></div>'
+          + '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--green)">' + totalAcheteurs + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Acheteurs</div></div>'
+          + '<div style="flex:1;padding:16px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--yellow)">' + ctrGlobal + (ctrGlobal!=='—'?'%':'') + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">CTR global</div></div>'
+          + '</div>';
+      }
     } catch(e) {
       jpEl.innerHTML = '<div style="font-size:12px;color:var(--red)">Erreur de chargement des clics</div>';
     }
@@ -4011,7 +4052,6 @@ function resoudrePays(paysRaw) {
 }
 
 async function genMessages(html) {
-  // Appel via serveur local — pas de clé API directe nécessaire
   document.getElementById('gen-ind').style.display = 'block';
   document.getElementById('liens-out').style.display = 'none';
 
@@ -4035,169 +4075,32 @@ async function genMessages(html) {
   }
 
   try {
-    // Gemini lit et comprend l'ensemble de la mindmap avant de remplir — comportement voulu,
-    // pas une extraction robotique champ par champ. Il détermine lui-même marque/produit/pays
-    // ET les variables plus fines (persona, raison émotionnelle, score, niche) à partir du
-    // contexte global, exactement comme le ferait un copywriter humain qui lit le brief entier.
-    // Extraction de texte fiable — un <div> créé par createElement() n'est JAMAIS attaché au
-    // DOM visible, donc .innerText (qui dépend du rendu réel de la page) est peu fiable et
-    // retombe souvent sur .textContent, qui lui inclut TOUT le contenu brut des balises
-    // <style> et <script> verbatim. Sur une mindmap avec beaucoup de CSS custom, ça pouvait
-    // noyer les 8000 premiers caractères dans du CSS, avant même d'atteindre le persona ou
-    // le prix — Gemini recevait alors du charabia au lieu du vrai contenu. On retire donc
-    // explicitement scripts et styles AVANT toute extraction, peu importe la méthode utilisée.
-    const briefText = (() => {
-      const htmlSansScriptsEtStyles = html
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ');
-      const d = document.createElement('div');
-      d.innerHTML = htmlSansScriptsEtStyles;
-      return (d.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 8000);
-    })();
-    // Liste de variables 100% dynamique — lit les templates ACTUELS (chargés juste au-dessus
-    // depuis Supabase/localStorage, donc déjà les templates modifiés par Amvr) et n'instruit
-    // Gemini que sur les crochets [Xxx] qui apparaissent VRAIMENT dedans. Cause profonde
-    // corrigée : avant, une liste fixe de 7 variables (dont [niche]) était toujours envoyée,
-    // même quand une template avait été mise à jour pour ne plus les utiliser — Gemini
-    // "cherchait" alors des choses non demandées, gaspillant un appel et créant la confusion
-    // vue dans les logs Render. Le principe reste : template libre, on ne remplit QUE ce qui
-    // y est vraiment écrit, jamais un travail caché sur une variable absente.
-    const DEFS_VARIABLES = {
-      'marque':               'nom de la marque/boutique',
-      'produit':              'nom du produit',
-      'pays':                 'le PAYS EN TOUTES LETTRES avec la bonne préposition française ("au Sénégal", "en Côte d\'Ivoire", "en RD Congo", "à Madagascar"...) — JAMAIS un code ou sigle (jamais "SN", "RDC", "CI")',
-      'persona prénom':       'prénom seul du persona',
-      'raison émotionnelle':  'ce qui pousse vraiment ce persona à acheter, déduit du contexte (3-5 mots)',
-      'score':                'chiffre seul du score',
-      'niche':                'grande catégorie (ex: cosmétiques, santé, mode)',
-    };
-    const _texteTemplatesComplet = templates.join('\n');
-    const _placeholdersPresents = [...new Set(
-      (_texteTemplatesComplet.match(/\[([^\]]{2,40})\]/g) || []).map(m => m.slice(1, -1).toLowerCase())
-    )];
-    const _lignesVariables = _placeholdersPresents
-      .map(ph => {
-        const def = DEFS_VARIABLES[ph];
-        return def ? `- [${ph}] = ${def}` : `- [${ph}] = déduis la valeur la plus plausible du contexte du brief`;
-      })
-      .join('\n');
-    const _aUnLienBrut = /adstackofficial\.com/i.test(_texteTemplatesComplet) && !/\[lien\]/i.test(_texteTemplatesComplet);
+    // Plus d'appel Gemini ici — les templates de relance actuels (J+3/J+10/J+21) ne contiennent
+    // plus qu'une seule variable, [Marque], déjà connue et fiable sur la fiche du prospect (pas
+    // besoin de lire la mindmap pour ça). Substitution directe, instantanée, gratuite.
+    const prospect = DB.find(p => p.id === leadId);
+    const marque = prospect?.nom_marque || '';
+    const vars = { messages: templates.map(t => t.replace(/\[Marque\]/gi, marque)) };
 
-    const prompt = 'Tu es expert copywriter WhatsApp pour e-commerce africain francophone.\n\n'
-      + 'Lis et comprends ENTIÈREMENT le brief ci-dessous avant de remplir quoi que ce soit — ne fais pas une extraction robotique champ par champ, comprends le contexte global (marché, persona, ce qui le pousse à acheter) comme le ferait un vrai copywriter.\n\n'
-      + 'BRIEF ADSTACK (mindmap complète du prospect) :\n' + briefText + '\n\n'
-      + 'TEMPLATES (' + templates.length + ' messages à remplir) :\n' + templates.map((t, i) => '--- TEMPLATE ' + (i+1) + ' ---\n' + t).join('\n\n') + '\n\n'
-      + (_lignesVariables
-          ? 'VARIABLES À EXTRAIRE DU BRIEF ET INJECTER — UNIQUEMENT celles listées ci-dessous, qui sont les seules réellement présentes dans les templates ci-dessus. N\'en invente aucune autre, et ne va chercher aucune information qui ne correspond à AUCUNE de ces variables :\n' + _lignesVariables + '\n\n'
-          : 'Ces templates ne contiennent aucune variable entre crochets [Xxx] à extraire du brief — contente-toi de les personnaliser dans l\'esprit du brief sans rien y ajouter de spécifique inventé.\n\n')
-      + 'RÈGLE ABSOLUE SUR LE LIEN : ' + (_aUnLienBrut
-          ? 'les templates contiennent l\'adresse "adstackofficial.com" écrite en clair — recopie-la EXACTEMENT caractère pour caractère, sans jamais la reformuler, la raccourcir, l\'abréger ou changer le texte autour dans lequel elle apparaît. Un lien réécrit différemment casse le suivi de clics.'
-          : 'si un template contient [lien] ou [lien_demo], NE LES REMPLACE JAMAIS — laisse ces crochets EXACTEMENT tels quels, ils seront substitués séparément par le code après coup.') + '\n\n'
-      + 'RÈGLE ABSOLUE : aucun texte entre crochets du type [Xxx] ne doit JAMAIS apparaître dans le résultat final' + (_aUnLienBrut ? '' : ' (sauf [lien]/[lien_demo], à laisser tels quels comme précisé ci-dessus)') + ' — chaque autre crochet DOIT être remplacé par du texte réel. Si une info exacte n\'est pas écrite noir sur blanc dans le brief (ex: le persona n\'a pas de prénom explicite), déduis la valeur la plus plausible du contexte plutôt que de laisser le crochet vide — un copywriter humain ne laisserait jamais "[Persona prénom]" dans un message envoyé à un client.\n'
-      + 'Exemple : si le brief décrit "une mère active de 30-40 ans qui veut regagner confiance en elle", [Persona prénom] pourrait devenir "Awa" ou "Fatou" (prénom plausible dans ce marché) et [Raison émotionnelle] pourrait devenir "regagner confiance en elle".\n\n'
-      + 'CONSIGNES : CONSERVE tous les *astérisques*, garde le ton de chaque template.\n\n'
-      + 'Retourne UNIQUEMENT ce JSON valide (marque/produit/pays_code utiles pour mettre à jour la fiche du prospect — pays_code = code ISO 2 lettres du pays trouvé) :\n'
-      + '{"marque":"...","produit":"...","pays_code":"...","numero_wa":"...","messages":["msg1","msg2","msg3"]}';
-    const res = await fetch(PROSP_API + '/gen-messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
-      signal: AbortSignal.timeout(95000)
-    });
-
-    const d = await res.json();
-    if (!res.ok) throw new Error(d.error || 'Erreur serveur ' + res.status);
-    const rawText = d.text || '';
-    if (!rawText) throw new Error('Réponse vide du serveur');
-
-    
-    const raw = rawText.replace(/```json|```/g, '').trim();
-    const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
-    const vars = JSON.parse(raw.slice(a, b + 1));
-    if (!vars.messages || !Array.isArray(vars.messages)) throw new Error('Format JSON invalide');
-
-    // Garde-fou : si Gemini a quand même laissé un [Placeholder] non rempli malgré la
-    // consigne, on fait un 2e appel CIBLÉ et plus simple pour rattraper uniquement ce qui
-    // manque — une tâche courte et contrainte est bien plus fiable qu'une longue tâche
-    // combinée, et évite d'envoyer un message avec des crochets vides à un vrai prospect.
-    let _placeholdersOublies = vars.messages
-      .map(m => (m.match(/\[[^\]]{2,40}\]/g) || []))
-      .flat();
-    if (_placeholdersOublies.length) {
-      console.warn('[genMessages] Placeholders non remplis, tentative de rattrapage:', _placeholdersOublies);
-      try {
-        const _nomsOublies = [...new Set(_placeholdersOublies.map(p => p.slice(1, -1).toLowerCase()))];
-        const _champsJson = _nomsOublies.map(n => `"${n}":"..."`).join(',');
-        const _promptRattrapage = 'Voici le brief d\'un prospect e-commerce :\n' + briefText
-          + '\n\nDonne UNIQUEMENT ce JSON, sans aucun texte autour, avec des valeurs réelles et plausibles déduites du brief (jamais de crochets, jamais vide — si l\'info exacte n\'est pas écrite noir sur blanc, déduis la valeur la plus probable). Ne renvoie QUE les champs suivants, ce sont les seuls qui manquent réellement :\n'
-          + '{' + _champsJson + '}';
-        const _resRattrapage = await fetch(PROSP_API + '/gen-messages', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt: _promptRattrapage }),
-          signal: AbortSignal.timeout(30000)
-        });
-        const _dRattrapage = await _resRattrapage.json();
-        const _rawRattrapage = (_dRattrapage.text || '').replace(/```json|```/g, '').trim();
-        const _a2 = _rawRattrapage.indexOf('{'), _b2 = _rawRattrapage.lastIndexOf('}');
-        const _valeurs = JSON.parse(_rawRattrapage.slice(_a2, _b2 + 1));
-        // Table de correspondance insensible à la casse (Gemini peut renvoyer "Score" alors
-        // qu'on a demandé "score") — évite un remplacement raté juste à cause de la casse.
-        const _valeursMinuscules = {};
-        Object.keys(_valeurs).forEach(k => { _valeursMinuscules[k.toLowerCase()] = _valeurs[k]; });
-
-        vars.messages = vars.messages.map(m => {
-          let out = m;
-          _nomsOublies.forEach(nom => {
-            const valeur = _valeursMinuscules[nom] || '';
-            const rx = new RegExp('\\[' + nom.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\]', 'gi');
-            out = out.replace(rx, valeur);
-            if (nom === 'pays') out = out.replace(/\b(en|au|à)\s+\[pays\]/gi, valeur);
-          });
-          return out;
-        });
-        _placeholdersOublies = vars.messages.map(m => (m.match(/\[[^\]]{2,40}\]/g) || [])).flat();
-        console.log('[genMessages] Rattrapage effectué, crochets restants après coup:', _placeholdersOublies);
-      } catch(eRattrapage) {
-        console.warn('[genMessages] Échec du rattrapage:', eRattrapage.message);
-      }
-    }
-    if (_placeholdersOublies.length) {
-      toast(`⚠️ Variables toujours non remplies après rattrapage : ${[...new Set(_placeholdersOublies)].join(', ')}`);
-    }
-
-    const _marque = vars.marque || '';
-    const _produit = vars.produit || '';
-    const _paysCode = (vars.pays_code || '').toUpperCase();
-
-    // Fiche prospect à jour : si la mindmap dit autre chose que ce qui est enregistré, on corrige la fiche.
-    try {
-      const _prospectForSync = DB.find(p => p.id === leadId);
-      if (_prospectForSync) {
-        const _updates = {};
-        if (_marque && _marque !== _prospectForSync.nom_marque) _updates.nom_marque = _marque;
-        if (_produit && _produit !== _prospectForSync.produit) _updates.produit = _produit;
-        if (_paysCode && _paysCode !== (_prospectForSync.pays || '').toUpperCase()) _updates.pays = _paysCode;
-        if (Object.keys(_updates).length) {
-          await patch(leadId, _updates);
-          Object.assign(_prospectForSync, _updates);
-          console.log('[Sync fiche prospect] Mise à jour depuis la mindmap :', _updates);
-        }
-      }
-    } catch(e) { console.warn('Sync fiche prospect échouée :', e.message); }
-
-    // Mettre à jour le nom de téléchargement : DEMO_MARQUE_PRODUIT.html
+    // Nom de téléchargement (DEMO_MARQUE_PRODUIT.html) — calculé depuis la fiche prospect
+    // déjà connue, plus besoin de la mindmap ni de Gemini pour ça.
     const _slug = s => (s||'').toUpperCase().replace(/[^A-Z0-9ÀÂÄÉÈÊËÎÏÔÖÙÛÜÇÆŒ]/gi, '_').replace(/_+/g,'_').replace(/^_|_$/g,'').slice(0, 30);
-    demoBriefName = 'DEMO_' + _slug(_marque) + '_' + _slug(_produit) + '.html';
+    demoBriefName = 'DEMO_' + _slug(marque) + '_' + _slug(prospect?.produit || '') + '.html';
+
+    // Garde-fou conservé : si un template contient encore une autre variable que [Marque]
+    // (ex: quelqu'un modifie le template et y remet [Produit] ou autre), on le signale au lieu
+    // de l'envoyer tel quel avec un crochet vide — mais sans jamais rappeler Gemini pour ça.
+    const _placeholdersOublies = vars.messages.map(m => (m.match(/\[[^\]]{2,40}\]/g) || [])).flat();
+    if (_placeholdersOublies.length) {
+      toast(`⚠️ Variable(s) non gérée(s) par la substitution directe : ${[...new Set(_placeholdersOublies)].join(', ')} — seul [Marque] est automatiquement rempli sur les relances`);
+    }
 
     const JOURS  = [3, 10, 21];
     const LABELS = ['Vu la démo ?', 'Tendance marché', 'Score & urgence'];
-    const prospect = DB.find(p => p.id === leadId);
     const _waNumero = (prospect?.lien_wa || '').replace('https://wa.me/', '').replace(/\D/g, '');
-    const numero = (vars.numero_wa || '').replace(/\D/g, '');
 
     const messages = vars.messages.map((texte, i) => {
-      const wa = _waNumero || numero;
+      const wa = _waNumero;
       const lien = wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent(texte) : '#';
       return { j: JOURS[i], label: 'J+' + JOURS[i] + ' — ' + LABELS[i], lien, texte };
     });
@@ -4226,7 +4129,7 @@ async function genMessages(html) {
 
   } catch(e) {
     console.error(e);
-    toast('Erreur : ' + (e.message || 'Vérif clé API'));
+    toast('Erreur : ' + (e.message || 'Génération des messages'));
   } finally {
     document.getElementById('gen-ind').style.display = 'none';
   }
@@ -5434,9 +5337,9 @@ const RELANCE_LABELS = ['Vu la démo ?', 'Tendance marché', 'Score & urgence'];
 const DEFAULT_INTROS = ["Bonjour *[Marque]*,\nje viens de voir votre pub pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nvotre pub sur *[Produit]*\nJe me demandais, est-ce vous qui l'avez créée ?", "Bonjour *[Marque]*,\nje suis tombé sur votre pub *[Produit]* en scrollant\nEst-ce vous qui êtes derrière ?", "Bonjour *[Marque]*, petite question\nLa pub *[Produit]* que je viens de voir,\nest-ce vous qui l'avez faite ?", "Bonjour *[Marque]*\nJe viens de voir votre pub avec *[Produit]*\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje regardais votre pub sur *[Produit]*. J'avais une question !\nEst-ce vous qui l'avez faites ?", "Bonjour *[Marque]*,\nj'ai vu votre pub pour *[Produit]* passer aujourd'hui\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje viens de consulter votre publicité pour *[Produit]*\nEst-ce vous qui l'avez réalisée ?", "Bonjour *[Marque]*,\nje suis tombé sur vos pubs, notamment celle pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nje viens de tomber sur votre pub avec *[Produit]* à l'instant\nEst-ce vous qui êtes derrière ?"];
 
 const DEFAULT_RELANCES = [
-  `Salut *[Marque]*\n\nVous avez *bien vu* la démo pour *[Produit]* ?\n\nCar on a pu identifier exactement ce qui pousse \n*[Persona prénom]* à commander, et qui n'est nul \nautre que *[Raison émotionnelle]*. \nPas le produit ! Vos prochaines *images pubs* peuvent parler \ndirectement à ça pour *vendre plus*.\n\nEt on peut le faire pour vous dès maintenant : adstackofficial.com/adboard/offers\n\nOu vous avez d'autres choses qui vous bloquent sur une collaboration ?`,
-  `Bonjour *[Marque]*\n\nSur la niche *[niche]* *[pays]*, les boutiques qui gagnent \ndu terrain en ce moment ont un point commun : \n\nElles ont une bonne diversité d'images pubs (angle, cible, concept).\nAinsi leur produit a une plus grande audience et domine les autres.\n\nEt cela peut être le cas de *[Produit]* aujourd'hui : adstackofficial.com/adboard/offers\n\nN'hésitez pas à nous dire si vous avez besoin de plus d'informations !`,
-  `Hello *[Marque]*\n\nSachez que ça nous a plu de vous avoir partagé ce \nque notre service peut mettre en place pour *[Produit]*\n\nVu son potentiel scoré à *[score]*/100, c'est presque \nurgent de l'exploiter de la meilleure des manières.\n\nEn tout cas le jour où vous serez prêt on sera là : adstackofficial.com/adboard/offers\n\nà la prochaine !!!`
+  `Bonjour *[Marque]* 👋🏾,\n\nAvec les outils actuels *(ChatGpt, Gemini…)* faire du contenu publicitaire *c'est facile*✅.\n\nMais produire des *pubs qui vendent* est encore plus *difficile*❌. \n\nSimplement à cause de la *saturation* qui tue en silence, même (angle, cible, accroche, design) que *tes concurrents*.\n\nAlors que ce qu'il vous faut c'est une stratégie sur mesure, pas une *IA qui s'en fout du résultat final*📉.\n\nD'où notre offre mensuel *CONVERSION STARTER* 👇🏽 : \n\nadstackofficial.com\n\noù chaque semaine notre équipe (Marketer, Copywriter, Designer…) travaille pour vous faire évoluer 📈.`,
+  `Salut *[Marque]* 👋🏾,\n\nSaviez vous c'est quoi le meilleur format publicitaire entre *VIDEO et IMAGE* ?\n\nRéponse : Aucun des deux❌, car c'est l'*angle marketing*✅ qui fait vendre.\n\n*Pas un faux angle* que tous tes concurrents ont, \n\nMais *un angle tirer des vraies émotions*💘 de votre cible (Peur, Désir, Douleur…)\n\nExactement là où est *notre expertise* : provoquer les bonnes émotions💘 qui déclenche l'*achat* avec des *images publicitaires*.\n\nAinsi chaque semaine recevez de quoi *gagner le coeur de vos clients* 👇🏽 : \n\nadstackofficial.com\n\npendant que vous dormez😴 avec *CONVERSION STARTER*.`,
+  `Hello *[Marque]* 👋🏾,\n\nRécemment *facebook* a publié un article révélant que le top 10% des entreprises qui *génère le plus de revenus📈* testait entre : \n\n*8 à 20 pubs / semaine* minimum et cela n'est pas un hasard, \n\nC'est juste la *magie de la diversité publicitaire*✨ : + tu testes + t'as de chances de trouver ce qui marche💵.\n\nMais du volume sans qualité (cible x angle x hook x concept…) ne mène nulle part❌.\n\nC'est ainsi qu'on produit une *stratégie complète* de *9 créatives images* pour votre produit.\n\nEt cela pas 1 fois par mois❌, mais 1 fois par semaine✅ avec *CONVERSION STARTER* 👇🏽 :\n\nadstackofficial.com\n\nLe tout sans que vous passiez des heures à faire de la recherche marketing.`
 ];
 
 async function loadTemplates() {
@@ -5444,6 +5347,7 @@ async function loadTemplates() {
   let relances  = DEFAULT_RELANCES;
   let interesse = '';
   let cfg_demo_msg = '';
+  let cfg_pitch = '';
   try {
     const r = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
     if (r.ok) {
@@ -5454,6 +5358,7 @@ async function loadTemplates() {
         if (cfg.tpl_relances)  relances  = cfg.tpl_relances;
         if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
         if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
+        if (cfg.tpl_pitch)     cfg_pitch = cfg.tpl_pitch;
         DB._config = cfg;
         // Sync localStorage pour genMessages (lecture rapide)
         localStorage.setItem('tpl_relances', JSON.stringify(relances));
@@ -5464,6 +5369,7 @@ async function loadTemplates() {
     intros    = JSON.parse(localStorage.getItem('tpl_intros')   || 'null') || DEFAULT_INTROS;
     relances  = JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
     interesse = localStorage.getItem('tpl_interesse') || '';
+    cfg_pitch = localStorage.getItem('tpl_pitch') || '';
   }
   // Ancien format (5 relances) encore enregistré quelque part → périmé, on force les nouveaux templates
   if (!Array.isArray(relances) || relances.length !== RELANCE_JOURS.length) {
@@ -5577,8 +5483,13 @@ async function loadTemplates() {
       </div>
       <div class="tpl-etape-body">
         <div class="tpl-groupe">
+          <div class="tpl-groupe-titre">💬 Message "Pitch"</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Variables : <span style="color:var(--green)">[Produit]</span> — envoyé dès que le prospect répond, avant toute démo</div>
+          <textarea id="tpl-pitch" style="width:100%;min-height:110px;font-size:12px" oninput="markDirty()"></textarea>
+        </div>
+        <div class="tpl-groupe">
           <div class="tpl-groupe-titre">💬 Message "Envoyer la démo"</div>
-          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Variables : <span style="color:var(--green)">[Niche] [Pays] [lien_demo] [Produit]</span></div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Variables : <span style="color:var(--green)">[Produit] [lien_demo]</span> — envoyé une fois "Intéressé" coché</div>
           <textarea id="tpl-demo-msg" style="width:100%;min-height:110px;font-size:12px" oninput="markDirty()"></textarea>
         </div>
         <div class="tpl-groupe">
@@ -5667,8 +5578,10 @@ async function loadTemplates() {
   const tplInt = document.getElementById('tpl-interesse');
   if (tplInt) tplInt.value = interesse || '';
 
+  const tplPitch = document.getElementById('tpl-pitch');
+  if (tplPitch) tplPitch.value = cfg_pitch || "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*💵 grâce à :\n\n👉🏾 Une vraie stratégie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous intéressé par une *DÉMONSTRATION* sur votre [Produit] ?";
   const tplDemoMsg = document.getElementById('tpl-demo-msg');
-  if (tplDemoMsg) tplDemoMsg.value = cfg_demo_msg || "Je posais la question car notre *Agence* aide des *marques* dans la niche *[Niche]* à faire *2x plus de ventes*.\n*Uniquement* grâce à des *IMAGES Publicitaires* basés sur :\n- Une analyse de votre marché *\"[Pays]\"* pour définir et comprendre *la cible* qui achète vraiment vos Produits;\nVoici une *démonstration gratuite* : *[lien_demo]*\npour *[Produit]*.\nAinsi qu'un aperçu de ce qu'on pourra mettre en place concrètement pour vous !!!\nOn attend impatiemment votre avis !!!";
+  if (tplDemoMsg) tplDemoMsg.value = cfg_demo_msg || "Voici l'*aperçu concret* de notre méthode sur votre [Produit] 👇🏽:\n\n[lien_demo]\n\nHâte de recevoir votre avis ?";
 }
 
 function toggleTplEtape(el) { el.classList.toggle('open'); }
@@ -5733,9 +5646,11 @@ async function saveAllTemplates() {
   const relances = getRelances();
   const int      = document.getElementById('tpl-interesse');
   const interesse = int ? int.value : '';
+  const pitchEl  = document.getElementById('tpl-pitch');
+  const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
   const demo_msg  = demoMsgEl ? demoMsgEl.value : '';
-  const cfg = { tpl_intros: intros, tpl_relances: relances, tpl_interesse: interesse, tpl_demo_msg: demo_msg };
+  const cfg = { tpl_intros: intros, tpl_relances: relances, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch };
 
   // Upsert dans la ligne config
   try {
@@ -5801,6 +5716,7 @@ async function saveAllTemplates() {
     localStorage.setItem('tpl_relances', JSON.stringify(relances));
     localStorage.setItem('tpl_interesse', interesse);
     localStorage.setItem('tpl_demo_msg', demo_msg);
+    localStorage.setItem('tpl_pitch', pitch);
     DB._config = cfg;
   } catch(e) {
     localStorage.setItem('tpl_intros',   JSON.stringify(intros));
@@ -5920,32 +5836,26 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   const numero = (p.lien_wa || '').replace('https://wa.me/', '').replace(/\D/g,'');
   if (!numero) { toast('Pas de numéro WhatsApp pour ce prospect'); return; }
 
-  const notesObj = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
-  const jour = RELANCE_JOURS_ENVOI[relanceIndex];
-  const texteGenere = notesObj['j' + jour + '_texte'];
-
-  let msg;
-  if (texteGenere) {
-    // Priorité absolue : le texte déjà généré par "Générer les messages" — Persona/Raison/score
-    // déjà remplis intelligemment par Gemini à partir de toute la mindmap. On ne refait PAS
-    // de substitution Marque/Produit/Pays dessus, c'est déjà fait.
-    msg = texteGenere;
-  } else {
-    // Secours uniquement si aucune génération n'a encore eu lieu pour ce prospect —
-    // substitution simple, ne gère que Marque/Produit/Pays.
-    const relanceTpls = (DB._config && DB._config.tpl_relances) || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || [];
-    const tpl = relanceTpls[relanceIndex] || '';
+  // Fix "template périmé" : on ne lit plus JAMAIS un texte pré-généré et potentiellement
+  // périmé (notesObj['j'+jour+'_texte'], hérité de l'ancien système Gemini). Depuis la Phase 4,
+  // la substitution est instantanée et gratuite (juste [Marque]) — donc plus aucune raison de
+  // mettre quoi que ce soit en cache. Le template ACTUEL (le plus récent enregistré dans
+  // Templates) est relu à chaque clic sur "Envoyer", garantissant qu'une modification de
+  // template s'applique immédiatement à tous les leads, même ceux déjà préparés auparavant.
+  const relanceTpls = (DB._config && DB._config.tpl_relances) || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
+  const tpl = relanceTpls[relanceIndex] || '';
+  let msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '');
+  // Filet de sécurité : si un template contient encore [Produit]/[Pays] (ancienne variable
+  // remise par erreur, ou template personnalisé), on les remplit quand même plutôt que de
+  // laisser un crochet vide visible dans le message envoyé.
+  if (/\[Produit\]/i.test(msg)) msg = msg.replace(/\[Produit\]/gi, p.produit || '');
+  if (/\[Pays\]/i.test(msg)) {
     const { phrase: paysPhrase } = resoudrePays(p.pays);
-    msg = tpl.replace(/\[Marque\]/gi, p.nom_marque||'')
-             .replace(/\[Produit\]/gi, p.produit||'')
-             .replace(/\b(en|au|à)\s+\*\[pays\]\*/gi, '*' + paysPhrase + '*')
+    msg = msg.replace(/\b(en|au|à)\s+\*\[pays\]\*/gi, '*' + paysPhrase + '*')
              .replace(/\*\[pays\]\*/gi, '*' + paysPhrase + '*')
              .replace(/\b(en|au|à)\s+\[Pays\]/gi, paysPhrase)
-             .replace(/\[Pays\]/gi, paysPhrase);
-    // Filet de sécurité (ex: "en au Cameroun") : quel que soit le template source exact, si
-    // deux prépositions se retrouvent collées après substitution, on ne garde que la 2e —
-    // plus proche du nom du pays, donc la bonne dans la quasi-totalité des cas.
-    msg = msg.replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2');
+             .replace(/\[Pays\]/gi, paysPhrase)
+             .replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2');
   }
 
   // Cause profonde corrigée (window.open bloqué sur mobile après await) : Safari iOS et Chrome
@@ -5976,7 +5886,7 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   // à tort comme une variable manquante avant même d'avoir pu être remplacée.
   const _placeholderRestant = msg.match(/\[[^\]]{2,40}\]/);
   if (_placeholderRestant) {
-    toast(`Variable non remplie : ${_placeholderRestant[0]} — clique d'abord sur "Générer les messages" pour ce prospect`);
+    toast(`Variable non remplie : ${_placeholderRestant[0]} — vérifie le template dans la section Templates`);
     if (tab) tab.close();
     return;
   }
@@ -5986,6 +5896,16 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   } else {
     window.open('https://wa.me/'+numero+'?text='+encodeURIComponent(msg), '_blank');
   }
+
+  // Marquer l'envoi — jusque-là rien n'enregistrait qu'une relance avait vraiment été envoyée,
+  // ce qui rendait impossible un vrai comptage "messages envoyés" au dashboard.
+  try {
+    const jourEnvoi = RELANCE_JOURS_ENVOI[relanceIndex];
+    const s = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
+    s['j' + jourEnvoi + '_envoye'] = true;
+    p.notes = JSON.stringify(s);
+    await patch(prospectId, { notes: p.notes });
+  } catch(e) { console.warn('Marquage envoi relance échoué:', e.message); }
 }
 
 async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
@@ -5998,25 +5918,20 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
     if (!continuer) return;
   }
 
-  const notesObj = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
-  const jour = RELANCE_JOURS_ENVOI[relanceIndex];
-  const texteGenere = notesObj['j' + jour + '_texte'];
-
-  let msg;
-  if (texteGenere) {
-    msg = texteGenere;
-  } else {
-    const relanceTpls = (DB._config && DB._config.tpl_relances)
-                      || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || [];
-    const tpl = relanceTpls[relanceIndex] || '';
+  // Même fix qu'envoyerRelanceWhatsApp : plus de texte pré-généré potentiellement périmé,
+  // toujours relire le template actuel au moment de l'envoi.
+  const relanceTpls = (DB._config && DB._config.tpl_relances)
+                    || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
+  const tpl = relanceTpls[relanceIndex] || '';
+  let msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '');
+  if (/\[Produit\]/i.test(msg)) msg = msg.replace(/\[Produit\]/gi, p.produit || '');
+  if (/\[Pays\]/i.test(msg)) {
     const { phrase: paysPhrase } = resoudrePays(p.pays);
-    msg = tpl.replace(/\[Marque\]/gi, p.nom_marque||'')
-             .replace(/\[Produit\]/gi, p.produit||'')
-             .replace(/\b(en|au|à)\s+\*\[pays\]\*/gi, '*' + paysPhrase + '*')
+    msg = msg.replace(/\b(en|au|à)\s+\*\[pays\]\*/gi, '*' + paysPhrase + '*')
              .replace(/\*\[pays\]\*/gi, '*' + paysPhrase + '*')
              .replace(/\b(en|au|à)\s+\[Pays\]/gi, paysPhrase)
-             .replace(/\[Pays\]/gi, paysPhrase);
-    msg = msg.replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2');
+             .replace(/\[Pays\]/gi, paysPhrase)
+             .replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2');
   }
 
   // Cause profonde corrigée (copie qui ne fonctionnait plus) : ouvrir Instagram déplace le
@@ -6031,13 +5946,21 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
 
   const _placeholderRestant = msg.match(/\[[^\]]{2,40}\]/);
   if (_placeholderRestant) {
-    toast(`Variable non remplie : ${_placeholderRestant[0]} — clique d'abord sur "Générer les messages" pour ce prospect`);
+    toast(`Variable non remplie : ${_placeholderRestant[0]} — vérifie le template dans la section Templates`);
     return;
   }
 
   const copie = await copierTexteAvecRepli(msg);
   toast(copie ? 'Texte de relance copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
   window.open(p.lien_instagram, '_blank');
+
+  try {
+    const jourEnvoi = RELANCE_JOURS_ENVOI[relanceIndex];
+    const s = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
+    s['j' + jourEnvoi + '_envoye'] = true;
+    p.notes = JSON.stringify(s);
+    await patch(prospectId, { notes: p.notes });
+  } catch(e) { console.warn('Marquage envoi relance échoué:', e.message); }
 }
 
 // Générer les liens WhatsApp avec les intros pour un prospect
