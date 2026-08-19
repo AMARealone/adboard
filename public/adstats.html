@@ -2834,8 +2834,15 @@ async function sendPitchMsg(pid) {
     // défaut du prospect font foi à ce stade (la mindmap n'existe pas encore, elle ne sera
     // produite qu'après confirmation d'intérêt — voir sendDemoMsg pour ce cas-là).
     let msg = d.tpl.replace(/\[Produit\]/gi, d.produit || 'votre produit');
+    // Fix : le template mentionne "(adstackofficial.com)" en clair (juste pour nommer l'agence,
+    // pas comme lien à cliquer) — l'ancienne logique voyait cette mention et pensait qu'un lien
+    // était déjà là, donc n'insérait jamais le vrai lien tracké nulle part. On remplace
+    // maintenant CETTE mention par le vrai lien (raccourci, UTM, miniature), même traitement
+    // que sur les relances. S'il n'y a aucune mention à remplacer, on l'ajoute à la fin.
+    const _avaitMention = /\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*)]*)?\*?/i.test(msg);
+    msg = msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*)]*)?\*?/gi, curLien);
     msg = msg.replace(/\[lien\]/gi, curLien);
-    if (!/adstackofficial\.com|\[lien\]/i.test(d.tpl)) msg += '\n\n' + curLien;
+    if (!_avaitMention && !/\[lien\]/i.test(d.tpl)) msg += '\n\n' + curLien;
 
     const numeroFinal = d.numero || (document.getElementById('btn-send-pitch-'+pid)||{}).dataset?.numero || '';
     if (d.lien_instagram) {
