@@ -2112,6 +2112,14 @@ textarea::placeholder { color: var(--muted); }
     <button class="btn btn-primary btn-sm" onclick="saveAllTemplates()">Sauvegarder les messages</button>
   </div>
 
+  <div style="background:rgba(255,181,71,.08);border:1px solid rgba(255,181,71,.3);border-radius:10px;padding:14px 16px;margin-bottom:24px">
+    <div style="font-size:13px;font-weight:700;color:#FFB547;margin-bottom:4px">⚠ Migration ponctuelle — étape "Intéressé"</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:10px">
+      À lancer UNE SEULE FOIS après ce déploiement. Coche "Intéressé" pour tous les Leads/Acheteurs existants (avec Démo envoyée rattrapée, datée de leur passage en Lead — pas d'aujourd'hui), et pour les prospects en Suivi qui ont répondu ces 4 dernières semaines. Sans ça, ces messages déjà envoyés avant la mise à jour du funnel ne remonteront jamais dans le dashboard.
+    </div>
+    <button class="btn btn-ghost btn-sm" style="border-color:#FFB547;color:#FFB547" onclick="migrationInteresseEtDemo()">Lancer la migration</button>
+  </div>
+
   <div id="tpl-funnel-groups"></div>
 </div>
 
@@ -3845,15 +3853,19 @@ async function renderDashboard() {
     if (!_dansPeriodeDash(p.date_achat)) return;
     if (p.j_plus_achat === 'J+3') jc[3]++; else if (p.j_plus_achat === 'J+10') jc[10]++; else if (p.j_plus_achat === 'J+21') jc[21]++;
   });
-  // Messages envoyés par étape — pitch_envoye/demo_envoye/jX_envoye, filtrés sur leur _at.
+  // Messages envoyés par étape — pitch_envoye/demo_envoye (notes), et pour les relances les
+  // DEUX noms de champ possibles : sent_j3/10/21 (le vrai mécanisme historique, coché depuis
+  // la section Leads) ET j3_envoye/10/21 (ajouté cette session, posé automatiquement au clic
+  // "Envoyer"). Les deux comptent comme "envoyé" — on ne veut perdre ni l'historique ni le
+  // nouveau suivi automatique.
   const envoyes = { pitch:0, demo:0, j3:0, j10:0, j21:0 };
   DB.forEach(p => {
     let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch(e) {}
     if (n.pitch_envoye && _dansPeriodeDash(n.pitch_envoye_at)) envoyes.pitch++;
     if (n.demo_envoye  && _dansPeriodeDash(n.demo_envoye_at))  envoyes.demo++;
-    if (n.j3_envoye    && _dansPeriodeDash(n.j3_envoye_at))    envoyes.j3++;
-    if (n.j10_envoye   && _dansPeriodeDash(n.j10_envoye_at))   envoyes.j10++;
-    if (n.j21_envoye   && _dansPeriodeDash(n.j21_envoye_at))   envoyes.j21++;
+    if ((n.sent_j3  || n.j3_envoye)  && _dansPeriodeDash(n.sent_j3_at  || n.j3_envoye_at))  envoyes.j3++;
+    if ((n.sent_j10 || n.j10_envoye) && _dansPeriodeDash(n.sent_j10_at || n.j10_envoye_at)) envoyes.j10++;
+    if ((n.sent_j21 || n.j21_envoye) && _dansPeriodeDash(n.sent_j21_at || n.j21_envoye_at)) envoyes.j21++;
   });
   const jpEl = document.getElementById('dash-jplus');
   if (jpEl) {
@@ -4883,12 +4895,64 @@ async function renderUtilisateurs() {
   }
 }
 
+async function migrationInteresseEtDemo() {
+  const nbLeadsAch = DB.filter(p => p.statut === 'lead' || p.statut === 'acheteur').length;
+  const quatreSemainesMs = 28 * 86400000;
+  const maintenant = Date.now();
+  const nbSuivi = DB.filter(p => p.statut === 'en_suivi' && p.a_repondu && p.date_contact
+    && (maintenant - new Date(p.date_contact).getTime()) <= quatreSemainesMs).length;
+
+  if (!confirm(
+    `Migration "Intéressé" — à lancer une seule fois :\n\n` +
+    `• ${nbLeadsAch} prospect(s) en Lead/Acheteur → cochés "Intéressé", "Démo envoyée" (datée de leur passage en Lead)\n` +
+    `• ${nbSuivi} prospect(s) en Suivi (répondu, ces 4 dernières semaines) → cochés "Intéressé"\n\n` +
+    `Continuer ?`
+  )) return;
+
+  let count = 0;
+  for (const p of DB) {
+    let s = {};
+    try { s = JSON.parse(p.notes || '{}'); } catch(e) {}
+    const updates = {};
+    let touched = false;
+
+    if (p.statut === 'lead' || p.statut === 'acheteur') {
+      if (!p.interesse) { updates.interesse = true; touched = true; }
+      if (!s.demo_envoye) {
+        s.demo_envoye = true;
+        // Date réaliste : le moment où le prospect est passé en Lead (déjà connu et fiable),
+        // pas "maintenant" — sinon le dashboard afficherait un pic artificiel de 100+ démos
+        // envoyées le jour de la migration.
+        s.demo_envoye_at = p.date_lead || p.date_contact || null;
+        touched = true;
+      }
+    } else if (p.statut === 'en_suivi' && p.a_repondu && p.date_contact
+      && (maintenant - new Date(p.date_contact).getTime()) <= quatreSemainesMs) {
+      if (!p.interesse) { updates.interesse = true; touched = true; }
+      if (s.demo_envoye && !s.demo_envoye_at) {
+        s.demo_envoye_at = p.date_contact;
+        touched = true;
+      }
+    }
+
+    if (touched) {
+      updates.notes = JSON.stringify(s);
+      await patch(p.id, updates);
+      count++;
+    }
+  }
+
+  toast(`Migration terminée — ${count} prospect(s) mis à jour`);
+  render();
+}
+
 async function saveJStatus(id, key, val) {
   const p = DB.find(x => x.id === id);
   if (!p) return;
   let s = {};
   try { s = JSON.parse(p.notes || '{}'); } catch(e) {}
   s[key] = val;
+  if (val && key.startsWith('sent_j') && !s[key + '_at']) s[key + '_at'] = new Date().toISOString();
   p.notes = JSON.stringify(s);
   // PATCH Supabase
   const ok = await patch(id, { notes: p.notes });
