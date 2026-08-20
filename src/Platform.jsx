@@ -2904,234 +2904,315 @@ function parsePrixNombre(str) {
   return digits ? parseInt(digits, 10) : null;
 }
 
-// Composant "dossier" — structure narrative continue (rail de chiffres + colonne de récit),
-// remplace l'ancien empilement de cartes séparées. Voir maquette validée.
+// Regroupe l'historique des livraisons (deliveries, déjà accumulé chronologiquement côté
+// serveur à chaque commande) en cibles distinctes, chacune avec ses batchs d'angles — c'est
+// cette fonction qui permet à la vue de montrer les angles accumulés d'une même cible ET les
+// cibles précédentes remplacées, sans qu'aucune sauvegarde supplémentaire ne soit nécessaire :
+// la donnée existe déjà dans deliveries[], on ne fait que la regrouper à l'affichage.
+function buildCiblesDepuisDeliveries(deliveries, marche) {
+  if (!deliveries || !deliveries.length) {
+    // Historique détaillé absent (ex: anciens produits) — repli sur le seul persona connu via marche.
+    if (!marche?.persona?.nom) return [];
+    return [{
+      nom: marche.persona.nom, statut: 'actuelle',
+      batches: [{ numero: 1, date: null, angles: (marche.angles || []).map((a, i) => ({ numero: i + 1, nom: (a.nom||'').split('*')[0].trim(), justification: a.justification })) }],
+    }];
+  }
+  const groups = [];
+  deliveries.forEach(d => {
+    const nom = d.cible || 'Cible';
+    let g = groups.find(x => x.nom === nom);
+    if (!g) { g = { nom, batches: [] }; groups.push(g); }
+    g.batches.push({ numero: g.batches.length + 1, date: d.date, angles: d.angles || [] });
+  });
+  const dernierNomCible = deliveries[deliveries.length - 1]?.cible;
+  groups.forEach(g => { g.statut = g.nom === dernierNomCible ? 'actuelle' : 'precedente'; });
+  groups.sort((a, b) => (a.statut === 'actuelle' ? -1 : 0) - (b.statut === 'actuelle' ? -1 : 0));
+  return groups;
+}
+
+const MDV4_ICONS = {
+  shield: <path d="M12 2l8 3v6c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V5z"/>,
+  shieldCheck: <><path d="M12 2l8 3v6c0 5-3.4 8.5-8 11-4.6-2.5-8-6-8-11V5z"/><path d="M9 12l2 2 4-4"/></>,
+  mechanism: <><circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4" fill="none"/><path d="M11 9.5a4 4 0 0 1 0 5"/></>,
+  layers: <><path d="M12 2l9 5-9 5-9-5z"/><path d="M3 12l9 5 9-5"/><path d="M3 17l9 5 9-5"/></>,
+  fileCheck: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></>,
+  megaphone: <path d="M3 11v2a2 2 0 0 0 2 2h1l2 6h2l-1-6h2l7 4V5l-7 4H6a2 2 0 0 0-2 2z"/>,
+  gift: <><path d="M20 12v9H4v-9"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></>,
+  clock: <><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></>,
+  fb: <path d="M14 9h3V6h-3c-1.7 0-3 1.3-3 3v2H8v3h3v7h3v-7h3l1-3h-4V9c0-.6.4-1 1-1z" fill="currentColor" stroke="none"/>,
+  wa: <><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2z"/><path d="M8.5 8.3c.2-.5.5-.5.8-.5h.6c.2 0 .4 0 .6.5s.7 1.8.8 1.9c.1.1.1.3 0 .5s-.2.3-.4.5-.4.4-.2.7c.2.4 1 1.5 2.1 2.4 1.4 1.1 1.9 1 2.2.9.3-.1.7-.7.9-1s.4-.3.6-.2c.2.1 1.6.8 1.9 1s.5.3.5.4c0 .2 0 1-.5 1.6s-1.7 1.2-3 .8c-1.6-.5-3.5-1.6-4.9-3.4-1.1-1.4-1.7-2.5-1.9-3.5-.2-.9.1-1.6.4-2.1z" fill="currentColor" stroke="none"/></>,
+  ig: <><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="currentColor" stroke="none"/></>,
+};
+const Mdv4Ic = ({name, size=14, color='currentColor', fill='none'}) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke={color} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">{MDV4_ICONS[name]}</svg>
+);
+
+// Vue "Données Marché" — voir maquette v4 validée (persona enrichi photo+listes, panneau marché
+// unifié barres/camembert/saisonnalité, recommandation de prix personnalisée, angles avec
+// justification client-safe + accumulation par cible via buildCiblesDepuisDeliveries, avantages
+// clés, recommandations personnalisées). Remplace l'ancien "dossier narratif".
 const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
   const p = m.positionnement || {};
   const persona = m.persona || {};
   const angles = m.angles || [];
-  const insights = m.insights || [];
+  const recommandations = m.recommandations || [];
   const deliveries = selected.deliveries || [];
+  const cibles = React.useMemo(() => buildCiblesDepuisDeliveries(deliveries, m), [deliveries, m]);
+  const [activeCible, setActiveCible] = useState(0);
 
-  // Historique des angles groupé par cible — construit depuis deliveries (source cumulative),
-  // jamais depuis m.angles seul (qui ne reflète que le dernier lot en mode remplacement).
-  const groupes = [];
-  deliveries.slice().reverse().forEach(d => {
-    const cibleNom = d.cible || 'Cible non identifiée';
-    const dernierGroupe = groupes[groupes.length - 1];
-    const groupe = (dernierGroupe && dernierGroupe.cible === cibleNom) ? dernierGroupe : (() => {
-      const g = { cible: cibleNom, items: [] };
-      groupes.push(g);
-      return g;
-    })();
-    (d.angles||[]).slice().reverse().forEach(a => groupe.items.push({ nom: a.nom, semaine: d.semaine, date: d.date }));
-  });
-  const cibleActuelleNom = groupes[0]?.cible;
-  const nbAnglesCibleActuelle = groupes[0]?.items?.length || 0;
+  const fmtFcfa = (n) => (typeof n === 'number' ? n.toLocaleString('fr-FR') + ' FCFA' : (n || '—'));
 
-  // Échelle de prix — seulement si au moins un concurrent a un prix numérique connu
-  const prixVous = parsePrixNombre(selected.pricing);
-  const concurrentsAvecPrix = (p.concurrents_directs||[]).filter(c => c && (c.prix_fcfa != null));
-  const pointsLadder = prixVous != null
-    ? [{ nom:'Votre produit', prix:prixVous, you:true }, ...concurrentsAvecPrix.map(c=>({nom:c.nom, prix:c.prix_fcfa}))]
-    : [];
-  const minPrix = pointsLadder.length ? Math.min(...pointsLadder.map(x=>x.prix)) : 0;
-  const maxPrix = pointsLadder.length ? Math.max(...pointsLadder.map(x=>x.prix)) : 1;
-  const rangePrix = Math.max(1, maxPrix - minPrix);
-  const posPct = (prix) => 10 + ((prix - minPrix) / rangePrix) * 80; // marge 10-90% pour éviter les labels coupés au bord
+  // ── Graphique en barres — taille du marché datée ──
+  const hist = p.taille_marche_historique || [];
+  const BarChart = () => {
+    if (!hist.length) return <div style={{fontSize:11,color:C.muted}}>Historique non disponible</div>;
+    const w = 240, gap = 14, bw = 28, chartH = 62, baseY = 82;
+    return (
+      <svg viewBox={`0 0 ${w} 100`} width="100%" height={100}>
+        {hist.map((h, i) => {
+          const x = 6 + i * (bw + gap + 10);
+          const maxIdx = hist.length - 1;
+          const heightFrac = 0.35 + (i / Math.max(maxIdx,1)) * 0.65; // progression visuelle croissante
+          const bh = chartH * heightFrac;
+          const y = baseY - bh;
+          const isCurrent = i === maxIdx - (hist[maxIdx]?.estimation ? 1 : 0);
+          return (
+            <g key={i}>
+              <text x={x+bw/2} y={y-6} textAnchor="middle" fontSize="10" fontWeight={isCurrent?800:700} fill={isCurrent?C.accent:C.sec} fontFamily="'DM Mono',monospace">{h.valeur_texte}</text>
+              {h.estimation ? (
+                <rect x={x} y={y} width={bw} height={bh} rx="3" fill="none" stroke={C.borderM} strokeWidth="1.5" strokeDasharray="3,3"/>
+              ) : (
+                <rect x={x} y={y} width={bw} height={bh} rx="3" fill={isCurrent ? C.accent : '#262A34'}/>
+              )}
+              <text x={x+bw/2} y={96} textAnchor="middle" fontSize="9" fill={isCurrent?C.accent:C.muted} fontWeight={isCurrent?700:400}>{h.annee}{h.estimation?' (est.)':''}</text>
+            </g>
+          );
+        })}
+      </svg>
+    );
+  };
 
-  // Un champ contenant "disponible"/"non trouvé" est un placeholder, jamais une vraie donnée —
-  // ne doit jamais s'afficher comme si c'en était une (voir aussi le même filtre en S01 plus haut).
-  const estPlaceholderMarche = (v) => !v || /disponible|non trouvé/i.test(v);
-
-  const railItems = [
-    !estPlaceholderMarche(p.taille_marche_personnes) && { n: p.taille_marche_personnes, l: 'taille de marché estimée', hero:true },
-    !estPlaceholderMarche(p.taux_croissance) && { n: p.taux_croissance, l: 'tendance du marché', color:'#22C55E' },
-    concurrentsAvecPrix.length > 0 && { n: `${concurrentsAvecPrix.filter(c=>c.prix_fcfa < prixVous).length}/${concurrentsAvecPrix.length}`, l: 'concurrents moins chers' },
-    nbAnglesCibleActuelle > 0 && { n: `${nbAnglesCibleActuelle}/18`, l: 'angles exploités sur la cible actuelle' },
-  ].filter(Boolean);
-
-  return (
-    <div style={{position:'relative', overflowX:'hidden'}}>
-      <div style={{display: isMobile ? 'flex' : 'grid', gridTemplateColumns: isMobile ? undefined : '150px minmax(0,1fr)', minWidth:0, gap: isMobile ? 20 : 40, flexDirection: isMobile ? 'row' : undefined, overflowX: isMobile ? 'auto' : undefined, paddingBottom: isMobile ? 16 : 0, marginBottom: isMobile ? 20 : 0, borderBottom: isMobile ? `1px solid ${C.border}` : 'none', alignItems:'flex-start'}}>
-
-        {/* Rail de chiffres — bande horizontale scrollable sur mobile, colonne sticky sur desktop */}
-        <div style={{display:'flex', flexDirection: isMobile ? 'row' : 'column', gap: isMobile ? 26 : 24, position: isMobile ? 'static' : 'sticky', top: isMobile ? 0 : 20}}>
-          {railItems.map((it,i) => (
-            <div key={i} style={{flexShrink:0, minWidth: isMobile ? 118 : undefined, maxWidth:150}}>
-              <div style={{width:16, height:1, background:C.border, marginBottom:7}}/>
-              <div style={{fontFamily:"'DM Mono',monospace", fontSize: String(it.n).length > 12 ? 13 : 19, fontWeight:500, lineHeight:1.25,
-                color: it.color || undefined,
-                background: it.hero && !it.color ? 'linear-gradient(135deg,#fff,#9fbcff)' : undefined,
-                WebkitBackgroundClip: it.hero && !it.color ? 'text' : undefined,
-                WebkitTextFillColor: it.hero && !it.color ? 'transparent' : undefined,
-                display:'-webkit-box', WebkitLineClamp:3, WebkitBoxOrient:'vertical', overflow:'hidden',
-              }} title={String(it.n)}>{it.n}</div>
-              <div style={{fontSize:10, color:C.muted, marginTop:5, lineHeight:1.4, maxWidth:120}}>{it.l}</div>
+  // ── Camembert — répartition du marché ──
+  const repart = p.repartition_marche || [];
+  const DonutChart = () => {
+    if (!repart.length) return null;
+    const colors = ['#5B8DEF', '#6B7280', '#3E4350', '#8891A0'];
+    let cursor = 0;
+    const nonCapte = repart.find(r => r.type === 'non_capte');
+    return (
+      <div style={{display:'flex',alignItems:'center',gap:16}}>
+        <svg width={100} height={100} viewBox="0 0 42 42" style={{flexShrink:0}}>
+          <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="#20242E" strokeWidth="6"/>
+          {repart.map((r, i) => {
+            const dash = `${r.part_pourcentage} ${100 - r.part_pourcentage}`;
+            const offset = 25 - cursor;
+            cursor += r.part_pourcentage;
+            return <circle key={i} cx="21" cy="21" r="15.9" fill="transparent" stroke={colors[i%colors.length]} strokeWidth="6" strokeDasharray={dash} strokeDashoffset={offset} transform="rotate(-90 21 21)"/>;
+          })}
+          {nonCapte && <>
+            <text x="21" y="19" textAnchor="middle" fontSize="6.5" fontWeight="800" fill="#fff" fontFamily="'DM Mono',monospace">{nonCapte.part_pourcentage}%</text>
+            <text x="21" y="25.5" textAnchor="middle" fontSize="3.4" fill={C.muted}>non capté</text>
+          </>}
+        </svg>
+        <div style={{display:'flex',flexDirection:'column',gap:7}}>
+          {repart.map((r, i) => (
+            <div key={i} style={{display:'flex',alignItems:'center',gap:7,fontSize:11,color:r.type==='non_capte'?C.accent:C.sec}}>
+              <span style={{width:8,height:8,borderRadius:2,background:colors[i%colors.length],flexShrink:0}}/>{r.nom} — {r.part_pourcentage}%
             </div>
           ))}
         </div>
+      </div>
+    );
+  };
 
-        {/* Colonne narrative */}
-        <div style={{minWidth:0}}>
+  // ── Courbe de saisonnalité ──
+  const saison = p.saisonnalite || {};
+  const quarters = ['T1','T2','T3','T4'];
+  const pkIdx = quarters.indexOf(saison.trimestre_pic);
+  const SeasonChart = () => {
+    if (!saison.trimestre_pic) return <div style={{fontSize:11,color:C.muted}}>Pas de saisonnalité marquée identifiée pour ce produit</div>;
+    const paths = ['M5,55 C35,58 55,60 75,52 C100,44 110,50 130,40 C155,29 165,18 195,12 C210,9 225,7 235,6'];
+    const highlightX = 5 + (pkIdx/4)*230;
+    return (
+      <>
+        <svg viewBox="0 0 240 105" width="100%" height={105}>
+          <defs><linearGradient id="mdv4Curve" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={C.accent} stopOpacity="0.28"/><stop offset="100%" stopColor={C.accent} stopOpacity="0"/></linearGradient></defs>
+          <path d={paths[0]+' L235,80 L5,80 Z'} fill="url(#mdv4Curve)"/>
+          <path d={paths[0]} fill="none" stroke={C.accent} strokeWidth="2.2" strokeLinecap="round"/>
+          <rect x={highlightX} y="4" width={235-highlightX} height="76" fill="rgba(91,141,239,0.06)"/>
+          <text x={highlightX+35} y="20" textAnchor="middle" fontSize="9" fontWeight="800" fill={C.accent}>Pic</text>
+          {quarters.map((q,i) => <text key={q} x={5+(i/4)*230+28} y="98" textAnchor="middle" fontSize="9" fill={i===pkIdx?C.accent:C.muted} fontWeight={i===pkIdx?700:400}>{q}</text>)}
+        </svg>
+        <div style={{fontSize:11,color:C.sec,marginTop:6,lineHeight:1.5}}>{saison.periode_texte} : {saison.explication}</div>
+      </>
+    );
+  };
 
-          {/* 01 — Positionnement */}
-          {p.taille_marche_personnes && (() => {
-            // Un champ contenant "disponible"/"non trouvé" est un placeholder, pas une vraie
-            // valeur — ne doit jamais être injecté tel quel dans une phrase ("...pèse environ
-            // Donnée non disponible..."), sinon le gabarit produit un non-sens visible.
-            const estPlaceholder = (v) => !v || /disponible|non trouvé/i.test(v);
-            const tailleOk = !estPlaceholder(p.taille_marche_revenus);
-            const croissanceOk = !estPlaceholder(p.taux_croissance);
-            // Une phrase gabarit ("Le marché pèse environ X et progresse de Y") suppose des
-            // valeurs courtes — si l'agent a renvoyé une phrase longue à la place d'un chiffre,
-            // mieux vaut l'afficher seule plutôt que de la fondre dans une phrase déjà construite.
-            const croissanceLongue = croissanceOk && p.taux_croissance.length > 40;
-            return (
-            <div style={{padding: isMobile? '0 0 32px' : '0 0 36px', borderBottom:`1px solid ${C.border}`}}>
-              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:9}}>01 — Positionnement</div>
-              <div style={{fontSize:12.5, color:C.sec, lineHeight:1.75, maxWidth:520}}>
-                {tailleOk && <>Le marché pèse environ <b style={{color:C.text}}>{p.taille_marche_revenus}</b>{croissanceOk && !croissanceLongue ? <> et progresse de <b style={{color:C.text}}>{p.taux_croissance}</b></> : ''}. </>}
-                {croissanceOk && (!tailleOk || croissanceLongue) && <>{p.taux_croissance} </>}
-                {p.concurrence && <>La concurrence y est <b style={{color: p.concurrence==='Élevée'?'#E55050':p.concurrence==='Moyenne'?'#FFB547':'#22C55E'}}>{p.concurrence.toLowerCase()}</b>{p.concurrence_explication ? ` — ${p.concurrence_explication}` : ''}</>}
-              </div>
-              {p.argument_principal && (
-                <div style={{marginTop:14, borderLeft:`2px solid ${C.accent}`, paddingLeft:13, fontSize:12, color:C.sec, lineHeight:1.6}}>{p.argument_principal}</div>
-              )}
+  const cible = cibles[activeCible];
+
+  return (
+    <div>
+      <style>{`
+        .mdv4-hero{display:grid;grid-template-columns:1fr;border-radius:16px;overflow:hidden;margin-bottom:24px;border:1px solid ${C.border}}
+        .mdv4-info-grid{display:grid;grid-template-columns:1fr;gap:18px}
+        .mdv4-mp-grid{display:grid;grid-template-columns:1fr;gap:0}
+        .mdv4-mp-cell{padding:18px}
+        .mdv4-mp-cell + .mdv4-mp-cell{border-top:1px solid ${C.border}}
+        @media(min-width:900px){
+          .mdv4-hero{grid-template-columns:0.8fr 1.3fr}
+          .mdv4-info-grid{grid-template-columns:1fr 1fr 1fr}
+          .mdv4-mp-grid{grid-template-columns:1fr 1fr 1fr}
+          .mdv4-mp-cell + .mdv4-mp-cell{border-top:none;border-left:1px solid ${C.border}}
+        }
+      `}</style>
+
+      {/* ═══ PERSONA HERO ═══ */}
+      {persona.nom && (
+        <div className="mdv4-hero">
+          <div style={{position:'relative',aspectRatio:isMobile?'4/3':'auto',background:'radial-gradient(circle at 30% 20%, rgba(255,200,140,0.22), transparent 55%), radial-gradient(circle at 75% 70%, rgba(91,141,239,0.28), transparent 55%), linear-gradient(160deg,#2b2118 0%,#181414 60%,#0d0d10 100%)',display:'flex',alignItems:'flex-end',padding:20,minHeight:isMobile?undefined:260}}>
+            <div style={{position:'absolute',top:14,right:14,fontSize:8.5,letterSpacing:0.4,color:'rgba(255,255,255,0.55)',background:'rgba(0,0,0,0.4)',padding:'4px 8px',borderRadius:20,border:'1px solid rgba(255,255,255,0.12)'}}>Portrait généré par IA</div>
+            <div>
+              <h1 style={{fontSize:24,fontWeight:800,color:'#fff',textShadow:'0 2px 12px rgba(0,0,0,0.5)',margin:0}}>{persona.nom}</h1>
+              <p style={{fontSize:12.5,color:'rgba(255,255,255,0.75)',marginTop:3}}>{persona.age} ans · {persona.role} · {persona.ville}</p>
             </div>
-            );
-          })()}
-
-          {/* 02 — Prix */}
-          {(pointsLadder.length > 1 || p.positionnement_prix) && (
-            <div style={{padding:'28px 0', borderBottom:`1px solid ${C.border}`}}>
-              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:9}}>02 — Prix</div>
-              {p.positionnement_prix && <div style={{fontSize:12.5, color:C.sec, lineHeight:1.75, maxWidth:520, marginBottom: pointsLadder.length>1?24:0}}>{p.positionnement_prix}</div>}
-
-              {pointsLadder.length > 1 && (
-                isMobile ? (
-                  <div>
-                    {pointsLadder.sort((a,b)=>a.prix-b.prix).map((pt,i) => (
-                      <div key={i} style={{display:'flex', alignItems:'baseline', gap:10, marginBottom:12}}>
-                        <span style={{fontFamily:"'DM Mono',monospace", fontSize:13, color: pt.you?C.accent:C.text, fontWeight: pt.you?700:400}}>{pt.prix.toLocaleString('fr-FR')} F</span>
-                        <span style={{fontSize:11.5, color: pt.you?C.accent:C.sec, fontWeight: pt.you?700:400}}>{pt.you ? '— Votre produit' : `— ${pt.nom}`}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{position:'relative', height:2, background:C.border, margin:'50px 0 34px', overflow:'visible'}}>
-                    {pointsLadder.map((pt,i) => {
-                      const pct = posPct(pt.prix);
-                      // Près des bords, le texte centré déborderait — on ancre à gauche/droite selon la position
-                      const align = pct < 22 ? 'left' : pct > 78 ? 'right' : 'center';
-                      const infoStyle = align === 'left'
-                        ? { left:0, textAlign:'left' }
-                        : align === 'right'
-                        ? { right:0, textAlign:'right' }
-                        : { left:'50%', transform:'translateX(-50%)', textAlign:'center' };
-                      return (
-                        <div key={i} style={{position:'absolute', left:`${pct}%`, top:'50%', transform:'translate(-50%,-50%)', display:'flex', flexDirection:'column', alignItems:'center'}}>
-                          <div style={{position:'absolute', bottom: pt.you?undefined:20, top: pt.you?20:undefined, whiteSpace:'nowrap', ...infoStyle}}>
-                            <div style={{fontFamily:"'DM Mono',monospace", fontSize:12.5, color:C.text, fontWeight:500}}>{pt.prix.toLocaleString('fr-FR')} F</div>
-                            <div style={{fontSize:10, color: pt.you?C.accent:C.sec, fontWeight: pt.you?700:400, marginTop:2}}>{pt.you?'Votre produit':pt.nom}</div>
-                          </div>
-                          <div style={{width:11, height:11, borderRadius:'50%', border:`2px solid ${C.bg}`, background: pt.you?C.accent:'rgba(255,255,255,0.25)', boxShadow: pt.you?'0 0 0 4px rgba(91,141,239,0.18)':'none'}}/>
-                        </div>
-                      );
+          </div>
+          <div style={{background:C.card,padding:isMobile?20:28}}>
+            {persona.quote && <p style={{fontSize:14,lineHeight:1.6,color:C.text,paddingBottom:16,marginBottom:16,borderBottom:`1px solid ${C.border}`}}>"{persona.quote}"</p>}
+            <div className="mdv4-info-grid">
+              {persona.objectifs?.length > 0 && <PersonaList color={C.accent} titre="Objectifs" items={persona.objectifs}/>}
+              {persona.style_de_vie?.length > 0 && <PersonaList color="#A78BFA" titre="Style de vie" items={persona.style_de_vie}/>}
+              {persona.freins?.length > 0 && <PersonaList color="#EF4444" titre="Ce qui la freine" items={persona.freins}/>}
+              {persona.comportement_achat?.length > 0 && <PersonaList color="#22D3EE" titre="Comportement d'achat" items={persona.comportement_achat}/>}
+              {persona.journee_type?.length > 0 && <PersonaList color="#EAB308" titre="Sa journée" items={persona.journee_type.map(j=>`${j.heure} — ${j.texte}`)}/>}
+              {persona.platforms?.length > 0 && (
+                <div>
+                  <div style={{display:'flex',alignItems:'center',gap:7,fontSize:12,fontWeight:800,marginBottom:9}}><span style={{width:7,height:7,borderRadius:2,background:'#22C55E',flexShrink:0}}/>Où la trouver</div>
+                  <div style={{display:'flex',gap:8}}>
+                    {persona.platforms.map((pl,i) => {
+                      const key = (pl||'').toLowerCase();
+                      const iconName = key.includes('face')?'fb':key.includes('whats')?'wa':key.includes('insta')?'ig':null;
+                      return <div key={i} style={{width:28,height:28,borderRadius:8,background:'#171B24',display:'flex',alignItems:'center',justifyContent:'center',color:C.sec}} title={pl}>{iconName ? <Mdv4Ic name={iconName} size={13} fill={iconName==='wa'?'currentColor':'none'}/> : <span style={{fontSize:9}}>{pl.slice(0,2)}</span>}</div>;
                     })}
-                  </div>
-                )
-              )}
-              {p.concurrents_indirects?.length > 0 && (
-                <div style={{marginTop:14, fontSize:11, color:C.muted}}><b style={{color:C.sec}}>Indirects : </b>{p.concurrents_indirects.join(', ')}</div>
-              )}
-            </div>
-          )}
-
-          {/* 03 — Cible actuelle */}
-          {persona.nom && (
-            <div style={{padding:'28px 0', borderBottom:`1px solid ${C.border}`}}>
-              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:16}}>03 — Cible actuelle</div>
-              <div style={{display:'flex', alignItems:'baseline', gap:9, flexWrap:'wrap', marginBottom:14}}>
-                <span style={{fontSize:14.5, fontWeight:800, color:C.text}}>{persona.nom}</span>
-                <span style={{fontSize:11.5, color:C.muted}}>{persona.age && `${persona.age} ans · `}{persona.role}{persona.ville ? ` · ${persona.ville}` : ''}</span>
-              </div>
-              {persona.quote && (
-                <div style={{fontSize:16, fontWeight:600, lineHeight:1.5, color:C.text, borderLeft:`2px solid ${C.accent}`, paddingLeft:16, margin:'16px 0', maxWidth:480}}>"{persona.quote}"</div>
-              )}
-              <div style={{display:'flex', gap:isMobile?24:32, flexWrap:'wrap', marginTop:18}}>
-                {persona.desirs?.length > 0 && (
-                  <div>
-                    <div style={{fontSize:9.5, color:C.muted, textTransform:'uppercase', letterSpacing:'0.5px', fontWeight:700, marginBottom:8}}>Ce qu'elle veut</div>
-                    {persona.desirs.map((d,i)=>(<div key={i} style={{fontSize:12, color:C.text, marginBottom:5}}>→ {d}</div>))}
-                  </div>
-                )}
-                {persona.craintes?.length > 0 && (
-                  <div>
-                    <div style={{fontSize:9.5, color:C.muted, textTransform:'uppercase', letterSpacing:'0.5px', fontWeight:700, marginBottom:8}}>Ce qui la freine</div>
-                    {persona.craintes.map((cr,i)=>(<div key={i} style={{fontSize:12, color:C.text, marginBottom:5}}>→ {cr}</div>))}
-                  </div>
-                )}
-              </div>
-              {nbAnglesCibleActuelle > 0 && (
-                <div style={{display:'flex', alignItems:'center', gap:12, marginTop:24, fontSize:11.5, color:C.muted, flexWrap:'wrap'}}>
-                  <b style={{color:C.text, fontFamily:"'DM Mono',monospace", fontWeight:500}}>{nbAnglesCibleActuelle}/18</b> angles exploités sur cette cible
-                  <div style={{flex: isMobile?'1 0 100%':1, maxWidth: isMobile?'none':220, height:2, background:C.border, position:'relative'}}>
-                    <div style={{position:'absolute', left:0, top:0, height:'100%', width:`${Math.min(100,(nbAnglesCibleActuelle/18)*100)}%`, background:C.accent}}/>
                   </div>
                 </div>
               )}
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {/* 04 — Historique des angles, groupé par cible, scrollable */}
-          {groupes.length > 0 && (
-            <div style={{padding:'28px 0', borderBottom:`1px solid ${C.border}`}}>
-              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:9}}>04 — Historique des angles</div>
-              <div style={{fontSize:12.5, color:C.sec, lineHeight:1.75, marginBottom:18, maxWidth:520}}>Chaque angle appartient à une cible précise — jamais réutilisé tel quel pour une autre cible.</div>
-              <div style={{maxHeight:320, overflowY:'auto', paddingRight:6}}>
-                {groupes.map((g, gi) => (
-                  <div key={gi}>
-                    <div style={{position:'sticky', top:0, background:C.bg, padding:'7px 0', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.5px', color: gi===0?C.accent:C.muted, display:'flex', alignItems:'center', gap:8}}>
-                      {gi===0 ? 'Cible actuelle' : 'Cible précédente'} — {g.cible} ({g.items.length})
-                      <div style={{flex:1, height:1, background:C.border}}/>
-                    </div>
-                    {g.items.map((a,ai) => (
-                      <div key={ai} style={{display:'grid', gridTemplateColumns:'22px 1fr', gap:10, padding:'10px 0', borderBottom:`1px solid ${C.border}`}}>
-                        <div style={{fontFamily:"'DM Mono',monospace", fontSize:10, color:C.muted, paddingTop:2}}>{g.items.length-ai}</div>
-                        <div>
-                          <div style={{fontSize:12.5, fontWeight:700, color:C.text}}>{a.nom}</div>
-                          <div style={{fontFamily:"'DM Mono',monospace", fontSize:9.5, color:C.muted, marginTop:3}}>{a.semaine} · {a.date}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
+      {/* ═══ MARCHÉ — panneau unifié ═══ */}
+      <div style={{border:`1px solid ${C.border}`,borderRadius:16,overflow:'hidden',marginBottom:24}}>
+        <div className="mdv4-mp-grid">
+          <div className="mdv4-mp-cell">
+            <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:12,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+              TAILLE DU MARCHÉ {p.taux_croissance && <span style={{fontSize:10,fontWeight:800,background:'rgba(34,197,94,0.12)',color:'#22C55E',padding:'3px 9px',borderRadius:20}}>{p.taux_croissance}</span>}
             </div>
-          )}
-
-          {/* 05 — Recommandations */}
-          {insights.length > 0 && (
-            <div style={{position:'relative', padding:'28px 0'}}>
-              <div style={{fontFamily:"'DM Mono',monospace", fontSize:10.5, color:C.muted, marginBottom:16}}>05 — Recommandations</div>
-              <div>
-                {insights.map((ins,i) => (
-                  <div key={i} style={{display: isMobile?'block':'grid', gridTemplateColumns: isMobile?undefined:'90px 1fr', gap: isMobile?6:20, padding:'18px 0', borderTop: i>0?`1px solid ${C.border}`:'none'}}>
-                    <div style={{flexShrink:0, color:C.accent}}><Icon name={ins.icon} size={15}/></div>
-                    <div style={{fontSize:12, color:C.sec, lineHeight:1.65, marginTop: isMobile?6:0}}>{ins.t}</div>
-                  </div>
-                ))}
-              </div>
-              {isDemo && <LockOverlay/>}
-            </div>
-          )}
-
+            <BarChart/>
+          </div>
+          <div className="mdv4-mp-cell">
+            <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:12}}>RÉPARTITION DU MARCHÉ</div>
+            <DonutChart/>
+          </div>
+          <div className="mdv4-mp-cell">
+            <div style={{fontSize:11,color:C.muted,fontWeight:700,marginBottom:12}}>QUAND POUSSER VOS PUBS DANS L'ANNÉE</div>
+            <SeasonChart/>
+          </div>
         </div>
       </div>
+
+      {/* ═══ RECOMMANDATION DE PRIX ═══ */}
+      {p.prix_recommande && (
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Notre recommandation sur votre prix</div>
+          <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',marginBottom:14}}>
+            <div><div style={{fontSize:10,color:C.muted,fontWeight:700,textTransform:'uppercase'}}>Prix actuel</div><div style={{fontFamily:"'DM Mono',monospace",fontSize:20,color:C.sec,textDecoration:'line-through'}}>{fmtFcfa(p.prix_recommande.prix_actuel_fcfa)}</div></div>
+            <Mdv4Ic name="layers" size={16} color={C.muted}/>
+            <div><div style={{fontSize:10,color:'#22C55E',fontWeight:700,textTransform:'uppercase'}}>Prix conseillé</div><div style={{fontFamily:"'DM Mono',monospace",fontSize:26,fontWeight:700,color:'#22C55E'}}>{fmtFcfa(p.prix_recommande.prix_conseille_fcfa)} {p.prix_recommande.prix_barre_fcfa && <span style={{fontSize:13,color:C.muted,textDecoration:'line-through',fontWeight:400,marginLeft:6}}>{fmtFcfa(p.prix_recommande.prix_barre_fcfa)}</span>}</div></div>
+          </div>
+          {p.prix_recommande.justification && <p style={{fontSize:12.5,color:C.sec,lineHeight:1.65,maxWidth:640,marginBottom:16}}>{p.prix_recommande.justification}</p>}
+          {(p.prix_recommande.offres||[]).map((o,i) => (
+            <div key={i} style={{display:'flex',gap:12,padding:'12px 0',borderTop:i>0?`1px solid ${C.border}`:'none'}}>
+              <div style={{width:30,height:30,borderRadius:8,background:C.card,border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:'#22C55E'}}><Mdv4Ic name={i===0?'gift':'clock'} color="#22C55E"/></div>
+              <div><div style={{fontSize:12.5,fontWeight:700,marginBottom:2}}>{o.titre}</div><div style={{fontSize:11.5,color:C.muted}}>{o.description}</div></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ═══ CIBLES & ANGLES ═══ */}
+      {cibles.length > 0 && (
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Cibles &amp; angles utilisés dans vos créatives</div>
+          <div style={{display:'flex',gap:8,marginBottom:16,overflowX:'auto',paddingBottom:2}}>
+            {cibles.map((c,i) => (
+              <div key={i} onClick={()=>setActiveCible(i)} style={{flexShrink:0,display:'flex',alignItems:'center',gap:8,padding:'9px 14px',borderRadius:10,border:`1px solid ${i===activeCible?'rgba(91,141,239,0.4)':C.border}`,background:i===activeCible?'rgba(91,141,239,0.12)':C.card,cursor:'pointer',fontSize:12,color:i===activeCible?C.text:C.sec,whiteSpace:'nowrap'}}>
+                {c.nom} {c.statut==='precedente' && <span style={{opacity:0.6}}>· précédente</span>}
+                <span style={{fontSize:9,fontWeight:700,background:i===activeCible?C.accent:'#383D48',color:i===activeCible?'#fff':C.sec,padding:'2px 7px',borderRadius:20}}>{c.batches.reduce((n,b)=>n+b.angles.length,0)} angles</span>
+              </div>
+            ))}
+          </div>
+          {cible && (
+            <>
+              <div style={{fontSize:12,color:C.muted,marginBottom:14}}>{cible.nom} · {cible.batches.length} batch{cible.batches.length>1?'s':''}{cible.statut==='precedente' ? ' — remplacée depuis' : ''}</div>
+              <div style={{display:'flex',gap:12,overflowX:'auto',paddingBottom:8}}>
+                {cible.batches.flatMap((b) => b.angles.map((a,ai) => (
+                  <div key={`${b.numero}-${ai}`} style={{scrollSnapAlign:'start',flexShrink:0,width:250,background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:16}}>
+                    <div style={{fontSize:9,color:C.muted,fontFamily:"'DM Mono',monospace",marginBottom:8}}>BATCH {b.numero} · ANGLE {a.numero || ai+1}</div>
+                    <div style={{fontSize:14,fontWeight:800,marginBottom:8,lineHeight:1.3}}>{a.nom}</div>
+                    {a.justification && <div style={{fontSize:11,color:C.sec,lineHeight:1.55,paddingTop:10,borderTop:`1px dashed ${C.border}`}}><b style={{color:C.muted,fontWeight:700,textTransform:'uppercase',fontSize:9,display:'block',marginBottom:4}}>Pourquoi cet angle</b>{a.justification}</div>}
+                  </div>
+                )))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ═══ AVANTAGES CLÉS ═══ */}
+      {(p.avantages_cles||[]).length > 0 && (
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Ce qui rend votre produit défendable</div>
+          {p.avantages_cles.map((a,i) => (
+            <div key={i} style={{display:'flex',gap:14,padding:'16px 0',borderTop:i>0?`1px solid ${C.border}`:'none'}}>
+              <div style={{width:36,height:36,borderRadius:10,background:C.card,border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:C.accent}}><Mdv4Ic name={i===0?'shieldCheck':'mechanism'} color={C.accent}/></div>
+              <div><div style={{fontSize:13.5,fontWeight:800,marginBottom:4}}>{a.titre}</div><div style={{fontSize:12,color:C.sec,lineHeight:1.6}}>{a.description}</div></div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ═══ RECOMMANDATIONS PERSONNALISÉES ═══ */}
+      {recommandations.length > 0 && (
+        <div>
+          <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Recommandations pour vos prochaines campagnes</div>
+          {recommandations.map((r,i) => {
+            const iconName = r.type==='campagne'?'layers':r.type==='page_produit'?'fileCheck':'megaphone';
+            return (
+              <div key={i} style={{padding:'16px 0',borderTop:i>0?`1px solid ${C.border}`:'none'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                  <div style={{width:32,height:32,borderRadius:9,background:'rgba(91,141,239,0.1)',border:'1px solid rgba(91,141,239,0.25)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,color:C.accent}}><Mdv4Ic name={iconName} size={15} color={C.accent}/></div>
+                  <div style={{fontSize:13.5,fontWeight:800}}>{r.titre}</div>
+                </div>
+                <div style={{fontSize:12.5,color:C.sec,lineHeight:1.65,paddingLeft:42}}>{r.texte}</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
+
+const PersonaList = ({color, titre, items}) => (
+  <div>
+    <div style={{display:'flex',alignItems:'center',gap:7,fontSize:12,fontWeight:800,marginBottom:9}}><span style={{width:7,height:7,borderRadius:2,background:color,flexShrink:0}}/>{titre}</div>
+    <ul style={{margin:0,padding:0}}>
+      {items.map((it,i) => <li key={i} style={{fontSize:12,color:C.sec,lineHeight:1.6,listStyle:'none',paddingLeft:14,position:'relative',marginBottom:2}}><span style={{position:'absolute',left:0,top:8,width:4,height:4,borderRadius:'50%',background:C.muted}}/>{it}</li>)}
+    </ul>
+  </div>
+);
 
 
 const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], briefs={}, section='', setSection, openProductForm, priceCtx={currency:'XOF',rate:1}, onOpenPayment}) => {

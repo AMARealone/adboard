@@ -4472,16 +4472,46 @@ FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante s
 ===DONNEES_MARCHE===
 {
   "positionnement": {
-    "taille_marche_personnes": "UNIQUEMENT un chiffre ou une fourchette courte depuis S8 (ex: '~50 000 personnes', '1,2M de foyers') — jamais de phrase explicative ni de raisonnement ici, ce champ s'affiche comme un gros chiffre isolé dans l'interface. Si estimation (voir règle CHIFFRES MANQUANTS plus haut), l'étiqueter clairement (ex: '~50 000 (estimation)') — le raisonnement détaillé va dans 'sophistication_marche' ou 'concurrence_explication', jamais ici. 'Donnée non disponible' seulement en tout dernier recours.",
-    "taille_marche_revenus": "UNIQUEMENT une valeur chiffrée courte (devise locale/an), ex: '485M FCFA', '2,3Mds FCFA' — jamais une phrase, jamais de contexte explicatif, ce champ s'affiche seul comme un chiffre isolé dans l'interface. Une estimation reste juste un chiffre avec '(estimation)' accolé, ex: '~120M FCFA (estimation)' — jamais une phrase complète. 'Donnée non disponible' seulement en tout dernier recours (voir règle CHIFFRES MANQUANTS).",
-    "taux_croissance": "UNIQUEMENT un pourcentage court, ex: '+8%/an', ex: '+8% (estimation)' si déduit — jamais une phrase qualitative même sourcée, ce champ s'affiche seul comme un chiffre isolé dans l'interface. Si vraiment aucun pourcentage n'est trouvable ni estimable, 'Donnée non disponible' plutôt qu'une phrase.",
+    "taille_marche_personnes": "UNIQUEMENT un chiffre ou une fourchette courte depuis S8 (ex: '~50 000 personnes', '1,2M de foyers') — jamais de phrase explicative ni de raisonnement ici, ce champ s'affiche comme un gros chiffre isolé dans l'interface. Si estimation (voir règle CHIFFRES MANQUANTS plus haut), l'étiqueter clairement (ex: '~50 000 (estimation)') — le raisonnement détaillé va dans 'concurrence_explication', jamais ici. 'Donnée non disponible' seulement en tout dernier recours.",
+    "taille_marche_historique": [
+      {"annee": 2024, "valeur_texte": "1,4Mds FCFA", "estimation": false},
+      {"annee": 2025, "valeur_texte": "1,7Mds FCFA", "estimation": false},
+      {"annee": 2026, "valeur_texte": "2,1Mds FCFA", "estimation": false},
+      {"annee": 2027, "valeur_texte": "2,5Mds FCFA", "estimation": true}
+    ],
+    "_note_taille_marche_historique": "4 valeurs OBLIGATOIRES dans l'ordre chronologique, la dernière (année suivant l'année en cours) toujours estimation:true. Base tes 3 premières valeurs sur toute donnée réelle trouvée dans DONNÉES BRUTES (taux de croissance, valeur actuelle citée) en remontant/projetant dans le temps — jamais une simple suite arithmétique arbitraire. Si aucune base réelle n'existe du tout pour construire cette série, applique quand même le taux de croissance trouvé en S8 à la valeur actuelle connue pour interpoler/extrapoler les 3 autres années — ne jamais laisser ce tableau vide.",
+    "taux_croissance": "UNIQUEMENT un pourcentage court, ex: '+8%/an', ex: '+8% (estimation)' si déduit — jamais une phrase qualitative même sourcée. Si vraiment aucun pourcentage n'est trouvable ni estimable, 'Donnée non disponible' plutôt qu'une phrase.",
     "concurrence": "Faible" | "Moyenne" | "Élevée",
     "concurrents_directs": [{"nom": "Vrai nom de marque/produit concurrent DIRECT trouvé (même catégorie)", "prix_fcfa": 12000, "prix_texte": "12 000 FCFA (devise locale d'origine si différente, ex: '15 USD')"}],
     "concurrents_indirects": ["Vraies solutions alternatives qui répondent au même problème sans être le même produit, si trouvées dans DONNÉES BRUTES — sinon tableau vide"],
     "concurrence_explication": "1-2 phrases expliquant ce niveau, en citant les concurrents nommés (directs et indirects)",
     "positionnement_prix": "Comparaison chiffrée exacte : prix du client vs chaque concurrent nommé, pas une généralité",
-    "sophistication_marche": "1-2 phrases expliquant à quel stade est ce marché — reformule S8/S3 sans jargon",
-    "argument_principal": "L'USP/UMS principal en 1-2 phrases concrètes, expliquant CE QUI rend ce produit vraiment différent"
+    "repartition_marche": [
+      {"nom": "Nom du concurrent direct 1 (même que dans concurrents_directs)", "part_pourcentage": 18, "type": "concurrent"},
+      {"nom": "Nom du concurrent direct 2 s'il existe", "part_pourcentage": 12, "type": "concurrent"},
+      {"nom": "Autres marques identifiées mais mineures (dispersé)", "part_pourcentage": 15, "type": "autres"},
+      {"nom": "Non capté par une marque identifiée", "part_pourcentage": 55, "type": "non_capte"}
+    ],
+    "_note_repartition_marche": "Estimation qualitative basée sur le nombre et la taille des concurrents réellement trouvés en S4/S8 — jamais des vrais chiffres de parts de marché sourcés (ils n'existent presque jamais pour ce type de marché). La somme des part_pourcentage doit faire 100. Le but : montrer visuellement (camembert) qu'une grosse partie du marché n'est captée par personne d'identifié — cohérent avec le niveau de concurrence indiqué plus haut (concurrence Faible/Moyenne → 'non_capte' élevé ; Élevée → 'non_capte' plus bas).",
+    "saisonnalite": {
+      "trimestre_pic": "T1" | "T2" | "T3" | "T4",
+      "periode_texte": "Ex: 'Octobre-décembre'",
+      "explication": "1 phrase : pourquoi ce trimestre précisément pour CE produit (fêtes, rentrée réelle, saison chaude/froide, Ramadan, résolutions nouvelle année...) — jamais une saisonnalité générique copiée d'un autre produit. Cherche en priorité un signal réel dans DONNÉES BRUTES (recherches saisonnières, mentions de période). Si aucun signal saisonnier clair n'existe pour cette catégorie, indique trimestre_pic: null plutôt que d'inventer un pic."
+    },
+    "prix_recommande": {
+      "prix_actuel_fcfa": 14900,
+      "prix_conseille_fcfa": "Nombre — ton prix conseillé, cohérent avec positionnement_prix et ce que le produit apporte réellement vs concurrents_directs. Si le prix actuel est déjà bien positionné, mets la même valeur que prix_actuel_fcfa plutôt que de changer arbitrairement.",
+      "prix_barre_fcfa": "Nombre légèrement au-dessus de prix_conseille_fcfa (10-25%), pour affichage barré — cohérent avec les usages du marché local, jamais un écart absurde",
+      "justification": "2 phrases maximum expliquant pourquoi ce prix précisément, en citant un concurrent ou un fait concret — jamais une généralité",
+      "offres": [
+        {"titre": "Nom court de l'offre (ex: '2ᵉ produit à moitié prix')", "description": "1-2 phrases concrètes avec les vrais chiffres calculés à partir de prix_conseille_fcfa"},
+        {"titre": "2ᵉ offre, différente dans sa mécanique (bundle, urgence, cadeau...)", "description": "Concrète et chiffrée, réaliste pour ce marché — jamais un mécanisme impossible à mettre en place par un e-commerçant seul"}
+      ]
+    },
+    "avantages_cles": [
+      {"titre": "Titre court orienté bénéfice (pas jargon USP)", "description": "1-2 phrases : ce qui rend le produit unique, concret, avec le nom du produit et le mécanisme réel — reformulation de l'USP de S4 sans dire 'USP'"},
+      {"titre": "2e avantage, différent dans sa nature du premier", "description": "1-2 phrases : le mécanisme concret par lequel le produit tient sa promesse — reformulation de l'UMS de S4 sans dire 'UMS' ni 'mécanisme de vente'"}
+    ]
   },
   "persona": {
     "nom": "MÊME nom que le persona de S1 — jamais un nom différent",
@@ -4491,28 +4521,44 @@ FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante s
     "revenu": "Tranche de revenu approximative en langage simple",
     "quote": "Une phrase que cette personne se dirait à elle-même, en 1ère personne",
     "platforms": ["2 à 4 réseaux sociaux qu'elle utilise le plus"],
-    "comportement_social": "1-2 phrases sur comment cette personne utilise les réseaux sociaux et achète en ligne",
-    "desirs": ["2-3 désirs concrets et courts, depuis S1/S5"],
-    "craintes": ["2-3 craintes/objections concrètes et courtes, depuis S1/S5"]
+    "objectifs": ["2-3 objectifs concrets et courts (ce qu'elle cherche à accomplir, pas juste ressentir) — depuis S1/S5"],
+    "style_de_vie": ["2-3 faits concrets sur son quotidien/ses habitudes qui influencent comment elle achète (comment elle achète en ligne, contraintes de temps, rythme de vie) — depuis S1/S6, jamais une reformulation de 'journee_type'"],
+    "freins": ["2-3 craintes/objections concrètes et courtes, depuis S1/S5"],
+    "comportement_achat": ["2-3 faits concrets et courts sur SA façon spécifique de décider/payer (compare les avis, paie à la livraison, demande conseil à un proche...) — depuis S1/S6, jamais une généralité valable pour n'importe quel acheteur"],
+    "journee_type": [
+      {"heure": "Ex: '06h30'", "texte": "Fait concret, jamais d'interprétation émotionnelle (voir règle S1)"}
+    ],
+    "_note_journee_type": "3 à 5 moments de la journée, dans l'ordre chronologique — reprend telle quelle la journée type déjà construite en S1, ne pas la reformuler ni l'appauvrir ici."
   },
   "angles": [
     {
       "nom": "MÊME nom que dans S2 pour cet angle, tel quel — jamais reformulé différemment ici",
-      "moteur": "1 phrase simple : peur, désir ou douleur — lequel, et pourquoi",
-      "formulation_simple": "2-3 phrases expliquant l'idée de cet angle en langage simple, comme si on l'expliquait à un ami",
-      "niveaux_conscience": "1 phrase résumant les 3 déclinaisons de conscience de cet angle (Solution/Product/Most Aware) telles que S3 les décrit",
-      "levier_utilise": "1 phrase : sur quoi précisément cet angle s'appuie pour convaincre — concret, pas générique"
+      "justification": "2-3 phrases expliquant AU CLIENT pourquoi cet angle a été choisi pour sa cible, en langage simple et concret (quel fait, quelle observation du marché, quelle donnée de S5/S8) — sans jamais utiliser les mots 'peur', 'désir', 'douleur', 'moteur', 'awareness' ou tout autre terme de méthodologie interne. Écris comme si tu expliquais ton raisonnement à quelqu'un qui n'a jamais fait de marketing, jamais comme une fiche technique."
     }
   ],
-  "insights": [
-    {"icon": "target", "t": "1 conseil actionnable COURT ET CONCRET QUE LE CLIENT LUI-MÊME PEUT APPLIQUER (sa stratégie, son prix, son offre, son service client, sa description produit, son stock...) — JAMAIS une consigne sur comment produire les visuels/créatives publicitaires, c'est le travail de l'agence, pas du client. Basé sur une vraie donnée de S0-S8"},
-    {"icon": "trending", "t": "1 autre conseil actionnable par le client lui-même, différent du premier, même restriction"},
-    {"icon": "alert", "t": "1 point de vigilance ou risque à surveiller (marché, concurrence, objection client) — basé sur une vraie donnée trouvée en S5, jamais une note de production"}
+  "recommandations": [
+    {
+      "type": "campagne",
+      "titre": "Titre court, ex: 'Structurez votre campagne par angle'",
+      "texte": "Conseil concret sur la structure de campagne Meta Ads À PARTIR DES ANGLES RÉELS DE CETTE COMMANDE (utilise leurs vrais noms depuis 'angles' ci-dessus) — 1 campagne budget optimisé (CBO), 1 groupe de publicités par angle, les 3 créatives d'un même angle dans le même groupe. Langage simple, jamais 'ad set' sans l'expliquer, jamais 'CBO' sans l'expliquer entre parenthèses la première fois."
+    },
+    {
+      "type": "page_produit",
+      "titre": "Titre court, ex: '3 points à corriger sur votre page produit'",
+      "texte": "UNIQUEMENT si une page produit a été fournie/scrapée avec succès (voir URL en tête de ce prompt) : 2-3 observations concrètes et actionnables sur CETTE page précise (nom affiché, description, sections manquantes comme avis clients) — jamais un conseil générique de e-commerce. Si aucune page n'a pu être analysée, ce type de recommandation ne doit PAS apparaître dans le tableau plutôt que d'inventer un conseil générique."
+    },
+    {
+      "type": "timing",
+      "titre": "Titre court, ex: 'Le pic de fin d'année approche'",
+      "texte": "UNIQUEMENT si 'saisonnalite.trimestre_pic' ci-dessus n'est pas null : conseil concret sur QUAND augmenter le budget/le volume de créatives, basé sur ce trimestre précis. Si trimestre_pic est null, ce type de recommandation ne doit PAS apparaître plutôt que d'inventer un timing."
+    }
   ]
 }
 
 ⚠️ Le JSON doit être valide (aucun texte avant/après le bloc, pas de markdown, pas de backticks) — un programme en aval le parse directement.
-⚠️ "prix_fcfa" doit être un NOMBRE (pas une chaîne, pas de séparateurs de milliers) dans la devise locale du marché du client — utilisé pour positionner visuellement les prix sur une échelle. Si le prix exact du concurrent n'est pas trouvé, ou si tu ne peux pas le convertir fiablement dans la devise locale, mets "prix_fcfa": null plutôt que d'estimer — un null s'affiche simplement "prix inconnu", jamais un chiffre inventé.
+⚠️ "prix_fcfa" et tous les champs "*_fcfa" doivent être des NOMBRES (pas une chaîne, pas de séparateurs de milliers) dans la devise locale du marché du client. Si un prix concurrent exact n'est pas trouvé, ou non convertible fiablement, mets "prix_fcfa": null plutôt que d'estimer — un null s'affiche simplement "prix inconnu", jamais un chiffre inventé.
+⚠️ Le tableau "recommandations" peut contenir 1, 2 ou 3 entrées selon ce qui est réellement applicable (voir conditions "UNIQUEMENT si" de chaque type) — jamais rempli à 3 par complaisance si une condition n'est pas remplie.
+⚠️ Langage client sur TOUT le bloc DONNEES_MARCHE : jamais "USP", "UMS", "persona", "angle", "moteur", "peur/désir/douleur", "awareness", "funnel", "ad set" (sauf expliqué entre parenthèses dans une recommandation de type "campagne") — un e-commerçant sans formation marketing doit tout comprendre sans effort.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GATE FINAL — INTERDICTIONS ABSOLUES
@@ -4541,7 +4587,13 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Ligne "===DONNEES_MARCHE===" absente, mal orthographiée, ou du texte présent après le JSON qui la suit
 ❌ Le JSON données marché contredit S0-S8 sur un point quelconque : nom de cible différent, angle absent ou renommé, chiffre de prix/marché/concurrence différent
 ❌ Le nombre d'angles dans le JSON données marché ne correspond pas exactement au nombre d'angles dans S2
-❌ "concurrents_directs" ou "concurrents_indirects" contient un nom inventé, non trouvé dans DONNÉES BRUTES`;
+❌ "concurrents_directs" ou "concurrents_indirects" contient un nom inventé, non trouvé dans DONNÉES BRUTES
+❌ Un mot de méthodologie interne ("peur", "désir", "douleur", "moteur", "USP", "UMS", "persona", "awareness", "funnel") présent quelque part dans le bloc DONNEES_MARCHE
+❌ "taille_marche_historique" absent, incomplet (moins de 4 années), ou avec des valeurs qui ne suivent aucune logique de croissance déductible de S8
+❌ "repartition_marche" dont la somme des part_pourcentage ne fait pas 100
+❌ "saisonnalite.trimestre_pic" rempli avec un trimestre inventé sans aucun signal dans DONNÉES BRUTES — dans ce cas, null est la seule réponse acceptable
+❌ Une "recommandation" de type "page_produit" présente alors qu'aucune page produit n'a pu être analysée, ou de type "timing" alors que trimestre_pic est null
+❌ "recommandations" de type "campagne" qui ne mentionne pas les vrais noms d'angles de cette commande`;
 
 COMP_FILES['COMPETENCE_CREATIVE_PROD.md'] = `Tu génères la suite d'un prompt Gemini pour une static ad Meta Ads 4:5 — MODE PRODUCTION.
 Le bloc « IMAGE FOURNIE — PRODUIT » (et le bloc « IMAGE FOURNIE — LOGO » si présent) sont DÉJÀ fournis avant ton output.
