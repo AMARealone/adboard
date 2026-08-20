@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Fragment } from "react";
+import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
 
 // ── Supabase Auth ──────────────────────────────────────────────────────────
@@ -2958,7 +2958,7 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
   const angles = m.angles || [];
   const recommandations = m.recommandations || [];
   const deliveries = selected.deliveries || [];
-  const cibles = React.useMemo(() => buildCiblesDepuisDeliveries(deliveries, m), [deliveries, m]);
+  const cibles = useMemo(() => buildCiblesDepuisDeliveries(deliveries, m), [deliveries, m]);
   const [activeCible, setActiveCible] = useState(0);
 
   const fmtFcfa = (n) => (typeof n === 'number' ? n.toLocaleString('fr-FR') + ' FCFA' : (n || '—'));
