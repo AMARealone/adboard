@@ -2733,29 +2733,38 @@ async function prodv2Launch() {
     prodv2State.synthesis = synthesisText;
     prodv2State.marche = marche;
 
-    // Portrait réaliste du persona — régénéré à chaque batch pour l'instant (y compris sur une
-    // cible déjà utilisée précédemment). Optimisation possible plus tard : ne regénérer que si
-    // la cible a changé (comparer à prodv2State.renewalContext?.cibleActuelle) et réutiliser le
-    // portrait déjà stocké sinon — pas fait ici, demanderait de vérifier où ce portrait_url
-    // précédent serait accessible côté serveur, non confirmé pour l'instant. Échec toléré : si
-    // la génération échoue, la vue AdBoard retombe simplement sur le fond dégradé, jamais un
-    // blocage de toute la production pour ça.
+    // Portrait réaliste du persona — régénéré UNIQUEMENT si la cible a réellement changé.
+    // Même logique de comparaison que le serveur (GET /products/:id/renewal-context, champ
+    // cibleActuelle) : nom+rôle+âge+ville, jamais juste le prénom seul, pour détecter un
+    // changement de cible même quand le prénom généré diffère d'un batch à l'autre sur la
+    // même description de personne. Échec de génération toléré : si ça échoue, la vue AdBoard
+    // retombe simplement sur le fond dégradé, jamais un blocage de toute la production pour ça.
     if (marche?.persona?.nom) {
-      try {
-        prodv2SetAgentState(1, 'running', `Portrait de ${marche.persona.nom}…`, 92);
-        const rPortrait = await fetch(SERVER + '/generate-persona-portrait', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ persona: marche.persona }),
-          signal: AbortSignal.timeout(70000)
-        });
-        const dPortrait = await rPortrait.json();
-        if (dPortrait.url) {
-          marche.persona.portrait_url = dPortrait.url;
-          prodv2State.marche = marche;
-          console.log('✓ Portrait généré :', dPortrait.url);
+      const descrPersona = (p) => p ? [p.nom, p.role, p.age ? `${p.age} ans` : null, p.ville].filter(Boolean).join(', ') : null;
+      const memeCible = prodv2State.renewalContext?.cibleActuelle && descrPersona(marche.persona) === prodv2State.renewalContext.cibleActuelle;
+      const portraitExistant = prodv2State.renewalContext?.portraitUrlCibleActuelle;
+
+      if (memeCible && portraitExistant) {
+        marche.persona.portrait_url = portraitExistant;
+        prodv2State.marche = marche;
+        console.log('✓ Portrait réutilisé (même cible) :', portraitExistant);
+      } else {
+        try {
+          prodv2SetAgentState(1, 'running', `Portrait de ${marche.persona.nom}…`, 92);
+          const rPortrait = await fetch(SERVER + '/generate-persona-portrait', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ persona: marche.persona }),
+            signal: AbortSignal.timeout(70000)
+          });
+          const dPortrait = await rPortrait.json();
+          if (dPortrait.url) {
+            marche.persona.portrait_url = dPortrait.url;
+            prodv2State.marche = marche;
+            console.log('✓ Portrait généré (nouvelle cible) :', dPortrait.url);
+          }
+        } catch(ePortrait) {
+          console.warn('⚠️ Portrait persona échoué (non bloquant) :', ePortrait.message);
         }
-      } catch(ePortrait) {
-        console.warn('⚠️ Portrait persona échoué (non bloquant) :', ePortrait.message);
       }
     }
 
