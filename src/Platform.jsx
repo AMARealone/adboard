@@ -2995,6 +2995,7 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
   const deliveries = selected.deliveries || [];
   const cibles = useMemo(() => buildCiblesDepuisDeliveries(deliveries, m), [deliveries, m]);
   const [activeCible, setActiveCible] = useState(0);
+  const [batchFiltre, setBatchFiltre] = useState(null); // null = tous les batchs de la cible active
 
   const fmtFcfa = (n) => (typeof n === 'number' ? n.toLocaleString('fr-FR') + ' FCFA' : (n || '—'));
 
@@ -3002,29 +3003,37 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
   const hist = p.taille_marche_historique || [];
   const BarChart = () => {
     if (!hist.length) return <div style={{fontSize:11,color:C.muted}}>Historique non disponible</div>;
-    const w = 240, gap = 14, bw = 28, chartH = 62, baseY = 82;
+    const w = 240, gap = 16, bw = 30, chartH = 62, baseY = 82;
+    // Étiquette courte par barre (juste le nombre) — le texte complet ("1,75 Mds FCFA") déborde
+    // largement de la largeur d'une barre dès que le conteneur est étroit (bug remonté en
+    // production : chiffres qui se chevauchent sur mobile). L'unité s'affiche une seule fois
+    // au-dessus du graphique plutôt que répétée 4 fois.
+    const valeurCourte = (txt) => (txt || '').match(/^[\d.,]+/)?.[0] || txt;
     return (
-      <svg viewBox={`0 0 ${w} 100`} width="100%" height={100}>
-        {hist.map((h, i) => {
-          const x = 6 + i * (bw + gap + 10);
-          const maxIdx = hist.length - 1;
-          const heightFrac = 0.35 + (i / Math.max(maxIdx,1)) * 0.65; // progression visuelle croissante
-          const bh = chartH * heightFrac;
-          const y = baseY - bh;
-          const isCurrent = i === maxIdx - (hist[maxIdx]?.estimation ? 1 : 0);
-          return (
-            <g key={i}>
-              <text x={x+bw/2} y={y-6} textAnchor="middle" fontSize="10" fontWeight={isCurrent?800:700} fill={isCurrent?C.accent:C.sec} fontFamily="'DM Mono',monospace">{h.valeur_texte}</text>
-              {h.estimation ? (
-                <rect x={x} y={y} width={bw} height={bh} rx="3" fill="none" stroke={C.borderM} strokeWidth="1.5" strokeDasharray="3,3"/>
-              ) : (
-                <rect x={x} y={y} width={bw} height={bh} rx="3" fill={isCurrent ? C.accent : '#262A34'}/>
-              )}
-              <text x={x+bw/2} y={96} textAnchor="middle" fontSize="9" fill={isCurrent?C.accent:C.muted} fontWeight={isCurrent?700:400}>{h.annee}{h.estimation?' (est.)':''}</text>
-            </g>
-          );
-        })}
-      </svg>
+      <>
+        <div style={{fontSize:9,color:C.muted,marginBottom:4}}>en Mds FCFA</div>
+        <svg viewBox={`0 0 ${w} 100`} width="100%" height={100}>
+          {hist.map((h, i) => {
+            const x = 6 + i * (bw + gap);
+            const maxIdx = hist.length - 1;
+            const heightFrac = 0.35 + (i / Math.max(maxIdx,1)) * 0.65; // progression visuelle croissante
+            const bh = chartH * heightFrac;
+            const y = baseY - bh;
+            const isCurrent = i === maxIdx - (hist[maxIdx]?.estimation ? 1 : 0);
+            return (
+              <g key={i}>
+                <text x={x+bw/2} y={y-6} textAnchor="middle" fontSize="10" fontWeight={isCurrent?800:700} fill={isCurrent?C.accent:C.sec} fontFamily="'DM Mono',monospace">{valeurCourte(h.valeur_texte)}</text>
+                {h.estimation ? (
+                  <rect x={x} y={y} width={bw} height={bh} rx="3" fill="none" stroke={C.borderM} strokeWidth="1.5" strokeDasharray="3,3"/>
+                ) : (
+                  <rect x={x} y={y} width={bw} height={bh} rx="3" fill={isCurrent ? C.accent : '#262A34'}/>
+                )}
+                <text x={x+bw/2} y={96} textAnchor="middle" fontSize="8.5" fill={isCurrent?C.accent:C.muted} fontWeight={isCurrent?700:400}>{h.annee}{h.estimation?' (est.)':''}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </>
     );
   };
 
@@ -3186,24 +3195,39 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Cibles &amp; angles utilisés dans vos créatives</div>
           <div style={{display:'flex',gap:8,marginBottom:16,overflowX:'auto',paddingBottom:2}}>
-            {cibles.map((c,i) => (
-              <div key={i} onClick={()=>setActiveCible(i)} style={{flexShrink:0,display:'flex',alignItems:'center',gap:8,padding:'9px 14px',borderRadius:10,border:`1px solid ${i===activeCible?'rgba(91,141,239,0.4)':C.border}`,background:i===activeCible?'rgba(91,141,239,0.12)':C.card,cursor:'pointer',fontSize:12,color:i===activeCible?C.text:C.sec,whiteSpace:'nowrap'}}>
-                {c.nom} {c.statut==='precedente' && <span style={{opacity:0.6}}>· précédente</span>}
+            {cibles.map((c,i) => {
+              const prenom = (c.nom || '').split(',')[0].trim() || 'Cible';
+              return (
+              <div key={i} onClick={()=>{setActiveCible(i); setBatchFiltre(null);}} style={{flexShrink:0,display:'flex',alignItems:'center',gap:8,padding:'9px 14px',borderRadius:10,border:`1px solid ${i===activeCible?'rgba(91,141,239,0.4)':C.border}`,background:i===activeCible?'rgba(91,141,239,0.12)':C.card,cursor:'pointer',fontSize:12,color:i===activeCible?C.text:C.sec,whiteSpace:'nowrap'}}>
+                {prenom} {c.statut==='precedente' && <span style={{opacity:0.6}}>· précédente</span>}
                 <span style={{fontSize:9,fontWeight:700,background:i===activeCible?C.accent:'#383D48',color:i===activeCible?'#fff':C.sec,padding:'2px 7px',borderRadius:20}}>{c.batches.reduce((n,b)=>n+b.angles.length,0)} angles</span>
               </div>
-            ))}
+              );
+            })}
           </div>
           {cible && (
             <>
               <div style={{fontSize:12,color:C.muted,marginBottom:14}}>{cible.nom} · {cible.batches.length} batch{cible.batches.length>1?'s':''}{cible.statut==='precedente' ? ' — remplacée depuis' : ''}</div>
+              {cible.batches.length > 1 && (
+                <div style={{display:'flex',gap:6,marginBottom:12,flexWrap:'wrap'}}>
+                  <button onClick={()=>setBatchFiltre(null)} style={{padding:'5px 11px',borderRadius:20,border:`1px solid ${batchFiltre===null?'rgba(91,141,239,0.4)':C.border}`,background:batchFiltre===null?'rgba(91,141,239,0.12)':'transparent',color:batchFiltre===null?C.text:C.muted,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Tous les batchs</button>
+                  {cible.batches.map(b => (
+                    <button key={b.numero} onClick={()=>setBatchFiltre(b.numero)} style={{padding:'5px 11px',borderRadius:20,border:`1px solid ${batchFiltre===b.numero?'rgba(91,141,239,0.4)':C.border}`,background:batchFiltre===b.numero?'rgba(91,141,239,0.12)':'transparent',color:batchFiltre===b.numero?C.text:C.muted,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Batch {b.numero}</button>
+                  ))}
+                </div>
+              )}
               <div style={{display:'flex',gap:12,overflowX:'auto',paddingBottom:8}}>
-                {cible.batches.flatMap((b) => b.angles.map((a,ai) => (
-                  <div key={`${b.numero}-${ai}`} style={{scrollSnapAlign:'start',flexShrink:0,width:250,background:C.card,border:`1px solid ${C.border}`,borderRadius:14,padding:16}}>
-                    <div style={{fontSize:9,color:C.muted,fontFamily:"'DM Mono',monospace",marginBottom:8}}>BATCH {b.numero} · ANGLE {a.numero || ai+1}</div>
+                {cible.batches.filter(b => batchFiltre===null || b.numero===batchFiltre).flatMap((b) => b.angles.map((a,ai) => {
+                  const accents = ['#5B8DEF','#22C55E','#EAB308','#A78BFA'];
+                  const accent = accents[ai % accents.length];
+                  return (
+                  <div key={`${b.numero}-${ai}`} style={{scrollSnapAlign:'start',flexShrink:0,width:250,background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${accent}`,borderRadius:14,padding:16}}>
+                    <div style={{fontSize:9,color:accent,fontFamily:"'DM Mono',monospace",marginBottom:8,fontWeight:700}}>BATCH {b.numero} · ANGLE {a.numero || ai+1}</div>
                     <div style={{fontSize:14,fontWeight:800,marginBottom:8,lineHeight:1.3}}>{a.nom}</div>
                     {a.justification && <div style={{fontSize:11,color:C.sec,lineHeight:1.55,paddingTop:10,borderTop:`1px dashed ${C.border}`}}><b style={{color:C.muted,fontWeight:700,textTransform:'uppercase',fontSize:9,display:'block',marginBottom:4}}>Pourquoi cet angle</b>{a.justification}</div>}
                   </div>
-                )))}
+                  );
+                }))}
               </div>
             </>
           )}
