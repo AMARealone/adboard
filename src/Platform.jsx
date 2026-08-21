@@ -849,6 +849,41 @@ function computeCredits(sub, allBriefs) {
   return { total, used, available: Math.max(0, total - used), nextCreditDate };
 }
 
+// ── Plafond de charge : 36 images max en production simultanée (tous produits confondus)
+// sur une fenêtre glissante de 24h depuis la création de chaque demande — protège la capacité
+// de production réelle, indépendant des crédits d'abonnement (qui, eux, se rechargent par semaine).
+const PLAFOND_PRODUCTION_24H = 36;
+const MS_24H = 24 * 60 * 60 * 1000;
+
+function briefsActifsDans24h(allBriefs) {
+  const seuil = Date.now() - MS_24H;
+  return allBriefs
+    .filter(b => (b.status === 'pending' || b.status === 'in_production') && new Date(b.created_at).getTime() >= seuil)
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // plus ancien en premier — expire le plus tôt
+}
+
+// Vérifie si une nouvelle demande de `qty` images passe sous le plafond. Si non : calcule la
+// première heure précise à laquelle assez de demandes en cours seront sorties de la fenêtre de
+// 24h pour que la nouvelle demande passe, ET la liste des demandes en cours qu'on pourrait
+// annuler à la place pour la faire passer immédiatement.
+function verifierPlafondProduction(allBriefs, qty) {
+  const actifs = briefsActifsDans24h(allBriefs);
+  const totalActuel = actifs.reduce((s, b) => s + (b.credits_used || b.quantity || 9), 0);
+  if (totalActuel + qty <= PLAFOND_PRODUCTION_24H) return { autorise: true };
+
+  // Simule la sortie progressive des demandes les plus anciennes de la fenêtre de 24h
+  let restant = totalActuel;
+  let prochaineDateLibre = null;
+  for (const b of actifs) {
+    restant -= (b.credits_used || b.quantity || 9);
+    if (restant + qty <= PLAFOND_PRODUCTION_24H) {
+      prochaineDateLibre = new Date(new Date(b.created_at).getTime() + MS_24H);
+      break;
+    }
+  }
+  return { autorise: false, totalActuel, actifs, prochaineDateLibre };
+}
+
 // ── Supabase Subscription & Credits ───────────────────────────────────────
 const sbSubs = {
   async load(session) {
@@ -4168,6 +4203,7 @@ export default function Platform() {
   const [subscription, setSubscription] = useState(null);
   const [creativesTarget, setCreativesTarget] = useState(null);
   const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
+  const [plafondModal, setPlafondModal] = useState(null); // {product, qty, totalActuel, actifs, prochaineDateLibre} — plafond 36 images/24h dépassé
   const [paymentProductId, setPaymentProductId] = useState(null); // id produit Chariow pour la modale de paiement intégrée
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
@@ -4751,6 +4787,71 @@ const views = {
       </div>
     )}
 
+    {plafondModal && (
+      <div onClick={()=>setPlafondModal(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:420,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
+          <div style={{width:40,height:40,borderRadius:11,background:'rgba(234,179,8,0.12)',border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14,color:'#EAB308'}}>
+            <Icon name="clock" size={18} color="#EAB308"/>
+          </div>
+          <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Capacité de production atteinte</h2>
+          <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:'0 0 16px'}}>
+            Vous avez déjà <b style={{color:C.text}}>{plafondModal.totalActuel} visuels</b> en cours de production sur les dernières 24h — la limite est de {PLAFOND_PRODUCTION_24H} à la fois, pour garantir que tout soit livré dans les temps. Cette nouvelle demande de {plafondModal.qty} visuels devra attendre, à moins d'annuler une commande en cours.
+          </p>
+
+          {plafondModal.prochaineDateLibre && (
+            <div style={{background:C.accentS,border:`1px solid ${C.borderM}`,borderRadius:10,padding:'12px 14px',marginBottom:16}}>
+              <div style={{fontSize:10.5,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:0.4,marginBottom:4}}>Vous pourrez réessayer à partir de</div>
+              <div style={{fontSize:14,fontWeight:700,color:C.accent}}>
+                {plafondModal.prochaineDateLibre.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} à {plafondModal.prochaineDateLibre.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}
+              </div>
+            </div>
+          )}
+
+          {plafondModal.actifs?.length > 0 && (
+            <>
+              <div style={{fontSize:11,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:0.4,margin:'0 0 8px'}}>Ou annulez une demande en cours pour faire de la place</div>
+              <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16,maxHeight:220,overflowY:'auto'}}>
+                {plafondModal.actifs.map(b => (
+                  <div key={b.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 12px',borderRadius:9,background:C.sidebar,border:`1px solid ${C.border}`}}>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{products.find(p => p.id === b.product_id)?.nom || 'Produit'}</div>
+                      <div style={{fontSize:10.5,color:C.muted}}>{b.credits_used || b.quantity} visuels · demandé {new Date(b.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à {new Date(b.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        const session = await sbAuth.refreshSession();
+                        const ok = await sbBriefs.cancel(session, b.id);
+                        if (!ok) return;
+                        const nouveauxBriefs = allBriefs.map(x => x.id === b.id ? {...x, status:'cancelled'} : x);
+                        setAllBriefs(nouveauxBriefs);
+                        const reverif = verifierPlafondProduction(nouveauxBriefs, plafondModal.qty);
+                        if (reverif.autorise) {
+                          // Assez de place libérée — on crée directement la demande initialement bloquée
+                          const brief = await sbBriefs.create(session, plafondModal.product.id, plafondModal.qty);
+                          if (brief) {
+                            setAllBriefs(prev => [...prev, brief]);
+                            setBriefs(prev => ({...prev, [plafondModal.product.id]: brief}));
+                            notify(`Demande de ${plafondModal.qty} visuels envoyée — livraison sous 48h`, 'brief');
+                          }
+                          setPlafondModal(null);
+                        } else {
+                          // Toujours au-dessus du plafond — on met juste la modale à jour
+                          setPlafondModal({product: plafondModal.product, qty: plafondModal.qty, ...reverif});
+                        }
+                      }}
+                      style={{flexShrink:0,padding:'6px 11px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:'#EF4444',fontWeight:600,fontSize:11,cursor:'pointer',fontFamily:'inherit'}}
+                    >Annuler</button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          <button onClick={()=>setPlafondModal(null)} style={{width:'100%',padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Compris, je reviendrai plus tard</button>
+        </div>
+      </div>
+    )}
+
     {creativesTarget && (
       <CreativesModal
         product={creativesTarget}
@@ -4760,6 +4861,15 @@ const views = {
         C={C}
         onClose={()=>setCreativesTarget(null)}
         onConfirm={async (qty) => {
+          // Plafond de charge — 36 images max en production simultanée, tous produits
+          // confondus, sur une fenêtre glissante de 24h. Vérifié AVANT toute création,
+          // indépendant des crédits d'abonnement (qui suivent une autre logique de rechargement).
+          const verif = verifierPlafondProduction(allBriefs, qty);
+          if (!verif.autorise) {
+            setPlafondModal({ product: creativesTarget, qty, ...verif });
+            setCreativesTarget(null);
+            return;
+          }
           const session = await sbAuth.refreshSession();
           const brief = await sbBriefs.create(session, creativesTarget.id, qty);
           if (brief) {
