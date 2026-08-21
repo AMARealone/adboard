@@ -2726,6 +2726,11 @@ async function prodv2Launch() {
         + _briefUrl + '\n\n'
       : '';
     // Nombre d'angles imposé explicitement — l'Analyste ne doit plus supposer 3 par défaut
+    // Date réelle du jour — sans ça, le modèle ne peut que deviner "l'année actuelle" pour tout
+    // ce qui en dépend (taille_marche_historique, saisonnalité, fraîcheur d'une donnée trouvée
+    // dans DONNÉES BRUTES). Cause profonde du bug "2024 mis en avant comme année actuelle" :
+    // cette info n'existait nulle part dans le prompt avant ce fix.
+    const _dateHeader = `⚠️ DATE RÉELLE D'AUJOURD'HUI (NON-NÉGOCIABLE, sers-t'en pour TOUT ce qui dépend du temps — historique de marché, saisonnalité, fraîcheur d'une donnée) : ${new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}. Ne devine JAMAIS l'année courante depuis ta mémoire interne — utilise UNIQUEMENT celle-ci.\n\n`;
     const _nbAnglesHeader = `⚠️ NOMBRE D'ANGLES ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}distincts en S2, ni plus ni moins, peu importe le nombre habituel. ${prodv2State.renewalContext?.estRenouvellement ? "S2 ne contient QUE ces angles — ne recopie jamais les anciens dedans, ils restent seulement dans l'historique fourni plus bas pour éviter les répétitions." : ''}\n\n`;
 
     // ── Contexte de renouvellement — injecté uniquement si ce n'est pas la première commande
@@ -2737,7 +2742,7 @@ async function prodv2Launch() {
     }
 
     const analysteParts = [
-      { type: 'text', text: _renewalHeader + _nbAnglesHeader + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
+      { type: 'text', text: _dateHeader + _renewalHeader + _nbAnglesHeader + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
       { type: 'image', source: { type:'base64', media_type: prodv2State.productMime, data: prodv2State.productB64 } }
     ];
     if(prodv2State.logoB64) {
@@ -2747,41 +2752,6 @@ async function prodv2Launch() {
     const { synthesisText, marche } = prodv2SplitSynthesisAndMarche(rawResponse);
     prodv2State.synthesis = synthesisText;
     prodv2State.marche = marche;
-
-    // Portrait réaliste du persona — régénéré UNIQUEMENT si la cible a réellement changé.
-    // Même logique de comparaison que le serveur (GET /products/:id/renewal-context, champ
-    // cibleActuelle) : nom+rôle+âge+ville, jamais juste le prénom seul, pour détecter un
-    // changement de cible même quand le prénom généré diffère d'un batch à l'autre sur la
-    // même description de personne. Échec de génération toléré : si ça échoue, la vue AdBoard
-    // retombe simplement sur le fond dégradé, jamais un blocage de toute la production pour ça.
-    if (marche?.persona?.nom) {
-      const descrPersona = (p) => p ? [p.nom, p.role, p.age ? `${p.age} ans` : null, p.ville].filter(Boolean).join(', ') : null;
-      const memeCible = prodv2State.renewalContext?.cibleActuelle && descrPersona(marche.persona) === prodv2State.renewalContext.cibleActuelle;
-      const portraitExistant = prodv2State.renewalContext?.portraitUrlCibleActuelle;
-
-      if (memeCible && portraitExistant) {
-        marche.persona.portrait_url = portraitExistant;
-        prodv2State.marche = marche;
-        console.log('✓ Portrait réutilisé (même cible) :', portraitExistant);
-      } else {
-        try {
-          prodv2SetAgentState(1, 'running', `Portrait de ${marche.persona.nom}…`, 92);
-          const rPortrait = await fetch(SERVER + '/generate-persona-portrait', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ persona: marche.persona }),
-            signal: AbortSignal.timeout(70000)
-          });
-          const dPortrait = await rPortrait.json();
-          if (dPortrait.url) {
-            marche.persona.portrait_url = dPortrait.url;
-            prodv2State.marche = marche;
-            console.log('✓ Portrait généré (nouvelle cible) :', dPortrait.url);
-          }
-        } catch(ePortrait) {
-          console.warn('⚠️ Portrait persona échoué (non bloquant) :', ePortrait.message);
-        }
-      }
-    }
 
     // Mode remplacement (pas accumulation) : S2 ne contient QUE les angles de cette commande —
     // plus besoin de ne garder que les N derniers, ils sont tous nouveaux par construction.
@@ -2907,6 +2877,57 @@ async function prodv2Launch() {
 
     prodv2SetAgentState(2, 'done', `${nbCreativesTotal} / ${nbCreativesTotal} créatives générées`, 100);
     prodv2SetAgentState(3, 'done', `${nbAngles} / ${nbAngles} sets ad copy générés`, 100);
+
+    // Portrait réaliste du persona — déplacé ici (après créatives + copies, pas avant) suite à
+    // un retour direct : ça n'a aucune dépendance avec les créatives/copies, donc plus aucune
+    // raison de retarder le démarrage visible de la production avec un temps d'attente
+    // théorique de plusieurs minutes avant que la 1ʳᵉ créative n'apparaisse. Bénéfice
+    // supplémentaire : la boucle séquentielle des créatives vient de libérer le quota Gemini
+    // Image (elle ne tourne plus en concurrence avec cet appel), donc moins de risque de
+    // limite de débit ici qu'auparavant. Régénéré UNIQUEMENT si la cible a réellement changé —
+    // même logique de comparaison que le serveur (GET /products/:id/renewal-context, champ
+    // cibleActuelle) : nom+rôle+âge+ville, jamais juste le prénom seul. Échec de génération
+    // toléré : si ça échoue, la vue AdBoard retombe simplement sur le fond dégradé, jamais un
+    // blocage de "Envoyer au client" pour ça.
+    if (marche?.persona?.nom) {
+      const descrPersona = (p) => p ? [p.nom, p.role, p.age ? `${p.age} ans` : null, p.ville].filter(Boolean).join(', ') : null;
+      const memeCible = prodv2State.renewalContext?.cibleActuelle && descrPersona(marche.persona) === prodv2State.renewalContext.cibleActuelle;
+      const portraitExistant = prodv2State.renewalContext?.portraitUrlCibleActuelle;
+
+      if (memeCible && portraitExistant) {
+        marche.persona.portrait_url = portraitExistant;
+        prodv2State.marche = marche;
+        console.log('✓ Portrait réutilisé (même cible) :', portraitExistant);
+      } else {
+        try {
+          prodv2SetAgentState(1, 'running', `Portrait de ${marche.persona.nom}…`, 98);
+          // 210s de marge confortable : le serveur peut légitimement prendre jusqu'à ~296s dans
+          // le pire cas (4 tentatives de 60s + attentes de 8s/16s/32s entre elles en cas de
+          // limite de débit — voir vertexRequestGlobalAvecReessai).
+          const rPortrait = await fetch(SERVER + '/generate-persona-portrait', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ persona: marche.persona }),
+            signal: AbortSignal.timeout(210000)
+          });
+          const dPortrait = await rPortrait.json();
+          if (dPortrait.url) {
+            marche.persona.portrait_url = dPortrait.url;
+            prodv2State.marche = marche;
+            console.log('✓ Portrait généré (nouvelle cible) :', dPortrait.url);
+            prodv2SetAgentState(1, 'done', `Synthèse · ${nbAngles} angles · portrait généré`, 100);
+          } else {
+            // Cause profonde corrigée : un échec ici finissait uniquement en console.warn,
+            // invisible pour quelqu'un qui ne regarde jamais les DevTools. Visible maintenant
+            // dans le journal de l'agent Analyste, là où on regarde déjà pendant la production.
+            console.warn('⚠️ Portrait — pas d\'URL dans la réponse :', JSON.stringify(dPortrait).slice(0,200));
+            prodv2SetAgentState(1, 'done', `Synthèse OK · ⚠️ portrait non généré (${dPortrait.error || 'réponse vide'})`, 100);
+          }
+        } catch(ePortrait) {
+          console.warn('⚠️ Portrait persona échoué (non bloquant) :', ePortrait.message);
+          prodv2SetAgentState(1, 'done', `Synthèse OK · ⚠️ portrait échoué (${ePortrait.message.slice(0,60)})`, 100);
+        }
+      }
+    }
 
     // Sauvegarde auto des livrables côté serveur — pour que "Envoyer au client" fonctionne
     // même après avoir quitté la page (pas dépendant de la mémoire du navigateur).
@@ -4530,8 +4551,8 @@ FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante s
       {"annee": 2026, "valeur_texte": "2,1Mds FCFA", "estimation": false},
       {"annee": 2027, "valeur_texte": "2,5Mds FCFA", "estimation": true}
     ],
-    "_note_taille_marche_historique": "4 valeurs OBLIGATOIRES dans l'ordre chronologique, la dernière (année suivant l'année en cours) toujours estimation:true. Base tes 3 premières valeurs sur toute donnée réelle trouvée dans DONNÉES BRUTES (taux de croissance, valeur actuelle citée) en remontant/projetant dans le temps — jamais une simple suite arithmétique arbitraire. Si aucune base réelle n'existe du tout pour construire cette série, applique quand même le taux de croissance trouvé en S8 à la valeur actuelle connue pour interpoler/extrapoler les 3 autres années — ne jamais laisser ce tableau vide.",
-    "taux_croissance": "UNIQUEMENT un pourcentage court, ex: '+8%/an', ex: '+8% (estimation)' si déduit — jamais une phrase qualitative même sourcée. Si vraiment aucun pourcentage n'est trouvable ni estimable, 'Donnée non disponible' plutôt qu'une phrase.",
+    "_note_taille_marche_historique": "4 valeurs OBLIGATOIRES dans l'ordre chronologique. La date réelle d'aujourd'hui est donnée en tête de ce prompt — utilise-la pour déterminer l'année en cours, ne la devine JAMAIS depuis ta mémoire interne (cause d'un bug déjà rencontré : une année périmée mise en avant comme 'actuelle'). La 3ᵉ valeur (avant-dernière) est l'année en cours, mise en avant dans l'interface — la 4ᵉ (dernière) est l'année suivante, toujours estimation:true. Base tes 3 premières valeurs sur toute donnée réelle trouvée dans DONNÉES BRUTES (taux de croissance, valeur actuelle citée) en remontant/projetant dans le temps — jamais une simple suite arithmétique arbitraire. Si aucune base réelle n'existe du tout pour construire cette série, applique quand même le taux de croissance trouvé en S8 à la valeur actuelle connue pour interpoler/extrapoler les 3 autres années — ne jamais laisser ce tableau vide. ⚠️ COHÉRENCE OBLIGATOIRE : la trajectoire de ces 4 valeurs et le champ 'taux_croissance' ci-dessous doivent raconter la MÊME histoire — si les valeurs progressent, taux_croissance doit être positif et du bon ordre de grandeur (vérifie le calcul, ne les invente jamais séparément l'un de l'autre) ; si le marché décline réellement, taux_croissance doit être négatif, jamais positif par réflexe.",
+    "taux_croissance": "UNIQUEMENT un pourcentage court, ex: '+8%/an', ex: '+8% (estimation)' si déduit — jamais une phrase qualitative même sourcée. DOIT correspondre mathématiquement à la trajectoire de taille_marche_historique ci-dessus (même sens, même ordre de grandeur) — jamais une valeur choisie indépendamment. Si vraiment aucun pourcentage n'est trouvable ni estimable, 'Donnée non disponible' plutôt qu'une phrase.",
     "concurrence": "Faible" | "Moyenne" | "Élevée",
     "concurrents_directs": [{"nom": "Vrai nom de marque/produit concurrent DIRECT trouvé (même catégorie)", "prix_fcfa": 12000, "prix_texte": "12 000 FCFA (devise locale d'origine si différente, ex: '15 USD')"}],
     "concurrents_indirects": ["Vraies solutions alternatives qui répondent au même problème sans être le même produit, si trouvées dans DONNÉES BRUTES — sinon tableau vide"],
@@ -4641,6 +4662,8 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ "concurrents_directs" ou "concurrents_indirects" contient un nom inventé, non trouvé dans DONNÉES BRUTES
 ❌ Un mot de méthodologie interne ("peur", "désir", "douleur", "moteur", "USP", "UMS", "persona", "awareness", "funnel") présent quelque part dans le bloc DONNEES_MARCHE
 ❌ "taille_marche_historique" absent, incomplet (moins de 4 années), ou avec des valeurs qui ne suivent aucune logique de croissance déductible de S8
+❌ La 3ᵉ valeur de "taille_marche_historique" (l'année mise en avant comme actuelle) ne correspond pas à l'année réelle donnée en tête de ce prompt
+❌ "taux_croissance" positif alors que "taille_marche_historique" montre une trajectoire en baisse (ou l'inverse) — les deux doivent raconter la même histoire
 ❌ "repartition_marche" dont la somme des part_pourcentage ne fait pas 100
 ❌ "saisonnalite.trimestre_pic" rempli avec un trimestre inventé sans aucun signal dans DONNÉES BRUTES — dans ce cas, null est la seule réponse acceptable
 ❌ Une "recommandation" de type "page_produit" présente alors qu'aucune page produit n'a pu être analysée, ou de type "timing" alors que trimestre_pic est null
