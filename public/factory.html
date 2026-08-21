@@ -1555,7 +1555,22 @@ async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
     return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta') && !k.endsWith('_awareness') && !k.endsWith('_styleTags');
   });
   if (ids.length === 0) return [];
-  if (ids.length <= count) return ids.sort(function() { return Math.random() - 0.5; });
+  // Cause profonde corrigée (créatives en échec silencieux sur les grosses commandes Pro/Scale,
+  // jusqu'à 36 créatives) : quand le pool de CT disponibles est plus PETIT que le nombre demandé,
+  // cette fonction ne renvoyait que ids.length éléments au lieu de `count` — tout index au-delà
+  // (ctPick[30] à ctPick[35] par exemple, pour un pool de 30 CT sur une commande de 36) valait
+  // undefined, faisant planter silencieusement CES créatives précises plus loin dans le pipeline.
+  // On complète maintenant en RECYCLANT le pool (avec un ré-mélange à chaque tour, pas une
+  // simple répétition dans le même ordre) jusqu'à atteindre exactement `count` éléments.
+  const completerParCyclage = function(liste) {
+    const résultat = liste.slice();
+    while (résultat.length < count) {
+      const tour = ids.slice().sort(function() { return Math.random() - 0.5; });
+      résultat.push(...tour.slice(0, Math.min(tour.length, count - résultat.length)));
+    }
+    return résultat;
+  };
+  if (ids.length <= count) return completerParCyclage(ids.sort(function() { return Math.random() - 0.5; }));
 
   const ctList = ids.map(function(id) {
     return { id: id, name: CT_IMAGES[id + '_name'] || id, meta: CT_IMAGES[id + '_meta'] || '', awareness: CT_IMAGES[id + '_awareness'] || [], styleTags: CT_IMAGES[id + '_styleTags'] || [] };
@@ -1576,12 +1591,12 @@ async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
     const data = await resp.json();
     if (data.selectedIds && data.selectedIds.length > 0) {
       const valid = data.selectedIds.filter(function(id) { return !!CT_IMAGES[id]; });
-      if (valid.length >= Math.min(count, ids.length)) return valid;
+      if (valid.length >= Math.min(count, ids.length)) return completerParCyclage(valid);
     }
   } catch(e) {
     console.warn('[selectCTs] Fallback aléatoire :', e.message);
   }
-  return ids.sort(function() { return Math.random() - 0.5; }).slice(0, count);
+  return completerParCyclage(ids.sort(function() { return Math.random() - 0.5; }).slice(0, count));
 }
 
 // ── Décodage pays — cause profonde corrigée : avant ce fix, un code ISO 2 lettres (ex: "CG")
