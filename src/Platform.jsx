@@ -3070,9 +3070,14 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
       {/* ═══ PERSONA HERO ═══ */}
       {persona.nom && (
         <div className="mdv4-hero">
-          <div style={{position:'relative',aspectRatio:isMobile?'4/3':'auto',background:'radial-gradient(circle at 30% 20%, rgba(255,200,140,0.22), transparent 55%), radial-gradient(circle at 75% 70%, rgba(91,141,239,0.28), transparent 55%), linear-gradient(160deg,#2b2118 0%,#181414 60%,#0d0d10 100%)',display:'flex',alignItems:'flex-end',padding:20,minHeight:isMobile?undefined:260}}>
-            <div style={{position:'absolute',top:14,right:14,fontSize:8.5,letterSpacing:0.4,color:'rgba(255,255,255,0.55)',background:'rgba(0,0,0,0.4)',padding:'4px 8px',borderRadius:20,border:'1px solid rgba(255,255,255,0.12)'}}>Portrait généré par IA</div>
-            <div>
+          <div style={{position:'relative',aspectRatio:isMobile?'4/3':'auto',overflow:'hidden',background: persona.portrait_url ? '#0d0d10' : 'radial-gradient(circle at 30% 20%, rgba(255,200,140,0.22), transparent 55%), radial-gradient(circle at 75% 70%, rgba(91,141,239,0.28), transparent 55%), linear-gradient(160deg,#2b2118 0%,#181414 60%,#0d0d10 100%)',display:'flex',alignItems:'flex-end',padding:20,minHeight:isMobile?undefined:260}}>
+            {persona.portrait_url && (
+              <>
+                <img src={persona.portrait_url} alt={persona.nom} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
+                <div style={{position:'absolute',inset:0,background:'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.75) 100%)'}}/>
+              </>
+            )}
+            <div style={{position:'relative'}}>
               <h1 style={{fontSize:24,fontWeight:800,color:'#fff',textShadow:'0 2px 12px rgba(0,0,0,0.5)',margin:0}}>{persona.nom}</h1>
               <p style={{fontSize:12.5,color:'rgba(255,255,255,0.75)',marginTop:3}}>{persona.age} ans · {persona.role} · {persona.ville}</p>
             </div>
