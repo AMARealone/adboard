@@ -4222,6 +4222,61 @@ export default function Platform() {
     }
   };
 
+  // Créer une demande + notifier Factory (webhook avec retry) — extrait de onConfirm pour être
+  // réutilisable ailleurs (popup de plafond de production notamment). Cause du bug initial :
+  // le popup de plafond appelait sbBriefs.create() en direct, sans jamais reproduire l'envoi du
+  // webhook vers Factory qui suit — Factory ne recevait donc jamais ces demandes-là, exactement
+  // comme cancelCreatives() existe déjà pour éviter la même erreur côté annulation.
+  const creerDemandeEtNotifierFactory = async (product, qty) => {
+    const session = await sbAuth.refreshSession();
+    const brief = await sbBriefs.create(session, product.id, qty);
+    if (!brief) return null;
+    setAllBriefs(prev => [...prev, brief]);
+    setBriefs(prev => ({...prev, [product.id]: brief}));
+    notify(`Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
+
+    const pastBriefs = allBriefs.filter(b => b.product_id === product.id && b.status !== 'cancelled' && b.status !== 'probleme_agence');
+    const webhookPayload = {
+      brief_id: brief.id,
+      user_id: user?.id,
+      user_email: user?.email,
+      plan: subscription?.plan || 'starter',
+      quantity: qty,
+      product: {
+        id: product.id, nom: product.nom, pricing: product.pricing, pays: product.pays,
+        promo: product.promo || '', cible: product.cible || '', utilite: product.utilite || '',
+        couleur1: product.couleur1 || '', couleur2: product.couleur2 || '', couleur3: product.couleur3 || '',
+        photo_url: product.photo_url || null,
+        photo_base64: product.photo?.startsWith('data:') ? product.photo : null,
+        lien_page_produit: product.lien || null,
+        marque: product.marque || null,
+      },
+      history: {
+        batches_count: pastBriefs.length,
+        total_creatives_done: pastBriefs.reduce((s,b) => s+(b.credits_used||9), 0),
+      }
+    };
+    // Envoi du webhook en fire-and-forget (jamais attendu) — comportement identique à l'original :
+    // la création de la demande doit rester rapide pour l'utilisateur, la notification à Factory
+    // se fait en arrière-plan, avec ses propres tentatives, sans bloquer l'interface.
+    (async () => {
+      for (let i=0; i<3; i++) {
+        try {
+          const r = await fetch('https://adstack-server.onrender.com/webhook/brief', {
+            method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'},
+            body: JSON.stringify(webhookPayload),
+            signal: AbortSignal.timeout(15000)
+          });
+          if (r.ok) return;
+        } catch(e) {
+          if (i < 2) await new Promise(res => setTimeout(res, 3000));
+          else console.warn('[Webhook] Échec après 3 tentatives:', e.message);
+        }
+      }
+    })();
+    return brief;
+  };
+
   const [briefs, setBriefs] = useState({});
   const [allBriefs, setAllBriefs] = useState([]); // tous les briefs pour calcul crédits
   const [subscription, setSubscription] = useState(null);
@@ -4843,20 +4898,20 @@ const views = {
                     </div>
                     <button
                       onClick={async () => {
-                        const session = await sbAuth.refreshSession();
-                        const ok = await sbBriefs.cancel(session, b.id);
-                        if (!ok) return;
+                        const produitCible = products.find(pr => pr.id === b.product_id);
+                        if (!produitCible) return;
+                        // Même chemin que le vrai bouton d'annulation (Suivi de demande) :
+                        // notifie Factory (webhook delete) + notifie l'utilisateur (email + in-app)
+                        // + toast. Cause du bug initial : ce bouton appelait sbBriefs.cancel() en
+                        // direct, sautant TOUTES ces étapes silencieusement.
+                        await cancelCreatives(produitCible);
                         const nouveauxBriefs = allBriefs.map(x => x.id === b.id ? {...x, status:'cancelled'} : x);
-                        setAllBriefs(nouveauxBriefs);
                         const reverif = verifierPlafondProduction(nouveauxBriefs, plafondModal.qty);
                         if (reverif.autorise) {
-                          // Assez de place libérée — on crée directement la demande initialement bloquée
-                          const brief = await sbBriefs.create(session, plafondModal.product.id, plafondModal.qty);
-                          if (brief) {
-                            setAllBriefs(prev => [...prev, brief]);
-                            setBriefs(prev => ({...prev, [plafondModal.product.id]: brief}));
-                            notify(`Demande de ${plafondModal.qty} visuels envoyée — livraison sous 48h`, 'brief');
-                          }
+                          // Assez de place libérée — on crée directement la demande initialement
+                          // bloquée, en notifiant Factory correctement cette fois (même chemin que
+                          // le flux normal de création, voir creerDemandeEtNotifierFactory).
+                          await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty);
                           setPlafondModal(null);
                         } else {
                           // Toujours au-dessus du plafond — on met juste la modale à jour
@@ -4894,65 +4949,7 @@ const views = {
             setCreativesTarget(null);
             return;
           }
-          const session = await sbAuth.refreshSession();
-          const brief = await sbBriefs.create(session, creativesTarget.id, qty);
-          if (brief) {
-            setAllBriefs(prev => [...prev, brief]);
-            setBriefs(prev => ({...prev, [creativesTarget.id]: brief}));
-            notify(`Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
-
-            // ── Envoyer le ticket vers Factory (avec wake-up Render) ──
-            const p = creativesTarget;
-            const pastBriefs = allBriefs.filter(b => b.product_id === p.id && b.status !== 'cancelled' && b.status !== 'probleme_agence');
-            const webhookPayload = {
-              brief_id: brief.id,
-              user_id: user?.id,
-              user_email: user?.email,
-              plan: subscription?.plan || 'starter',
-              quantity: qty,
-              product: {
-                id: p.id,
-                nom: p.nom,
-                pricing: p.pricing,
-                pays: p.pays,
-                promo: p.promo || '',
-                cible: p.cible || '',
-                utilite: p.utilite || '',
-                couleur1: p.couleur1 || '',
-                couleur2: p.couleur2 || '',
-                couleur3: p.couleur3 || '',
-                photo_url: p.photo_url || null,
-                photo_base64: p.photo?.startsWith('data:') ? p.photo : null,
-                lien_page_produit: p.lien || null,
-                marque: p.marque || null,
-              },
-              history: {
-                batches_count: pastBriefs.length,
-                total_creatives_done: pastBriefs.reduce((s,b) => s+(b.credits_used||9), 0),
-              }
-            };
-            // Cause profonde corrigée : cette fonction avec retry (pensée pour le cas où Render
-            // dort et met du temps à répondre au 1er appel) existait mais n'était jamais
-            // réellement appelée — l'envoi utilisait un fetch séparé, une seule tentative, échec
-            // silencieux. Cette demande pouvait donc ne jamais arriver jusqu'à Factory sans que
-            // personne ne le sache.
-            const sendWebhook = async (payload, retries=3) => {
-              for (let i=0; i<retries; i++) {
-                try {
-                  const r = await fetch('https://adstack-server.onrender.com/webhook/brief', {
-                    method:'POST', headers:{'Content-Type':'application/json', 'ngrok-skip-browser-warning':'1'},
-                    body: JSON.stringify(payload),
-                    signal: AbortSignal.timeout(15000)
-                  });
-                  if (r.ok) return;
-                } catch(e) {
-                  if (i < retries-1) await new Promise(res => setTimeout(res, 3000));
-                  else console.warn('[Webhook] Échec après', retries, 'tentatives:', e.message);
-                }
-              }
-            };
-            sendWebhook(webhookPayload);
-          }
+          await creerDemandeEtNotifierFactory(creativesTarget, qty);
           setCreativesTarget(null);
         }}
       />
