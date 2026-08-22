@@ -2346,7 +2346,13 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
     return (ticketId && dateParTicket[ticketId]) ? new Date(dateParTicket[ticketId]).getTime() : 0;
   };
   const realCreatives = products.flatMap(p => p.creatives || []).sort((a,b) => dateCreative(b) - dateCreative(a));
-  const angleSet = [...new Set(realCreatives.map(c => c.angle))];
+  // Cause profonde corrigée (filtres batch/angle/cible affichant TOUS les produits même après
+  // avoir sélectionné un produit précis) : angleSet/batchSet/cibleSet étaient calculés depuis
+  // realCreatives (tous produits confondus) au lieu des créatives du produit sélectionné. La
+  // hiérarchie voulue est Tous → Produit → Cible → Batch → Angle (Date se cumule avec n'importe
+  // laquelle) — chaque niveau doit filtrer réellement ce que le niveau suivant propose.
+  const creativesDuProduit = selectedProduct ? realCreatives.filter(c => c.productId === selectedProduct) : realCreatives;
+  const angleSet = [...new Set(creativesDuProduit.map(c => c.angle))];
   // "Batch" — anciennement affiché sous le nom "Date", ce qui prêtait à confusion avec la vraie
   // date de livraison (voir le nouveau filtre "Date" en dessous).
   // Cause profonde corrigée (collision "Batch 1" entre deux produits différents) : le numéro de
@@ -2359,7 +2365,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   products.forEach(p => { nomProduitParId[p.id] = p.nom; });
   const batchKey = (c) => `${c.productId}::${c.week}`;
   const batchLabelParKey = {};
-  realCreatives.forEach(c => {
+  creativesDuProduit.forEach(c => {
     if (c.week) batchLabelParKey[batchKey(c)] = `Batch ${c.week.replace(/^[SB]/,'')} · ${nomProduitParId[c.productId] || '?'}`;
   });
   const batchSet = Object.keys(batchLabelParKey)
@@ -2368,12 +2374,12 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   // Les créatives livrées avant ce fix n'ont pas ce champ — regroupées sous un intitulé honnête
   // plutôt que d'être silencieusement exclues du filtre.
   const CIBLE_INCONNUE = 'Cible non identifiée (livrée avant ce fix)';
-  const cibleSet = [...new Set(realCreatives.map(c => c.cible || CIBLE_INCONNUE))];
+  const cibleSet = [...new Set(creativesDuProduit.map(c => c.cible || CIBLE_INCONNUE))];
 
   const filtered = realCreatives.filter(c => {
     if (selectedProduct && c.productId !== selectedProduct) return false;
     const q = query.trim().toLowerCase();
-    if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q) && !(c.cible||'').toLowerCase().includes(q)) return false;
+    if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q) && !(c.cible||'').toLowerCase().includes(q) && !(nomProduitParId[c.productId]||'').toLowerCase().includes(q)) return false;
     if (filterMode==='angle' && activeChip && c.angle!==activeChip) return false;
     if (filterMode==='batch' && activeChip && batchKey(c)!==activeChip) return false;
     if (filterMode==='cible' && activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
