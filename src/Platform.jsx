@@ -82,6 +82,26 @@ function notifyAction(userId, action, name) {
   }).catch(()=>{});
 }
 
+// Funnel CRM — mêmes 2 événements que la page de vente (ajout_panier / paiement_initie), même
+// endpoint, même déduplication par session (sessionStorage, jamais plus d'un par type et par
+// session peu importe combien de fois l'action est répétée). source:'adboard' permet de
+// distinguer ces événements de ceux de la page de vente côté reporting, plutôt que de les
+// mélanger sous une même étiquette qui perdrait le contexte (client déjà existant qui navigue
+// dans son espace, pas un prospect anonyme qui découvre l'offre).
+function adstackTrackFunnelAdboard(type, userId) {
+  try {
+    const flagKey = 'adstack_tracked_' + type;
+    if (sessionStorage.getItem(flagKey)) return;
+    sessionStorage.setItem(flagKey, '1');
+    fetch('https://adstack-server.onrender.com/track-funnel-event', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, source: 'adboard', user_id: userId || null }),
+      keepalive: true
+    }).catch(()=>{});
+  } catch(e) {}
+}
+
 const sbAuth = {
   signInWithGoogle: () => {
     const redirectTo = encodeURIComponent(window.location.origin + '/adboard');
@@ -3564,10 +3584,12 @@ const startCheckout = (productId, setPaymentProductId) => {
     sbAuth.signInWithGoogle();
     return;
   }
+  adstackTrackFunnelAdboard('paiement_initie', user.id);
   setPaymentProductId(productId);
 };
 
 const triggerChariowCheckout = async (plan, cycle, user, popup) => {
+  adstackTrackFunnelAdboard('paiement_initie', user?.id);
   const cycleData = plan[cycle];
   const checkoutUrl = cycleData.checkout;
   try {
@@ -3957,6 +3979,7 @@ export default function Platform() {
   });
   const setSection = (s) => {
     _setSection(s);
+    if (s === 'tarifs') adstackTrackFunnelAdboard('ajout_panier', user?.id);
     try {
       sessionStorage.setItem('adstack_section', s);
       localStorage.setItem('adstack_section', s);
@@ -4394,7 +4417,7 @@ export default function Platform() {
         if (pendingProductId) {
           localStorage.removeItem('adstack_pending_checkout');
           setSection('tarifs');
-          setTimeout(() => setPaymentProductId(pendingProductId), 400);
+          setTimeout(() => { adstackTrackFunnelAdboard('paiement_initie', u?.id); setPaymentProductId(pendingProductId); }, 400);
         } else {
           // Ancienne clé (avant unification du flux de paiement) — compatibilité pendant la transition
           const pendingRaw = localStorage.getItem('adstack_pending_plan');
@@ -4405,7 +4428,7 @@ export default function Platform() {
             setSection('tarifs');
             const productId = PLAN_CHECKOUT_IDS[`${pendingPlan.id}-${pendingCycle}`];
             setTimeout(() => {
-              if (productId) setPaymentProductId(productId);
+              if (productId) { adstackTrackFunnelAdboard('paiement_initie', u?.id); setPaymentProductId(productId); }
               else triggerChariowCheckout(pendingPlan, pendingCycle, u, window);
             }, 400);
           }
