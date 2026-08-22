@@ -3897,7 +3897,9 @@ async function renderDashboard() {
 
       // Ajouts au panier / paiements initiés — même fenêtre de dates que les clics, table dédiée
       // (funnel_events), alimentée par la page de vente avec déduplication par session côté client.
-      let queryFunnel = `${SB}/funnel_events?select=type,created_at`;
+      // campagne récupérée en plus de type — nécessaire pour calculer un taux PAR message
+      // (pitch/démo/J+3/J+10/J+21), pas juste un total global.
+      let queryFunnel = `${SB}/funnel_events?select=type,campagne,created_at`;
       if (from || to) {
         if (from) queryFunnel += `&created_at=gte.${from}T00:00:00`;
         if (to)   queryFunnel += `&created_at=lte.${to}T23:59:59`;
@@ -3906,12 +3908,20 @@ async function renderDashboard() {
         queryFunnel += `&created_at=gte.${cutoffDateFunnel.toISOString()}`;
       }
       let totalAjoutsPanier = 0, totalPaiementsInities = 0;
+      const panierParCampagne = {}, paiementParCampagne = {};
       try {
         const rFunnel = await fetch(queryFunnel, { headers: H });
         const funnelData = await rFunnel.json();
         if (Array.isArray(funnelData)) {
-          totalAjoutsPanier = funnelData.filter(f => f.type === 'ajout_panier').length;
-          totalPaiementsInities = funnelData.filter(f => f.type === 'paiement_initie').length;
+          funnelData.forEach(f => {
+            if (f.type === 'ajout_panier') {
+              totalAjoutsPanier++;
+              if (f.campagne) panierParCampagne[f.campagne] = (panierParCampagne[f.campagne]||0) + 1;
+            } else if (f.type === 'paiement_initie') {
+              totalPaiementsInities++;
+              if (f.campagne) paiementParCampagne[f.campagne] = (paiementParCampagne[f.campagne]||0) + 1;
+            }
+          });
         }
       } catch(eFunnel) { console.warn('[Dashboard] funnel_events indisponible :', eFunnel.message); }
       const MESSAGES = [
@@ -3925,12 +3935,14 @@ async function renderDashboard() {
         const clics = clicsParCampagne[m.cle] || 0;
         const ctr = m.envoyes > 0 ? (clics/m.envoyes)*100 : null;
         const conv = (m.achats !== null && clics > 0) ? (m.achats/clics)*100 : null;
-        return { label: m.label, envoyes: m.envoyes, clics, achats: m.achats, ctr, conv };
+        const panier = clics > 0 ? ((panierParCampagne[m.cle]||0)/clics)*100 : null;
+        const paiement = clics > 0 ? ((paiementParCampagne[m.cle]||0)/clics)*100 : null;
+        return { label: m.label, envoyes: m.envoyes, clics, achats: m.achats, ctr, conv, panier, paiement };
       });
       const maxClics = Math.max(...lignes.map(l => l.clics), 1);
       jpEl.innerHTML =
         '<div style="display:flex;padding:0 0 8px;font-size:9.5px;color:var(--dimmed);text-transform:uppercase;letter-spacing:.5px">'
-        + '<span style="width:64px">Étape</span><span style="width:60px;text-align:right">Envoyés</span><span style="flex:1"></span><span style="width:70px;text-align:right">Clics</span><span style="width:50px;text-align:right">CTR</span>' + (lignes.some(l=>l.achats!==null) ? '<span style="width:55px;text-align:right">Conv.</span>' : '')
+        + '<span style="width:64px">Étape</span><span style="width:60px;text-align:right">Envoyés</span><span style="flex:1"></span><span style="width:70px;text-align:right">Clics</span><span style="width:50px;text-align:right">CTR</span><span style="width:55px;text-align:right">Panier</span><span style="width:55px;text-align:right">Paiement</span>' + (lignes.some(l=>l.achats!==null) ? '<span style="width:55px;text-align:right">Conv.</span>' : '')
         + '</div>'
         + lignes.map((l, idx) =>
         '<div style="display:flex;align-items:center;padding:10px 0;' + (idx < lignes.length-1 ? 'border-bottom:0.5px solid var(--border)' : '') + '">'
@@ -3939,6 +3951,8 @@ async function renderDashboard() {
         + '<div style="flex:1;height:4px;background:var(--surface2);border-radius:2px;margin:0 10px"><div style="width:' + Math.round(l.clics/maxClics*100) + '%;height:100%;background:var(--blue);border-radius:2px"></div></div>'
         + '<span style="font-size:12px;color:var(--muted);width:70px;text-align:right">' + l.clics + ' clic' + (l.clics!==1?'s':'') + '</span>'
         + '<span style="font-size:12px;font-weight:600;width:50px;text-align:right;color:' + (l.ctr ? 'var(--blue)' : 'var(--muted)') + '">' + (l.ctr !== null ? l.ctr.toFixed(1)+'%' : '—') + '</span>'
+        + '<span style="font-size:12px;font-weight:600;width:55px;text-align:right;color:' + (l.panier ? 'var(--yellow)' : 'var(--muted)') + '">' + (l.panier !== null ? l.panier.toFixed(1)+'%' : '—') + '</span>'
+        + '<span style="font-size:12px;font-weight:600;width:55px;text-align:right;color:' + (l.paiement ? '#FF7A45' : 'var(--muted)') + '">' + (l.paiement !== null ? l.paiement.toFixed(1)+'%' : '—') + '</span>'
         + (l.achats !== null ? '<span style="font-size:12px;font-weight:600;width:55px;text-align:right;color:' + (l.conv ? 'var(--green)' : 'var(--muted)') + '">' + (l.conv !== null ? l.conv.toFixed(1)+'%' : '—') + '</span>' : (lignes.some(x=>x.achats!==null) ? '<span style="width:55px"></span>' : ''))
         + '</div>'
       ).join('');

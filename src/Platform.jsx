@@ -1728,8 +1728,8 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
           <Icon name="check" size={11} color="#22C55E"/> Demande déjà envoyée pour ce produit
         </div>
       )}
-      <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px",borderRadius:7,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
-        <Icon name="sparkle" size={12} color="#fff"/> Demander mes images
+      <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
+        <Icon name="sparkle" size={13} color="#fff"/> Demander mes images
       </button>
     </div>
   );
@@ -1789,19 +1789,19 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
           </span>
         </div>
       </div>
-      <div style={{padding:'10px 12px',flex:1,display:'flex',flexDirection:'column',gap:4}}>
-        <div style={{fontSize:13,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
-        <div style={{fontSize:11,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:1}}>
-          {p.pays ? <span style={{fontSize:10,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'3px 8px',borderRadius:99}}>{p.pays}</span> : <span/>}
-          <div style={{display:'flex',gap:4}}>
+      <div style={{padding:'14px 16px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
+        <div style={{fontSize:15.5,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
+        <div style={{fontSize:12.5,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:3}}>
+          {p.pays ? <span style={{fontSize:11,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'4px 10px',borderRadius:99}}>{p.pays}</span> : <span/>}
+          <div style={{display:'flex',gap:5}}>
             {[p.couleur1,p.couleur2,p.couleur3].filter(Boolean).map((col,i)=>(
-              <span key={i} style={{width:11,height:11,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
+              <span key={i} style={{width:13,height:13,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
             ))}
           </div>
         </div>
       </div>
-      <div style={{padding:'0 12px 12px'}}>
+      <div style={{padding:'0 16px 16px'}}>
         <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} onOpenPayment={onOpenPayment} C={C}/>
       </div>
     </div>
@@ -2036,12 +2036,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         </div>
       )}
 
-      <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(auto-fill,minmax(150px,1fr))',gap:isMobile?8:10}}>
+      <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill,minmax(290px,1fr))',gap:isMobile?14:20}}>
         {products.map(p => (
           <ProductCard key={p.id} p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} notify={notify} setProducts={setProducts} openEdit={openEdit} onOpenPayment={onOpenPayment} C={C}/>
         ))}
 
-        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:150,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
+        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:260,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; e.currentTarget.style.background='rgba(91,141,239,0.05)';}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.muted; e.currentTarget.style.background='transparent';}}
         >
@@ -2315,7 +2315,7 @@ async function shareOrDownloadMultiple(items, isMobile) {
   }
 }
 
-const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
+const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null);
@@ -2489,8 +2489,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
           <div style={{display:'flex',flexDirection:isMobile?'column':'row',alignItems:isMobile?'stretch':'center',justifyContent:'space-between',gap:10,padding:'10px 12px',borderRadius:9,background:C.card,border:`1px solid ${C.borderM}`,boxShadow:'0 8px 24px rgba(0,0,0,0.3)'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
               <button onClick={() => { setSelectMode(false); setSelectedIds([]); }}
-                style={{fontSize:11.5,fontWeight:600,color:C.sec,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
-                ← Annuler
+                style={{display:'flex',alignItems:'center',gap:6,padding:'7px 13px',borderRadius:7,border:`1.5px solid ${C.borderM}`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:11.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                <Icon name="x" size={12} color={C.text}/> Annuler
               </button>
               <button onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(c=>c.id))}
                 style={{fontSize:11.5,fontWeight:600,color:C.accent,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
@@ -2504,8 +2504,15 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
                 onClick={async () => {
                   setBulkDownloading(true);
                   const items = filtered.filter(c => selectedIds.includes(c.id));
+                  const nb = items.length;
                   await shareOrDownloadMultiple(items, isMobile);
                   setBulkDownloading(false);
+                  // Retour visible demandé : sans ça, aucun moyen de savoir si le téléchargement
+                  // a réellement fonctionné. Désélection automatique aussi — l'action est faite,
+                  // garder les cases cochées n'a plus de sens et invite à re-cliquer par erreur.
+                  notify && notify(`${nb} créative${nb>1?'s':''} téléchargée${nb>1?'s':''} avec succès`, 'brief');
+                  setSelectedIds([]);
+                  setSelectMode(false);
                 }}
                 style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                 <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? '…' : `Télécharger (${selectedIds.length})`}
@@ -2671,6 +2678,7 @@ const Copies = ({products, setSection}) => {
   // au lieu de juste y faire défiler (retour direct : "il faut que l'ad copy remonte, pas
   // que je descende vers lui").
   const [cibleFilter, setCibleFilter] = useState(null);
+  const [batchFilterCopies, setBatchFilterCopies] = useState(null);
   const [angleQuery, setAngleQuery] = useState('');
 
   const copy = (text, id) => {
@@ -2681,6 +2689,7 @@ const Copies = ({products, setSection}) => {
     ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, cible:d.cible, idUnique:`${d.semaine}-${a.numero}`})))
     : [];
   const cibleSetCopies = [...new Set(allAngles.map(a => a.cible).filter(Boolean))];
+  const batchSetCopies = [...new Set(allAngles.map(a => a.semaine).filter(Boolean))];
 
   const filtered = products.filter(p => p.nom.toLowerCase().includes(query.toLowerCase()));
 
@@ -2804,14 +2813,28 @@ const Copies = ({products, setSection}) => {
                     style={{width:'100%',padding:'8px 12px 8px 32px',borderRadius:8,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:11.5,fontFamily:'inherit',outline:'none'}}/>
                 </div>
                 {cibleSetCopies.length > 1 && (
-                  <div style={{marginBottom:8}}>
+                  <div style={{marginBottom:10}}>
                     <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Cible</div>
-                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                      <button onClick={()=>setCibleFilter(null)} style={{padding:'4px 11px',borderRadius:20,border:`1px solid ${!cibleFilter?C.accent:C.border}`,background:!cibleFilter?'rgba(91,141,239,0.1)':'transparent',color:!cibleFilter?C.text:C.sec,fontSize:10.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Toutes</button>
+                    <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
+                      <button onClick={()=>setCibleFilter(null)} style={{padding:'8px 16px',borderRadius:20,border:`1.5px solid ${!cibleFilter?C.accent:C.border}`,background:!cibleFilter?'rgba(91,141,239,0.12)':'transparent',color:!cibleFilter?C.text:C.sec,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Toutes</button>
                       {cibleSetCopies.map(c => (
                         <button key={c} onClick={()=>setCibleFilter(cibleFilter===c?null:c)} title={c}
-                          style={{padding:'4px 11px',borderRadius:20,border:`1px solid ${cibleFilter===c?C.accent:C.border}`,background:cibleFilter===c?'rgba(91,141,239,0.1)':'transparent',color:cibleFilter===c?C.text:C.sec,fontSize:10.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          style={{padding:'8px 16px',borderRadius:20,border:`1.5px solid ${cibleFilter===c?C.accent:C.border}`,background:cibleFilter===c?'rgba(91,141,239,0.12)':'transparent',color:cibleFilter===c?C.text:C.sec,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
                           {c.split(',')[0]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {batchSetCopies.length > 1 && (
+                  <div style={{marginBottom:8}}>
+                    <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Batch</div>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                      <button onClick={()=>setBatchFilterCopies(null)} style={{padding:'6px 13px',borderRadius:20,border:`1px solid ${!batchFilterCopies?C.accent:C.border}`,background:!batchFilterCopies?'rgba(91,141,239,0.1)':'transparent',color:!batchFilterCopies?C.text:C.sec,fontSize:11.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Tous</button>
+                      {batchSetCopies.map(s => (
+                        <button key={s} onClick={()=>setBatchFilterCopies(batchFilterCopies===s?null:s)}
+                          style={{padding:'6px 13px',borderRadius:20,border:`1px solid ${batchFilterCopies===s?C.accent:C.border}`,background:batchFilterCopies===s?'rgba(91,141,239,0.1)':'transparent',color:batchFilterCopies===s?C.text:C.sec,fontSize:11.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                          Batch {s.replace(/^[SB]/,'')}
                         </button>
                       ))}
                     </div>
@@ -2819,10 +2842,10 @@ const Copies = ({products, setSection}) => {
                 )}
                 <div>
                   <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Angle</div>
-                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                  <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
                     {allAngles.map(a => (
                       <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}`}
-                        style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
+                        style={{padding:'4px 10px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
                         onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
                         onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
                       >A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
@@ -2833,6 +2856,7 @@ const Copies = ({products, setSection}) => {
 
               {/* Deliveries + Angles */}
               {(selected.deliveries||[]).map(delivery => {
+                if (batchFilterCopies && delivery.semaine !== batchFilterCopies) return null;
                 // Filtre cible sur le batch entier — un batch appartient à une seule cible
                 if (cibleFilter && delivery.cible !== cibleFilter) return null;
                 const anglesVisibles = delivery.angles.filter(angle => {
@@ -3486,6 +3510,10 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       const productId = PLAN_CHECKOUT_IDS[`${parts[1]}-${cycle}`];
       if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
+    if (type === 'whatsapp') {
+      const msg = encodeURIComponent("Bonjour, j'ai besoin d'aide sur AdStack.");
+      window.open(`https://wa.me/221766332693?text=${msg}`, '_blank');
+    }
   };
 
   const BTN_LABELS = {
@@ -3502,6 +3530,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout-annual:starter': 'Starter annuel (-25%) →',
     'checkout-annual:pro': 'Pro annuel (-25%) →',
     'checkout-annual:scale': 'Scale annuel (-25%) →',
+    'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
   return (
@@ -3666,13 +3695,14 @@ const PLAN_CHECKOUT_IDS = {
 // Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
 // Vérifie la connexion Google, mémorise l'intention si pas connecté, reprend automatiquement après connexion.
 const startCheckout = (productId, setPaymentProductId) => {
+  // Cause profonde corrigée (chatbot — et tous les autres boutons de paiement d'AdBoard —
+  // redirigeaient vers "connecte-toi d'abord" au lieu d'ouvrir directement le paiement) :
+  // cette fonction forçait une connexion Google AVANT même d'afficher le popup Chariow. Sur la
+  // page de vente, on peut payer sans être connecté — la connexion ne redevient obligatoire que
+  // plus tard, naturellement, quand on essaie de créer un produit. Ce même principe s'applique
+  // maintenant ici : le paiement s'ouvre toujours directement, connecté ou non.
   const user = sbAuth.getUser();
-  if (!user) {
-    localStorage.setItem('adstack_pending_checkout', productId);
-    sbAuth.signInWithGoogle();
-    return;
-  }
-  adstackTrackFunnelAdboard('paiement_initie', user.id);
+  if (user) adstackTrackFunnelAdboard('paiement_initie', user.id);
   setPaymentProductId(productId);
 };
 
@@ -3709,11 +3739,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "Conversion Discovery (18 images incluses, achat unique sans engagement), Conversion Starter (9 images/semaine, 1 produit), Conversion Pro (18 images/semaine, 2 produits), et Conversion Scale (36 images/semaine, 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
+    a: "Conversion Discovery (9 images incluses, achat unique sans engagement), Conversion Starter (9 images/semaine, 1 produit), Conversion Pro (18 images/semaine, 1 à 2 produits), et Conversion Scale (36 images/semaine, 1 à 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
   },
   {
     q: "Conversion Discovery, comment ça marche exactement ?",
-    a: "C'est un achat unique, pas un abonnement : vous payez une fois, vous recevez 18 images à utiliser librement (en une ou plusieurs demandes, sur un ou deux produits), valables 3 mois. Contrairement aux autres formules, elles ne se renouvellent jamais automatiquement — une fois utilisées, vous pouvez passer à un abonnement classique pour continuer à en recevoir chaque semaine."
+    a: "C'est un achat unique, pas un abonnement : vous payez une fois, vous recevez 9 images à utiliser librement, valables 3 mois. Contrairement aux autres formules, elles ne se renouvellent jamais automatiquement — une fois utilisées, vous pouvez passer à un abonnement classique pour continuer à en recevoir chaque semaine."
   },
   {
     q: "En combien de temps mes visuels sont-ils livrés ?",
@@ -3738,6 +3768,18 @@ const FAQ_ITEMS = [
   {
     q: "Mes données sont-elles en sécurité ?",
     a: "Oui. Vos informations sont hébergées de façon sécurisée et ne sont jamais revendues à des tiers à des fins publicitaires. Le détail complet est disponible dans notre Politique de confidentialité ci-dessous."
+  },
+  {
+    q: "Pourquoi ma demande d'images est-elle parfois refusée ?",
+    a: "Pour garantir que tout le monde soit livré dans les temps, la production est plafonnée à 36 images en cours simultanément sur une fenêtre glissante de 24h, tous produits confondus. Si vous atteignez cette limite, on vous indique l'heure exacte à laquelle vous pourrez réessayer — ou vous pouvez annuler une demande en cours pour libérer de la place immédiatement."
+  },
+  {
+    q: "Puis-je annuler une demande en cours ?",
+    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les images correspondantes sont automatiquement recréditées."
+  },
+  {
+    q: "Qui est Ava, l'assistante dans le coin de l'écran ?",
+    a: "Ava est notre assistante intégrée à AdBoard — elle connaît votre compte, vos produits, vos créatives déjà livrées et vos données marché. Posez-lui vos questions directement, elle répond en tenant compte de votre situation réelle plutôt que de réponses génériques."
   },
 ];
 
@@ -4831,7 +4873,7 @@ const views = {
               return;
             }
             setCreativesTarget(p); }}/>,
-    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile}/>,
+    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
