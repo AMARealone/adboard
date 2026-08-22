@@ -89,16 +89,27 @@
           var flagKey = 'adstack_tracked_' + type;
           if (sessionStorage.getItem(flagKey)) return; // déjà compté cette session
           sessionStorage.setItem(flagKey, '1');
-          var attr = null;
-          try { attr = JSON.parse(localStorage.getItem('crm_attribution') || 'null'); } catch(e) {}
+          // Priorité à l'URL courante — la source la plus fraîche et la plus fiable pour CETTE
+          // visite précise (rien à lire en mémoire, juste ce qui est déjà dans la barre d'adresse).
+          // localStorage reste un repli utile pour une navigation interne qui aurait perdu les
+          // paramètres (ex: clic sur une ancre après un premier chargement) — mais ne résout pas
+          // le changement d'appareil, aucune solution côté client ne le peut vraiment.
+          var params = new URLSearchParams(window.location.search);
+          var prospectId = params.get('utm_content');
+          var campagne = params.get('utm_campaign');
+          if (!prospectId || !campagne) {
+            var attr = null;
+            try { attr = JSON.parse(localStorage.getItem('crm_attribution') || 'null'); } catch(e) {}
+            if (attr) { prospectId = attr.prospect_id; campagne = attr.campagne; }
+          }
           fetch('https://adstack-server.onrender.com/track-funnel-event', {
             method: 'POST',
             headers: {'Content-Type':'application/json'},
             body: JSON.stringify({
               type: type,
               source: 'vente',
-              prospect_id: attr ? attr.prospect_id : null,
-              campagne: attr ? attr.campagne : null
+              prospect_id: prospectId || null,
+              campagne: campagne || null
             }),
             keepalive: true
           }).catch(function(){});
