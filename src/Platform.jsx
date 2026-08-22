@@ -844,11 +844,27 @@ const sbSub = {
   }
 };
 
+// ── Deux notions de statut de brief, utilisées PARTOUT dans le fichier de façon cohérente —
+// cause profonde d'une bonne partie du chaos remonté : 5 variantes légèrement différentes de ces
+// mêmes filtres existaient éparpillées (certaines oubliaient probleme_agence, d'autres oubliaient
+// done), donnant des réponses différentes à "cette commande compte-t-elle encore ?" selon
+// l'endroit du code qui posait la question — d'où des popups qui se contredisaient, une jauge qui
+// ne se mettait pas à jour, une demande "fantôme" qui bloquait alors que Factory l'avait supprimée.
+//
+// briefCompteCredits — le brief a consommé un crédit d'abonnement et continue de compter dans le
+// total utilisé, MÊME une fois livré (normal : l'image a été produite). Seuls "annulé" (client ou
+// agence) libèrent le crédit.
+function briefCompteCredits(b) { return !!b && b.status !== 'cancelled' && b.status !== 'probleme_agence'; }
+// briefEstActif — le brief est RÉELLEMENT en cours de traitement, ni terminé ni annulé sous
+// aucune forme. La SEULE notion à utiliser pour bloquer un doublon, occuper la capacité de
+// production 24h, ou afficher "en production" sur une carte produit.
+function briefEstActif(b) { return !!b && (b.status === 'pending' || b.status === 'in_production'); }
+
 // Calcule les images publicitaires disponibles dynamiquement
 function computeCredits(sub, allBriefs) {
   if (!sub || !sub.active) return { total: 0, used: 0, available: 0, nextCreditDate: null };
   const used = allBriefs
-    .filter(b => b.status !== 'cancelled' && b.status !== 'probleme_agence')
+    .filter(briefCompteCredits)
     .reduce((sum, b) => sum + (b.credits_used || 9), 0);
   // Pack (Discovery) : total fixe, jamais de rechargement — contrairement à un abonnement
   // classique qui accumule credits_per_week × semaines écoulées.
@@ -878,7 +894,7 @@ const MS_24H = 24 * 60 * 60 * 1000;
 function briefsActifsDans24h(allBriefs) {
   const seuil = Date.now() - MS_24H;
   return allBriefs
-    .filter(b => (b.status === 'pending' || b.status === 'in_production') && new Date(b.created_at).getTime() >= seuil)
+    .filter(b => briefEstActif(b) && new Date(b.created_at).getTime() >= seuil)
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // plus ancien en premier — expire le plus tôt
 }
 
@@ -923,23 +939,6 @@ const sbSubs = {
     return sub;
   }
 };
-
-// Calcule les images publicitaires disponibles dynamiquement
-function calcCredits(subscription, briefs) {
-  if (!subscription || !subscription.active) return { earned: 0, used: 0, available: 0, plan: null };
-  const used = Object.values(briefs)
-    .filter(b => b.status !== 'cancelled' && b.status !== 'probleme_agence')
-    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
-  if (subscription.type === 'pack') {
-    const earned = subscription.total_credits || 0;
-    return { earned, used, available: Math.max(0, earned - used), plan: subscription.plan };
-  }
-  const now = Date.now();
-  const started = new Date(subscription.started_at).getTime();
-  const weeksActive = Math.floor((now - started) / (7 * 24 * 60 * 60 * 1000)) + 1;
-  const earned = weeksActive * subscription.credits_per_week;
-  return { earned, used, available: Math.max(0, earned - used), plan: subscription.plan };
-}
 
 const PLAN_LABELS = { starter: 'Starter', pro: 'Pro', scale: 'Scale' };
 const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
@@ -1540,7 +1539,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   const onRefreshRef = useRef(onRefresh);
   const hasActiveRef = useRef(false);
   onRefreshRef.current = onRefresh;
-  hasActiveRef.current = (allBriefs || []).some(b => b.status === 'pending' || b.status === 'in_production');
+  hasActiveRef.current = (allBriefs || []).some(briefEstActif);
   useEffect(() => {
     const p = setInterval(() => {
       if (hasActiveRef.current && onRefreshRef.current) onRefreshRef.current();
@@ -1567,7 +1566,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   // affichées indéfiniment dans cette liste, mélangées aux demandes actives. "Tout disparaît" une
   // fois la demande satisfaite — seules les demandes réellement en cours restent visibles ici.
   const sorted = [...allBriefs]
-    .filter(b => b.status === 'pending' || b.status === 'in_production')
+    .filter(briefEstActif)
     .sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
 
   if (!sorted.length) return (
@@ -1697,7 +1696,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
 
 const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, onOpenPayment, C}) => {
   const brief = briefs[p.id];
-  const hasActiveBrief = brief && brief.status !== 'cancelled' && brief.status !== 'done' && brief.status !== 'probleme_agence';
+  const hasActiveBrief = briefEstActif(brief);
   const credits = computeCredits(subscription, allBriefs);
   const nextCreditDate = credits.nextCreditDate
     ? credits.nextCreditDate.toLocaleDateString('fr-FR', { day:'numeric', month:'long' })
@@ -1740,7 +1739,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   const [hovered, setHovered] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const brief = briefs[p.id];
-  const hasActiveBrief = brief && brief.status !== 'cancelled' && brief.status !== 'probleme_agence';
+  const hasActiveBrief = briefEstActif(brief);
 
   const doDelete = async () => {
     const session = await sbAuth.refreshSession();
@@ -4088,14 +4087,23 @@ export default function Platform() {
   const [pullDistance, setPullDistance] = useState(0);
   const touchStartY = useRef(0);
   const mainRef = useRef(null);
+  // Garde synchrone contre les appels chevauchants — cause profonde probable du chaos remonté
+  // (demandes qui apparaissent/disparaissent, jauge qui saute) : le sondage automatique toutes les
+  // 10s pouvait déclencher un NOUVEL appel avant que le précédent soit terminé, si le serveur
+  // Render met plus de 10s à répondre (très plausible s'il vient de s'endormir) — deux requêtes
+  // en vol simultanément, celle qui répond en DERNIER écrasait l'état avec des données parfois
+  // plus anciennes que celles déjà affichées, peu importe l'ordre réel des réponses.
+  const refreshEnCoursRef = useRef(false);
 
   // Rafraîchit toutes les données utilisateur (abonnement, produits, briefs) — utilisé par le pull-to-refresh
   const refreshUserData = async () => {
     if (!user) return;
+    if (refreshEnCoursRef.current) return; // un rafraîchissement est déjà en vol — on l'ignore plutôt que de le chevaucher
+    refreshEnCoursRef.current = true;
     setIsRefreshing(true);
     try {
       const session = await sbAuth.refreshSession();
-      if (!session) { setIsRefreshing(false); return; }
+      if (!session) { return; }
       const [prods, sub] = await Promise.all([sbProducts.load(session), sbSubs.load(session)]);
       if (prods) setProducts(prods);
       setSubscription(sub);
@@ -4111,8 +4119,11 @@ export default function Platform() {
         setNotifications(notifs);
         setUnreadCount(notifs.filter(n => !n.read).length);
       }
-    } catch(e) {}
-    setTimeout(() => setIsRefreshing(false), 500);
+    } catch(e) {
+    } finally {
+      refreshEnCoursRef.current = false;
+      setTimeout(() => setIsRefreshing(false), 500);
+    }
   };
 
   // Pull-to-refresh tactile — actif uniquement si le contenu est tout en haut.
@@ -4347,7 +4358,7 @@ export default function Platform() {
     setBriefs(prev => ({...prev, [product.id]: brief}));
     notify(`Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
 
-    const pastBriefs = allBriefs.filter(b => b.product_id === product.id && b.status !== 'cancelled' && b.status !== 'probleme_agence');
+    const pastBriefs = allBriefs.filter(b => b.product_id === product.id && briefCompteCredits(b));
     const webhookPayload = {
       brief_id: brief.id,
       user_id: user?.id,
@@ -4543,8 +4554,16 @@ export default function Platform() {
   // (Chariow) — la notification push arrivait bien (canal séparé), mais l'état affiché par
   // l'app restait celui chargé au tout premier montage, potentiellement obsolète.
   const chargerDonneesUtilisateur = () => {
+    // Même garde que refreshUserData (refreshEnCoursRef) — ces deux fonctions touchent EXACTEMENT
+    // les mêmes états (allBriefs, briefs, products, subscription) mais se déclenchent de façon
+    // indépendante (celle-ci au montage/retour d'onglet, l'autre par sondage toutes les 10s). Sans
+    // garde PARTAGÉE, l'une pouvait démarrer pendant que l'autre était encore en vol — deux
+    // sources concurrentes écrivant dans le même état, cause probable d'une bonne partie du
+    // chaos remonté (demandes qui apparaissent/disparaissent).
+    if (refreshEnCoursRef.current) return;
+    refreshEnCoursRef.current = true;
     sbAuth.refreshSession().then(session => {
-      if (!session) { setUser(null); return; }
+      if (!session) { setUser(null); refreshEnCoursRef.current = false; return; }
       Promise.all([
         sbProducts.load(session),
         sbSubs.load(session),
@@ -4590,8 +4609,8 @@ export default function Platform() {
             }
           });
         }
-      });
-    });
+      }).finally(() => { refreshEnCoursRef.current = false; });
+    }).catch(() => { refreshEnCoursRef.current = false; });
   };
 
   // Rafraîchit tout dès que l'onglet redevient visible (retour depuis un autre onglet, une
@@ -4794,23 +4813,19 @@ const views = {
     produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
-            // Limite anti-abus : max 36 images / 4 demandes par fenêtre glissante de 24h (tous produits confondus)
-            const now = Date.now();
-            const WIN_24H = 24*60*60*1000;
-            const recentBriefs = allBriefs.filter(b => b.status !== 'cancelled' && b.status !== 'probleme_agence' && (now - new Date(b.created_at).getTime()) < WIN_24H);
-            const recentImages = recentBriefs.reduce((sum,b) => sum + (b.quantity || b.credits_used || 9), 0);
-            if (recentBriefs.length >= 4 || recentImages >= 36) {
-              const oldest = recentBriefs.reduce((o,b) => !o || new Date(b.created_at) < new Date(o.created_at) ? b : o, null);
-              const freeAt = oldest ? new Date(new Date(oldest.created_at).getTime() + WIN_24H) : null;
-              const freeAtStr = freeAt ? freeAt.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' }) + ' le ' + freeAt.toLocaleDateString('fr-FR', { day:'numeric', month:'long' }) : 'plus tard';
-              notify(`Limite atteinte : maximum 36 images (4 demandes) par 24h. Réessayez après ${freeAtStr}.`, 'info');
-              return;
-            }
-            // Anti-doublon : brief actif existant ?
+            // Cause profonde corrigée (chaos remonté : plafond qui bloque avant même d'avoir
+            // choisi une quantité, incohérent avec le popup de plafond du modal) : il existait
+            // ICI un 2e système de plafond, entièrement séparé de verifierPlafondProduction et
+            // du popup plafondModal, avec sa PROPRE logique légèrement différente (4 demandes OU
+            // 36 images, pas juste 36) — les deux pouvaient se contredire selon lequel se
+            // déclenchait en premier. Un seul système de plafond doit exister : celui du modal,
+            // qui connaît la vraie quantité demandée. Retiré d'ici entièrement.
+            // Anti-doublon : brief actif existant pour CE produit précis ? briefEstActif — seule
+            // notion cohérente d'"actif" dans tout le fichier (voir sa définition : ni terminé,
+            // ni annulé sous aucune forme, y compris probleme_agence, précédemment oublié ici).
             const existing = briefs[p.id];
             const CANCEL_WIN = 12*60*60*1000;
-            const isActive = existing && existing.status !== 'cancelled' && existing.status !== 'done';
-            if(isActive){
+            if(briefEstActif(existing)){
               const canCancel = existing.status==='pending' && (Date.now()-new Date(existing.created_at).getTime()) < CANCEL_WIN;
               setReAskConfirm({ product: p, canCancel });
               return;
