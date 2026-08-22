@@ -1729,8 +1729,8 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
           <Icon name="check" size={11} color="#22C55E"/> Demande déjà envoyée pour ce produit
         </div>
       )}
-      <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
-        <Icon name="sparkle" size={13} color="#fff"/> Demander mes images
+      <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"9px",borderRadius:7,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:11,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
+        <Icon name="sparkle" size={12} color="#fff"/> Demander mes images
       </button>
     </div>
   );
@@ -1758,51 +1758,51 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
       onMouseEnter={e=>{setHovered(true); e.currentTarget.style.borderColor='rgba(45,127,249,0.35)'; e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 12px 32px rgba(45,127,249,0.12)';}}
       onMouseLeave={e=>{setHovered(false); e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none';}}
     >
-      <div style={{aspectRatio:'4/5',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-        {!p.photo && <Icon name="box" size={32} color={C.muted}/>}
+      <div style={{aspectRatio:'4/3',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        {!p.photo && <Icon name="box" size={26} color={C.muted}/>}
         {/* Voile dégradé bas — meilleure lisibilité du badge de statut, plus tech qu'un fond plat */}
         <div style={{position:'absolute',bottom:0,left:0,right:0,height:'45%',background:'linear-gradient(transparent, rgba(0,0,0,0.55))',pointerEvents:'none'}}/>
         {p.logo && (
-          <div style={{position:'absolute',bottom:8,left:8,width:32,height:32,borderRadius:8,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:4}}>
+          <div style={{position:'absolute',bottom:7,left:7,width:26,height:26,borderRadius:7,background:'rgba(255,255,255,0.92)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:3}}>
             <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
           </div>
         )}
-        <div style={{position:'absolute',top:10,right:10,display:'flex',gap:6,opacity:hovered?1:0,transition:'opacity 0.15s'}}>
-          <button onClick={() => openEdit(p)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+        <div style={{position:'absolute',top:7,right:7,display:'flex',gap:5,opacity:hovered?1:0,transition:'opacity 0.15s'}}>
+          <button onClick={() => openEdit(p)} style={{width:22,height:22,borderRadius:6,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(91,141,239,0.85)'}
             onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
           >
-            <Icon name="pencil" size={13} color="#E4E7EC"/>
+            <Icon name="pencil" size={11} color="#E4E7EC"/>
           </button>
-          <button onClick={() => setConfirmDelete(true)} style={{width:26,height:26,borderRadius:8,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+          <button onClick={() => setConfirmDelete(true)} style={{width:22,height:22,borderRadius:6,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(239,107,91,0.85)'}
             onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
           >
-            <Icon name="x" size={13} color="#E4E7EC"/>
+            <Icon name="x" size={11} color="#E4E7EC"/>
           </button>
         </div>
-        <div style={{position:'absolute',top:10,left:10,display:'flex',gap:6}}>
+        <div style={{position:'absolute',top:7,left:7,display:'flex',gap:5}}>
           {p.promo && <Tag ch={p.promo} color="red"/>}
         </div>
-        <div style={{position:'absolute',bottom:10,left:10}}>
-          <span style={{fontSize:10,fontWeight:700,letterSpacing:'0.02em',padding:'4px 9px',borderRadius:99,background: hasActiveBrief ? 'rgba(91,141,239,0.16)' : 'rgba(255,255,255,0.09)', color: hasActiveBrief ? C.accent : C.muted, border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
+        <div style={{position:'absolute',bottom:7,left:7}}>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:'0.02em',padding:'3px 8px',borderRadius:99,background: hasActiveBrief ? 'rgba(91,141,239,0.16)' : 'rgba(255,255,255,0.09)', color: hasActiveBrief ? C.accent : C.muted, border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
             {hasActiveBrief ? 'En production' : 'Prêt à commander'}
           </span>
         </div>
       </div>
-      <div style={{padding:'14px 16px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
-        <div style={{fontSize:14.5,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
-        <div style={{fontSize:12,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:2}}>
-          {p.pays ? <span style={{fontSize:11,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'4px 9px',borderRadius:99}}>{p.pays}</span> : <span/>}
-          <div style={{display:'flex',gap:5}}>
+      <div style={{padding:'10px 12px',flex:1,display:'flex',flexDirection:'column',gap:4}}>
+        <div style={{fontSize:13,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
+        <div style={{fontSize:11,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:1}}>
+          {p.pays ? <span style={{fontSize:10,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'3px 8px',borderRadius:99}}>{p.pays}</span> : <span/>}
+          <div style={{display:'flex',gap:4}}>
             {[p.couleur1,p.couleur2,p.couleur3].filter(Boolean).map((col,i)=>(
-              <span key={i} style={{width:13,height:13,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
+              <span key={i} style={{width:11,height:11,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
             ))}
           </div>
         </div>
       </div>
-      <div style={{padding:'0 16px 16px'}}>
+      <div style={{padding:'0 12px 12px'}}>
         <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} onOpenPayment={onOpenPayment} C={C}/>
       </div>
     </div>
@@ -2037,12 +2037,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         </div>
       )}
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:14}}>
+      <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,1fr)':'repeat(auto-fill,minmax(150px,1fr))',gap:isMobile?8:10}}>
         {products.map(p => (
           <ProductCard key={p.id} p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} notify={notify} setProducts={setProducts} openEdit={openEdit} onOpenPayment={onOpenPayment} C={C}/>
         ))}
 
-        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:240,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
+        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:150,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; e.currentTarget.style.background='rgba(91,141,239,0.05)';}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.muted; e.currentTarget.style.background='transparent';}}
         >
@@ -2329,6 +2329,16 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Filtre produit — dropdown recherchable, remplace l'ancienne bande de pills à défilement
+  // horizontal (difficile à parcourir avec beaucoup de produits, cf retour direct).
+  const [productDropdownOpen, setProductDropdownOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const productDropdownRef = useRef(null);
+  useEffect(() => {
+    const onClickOutside = (e) => { if (productDropdownRef.current && !productDropdownRef.current.contains(e.target)) setProductDropdownOpen(false); };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
 
   // Cause profonde corrigée : CREA était une constante vide codée en dur (jamais remplie) —
   // la galerie affichait des rectangles de dégradé factices, jamais les vraies créatives déjà
@@ -2424,88 +2434,109 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
 
   return (
     <div>
-      <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18}}>
-        <div>
-          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Galerie Créatives</h1>
-          <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Vos visuels produits</p>
-        </div>
-        <div style={{display:'flex',alignItems:'center',gap:8}}>
-          <Tag ch={`${filtered.length} créatives`} color="gray"/>
-          {realCreatives.length > 0 && (
-            <button onClick={() => { setSelectMode(m => !m); setSelectedIds([]); }}
-              style={{padding:'6px 12px',borderRadius:7,border:`1px solid ${selectMode?C.accent:C.border}`,background:selectMode?'rgba(196,30,58,0.08)':'rgba(255,255,255,0.05)',color:selectMode?C.text:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
-              {selectMode ? 'Annuler' : 'Sélectionner'}
-            </button>
-          )}
-        </div>
+      <div style={{marginBottom:14}}>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Galerie Créatives</h1>
+        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Vos visuels produits · {filtered.length} créative{filtered.length!==1?'s':''}</p>
       </div>
 
-      {selectMode && (
-        <div style={{display:'flex',flexDirection:isMobile?'column':'row',alignItems:isMobile?'stretch':'center',justifyContent:'space-between',gap:10,marginBottom:14,padding:'12px 14px',borderRadius:9,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
-          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
-            <button onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(c=>c.id))}
-              style={{fontSize:11.5,fontWeight:600,color:C.accent,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
-              {selectedIds.length === filtered.length ? 'Tout désélectionner' : 'Tout sélectionner'}
-            </button>
-            {isMobile && <span style={{fontSize:11.5,color:C.sec}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>}
+      {/* ═══ Barre d'action STICKY — reste visible en scrollant, bascule selon le mode ═══
+          Corrige le retour direct : "je dois remonter jusqu'en haut pour Télécharger/Supprimer". */}
+      <div style={{position:'sticky',top:0,zIndex:20,background:C.bg,margin:'0 -16px',padding:'8px 16px',marginBottom:selectMode?10:0}}>
+        {!selectMode ? (
+          <div style={{display:'flex',alignItems:'center',gap:8}}>
+            {/* Dropdown produit recherchable — remplace l'ancienne bande de pills horizontale */}
+            <div ref={productDropdownRef} style={{position:'relative',flex:1,minWidth:0}}>
+              <button onClick={()=>setProductDropdownOpen(o=>!o)}
+                style={{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'8px 12px',borderRadius:9,border:`1px solid ${selectedProduct?C.accent:C.border}`,background:selectedProduct?'rgba(91,141,239,0.08)':C.card,color:selectedProduct?C.text:C.sec,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                {selectedProduct ? (
+                  <div style={{width:20,height:20,borderRadius:5,flexShrink:0,background:products.find(p=>p.id===selectedProduct)?.photo?`url(${products.find(p=>p.id===selectedProduct).photo}) center/cover no-repeat`:'rgba(255,255,255,0.08)'}}/>
+                ) : <Icon name="grid" size={13} color={C.sec}/>}
+                <span style={{flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{selectedProduct ? products.find(p=>p.id===selectedProduct)?.nom : 'Tous les produits'}</span>
+                <Icon name="chevron" size={13} color={C.muted}/>
+              </button>
+              {productDropdownOpen && (
+                <div style={{position:'absolute',top:'calc(100% + 6px)',left:0,right:0,maxWidth:340,borderRadius:10,border:`1px solid ${C.borderM}`,background:C.card,boxShadow:'0 12px 32px rgba(0,0,0,0.4)',zIndex:30,overflow:'hidden'}}>
+                  <div style={{padding:8,borderBottom:`1px solid ${C.border}`}}>
+                    <input autoFocus value={productSearch} onChange={e=>setProductSearch(e.target.value)} placeholder="Rechercher un produit..."
+                      style={{width:'100%',padding:'8px 10px',borderRadius:7,background:C.bg,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none'}}/>
+                  </div>
+                  <div style={{maxHeight:280,overflowY:'auto'}}>
+                    <button onClick={()=>{setSelectedProduct(null);setActiveChip(null);setProductDropdownOpen(false);setProductSearch('');}}
+                      style={{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'9px 12px',border:'none',background:!selectedProduct?'rgba(91,141,239,0.08)':'transparent',color:!selectedProduct?C.text:C.sec,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                      <Icon name="grid" size={13} color={C.sec}/> Tous les produits
+                    </button>
+                    {products.filter(p=>p.nom.toLowerCase().includes(productSearch.toLowerCase())).map(p => (
+                      <button key={p.id} onClick={()=>{setSelectedProduct(p.id);setActiveChip(null);setProductDropdownOpen(false);setProductSearch('');}}
+                        style={{display:'flex',alignItems:'center',gap:8,width:'100%',padding:'9px 12px',border:'none',background:selectedProduct===p.id?'rgba(91,141,239,0.08)':'transparent',color:selectedProduct===p.id?C.text:C.sec,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',textAlign:'left'}}>
+                        <div style={{width:20,height:20,borderRadius:5,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.08)'}}/>
+                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.nom}</span>
+                      </button>
+                    ))}
+                    {products.filter(p=>p.nom.toLowerCase().includes(productSearch.toLowerCase())).length===0 && (
+                      <div style={{padding:'14px 12px',fontSize:11.5,color:C.muted,textAlign:'center'}}>Aucun produit trouvé</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+            {realCreatives.length > 0 && (
+              <button onClick={() => { setSelectMode(true); setSelectedIds([]); }}
+                style={{flexShrink:0,padding:'8px 14px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.05)',color:C.sec,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+                Sélectionner
+              </button>
+            )}
           </div>
-          <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-            {!isMobile && <span style={{fontSize:11.5,color:C.sec,flexShrink:0}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>}
-            <button disabled={!selectedIds.length || bulkDownloading}
-              onClick={async () => {
-                setBulkDownloading(true);
-                const items = filtered.filter(c => selectedIds.includes(c.id));
-                await shareOrDownloadMultiple(items, isMobile);
-                setBulkDownloading(false);
-              }}
-              style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
-              <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? '…' : `Télécharger (${selectedIds.length})`}
-            </button>
-            <button disabled={!selectedIds.length || deleting}
-              onClick={() => setDeleteConfirm(true)}
-              style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:`1px solid ${selectedIds.length?'rgba(229,80,80,0.3)':C.border}`,background:selectedIds.length?'rgba(229,80,80,0.08)':'rgba(255,255,255,0.04)',color:selectedIds.length?'#E55050':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
-              <Icon name="x" size={13} color={selectedIds.length?'#E55050':C.muted}/> Supprimer
-            </button>
+        ) : (
+          <div style={{display:'flex',flexDirection:isMobile?'column':'row',alignItems:isMobile?'stretch':'center',justifyContent:'space-between',gap:10,padding:'10px 12px',borderRadius:9,background:C.card,border:`1px solid ${C.borderM}`,boxShadow:'0 8px 24px rgba(0,0,0,0.3)'}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
+              <button onClick={() => { setSelectMode(false); setSelectedIds([]); }}
+                style={{fontSize:11.5,fontWeight:600,color:C.sec,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
+                ← Annuler
+              </button>
+              <button onClick={() => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(c=>c.id))}
+                style={{fontSize:11.5,fontWeight:600,color:C.accent,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',padding:0}}>
+                {selectedIds.length === filtered.length ? 'Tout désélectionner' : 'Tout sélectionner'}
+              </button>
+              {isMobile && <span style={{fontSize:11.5,color:C.sec}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>}
+            </div>
+            <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+              {!isMobile && <span style={{fontSize:11.5,color:C.sec,flexShrink:0}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>}
+              <button disabled={!selectedIds.length || bulkDownloading}
+                onClick={async () => {
+                  setBulkDownloading(true);
+                  const items = filtered.filter(c => selectedIds.includes(c.id));
+                  await shareOrDownloadMultiple(items, isMobile);
+                  setBulkDownloading(false);
+                }}
+                style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? '…' : `Télécharger (${selectedIds.length})`}
+              </button>
+              <button disabled={!selectedIds.length || deleting}
+                onClick={() => setDeleteConfirm(true)}
+                style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:`1px solid ${selectedIds.length?'rgba(229,80,80,0.3)':C.border}`,background:selectedIds.length?'rgba(229,80,80,0.08)':'rgba(255,255,255,0.04)',color:selectedIds.length?'#E55050':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
+                <Icon name="x" size={13} color={selectedIds.length?'#E55050':C.muted}/> Supprimer
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Product filter strip */}
-      {products.length > 0 && (
-        <div style={{display:'flex',gap:8,marginBottom:16,overflowX:'auto',paddingBottom:2}}>
-          <button
-            onClick={() => setSelectedProduct(null)}
-            style={{display:'flex',alignItems:'center',gap:6,padding:'6px 14px',borderRadius:20,border:`1px solid ${!selectedProduct ? C.accent : C.border}`,background:!selectedProduct ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:!selectedProduct ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
-          >Tous</button>
-          {products.map(p => (
-            <button key={p.id}
-              onClick={() => setSelectedProduct(selectedProduct === p.id ? null : p.id)}
-              style={{display:'flex',alignItems:'center',gap:7,padding:'5px 12px 5px 7px',borderRadius:20,border:`1px solid ${selectedProduct===p.id ? C.accent : C.border}`,background:selectedProduct===p.id ? 'rgba(196,30,58,0.08)' : 'rgba(255,255,255,0.07)',color:selectedProduct===p.id ? C.text : C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0,transition:'all 0.15s'}}
-            >
-              <div style={{width:20,height:20,borderRadius:4,flexShrink:0,background:p.photo?`url(${p.photo}) center/cover no-repeat`:'rgba(255,255,255,0.08)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
-                {!p.photo && <Icon name="box" size={10} color={C.sec}/>}
-              </div>
-              <span style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:130}}>{p.nom}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div style={{position:'relative',marginBottom:14}}>
+      <div style={{position:'relative',marginBottom:14,marginTop:selectMode?0:12}}>
         <div style={{position:'absolute',left:13,top:0,bottom:0,display:'flex',alignItems:'center',color:C.sec,pointerEvents:'none'}}>
           <Icon name="search" size={15}/>
         </div>
         <input
           value={query} onChange={e=>setQuery(e.target.value)}
-          placeholder="Rechercher par angle, batch..."
+          placeholder="Rechercher par produit, angle, batch..."
           style={{width:'100%',padding:'11px 14px 11px 38px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none',transition:'border-color 0.15s'}}
           onFocus={e=>e.target.style.borderColor=C.borderM}
           onBlur={e=>e.target.style.borderColor=C.border}
         />
       </div>
 
+      {/* Hiérarchie voulue : Tous → Cible → Batch → Angle (Date se cumule avec n'importe lequel) */}
       <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18, flexWrap:'wrap'}}>
-        {[['tous','Tous','grid'],['batch','Batch','card'],['date','Date','calendar'],['angle','Angle','tag'],['cible','Cible','person']].map(([id,label,icon]) => (
+        {[['tous','Tous','grid'],['cible','Cible','person'],['batch','Batch','card'],['angle','Angle','tag'],['date','Date','calendar']].map(([id,label,icon]) => (
           <button key={id} onClick={() => {setFilterMode(id); setActiveChip(null);}}
             style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
@@ -2552,14 +2583,22 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
             onClick={() => selectMode
               ? setSelectedIds(ids => ids.includes(c.id) ? ids.filter(i=>i!==c.id) : [...ids, c.id])
               : setSelected(c)}
-            style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:c.imageUrl?`url(${c.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`}}
+            style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:c.imageUrl?'#14161D':`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`,transform:selectMode&&selectedIds.includes(c.id)?'scale(0.94)':'scale(1)',transition:'transform 0.15s cubic-bezier(0.34,1.56,0.64,1)',boxShadow:selectMode&&selectedIds.includes(c.id)?`0 0 0 2px ${C.accent}`:'none'}}
           >
+            {/* Vraie balise <img loading="lazy"> plutôt qu'un fond CSS — le navigateur ne
+                télécharge plus TOUTES les images d'un coup, seulement celles qui approchent du
+                viewport en scrollant. Un fond CSS ne peut pas bénéficier de cette optimisation
+                native, cause probable du chargement très lent remonté sur une grande galerie. */}
+            {c.imageUrl && (
+              <img src={c.imageUrl} alt={c.angle} loading="lazy" decoding="async"
+                style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
+            )}
             {selectMode && (
-              <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:selectedIds.includes(c.id)?C.accent:'rgba(0,0,0,0.45)',border:`1.5px solid ${selectedIds.includes(c.id)?C.accent:'rgba(255,255,255,0.6)'}`,backdropFilter:'blur(2px)'}}>
+              <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:selectedIds.includes(c.id)?C.accent:'rgba(0,0,0,0.45)',border:`1.5px solid ${selectedIds.includes(c.id)?C.accent:'rgba(255,255,255,0.6)'}`,backdropFilter:'blur(2px)',zIndex:2}}>
                 {selectedIds.includes(c.id) && <Icon name="check" size={12} color="#fff"/>}
               </div>
             )}
-            <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))'}}>
+            <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))',zIndex:2}}>
               <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.angle}</div>
               <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Batch {c.week.replace(/^[SB]/,'')}</div>
             </div>
@@ -2630,6 +2669,11 @@ const Copies = ({products, setSection}) => {
   const [selected, setSelected] = useState(null);
   const [copied, setCopied] = useState(null);
   const angleRefs = useRef({});
+  // Filtres cible/angle une fois un produit sélectionné — isolent les angles correspondants
+  // au lieu de juste y faire défiler (retour direct : "il faut que l'ad copy remonte, pas
+  // que je descende vers lui").
+  const [cibleFilter, setCibleFilter] = useState(null);
+  const [angleQuery, setAngleQuery] = useState('');
 
   const copy = (text, id) => {
     navigator.clipboard?.writeText(text).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2200); });
@@ -2638,10 +2682,11 @@ const Copies = ({products, setSection}) => {
   const allAngles = selected
     ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, cible:d.cible, idUnique:`${d.semaine}-${a.numero}`})))
     : [];
+  const cibleSetCopies = [...new Set(allAngles.map(a => a.cible).filter(Boolean))];
 
   const filtered = products.filter(p => p.nom.toLowerCase().includes(query.toLowerCase()));
 
-  const pick = (p) => { setSelected(p); setQuery(''); };
+  const pick = (p) => { setSelected(p); setQuery(''); setCibleFilter(null); setAngleQuery(''); };
 
   const scrollTo = (num) => { angleRefs.current[num]?.scrollIntoView({behavior:'smooth', block:'start'}); };
 
@@ -2749,22 +2794,60 @@ const Copies = ({products, setSection}) => {
             </div>
           ) : (
             <>
-              {/* Jump to angle chips */}
-              <div style={{marginBottom:22}}>
-                <div style={{fontSize:10,color:C.sec,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.8px',marginBottom:8}}>Aller à l'angle</div>
-                <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                  {allAngles.map(a => (
-                    <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}`}
-                      style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
-                    >A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
-                  ))}
+              {/* Barre de filtres STICKY — recherche + cible + angle. Cliquer un filtre isole
+                  les angles correspondants (les autres disparaissent) au lieu d'y faire
+                  défiler — retour direct pris en compte. */}
+              <div style={{position:'sticky',top:0,zIndex:20,background:C.bg,margin:'0 -16px 18px',padding:'10px 16px',borderBottom:`1px solid ${C.border}`}}>
+                <div style={{position:'relative',marginBottom:10}}>
+                  <div style={{position:'absolute',left:11,top:0,bottom:0,display:'flex',alignItems:'center',color:C.sec,pointerEvents:'none'}}>
+                    <Icon name="search" size={13}/>
+                  </div>
+                  <input value={angleQuery} onChange={e=>setAngleQuery(e.target.value)} placeholder="Rechercher un angle, un hook..."
+                    style={{width:'100%',padding:'8px 12px 8px 32px',borderRadius:8,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:11.5,fontFamily:'inherit',outline:'none'}}/>
+                </div>
+                {cibleSetCopies.length > 1 && (
+                  <div style={{marginBottom:8}}>
+                    <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Cible</div>
+                    <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                      <button onClick={()=>setCibleFilter(null)} style={{padding:'4px 11px',borderRadius:20,border:`1px solid ${!cibleFilter?C.accent:C.border}`,background:!cibleFilter?'rgba(91,141,239,0.1)':'transparent',color:!cibleFilter?C.text:C.sec,fontSize:10.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Toutes</button>
+                      {cibleSetCopies.map(c => (
+                        <button key={c} onClick={()=>setCibleFilter(cibleFilter===c?null:c)} title={c}
+                          style={{padding:'4px 11px',borderRadius:20,border:`1px solid ${cibleFilter===c?C.accent:C.border}`,background:cibleFilter===c?'rgba(91,141,239,0.1)':'transparent',color:cibleFilter===c?C.text:C.sec,fontSize:10.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {c.split(',')[0]}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Angle</div>
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                    {allAngles.map(a => (
+                      <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}`}
+                        style={{padding:'5px 12px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
+                        onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
+                      >A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
               {/* Deliveries + Angles */}
-              {(selected.deliveries||[]).map(delivery => (
+              {(selected.deliveries||[]).map(delivery => {
+                // Filtre cible sur le batch entier — un batch appartient à une seule cible
+                if (cibleFilter && delivery.cible !== cibleFilter) return null;
+                const anglesVisibles = delivery.angles.filter(angle => {
+                  if (angleQuery.trim()) {
+                    const q = angleQuery.toLowerCase();
+                    const matchNom = angle.nom.toLowerCase().includes(q);
+                    const matchHook = (angle.hooks||[]).some(h => h.toLowerCase().includes(q));
+                    if (!matchNom && !matchHook) return false;
+                  }
+                  return true;
+                });
+                if (anglesVisibles.length === 0) return null;
+                return (
                 <div key={delivery.ticketId || delivery.semaine} style={{marginBottom:28}}>
                   <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:14}}>
                     <div style={{height:1,flex:1,background:C.border}}/>
@@ -2783,7 +2866,7 @@ const Copies = ({products, setSection}) => {
                   </div>
 
                   <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                    {delivery.angles.map(angle => (
+                    {anglesVisibles.map(angle => (
                       <div key={`${delivery.semaine}-${angle.numero}`} ref={el=>{angleRefs.current[`${delivery.semaine}-${angle.numero}`]=el;}} style={{
                         position:'relative', overflow:'hidden', scrollMarginTop:16,
                         background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',
@@ -2831,7 +2914,8 @@ const Copies = ({products, setSection}) => {
                     ))}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </>
           )}
         </div>
