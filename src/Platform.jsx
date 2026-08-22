@@ -2585,12 +2585,11 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile}) => {
               : setSelected(c)}
             style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:c.imageUrl?'#14161D':`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`,transform:selectMode&&selectedIds.includes(c.id)?'scale(0.94)':'scale(1)',transition:'transform 0.15s cubic-bezier(0.34,1.56,0.64,1)',boxShadow:selectMode&&selectedIds.includes(c.id)?`0 0 0 2px ${C.accent}`:'none'}}
           >
-            {/* Vraie balise <img loading="lazy"> plutôt qu'un fond CSS — le navigateur ne
-                télécharge plus TOUTES les images d'un coup, seulement celles qui approchent du
-                viewport en scrollant. Un fond CSS ne peut pas bénéficier de cette optimisation
-                native, cause probable du chargement très lent remonté sur une grande galerie. */}
+            {/* Préfère thumbUrl (vraie miniature ~15-40 Ko générée côté serveur) à imageUrl
+                (original, potentiellement 500 Ko-2 Mo) pour la grille — repli sur imageUrl pour
+                les créatives livrées avant ce fix, qui n'ont pas de thumbUrl. */}
             {c.imageUrl && (
-              <img src={c.imageUrl} alt={c.angle} loading="lazy" decoding="async"
+              <img src={c.thumbUrl || c.imageUrl} alt={c.angle} loading="lazy" decoding="async"
                 style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
             )}
             {selectMode && (

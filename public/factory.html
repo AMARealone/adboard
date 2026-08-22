@@ -3090,6 +3090,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   // maintenant uploadée vers le Storage DÈS SA GÉNÉRATION — seul un lien léger (quelques dizaines
   // d'octets) est ensuite gardé en mémoire et sauvegardé, jamais l'image elle-même.
   let creativeUrl = null;
+  let creativeThumbUrl = null;
   if (prodv2State.briefSource === 'commande' && prodv2State.commandeId) {
     try {
       const rUp = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/upload-creative-now`, {
@@ -3097,7 +3098,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
         body: JSON.stringify({ imgB64, mime: imageMime, index: idx })
       });
       const dUp = await rUp.json();
-      if (dUp.ok && dUp.url) creativeUrl = dUp.url;
+      if (dUp.ok && dUp.url) { creativeUrl = dUp.url; creativeThumbUrl = dUp.thumbUrl || null; }
     } catch(e) { console.warn(`[Upload immédiat] Créative ${idx} — échoué, conservée en base64 en secours :`, e.message); }
   }
 
@@ -3105,7 +3106,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   // Si l'upload a échoué (réseau, serveur endormi) : garde le base64 en secours plutôt que de
   // perdre la créative — moins optimal pour la sauvegarde, mais jamais une perte de données.
   prodv2State.creatives[idx] = creativeUrl
-    ? { ...prodv2State.creatives[idx], url: creativeUrl, imgB64: null, desc, status:'done', imageMime }
+    ? { ...prodv2State.creatives[idx], url: creativeUrl, thumbUrl: creativeThumbUrl, imgB64: null, desc, status:'done', imageMime }
     : { ...prodv2State.creatives[idx], imgB64, desc, status:'done', imageMime };
 }
 
