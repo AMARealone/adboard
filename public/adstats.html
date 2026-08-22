@@ -3894,6 +3894,26 @@ async function renderDashboard() {
       if (Array.isArray(linksData)) {
         linksData.forEach(l => { clicsParCampagne[l.campagne] = (clicsParCampagne[l.campagne]||0) + (l.clicks||0); });
       }
+
+      // Ajouts au panier / paiements initiés — même fenêtre de dates que les clics, table dédiée
+      // (funnel_events), alimentée par la page de vente avec déduplication par session côté client.
+      let queryFunnel = `${SB}/funnel_events?select=type,created_at`;
+      if (from || to) {
+        if (from) queryFunnel += `&created_at=gte.${from}T00:00:00`;
+        if (to)   queryFunnel += `&created_at=lte.${to}T23:59:59`;
+      } else if (dashPeriod < 9999) {
+        const cutoffDateFunnel = new Date(); cutoffDateFunnel.setDate(cutoffDateFunnel.getDate() - dashPeriod); cutoffDateFunnel.setHours(0,0,0,0);
+        queryFunnel += `&created_at=gte.${cutoffDateFunnel.toISOString()}`;
+      }
+      let totalAjoutsPanier = 0, totalPaiementsInities = 0;
+      try {
+        const rFunnel = await fetch(queryFunnel, { headers: H });
+        const funnelData = await rFunnel.json();
+        if (Array.isArray(funnelData)) {
+          totalAjoutsPanier = funnelData.filter(f => f.type === 'ajout_panier').length;
+          totalPaiementsInities = funnelData.filter(f => f.type === 'paiement_initie').length;
+        }
+      } catch(eFunnel) { console.warn('[Dashboard] funnel_events indisponible :', eFunnel.message); }
       const MESSAGES = [
         { cle: 'pitch', label: 'Pitch', envoyes: envoyes.pitch, achats: null },
         { cle: 'demo',  label: 'Démo',  envoyes: envoyes.demo,  achats: null },
@@ -3928,14 +3948,17 @@ async function renderDashboard() {
       const totalClics = lignes.reduce((s,l) => s+l.clics, 0);
       const totalAcheteurs = DB.filter(p => p.statut === 'acheteur' && _dansPeriodeDash(p.date_achat)).length;
       const ctrGlobal = totalEnvoyes > 0 ? (totalClics/totalEnvoyes*100).toFixed(1) : '—';
+      const ratioPanier = totalClics > 0 ? (totalAjoutsPanier/totalClics*100).toFixed(1) : '—';
+      const ratioPaiement = totalClics > 0 ? (totalPaiementsInities/totalClics*100).toFixed(1) : '—';
       const ovEl = document.getElementById('dash-clics-overview');
       if (ovEl) {
         ovEl.innerHTML =
-          '<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden">'
-          + '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalEnvoyes + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Messages envoyés</div></div>'
-          + '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--blue)">' + totalClics + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Clics</div></div>'
-          + '<div style="flex:1;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--green)">' + totalAcheteurs + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Acheteurs</div></div>'
-          + '<div style="flex:1;padding:16px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--yellow)">' + ctrGlobal + (ctrGlobal!=='—'?'%':'') + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">CTR global</div></div>'
+          '<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;flex-wrap:wrap">'
+          + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalEnvoyes + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Messages envoyés</div></div>'
+          + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--blue)">' + totalClics + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Clics</div><div style="font-size:10px;color:var(--yellow);font-weight:600;margin-top:2px">CTR ' + ctrGlobal + (ctrGlobal!=='—'?'%':'') + '</div></div>'
+          + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalAjoutsPanier + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Ajouts au panier</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">' + ratioPanier + (ratioPanier!=='—'?'%':'') + ' des clics</div></div>'
+          + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalPaiementsInities + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Paiements initiés</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">' + ratioPaiement + (ratioPaiement!=='—'?'%':'') + ' des clics</div></div>'
+          + '<div style="flex:1;min-width:110px;padding:16px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">' + totalAcheteurs + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Acheteurs</div></div>'
           + '</div>';
       }
     } catch(e) {

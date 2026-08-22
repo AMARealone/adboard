@@ -78,6 +78,40 @@
         }
       })();
     </script>
+
+    <!-- Funnel CRM — ajout au panier / paiement initié. Déduplication par session (sessionStorage,
+         se réinitialise à chaque nouvel onglet/nouvelle visite, jamais par requête serveur) — un
+         visiteur qui clique 5 fois sur 3 boutons différents dans la même session ne compte qu'une
+         seule fois par type d'événement. -->
+    <script>
+      function adstackTrackFunnel(type) {
+        try {
+          var flagKey = 'adstack_tracked_' + type;
+          if (sessionStorage.getItem(flagKey)) return; // déjà compté cette session
+          sessionStorage.setItem(flagKey, '1');
+          var attr = null;
+          try { attr = JSON.parse(localStorage.getItem('crm_attribution') || 'null'); } catch(e) {}
+          fetch('https://adstack-server.onrender.com/track-funnel-event', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({
+              type: type,
+              prospect_id: attr ? attr.prospect_id : null,
+              campagne: attr ? attr.campagne : null
+            }),
+            keepalive: true
+          }).catch(function(){});
+        } catch(e) {}
+      }
+      // Ajout au panier — délégation d'événement plutôt que modifier chaque bouton un par un :
+      // capte tous les boutons/liens qui mènent vers #nos-offres (nav, hero, barre sticky,
+      // assistant, CTA final, footer), y compris ceux créés dynamiquement en JS plus bas dans
+      // la page, sans avoir à les lister un par un dans leur propre onclick.
+      document.addEventListener('click', function(e) {
+        var el = e.target.closest('a[href="#nos-offres"], #heroMainBtn, #upsellBtn, .as-cta-offre');
+        if (el) adstackTrackFunnel('ajout_panier');
+      });
+    </script>
   </head>
   <body>
     <noscript><img height="1" width="1" style="display:none"
@@ -1142,6 +1176,7 @@ function lpToggleCycle() {
 }
 
 function lpOpenCheckout(productId, offerName, price) {
+  adstackTrackFunnel('paiement_initie');
   if (typeof fbq !== 'undefined') fbq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
   document.querySelectorAll('script[src*="chariowcdn"]').forEach(function(s) { s.remove(); });
   // Recrée le noeud DOM du widget à neuf à chaque ouverture, au lieu de réutiliser le même
