@@ -4312,6 +4312,14 @@ export default function Platform() {
   const [creativesTarget, setCreativesTarget] = useState(null);
   const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
   const [plafondModal, setPlafondModal] = useState(null); // {product, qty, totalActuel, actifs, prochaineDateLibre} — plafond 36 images/24h dépassé
+  // Garde synchrone (ref, pas state) contre le double-clic sur "Annuler" dans le popup de
+  // plafond — la séquence annulation+recréation enchaîne plusieurs appels réseau avec retries,
+  // largement assez long pour qu'un clic impatient déclenche une 2e exécution. Cette 2e exécution
+  // relirait alors briefs[p.id] déjà mis à jour par la 1ère vers la NOUVELLE demande tout juste
+  // créée, et l'annulerait à son tour sans que personne ne le comprenne — cause profonde exacte
+  // du bug remonté ("ma demande de 27 a disparu quelques minutes après, comme auto-annulée").
+  const plafondActionEnCoursRef = useRef(false);
+  const [plafondBriefEnCours, setPlafondBriefEnCours] = useState(null); // id du brief en cours d'annulation, pour l'affichage
   const [paymentProductId, setPaymentProductId] = useState(null); // id produit Chariow pour la modale de paiement intégrée
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
@@ -4926,29 +4934,38 @@ const views = {
                       <div style={{fontSize:10.5,color:C.muted}}>{b.credits_used || b.quantity} visuels · demandé {new Date(b.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à {new Date(b.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                     </div>
                     <button
+                      disabled={plafondActionEnCoursRef.current}
                       onClick={async () => {
-                        const produitCible = products.find(pr => pr.id === b.product_id);
-                        if (!produitCible) return;
-                        // Même chemin que le vrai bouton d'annulation (Suivi de demande) :
-                        // notifie Factory (webhook delete) + notifie l'utilisateur (email + in-app)
-                        // + toast. Cause du bug initial : ce bouton appelait sbBriefs.cancel() en
-                        // direct, sautant TOUTES ces étapes silencieusement.
-                        await cancelCreatives(produitCible);
-                        const nouveauxBriefs = allBriefs.map(x => x.id === b.id ? {...x, status:'cancelled'} : x);
-                        const reverif = verifierPlafondProduction(nouveauxBriefs, plafondModal.qty);
-                        if (reverif.autorise) {
-                          // Assez de place libérée — on crée directement la demande initialement
-                          // bloquée, en notifiant Factory correctement cette fois (même chemin que
-                          // le flux normal de création, voir creerDemandeEtNotifierFactory).
-                          await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty);
-                          setPlafondModal(null);
-                        } else {
-                          // Toujours au-dessus du plafond — on met juste la modale à jour
-                          setPlafondModal({product: plafondModal.product, qty: plafondModal.qty, ...reverif});
+                        if (plafondActionEnCoursRef.current) return; // déjà en cours — ignore le clic répété
+                        plafondActionEnCoursRef.current = true;
+                        setPlafondBriefEnCours(b.id);
+                        try {
+                          const produitCible = products.find(pr => pr.id === b.product_id);
+                          if (!produitCible) return;
+                          // Même chemin que le vrai bouton d'annulation (Suivi de demande) :
+                          // notifie Factory (webhook delete) + notifie l'utilisateur (email + in-app)
+                          // + toast. Cause du bug initial : ce bouton appelait sbBriefs.cancel() en
+                          // direct, sautant TOUTES ces étapes silencieusement.
+                          await cancelCreatives(produitCible);
+                          const nouveauxBriefs = allBriefs.map(x => x.id === b.id ? {...x, status:'cancelled'} : x);
+                          const reverif = verifierPlafondProduction(nouveauxBriefs, plafondModal.qty);
+                          if (reverif.autorise) {
+                            // Assez de place libérée — on crée directement la demande initialement
+                            // bloquée, en notifiant Factory correctement cette fois (même chemin que
+                            // le flux normal de création, voir creerDemandeEtNotifierFactory).
+                            await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty);
+                            setPlafondModal(null);
+                          } else {
+                            // Toujours au-dessus du plafond — on met juste la modale à jour
+                            setPlafondModal({product: plafondModal.product, qty: plafondModal.qty, ...reverif});
+                          }
+                        } finally {
+                          plafondActionEnCoursRef.current = false;
+                          setPlafondBriefEnCours(null);
                         }
                       }}
-                      style={{flexShrink:0,padding:'6px 11px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:'#EF4444',fontWeight:600,fontSize:11,cursor:'pointer',fontFamily:'inherit'}}
-                    >Annuler</button>
+                      style={{flexShrink:0,padding:'6px 11px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:plafondActionEnCoursRef.current?C.muted:'#EF4444',fontWeight:600,fontSize:11,cursor:plafondActionEnCoursRef.current?'default':'pointer',fontFamily:'inherit',opacity:plafondActionEnCoursRef.current?0.6:1}}
+                    >{plafondBriefEnCours===b.id ? 'Annulation…' : 'Annuler'}</button>
                   </div>
                 ))}
               </div>
