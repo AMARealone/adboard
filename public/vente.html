@@ -294,10 +294,10 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <div class="nav-menu-wrap">
       <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
       <div class="nav-dropdown" id="navDrop">
-        <a class="nav-drop-item" href="#solution" onclick="event.preventDefault();document.getElementById('solution').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
-        <a class="nav-drop-item" href="#pourquoi-images" onclick="event.preventDefault();document.getElementById('pourquoi-images').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Pourquoi des images</a>
+        <a class="nav-drop-item" href="#comparatif-honnete" onclick="event.preventDefault();document.getElementById('comparatif-honnete').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
         <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:29900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
         <a class="nav-drop-item" href="#faq" onclick="event.preventDefault();var el=document.getElementById('faq');if(el)el.scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
+        <a class="nav-drop-item" href="/blog/" style="color:#1FB6FF!important"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Nos Blogs</a>
       </div>
     </div>
   </div>
@@ -1579,7 +1579,7 @@ lpPrepurchaseInit();
 .ads-footer-copy{font-size:11px;color:#3A3D45;line-height:1.5}
 .ads-footer-address{display:flex;align-items:center;gap:5px;font-size:11px;color:#3A3D45}
 @media(min-width:1024px){
-.ads-footer-inner{max-width:1160px;display:grid;grid-template-columns:340px 1fr;column-gap:40px;align-items:start}
+.ads-footer-inner{max-width:1160px;display:grid;grid-template-columns:340px auto;column-gap:40px;align-items:start;justify-content:center}
 .ads-footer-brand{grid-column:1;grid-row:1;margin-bottom:0;padding-bottom:0;border-bottom:none}
 .ads-footer-cols{grid-column:2;grid-row:1;grid-template-columns:1fr 1fr;max-width:420px;gap:24px;margin-bottom:0;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,0.06)}
 .ads-footer-bottom{grid-column:1/-1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;margin-top:32px}
@@ -2154,7 +2154,7 @@ window.lpApplyCurrency = function(){};
         <div class="ads-footer-col-title">Explorer</div>
         <div class="ads-footer-col-links">
           <a href="#travaux" onclick="event.preventDefault();document.getElementById('travaux').scrollIntoView({behavior:'smooth'})">Travaux récents</a>
-          <a href="#solution" onclick="event.preventDefault();document.getElementById('solution').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
+          <a href="#comparatif-honnete" onclick="event.preventDefault();document.getElementById('comparatif-honnete').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
           <a href="#ce-que-vous-recevez" onclick="event.preventDefault();document.getElementById('ce-que-vous-recevez').scrollIntoView({behavior:'smooth'})">Ce que vous recevez</a>
           <a href="#comment" onclick="event.preventDefault();document.getElementById('comment').scrollIntoView({behavior:'smooth'})">Comment ça marche</a>
           <a href="#faq" onclick="event.preventDefault();document.getElementById('faq').scrollIntoView({behavior:'smooth'})">FAQ</a>
