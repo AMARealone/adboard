@@ -4,6 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>AdBoard</title>
+    <!-- AdBoard est une application cliente derrière connexion — pas une page de contenu public,
+         rien à indexer. Sans cette balise, Google l'indexait comme si c'était du contenu normal. -->
+    <meta name="robots" content="noindex, nofollow">
 
     <!-- Miniature de marque — couvre tout lien vers AdBoard (Mes Produits, Offres, etc.) -->
     <meta property="og:type" content="website">
