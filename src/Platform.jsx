@@ -2140,6 +2140,29 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               </div>
             </div>
 
+            {/* Lien de la page produit — sorti volontairement de la zone repliable ci-dessous.
+                Toujours visible dès l'ouverture du formulaire : c'est un raccourci, pas un
+                champ "en plus" — le client doit pouvoir le remplir EN PREMIER pour que le
+                pré-remplissage automatique lui évite de taper le reste à la main. Le caché
+                derrière "requisRemplis" annulait complètement cet objectif. */}
+            <div style={{marginBottom:20,padding:'12px 14px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.25)`}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
+                <Icon name="sparkle" size={13} color={C.accent}/>
+                <div style={{fontSize:11.5,fontWeight:700,color:C.text}}>Lien de la page produit</div>
+                <span style={{fontSize:9,color:C.muted,fontWeight:400}}>(optionnel — mais commencez par là si vous l'avez)</span>
+              </div>
+              <div style={{position:'relative'}}>
+                <input value={form.lien||''} onChange={e=>setForm(f=>({...f,lien:e.target.value}))} onBlur={fetchProductInfoFromLien} placeholder="https://..."
+                  style={{width:'100%',boxSizing:'border-box',padding:'9px 36px 9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
+                {fetchingLien && (
+                  <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',width:14,height:14,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>
+                )}
+              </div>
+              <div style={{fontSize:10,color:C.muted,marginTop:6}}>
+                {fetchingLien ? 'On regarde votre page produit — ça va préremplir les champs ci-dessous...' : "Collez le lien, on préremplit le nom, le prix, le pays et le reste pour vous."}
+              </div>
+            </div>
+
             {(() => {
               const requisRemplis = !!(form.photo && form.nom && form.pricing && form.pays);
               return (
@@ -2167,27 +2190,6 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
               <div style={{overflow:'hidden',...(requisRemplis ? {animation:'revealOptional 0.5s ease forwards'} : {maxHeight:0,opacity:0,margin:0})}}>
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
-
-              {/* Lien de la page produit — mis en avant, distinct des autres champs optionnels.
-                  Pas obligatoire, mais très utile en production : source d'informations riches
-                  et personnalisées sur le produit réel. */}
-              <div style={{padding:'12px 14px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.25)`}}>
-                <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
-                  <Icon name="sparkle" size={13} color={C.accent}/>
-                  <div style={{fontSize:11.5,fontWeight:700,color:C.text}}>Lien de la page produit</div>
-                  <span style={{fontSize:9,color:C.muted,fontWeight:400}}>(optionnel, mais précieux)</span>
-                </div>
-                <div style={{position:'relative'}}>
-                  <input value={form.lien||''} onChange={e=>setForm(f=>({...f,lien:e.target.value}))} onBlur={fetchProductInfoFromLien} placeholder="https://..."
-                    style={{width:'100%',boxSizing:'border-box',padding:'9px 36px 9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
-                  {fetchingLien && (
-                    <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',width:14,height:14,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>
-                  )}
-                </div>
-                <div style={{fontSize:10,color:C.muted,marginTop:6}}>
-                  {fetchingLien ? 'On regarde votre page produit — ça peut préremplir quelques champs ci-dessous...' : "Notre équipe y puise des détails que vous n'auriez pas pensé à mentionner."}
-                </div>
-              </div>
 
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
