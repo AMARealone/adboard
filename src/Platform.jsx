@@ -4949,9 +4949,13 @@ const views = {
           @keyframes ctaFloat { from{ opacity:0; transform:translateX(-50%) translateY(20px); } to{ opacity:1; transform:translateX(-50%) translateY(0); } }
           @keyframes ctaPulse { 0%,100%{ box-shadow:0 6px 28px rgba(45,127,239,0.55); } 50%{ box-shadow:0 6px 36px rgba(45,127,249,0.80); } }
         `}</style>
-        <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",fontWeight:700,fontSize:13,animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
+        <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
           onClick={() => setSection('tarifs')}>
-          <Icon name="sparkle" size={13} color="#fff"/> Découvrir Nos Offres
+          <Icon name="sparkle" size={16} color="#fff"/>
+          <div style={{display:'flex',flexDirection:'column',lineHeight:1.25}}>
+            <span style={{fontWeight:700,fontSize:13}}>S'abonner à nos offres</span>
+            <span style={{fontWeight:500,fontSize:10,opacity:0.85}}>Travaillez dès maintenant avec notre agence</span>
+          </div>
           <button onClick={e=>{e.stopPropagation(); setShowOffersCta(false); try{localStorage.setItem('adstack_offers_cta_dismissed','1');}catch(e){}}} style={{marginLeft:4,width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.2)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={9} color="#fff"/></button>
         </div>
       </div>
