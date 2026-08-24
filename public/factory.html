@@ -2743,7 +2743,17 @@ async function prodv2Launch() {
     // dans DONNÉES BRUTES). Cause profonde du bug "2024 mis en avant comme année actuelle" :
     // cette info n'existait nulle part dans le prompt avant ce fix.
     const _dateHeader = `⚠️ DATE RÉELLE D'AUJOURD'HUI (NON-NÉGOCIABLE, sers-t'en pour TOUT ce qui dépend du temps — historique de marché, saisonnalité, fraîcheur d'une donnée) : ${new Date().toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}. Ne devine JAMAIS l'année courante depuis ta mémoire interne — utilise UNIQUEMENT celle-ci.\n\n`;
-    const _nbAnglesHeader = `⚠️ NOMBRE D'ANGLES ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}distincts en S2, ni plus ni moins, peu importe le nombre habituel. ${prodv2State.renewalContext?.estRenouvellement ? "S2 ne contient QUE ces angles — ne recopie jamais les anciens dedans, ils restent seulement dans l'historique fourni plus bas pour éviter les répétitions." : ''}\n\n`;
+    const ag = prodv2State.renewalContext?.angleGagnant;
+    const _nbAnglesHeader = ag
+      ? `⚠️ NOMBRE D'ANGLES À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle). Sur ces ${nbAngles} angles : 1 est l'ANGLE_GAGNANT ci-dessous (repris tel quel, pas reconstruit), les ${nbAngles - 1} autres sont NOUVEAUX et distincts, construits selon le processus habituel. S2 ne contient que ces ${nbAngles} angles au total.\n\n`
+      : `⚠️ NOMBRE D'ANGLES ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}À PRODUIRE POUR CETTE COMMANDE (NON-NÉGOCIABLE) : ${nbAngles}\nCette commande porte sur ${nbCreativesTotal} visuels (3 par angle) — tu dois donc construire exactement ${nbAngles} angles ${prodv2State.renewalContext?.estRenouvellement ? 'NOUVEAUX ' : ''}distincts en S2, ni plus ni moins, peu importe le nombre habituel. ${prodv2State.renewalContext?.estRenouvellement ? "S2 ne contient QUE ces angles — ne recopie jamais les anciens dedans, ils restent seulement dans l'historique fourni plus bas pour éviter les répétitions." : ''}\n\n`;
+
+    // ── Angle gagnant (feedback loop Top Performer) — voir GESTION DU VOLUME ÉTENDU ET DE
+    // L'ANGLE GAGNANT dans COMPETENCE_ANALYSTE.md. Repris tel quel, jamais reconstruit — un
+    // des ${nbAngles} angles de S2 doit être CET angle, pas un nouveau construit à partir de lui.
+    const _angleGagnantHeader = ag
+      ? `⚠️ ANGLE_GAGNANT (feedback loop — voir GESTION DU VOLUME ÉTENDU ET DE L'ANGLE GAGNANT dans tes instructions) :\nNom : ${ag.nom}\nJustification d'origine : ${ag.justification || '(non renseignée)'}\nOrigine : ${ag.batchOrigine || 'batch précédent'}, marqué performant par le client.\n\nUn des ${nbAngles} angles de S2 doit être CET angle, repris tel quel (même formulation, même nom) — pas reconstruit. Les créatives qui lui sont allouées doivent utiliser des concepts visuels ENTIÈREMENT NOUVEAUX, jamais une reprise de ce qui a déjà été produit pour lui.\n\n`
+      : '';
 
     // ── Contexte de renouvellement — injecté uniquement si ce n'est pas la première commande
     // sur ce produit (voir MODE RENOUVELLEMENT dans le fichier de compétences) ──
@@ -2754,7 +2764,7 @@ async function prodv2Launch() {
     }
 
     const analysteParts = [
-      { type: 'text', text: _dateHeader + _renewalHeader + _nbAnglesHeader + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
+      { type: 'text', text: _dateHeader + _renewalHeader + _nbAnglesHeader + _angleGagnantHeader + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
       { type: 'image', source: { type:'base64', media_type: prodv2State.productMime, data: prodv2State.productB64 } }
     ];
     if(prodv2State.logoB64) {
@@ -4395,6 +4405,24 @@ Un seul persona pour toute la synthèse — pas de facettes ni de sous-avatars. 
 ÉTAPE 3 — S2 : 3 ANGLES MARKETING (peur / désir / douleur / scepticisme du marché)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+DÉFAUT (aucune indication contraire dans le brief) : 3 angles nouveaux, 9 créatives au total, comme décrit dans toute cette étape. Le sous-bloc ci-dessous ne s'applique QUE si le brief contient les signaux qu'il décrit — sinon, ignore-le et passe directement à CONSTRUCTION DES 3 ANGLES.
+
+━━━ GESTION DU VOLUME ÉTENDU ET DE L'ANGLE GAGNANT (feedback loop — cas non-défaut) ━━━
+
+Deux signaux possibles dans le brief, indépendants l'un de l'autre :
+
+→ QUANTITE_DEMANDEE : si présent et différent de 9, le batch n'est plus 3×3. Calcule le nombre total de créatives directement depuis cette valeur (ex : 18 au lieu de 9).
+
+→ ANGLE_GAGNANT : si présent, le brief fournit la formulation complète d'un angle d'un batch précédent pour CE produit et CETTE cible, marqué comme performant par le client (moteur dominant, moteur secondaire, formulation — mêmes champs que ceux que tu produis normalement à l'étape C). Si ce signal est présent :
+
+1. NE RECONSTRUIS PAS cet angle. Ne repasse pas par les étapes A/B/C pour lui — reprends sa formulation exactement telle que fournie. Une performance réelle mesurée est une preuve plus forte que le processus de sourcing lui-même ; le remettre en question ici serait un pas en arrière.
+2. Calcule son volume : QUANTITE_DEMANDEE ÷ 3, arrondi à l'entier le plus proche (ex : 18÷3=6, 9÷3=3). C'est le nombre de créatives allouées à cet angle repris — toujours le tiers du total, quelle que soit la quantité demandée.
+3. Le reste (QUANTITE_DEMANDEE − volume de l'angle gagnant) se répartit en nouveaux angles à raison de 3 créatives chacun (ex : 18−6=12 → 4 nouveaux angles ; 9−3=6 → 2 nouveaux angles). Si le reste n'est pas exactement divisible par 3, arrondis au multiple de 3 le plus proche et signale l'ajustement dans S9/notes internes plutôt que de produire un angle incomplet.
+4. Construis UNIQUEMENT ce nombre de nouveaux angles (pas 3) selon CONSTRUCTION DES 3 ANGLES ci-dessous — les mêmes règles de non-redondance, sourcing par pools, dosage et validation s'appliquent à l'identique, juste appliquées à ce nombre variable plutôt qu'à 3 fixes.
+5. Répartition des créatives de l'angle gagnant sur les 3 niveaux de conscience (voir ÉTAPE 3bis plus bas) : distribue le volume calculé à l'étape 2 le plus également possible entre Solution/Product/Most Aware (ex : 6 → 2 par niveau ; 3 → 1 par niveau, comme le cas par défaut). CHAQUE créative doit être un concept visuel ENTIÈREMENT NOUVEAU, jamais produit pour ce produit auparavant — jamais une variation ou un rapprochement du concept d'origine qui a performé. Ce qui est repris, c'est l'angle (le message, l'émotion ciblée) — jamais le concept visuel exact. Répéter le même concept ou une simple variante dilue la valeur du test : le but est de savoir si c'est L'ANGLE qui gagne, pas juste UNE exécution.
+
+Partout ailleurs dans ce document, "3 angles" et "9 créatives" s'entendent alors comme "le nombre de nouveaux angles calculé ici" et "QUANTITE_DEMANDEE" — mêmes règles, volume variable.
+
 CONSTRUCTION DES 3 ANGLES — méthode complète en 3 étapes. C'est le cœur du travail de l'Analyste — ne la traite jamais superficiellement, ne saute jamais directement à la formulation d'un angle sans être passé par les 3 étapes ci-dessous.
 
 ━━━ ÉTAPE A — CONSTITUER DE GRANDES LISTES, TRACÉES PAR SOURCE ━━━
@@ -4699,7 +4727,9 @@ FORMAT — après avoir terminé S0 à S8, écris EXACTEMENT la ligne suivante s
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 GATE FINAL — INTERDICTIONS ABSOLUES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ Output tronqué — S0 à S9 obligatoires et complets, 3 angles dans S2, chacun décliné sur 3 niveaux de conscience, 3 scènes de base dans S7
+❌ Output tronqué — S0 à S9 obligatoires et complets, 3 angles dans S2 (ou le nombre calculé si QUANTITE_DEMANDEE/ANGLE_GAGNANT sont fournis), chacun décliné sur ses niveaux de conscience, 3 scènes de base dans S7
+❌ ANGLE_GAGNANT fourni mais reconstruit/reformulé au lieu d'être repris tel quel
+❌ ANGLE_GAGNANT fourni mais ses créatives réutilisent le concept visuel d'origine au lieu d'en proposer de nouveaux
 ❌ Un des angles de S2 ne commence pas EXACTEMENT par "Angle N — [Nom court]" en première ligne (voir FORMAT DE LIGNE OBLIGATOIRE ci-dessus) — un programme en aval lit cette ligne précise pour afficher le nom de l'angle au client ; un format différent le fait échouer silencieusement
 ❌ Verbatim construit, même labelisé "basé sur forums" ou "exemple typique" — seule forme acceptable : [AUCUN VERBATIM TROUVÉ DANS DONNÉES BRUTES]
 ❌ USP qui ne respecte pas le format "[produit] est le seul qui X grâce à Y"
