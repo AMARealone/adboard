@@ -387,6 +387,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
     creditcard: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
     help: <><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2 2-2.5 3.2"/><line x1="12" y1="17" x2="12.01" y2="17"/></>,
     chevron: <polyline points="6 9 12 15 18 9"/>,
+    star: <polygon points="12 2 15.09 8.63 22 9.24 16.5 13.97 18.18 21 12 17.27 5.82 21 7.5 13.97 2 9.24 8.91 8.63 12 2"/>,
   };
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill={filled?color:'none'} stroke={filled?'none':color} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
@@ -1836,6 +1837,40 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const [brief, setBrief] = useState(null);
   const [briefCopied, setBriefCopied] = useState(false);
   const photoRef = useRef(null);
+  const [fetchingLien, setFetchingLien] = useState(false);
+  const lienFetchedRef = useRef('');
+
+  // Pré-remplissage intelligent depuis le lien de la page produit — jamais écrasant :
+  // ne remplit que les champs encore vides, laisse toujours la main au client sur ce qu'il a déjà tapé.
+  const fetchProductInfoFromLien = async () => {
+    const url = (form.lien || '').trim();
+    if (!url || !/^https?:\/\//.test(url)) return;
+    if (lienFetchedRef.current === url) return; // déjà tenté pour cette URL exacte
+    lienFetchedRef.current = url;
+    setFetchingLien(true);
+    try {
+      const r = await fetch('https://adstack-server.onrender.com/fetch-product-info', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url })
+      });
+      const j = await r.json();
+      if (j.ok && j.data) {
+        setForm(f => ({
+          ...f,
+          nom: f.nom || j.data.nom || f.nom,
+          pricing: f.pricing || j.data.prix || f.pricing,
+          pays: f.pays || j.data.pays || f.pays,
+          utilite: f.utilite || j.data.utilite || f.utilite,
+          promo: f.promo || j.data.promo || f.promo,
+        }));
+      }
+    } catch(e) {
+      console.warn('[fetchProductInfoFromLien] échec silencieux:', e.message);
+    } finally {
+      setFetchingLien(false);
+    }
+  };
 
   const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); };
   const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); };
@@ -2056,6 +2091,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         <div onClick={() => setShowForm(false)} style={{position:'fixed',top:0,bottom:0,left:isMobile?52:0,right:0,background:'rgba(0,0,0,0.75)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}>
           <style>{`
             @keyframes revealOptional { from{ opacity:0; max-height:0; } to{ opacity:1; max-height:900px; } }
+            @keyframes spin { to{ transform:rotate(360deg); } }
           `}</style>
           <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden',width:'100%',maxWidth:460,maxHeight:'82vh',borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.borderM}`,boxShadow:'0 24px 64px rgba(0,0,0,0.6)',display:'flex',flexDirection:'column'}}>
             <div style={{position:'absolute',top:-60,right:-40,width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
@@ -2118,7 +2154,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
                     <Field label="Prix actuel" k="pricing" required placeholder="Ex : 12 900" form={form} setForm={setForm} errors={errors} C={C}/>
-                    <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal" form={form} setForm={setForm} errors={errors} C={C}/>
+                    <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal — ou Sénégal, Mali, Guinée" form={form} setForm={setForm} errors={errors} C={C}/>
                   </div>
                 </div>
               </div>
@@ -2141,9 +2177,16 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <div style={{fontSize:11.5,fontWeight:700,color:C.text}}>Lien de la page produit</div>
                   <span style={{fontSize:9,color:C.muted,fontWeight:400}}>(optionnel, mais précieux)</span>
                 </div>
-                <input value={form.lien||''} onChange={e=>setForm(f=>({...f,lien:e.target.value}))} placeholder="https://..."
-                  style={{width:'100%',boxSizing:'border-box',padding:'9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
-                <div style={{fontSize:10,color:C.muted,marginTop:6}}>Notre équipe y puise des détails que vous n'auriez pas pensé à mentionner.</div>
+                <div style={{position:'relative'}}>
+                  <input value={form.lien||''} onChange={e=>setForm(f=>({...f,lien:e.target.value}))} onBlur={fetchProductInfoFromLien} placeholder="https://..."
+                    style={{width:'100%',boxSizing:'border-box',padding:'9px 36px 9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
+                  {fetchingLien && (
+                    <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',width:14,height:14,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>
+                  )}
+                </div>
+                <div style={{fontSize:10,color:C.muted,marginTop:6}}>
+                  {fetchingLien ? 'On regarde votre page produit — ça peut préremplir quelques champs ci-dessous...' : "Notre équipe y puise des détails que vous n'auriez pas pensé à mentionner."}
+                </div>
               </div>
 
               <div>
@@ -2392,6 +2435,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
     if (filterMode==='angle' && activeChip && c.angle!==activeChip) return false;
     if (filterMode==='batch' && activeChip && batchKey(c)!==activeChip) return false;
     if (filterMode==='cible' && activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
+    if (filterMode==='topPerformer' && !c.topPerformer) return false;
     if (filterMode==='date') {
       const t = dateCreative(c);
       if (dateDebut && t < new Date(dateDebut).getTime()) return false;
@@ -2401,6 +2445,27 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
   });
 
   const chips = filterMode==='angle' ? angleSet : filterMode==='batch' ? batchSet : filterMode==='cible' ? cibleSet : [];
+
+  const [togglingTopPerformer, setTogglingTopPerformer] = useState(false);
+  const toggleTopPerformer = async (creative) => {
+    setTogglingTopPerformer(true);
+    const nextValue = !creative.topPerformer;
+    try {
+      await fetch(`https://adstack-server.onrender.com/products/${creative.productId}/mark-top-performer`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ creativeId: creative.id, value: nextValue })
+      });
+      setProducts(prev => prev.map(p => p.id !== creative.productId ? p : {
+        ...p,
+        creatives: (p.creatives||[]).map(c => c.id === creative.id ? {...c, topPerformer: nextValue} : c)
+      }));
+      setSelected(s => s && s.id === creative.id ? {...s, topPerformer: nextValue} : s);
+    } catch(e) {
+      console.error('Marquage Top Performer échoué :', e.message);
+    } finally {
+      setTogglingTopPerformer(false);
+    }
+  };
 
   const confirmDeleteSelected = async () => {
     setDeleting(true);
@@ -2542,7 +2607,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
 
       {/* Hiérarchie voulue : Tous → Cible → Batch → Angle (Date se cumule avec n'importe lequel) */}
       <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18, flexWrap:'wrap'}}>
-        {[['tous','Tous','grid'],['cible','Cible','person'],['batch','Batch','card'],['angle','Angle','tag'],['date','Date','calendar']].map(([id,label,icon]) => (
+        {[['tous','Tous','grid'],['cible','Cible','person'],['batch','Batch','card'],['angle','Angle','tag'],['topPerformer','Top Performer','star'],['date','Date','calendar']].map(([id,label,icon]) => (
           <button key={id} onClick={() => {setFilterMode(id); setActiveChip(null);}}
             style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
@@ -2603,6 +2668,11 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
                 {selectedIds.includes(c.id) && <Icon name="check" size={12} color="#fff"/>}
               </div>
             )}
+            {!selectMode && c.topPerformer && (
+              <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.5)',backdropFilter:'blur(2px)',zIndex:2}}>
+                <Icon name="star" size={11} color="#FFC107"/>
+              </div>
+            )}
             <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))',zIndex:2}}>
               <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.angle}</div>
               <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Batch {c.week.replace(/^[SB]/,'')}</div>
@@ -2649,6 +2719,26 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
                 <Icon name="download" size={15}/>
               </button>
             </div>
+            {(() => {
+              const ageMs = Date.now() - dateCreative(selected);
+              const eligible = dateCreative(selected) === 0 || ageMs >= 7*24*60*60*1000;
+              const joursRestants = eligible ? 0 : Math.ceil((7*24*60*60*1000 - ageMs) / (24*60*60*1000));
+              return (
+                <div style={{padding:'0 16px 14px'}}>
+                  {eligible ? (
+                    <button onClick={() => toggleTopPerformer(selected)} disabled={togglingTopPerformer}
+                      style={{width:'100%',padding:'10px',borderRadius:8,border:`1px solid ${selected.topPerformer?'rgba(255,193,7,0.4)':C.border}`,background:selected.topPerformer?'rgba(255,193,7,0.12)':'rgba(255,255,255,0.05)',color:selected.topPerformer?'#FFC107':C.sec,cursor:togglingTopPerformer?'default':'pointer',fontSize:12,fontWeight:700,fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,opacity:togglingTopPerformer?0.6:1,transition:'all 0.15s'}}>
+                      <Icon name="star" size={13} color={selected.topPerformer?'#FFC107':C.sec}/>
+                      {selected.topPerformer ? 'Marquée Top Performer' : 'Marquer comme Top Performer'}
+                    </button>
+                  ) : (
+                    <div style={{fontSize:10.5,color:C.muted,textAlign:'center',padding:'6px 0'}}>
+                      Disponible dans {joursRestants} jour{joursRestants>1?'s':''} — le temps de vraiment juger ses résultats
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
           <button onClick={() => setSelected(null)} style={{position:'absolute',top:24,right:24,width:38,height:38,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <Icon name="x" size={16} color="#fff"/>
