@@ -2727,17 +2727,18 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
               const joursRestants = eligible ? 0 : Math.ceil((7*24*60*60*1000 - ageMs) / (24*60*60*1000));
               return (
                 <div style={{padding:'0 16px 14px'}}>
-                  {eligible ? (
-                    <button onClick={() => toggleTopPerformer(selected)} disabled={togglingTopPerformer}
-                      style={{width:'100%',padding:'10px',borderRadius:8,border:`1px solid ${selected.topPerformer?'rgba(255,193,7,0.4)':C.border}`,background:selected.topPerformer?'rgba(255,193,7,0.12)':'rgba(255,255,255,0.05)',color:selected.topPerformer?'#FFC107':C.sec,cursor:togglingTopPerformer?'default':'pointer',fontSize:12,fontWeight:700,fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,opacity:togglingTopPerformer?0.6:1,transition:'all 0.15s'}}>
-                      <Icon name="star" size={13} color={selected.topPerformer?'#FFC107':C.sec}/>
+                  <button onClick={() => eligible && toggleTopPerformer(selected)} disabled={!eligible || togglingTopPerformer}
+                    style={{width:'100%',padding:'10px',borderRadius:8,border:`1px solid ${selected.topPerformer?'rgba(255,193,7,0.4)':C.border}`,background:selected.topPerformer?'rgba(255,193,7,0.12)':'rgba(255,255,255,0.05)',color:!eligible?C.muted:(selected.topPerformer?'#FFC107':C.sec),cursor:!eligible?'default':(togglingTopPerformer?'default':'pointer'),fontSize:12,fontWeight:700,fontFamily:'inherit',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,opacity:!eligible?0.55:(togglingTopPerformer?0.6:1),transition:'all 0.15s'}}>
+                    <span style={{display:'flex',alignItems:'center',gap:7}}>
+                      <Icon name="star" size={13} color={!eligible?C.muted:(selected.topPerformer?'#FFC107':C.sec)}/>
                       {selected.topPerformer ? 'Marquée Top Performer' : 'Marquer comme Top Performer'}
-                    </button>
-                  ) : (
-                    <div style={{fontSize:10.5,color:C.muted,textAlign:'center',padding:'6px 0'}}>
-                      Disponible dans {joursRestants} jour{joursRestants>1?'s':''} — le temps de vraiment juger ses résultats
-                    </div>
-                  )}
+                    </span>
+                    {!eligible && (
+                      <span style={{fontSize:9.5,fontWeight:500,color:C.muted}}>
+                        Revenez dans {joursRestants} jour{joursRestants>1?'s':''} si elle a bien performé
+                      </span>
+                    )}
+                  </button>
                 </div>
               );
             })()}
@@ -2760,6 +2761,23 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
   );
 };
 
+// ── Angle gagnant ACTUEL d'un produit — même logique que /products/:id/renewal-context
+// côté serveur (celle qui alimente l'Analyste), répliquée ici pour un badge instantané sans
+// appel réseau. Le marquage le PLUS RÉCENT prime : dès qu'une créative d'un autre angle est
+// marquée Top Performer plus tard, le badge se déplace automatiquement sur ce nouvel angle,
+// disparaît de l'ancien — rien à faire manuellement, jamais figé.
+function getAngleGagnantActuel(product) {
+  const deliveries = product?.deliveries || [];
+  const creativesTopPerformer = (product?.creatives || []).filter(c => c.topPerformer);
+  if (!creativesTopPerformer.length) return null;
+  for (let i = deliveries.length - 1; i >= 0; i--) {
+    const d = deliveries[i];
+    const match = creativesTopPerformer.find(c => c.week === d.semaine);
+    if (match) return match.angle || null;
+  }
+  return null;
+}
+
 const Copies = ({products, setSection}) => {
   const isMobile = useIsMobile();
   const [query, setQuery] = useState('');
@@ -2780,6 +2798,7 @@ const Copies = ({products, setSection}) => {
   const allAngles = selected
     ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, cible:d.cible, idUnique:`${d.semaine}-${a.numero}`})))
     : [];
+  const angleGagnantActuel = selected ? getAngleGagnantActuel(selected) : null;
   const cibleSetCopies = [...new Set(allAngles.map(a => a.cible).filter(Boolean))];
   const batchSetCopies = [...new Set(allAngles.map(a => a.semaine).filter(Boolean))];
 
@@ -2791,6 +2810,10 @@ const Copies = ({products, setSection}) => {
 
   return (
     <div>
+      <style>{`
+        @keyframes tpGlow { 0%,100%{box-shadow:0 0 0 1px rgba(234,179,8,0.4), 0 0 12px rgba(234,179,8,0.35);} 50%{box-shadow:0 0 0 1px rgba(234,179,8,0.7), 0 0 22px rgba(234,179,8,0.65);} }
+        .tp-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(234,179,8,0.14);border:1px solid rgba(234,179,8,0.4);color:#EAB308;font-size:9.5px;font-weight:800;letter-spacing:.3px;white-space:nowrap;animation:tpGlow 2.4s ease-in-out infinite;flex-shrink:0;}
+      `}</style>
       <div style={{marginBottom:18}}>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Ad Copies</h1>
         <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Hooks et textes classés par angle · Copiez directement dans Meta Ads Manager</p>
@@ -2936,11 +2959,11 @@ const Copies = ({products, setSection}) => {
                   <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Angle</div>
                   <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
                     {allAngles.map(a => (
-                      <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}`}
-                        style={{padding:'4px 10px',borderRadius:20,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.sec,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}
+                      <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}${a.nom===angleGagnantActuel ? ' · Angle Top Performer actuel' : ''}`}
+                        style={{padding:'4px 10px',borderRadius:20,border:`1px solid ${a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.5)' : C.border}`,background:a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)',color:a.nom===angleGagnantActuel ? '#EAB308' : C.sec,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',animation:a.nom===angleGagnantActuel ? 'tpGlow 2.4s ease-in-out infinite' : 'none'}}
                         onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
-                        onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border;e.currentTarget.style.background='rgba(255,255,255,0.07)';e.currentTarget.style.color=C.sec;}}
-                      >A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor=a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.5)' : C.border;e.currentTarget.style.background=a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)';e.currentTarget.style.color=a.nom===angleGagnantActuel ? '#EAB308' : C.sec;}}
+                      >{a.nom===angleGagnantActuel && '⚡ '}A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
                     ))}
                   </div>
                 </div>
@@ -2992,7 +3015,12 @@ const Copies = ({products, setSection}) => {
                         </div>
 
                         <div style={{position:'relative'}}>
-                          <div style={{fontSize:9.5,color:C.accent,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:6}}>Angle {angle.numero}</div>
+                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
+                            <div style={{fontSize:9.5,color:C.accent,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase'}}>Angle {angle.numero}</div>
+                            {angle.nom===angleGagnantActuel && (
+                              <span className="tp-badge">⚡ Angle Top Performer actuel</span>
+                            )}
+                          </div>
                           <div style={{fontSize:16.5,fontWeight:800,color:C.text,marginBottom:22}}>{angle.nom}</div>
 
                           {/* Hooks — liste divisée par de fines lignes, plus une boîte par hook */}
@@ -3318,10 +3346,13 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
   };
 
   const cible = cibles[activeCible];
+  const angleGagnantActuel = getAngleGagnantActuel(selected);
 
   return (
     <div>
       <style>{`
+        @keyframes tpGlow { 0%,100%{box-shadow:0 0 0 1px rgba(234,179,8,0.4), 0 0 12px rgba(234,179,8,0.35);} 50%{box-shadow:0 0 0 1px rgba(234,179,8,0.7), 0 0 22px rgba(234,179,8,0.65);} }
+        .tp-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(234,179,8,0.14);border:1px solid rgba(234,179,8,0.4);color:#EAB308;font-size:9.5px;font-weight:800;letter-spacing:.3px;white-space:nowrap;animation:tpGlow 2.4s ease-in-out infinite;flex-shrink:0;}
         .mdv4-hero{display:grid;grid-template-columns:1fr;border-radius:16px;overflow:hidden;margin-bottom:24px;border:1px solid ${C.border}}
         .mdv4-info-grid{display:grid;grid-template-columns:1fr;gap:18px}
         .mdv4-mp-grid{display:grid;grid-template-columns:1fr;gap:0}
@@ -3445,8 +3476,11 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
                   const accents = ['#5B8DEF','#22C55E','#EAB308','#A78BFA'];
                   const accent = accents[ai % accents.length];
                   return (
-                  <div key={`${b.numero}-${ai}`} style={{scrollSnapAlign:'start',flexShrink:0,width:250,background:C.card,border:`1px solid ${C.border}`,borderTop:`3px solid ${accent}`,borderRadius:14,padding:16}}>
-                    <div style={{fontSize:9,color:accent,fontFamily:"'DM Mono',monospace",marginBottom:8,fontWeight:700}}>BATCH {b.numero} · ANGLE {a.numero || ai+1}</div>
+                  <div key={`${b.numero}-${ai}`} style={{scrollSnapAlign:'start',flexShrink:0,width:250,background:C.card,border:`1px solid ${a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.5)' : C.border}`,borderTop:`3px solid ${a.nom===angleGagnantActuel ? '#EAB308' : accent}`,borderRadius:14,padding:16}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:8}}>
+                      <div style={{fontSize:9,color:accent,fontFamily:"'DM Mono',monospace",fontWeight:700}}>BATCH {b.numero} · ANGLE {a.numero || ai+1}</div>
+                      {a.nom===angleGagnantActuel && <span className="tp-badge">⚡ Top Performer</span>}
+                    </div>
                     <div style={{fontSize:14,fontWeight:800,marginBottom:8,lineHeight:1.3}}>{a.nom}</div>
                     {a.justification && <div style={{fontSize:11,color:C.sec,lineHeight:1.55,paddingTop:10,borderTop:`1px dashed ${C.border}`}}><b style={{color:C.muted,fontWeight:700,textTransform:'uppercase',fontSize:9,display:'block',marginBottom:4}}>Pourquoi cet angle</b>{a.justification}</div>}
                   </div>
@@ -4309,12 +4343,16 @@ export default function Platform() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
 
-  // Précharge chaque image de créative en arrière-plan dès qu'elle apparaît dans products —
-  // le navigateur la met en cache HTTP standard (aucune compression, qualité intacte). Résultat
-  // recherché : au moment où le client ouvre réellement la Galerie, l'image est déjà en cache,
-  // donc affichage instantané au lieu d'un chargement visible à chaque visite.
+  // Précharge chaque MINIATURE de créative en arrière-plan dès qu'elle apparaît dans products —
+  // le navigateur la met en cache HTTP standard. Résultat recherché : au moment où le client
+  // ouvre réellement la Galerie, l'image est déjà en cache, donc affichage instantané.
+  // ⚠️ CRITIQUE : ne JAMAIS précharger c.imageUrl (pleine résolution, souvent plusieurs Mo).
+  // Ce useEffect tourne sur TOUTES les pages d'AdBoard, pas seulement la Galerie — précharger
+  // les images pleine résolution ici téléchargeait silencieusement tout le catalogue de
+  // créatives de l'utilisateur à chaque visite, indépendamment de ce qu'il consultait
+  // réellement. C'est ce qui a fait exploser l'egress Supabase (11,73 Go / 5,5 Go de quota).
   useEffect(() => {
-    const urls = products.flatMap(p => (p.creatives || []).map(c => c.imageUrl)).filter(Boolean);
+    const urls = products.flatMap(p => (p.creatives || []).map(c => c.thumbUrl)).filter(Boolean);
     urls.forEach(url => { const img = new Image(); img.src = url; });
   }, [products]);
 
