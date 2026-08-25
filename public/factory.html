@@ -3105,6 +3105,35 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   btns[1].disabled = false;
   btns[1].onclick = () => prodv2RegenerateCrea(idx);
 
+// Génère une miniature JPEG compressée côté NAVIGATEUR via Canvas — contourne complètement
+// sharp/libvips côté serveur (échec systématique en diagnostic : "vipspng: libpng read error",
+// reproductible même après cache de build vidé + Node LTS 24). Même cible que la version
+// serveur (400px de large, JPEG qualité ~78) pour un résultat visuellement équivalent, mais
+// ne dépend d'aucune librairie native — fonctionne dans n'importe quel navigateur.
+function prodv2GenerateThumbClientSide(base64Data, mime) {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const targetW = 400;
+          const scale = Math.min(1, targetW / img.width);
+          const w = Math.round(img.width * scale) || img.width;
+          const h = Math.round(img.height * scale) || img.height;
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+          resolve((dataUrl.split(',')[1]) || null);
+        } catch(eDraw) { resolve(null); }
+      };
+      img.onerror = () => resolve(null);
+      img.src = `data:${mime};base64,${base64Data}`;
+    } catch(e) { resolve(null); }
+  });
+}
+
   // Cause profonde corrigée (statement timeout persistant à la sauvegarde, malgré une écriture
   // déjà ciblée) : le vrai poids venait de la TAILLE du contenu — accumuler les images en base64
   // directement dans deliverables grossissait la ligne à chaque créative, jusqu'à devenir trop
@@ -3115,9 +3144,10 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   let creativeThumbUrl = null;
   if (prodv2State.briefSource === 'commande' && prodv2State.commandeId) {
     try {
+      const thumbB64 = await prodv2GenerateThumbClientSide(imgB64, imageMime);
       const rUp = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/upload-creative-now`, {
         method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
-        body: JSON.stringify({ imgB64, mime: imageMime, index: idx })
+        body: JSON.stringify({ imgB64, mime: imageMime, index: idx, thumbB64 })
       });
       const dUp = await rUp.json();
       if (dUp.ok && dUp.url) { creativeUrl = dUp.url; creativeThumbUrl = dUp.thumbUrl || null; }
