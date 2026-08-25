@@ -2763,19 +2763,36 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
 
 // ── Angle gagnant ACTUEL d'un produit — même logique que /products/:id/renewal-context
 // côté serveur (celle qui alimente l'Analyste), répliquée ici pour un badge instantané sans
-// appel réseau. Le marquage le PLUS RÉCENT prime : dès qu'une créative d'un autre angle est
-// marquée Top Performer plus tard, le badge se déplace automatiquement sur ce nouvel angle,
-// disparaît de l'ancien — rien à faire manuellement, jamais figé.
+// appel réseau. LES DEUX DOIVENT RESTER STRICTEMENT IDENTIQUES — sinon le badge affiché au
+// client contredirait l'angle réellement transmis à l'Analyste pour le prochain batch.
+//
+// Score combiné, pas un simple "dernier marqué gagne" : pour chaque créative marquée Top
+// Performer, on ajoute à son angle un poids de fraîcheur (position du batch dans l'historique
+// du produit — plus récent = poids plus fort). Un angle avec PLUSIEURS marquages, même un peu
+// plus anciens, peut donc l'emporter sur un marquage unique très récent : ni le volume ni la
+// fraîcheur seule ne dominent, les deux se combinent dans UN seul score par angle.
+// Le multiplicateur de rang (classement manuel du client, pas encore construit — voir
+// drag-and-drop à faire) est neutre à 1 pour l'instant : prêt à être branché sans réécrire le
+// reste dès que ce classement existera.
 function getAngleGagnantActuel(product) {
   const deliveries = product?.deliveries || [];
   const creativesTopPerformer = (product?.creatives || []).filter(c => c.topPerformer);
-  if (!creativesTopPerformer.length) return null;
-  for (let i = deliveries.length - 1; i >= 0; i--) {
-    const d = deliveries[i];
-    const match = creativesTopPerformer.find(c => c.week === d.semaine);
-    if (match) return match.angle || null;
-  }
-  return null;
+  if (!creativesTopPerformer.length || !deliveries.length) return null;
+
+  const scores = {}; // nom d'angle -> score cumulé
+  deliveries.forEach((d, i) => {
+    const poidsRecence = i + 1; // batch le plus ancien = 1, chaque batch suivant pèse plus
+    creativesTopPerformer.filter(c => c.week === d.semaine).forEach(c => {
+      const rankMultiplier = 1; // TODO: remplacer par le rang une fois le classement drag-and-drop construit
+      if (!c.angle) return;
+      scores[c.angle] = (scores[c.angle] || 0) + poidsRecence * rankMultiplier;
+    });
+  });
+
+  const entries = Object.entries(scores);
+  if (!entries.length) return null;
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0];
 }
 
 const Copies = ({products, setSection}) => {
