@@ -2373,6 +2373,16 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  // Classement drag-and-drop des créatives Top Performer — préférence du client, une des 3
+  // métriques (avec fraîcheur et volume) qui déterminent l'angle gagnant utilisé en interne
+  // pour les prochains batches. Jamais montré au client comme "métrique" — juste "vous pouvez
+  // réordonner", le score qui en découle reste invisible côté client.
+  const [dragId, setDragId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+  const [localTpOrder, setLocalTpOrder] = useState(null); // array d'ids pendant un drag en cours
+  const [justRanked, setJustRanked] = useState(null); // id de la créative qui vient d'être déplacée — pour le flash de confirmation
+  const [savingRank, setSavingRank] = useState(false);
+  const dragGridRef = useRef(null);
   // Filtre produit — dropdown recherchable, remplace l'ancienne bande de pills à défilement
   // horizontal (difficile à parcourir avec beaucoup de produits, cf retour direct).
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
@@ -2444,6 +2454,13 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
       if (dateFin && t > new Date(dateFin).getTime() + 86400000) return false; // inclut toute la journée de fin
     }
     return true;
+  }).sort((a, b) => {
+    // En mode Top Performer, respecter le classement manuel du client (drag-and-drop) —
+    // rang 1 en premier, non classées à la fin, dans leur ordre habituel entre elles.
+    if (filterMode !== 'topPerformer') return 0;
+    const ra = a.topPerformerRank ?? Infinity;
+    const rb = b.topPerformerRank ?? Infinity;
+    return ra - rb;
   });
 
   const chips = filterMode==='angle' ? angleSet : filterMode==='batch' ? batchSet : filterMode==='cible' ? cibleSet : [];
@@ -2468,6 +2485,83 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
       setTogglingTopPerformer(false);
     }
   };
+
+  // Ordre affiché : celui du drag en cours si un drag est actif, sinon l'ordre trié par rang.
+  // Recalculé à chaque rendu — jamais de désync possible entre ce qui s'affiche et filtered.
+  const tpDisplayOrder = (filterMode === 'topPerformer' && localTpOrder)
+    ? localTpOrder.map(id => filtered.find(c => c.id === id)).filter(Boolean)
+    : filtered;
+
+  const persistTopPerformerOrder = async (orderedIds) => {
+    setSavingRank(true);
+    const productIdRef = filtered.find(c => c.id === orderedIds[0])?.productId
+      || (filtered[0] && filtered[0].productId);
+    try {
+      await fetch(`https://adstack-server.onrender.com/products/${productIdRef}/reorder-top-performers`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ order: orderedIds })
+      });
+      setProducts(prev => prev.map(p => ({
+        ...p,
+        creatives: (p.creatives||[]).map(c => {
+          const idx = orderedIds.indexOf(c.id);
+          return idx === -1 ? c : {...c, topPerformerRank: idx + 1};
+        })
+      })));
+    } catch(e) {
+      console.error('Sauvegarde du classement échouée :', e.message);
+      notify && notify('Classement non sauvegardé — vérifiez votre connexion', 'error');
+    } finally {
+      setSavingRank(false);
+    }
+  };
+
+  // Pointer Events plutôt que le drag-and-drop HTML5 natif : fonctionne de façon identique à
+  // la souris ET au doigt (le HTML5 natif ne marche quasiment jamais sur mobile, et l'audience
+  // ici est très majoritairement mobile).
+  const handleDragPointerDown = (e, creativeId) => {
+    if (filterMode !== 'topPerformer') return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragId(creativeId);
+    setLocalTpOrder(filtered.map(c => c.id));
+  };
+
+  const handleDragPointerMove = (e) => {
+    if (!dragId) return;
+    e.preventDefault();
+    const target = document.elementFromPoint(e.clientX, e.clientY);
+    const cardEl = target && target.closest('[data-drag-id]');
+    if (!cardEl) return;
+    const overId = cardEl.getAttribute('data-drag-id');
+    if (!overId || overId === dragId || overId === dragOverId) return;
+    setDragOverId(overId);
+    setLocalTpOrder(prev => {
+      if (!prev) return prev;
+      const arr = [...prev];
+      const fromIdx = arr.indexOf(dragId);
+      const toIdx = arr.indexOf(overId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      arr.splice(fromIdx, 1);
+      arr.splice(toIdx, 0, dragId);
+      return arr;
+    });
+  };
+
+  const handleDragPointerUp = () => {
+    if (!dragId) return;
+    const finalOrder = localTpOrder;
+    const finishedId = dragId;
+    setDragId(null);
+    setDragOverId(null);
+    if (finalOrder) {
+      persistTopPerformerOrder(finalOrder);
+      setJustRanked(finishedId);
+      setTimeout(() => setJustRanked(r => r === finishedId ? null : r), 1400);
+    }
+    // localTpOrder reste jusqu'au prochain rendu de products (mis à jour par persistTopPerformerOrder)
+    // pour éviter un flash retour à l'ancien ordre pendant l'attente réseau.
+  };
+
 
   const confirmDeleteSelected = async () => {
     setDeleting(true);
@@ -2650,29 +2744,66 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
         </div>
       )}
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
-        {filtered.map(c => (
-          <div key={c.id} className="gallery-item"
-            onClick={() => selectMode
-              ? setSelectedIds(ids => ids.includes(c.id) ? ids.filter(i=>i!==c.id) : [...ids, c.id])
-              : setSelected(c)}
-            style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',cursor:'pointer',position:'relative',background:c.imageUrl?'#14161D':`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`,transform:selectMode&&selectedIds.includes(c.id)?'scale(0.94)':'scale(1)',transition:'transform 0.15s cubic-bezier(0.34,1.56,0.64,1)',boxShadow:selectMode&&selectedIds.includes(c.id)?`0 0 0 2px ${C.accent}`:'none'}}
+      {filterMode==='topPerformer' && filtered.length > 1 && (
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'8px 12px',borderRadius:8,background:'rgba(255,193,7,0.08)',border:'1px solid rgba(255,193,7,0.25)'}}>
+          <Icon name="star" size={13} color="#FFC107"/>
+          <span style={{fontSize:11,color:C.sec}}>Glissez une créative pour la classer — celle du haut est celle que vous jugez la plus performante.</span>
+        </div>
+      )}
+
+      <div ref={dragGridRef} style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
+        {tpDisplayOrder.map((c, i) => {
+          const isTpMode = filterMode==='topPerformer';
+          const isDragging = dragId === c.id;
+          const isJustRanked = justRanked === c.id;
+          return (
+          <div key={c.id} className="gallery-item" data-drag-id={isTpMode ? c.id : undefined}
+            onClick={() => {
+              if (isDragging) return; // évite d'ouvrir le détail juste après avoir relâché le drag
+              if (selectMode) setSelectedIds(ids => ids.includes(c.id) ? ids.filter(i=>i!==c.id) : [...ids, c.id]);
+              else setSelected(c);
+            }}
+            onPointerDown={isTpMode ? (e) => handleDragPointerDown(e, c.id) : undefined}
+            onPointerMove={isTpMode ? handleDragPointerMove : undefined}
+            onPointerUp={isTpMode ? handleDragPointerUp : undefined}
+            onPointerCancel={isTpMode ? handleDragPointerUp : undefined}
+            style={{
+              aspectRatio:'4/5',borderRadius:6,overflow:'hidden',
+              cursor:isTpMode?(isDragging?'grabbing':'grab'):'pointer',
+              position:'relative',
+              background:c.imageUrl?'#14161D':`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`,
+              transform:isDragging?'scale(1.08)':(selectMode&&selectedIds.includes(c.id)?'scale(0.94)':(isJustRanked?'scale(1.05)':'scale(1)')),
+              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s',
+              boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.5)' : (isJustRanked ? '0 0 0 2px #FFC107' : (selectMode&&selectedIds.includes(c.id)?`0 0 0 2px ${C.accent}`:'none')),
+              zIndex: isDragging ? 10 : 1,
+              touchAction: isTpMode ? 'none' : 'auto', // empêche le scroll de la page pendant qu'on glisse une créative
+            }}
           >
             {/* Préfère thumbUrl (vraie miniature ~15-40 Ko générée côté serveur) à imageUrl
                 (original, potentiellement 500 Ko-2 Mo) pour la grille — repli sur imageUrl pour
                 les créatives livrées avant ce fix, qui n'ont pas de thumbUrl. */}
             {c.imageUrl && (
-              <img src={c.thumbUrl || c.imageUrl} alt={c.angle} loading="lazy" decoding="async"
-                style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
+              <img src={c.thumbUrl || c.imageUrl} alt={c.angle} loading="lazy" decoding="async" draggable={false}
+                style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',pointerEvents:'none'}}/>
             )}
-            {selectMode && (
+            {selectMode && !isTpMode && (
               <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:selectedIds.includes(c.id)?C.accent:'rgba(0,0,0,0.45)',border:`1.5px solid ${selectedIds.includes(c.id)?C.accent:'rgba(255,255,255,0.6)'}`,backdropFilter:'blur(2px)',zIndex:2}}>
                 {selectedIds.includes(c.id) && <Icon name="check" size={12} color="#fff"/>}
               </div>
             )}
-            {!selectMode && c.topPerformer && (
+            {!selectMode && !isTpMode && c.topPerformer && (
               <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.5)',backdropFilter:'blur(2px)',zIndex:2}}>
                 <Icon name="star" size={11} color="#FFC107"/>
+              </div>
+            )}
+            {isTpMode && (
+              <div style={{position:'absolute',top:6,left:6,minWidth:20,height:20,padding:'0 6px',borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:i===0?'#FFC107':'rgba(0,0,0,0.55)',border:i===0?'none':'1px solid rgba(255,255,255,0.25)',backdropFilter:'blur(2px)',zIndex:2}}>
+                <span style={{fontSize:10,fontWeight:800,color:i===0?'#1a1a1a':'#fff'}}>#{i+1}</span>
+              </div>
+            )}
+            {isJustRanked && (
+              <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.35)',zIndex:3,pointerEvents:'none'}}>
+                <span style={{fontSize:11,fontWeight:800,color:'#FFC107',background:'rgba(0,0,0,0.6)',padding:'4px 10px',borderRadius:20}}>✓ Classée #{i+1}</span>
               </div>
             )}
             <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))',zIndex:2}}>
@@ -2680,7 +2811,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
               <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Batch {c.week.replace(/^[SB]/,'')}</div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {filtered.length===0 && query && (
@@ -2783,7 +2915,12 @@ function getAngleGagnantActuel(product) {
   deliveries.forEach((d, i) => {
     const poidsRecence = i + 1; // batch le plus ancien = 1, chaque batch suivant pèse plus
     creativesTopPerformer.filter(c => c.week === d.semaine).forEach(c => {
-      const rankMultiplier = 1; // TODO: remplacer par le rang une fois le classement drag-and-drop construit
+      // Rang manuel (drag-and-drop client) — 3e métrique, en plus de fraîcheur et volume.
+      // Rang 1 = ×2, rang 2 = ×1.5, rang 3 = ×1.33... décroît vers 1 (neutre) pour les rangs
+      // élevés ou les créatives non classées. Volontairement pas dominant à lui seul : c'est
+      // un avis client, précieux mais pas aussi fiable qu'une vraie donnée de performance
+      // (spend, ventes) — voir note dans COMPETENCE_ANALYSTE.md.
+      const rankMultiplier = c.topPerformerRank ? (1 + 1 / c.topPerformerRank) : 1;
       if (!c.angle) return;
       scores[c.angle] = (scores[c.angle] || 0) + poidsRecence * rankMultiplier;
     });
