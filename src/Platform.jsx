@@ -2447,7 +2447,14 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
     if (filterMode==='angle' && activeChip && c.angle!==activeChip) return false;
     if (filterMode==='batch' && activeChip && batchKey(c)!==activeChip) return false;
     if (filterMode==='cible' && activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
-    if (filterMode==='topPerformer' && !c.topPerformer) return false;
+    // Top Performer exige un produit ET une cible précis — un angle marketing joue sur les
+    // émotions d'UNE cible, mélanger plusieurs produits/cibles dans le même classement n'aurait
+    // aucun sens (voir garde-fou plus bas qui bloque tant que ces deux choix ne sont pas faits).
+    if (filterMode==='topPerformer') {
+      if (!c.topPerformer) return false;
+      if (!selectedProduct) return false;
+      if (activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
+    }
     if (filterMode==='date') {
       const t = dateCreative(c);
       if (dateDebut && t < new Date(dateDebut).getTime()) return false;
@@ -2463,7 +2470,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
     return ra - rb;
   });
 
-  const chips = filterMode==='angle' ? angleSet : filterMode==='batch' ? batchSet : filterMode==='cible' ? cibleSet : [];
+  const chips = filterMode==='angle' ? angleSet : filterMode==='batch' ? batchSet : (filterMode==='cible' || filterMode==='topPerformer') ? cibleSet : [];
 
   const [togglingTopPerformer, setTogglingTopPerformer] = useState(false);
   const toggleTopPerformer = async (creative) => {
@@ -2732,7 +2739,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
         </div>
       )}
 
-      {(filterMode==='angle' || filterMode==='batch' || filterMode==='cible') && (
+      {(filterMode==='angle' || filterMode==='batch' || filterMode==='cible' || filterMode==='topPerformer') && (
         <div style={{display:'flex',gap:6,marginBottom:18,flexWrap:'wrap'}}>
           {chips.map(ch => (
             <button key={ch} onClick={() => setActiveChip(activeChip===ch?null:ch)}
@@ -2744,7 +2751,21 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
         </div>
       )}
 
-      {filterMode==='topPerformer' && filtered.length > 1 && (
+      {filterMode==='topPerformer' && !selectedProduct && (
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'10px 12px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+          <Icon name="grid" size={13} color={C.sec}/>
+          <span style={{fontSize:11,color:C.sec}}>Choisissez d'abord un produit ci-dessus — un classement mélangeant plusieurs produits n'aurait pas de sens.</span>
+        </div>
+      )}
+
+      {filterMode==='topPerformer' && selectedProduct && cibleSet.length > 1 && !activeChip && (
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'10px 12px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+          <Icon name="person" size={13} color={C.sec}/>
+          <span style={{fontSize:11,color:C.sec}}>Ce produit a eu plusieurs cibles différentes — choisissez celle à classer ci-dessus (un angle qui marche sur une cible ne dit rien sur une autre).</span>
+        </div>
+      )}
+
+      {filterMode==='topPerformer' && selectedProduct && (activeChip || cibleSet.length <= 1) && filtered.length > 1 && (
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'8px 12px',borderRadius:8,background:'rgba(255,193,7,0.08)',border:'1px solid rgba(255,193,7,0.25)'}}>
           <Icon name="star" size={13} color="#FFC107"/>
           <span style={{fontSize:11,color:C.sec}}>Glissez une créative pour la classer — celle du haut est celle que vous jugez la plus performante.</span>
@@ -2893,27 +2914,30 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
   );
 };
 
-// ── Angle gagnant ACTUEL d'un produit — même logique que /products/:id/renewal-context
-// côté serveur (celle qui alimente l'Analyste), répliquée ici pour un badge instantané sans
-// appel réseau. LES DEUX DOIVENT RESTER STRICTEMENT IDENTIQUES — sinon le badge affiché au
-// client contredirait l'angle réellement transmis à l'Analyste pour le prochain batch.
+// ── Angle gagnant ACTUEL d'un produit, POUR UNE CIBLE PRÉCISE — même logique que
+// /products/:id/renewal-context côté serveur (celle qui alimente l'Analyste), répliquée ici
+// pour un badge instantané sans appel réseau. LES DEUX DOIVENT RESTER STRICTEMENT IDENTIQUES —
+// sinon le badge affiché au client contredirait l'angle réellement transmis à l'Analyste.
+//
+// SCOPÉ PAR CIBLE, PAS SEULEMENT PAR PRODUIT : un angle marketing joue sur les émotions d'UNE
+// cible précise — un angle gagnant pour "mères actives 35-45 ans" n'a aucune raison de
+// fonctionner pour "étudiants 18-22 ans" même sur le même produit. Mélanger les cibles
+// fausserait le signal. `cible` doit correspondre exactement au champ `cible` des livraisons
+// (voir deliveries[].cible côté serveur) — pas de correspondance floue.
 //
 // Score combiné, pas un simple "dernier marqué gagne" : pour chaque créative marquée Top
-// Performer, on ajoute à son angle un poids de fraîcheur (position du batch dans l'historique
-// du produit — plus récent = poids plus fort). Un angle avec PLUSIEURS marquages, même un peu
-// plus anciens, peut donc l'emporter sur un marquage unique très récent : ni le volume ni la
-// fraîcheur seule ne dominent, les deux se combinent dans UN seul score par angle.
-// Le multiplicateur de rang (classement manuel du client, pas encore construit — voir
-// drag-and-drop à faire) est neutre à 1 pour l'instant : prêt à être branché sans réécrire le
-// reste dès que ce classement existera.
-function getAngleGagnantActuel(product) {
-  const deliveries = product?.deliveries || [];
+// Performer, on ajoute à son angle un poids de fraîcheur (position du batch DE CETTE CIBLE —
+// plus récent = poids plus fort). Un angle avec PLUSIEURS marquages, même un peu plus anciens,
+// peut donc l'emporter sur un marquage unique très récent : ni le volume ni la fraîcheur seule
+// ne dominent, les deux se combinent dans UN seul score par angle.
+function getAngleGagnantActuel(product, cible) {
+  const deliveries = (product?.deliveries || []).filter(d => (d.cible || null) === (cible || null));
   const creativesTopPerformer = (product?.creatives || []).filter(c => c.topPerformer);
   if (!creativesTopPerformer.length || !deliveries.length) return null;
 
   const scores = {}; // nom d'angle -> score cumulé
   deliveries.forEach((d, i) => {
-    const poidsRecence = i + 1; // batch le plus ancien = 1, chaque batch suivant pèse plus
+    const poidsRecence = i + 1; // livraison la plus ancienne DE CETTE CIBLE = 1, chaque suivante pèse plus
     creativesTopPerformer.filter(c => c.week === d.semaine).forEach(c => {
       // Rang manuel (drag-and-drop client) — 3e métrique, en plus de fraîcheur et volume.
       // Rang 1 = ×2, rang 2 = ×1.5, rang 3 = ×1.33... décroît vers 1 (neutre) pour les rangs
@@ -2952,7 +2976,13 @@ const Copies = ({products, setSection}) => {
   const allAngles = selected
     ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, cible:d.cible, idUnique:`${d.semaine}-${a.numero}`})))
     : [];
-  const angleGagnantActuel = selected ? getAngleGagnantActuel(selected) : null;
+  // Un produit peut avoir eu plusieurs cibles différentes dans le temps — l'angle gagnant
+  // doit être calculé PAR CIBLE, jamais un seul gagnant "global" mélangeant tout. On construit
+  // donc une correspondance cible → angle gagnant, calculée une fois par cible distincte
+  // présente dans les angles de ce produit.
+  const cibleSetPourGagnant = selected ? [...new Set((selected.deliveries||[]).map(d => d.cible || null))] : [];
+  const angleGagnantParCible = {};
+  cibleSetPourGagnant.forEach(cible => { angleGagnantParCible[cible] = getAngleGagnantActuel(selected, cible); });
   const cibleSetCopies = [...new Set(allAngles.map(a => a.cible).filter(Boolean))];
   const batchSetCopies = [...new Set(allAngles.map(a => a.semaine).filter(Boolean))];
 
@@ -3113,11 +3143,11 @@ const Copies = ({products, setSection}) => {
                   <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Angle</div>
                   <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
                     {allAngles.map(a => (
-                      <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}${a.nom===angleGagnantActuel ? ' · Angle Top Performer actuel' : ''}`}
-                        style={{padding:'4px 10px',borderRadius:20,border:`1px solid ${a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.5)' : C.border}`,background:a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)',color:a.nom===angleGagnantActuel ? '#EAB308' : C.sec,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',animation:a.nom===angleGagnantActuel ? 'tpGlow 2.4s ease-in-out infinite' : 'none'}}
+                      <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}${a.nom===angleGagnantParCible[a.cible||null] ? ' · Angle Top Performer actuel' : ''}`}
+                        style={{padding:'4px 10px',borderRadius:20,border:`1px solid ${a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.5)' : C.border}`,background:a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)',color:a.nom===angleGagnantParCible[a.cible||null] ? '#EAB308' : C.sec,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',animation:a.nom===angleGagnantParCible[a.cible||null] ? 'tpGlow 2.4s ease-in-out infinite' : 'none'}}
                         onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
-                        onMouseLeave={e=>{e.currentTarget.style.borderColor=a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.5)' : C.border;e.currentTarget.style.background=a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)';e.currentTarget.style.color=a.nom===angleGagnantActuel ? '#EAB308' : C.sec;}}
-                      >{a.nom===angleGagnantActuel && '⚡ '}A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
+                        onMouseLeave={e=>{e.currentTarget.style.borderColor=a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.5)' : C.border;e.currentTarget.style.background=a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)';e.currentTarget.style.color=a.nom===angleGagnantParCible[a.cible||null] ? '#EAB308' : C.sec;}}
+                      >{a.nom===angleGagnantParCible[a.cible||null] && '⚡ '}A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
                     ))}
                   </div>
                 </div>
@@ -3171,7 +3201,7 @@ const Copies = ({products, setSection}) => {
                         <div style={{position:'relative'}}>
                           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
                             <div style={{fontSize:9.5,color:C.accent,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase'}}>Angle {angle.numero}</div>
-                            {angle.nom===angleGagnantActuel && (
+                            {angle.nom===angleGagnantParCible[delivery.cible||null] && (
                               <span className="tp-badge">⚡ Angle Top Performer actuel</span>
                             )}
                           </div>
@@ -3500,7 +3530,7 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
   };
 
   const cible = cibles[activeCible];
-  const angleGagnantActuel = getAngleGagnantActuel(selected);
+  const angleGagnantActuel = getAngleGagnantActuel(selected, cible?.nom);
 
   return (
     <div>
