@@ -807,15 +807,20 @@ const sbBriefs = {
     if (!session?.access_token) return null;
     const user = sbAuth.getUser();
     if (!user?.id) return null;
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/briefs`, {
+    // Passe désormais par le serveur (voir /briefs/create) qui revérifie les crédits avec des
+    // données fraîches au moment exact de la création — l'ancienne insertion directe vers
+    // Supabase faisait confiance à l'état local du client, qui pouvait être temporairement
+    // faux juste après le chargement de la page (allBriefs pas encore rafraîchi), laissant
+    // passer des demandes que le client n'avait plus les crédits pour couvrir.
+    const r = await fetch('https://adstack-server.onrender.com/briefs/create', {
       method: 'POST',
-      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify({ user_id: user.id, product_id: productId, quantity, status: 'pending', credits_used: quantity })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, productId, quantity })
     });
-    if (!r.ok) return null;
-    const rows = await r.json();
-    return rows[0];
+    if (!r.ok) return { error: 'reseau' };
+    const data = await r.json();
+    if (data.error) return data; // { error: 'credits_insuffisants'|'plafond_production'|'abonnement_inactif', ... }
+    return data.brief || null;
   },
   async cancel(session, briefId) {
     if (!session?.access_token) return false;
@@ -1695,13 +1700,25 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   );
 };
 
-const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, onOpenPayment, C}) => {
+const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user, onNeedLogin, onAskCreatives, cancelCreatives, onOpenPayment, C}) => {
   const brief = briefs[p.id];
   const hasActiveBrief = briefEstActif(brief);
   const credits = computeCredits(subscription, allBriefs);
   const nextCreditDate = credits.nextCreditDate
     ? credits.nextCreditDate.toLocaleDateString('fr-FR', { day:'numeric', month:'long' })
     : null;
+  // Tant que les vraies données ne sont pas arrivées, ne JAMAIS rendre le bouton actif — même
+  // si credits.available calcule (à tort, sur des données pas encore chargées) un nombre
+  // suffisant. Voir la note sur creditsDataReady plus haut dans ce fichier pour la cause exacte
+  // du bug que ça corrige.
+  if (!creditsDataReady) {
+    return (
+      <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11}}>
+        <div style={{width:12,height:12,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.muted,animation:'spin 0.7s linear infinite'}}/>
+        Vérification de vos crédits...
+      </div>
+    );
+  }
   if (subscription?.active && credits.available < 9) {
     // Discovery épuisé : jamais "prochaine image dans une semaine" (ça n'existe pas pour un
     // pack) — un vrai bouton qui ouvre directement le paiement pour en ajouter, empilable
@@ -1736,7 +1753,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   );
 };
 
-const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onAskCreatives, cancelCreatives, notify, setProducts, openEdit, onOpenPayment, C}) => {
+const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user, onNeedLogin, onAskCreatives, cancelCreatives, notify, setProducts, openEdit, onOpenPayment, C}) => {
   const [hovered, setHovered] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const brief = briefs[p.id];
@@ -1803,7 +1820,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
         </div>
       </div>
       <div style={{padding:'0 16px 16px'}}>
-        <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} onOpenPayment={onOpenPayment} C={C}/>
+        <BriefButton p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} creditsDataReady={creditsDataReady} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} onOpenPayment={onOpenPayment} C={C}/>
       </div>
     </div>
 
@@ -1821,7 +1838,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, user, onNeedLogin, onA
   );
 };
 
-const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}, setSection, onOpenPayment}) => {
+const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, creditsDataReady=false, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}, setSection, onOpenPayment}) => {
   // Recalculer les crédits en temps réel depuis allBriefs
   const credits = computeCredits(subscription, allBriefs);
   const nextCreditDate = credits.nextCreditDate
@@ -1940,16 +1957,44 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     setRequestModal({ product: p });
   };
 
+  const [requestSubmitting, setRequestSubmitting] = useState(false);
   const confirmRequest = async () => {
     const p = requestModal?.product;
     if (!p) return;
+    setRequestSubmitting(true);
     const session = sbAuth.getSession();
     const brief = await sbBriefs.create(session, p.id, requestQty);
-    if (brief) {
-      brief.credits_used = requestQty;
-      setBriefs(prev => ({...prev, [p.id]: brief}));
-      setAllBriefs(prev => [...prev, brief]);
+    setRequestSubmitting(false);
+
+    if (!brief || brief.error) {
+      // Le serveur a revérifié avec des données fraîches et a refusé — jamais un succès
+      // silencieux ni un faux brief local dans ce cas. Message honnête selon la vraie raison.
+      const messages = {
+        credits_insuffisants: `Vous n'avez plus assez d'images disponibles pour cette demande (${brief?.available ?? 0} restantes). La page va se rafraîchir.`,
+        plafond_production: 'Notre capacité de production est temporairement au maximum — réessayez dans quelques heures.',
+        abonnement_inactif: 'Votre abonnement ne semble plus actif — vérifiez votre statut avant de réessayer.',
+        reseau: 'Connexion au serveur impossible — vérifiez votre connexion et réessayez.',
+      };
+      notify && notify(messages[brief?.error] || 'La demande n\'a pas pu être créée — réessayez.', 'error');
+      setRequestModal(null);
+      // Les chiffres affichés étaient visiblement désynchronisés de la réalité serveur —
+      // on force un rechargement complet plutôt que de laisser l'utilisateur face à un
+      // écran dont il sait maintenant qu'il ne peut plus lui faire confiance.
+      const freshSession = await sbAuth.refreshSession();
+      if (freshSession) {
+        sbBriefs.loadForProducts(freshSession, products.map(x=>x.id)).then(bs => {
+          setAllBriefs(bs);
+          const map = {};
+          bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
+          setBriefs(map);
+        });
+      }
+      return;
     }
+
+    brief.credits_used = requestQty;
+    setBriefs(prev => ({...prev, [p.id]: brief}));
+    setAllBriefs(prev => [...prev, brief]);
     setRequestModal(null);
     // Afficher le brief local aussi (ancien comportement)
     const qty = requestQty;
@@ -1989,6 +2034,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
   return (
     <div>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       {/* ── Jauge images publicitaires ── */}
       {subscription?.active ? (
         <div style={{position:'relative',overflow:'hidden',marginBottom:18,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'22px 24px'}}>
@@ -2073,7 +2119,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
       <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill,minmax(290px,1fr))',gap:isMobile?14:20}}>
         {products.map(p => (
-          <ProductCard key={p.id} p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} notify={notify} setProducts={setProducts} openEdit={openEdit} onOpenPayment={onOpenPayment} C={C}/>
+          <ProductCard key={p.id} p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} creditsDataReady={creditsDataReady} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} notify={notify} setProducts={setProducts} openEdit={openEdit} onOpenPayment={onOpenPayment} C={C}/>
         ))}
 
         <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:260,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
@@ -2373,16 +2419,19 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
   const [bulkDownloading, setBulkDownloading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  // Classement drag-and-drop des créatives Top Performer — préférence du client, une des 3
-  // métriques (avec fraîcheur et volume) qui déterminent l'angle gagnant utilisé en interne
-  // pour les prochains batches. Jamais montré au client comme "métrique" — juste "vous pouvez
-  // réordonner", le score qui en découle reste invisible côté client.
-  const [dragId, setDragId] = useState(null);
-  const [dragOverId, setDragOverId] = useState(null);
-  const [localTpOrder, setLocalTpOrder] = useState(null); // array d'ids pendant un drag en cours
-  const [justRanked, setJustRanked] = useState(null); // id de la créative qui vient d'être déplacée — pour le flash de confirmation
+  // Classement des créatives Top Performer — préférence du client, une des 3 métriques (avec
+  // fraîcheur et volume) qui déterminent l'angle gagnant utilisé en interne pour les prochains
+  // batches. Jamais montré au client comme "métrique" — juste "vous pouvez réordonner", le
+  // score qui en découle reste invisible côté client.
+  //
+  // Système "tap pour échanger" (façon sélection de carte à jouer) plutôt qu'un drag continu :
+  // le drag par Pointer Events s'est révélé peu fiable sur mobile en usage réel (retours
+  // directs). Taper une créative la sélectionne (surbrillance), taper une deuxième échange
+  // leurs deux positions, taper la même deux fois annule la sélection. Fonctionne à l'identique
+  // à la souris et au doigt — un seul système à maintenir au lieu de deux.
+  const [selectedForSwap, setSelectedForSwap] = useState(null); // id de la créative sélectionnée en attente d'échange
+  const [justRanked, setJustRanked] = useState([]); // ids des créatives concernées par le dernier échange — pour le flash de confirmation
   const [savingRank, setSavingRank] = useState(false);
-  const dragGridRef = useRef(null);
   // Filtre produit — dropdown recherchable, remplace l'ancienne bande de pills à défilement
   // horizontal (difficile à parcourir avec beaucoup de produits, cf retour direct).
   const [productDropdownOpen, setProductDropdownOpen] = useState(false);
@@ -2495,10 +2544,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
 
   // Ordre affiché : celui du drag en cours si un drag est actif, sinon l'ordre trié par rang.
   // Recalculé à chaque rendu — jamais de désync possible entre ce qui s'affiche et filtered.
-  const tpDisplayOrder = (filterMode === 'topPerformer' && localTpOrder)
-    ? localTpOrder.map(id => filtered.find(c => c.id === id)).filter(Boolean)
-    : filtered;
-
   const persistTopPerformerOrder = async (orderedIds) => {
     setSavingRank(true);
     const productIdRef = filtered.find(c => c.id === orderedIds[0])?.productId
@@ -2523,50 +2568,56 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
     }
   };
 
-  // Pointer Events plutôt que le drag-and-drop HTML5 natif : fonctionne de façon identique à
-  // la souris ET au doigt (le HTML5 natif ne marche quasiment jamais sur mobile, et l'audience
-  // ici est très majoritairement mobile).
-  const handleDragPointerDown = (e, creativeId) => {
-    if (filterMode !== 'topPerformer') return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    setDragId(creativeId);
-    setLocalTpOrder(filtered.map(c => c.id));
-  };
-
-  const handleDragPointerMove = (e) => {
-    if (!dragId) return;
-    e.preventDefault();
-    const target = document.elementFromPoint(e.clientX, e.clientY);
-    const cardEl = target && target.closest('[data-drag-id]');
-    if (!cardEl) return;
-    const overId = cardEl.getAttribute('data-drag-id');
-    if (!overId || overId === dragId || overId === dragOverId) return;
-    setDragOverId(overId);
-    setLocalTpOrder(prev => {
-      if (!prev) return prev;
-      const arr = [...prev];
-      const fromIdx = arr.indexOf(dragId);
-      const toIdx = arr.indexOf(overId);
-      if (fromIdx === -1 || toIdx === -1) return prev;
-      arr.splice(fromIdx, 1);
-      arr.splice(toIdx, 0, dragId);
-      return arr;
-    });
-  };
-
-  const handleDragPointerUp = () => {
-    if (!dragId) return;
-    const finalOrder = localTpOrder;
-    const finishedId = dragId;
-    setDragId(null);
-    setDragOverId(null);
-    if (finalOrder) {
-      persistTopPerformerOrder(finalOrder);
-      setJustRanked(finishedId);
-      setTimeout(() => setJustRanked(r => r === finishedId ? null : r), 1400);
+  // Défaut intelligent quand on clique sur l'onglet Top Performer : filtre directement sur le
+  // produit le plus récemment livré PARMI ceux qui ont au moins une créative marquée, et sa
+  // cible la plus récente — sinon l'utilisateur atterrit sur un écran vide lui demandant de
+  // choisir, alors qu'un défaut sensé existe presque toujours (le cas courant : un seul
+  // produit, une seule cible → il voit directement ses créatives à classer, sans rien choisir).
+  // Il reste libre de changer via les filtres juste en dessous, comme d'habitude.
+  const handleFilterModeClick = (id) => {
+    setFilterMode(id);
+    if (id === 'topPerformer') {
+      const produitsAvecTopPerformer = products.filter(p => (p.creatives||[]).some(c => c.topPerformer));
+      if (produitsAvecTopPerformer.length) {
+        const dateLivraisonRecente = (p) => {
+          const ds = (p.deliveries||[]).map(d => new Date(d.created_at||0).getTime());
+          return ds.length ? Math.max(...ds) : 0;
+        };
+        const produitDefaut = produitsAvecTopPerformer.reduce((best, p) =>
+          dateLivraisonRecente(p) > dateLivraisonRecente(best) ? p : best
+        );
+        setSelectedProduct(produitDefaut.id);
+        const deliveries = produitDefaut.deliveries || [];
+        const derniereLivraison = deliveries.length ? deliveries[deliveries.length-1] : null;
+        setActiveChip(derniereLivraison?.cible || null);
+        return;
+      }
     }
-    // localTpOrder reste jusqu'au prochain rendu de products (mis à jour par persistTopPerformerOrder)
-    // pour éviter un flash retour à l'ancien ordre pendant l'attente réseau.
+    setActiveChip(null);
+  };
+
+  // Tap pour échanger — tape une créative pour la sélectionner (surbrillance), tape une
+  // deuxième pour échanger leurs deux positions, retape la même pour annuler la sélection.
+  // `filtered` est déjà trié par rang (voir plus haut) — l'ordre affiché se met à jour tout
+  // seul dès que `products` change, pas besoin d'état local séparé à faire vivre pendant
+  // l'interaction.
+  const handleTapSwap = (creativeId) => {
+    if (!selectedForSwap) { setSelectedForSwap(creativeId); return; }
+    if (selectedForSwap === creativeId) { setSelectedForSwap(null); return; } // retap = annuler
+
+    const currentOrder = filtered.map(c => c.id);
+    const idxA = currentOrder.indexOf(selectedForSwap);
+    const idxB = currentOrder.indexOf(creativeId);
+    setSelectedForSwap(null);
+    if (idxA === -1 || idxB === -1) return;
+
+    const newOrder = [...currentOrder];
+    [newOrder[idxA], newOrder[idxB]] = [newOrder[idxB], newOrder[idxA]];
+    persistTopPerformerOrder(newOrder);
+
+    const swappedIds = [selectedForSwap, creativeId];
+    setJustRanked(swappedIds);
+    setTimeout(() => setJustRanked(r => (r[0]===swappedIds[0] && r[1]===swappedIds[1]) ? [] : r), 1400);
   };
 
 
@@ -2711,7 +2762,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
       {/* Hiérarchie voulue : Tous → Cible → Batch → Angle (Date se cumule avec n'importe lequel) */}
       <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18, flexWrap:'wrap'}}>
         {[['tous','Tous','grid'],['cible','Cible','person'],['batch','Batch','card'],['angle','Angle','tag'],['topPerformer','Top Performer','star'],['date','Date','calendar']].map(([id,label,icon]) => (
-          <button key={id} onClick={() => {setFilterMode(id); setActiveChip(null);}}
+          <button key={id} onClick={() => handleFilterModeClick(id)}
             style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
           </button>
@@ -2768,36 +2819,33 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
       {filterMode==='topPerformer' && selectedProduct && (activeChip || cibleSet.length <= 1) && filtered.length > 1 && (
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'8px 12px',borderRadius:8,background:'rgba(255,193,7,0.08)',border:'1px solid rgba(255,193,7,0.25)'}}>
           <Icon name="star" size={13} color="#FFC107"/>
-          <span style={{fontSize:11,color:C.sec}}>Glissez une créative pour la classer — celle du haut est celle que vous jugez la plus performante.</span>
+          <span style={{fontSize:11,color:C.sec}}>
+            {selectedForSwap ? 'Tapez une deuxième créative pour échanger leurs places.' : 'Tapez une créative, puis une deuxième pour échanger leurs places — celle du haut est celle que vous jugez la plus performante. Ça nous aide à faire mieux la prochaine fois.'}
+          </span>
         </div>
       )}
 
-      <div ref={dragGridRef} style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
-        {tpDisplayOrder.map((c, i) => {
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
+        {filtered.map((c, i) => {
           const isTpMode = filterMode==='topPerformer';
-          const isDragging = dragId === c.id;
-          const isJustRanked = justRanked === c.id;
+          const isSelectedForSwap = selectedForSwap === c.id;
+          const isJustRanked = justRanked.includes(c.id);
           return (
-          <div key={c.id} className="gallery-item" data-drag-id={isTpMode ? c.id : undefined}
+          <div key={c.id} className="gallery-item"
             onClick={() => {
-              if (isDragging) return; // évite d'ouvrir le détail juste après avoir relâché le drag
+              if (isTpMode) { handleTapSwap(c.id); return; }
               if (selectMode) setSelectedIds(ids => ids.includes(c.id) ? ids.filter(i=>i!==c.id) : [...ids, c.id]);
               else setSelected(c);
             }}
-            onPointerDown={isTpMode ? (e) => handleDragPointerDown(e, c.id) : undefined}
-            onPointerMove={isTpMode ? handleDragPointerMove : undefined}
-            onPointerUp={isTpMode ? handleDragPointerUp : undefined}
-            onPointerCancel={isTpMode ? handleDragPointerUp : undefined}
             style={{
               aspectRatio:'4/5',borderRadius:6,overflow:'hidden',
-              cursor:isTpMode?(isDragging?'grabbing':'grab'):'pointer',
+              cursor:isTpMode?'pointer':'pointer',
               position:'relative',
               background:c.imageUrl?'#14161D':`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`,
-              transform:isDragging?'scale(1.08)':(selectMode&&selectedIds.includes(c.id)?'scale(0.94)':(isJustRanked?'scale(1.05)':'scale(1)')),
-              transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s',
-              boxShadow: isDragging ? '0 8px 24px rgba(0,0,0,0.5)' : (isJustRanked ? '0 0 0 2px #FFC107' : (selectMode&&selectedIds.includes(c.id)?`0 0 0 2px ${C.accent}`:'none')),
-              zIndex: isDragging ? 10 : 1,
-              touchAction: isTpMode ? 'none' : 'auto', // empêche le scroll de la page pendant qu'on glisse une créative
+              transform:isSelectedForSwap?'scale(1.06)':(selectMode&&selectedIds.includes(c.id)?'scale(0.94)':(isJustRanked?'scale(1.05)':'scale(1)')),
+              transition: 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s',
+              boxShadow: isSelectedForSwap ? `0 0 0 2px ${C.accent}, 0 6px 20px rgba(45,127,249,0.35)` : (isJustRanked ? '0 0 0 2px #FFC107' : (selectMode&&selectedIds.includes(c.id)?`0 0 0 2px ${C.accent}`:'none')),
+              zIndex: isSelectedForSwap ? 5 : 1,
             }}
           >
             {/* Préfère thumbUrl (vraie miniature ~15-40 Ko générée côté serveur) à imageUrl
@@ -2821,6 +2869,9 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
               <div style={{position:'absolute',top:6,left:6,minWidth:20,height:20,padding:'0 6px',borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:i===0?'#FFC107':'rgba(0,0,0,0.55)',border:i===0?'none':'1px solid rgba(255,255,255,0.25)',backdropFilter:'blur(2px)',zIndex:2}}>
                 <span style={{fontSize:10,fontWeight:800,color:i===0?'#1a1a1a':'#fff'}}>#{i+1}</span>
               </div>
+            )}
+            {isSelectedForSwap && (
+              <div style={{position:'absolute',inset:0,border:`2px solid ${C.accent}`,borderRadius:6,zIndex:3,pointerEvents:'none'}}/>
             )}
             {isJustRanked && (
               <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.35)',zIndex:3,pointerEvents:'none'}}>
@@ -4466,6 +4517,7 @@ export default function Platform() {
         bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
         setBriefs(map);
       }
+      setCreditsDataReady(true);
       const notifs = await sbNotifications.load(session);
       if (notifs) {
         setNotifications(notifs);
@@ -4758,6 +4810,15 @@ export default function Platform() {
 
   const [briefs, setBriefs] = useState({});
   const [allBriefs, setAllBriefs] = useState([]); // tous les briefs pour calcul crédits
+  // Distingue "pas encore chargé" de "chargé et vide" — allBriefs=[] est l'état initial ET
+  // l'état réel d'un compte sans aucune demande, les deux sont indiscernables sans ce flag.
+  // Cause profonde d'un bug remonté en prod : avant que ce flag existe, computeCredits()
+  // tournait sur allBriefs=[] pendant la fraction de seconde du chargement, affichant un
+  // volume de crédits gonflé (aucune consommation comptée) — assez pour laisser le temps à un
+  // clic rapide sur "Demander mes images" de passer avec des chiffres faux. Le bouton doit
+  // rester désactivé tant que ce flag n'est pas true, quel que soit ce que credits.available
+  // affiche dans l'intervalle.
+  const [creditsDataReady, setCreditsDataReady] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [creativesTarget, setCreativesTarget] = useState(null);
   const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
@@ -4931,7 +4992,13 @@ export default function Platform() {
             const map = {};
             bs.forEach(b => { if (!map[b.product_id]) map[b.product_id] = b; });
             setBriefs(map);
+            setCreditsDataReady(true);
           });
+        } else {
+          // Aucun produit → aucun brief possible non plus, mais le flag doit quand même
+          // passer à true : sinon le bouton resterait indéfiniment désactivé pour un compte
+          // qui vient tout juste de créer son premier produit.
+          setCreditsDataReady(true);
         }
         setSubscription(sub);
         if (sub?.expired) {
@@ -5166,7 +5233,7 @@ export default function Platform() {
 
 const views = {
     demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={(p)=>{ 
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} creditsDataReady={creditsDataReady} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={(p)=>{ 
             if(!user){setShowLogin(true);return;} 
             if(!subscription?.active){setSection('tarifs');return;}
             // Cause profonde corrigée (chaos remonté : plafond qui bloque avant même d'avoir
