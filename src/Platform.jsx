@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
 
 // ── Supabase Auth ──────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://mifljhsusidgzelnswma.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
+const SUPABASE_URL = 'https://hgxcpkrqdahmxhmpouvm.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneGNwa3JxZGFobXhobXBvdXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODE1MjYsImV4cCI6MjEwMzM1NzUyNn0.TiptFjpOL5nYeQhndg3VBfIDjFr4wRoqWlT56RmiDpQ';
 
 // ── Web Push (notifications navigateur) ─────────────────────────────────────
 function urlBase64ToUint8Array(base64String) {
