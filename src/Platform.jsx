@@ -4985,16 +4985,26 @@ export default function Platform() {
       // Réconciliation automatique — sans effet pour un compte non concerné par la migration,
       // voir /reconcile-account côté serveur. Doit se faire AVANT de charger les produits,
       // sinon le premier chargement post-migration reviendrait vide.
+      // ⚠️ Timeout strict à 4s : un fetch qui ne répond jamais (au lieu d'échouer proprement)
+      // bloquerait tout le chargement des produits qui suit, indéfiniment — try/catch seul ne
+      // protège que contre une erreur, pas contre une réponse qui ne vient jamais.
       try {
         const u = sbAuth.getUser();
         if (u?.email && u?.id) {
-          await fetch('https://adstack-server.onrender.com/reconcile-account', {
-            method: 'POST', headers: {'Content-Type':'application/json'},
-            body: JSON.stringify({ email: u.email, userId: u.id })
-          });
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 4000);
+          try {
+            await fetch('https://adstack-server.onrender.com/reconcile-account', {
+              method: 'POST', headers: {'Content-Type':'application/json'},
+              body: JSON.stringify({ email: u.email, userId: u.id }),
+              signal: controller.signal
+            });
+          } finally {
+            clearTimeout(timeoutId);
+          }
         }
       } catch(eReconcile) {
-        console.warn('[Réconciliation] échouée (sans gravité si le compte n\'était pas concerné) :', eReconcile.message);
+        console.warn('[Réconciliation] échouée ou expirée (sans gravité si le compte n\'était pas concerné) :', eReconcile.message);
       }
 
       Promise.all([
