@@ -5259,9 +5259,24 @@ export default function Platform() {
 
 const views = {
     demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} creditsDataReady={creditsDataReady} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={(p)=>{ 
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} creditsDataReady={creditsDataReady} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={async (p)=>{ 
             if(!user){setShowLogin(true);return;} 
-            if(!subscription?.active){setSection('tarifs');return;}
+            // Cause profonde corrigée (client déjà payant redirigé à tort vers "Nos offres") :
+            // `subscription` est un état React chargé une seule fois au démarrage de la page —
+            // si l'abonnement est activé PENDANT que la page reste ouverte (paiement en cours de
+            // traitement, réconciliation après migration, etc.), ce vieil état ne le sait jamais
+            // tant que la page n'est pas rechargée manuellement. On revérifie maintenant en
+            // direct, juste avant la décision qui compte, plutôt que de faire confiance à un
+            // instantané potentiellement vieux de plusieurs minutes.
+            let subFraiche = subscription;
+            try {
+              const sessionFraiche = await sbAuth.refreshSession();
+              if (sessionFraiche) {
+                const subVerif = await sbSubs.load(sessionFraiche);
+                if (subVerif) { subFraiche = subVerif; setSubscription(subVerif); }
+              }
+            } catch(eSubCheck) { console.warn('[Vérif abonnement] échouée, repli sur l\'état déjà en mémoire :', eSubCheck.message); }
+            if(!subFraiche?.active){setSection('tarifs');return;}
             // Cause profonde corrigée (chaos remonté : plafond qui bloque avant même d'avoir
             // choisi une quantité, incohérent avec le popup de plafond du modal) : il existait
             // ICI un 2e système de plafond, entièrement séparé de verifierPlafondProduction et
