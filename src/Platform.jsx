@@ -4979,8 +4979,24 @@ export default function Platform() {
     // chaos remonté (demandes qui apparaissent/disparaissent).
     if (refreshEnCoursRef.current) return;
     refreshEnCoursRef.current = true;
-    sbAuth.refreshSession().then(session => {
+    sbAuth.refreshSession().then(async session => {
       if (!session) { setUser(null); refreshEnCoursRef.current = false; return; }
+
+      // Réconciliation automatique — sans effet pour un compte non concerné par la migration,
+      // voir /reconcile-account côté serveur. Doit se faire AVANT de charger les produits,
+      // sinon le premier chargement post-migration reviendrait vide.
+      try {
+        const u = sbAuth.getUser();
+        if (u?.email && u?.id) {
+          await fetch('https://adstack-server.onrender.com/reconcile-account', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ email: u.email, userId: u.id })
+          });
+        }
+      } catch(eReconcile) {
+        console.warn('[Réconciliation] échouée (sans gravité si le compte n\'était pas concerné) :', eReconcile.message);
+      }
+
       Promise.all([
         sbProducts.load(session),
         sbSubs.load(session),
