@@ -5908,11 +5908,20 @@ async function renderGallery() {
 
     info.appendChild(nameEl);
 
-    // Meta (mécanisme psychologique) — jusqu'ici généré mais jamais affiché nulle part.
+    // Meta description (géométrie visuelle + ton copywriting + distinction) — repliée par
+    // défaut (2 lignes) pour ne pas alourdir la grille, dépliable au clic vu sa longueur
+    // désormais bien plus grande que l'ancien tag court à 3-6 mots.
     if (rec.meta) {
       var metaEl = document.createElement('div');
-      metaEl.style.cssText = 'font-size:9.5px;color:var(--blue);margin-top:4px;line-height:1.4;font-style:italic;';
+      metaEl.style.cssText = 'font-size:9.5px;color:var(--blue);margin-top:4px;line-height:1.4;font-style:italic;cursor:pointer;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;';
       metaEl.textContent = rec.meta;
+      metaEl.dataset.expanded = 'false';
+      metaEl.onclick = function(e) {
+        e.stopPropagation(); // n'ouvre pas la lightbox de l'image en dessous
+        var repli = this.dataset.expanded === 'true';
+        this.dataset.expanded = repli ? 'false' : 'true';
+        this.style.webkitLineClamp = repli ? '2' : 'none';
+      };
       info.appendChild(metaEl);
     }
 
