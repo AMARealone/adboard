@@ -3811,7 +3811,20 @@ async function renderApiCosts() {
     return d >= cutoff.toISOString().slice(0,10);
   });
   const l  = cohortePeriode.filter(p => ['lead','acheteur','standard','scale'].includes(p.statut)).length;
-  const a  = cohortePeriode.filter(p => ['acheteur','standard','scale'].includes(p.statut)).length;
+  // Même correction que dash-hero-funnel plus haut — vraies transactions, pas le statut
+  // prospect manuel, avec la même fenêtre de période que cohortePeriode ci-dessus.
+  const a = new Set(TX.filter(t => {
+    if (!CORE_PLANS.includes(t.plan)) return false;
+    const d = (t.created_at || '').slice(0,10);
+    if (from || to) {
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    }
+    if (dashPeriod >= 9999) return true;
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - dashPeriod);
+    return d >= cutoff.toISOString().slice(0,10);
+  }).map(t => t.user_id)).size;
 
   const cLead  = l > 0 ? budget / l : null;
   const cAchat = a > 0 ? budget / a : null;
@@ -3858,7 +3871,21 @@ async function renderDashboard() {
   const r = cohorte.filter(p => p.a_repondu).length;
   const i = cohorte.filter(p => p.interesse).length;
   const l = cohorte.filter(p => ['lead','acheteur','standard','scale'].includes(p.statut)).length;
-  const a = cohorte.filter(p => ['acheteur','standard','scale'].includes(p.statut)).length;
+  // Acheteurs distincts sur la même fenêtre de période que "cohorte" ci-dessus (from/to ou
+  // dashPeriod), tirés des vraies transactions — même source que Vue Globale et Vue
+  // d'ensemble clics, celui-ci avait été oublié lors du premier passage.
+  const a = new Set(TX.filter(t => {
+    if (!CORE_PLANS.includes(t.plan)) return false;
+    const d = (t.created_at || '').slice(0,10);
+    if (from || to) {
+      if (from && d < from) return false;
+      if (to && d > to) return false;
+      return true;
+    }
+    if (dashPeriod >= 9999) return true;
+    const cutoff = new Date(Date.now() - dashPeriod * 86400000).toISOString().split('T')[0];
+    return d >= cutoff;
+  }).map(t => t.user_id)).size;
   const pct = (n) => c > 0 ? Math.round(n/c*100) : 0;
 
   renderApiCosts();
