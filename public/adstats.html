@@ -4069,6 +4069,7 @@ async function renderDashboard() {
       const ctrGlobal = totalEnvoyes > 0 ? (totalClics/totalEnvoyes*100).toFixed(1) : '—';
       const ratioPanier = totalClics > 0 ? (totalAjoutsPanier/totalClics*100).toFixed(1) : '—';
       const ratioPaiement = totalClics > 0 ? (totalPaiementsInities/totalClics*100).toFixed(1) : '—';
+      const ratioAcheteurs = totalClics > 0 ? (totalAcheteurs/totalClics*100).toFixed(1) : '—';
       const ovEl = document.getElementById('dash-clics-overview');
       if (ovEl) {
         ovEl.innerHTML =
@@ -4077,7 +4078,7 @@ async function renderDashboard() {
           + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--blue)">' + totalClics + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Clics</div><div style="font-size:10px;color:var(--yellow);font-weight:600;margin-top:2px">CTR ' + ctrGlobal + (ctrGlobal!=='—'?'%':'') + '</div></div>'
           + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalAjoutsPanier + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Ajouts au panier</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">' + ratioPanier + (ratioPanier!=='—'?'%':'') + ' des clics</div></div>'
           + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalPaiementsInities + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Paiements initiés</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">' + ratioPaiement + (ratioPaiement!=='—'?'%':'') + ' des clics</div></div>'
-          + '<div style="flex:1;min-width:110px;padding:16px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">' + totalAcheteurs + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Acheteurs</div></div>'
+          + '<div style="flex:1;min-width:110px;padding:16px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">' + totalAcheteurs + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Acheteurs</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">' + ratioAcheteurs + (ratioAcheteurs!=='—'?'%':'') + ' des clics</div></div>'
           + '</div>';
       }
     } catch(e) {
