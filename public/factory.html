@@ -2709,6 +2709,13 @@ async function prodv2Launch() {
   // serveur) — c'est CE marqueur qui sert désormais au contrôle "commande active ailleurs".
   if (prodv2State.commandeId) {
     fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/generation-started`, { method: 'POST' }).catch(()=>{});
+    // Cause profonde corrigée (batch généré via "Relancer" perdu au rafraîchissement) :
+    // prodv2SendClient() retire ce marqueur une fois un envoi confirmé — correct pour CE
+    // batch-là. Mais une relance derrière ne le recréait jamais, donc plus aucun marqueur ne
+    // signalait "production en cours" pour rafraîchissement mécanisme de reprise. Recréé ici,
+    // à chaque vrai démarrage de génération (premier lancement ou relance), pas seulement au
+    // tout premier chargement du ticket depuis la file d'attente.
+    try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: prodv2State.commandeId, ts: Date.now() })); } catch(e) {}
   }
   prodv2State.synthesis = null;
   prodv2State.angles = [];
