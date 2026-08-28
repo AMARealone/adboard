@@ -1552,7 +1552,7 @@ function copyDemoGenLink() {
 // ── Sélection intelligente des CTs pour génération complète ──
 async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
   const ids = Object.keys(CT_IMAGES).filter(function(k) {
-    return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta') && !k.endsWith('_awareness') && !k.endsWith('_styleTags');
+    return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta') && !k.endsWith('_awareness') && !k.endsWith('_styleTags') && !k.endsWith('_niche');
   });
   if (ids.length === 0) return [];
   // Cause profonde corrigée (créatives en échec silencieux sur les grosses commandes Pro/Scale,
@@ -1573,7 +1573,7 @@ async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
   if (ids.length <= count) return completerParCyclage(ids.sort(function() { return Math.random() - 0.5; }));
 
   const ctList = ids.map(function(id) {
-    return { id: id, name: CT_IMAGES[id + '_name'] || id, meta: CT_IMAGES[id + '_meta'] || '', awareness: CT_IMAGES[id + '_awareness'] || [], styleTags: CT_IMAGES[id + '_styleTags'] || [] };
+    return { id: id, name: CT_IMAGES[id + '_name'] || id, meta: CT_IMAGES[id + '_meta'] || '', awareness: CT_IMAGES[id + '_awareness'] || [], styleTags: CT_IMAGES[id + '_styleTags'] || [], niche: CT_IMAGES[id + '_niche'] || '' };
   });
 
   try {
@@ -5666,7 +5666,7 @@ async function _ctPut(rec) {
   var jsonResp = await fetch(`${SB_FACTORY.replace('/rest/v1','')}/storage/v1/object/${_CT_BUCKET}/${rec.id}.json`, {
     method: 'POST',
     headers: { 'apikey': SB_KEY_F, 'Authorization': 'Bearer ' + SB_KEY_F, 'Content-Type': 'application/json', 'x-upsert': 'true' },
-    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [] })
+    body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [], niche: rec.niche || '' })
   });
   if (!jsonResp.ok) throw new Error('Upload métadonnées Supabase échoué : HTTP ' + jsonResp.status);
   return rec;
@@ -5738,8 +5738,9 @@ async function renderCTSelector() {
     CT_IMAGES[rec.id + '_meta'] = rec.meta || '';
     CT_IMAGES[rec.id + '_awareness'] = rec.awareness || [];
     CT_IMAGES[rec.id + '_styleTags'] = rec.styleTags || [];
+    CT_IMAGES[rec.id + '_niche'] = rec.niche || '';
 
-    var ct = { id: rec.id, name: rec.name, meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [] };
+    var ct = { id: rec.id, name: rec.name, meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [], niche: rec.niche || '' };
     var btn = document.createElement('button');
     btn.style.cssText = 'display:flex;flex-direction:column;width:84px;flex-shrink:0;background:var(--bg2);border:1px solid var(--border1);border-radius:8px;overflow:hidden;cursor:pointer;padding:0;';
     // Meta + balises visibles au survol — pas assez de place pour un texte permanent dans
@@ -5748,6 +5749,7 @@ async function renderCTSelector() {
     if (ct.meta) titreParts.push(ct.meta);
     if (ct.awareness.length) titreParts.push('Conscience : ' + ct.awareness.join('/'));
     if (ct.styleTags.length) titreParts.push('Style : ' + ct.styleTags.join(', '));
+    if (ct.niche) titreParts.push('Niche : ' + ct.niche);
     btn.title = titreParts.join('\n');
 
     var img = document.createElement('img');
@@ -5923,20 +5925,22 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
     });
     var data = await resp.json();
     var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
-    var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
+    var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 500);
     var awareness = data.awareness || [];
     var styleTags = data.styleTags || [];
+    var niche = data.niche || '';
     if (!name) throw new Error('Nom vide');
 
     // Juste le nom/meta changent — pas de b64/mime ici, donc _ctPut ne re-uploade PAS
     // l'image, seulement le .json de métadonnées (voir _ctPut).
-    await _ctPut({ id: id, name: name, meta: meta, awareness: awareness, styleTags: styleTags, addedAt: CT_IMAGES[id + '_addedAt'] || Date.now() });
+    await _ctPut({ id: id, name: name, meta: meta, awareness: awareness, styleTags: styleTags, niche: niche, addedAt: CT_IMAGES[id + '_addedAt'] || Date.now() });
 
     // Mettre à jour mémoire
     CT_IMAGES[id + '_name'] = name;
     CT_IMAGES[id + '_meta'] = meta;
     CT_IMAGES[id + '_awareness'] = awareness;
     CT_IMAGES[id + '_styleTags'] = styleTags;
+    CT_IMAGES[id + '_niche'] = niche;
 
     // Mettre à jour UI
     if (nameEl) { nameEl.textContent = name; nameEl.style.color = 'var(--t1)'; }
@@ -5991,19 +5995,22 @@ Reponds UNIQUEMENT avec le nom, sans guillemets ni explication.`;
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       var data = await resp.json();
       var name = (data.name || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
-      var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 60);
+      var meta = (data.meta || '').replace(/^["\']|["\']$/g, '').substring(0, 500);
       var awareness = data.awareness || [];
       var styleTags = data.styleTags || [];
+      var niche = data.niche || '';
       if (!name) throw new Error('Nom vide reçu du serveur');
       rec.name = name;
       rec.meta = meta;
       rec.awareness = awareness;
       rec.styleTags = styleTags;
+      rec.niche = niche;
       await _ctPut(rec);
       CT_IMAGES[rec.id + '_name'] = name;
       CT_IMAGES[rec.id + '_meta'] = meta;
       CT_IMAGES[rec.id + '_awareness'] = awareness;
       CT_IMAGES[rec.id + '_styleTags'] = styleTags;
+      CT_IMAGES[rec.id + '_niche'] = niche;
       succes++;
     } catch(e) {
       echecs++;
@@ -7968,6 +7975,9 @@ async function loadCTImages() {
       CT_IMAGES[rec.id + '_name'] = rec.name;
       CT_IMAGES[rec.id + '_addedAt'] = rec.addedAt;
     CT_IMAGES[rec.id + '_meta'] = rec.meta || '';
+    CT_IMAGES[rec.id + '_awareness'] = rec.awareness || [];
+    CT_IMAGES[rec.id + '_styleTags'] = rec.styleTags || [];
+    CT_IMAGES[rec.id + '_niche'] = rec.niche || '';
     });
   } catch(e) {
     console.warn('[loadCTImages] échec chargement initial :', e.message);
