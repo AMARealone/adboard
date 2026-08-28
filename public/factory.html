@@ -3258,7 +3258,7 @@ function prodv2RenderCopy(angleIdx) {
   const estRepli = data.description === '(description vide — Gemini n\'a pas suivi le format)';
   el.innerHTML = `
     <div class="prodv2-copy-section">
-      <div class="prodv2-copy-label">5 Hooks · variantes Meta Ads<span class="copy-all" onclick="prodv2CopyAllHooks(${angleIdx})">copier tout</span></div>
+      <div class="prodv2-copy-label">5 Hooks · variantes Meta Ads<span class="copy-all" onclick="prodv2CopyAllHooks(${angleIdx})">copier tout</span><button class="prodv2-crea-btn icon" title="Envoyer cette ad copy au client" onclick="prodv2SendOneCopy(${angleIdx})" style="width:auto;padding:3px 9px;font-size:10px;margin-left:8px;">📤</button></div>
       <div class="prodv2-hooks">${hooksHtml}</div>
     </div>
     <div class="prodv2-copy-section">
@@ -3398,6 +3398,36 @@ async function prodv2SendMarche() {
     if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = texteOrig || '📤'; btn.disabled = false; }, 1500); }
   } catch(e) {
     alert('Envoi des Données Marché échoué : ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = texteOrig || '📤'; }
+  }
+}
+
+async function prodv2SendOneCopy(angleIdx) {
+  if (!prodv2State.commandeId) {
+    alert("Cette production n'est pas liée à une commande AdBoard — rien à envoyer automatiquement.");
+    return;
+  }
+  const el = document.getElementById('prodv2Copy' + angleIdx);
+  const btn = el ? el.querySelector('.prodv2-crea-btn.icon') : null;
+  const texteOrig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
+      method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({
+        creatives: prodv2State.creatives, copies: prodv2State.copies,
+        synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche
+      })
+    });
+    const r = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/send-one-copy`, {
+      method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({ index: angleIdx })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || ('HTTP ' + r.status));
+    if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = texteOrig || '📤'; btn.disabled = false; }, 1500); }
+  } catch(e) {
+    alert('Envoi de cette ad copy échoué : ' + e.message);
     if (btn) { btn.disabled = false; btn.textContent = texteOrig || '📤'; }
   }
 }
