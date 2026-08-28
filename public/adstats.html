@@ -2224,6 +2224,12 @@ const H_PATCH = {
 // STATE
 // ═══════════════════════════════════════
 let DB = [];
+// Transactions réelles (Chariow) — source fiable du funnel "Acheteurs", indépendante du
+// statut manuel des prospects (lien prospect→acheteur peu fiable : nom, WhatsApp, email
+// diffèrent souvent entre le lead et le vrai paiement). Chaque achat compte, y compris les
+// achats répétés d'un même client — cross-sell exclus (voir CORE_PLANS).
+let TX = [];
+const CORE_PLANS = ['discovery', 'starter', 'pro', 'scale'];
 let dashPeriod = 0; // 0 = aujourd'hui, par défaut
 let noteId = null, leadId = null, achatId = null, achatSel = null;
 
@@ -2330,6 +2336,12 @@ async function _loadImpl() {
     if (configRow) {
       try { DB._config = JSON.parse(configRow.notes || '{}'); } catch(e) { DB._config = {}; }
     }
+
+    // Transactions réelles — pour le funnel Acheteurs, indépendant du statut prospect manuel
+    try {
+      const rTx = await fetch(`${SB}/transactions?select=*&order=created_at.asc`, { headers: H });
+      if (rTx.ok) TX = await rTx.json();
+    } catch(eTx) { console.warn('Chargement transactions échoué:', eTx.message); }
   } catch(e) {
     toast('Erreur connexion Supabase : ' + e.message);
     return;
@@ -4018,7 +4030,10 @@ async function renderDashboard() {
       // ── VUE D'ENSEMBLE CLICS — messages envoyés / clics / acheteurs, avec CTR global ──
       const totalEnvoyes = lignes.reduce((s,l) => s+l.envoyes, 0);
       const totalClics = lignes.reduce((s,l) => s+l.clics, 0);
-      const totalAcheteurs = DB.filter(p => p.statut === 'acheteur' && _dansPeriodeDash(p.date_achat)).length;
+      // Chaque transaction = un événement acheteur, y compris les achats répétés d'un même
+      // client (cross-sell exclus via CORE_PLANS) — plus fiable que le statut manuel des
+      // prospects, dont le lien avec la transaction réelle est souvent impossible à établir.
+      const totalAcheteurs = TX.filter(t => CORE_PLANS.includes(t.plan) && _dansPeriodeDash(t.created_at)).length;
       const ctrGlobal = totalEnvoyes > 0 ? (totalClics/totalEnvoyes*100).toFixed(1) : '—';
       const ratioPanier = totalClics > 0 ? (totalAjoutsPanier/totalClics*100).toFixed(1) : '—';
       const ratioPaiement = totalClics > 0 ? (totalPaiementsInities/totalClics*100).toFixed(1) : '—';
@@ -4045,7 +4060,9 @@ async function renderDashboard() {
     { l:'Réponses',   v:DB.filter(p=>p.a_repondu).length },
     // Intéressés supprimé du funnel
     { l:'Leads',      v:DB.filter(p=>['lead','acheteur','standard','scale'].includes(p.statut)).length },
-    { l:'Acheteurs',  v:DB.filter(p=>['acheteur','standard','scale'].includes(p.statut)).length },
+    // Acheteurs distincts (all-time) tirés des vraies transactions — cohérent avec la Vue
+    // Client, indépendant du lien manuel prospect→acheteur.
+    { l:'Acheteurs',  v:new Set(TX.filter(t => CORE_PLANS.includes(t.plan)).map(t => t.user_id)).size },
   ];
   const gEl = document.getElementById('dash-global');
   if (gEl) {
