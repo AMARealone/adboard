@@ -1639,7 +1639,7 @@ textarea::placeholder { color: var(--muted); }
         </button>
         <button class="nav-item yellow" onclick="goTo('acheteurs',this)">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5L17 22l-5-3-5 3 1.5-8.5"/></svg>
-          <span>Starter</span>
+          <span>Clients</span>
           <span class="nav-count" id="nc-acheteurs">0</span>
         </button>
       </div>
@@ -1992,12 +1992,12 @@ textarea::placeholder { color: var(--muted); }
   <div id="leads-list"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
 </div>
 
-<!-- ── ACHETEURS ── -->
+<!-- ── CLIENTS ── -->
 <div class="page" id="page-acheteurs">
   <div class="page-header">
     <div>
-      <div class="page-title">Acheteurs Starter</div>
-      <div class="page-sub">Suivi post-achat et relances upsell vers Conversion Standard</div>
+      <div class="page-title">Clients</div>
+      <div class="page-sub">Tous les clients payants — abonnement, usage, dépense. Qu'ils aient été prospects/leads avant ou non.</div>
     </div>
     <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
   </div>
@@ -2005,15 +2005,15 @@ textarea::placeholder { color: var(--muted); }
   <div class="kpi-strip" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px">
     <div class="kpi-cell" style="--accent:var(--yellow)">
       <div class="kpi-val" id="ka-n">—</div>
-      <div class="kpi-label">Acheteurs Starter</div>
-    </div>
-    <div class="kpi-cell" style="--accent:var(--yellow)">
-      <div class="kpi-val" id="ka-j">—</div>
-      <div class="kpi-label">J+ moyen d'achat</div>
+      <div class="kpi-label">Clients actifs</div>
     </div>
     <div class="kpi-cell" style="--accent:var(--purple)">
+      <div class="kpi-val" id="ka-j">—</div>
+      <div class="kpi-label">Dépense totale (FCFA)</div>
+    </div>
+    <div class="kpi-cell" style="--accent:var(--green)">
       <div class="kpi-val" id="ka-u">—</div>
-      <div class="kpi-label">Passés en Standard</div>
+      <div class="kpi-label">Crédits utilisés / total</div>
     </div>
   </div>
 
@@ -2182,6 +2182,16 @@ textarea::placeholder { color: var(--muted); }
   </div>
 </div>
 
+<!-- ════ MODAL DÉTAIL CLIENT ════ -->
+<div class="modal-bg" id="m-client-detail">
+  <div class="modal" style="width:460px">
+    <button class="modal-x" onclick="closeM('m-client-detail')">✕</button>
+    <div class="modal-title">Détail client</div>
+    <div class="divider"></div>
+    <div id="client-detail-body"></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 
@@ -2326,6 +2336,19 @@ async function _loadImpl() {
   }
   try { render(); } catch(e) { console.error('Erreur render:', e); }
   setTimeout(() => { try { renderDashboard(); } catch(e) { console.error('Erreur dashboard:', e); } }, 150);
+  loadClients();
+}
+
+async function loadClients() {
+  try {
+    const r = await fetch('https://adstack-server.onrender.com/crm/clients');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const clients = await r.json();
+    renderClients(clients);
+  } catch(e) {
+    const el = document.getElementById('acheteurs-list');
+    if (el) el.innerHTML = `<div class="empty"><div class="empty-title">Erreur de chargement</div>${e.message}</div>`;
+  }
 }
 
 function render() {
@@ -2346,11 +2369,7 @@ function render() {
   set('ks-ld', LD.length);
   set('ks-td', DB.filter(p => p.date_collecte === today).length);
 
-  // KPI acheteurs
-  set('ka-n', ACH.length);
-  set('ka-u', UP.length);
-  const jMoy = ACH.filter(a=>a.j_plus_achat).map(a=>+a.j_plus_achat.replace('J+',''));
-  set('ka-j', jMoy.length ? 'J+' + Math.round(jMoy.reduce((a,b)=>a+b,0)/jMoy.length) : '—');
+  // KPI Clients — voir loadClients(), chargées séparément (données réelles serveur, pas DB prospects)
 
   // Nav counts
   set('nc-prospects', AC.length);
@@ -2395,7 +2414,6 @@ function render() {
   }
   // Compteurs mobile
   updateMobCounts();
-  renderAcheteurs(ACH);
   renderDashboard();
 }
 
@@ -3494,43 +3512,83 @@ function renderLeads(data) {
 }
 
 
-function renderAcheteurs(data) {
+const PLAN_LABELS_CLIENTS = { discovery: 'Discovery', starter: 'Starter', pro: 'Pro', scale: 'Scale' };
+const PLAN_COLORS_CLIENTS = { discovery: 'var(--muted)', starter: 'var(--yellow)', pro: 'var(--blue)', scale: 'var(--purple)' };
+
+function renderClients(data) {
   const el = document.getElementById('acheteurs-list');
+  if (!el) return;
+
+  const actifs = data.filter(c => c.active);
+  set('ka-n', actifs.length);
+  set('ka-j', data.reduce((s,c) => s + (c.total_depense_fcfa||0), 0).toLocaleString('fr-FR'));
+  const totUsed = data.reduce((s,c) => s + (c.credits_used||0), 0);
+  const totCred = data.reduce((s,c) => s + (c.credits_total||0), 0);
+  set('ka-u', `${totUsed} / ${totCred}`);
+
   if (!data.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-title">Aucun acheteur Starter</div>Les acheteurs apparaissent ici après confirmation d'un achat</div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-title">Aucun client pour l'instant</div>Les clients apparaissent ici dès qu'un abonnement est activé — prospect au préalable ou non</div>`;
     return;
   }
 
-  el.innerHTML = data.map(p => {
-    const jDep = p.date_contact ? Math.floor((Date.now() - new Date(p.date_contact)) / 86400000) : 0;
+  el.innerHTML = data.map(c => {
+    const initiale = (c.nom || c.email || '?').charAt(0).toUpperCase();
+    const depuis = c.started_at ? new Date(c.started_at).toLocaleDateString('fr-FR', {day:'numeric',month:'short',year:'numeric'}) : '—';
+    const pct = c.credits_total > 0 ? Math.min(100, Math.round(100 * c.credits_used / c.credits_total)) : 0;
+    const planColor = PLAN_COLORS_CLIENTS[c.plan] || 'var(--muted)';
     return `<div class="card achat-card">
       <div class="card-top">
-        <div>
-          <div class="card-name">${p.nom_marque || '—'} <span style="color:var(--muted);font-weight:400">· ${p.pays || ''}</span></div>
-          <div class="card-prod">
-            ${p.produit || '—'} · 
-            ${p.j_plus_achat ? `Acheté au <strong style="color:var(--yellow)">${p.j_plus_achat}</strong>` : 'J+ non défini'} 
-            · ${jDep}j depuis le lead
+        <div style="display:flex;align-items:center;gap:10px">
+          ${c.avatar ? `<img src="${c.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover">` : `<div style="width:36px;height:36px;border-radius:50%;background:${planColor};display:flex;align-items:center;justify-content:center;font-weight:800;color:#0a0a0a;font-size:14px">${initiale}</div>`}
+          <div>
+            <div class="card-name">${c.nom || c.email || 'Sans nom'} ${!c.active ? '<span style="color:var(--red);font-size:10px;font-weight:700">· INACTIF</span>' : ''}</div>
+            <div class="card-prod" style="font-size:11px">${c.email || ''}</div>
           </div>
         </div>
-        <button class="btn btn-ghost btn-sm" data-notes-id="${p.id}" onclick="openNotes(this.dataset.notesId)">Notes</button>
-        <button class="btn btn-red btn-sm" onclick="deleteProspect('${p.id}')">Supprimer</button>
+        <span style="padding:3px 10px;border-radius:12px;font-size:10px;font-weight:800;background:${planColor}22;color:${planColor};text-transform:uppercase">${PLAN_LABELS_CLIENTS[c.plan] || c.plan}</span>
       </div>
 
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">
-        Upsell → Conversion Standard (59 900 FCFA/mois)
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:12px 0">
+        <div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:2px">Crédits</div>
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${c.credits_used} / ${c.credits_total}</div>
+          <div style="height:4px;background:var(--border2);border-radius:2px;margin-top:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${planColor}"></div></div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:2px">Dépensé</div>
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${(c.total_depense_fcfa||0).toLocaleString('fr-FR')} F</div>
+          <div style="font-size:10px;color:var(--muted)">${c.nb_achats} achat${c.nb_achats>1?'s':''}</div>
+        </div>
+        <div>
+          <div style="font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:2px">Client depuis</div>
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${depuis}</div>
+        </div>
       </div>
-      <div class="relance-list">
-        <a href="${WAHA_CONFIG.enabled ? '#' : p.lien_wa}" target="_blank" class="relance-btn" ${WAHA_CONFIG.enabled ? `onclick="handleWASend('${(p.lien_wa||'').replace('https://wa.me/','').replace(/\D/g,'')}','Bonjour *${p.nom_marque||''}*, je voulais faire le point sur ton expérience avec notre offre Starter. Prêt à passer au Standard pour 3x plus de créatives ? 🚀',this);return false"` : ''}>
-          <span class="j-badge">J+14</span> Upsell Standard
-        </a>
-        <a href="${WAHA_CONFIG.enabled ? '#' : p.lien_wa}" target="_blank" class="relance-btn" ${WAHA_CONFIG.enabled ? `onclick="handleWASend('${(p.lien_wa||'').replace('https://wa.me/','').replace(/\D/g,'')}','Bonjour *${p.nom_marque||''}*, dernière chance pour passer au Standard cette semaine 👇',this);return false"` : ''}>
-          <span class="j-badge">J+30</span> Relance Standard
-        </a>
-        <button class="btn btn-purple btn-sm" onclick="toStandard('${p.id}')">Passé en Standard</button>
+
+      <div style="display:flex;gap:8px">
+        ${c.email ? `<a href="mailto:${c.email}" class="btn btn-ghost btn-sm">✉ Contacter</a>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick='showClientDetail(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Voir le détail</button>
       </div>
     </div>`;
   }).join('');
+}
+
+function showClientDetail(c) {
+  const html = `
+    <div style="font-size:13px;line-height:1.8">
+      <div><strong>Email :</strong> ${c.email||'—'}</div>
+      <div><strong>Nom :</strong> ${c.nom||'—'}</div>
+      <div><strong>Plan :</strong> ${PLAN_LABELS_CLIENTS[c.plan]||c.plan} (${c.cycle||''})</div>
+      <div><strong>Statut :</strong> ${c.active ? '✅ Actif' : '❌ Inactif'}</div>
+      <div><strong>Client depuis :</strong> ${c.started_at ? new Date(c.started_at).toLocaleString('fr-FR') : '—'}</div>
+      <div><strong>Expire le :</strong> ${c.expires_at ? new Date(c.expires_at).toLocaleString('fr-FR') : '—'}</div>
+      <div><strong>Crédits utilisés :</strong> ${c.credits_used} / ${c.credits_total}</div>
+      <div><strong>Total dépensé :</strong> ${(c.total_depense_fcfa||0).toLocaleString('fr-FR')} FCFA (${c.nb_achats} achat${c.nb_achats>1?'s':''})</div>
+      <div><strong>Premier achat :</strong> ${c.premier_achat ? new Date(c.premier_achat).toLocaleDateString('fr-FR') : '—'}</div>
+      <div><strong>ID compte :</strong> <code style="font-size:10px">${c.user_id}</code></div>
+    </div>`;
+  document.getElementById('client-detail-body').innerHTML = html;
+  openM('m-client-detail');
 }
 
 async function toStandard(id) {
