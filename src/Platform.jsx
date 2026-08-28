@@ -4650,6 +4650,19 @@ export default function Platform() {
     window.location.reload();
   };
 
+  // Déclenchement depuis le CRM (AdStats → carte client → "Aller sur son compte") — le
+  // bouton d'admin dans AdBoard lui-même a été retiré, le point d'entrée est maintenant
+  // exclusivement côté CRM, pour rester cohérent avec la demande explicite. Nécessite d'être
+  // déjà connecté ici en tant qu'admin — sinon startImpersonation le signale proprement.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const targetEmail = params.get('impersonate');
+    if (targetEmail && !impersonating) {
+      startImpersonation(targetEmail);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Incitation "Ajouter à l'écran d'accueil" — universelle. Sur Android/Chromium, un vrai
   // bouton d'installation en un clic (API beforeinstallprompt, la seule plateforme qui le
   // permet réellement). Sur iOS, Apple n'expose AUCUNE API pour déclencher ça par code —
@@ -5402,10 +5415,9 @@ const views = {
             </div>
           )}
           {!impersonating && user?.email?.toLowerCase() === ADMIN_EMAIL_UI && (
-            <button onClick={() => { const email = prompt('Email du client à voir en tant que lui :'); if (email) startImpersonation(email.trim()); }}
-              style={{position:'fixed',bottom:16,left:16,zIndex:99999,padding:'9px 14px',background:'#1E293B',color:'#fff',border:'1px solid rgba(255,255,255,0.15)',borderRadius:10,fontSize:11.5,fontWeight:700,cursor:'pointer',boxShadow:'0 4px 16px rgba(0,0,0,0.4)'}}>
-              👁 Voir en tant que...
-            </button>
+            <div style={{position:'fixed',bottom:16,left:16,zIndex:99999,padding:'6px 12px',background:'#1E293B',color:'rgba(255,255,255,0.5)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:10,fontSize:10.5,fontWeight:600}}>
+              Mode admin actif — déclenche "Aller sur son compte" depuis AdStats
+            </div>
           )}
           {views[section]}
         </main>

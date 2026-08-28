@@ -2230,6 +2230,9 @@ let DB = [];
 // achats répétés d'un même client — cross-sell exclus (voir CORE_PLANS).
 let TX = [];
 const CORE_PLANS = ['discovery', 'starter', 'pro', 'scale'];
+// ⚠️ À REMPLIR avec la vraie URL de production d'AdBoard (celle utilisée pour s'y connecter
+// normalement) — sert au bouton "Aller sur son compte" de la Vue Client.
+const ADBOARD_URL = 'https://www.adstackofficial.com/adboard';
 let dashPeriod = 0; // 0 = aujourd'hui, par défaut
 let noteId = null, leadId = null, achatId = null, achatSel = null;
 
@@ -2388,7 +2391,8 @@ function render() {
   set('nc-suivi', SV.length);
   set('nc-leads', LD.length);
   set('nc-contacts', DB.length);
-  set('nc-acheteurs', ACH.length);
+  // nc-acheteurs mis à jour dans renderClients() — dépend des vraies transactions, chargées
+  // séparément et de façon async, pas du statut prospect (voir ACH, plus utilisé pour ça)
 
   // Pipeline mini
   set('pm-p', AC.length);
@@ -3533,6 +3537,7 @@ function renderClients(data) {
 
   const actifs = data.filter(c => c.active);
   set('ka-n', actifs.length);
+  set('nc-acheteurs', actifs.length);
   set('ka-j', data.reduce((s,c) => s + (c.total_depense_fcfa||0), 0).toLocaleString('fr-FR'));
   const totUsed = data.reduce((s,c) => s + (c.credits_used||0), 0);
   const totCred = data.reduce((s,c) => s + (c.credits_total||0), 0);
@@ -3580,6 +3585,7 @@ function renderClients(data) {
       <div style="display:flex;gap:8px">
         ${c.email ? `<a href="mailto:${c.email}" class="btn btn-ghost btn-sm">✉ Contacter</a>` : ''}
         <button class="btn btn-ghost btn-sm" onclick='showClientDetail(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Voir le détail</button>
+        ${c.email ? `<a href="${ADBOARD_URL}/?impersonate=${encodeURIComponent(c.email)}" target="_blank" class="btn btn-purple btn-sm">👁 Aller sur son compte</a>` : ''}
       </div>
     </div>`;
   }).join('');
