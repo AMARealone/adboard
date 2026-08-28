@@ -5679,7 +5679,11 @@ async function _ctGetAll() {
     var meta = { name: id, addedAt: 0 };
     if (entry.jsonName) {
       try {
-        var mResp = await fetch(_ctPublicUrl(entry.jsonName));
+        // Cache-busting explicite — sans ça, le navigateur (et/ou le cache par défaut de
+        // Supabase Storage sur cette URL publique) pouvait continuer à servir l'ancien .json
+        // après un renommage, laissant la carte affichée inchangée malgré une vraie mise à
+        // jour réussie côté serveur.
+        var mResp = await fetch(_ctPublicUrl(entry.jsonName) + '?t=' + Date.now());
         if (mResp.ok) meta = await mResp.json();
       } catch(e) { /* garde le nom par défaut si le .json est illisible */ }
     }
@@ -5690,6 +5694,7 @@ async function _ctGetAll() {
       meta: meta.meta || '',
       awareness: meta.awareness || [],
       styleTags: meta.styleTags || [],
+      niche: meta.niche || '',
       mime: entry.mime || 'image/jpeg',
       url: _ctPublicUrl(entry.imgName),
     });
@@ -5881,10 +5886,11 @@ async function renderGallery() {
       info.appendChild(metaEl);
     }
 
-    // Balises niveau de conscience + style — affichage sous forme de petites pastilles.
+    // Balises niveau de conscience + style + niche — affichage sous forme de petites pastilles.
     var toutesBalises = [].concat(
       (rec.awareness || []).map(function(a){ return { txt: a, color: '#8B5CF6' }; }),
-      (rec.styleTags || []).map(function(s){ return { txt: s, color: 'var(--t3)' }; })
+      (rec.styleTags || []).map(function(s){ return { txt: s, color: 'var(--t3)' }; }),
+      (rec.niche ? [{ txt: rec.niche, color: '#F59E0B' }] : [])
     );
     if (toutesBalises.length) {
       var balisesEl = document.createElement('div');
