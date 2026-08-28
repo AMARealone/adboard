@@ -914,6 +914,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
           <div class="prodv2-syn-head" onclick="prodv2ToggleSyn()">
             <div class="prodv2-syn-title"><span class="prodv2-syn-arrow">›</span> Données Marché · <span id="prodv2SynAnglesCount">3</span> angles</div>
             <div class="prodv2-syn-meta" id="prodv2SynMeta">—</div>
+            <button class="prodv2-crea-btn icon" title="Envoyer les Données Marché au client" onclick="event.stopPropagation(); prodv2SendMarche()" style="width:auto;padding:4px 10px;font-size:11px;">📤</button>
           </div>
           <div class="prodv2-syn-body" id="prodv2SynBody"></div>
         </div>
@@ -2818,6 +2819,7 @@ async function prodv2Launch() {
             <div class="prodv2-crea-actions">
               <button class="prodv2-crea-btn" disabled>Télécharger</button>
               <button class="prodv2-crea-btn icon" title="Régénérer" disabled>↻</button>
+              <button class="prodv2-crea-btn icon" title="Envoyer cette créative au client" onclick="prodv2SendOneCreative(${idx})" disabled>📤</button>
             </div>
           </div>`;
         container.appendChild(card);
@@ -2911,45 +2913,10 @@ async function prodv2Launch() {
     // cibleActuelle) : nom+rôle+âge+ville, jamais juste le prénom seul. Échec de génération
     // toléré : si ça échoue, la vue AdBoard retombe simplement sur le fond dégradé, jamais un
     // blocage de "Envoyer au client" pour ça.
-    if (marche?.persona?.nom) {
-      const descrPersona = (p) => p ? [p.nom, p.role, p.age ? `${p.age} ans` : null, p.ville].filter(Boolean).join(', ') : null;
-      const memeCible = prodv2State.renewalContext?.cibleActuelle && descrPersona(marche.persona) === prodv2State.renewalContext.cibleActuelle;
-      const portraitExistant = prodv2State.renewalContext?.portraitUrlCibleActuelle;
-
-      if (memeCible && portraitExistant) {
-        marche.persona.portrait_url = portraitExistant;
-        prodv2State.marche = marche;
-        console.log('✓ Portrait réutilisé (même cible) :', portraitExistant);
-      } else {
-        try {
-          prodv2SetAgentState(1, 'running', `Portrait de ${marche.persona.nom}…`, 98);
-          // 210s de marge confortable : le serveur peut légitimement prendre jusqu'à ~296s dans
-          // le pire cas (4 tentatives de 60s + attentes de 8s/16s/32s entre elles en cas de
-          // limite de débit — voir vertexRequestGlobalAvecReessai).
-          const rPortrait = await fetch(SERVER + '/generate-persona-portrait', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ persona: marche.persona }),
-            signal: AbortSignal.timeout(210000)
-          });
-          const dPortrait = await rPortrait.json();
-          if (dPortrait.url) {
-            marche.persona.portrait_url = dPortrait.url;
-            prodv2State.marche = marche;
-            console.log('✓ Portrait généré (nouvelle cible) :', dPortrait.url);
-            prodv2SetAgentState(1, 'done', `Synthèse · ${nbAngles} angles · portrait généré`, 100);
-          } else {
-            // Cause profonde corrigée : un échec ici finissait uniquement en console.warn,
-            // invisible pour quelqu'un qui ne regarde jamais les DevTools. Visible maintenant
-            // dans le journal de l'agent Analyste, là où on regarde déjà pendant la production.
-            console.warn('⚠️ Portrait — pas d\'URL dans la réponse :', JSON.stringify(dPortrait).slice(0,200));
-            prodv2SetAgentState(1, 'done', `Synthèse OK · ⚠️ portrait non généré (${dPortrait.error || 'réponse vide'})`, 100);
-          }
-        } catch(ePortrait) {
-          console.warn('⚠️ Portrait persona échoué (non bloquant) :', ePortrait.message);
-          prodv2SetAgentState(1, 'done', `Synthèse OK · ⚠️ portrait échoué (${ePortrait.message.slice(0,60)})`, 100);
-        }
-      }
-    }
+    // Portrait réaliste du persona : plus généré ici du tout. Déplacé entièrement côté serveur,
+    // déclenché au clic sur "Envoyer au client" (voir /commandes/:id/done et
+    // genererEtSauvegarderPortraitEnTacheDeFond côté serveur) — jamais bloquant pour la
+    // production, jamais de label "en cours" visible, tourne indépendamment du navigateur.
 
     // Sauvegarde auto des livrables côté serveur — pour que "Envoyer au client" fonctionne
     // même après avoir quitté la page (pas dépendant de la mémoire du navigateur).
@@ -3104,6 +3071,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   btns[0].onclick = () => prodv2DownloadCrea(idx);
   btns[1].disabled = false;
   btns[1].onclick = () => prodv2RegenerateCrea(idx);
+  if (btns[2]) { btns[2].disabled = false; btns[2].onclick = () => prodv2SendOneCreative(idx); }
 
 // Génère une miniature JPEG compressée côté NAVIGATEUR via Canvas — contourne complètement
 // sharp/libvips côté serveur (échec systématique en diagnostic : "vipspng: libpng read error",
@@ -3285,6 +3253,9 @@ function prodv2RenderCopy(angleIdx) {
   const hooksHtml = data.hooks.map((h,i) =>
     `<div class="prodv2-hook"><span class="prodv2-hook-text">${escapeHtml(h)}</span><span class="prodv2-hook-copy" onclick="prodv2CopyText(this, ${JSON.stringify(h).replace(/"/g,'&quot;')})">copier</span></div>`
   ).join('');
+  // Repli "description vide" après 2 tentatives (voir prodv2GenerateOneCopy) — visible et
+  // rejouable, pas juste affiché comme si c'était un vrai contenu prêt pour le client.
+  const estRepli = data.description === '(description vide — Gemini n\'a pas suivi le format)';
   el.innerHTML = `
     <div class="prodv2-copy-section">
       <div class="prodv2-copy-label">5 Hooks · variantes Meta Ads<span class="copy-all" onclick="prodv2CopyAllHooks(${angleIdx})">copier tout</span></div>
@@ -3292,13 +3263,29 @@ function prodv2RenderCopy(angleIdx) {
     </div>
     <div class="prodv2-copy-section">
       <div class="prodv2-copy-label">Description · structure AIDA<span class="copy-all" onclick="prodv2CopyText(this, ${JSON.stringify(data.description).replace(/"/g,'&quot;')})">copier</span></div>
-      <div class="prodv2-desc">${escapeHtml(data.description)}</div>
+      <div class="prodv2-desc"${estRepli ? ' style="color:var(--red)"' : ''}>${escapeHtml(data.description)}</div>
+      ${estRepli ? `<button class="prodv2-crea-btn icon" title="Régénérer" onclick="prodv2RegenerateCopy(${angleIdx})" style="margin-top:8px;width:auto;padding:6px 14px;">↻ Régénérer la description</button>` : ''}
     </div>`;
 }
 
 function prodv2MarkCopyError(angleIdx, errMsg) {
   const el = document.getElementById('prodv2Copy' + angleIdx);
-  el.innerHTML = `<div class="prodv2-copy-loading" style="color:var(--red)">Erreur copywriter : ${escapeHtml(errMsg)}</div>`;
+  el.innerHTML = `<div class="prodv2-copy-loading" style="color:var(--red)">Erreur copywriter : ${escapeHtml(errMsg)}</div>
+    <button class="prodv2-crea-btn icon" title="Régénérer" onclick="prodv2RegenerateCopy(${angleIdx})" style="margin-top:8px;width:auto;padding:6px 14px;">↻ Régénérer</button>`;
+}
+
+async function prodv2RegenerateCopy(angleIdx) {
+  const el = document.getElementById('prodv2Copy' + angleIdx);
+  if (el) el.innerHTML = '<div class="prodv2-copy-loading">Génération des hooks et de la description…</div>';
+  // Nouveau AbortController à chaque tentative — même raison que prodv2RegenerateCrea (une
+  // régénération individuelle ne doit jamais réutiliser le signal du batch original, déjà
+  // potentiellement terminé/annulé).
+  const regenController = new AbortController();
+  try {
+    await prodv2GenerateOneCopy(angleIdx, regenController.signal);
+  } catch(err) {
+    if (err.name !== 'AbortError') prodv2MarkCopyError(angleIdx, err.message);
+  }
 }
 
 function escapeHtml(s) {
@@ -3347,6 +3334,71 @@ async function prodv2RegenerateCrea(idx) {
     await prodv2GenerateOneCreative(idx, c.angleIdx, c.ctIdx, c.ct, regenController.signal);
   } catch(err) {
     prodv2MarkCreativeError(idx, err.message);
+  }
+}
+
+async function prodv2SendOneCreative(idx) {
+  if (!prodv2State.commandeId) {
+    alert("Cette production n'est pas liée à une commande AdBoard — rien à envoyer automatiquement.");
+    return;
+  }
+  const card = document.getElementById('prodv2Crea_' + idx);
+  const btn = card ? card.querySelectorAll('.prodv2-crea-btn')[2] : null;
+  const texteOrig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    // Même logique que prodv2SendClient (étape 1) — s'assurer que le serveur a bien la
+    // dernière version avant de tenter quoi que ce soit, sinon on pourrait envoyer une
+    // version périmée de cette créative précise.
+    await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
+      method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({
+        creatives: prodv2State.creatives, copies: prodv2State.copies,
+        synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche
+      })
+    });
+    const r = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/send-one-creative`, {
+      method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({ index: idx })
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || ('HTTP ' + r.status));
+    if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = texteOrig || '📤'; btn.disabled = false; }, 1500); }
+  } catch(e) {
+    alert('Envoi de cette créative échoué : ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = texteOrig || '📤'; }
+  }
+}
+
+async function prodv2SendMarche() {
+  if (!prodv2State.commandeId) {
+    alert("Cette production n'est pas liée à une commande AdBoard — rien à envoyer automatiquement.");
+    return;
+  }
+  if (!prodv2State.marche) {
+    alert('Aucune donnée marché générée pour l\'instant — rien à envoyer.');
+    return;
+  }
+  const btn = document.querySelector('#prodv2Syn .prodv2-crea-btn');
+  const texteOrig = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  try {
+    await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
+      method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+      body: JSON.stringify({
+        creatives: prodv2State.creatives, copies: prodv2State.copies,
+        synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche
+      })
+    });
+    const r = await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/send-marche`, {
+      method: 'POST', headers: {'ngrok-skip-browser-warning':'1'}
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.ok) throw new Error(data.error || ('HTTP ' + r.status));
+    if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = texteOrig || '📤'; btn.disabled = false; }, 1500); }
+  } catch(e) {
+    alert('Envoi des Données Marché échoué : ' + e.message);
+    if (btn) { btn.disabled = false; btn.textContent = texteOrig || '📤'; }
   }
 }
 
@@ -7002,6 +7054,7 @@ async function prodv2CheckResume() {
             <div class="prodv2-crea-actions">
               <button class="prodv2-crea-btn" ${item.status!=='done'?'disabled':''}>Télécharger</button>
               <button class="prodv2-crea-btn icon" title="Régénérer" ${item.status!=='done'?'disabled':''}>↻</button>
+              <button class="prodv2-crea-btn icon" title="Envoyer cette créative au client" ${item.status!=='done'?'disabled':''}>📤</button>
             </div>
           </div>`;
         container.appendChild(card);
@@ -7009,6 +7062,7 @@ async function prodv2CheckResume() {
           const btns = card.querySelectorAll('.prodv2-crea-btn');
           btns[0].onclick = () => prodv2DownloadCrea(idx);
           btns[1].onclick = () => prodv2RegenerateCrea(idx);
+          btns[2].onclick = () => prodv2SendOneCreative(idx);
         }
       }
     }
