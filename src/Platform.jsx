@@ -4614,6 +4614,42 @@ export default function Platform() {
   const [showLogin, setShowLogin] = useState(false);
   const [loginAutoPrompt, setLoginAutoPrompt] = useState(false);
 
+  // ── Impersonation admin — voir /admin/impersonate côté serveur pour la vraie vérification
+  // de sécurité (jamais fait confiance à un simple champ côté client, le serveur revérifie
+  // cryptographiquement que la session envoyée appartient bien à l'admin avant d'agir).
+  const ADMIN_EMAIL_UI = 'thefirstquality01@gmail.com';
+  const [impersonating, setImpersonating] = useState(() => !!localStorage.getItem('sb_admin_original_session'));
+  const startImpersonation = async (targetEmail) => {
+    const session = sbAuth.getSession();
+    if (!session?.access_token) { alert('Reconnecte-toi d\'abord.'); return; }
+    try {
+      const r = await fetch('https://adstack-server.onrender.com/admin/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ targetEmail })
+      });
+      const data = await r.json();
+      if (!r.ok || !data.session) { alert('Échec : ' + (data.error || 'inconnu')); return; }
+      // Range la session admin de côté — jamais écrasée, jamais perdue, sert à revenir.
+      localStorage.setItem('sb_admin_original_session', JSON.stringify(session));
+      localStorage.setItem('sb_admin_original_user', JSON.stringify(sbAuth.getUser()));
+      localStorage.setItem('sb_session', JSON.stringify(data.session));
+      localStorage.setItem('sb_user', JSON.stringify(data.session.user));
+      window.location.reload();
+    } catch (e) {
+      alert('Erreur réseau : ' + e.message);
+    }
+  };
+  const stopImpersonation = () => {
+    const originalSession = localStorage.getItem('sb_admin_original_session');
+    const originalUser = localStorage.getItem('sb_admin_original_user');
+    if (originalSession) localStorage.setItem('sb_session', originalSession);
+    if (originalUser) localStorage.setItem('sb_user', originalUser);
+    localStorage.removeItem('sb_admin_original_session');
+    localStorage.removeItem('sb_admin_original_user');
+    window.location.reload();
+  };
+
   // ── Incitation "Ajouter à l'écran d'accueil" — universelle. Sur Android/Chromium, un vrai
   // bouton d'installation en un clic (API beforeinstallprompt, la seule plateforme qui le
   // permet réellement). Sur iOS, Apple n'expose AUCUNE API pour déclencher ça par code —
@@ -5358,6 +5394,18 @@ const views = {
               }}/>
               <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
             </div>
+          )}
+          {impersonating && (
+            <div style={{position:'fixed',top:0,left:0,right:0,zIndex:99999,background:'#7C2D12',color:'#fff',padding:'8px 16px',display:'flex',alignItems:'center',justifyContent:'center',gap:12,fontSize:12.5,fontWeight:700,boxShadow:'0 2px 12px rgba(0,0,0,0.4)'}}>
+              <span>👁 Vous voyez le compte de <b>{user?.email}</b></span>
+              <button onClick={stopImpersonation} style={{padding:'4px 12px',background:'#fff',color:'#7C2D12',border:'none',borderRadius:6,fontWeight:800,fontSize:11.5,cursor:'pointer'}}>← Revenir à mon compte admin</button>
+            </div>
+          )}
+          {!impersonating && user?.email?.toLowerCase() === ADMIN_EMAIL_UI && (
+            <button onClick={() => { const email = prompt('Email du client à voir en tant que lui :'); if (email) startImpersonation(email.trim()); }}
+              style={{position:'fixed',bottom:16,left:16,zIndex:99999,padding:'9px 14px',background:'#1E293B',color:'#fff',border:'1px solid rgba(255,255,255,0.15)',borderRadius:10,fontSize:11.5,fontWeight:700,cursor:'pointer',boxShadow:'0 4px 16px rgba(0,0,0,0.4)'}}>
+              👁 Voir en tant que...
+            </button>
           )}
           {views[section]}
         </main>
