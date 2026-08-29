@@ -1890,6 +1890,16 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   };
 
   const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); };
+
+  // Cause profonde corrigée (le bouton "Créer mon produit maintenant" du chatbot ne faisait
+  // jamais rien de visible à part changer de section) : ce window event était dispatché à deux
+  // endroits (chatbot + ouverture automatique post-connexion) mais jamais écouté nulle part —
+  // aucun listener n'existait pour réagir et réellement ouvrir le formulaire.
+  useEffect(() => {
+    const handler = () => openNew();
+    window.addEventListener('openProductForm', handler);
+    return () => window.removeEventListener('openProductForm', handler);
+  }, [user]);
   const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); };
 
   const handleFile = (e, fieldKey) => {
@@ -2104,15 +2114,26 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       </div>
 
       {products.length === 0 && (
-        <div style={{position:'relative',overflow:'hidden',borderRadius:16,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',padding:'60px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:12,textAlign:'center',marginBottom:14}}>
+        <div style={{position:'relative',overflow:'hidden',borderRadius:16,border:`1px solid ${subscription?.active ? C.accent+'55' : C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',padding:'60px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:12,textAlign:'center',marginBottom:14}}>
           <div style={{position:'absolute',top:-60,left:'50%',transform:'translateX(-50%)',width:220,height:220,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
+          {subscription?.active && (
+            <div style={{position:'relative',fontSize:11,fontWeight:700,color:'#22C55E',background:'rgba(34,197,94,0.1)',border:'1px solid rgba(34,197,94,0.3)',borderRadius:20,padding:'4px 12px',display:'flex',alignItems:'center',gap:5}}>
+              <Icon name="check" size={11} color="#22C55E"/> Paiement confirmé
+            </div>
+          )}
           <div style={{position:'relative',width:44,height:44,borderRadius:12,background:C.accentS,border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',color:C.accent}}>
             <Icon name="box" size={20}/>
           </div>
-          <div style={{position:'relative',fontSize:17,fontWeight:700,color:C.text}}>Aucun produit pour l'instant</div>
-          <div style={{position:'relative',fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 48h.</div>
+          <div style={{position:'relative',fontSize:17,fontWeight:700,color:C.text}}>
+            {subscription?.active ? 'Plus qu\'une étape avant tes premières images' : 'Aucun produit pour l\'instant'}
+          </div>
+          <div style={{position:'relative',fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>
+            {subscription?.active
+              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes visuels juste après. Livraison sous 48h max.'
+              : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 48h.'}
+          </div>
           <button onClick={openNew} style={{position:'relative',marginTop:6,padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7,boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
-            <Icon name="plus" size={14} color="#fff"/> Ajouter mon premier produit
+            <Icon name="plus" size={14} color="#fff"/> {subscription?.active ? 'Ajouter mon produit' : 'Ajouter mon premier produit'}
           </button>
         </div>
       )}
@@ -4505,6 +4526,12 @@ export default function Platform() {
   // en vol simultanément, celle qui répond en DERNIER écrasait l'état avec des données parfois
   // plus anciennes que celles déjà affichées, peu importe l'ordre réel des réponses.
   const refreshEnCoursRef = useRef(false);
+  // Ouverture automatique du formulaire produit — une seule fois par session, juste après la
+  // toute première connexion réussie sur un compte à 0 produit (typiquement un client qui vient
+  // de payer sur la page de vente et atterrit sur Mes Produits). Sans ce garde-fou, chargerDonneesUtilisateur()
+  // étant rappelée à chaque retour sur l'onglet, le formulaire se rouvrirait à répétition tant
+  // que le compte n'a toujours pas de produit — agaçant plutôt qu'utile après la première fois.
+  const autoOpenProductFormDoneRef = useRef(false);
 
   // Rafraîchit toutes les données utilisateur (abonnement, produits, briefs) — utilisé par le pull-to-refresh
   const refreshUserData = async () => {
@@ -5082,6 +5109,14 @@ export default function Platform() {
           // passer à true : sinon le bouton resterait indéfiniment désactivé pour un compte
           // qui vient tout juste de créer son premier produit.
           setCreditsDataReady(true);
+          // Ouverture automatique du formulaire — voir autoOpenProductFormDoneRef plus haut.
+          // Réutilise exactement le même mécanisme que le chatbot (window event 'openProductForm'),
+          // déjà écouté par la vue Produits — aucun nouveau plomberie à ajouter côté formulaire.
+          if (!autoOpenProductFormDoneRef.current) {
+            autoOpenProductFormDoneRef.current = true;
+            setSection('produits');
+            setTimeout(() => window.dispatchEvent(new Event('openProductForm')), 300);
+          }
         }
         setSubscription(sub);
         if (sub?.expired) {
