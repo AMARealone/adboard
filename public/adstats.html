@@ -1600,6 +1600,10 @@ textarea::placeholder { color: var(--muted); }
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
           <span>Transactions</span>
         </button>
+        <button class="nav-item" onclick="goTo('comptabilite',this)">
+          <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+          <span>Comptabilité</span>
+        </button>
         <button class="nav-item" onclick="goTo('utilisateurs',this)">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
           <span>Utilisateurs</span>
@@ -2011,7 +2015,7 @@ textarea::placeholder { color: var(--muted); }
     </div>
     <div class="kpi-cell" style="--accent:var(--purple)">
       <div class="kpi-val" id="ka-j">—</div>
-      <div class="kpi-label">Dépense totale (FCFA)</div>
+      <div class="kpi-label">Dépense totale</div>
     </div>
     <div class="kpi-cell" style="--accent:var(--green)">
       <div class="kpi-val" id="ka-u">—</div>
@@ -2096,6 +2100,63 @@ textarea::placeholder { color: var(--muted); }
 
   <div id="tx-list"></div>
 </div>
+
+<!-- ── PAGE COMPTABILITÉ ── -->
+<div class="page" id="page-comptabilite">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Comptabilité</div>
+      <div class="page-sub">Vue financière réelle — revenus, dépenses par vraie catégorie, marge</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;position:relative">
+      <div class="dash-period-picker">
+        <button class="dash-period-btn" onclick="toggleComptaPeriodPanel(event)">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <span id="compta-period-label">30 jours</span>
+          <span class="nav-chevron" style="font-size:9px">▾</span>
+        </button>
+        <div class="dash-period-panel" id="compta-period-panel">
+          <span class="ptab-compta" onclick="setComptaPeriodQuick(0,this)">Aujourd'hui</span>
+          <span class="ptab-compta" onclick="setComptaPeriodQuick(7,this)">7 jours</span>
+          <span class="ptab-compta active" onclick="setComptaPeriodQuick(30,this)">30 jours</span>
+          <span class="ptab-compta" onclick="setComptaPeriodQuick(365,this)">Cette année</span>
+          <div style="height:1px;background:var(--border);margin:8px 0"></div>
+          <div id="compta-calendar-container"></div>
+          <div id="compta-date-range-label" style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:6px"></div>
+          <button onclick="clearComptaDateRange()" style="width:100%;margin-top:6px;background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--muted);cursor:pointer;font-size:11px;padding:5px">Effacer la plage</button>
+          <input type="hidden" id="compta-date-from">
+          <input type="hidden" id="compta-date-to">
+        </div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="renderComptabilite()">Actualiser</button>
+    </div>
+  </div>
+
+  <!-- KPI principaux -->
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px" id="compta-kpis-principaux"></div>
+
+  <!-- Dépenses détaillées + Revenus détaillés côte à côte -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" id="compta-blocs-detail"></div>
+
+  <!-- Revenu potentiel -->
+  <div id="compta-potentiel" style="margin-bottom:20px"></div>
+
+  <!-- Tableaux détaillés -->
+  <div style="display:flex;gap:10px;margin-bottom:14px">
+    <button class="ptab-compta-table active" onclick="comptaShowTable('depenses',this)">Dépenses (détail)</button>
+    <button class="ptab-compta-table" onclick="comptaShowTable('revenus',this)">Transactions (détail)</button>
+  </div>
+  <div id="compta-table-depenses"></div>
+  <div id="compta-table-revenus" style="display:none"></div>
+</div>
+
+<style>
+.ptab-compta { display:block; padding:6px 10px; border-radius:6px; font-size:11.5px; color:var(--muted); cursor:pointer; }
+.ptab-compta:hover { background:var(--surface2); color:var(--text); }
+.ptab-compta.active { background:var(--blue); color:#fff; }
+.ptab-compta-table { padding:8px 16px; border-radius:8px; border:1px solid var(--border2); background:transparent; color:var(--muted); font-size:12px; font-weight:600; cursor:pointer; }
+.ptab-compta-table.active { background:var(--surface2); color:var(--text); border-color:var(--blue); }
+</style>
 
 <style>
 @keyframes pulse-green {
@@ -2232,6 +2293,18 @@ let DB = [];
 // achats répétés d'un même client — cross-sell exclus (voir CORE_PLANS).
 let TX = [];
 const CORE_PLANS = ['discovery', 'starter', 'pro', 'scale'];
+
+// Toutes les données monétaires sont stockées en FCFA (la vraie devise de facturation
+// Chariow) — jamais changé côté base ni côté appels API, uniquement l'AFFICHAGE partout dans
+// le CRM. Taux approximatif — le FCFA (XOF) est arrimé à l'euro à un taux fixe, ce qui rend
+// 1 USD ≈ 600 FCFA raisonnablement stable dans le temps. Aucune API de taux de change en
+// temps réel branchée ici. Les transactions en GNF (Guinée) sont converties avec ce même
+// taux par simplicité, ce qui introduit une imprécision reconnue sur ces lignes précises (le
+// GNF n'est pas arrimé à l'euro comme le FCFA/XOF).
+const TAUX_USD_FCFA = 600;
+function fmtUSD(fcfa) {
+  return '$' + ((fcfa||0) / TAUX_USD_FCFA).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 // ⚠️ À REMPLIR avec la vraie URL de production d'AdBoard (celle utilisée pour s'y connecter
 // normalement) — sert au bouton "Aller sur son compte" de la Vue Client.
 const ADBOARD_URL = 'https://www.adstackofficial.com/adboard';
@@ -2306,6 +2379,7 @@ function goTo(name, btn) {
   if (name === 'contacts') renderContacts();
   if (name === 'donnees') renderDonnees();
   if (name === 'transactions') renderTransactions();
+  if (name === 'comptabilite') renderComptabilite();
   if (name === 'comportement') renderComportement();
   if (name === 'utilisateurs') renderUtilisateurs();
 }
@@ -3539,7 +3613,7 @@ function renderClients(data) {
   const actifs = data.filter(c => c.active);
   set('ka-n', actifs.length);
   set('nc-acheteurs', actifs.length);
-  set('ka-j', data.reduce((s,c) => s + (c.total_depense_fcfa||0), 0).toLocaleString('fr-FR'));
+  set('ka-j', fmtUSD(data.reduce((s,c) => s + (c.total_depense_fcfa||0), 0)));
   const totUsed = data.reduce((s,c) => s + (c.credits_used||0), 0);
   const totCred = data.reduce((s,c) => s + (c.credits_total||0), 0);
   set('ka-u', `${totUsed} / ${totCred}`);
@@ -3574,7 +3648,7 @@ function renderClients(data) {
         </div>
         <div>
           <div style="font-size:9px;color:var(--muted);text-transform:uppercase;font-weight:700;margin-bottom:2px">Dépensé</div>
-          <div style="font-size:13px;font-weight:800;color:var(--text)">${(c.total_depense_fcfa||0).toLocaleString('fr-FR')} F</div>
+          <div style="font-size:13px;font-weight:800;color:var(--text)">${fmtUSD(c.total_depense_fcfa||0)}</div>
           <div style="font-size:10px;color:var(--muted)">${c.nb_achats} achat${c.nb_achats>1?'s':''}</div>
         </div>
         <div>
@@ -3602,7 +3676,7 @@ function showClientDetail(c) {
       <div><strong>Client depuis :</strong> ${c.started_at ? new Date(c.started_at).toLocaleString('fr-FR') : '—'}</div>
       <div><strong>Expire le :</strong> ${c.expires_at ? new Date(c.expires_at).toLocaleString('fr-FR') : '—'}</div>
       <div><strong>Crédits utilisés :</strong> ${c.credits_used} / ${c.credits_total}</div>
-      <div><strong>Total dépensé :</strong> ${(c.total_depense_fcfa||0).toLocaleString('fr-FR')} FCFA (${c.nb_achats} achat${c.nb_achats>1?'s':''})</div>
+      <div><strong>Total dépensé :</strong> ${fmtUSD(c.total_depense_fcfa||0)} (${c.nb_achats} achat${c.nb_achats>1?'s':''})</div>
       <div><strong>Premier achat :</strong> ${c.premier_achat ? new Date(c.premier_achat).toLocaleDateString('fr-FR') : '—'}</div>
       <div><strong>ID compte :</strong> <code style="font-size:10px">${c.user_id}</code></div>
     </div>`;
@@ -5029,6 +5103,249 @@ function fermerDetailDonnees() {
   if (t) t.textContent = 'Données';
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// COMPTABILITÉ — vue financière réelle, dépenses ventilées par vraie
+// catégorie (jamais mélangées), revenu net (après commission Chariow),
+// marge brute/nette, projection de revenu potentiel.
+// ═══════════════════════════════════════════════════════════════════════
+// TAUX_USD_FCFA et fmtUSD sont définis globalement plus haut (voir STATE) — réutilisés ici.
+
+let comptaPeriodDays = 30;
+
+function toggleComptaPeriodPanel(e) {
+  if (e) e.stopPropagation();
+  const panel = document.getElementById('compta-period-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    const fromEl = document.getElementById('compta-date-from');
+    const toEl = document.getElementById('compta-date-to');
+    renderCalendarWidget('compta-calendar-container', fromEl.value, toEl.value, (from, to) => {
+      fromEl.value = from || '';
+      toEl.value = to || '';
+      const labelEl = document.getElementById('compta-date-range-label');
+      if (labelEl) {
+        labelEl.textContent = from && to
+          ? (from === to ? new Date(from).toLocaleDateString('fr-FR') : `${new Date(from).toLocaleDateString('fr-FR')} → ${new Date(to).toLocaleDateString('fr-FR')}`)
+          : from ? `${new Date(from).toLocaleDateString('fr-FR')} → …` : '';
+      }
+      if (from && to) {
+        document.querySelectorAll('.ptab-compta').forEach(b => b.classList.remove('active'));
+        document.getElementById('compta-period-label').textContent = from === to ? new Date(from).toLocaleDateString('fr-FR') : 'Période personnalisée';
+        renderComptabilite();
+      }
+    });
+  }
+}
+document.addEventListener('click', (e) => {
+  const panel = document.getElementById('compta-period-panel');
+  const btn = document.querySelector('#page-comptabilite .dash-period-btn');
+  if (panel && panel.classList.contains('open') && !panel.contains(e.target) && e.target !== btn && !btn?.contains(e.target)) {
+    panel.classList.remove('open');
+  }
+});
+
+function setComptaPeriodQuick(days, el) {
+  comptaPeriodDays = days;
+  document.getElementById('compta-date-from').value = '';
+  document.getElementById('compta-date-to').value = '';
+  document.querySelectorAll('.ptab-compta').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('compta-period-label').textContent = el.textContent.trim();
+  document.getElementById('compta-period-panel')?.classList.remove('open');
+  renderComptabilite();
+}
+
+function clearComptaDateRange() {
+  document.getElementById('compta-date-from').value = '';
+  document.getElementById('compta-date-to').value = '';
+  comptaPeriodDays = 30;
+  document.querySelectorAll('.ptab-compta').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.ptab-compta')[2]?.classList.add('active'); // "30 jours"
+  document.getElementById('compta-period-label').textContent = '30 jours';
+  renderComptabilite();
+}
+
+function comptaShowTable(nom, btn) {
+  document.querySelectorAll('.ptab-compta-table').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('compta-table-depenses').style.display = nom === 'depenses' ? '' : 'none';
+  document.getElementById('compta-table-revenus').style.display = nom === 'revenus' ? '' : 'none';
+}
+
+async function renderComptabilite() {
+  const kpisEl = document.getElementById('compta-kpis-principaux');
+  const blocsEl = document.getElementById('compta-blocs-detail');
+  const potentielEl = document.getElementById('compta-potentiel');
+  const tableDepEl = document.getElementById('compta-table-depenses');
+  const tableRevEl = document.getElementById('compta-table-revenus');
+  if (!kpisEl) return;
+  kpisEl.innerHTML = '<div style="grid-column:1/-1;padding:20px;color:var(--muted);font-size:13px">Chargement...</div>';
+
+  const fromEl = document.getElementById('compta-date-from');
+  const toEl = document.getElementById('compta-date-to');
+  const from = fromEl?.value, to = toEl?.value;
+  let dateFiltreApi = '', dateFiltreTx = '';
+  if (from && to) {
+    dateFiltreApi = `&created_at=gte.${from}T00:00:00&created_at=lte.${to}T23:59:59`;
+    dateFiltreTx = `&created_at=gte.${from}T00:00:00&created_at=lte.${to}T23:59:59`;
+  } else if (comptaPeriodDays < 9999) {
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - comptaPeriodDays); cutoff.setHours(0,0,0,0);
+    dateFiltreApi = `&created_at=gte.${cutoff.toISOString()}`;
+    dateFiltreTx = `&created_at=gte.${cutoff.toISOString()}`;
+  }
+
+  try {
+    const [apiRes, txRes] = await Promise.all([
+      fetch(`${SB}/api_usage_log?select=source,cout_usd,type_appel,created_at${dateFiltreApi}&order=created_at.desc`, { headers: H }),
+      fetch(`${SB}/transactions?select=*${dateFiltreTx}&order=created_at.desc`, { headers: H }),
+    ]);
+    const apiRows = await apiRes.json();
+    const txRows = await txRes.json();
+
+    // ── Dépenses par vraie catégorie — jamais mélangées ──
+    const sommeParSource = (src) => apiRows.filter(r => r.source === src).reduce((s,r) => s + (r.cout_usd||0), 0);
+    const depAcquisitionUsd = sommeParSource('demo') + sommeParSource('prospecteur');
+    const depProductionUsd  = sommeParSource('production');
+    const depTestsUsd       = sommeParSource('agent_test');
+    const depAutreUsd       = apiRows.filter(r => !['demo','prospecteur','production','agent_test'].includes(r.source)).reduce((s,r) => s + (r.cout_usd||0), 0);
+    const depFixesFcfa = 0; // Structure prête — aucun coût fixe renseigné pour l'instant
+
+    const depAcquisitionFcfa = depAcquisitionUsd * TAUX_USD_FCFA;
+    const depProductionFcfa  = depProductionUsd  * TAUX_USD_FCFA;
+    const depTestsFcfa       = depTestsUsd       * TAUX_USD_FCFA;
+    const depAutreFcfa       = depAutreUsd       * TAUX_USD_FCFA;
+    const depTotalFcfa = depAcquisitionFcfa + depProductionFcfa + depTestsFcfa + depAutreFcfa + depFixesFcfa;
+
+    // ── Revenu — net (après commission Chariow 15%), la vraie somme perçue ──
+    const revenuNetFcfa = txRows.reduce((s,t) => s + (t.montant_net_fcfa||0), 0);
+    const revenuBrutFcfa = txRows.reduce((s,t) => s + (t.montant_fcfa||0), 0);
+
+    const profitFcfa = revenuNetFcfa - depTotalFcfa;
+    const margeBrute = revenuNetFcfa > 0 ? ((revenuNetFcfa - depProductionFcfa) / revenuNetFcfa * 100) : null;
+    const margeNette = revenuNetFcfa > 0 ? (profitFcfa / revenuNetFcfa * 100) : null;
+
+    const fmtFcfa = fmtUSD; // alias — affichage en $ partout, demande explicite (standing/perception)
+    const fmtPct = (v) => v === null ? '—' : v.toFixed(1) + '%';
+
+    // ── KPI principaux ──
+    kpisEl.innerHTML = [
+      { label: 'Revenu net', val: fmtFcfa(revenuNetFcfa), color: 'var(--white)' },
+      { label: 'Dépenses totales', val: fmtFcfa(depTotalFcfa), color: 'var(--white)' },
+      { label: 'Profit', val: fmtFcfa(profitFcfa), color: profitFcfa >= 0 ? '#22C55E' : '#EF4444' },
+      { label: 'Marge brute', val: fmtPct(margeBrute), color: 'var(--white)' },
+      { label: 'Marge nette', val: fmtPct(margeNette), color: margeNette !== null && margeNette >= 0 ? '#22C55E' : '#EF4444' },
+    ].map(k =>
+      `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
+        <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${k.label}</div>
+        <div style="font-size:19px;font-weight:800;color:${k.color}">${k.val}</div>
+      </div>`
+    ).join('');
+
+    // ── Bloc Dépenses détaillé ──
+    const ligneDepense = (label, valFcfa, valUsd, couleur) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:12.5px;color:var(--text)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${couleur};margin-right:8px"></span>${label}</span>
+        <span style="font-size:12.5px;font-weight:700;color:var(--text)">${fmtFcfa(valFcfa)}</span>
+      </div>`;
+    const blocDepenses = `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px">
+        <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px">Dépenses par catégorie réelle</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:14px">Jamais mélangées — production et tests n'affectent plus le coût d'acquisition</div>
+        ${ligneDepense('Acquisition (démo + prospection)', depAcquisitionFcfa, depAcquisitionUsd, '#3B82F6')}
+        ${ligneDepense('Production (vrais livrables clients)', depProductionFcfa, depProductionUsd, '#F59E0B')}
+        ${ligneDepense('Tests d\'agents', depTestsFcfa, depTestsUsd, '#8B5CF6')}
+        ${depAutreFcfa > 0 ? ligneDepense('Autre / non catégorisé', depAutreFcfa, depAutreUsd, '#6B7280') : ''}
+        ${ligneDepense('Coûts fixes', depFixesFcfa, 0, '#6B7280')}
+      </div>`;
+
+    // ── Bloc Revenus détaillé (par plan) ──
+    const parPlan = {};
+    txRows.forEach(t => {
+      const p = t.plan || 'inconnu';
+      if (!parPlan[p]) parPlan[p] = { count: 0, total: 0 };
+      parPlan[p].count++;
+      parPlan[p].total += (t.montant_net_fcfa || 0);
+    });
+    const couleursPlan = { discovery: '#6B7280', starter: '#F59E0B', pro: '#3B82F6', scale: '#8B5CF6' };
+    const blocRevenus = `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px">
+        <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px">Revenu net par plan</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:14px">${txRows.length} transaction${txRows.length>1?'s':''} sur la période</div>
+        ${Object.entries(parPlan).sort((a,b) => b[1].total - a[1].total).map(([plan, d]) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:12.5px;color:var(--text)"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${couleursPlan[plan]||'#6B7280'};margin-right:8px"></span>${plan.toUpperCase()} <span style="color:var(--muted)">· ${d.count}</span></span>
+            <span style="font-size:12.5px;font-weight:700;color:var(--text)">${fmtFcfa(d.total)}</span>
+          </div>`).join('') || '<div style="font-size:12px;color:var(--muted);padding:10px 0">Aucune transaction sur la période</div>'}
+      </div>`;
+
+    blocsEl.innerHTML = blocDepenses + blocRevenus;
+
+    // ── Revenu potentiel — projection depuis le funnel réel ──
+    const totalProspects = DB.length;
+    const totalLeads = DB.filter(p => ['lead','acheteur','standard','scale'].includes(p.statut)).length;
+    const tauxProspectLead = totalProspects > 0 ? (totalLeads / totalProspects * 100) : 0;
+    const panierMoyen = txRows.length > 0 ? revenuNetFcfa / txRows.length : 0;
+    potentielEl.innerHTML = `
+      <div style="background:linear-gradient(135deg, rgba(45,127,249,0.08), rgba(139,92,246,0.05));border:1px solid var(--border);border-radius:12px;padding:18px">
+        <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:10px">Revenu potentiel — projection</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;font-size:12px;color:var(--text)">
+          <div>Taux actuel prospect → lead : <strong>${tauxProspectLead.toFixed(1)}%</strong> (${totalLeads}/${totalProspects})</div>
+          <div>Panier moyen par vente : <strong>${fmtFcfa(panierMoyen)}</strong></div>
+          <div>Si +10 points sur ce taux : <strong style="color:#22C55E">+${fmtFcfa(totalProspects * 0.10 * (txRows.length && totalLeads ? txRows.length/totalLeads : 0) * panierMoyen)}</strong> estimé</div>
+        </div>
+      </div>`;
+
+    // ── Tableau détaillé des dépenses ──
+    tableDepEl.innerHTML = apiRows.length ? `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:10px 14px;color:var(--muted);font-weight:600">Date</th>
+            <th style="text-align:left;padding:10px 14px;color:var(--muted);font-weight:600">Catégorie</th>
+            <th style="text-align:left;padding:10px 14px;color:var(--muted);font-weight:600">Type d'appel</th>
+            <th style="text-align:right;padding:10px 14px;color:var(--muted);font-weight:600">Coût</th>
+          </tr></thead>
+          <tbody>
+            ${apiRows.slice(0, 200).map(r => `
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:8px 14px;color:var(--muted)">${new Date(r.created_at).toLocaleString('fr-FR')}</td>
+                <td style="padding:8px 14px;color:var(--text)">${r.source||'—'}</td>
+                <td style="padding:8px 14px;color:var(--muted)">${r.type_appel||'—'}</td>
+                <td style="padding:8px 14px;text-align:right;color:var(--text);font-weight:600">$${(r.cout_usd||0).toFixed(4)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        ${apiRows.length > 200 ? `<div style="padding:10px 14px;color:var(--muted);font-size:11px">Affichage limité aux 200 plus récentes (${apiRows.length} au total sur la période)</div>` : ''}
+      </div>` : '<div style="padding:30px;text-align:center;color:var(--muted);font-size:12px">Aucune dépense API sur la période</div>';
+
+    // ── Tableau détaillé des transactions ──
+    tableRevEl.innerHTML = txRows.length ? `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead><tr style="border-bottom:1px solid var(--border)">
+            <th style="text-align:left;padding:10px 14px;color:var(--muted);font-weight:600">Date</th>
+            <th style="text-align:left;padding:10px 14px;color:var(--muted);font-weight:600">Client</th>
+            <th style="text-align:left;padding:10px 14px;color:var(--muted);font-weight:600">Plan</th>
+            <th style="text-align:right;padding:10px 14px;color:var(--muted);font-weight:600">Net perçu</th>
+          </tr></thead>
+          <tbody>
+            ${txRows.map(t => `
+              <tr style="border-bottom:1px solid var(--border)">
+                <td style="padding:8px 14px;color:var(--muted)">${new Date(t.created_at).toLocaleString('fr-FR')}</td>
+                <td style="padding:8px 14px;color:var(--text)">${t.email||t.user_id?.slice(0,8)+'...'}</td>
+                <td style="padding:8px 14px;color:var(--text)">${(t.plan||'—').toUpperCase()}</td>
+                <td style="padding:8px 14px;text-align:right;color:var(--text);font-weight:600">${fmtFcfa(t.montant_net_fcfa||0)}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>` : '<div style="padding:30px;text-align:center;color:var(--muted);font-size:12px">Aucune transaction sur la période</div>';
+
+  } catch(e) {
+    kpisEl.innerHTML = `<div style="grid-column:1/-1;padding:20px;color:#EF4444;font-size:12px">Erreur : ${e.message}</div>`;
+  }
+}
+
+
 async function renderTransactions() {
   const kpisEl = document.getElementById('tx-kpis');
   const listEl = document.getElementById('tx-list');
@@ -5048,7 +5365,7 @@ async function renderTransactions() {
     const totalBrut = rows.reduce((s,t) => s + (t.montant_fcfa||0), 0);
     const totalNet  = rows.reduce((s,t) => s + (t.montant_net_fcfa||0), 0);
     const totalComm = rows.reduce((s,t) => s + (t.commission_chariow_fcfa||0), 0);
-    const fmtFcfa = (v) => Math.round(v).toLocaleString('fr-FR') + ' FCFA';
+    const fmtFcfa = fmtUSD; // alias — affichage en $ partout, demande explicite (standing/perception)
 
     kpisEl.innerHTML = [
       { label: 'Revenu brut',      val: fmtFcfa(totalBrut) },
@@ -5134,7 +5451,7 @@ async function renderUtilisateurs() {
       { label: 'Inscrits',           val: total },
       { label: 'Avec produit créé',  val: avecProduit + ' (' + Math.round(avecProduit/total*100) + '%)' },
       { label: 'Abonnement actif',   val: avecPlan + ' (' + Math.round(avecPlan/total*100) + '%)' },
-      { label: 'Revenu net cumulé',  val: Math.round(revenuTotal).toLocaleString('fr-FR') + ' FCFA' },
+      { label: 'Revenu net cumulé',  val: fmtUSD(revenuTotal) },
     ].map(k =>
       `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px">
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">${k.label}</div>
@@ -5155,7 +5472,7 @@ async function renderUtilisateurs() {
         ? `<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(31,182,255,.12);color:var(--blue)">${PLAN_LABELS[u.plan]||u.plan}</span>`
         : `<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--surface2);color:var(--muted)">Aucun plan actif</span>`;
       const achatBadge = u.a_achete
-        ? `<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(50,255,126,.12);color:var(--green)">${Math.round(u.ltv_fcfa).toLocaleString('fr-FR')} FCFA</span>`
+        ? `<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:rgba(50,255,126,.12);color:var(--green)">${fmtUSD(u.ltv_fcfa)}</span>`
         : `<span style="font-size:10px;color:var(--muted)">Jamais acheté</span>`;
       return `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;flex-wrap:wrap;gap:8px">
         <div>
