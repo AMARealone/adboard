@@ -1705,12 +1705,14 @@ textarea::placeholder { color: var(--muted); }
           <span class="ptab-new" onclick="setPeriodNew(7,this)">7 jours</span>
           <span class="ptab-new" onclick="setPeriodNew(30,this)">30 jours</span>
           <div style="height:1px;background:var(--border);margin:8px 0"></div>
-          <div style="display:flex;align-items:center;gap:6px">
-            <input type="date" id="dash-date-from" onchange="onDateRangeChange()" style="background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:5px 7px;font-family:Outfit,sans-serif;font-size:11px;color:var(--text);outline:none;cursor:pointer;flex:1">
-            <span style="color:var(--border2);font-size:11px">→</span>
-            <input type="date" id="dash-date-to" onchange="onDateRangeChange()" style="background:var(--surface3);border:1px solid var(--border2);border-radius:6px;padding:5px 7px;font-family:Outfit,sans-serif;font-size:11px;color:var(--text);outline:none;cursor:pointer;flex:1">
-            <button onclick="clearDateRange()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px" title="Effacer">×</button>
-          </div>
+          <div id="dash-calendar-container"></div>
+          <div id="dash-date-range-label" style="font-size:10.5px;color:var(--muted);text-align:center;margin-top:6px"></div>
+          <button onclick="clearDateRange()" style="width:100%;margin-top:6px;background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--muted);cursor:pointer;font-size:11px;padding:5px" title="Effacer">Effacer la plage</button>
+          <!-- Champs cachés — gardent le même id/valeur que l'ancien système, pour que tout le
+               reste du code (onDateRangeChange, les requêtes qui lisent .value) continue de
+               fonctionner sans aucune autre modification ailleurs. -->
+          <input type="hidden" id="dash-date-from">
+          <input type="hidden" id="dash-date-to">
         </div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
@@ -3624,9 +3626,113 @@ function setPeriod(days, btn) {
   renderDashboard();
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// CALENDRIER RÉUTILISABLE — remplace les <input type="date"> natifs partout
+// où un vrai sélecteur de plage est nécessaire (demande explicite : jamais le
+// picker natif du navigateur). Générique, paramétré par containerId + callback
+// — pas lié au dashboard spécifiquement, prévu pour être réutilisé ailleurs
+// (section Comptabilité, et au-delà si d'autres sections en ont besoin).
+// ═══════════════════════════════════════════════════════════════════════
+const MOIS_FR = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const JOURS_FR = ['L','M','M','J','V','S','D'];
+
+function renderCalendarWidget(containerId, fromISO, toISO, onRangeSelected) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const today = new Date();
+  const state = container._calState || {
+    viewYear: (fromISO ? new Date(fromISO) : today).getFullYear(),
+    viewMonth: (fromISO ? new Date(fromISO) : today).getMonth(),
+    selStart: fromISO || null,
+    selEnd: toISO || null,
+    pickingEnd: false,
+  };
+  container._calState = state;
+  container._calCallback = onRangeSelected;
+  _drawCalendarMonth(container, state);
+}
+
+function _drawCalendarMonth(container, state) {
+  const premierJourMois = new Date(state.viewYear, state.viewMonth, 1);
+  // Lundi = premier jour de semaine — décalage nécessaire car getDay() renvoie 0 pour dimanche.
+  const decalage = (premierJourMois.getDay() + 6) % 7;
+  const nbJours = new Date(state.viewYear, state.viewMonth + 1, 0).getDate();
+  const todayISO = new Date().toISOString().slice(0,10);
+
+  let cellules = '';
+  for (let i = 0; i < decalage; i++) cellules += '<div></div>';
+  for (let j = 1; j <= nbJours; j++) {
+    const iso = `${state.viewYear}-${String(state.viewMonth+1).padStart(2,'0')}-${String(j).padStart(2,'0')}`;
+    const estDebut = iso === state.selStart;
+    const estFin = iso === state.selEnd;
+    const estDansPlage = state.selStart && state.selEnd && iso > state.selStart && iso < state.selEnd;
+    const estAujourdhui = iso === todayISO;
+    let bg = 'transparent', color = 'var(--text)', radius = '6px', fontWeight = '500';
+    if (estDebut || estFin) { bg = 'var(--blue, #5B8DEF)'; color = '#fff'; fontWeight = '700'; }
+    else if (estDansPlage) { bg = 'rgba(91,141,239,0.15)'; }
+    let border = estAujourdhui && !estDebut && !estFin ? '1px solid var(--blue, #5B8DEF)' : '1px solid transparent';
+    cellules += `<div onclick="_calendarDayClick('${container.id}','${iso}')" style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:${radius};background:${bg};color:${color};font-size:11px;font-weight:${fontWeight};border:${border};">${j}</div>`;
+  }
+
+  container.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <button onclick="_calendarNavMonth('${container.id}',-1)" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;">‹</button>
+      <span style="font-size:11.5px;font-weight:600;color:var(--text);">${MOIS_FR[state.viewMonth]} ${state.viewYear}</span>
+      <button onclick="_calendarNavMonth('${container.id}',1)" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;">›</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,26px);gap:2px;justify-content:center;margin-bottom:3px;">
+      ${JOURS_FR.map(j => `<div style="font-size:9.5px;color:var(--muted);text-align:center;font-weight:600;">${j}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,26px);gap:2px;justify-content:center;">
+      ${cellules}
+    </div>`;
+}
+
+function _calendarNavMonth(containerId, delta) {
+  const container = document.getElementById(containerId);
+  const state = container._calState;
+  state.viewMonth += delta;
+  if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+  else if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+  _drawCalendarMonth(container, state);
+}
+
+function _calendarDayClick(containerId, iso) {
+  const container = document.getElementById(containerId);
+  const state = container._calState;
+  if (!state.selStart || state.pickingEnd === false || iso < state.selStart) {
+    // Premier clic d'une nouvelle sélection, ou clic avant le début actuel → redémarre la plage
+    state.selStart = iso;
+    state.selEnd = null;
+    state.pickingEnd = true;
+  } else {
+    state.selEnd = iso;
+    state.pickingEnd = false;
+  }
+  _drawCalendarMonth(container, state);
+  if (container._calCallback) container._calCallback(state.selStart, state.selEnd);
+}
+
+
 function togglePeriodPanel(e) {
   if (e) e.stopPropagation();
-  document.getElementById('dash-period-panel').classList.toggle('open');
+  const panel = document.getElementById('dash-period-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open')) {
+    const fromEl = document.getElementById('dash-date-from');
+    const toEl = document.getElementById('dash-date-to');
+    renderCalendarWidget('dash-calendar-container', fromEl.value, toEl.value, (from, to) => {
+      fromEl.value = from || '';
+      toEl.value = to || '';
+      const labelEl = document.getElementById('dash-date-range-label');
+      if (labelEl) {
+        labelEl.textContent = from && to
+          ? (from === to ? new Date(from).toLocaleDateString('fr-FR') : `${new Date(from).toLocaleDateString('fr-FR')} → ${new Date(to).toLocaleDateString('fr-FR')}`)
+          : from ? `${new Date(from).toLocaleDateString('fr-FR')} → …` : '';
+      }
+      if (from && to) onDateRangeChange();
+    });
+  }
 }
 document.addEventListener('click', (e) => {
   const panel = document.getElementById('dash-period-panel');
