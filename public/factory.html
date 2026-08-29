@@ -2709,10 +2709,40 @@ function prodv2BuildAngleUI(nbAngles) {
   if (delivTitle) delivTitle.textContent = `Livrables · Synthèse + ${nbAngles * 3} créatives + ${nbAngles} sets ad copy`;
 }
 
+// Toast léger, auto-disparaissant — pas de dépendance, réutilisable pour toute confirmation
+// visuelle ponctuelle dans la vue production.
+function prodv2ShowToast(texte, duree = 4000) {
+  const el = document.createElement('div');
+  el.textContent = texte;
+  el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1E293B;color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.35);z-index:99999;max-width:90vw;text-align:center;border:1px solid rgba(255,255,255,0.1);opacity:0;transition:opacity 0.25s ease;';
+  document.body.appendChild(el);
+  requestAnimationFrame(() => { el.style.opacity = '1'; });
+  setTimeout(() => {
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, duree);
+}
+
 async function prodv2Launch() {
   if(!prodv2State.brief || !prodv2State.productB64) {
     alert('Charge un brief.json valide avec photo_produit avant de lancer.');
     return;
+  }
+  // Confirmation explicite avant toute RELANCE — distincte du premier lancement, détectée par
+  // la présence de créatives déjà générées en mémoire. L'ancien batch disparaît réellement au
+  // clic (voir /commandes/:id/generation-started côté serveur, qui supprime activement le
+  // batch précédent de la galerie du produit) — irréversible, donc à confirmer explicitement
+  // plutôt que de le faire disparaître silencieusement.
+  const aDejaDuContenu = (prodv2State.creatives || []).some(c => c && (c.imgB64 || c.url));
+  if (aDejaDuContenu) {
+    const continuer = confirm(
+      "🔄 Relancer la production ?\n\n" +
+      "Le batch actuel (déjà généré, éventuellement déjà envoyé) sera ABANDONNÉ définitivement — " +
+      "y compris chez le client si tu l'avais déjà envoyé.\n\n" +
+      "Le nouveau batch qui va être généré sera le SEUL valide à partir de maintenant.\n\n" +
+      "Continuer ?"
+    );
+    if (!continuer) return;
   }
   // Avertissement explicite AVANT de dépenser quoi que ce soit — la sauvegarde automatique
   // ne fonctionne que si la production est liée à un ticket de commande (brief chargé via
@@ -2746,6 +2776,7 @@ async function prodv2Launch() {
     // à chaque vrai démarrage de génération (premier lancement ou relance), pas seulement au
     // tout premier chargement du ticket depuis la file d'attente.
     try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: prodv2State.commandeId, ts: Date.now() })); } catch(e) {}
+    if (aDejaDuContenu) prodv2ShowToast('🔄 Ancien batch abandonné — nouvelle génération en cours, c\'est elle qui compte désormais.');
   }
   prodv2State.synthesis = null;
   prodv2State.angles = [];
