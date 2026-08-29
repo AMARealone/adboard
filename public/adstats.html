@@ -2296,14 +2296,32 @@ const CORE_PLANS = ['discovery', 'starter', 'pro', 'scale'];
 
 // Toutes les données monétaires sont stockées en FCFA (la vraie devise de facturation
 // Chariow) — jamais changé côté base ni côté appels API, uniquement l'AFFICHAGE partout dans
-// le CRM. Taux approximatif — le FCFA (XOF) est arrimé à l'euro à un taux fixe, ce qui rend
-// 1 USD ≈ 600 FCFA raisonnablement stable dans le temps. Aucune API de taux de change en
-// temps réel branchée ici. Les transactions en GNF (Guinée) sont converties avec ce même
-// taux par simplicité, ce qui introduit une imprécision reconnue sur ces lignes précises (le
-// GNF n'est pas arrimé à l'euro comme le FCFA/XOF).
-const TAUX_USD_FCFA = 600;
+// le CRM. Taux réel, même source que vente.html (déjà en place là-bas pour la conversion de
+// devise selon le pays visiteur) : @fawazahmed0/currency-api, gratuite, sans clé, mise à jour
+// quotidiennement. Récupéré une fois au chargement, avec un repli fixe (1 USD ≈ 600 FCFA) tant
+// que la vraie valeur n'est pas encore arrivée ou si la requête échoue — jamais d'affichage
+// cassé, juste une précision qui s'améliore dès que possible après le premier rendu.
+let tauxXofVersUsd = 1 / 600; // repli — écrasé dès que le vrai taux répond
+(async function chargerTauxChangeReel() {
+  try {
+    const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json');
+    const data = await r.json();
+    if (data?.xof?.usd) {
+      tauxXofVersUsd = data.xof.usd;
+      console.log('[Taux de change] XOF→USD réel chargé :', tauxXofVersUsd);
+      // Redessine tout affichage monétaire déjà rendu avec l'ancien repli, pour ne pas laisser
+      // les tout premiers chiffres visibles légèrement imprécis jusqu'au prochain rafraîchissement.
+      // Vérifié directement sur le DOM — _activePage est une variable locale à une autre
+      // fonction, jamais accessible ici malgré le nom qui pourrait le laisser penser.
+      const pageCompta = document.getElementById('page-comptabilite');
+      if (pageCompta?.classList.contains('active') && typeof renderComptabilite === 'function') renderComptabilite();
+    }
+  } catch(e) {
+    console.warn('[Taux de change] Échec de récupération, repli sur 1$≈600F maintenu :', e.message);
+  }
+})();
 function fmtUSD(fcfa) {
-  return '$' + ((fcfa||0) / TAUX_USD_FCFA).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return '$' + ((fcfa||0) * tauxXofVersUsd).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 // ⚠️ À REMPLIR avec la vraie URL de production d'AdBoard (celle utilisée pour s'y connecter
 // normalement) — sert au bouton "Aller sur son compte" de la Vue Client.
@@ -5210,10 +5228,12 @@ async function renderComptabilite() {
     const depAutreUsd       = apiRows.filter(r => !['demo','prospecteur','production','agent_test'].includes(r.source)).reduce((s,r) => s + (r.cout_usd||0), 0);
     const depFixesFcfa = 0; // Structure prête — aucun coût fixe renseigné pour l'instant
 
-    const depAcquisitionFcfa = depAcquisitionUsd * TAUX_USD_FCFA;
-    const depProductionFcfa  = depProductionUsd  * TAUX_USD_FCFA;
-    const depTestsFcfa       = depTestsUsd       * TAUX_USD_FCFA;
-    const depAutreFcfa       = depAutreUsd       * TAUX_USD_FCFA;
+    // Conversion USD → FCFA (sens inverse de fmtUSD) — tauxXofVersUsd est "USD par XOF", donc
+    // diviser un montant USD par ce taux redonne des FCFA.
+    const depAcquisitionFcfa = depAcquisitionUsd / tauxXofVersUsd;
+    const depProductionFcfa  = depProductionUsd  / tauxXofVersUsd;
+    const depTestsFcfa       = depTestsUsd       / tauxXofVersUsd;
+    const depAutreFcfa       = depAutreUsd       / tauxXofVersUsd;
     const depTotalFcfa = depAcquisitionFcfa + depProductionFcfa + depTestsFcfa + depAutreFcfa + depFixesFcfa;
 
     // ── Revenu — net (après commission Chariow 15%), la vraie somme perçue ──
