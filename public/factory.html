@@ -2344,6 +2344,14 @@ function prodv2HandleBrief(input) {
     try {
       const raw = e.target.result;
       const brief = JSON.parse(raw);
+
+      // Même garde que lancerProduction() — ce chemin de chargement manuel l'avait
+      // complètement contournée jusqu'ici, écrasant prodv2State sans aucun avertissement.
+      if (prodv2State.commandeId && !prodv2EstActuellementComplet()) {
+        const nomActuel = prodv2State.brief?.product?.nom || 'la production en cours';
+        if (!confirm(`⚠️ "${nomActuel}" est encore en cours de génération (pas encore terminée). Charger ce nouveau brief maintenant risque de perdre ce qui n'est pas encore sauvegardé.\n\nContinuer quand même ?`)) return;
+      }
+
       brief.__manualUpload = true;
       prodv2State.briefSource = 'manuel';
       prodv2State.commandeId = null;
