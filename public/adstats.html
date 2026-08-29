@@ -3784,7 +3784,14 @@ async function renderApiCosts() {
   // exploitée ici. Note : le Prospecteur (script Python séparé) n'a jamais été vu dans cette
   // conversation — si lui aussi dépense en API et doit compter dans ce chiffre, il faudrait
   // vérifier comment (et si) il logue ses coûts dans api_usage_log, avec sa propre catégorie.
-  let query = `${SB}/api_usage_log?select=cout_usd,created_at&source=eq.demo`;
+  // Cause profonde corrigée (coût d'acquisition/coût par lead faussés, gonflés par la
+  // production et les tests d'agents) : cette requête ne filtrait jamais par catégorie — elle
+  // additionnait TOUT api_usage_log, peu importe la source réelle de la dépense. Filtré
+  // maintenant aux deux vraies sources d'acquisition : 'demo' (génération de démonstrations,
+  // catégorie posée par categoriserAppel() côté serveur Node) et 'prospecteur' (scraping de
+  // prospects, catégorie posée directement par adstack_prospector_v124.py — un script Python
+  // séparé qui écrit directement dans api_usage_log, jamais via le serveur Node).
+  let query = `${SB}/api_usage_log?select=cout_usd,created_at&source=in.(demo,prospecteur)`;
   if (from || to) {
     if (from) query += `&created_at=gte.${from}T00:00:00`;
     if (to)   query += `&created_at=lte.${to}T23:59:59`;
@@ -3839,7 +3846,7 @@ async function renderApiCosts() {
   const fmt = (v) => v === null ? '—' : '$' + v.toFixed(4);
 
   const items = [
-    { label: 'Dépense API (démo)',  val: '$' + budget.toFixed(4) },
+    { label: 'Dépense API (acquisition)',  val: '$' + budget.toFixed(4) },
     { label: 'Coût / lead',  val: fmt(cLead) },
     { label: 'Coût / achat', val: fmt(cAchat) },
   ];
