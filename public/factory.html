@@ -914,7 +914,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
           <div class="prodv2-syn-head" onclick="prodv2ToggleSyn()">
             <div class="prodv2-syn-title"><span class="prodv2-syn-arrow">›</span> Données Marché · <span id="prodv2SynAnglesCount">3</span> angles</div>
             <div class="prodv2-syn-meta" id="prodv2SynMeta">—</div>
-            <button class="prodv2-crea-btn icon" title="Envoyer les Données Marché au client" onclick="event.stopPropagation(); prodv2SendMarche()" style="width:auto;padding:4px 10px;font-size:11px;">📤</button>
+            <button class="prodv2-crea-btn icon" title="Envoyer les Données Marché" onclick="event.stopPropagation(); prodv2ShowSendChoice(this, () => prodv2SendMarche(), () => prodv2OpenManualSendScoped('marche', null))" style="width:auto;padding:4px 10px;font-size:11px;">📤</button>
           </div>
           <div class="prodv2-syn-body" id="prodv2SynBody"></div>
         </div>
@@ -2887,7 +2887,7 @@ async function prodv2Launch() {
             <div class="prodv2-crea-actions">
               <button class="prodv2-crea-btn" disabled>Télécharger</button>
               <button class="prodv2-crea-btn icon" title="Régénérer" disabled>↻</button>
-              <button class="prodv2-crea-btn icon" title="Envoyer cette créative au client" onclick="prodv2SendOneCreative(${idx})" disabled>📤</button>
+              <button class="prodv2-crea-btn icon" title="Envoyer cette créative" onclick="prodv2ShowSendChoice(this, () => prodv2SendOneCreative(${idx}), () => prodv2OpenManualSendScoped('creative', ${idx}))" disabled>📤</button>
             </div>
           </div>`;
         container.appendChild(card);
@@ -3099,11 +3099,16 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
 
   // Cause du blocage signalé : aucun timeout côté navigateur, seulement l'annulation manuelle.
   // Si le serveur redémarre en plein appel (redéploiement, crash), la requête ne se termine
-  // JAMAIS d'elle-même — bloqué indéfiniment sans la moindre erreur visible. Un timeout de
-  // 150s (marge au-dessus des ~120s internes du serveur pour le rendu image) force un échec
-  // explicite, qui déclenche alors le retry existant au lieu d'un blocage silencieux.
+  // JAMAIS d'elle-même — bloqué indéfiniment sans la moindre erreur visible.
+  // Cause profonde corrigée ("timeout serveur" affiché côté client alors que le serveur avait
+  // déjà réussi, juste trop tard) : côté serveur, vertexRequestGlobalAvecReessai peut retenter
+  // jusqu'à 4 fois, chaque tentative jusqu'à 120s, avec des pauses entre elles pouvant aller
+  // jusqu'à 8+16+32=56s sur une limite de débit — pire cas réaliste ~536s (9 min). Le timeout
+  // client à 150s abandonnait donc largement avant que le serveur ait fini de retenter,
+  // affichant un faux échec malgré une génération qui allait réellement aboutir. 600s (10 min),
+  // large marge au-dessus du pire cas serveur documenté ci-dessus.
   const combinedSignal = (typeof AbortSignal.any === 'function')
-    ? AbortSignal.any([signal, AbortSignal.timeout(150000)])
+    ? AbortSignal.any([signal, AbortSignal.timeout(600000)])
     : signal;
   const res = await fetch(SERVER + '/creative-prod', {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -3139,7 +3144,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
   btns[0].onclick = () => prodv2DownloadCrea(idx);
   btns[1].disabled = false;
   btns[1].onclick = () => prodv2RegenerateCrea(idx);
-  if (btns[2]) { btns[2].disabled = false; btns[2].onclick = () => prodv2SendOneCreative(idx); }
+  if (btns[2]) { btns[2].disabled = false; btns[2].onclick = (e) => prodv2ShowSendChoice(e.currentTarget, () => prodv2SendOneCreative(idx), () => prodv2OpenManualSendScoped('creative', idx)); }
 
 // Génère une miniature JPEG compressée côté NAVIGATEUR via Canvas — contourne complètement
 // sharp/libvips côté serveur (échec systématique en diagnostic : "vipspng: libpng read error",
@@ -3326,7 +3331,7 @@ function prodv2RenderCopy(angleIdx) {
   const estRepli = data.description === '(description vide — Gemini n\'a pas suivi le format)';
   el.innerHTML = `
     <div class="prodv2-copy-section">
-      <div class="prodv2-copy-label">5 Hooks · variantes Meta Ads<span class="copy-all" onclick="prodv2CopyAllHooks(${angleIdx})">copier tout</span><button class="prodv2-crea-btn icon" title="Envoyer cette ad copy au client" onclick="prodv2SendOneCopy(${angleIdx})" style="width:auto;padding:3px 9px;font-size:10px;margin-left:8px;">📤</button></div>
+      <div class="prodv2-copy-label">5 Hooks · variantes Meta Ads<span class="copy-all" onclick="prodv2CopyAllHooks(${angleIdx})">copier tout</span><button class="prodv2-crea-btn icon" title="Envoyer cette ad copy" onclick="prodv2ShowSendChoice(this, () => prodv2SendOneCopy(${angleIdx}), () => prodv2OpenManualSendScoped('copy', ${angleIdx}))" style="width:auto;padding:3px 9px;font-size:10px;margin-left:8px;">📤</button></div>
       <div class="prodv2-hooks">${hooksHtml}</div>
     </div>
     <div class="prodv2-copy-section">
@@ -3504,8 +3509,51 @@ function prodv2ExportZip() {
   alert('Export ZIP — à implémenter (côté serveur, endpoint /export-zip)');
 }
 
+// Petit menu au clic sur un bouton d'envoi — choix client/test, réutilisable sur tous les
+// boutons d'envoi individuels (créative, ad copy, données marché) et le bouton global.
+function prodv2ShowSendChoice(anchorEl, onClient, onTest) {
+  document.querySelectorAll('.prodv2-send-popover').forEach(el => el.remove());
+  const pop = document.createElement('div');
+  pop.className = 'prodv2-send-popover';
+  pop.style.cssText = 'position:fixed;z-index:99999;background:var(--bg3, #1E293B);border:1px solid var(--border2);border-radius:8px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:170px;';
+  pop.innerHTML = `
+    <div class="prodv2-send-opt" style="padding:10px 13px;font-size:12px;color:var(--t1);cursor:pointer;display:flex;align-items:center;gap:8px;">👤 Au compte du client</div>
+    <div class="prodv2-send-opt" style="padding:10px 13px;font-size:12px;color:var(--t1);cursor:pointer;display:flex;align-items:center;gap:8px;border-top:1px solid var(--border2);">🧪 À un autre compte (test)…</div>`;
+  const rect = anchorEl.getBoundingClientRect();
+  pop.style.top = (rect.bottom + 4) + 'px';
+  pop.style.left = Math.max(8, rect.right - 170) + 'px';
+  document.body.appendChild(pop);
+  const opts = pop.querySelectorAll('.prodv2-send-opt');
+  opts[0].onmouseover = opts[1].onmouseover = function(){ this.style.background = 'rgba(255,255,255,0.06)'; };
+  opts[0].onmouseout = opts[1].onmouseout = function(){ this.style.background = 'transparent'; };
+  opts[0].onclick = (e) => { e.stopPropagation(); pop.remove(); onClient(); };
+  opts[1].onclick = (e) => { e.stopPropagation(); pop.remove(); onTest(); };
+  setTimeout(() => {
+    document.addEventListener('click', function closeOnce(e) {
+      if (!pop.contains(e.target)) { pop.remove(); document.removeEventListener('click', closeOnce); }
+    });
+  }, 10);
+}
+
+// Ouvre la modale d'envoi manuel existante, mais scopée à UN SEUL livrable — voir
+// prodv2ConfirmManualSend, qui construit un objet deliverables réduit à ce seul item quand
+// une portée est définie, plutôt que d'envoyer tout le batch comme le fait le bouton global.
+function prodv2OpenManualSendScoped(type, index) {
+  window._manualSendScope = { type, index };
+  _prodv2OpenManualSendModal();
+}
+
 function prodv2OpenManualSend() {
-  if (!prodv2State.creatives.some(c => c && (c.imgB64 || c.url)) && !prodv2State.copies.some(c => c)) {
+  // Appel direct (bouton global "Envoyer à un autre compte") — jamais de portée, nettoyage
+  // explicite pour ne jamais hériter d'une portée laissée par un envoi individuel resté ouvert
+  // sans confirmation.
+  window._manualSendScope = null;
+  _prodv2OpenManualSendModal();
+}
+
+function _prodv2OpenManualSendModal() {
+  const scope = window._manualSendScope;
+  if (!scope && !prodv2State.creatives.some(c => c && (c.imgB64 || c.url)) && !prodv2State.copies.some(c => c)) {
     alert('Aucun livrable généré pour l\'instant — rien à envoyer.');
     return;
   }
@@ -3519,6 +3567,7 @@ function prodv2OpenManualSend() {
   window._manualSendSelectedProduct = null;
 }
 function prodv2CloseManualSend() {
+  window._manualSendScope = null;
   document.getElementById('prodv2ManualSendModal').style.display = 'none';
 }
 
@@ -3596,6 +3645,23 @@ async function prodv2ConfirmManualSend() {
   const newName = document.getElementById('prodv2ManualNewProductInput')?.value.trim();
   const btn = document.getElementById('prodv2ManualSendBtn');
   btn.disabled = true; btn.textContent = 'Envoi en cours…';
+  const scope = window._manualSendScope;
+  // Portée définie (envoi individuel) : réduit deliverables à CE SEUL item — les tableaux
+  // gardent leurs vrais index (creatives[idx] à sa vraie position, reste vide) pour que la
+  // construction d'id côté serveur (ticketId_g{version}_{i}) reste cohérente avec un envoi
+  // normal du même item. Sans portée (bouton global) : tout le batch, comportement inchangé.
+  let deliverablesEnvoyees;
+  if (scope?.type === 'creative') {
+    const arr = []; arr[scope.index] = prodv2State.creatives[scope.index];
+    deliverablesEnvoyees = { creatives: arr, copies: [], synthesis: null, angles: [], marche: null };
+  } else if (scope?.type === 'copy') {
+    const arr = []; arr[scope.index] = prodv2State.copies[scope.index];
+    deliverablesEnvoyees = { creatives: [], copies: arr, synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: null };
+  } else if (scope?.type === 'marche') {
+    deliverablesEnvoyees = { creatives: [], copies: [], synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche };
+  } else {
+    deliverablesEnvoyees = { creatives: prodv2State.creatives, copies: prodv2State.copies, synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche };
+  }
   try {
     const res = await fetch('https://adstack-server.onrender.com/manual-deliver', {
       method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
@@ -3604,17 +3670,12 @@ async function prodv2ConfirmManualSend() {
         productId: window._manualSendSelectedProduct || undefined,
         newProductName: window._manualSendSelectedProduct ? undefined : newName,
         ticketId: prodv2State.commandeId || undefined,
-        deliverables: {
-          creatives: prodv2State.creatives,
-          copies: prodv2State.copies,
-          synthesis: prodv2State.synthesis,
-          angles: prodv2State.angles,
-          marche: prodv2State.marche
-        }
+        deliverables: deliverablesEnvoyees
       })
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     alert(`✅ Envoyé à ${window._manualSendSelectedUser.email}.`);
+    window._manualSendScope = null;
     prodv2CloseManualSend();
   } catch(e) {
     alert('Erreur lors de l\'envoi : ' + e.message);
@@ -6553,13 +6614,10 @@ async function loadCommandes() {
     }
 
     const statusColor = { pending: '#F59E0B', in_production: '#3B82F6', done: '#22C55E', cancelled: '#6B7280' };
-    const statusLabel = { pending: '⏳ En attente', in_production: '🔵 En production', done: '✅ Livré', cancelled: '✗ Annulé' };
+    const statusLabel = { pending: 'En attente', in_production: 'En cours', done: 'Livré', cancelled: 'Annulé' };
 
-    // Distingue "vient de démarrer" de "tout est généré, prêt à envoyer" — jusqu'ici les deux
-    // affichaient exactement le même badge bleu "En production", rendant impossible de repérer
-    // d'un coup d'œil quelle commande peut être quittée sans risque pour en démarrer une autre.
-    // Calculé sur les vraies données sauvegardées, pas sur le statut brut (qui ne distingue pas
-    // ces deux cas), pour ne jamais dépendre d'un nouvel état à faire vivre partout ailleurs.
+    // Distingue "vient de démarrer" de "tout est généré, prêt à envoyer" — calculé sur les
+    // vraies données sauvegardées, pas sur le statut brut (qui ne distingue pas ces deux cas).
     const estPretAEnvoyer = (b) => {
       if (b.status !== 'in_production') return false;
       const d = b.deliverables || {};
@@ -6570,50 +6628,55 @@ async function loadCommandes() {
       return nbCrea >= nbCreaAttendu && nbCopy >= nbAnglesAttendu;
     };
 
-    el.innerHTML = briefs.map(b => {
+    // Vraie file d'attente : ce qui demande une action de ta part remonte en premier — pas
+    // l'ordre chronologique brut, qui noie une commande "prête à envoyer" depuis 2 jours sous
+    // 5 commandes déjà livrées entre-temps. Prêt à envoyer > En cours > En attente > Livré /
+    // Annulé — et à égalité de priorité, la plus récente d'abord.
+    const rangPriorite = (b) => estPretAEnvoyer(b) ? 0 : b.status === 'in_production' ? 1 : b.status === 'pending' ? 2 : 3;
+    const briefsTries = [...briefs].sort((a, b) => {
+      const diff = rangPriorite(a) - rangPriorite(b);
+      return diff !== 0 ? diff : new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    el.innerHTML = briefsTries.map(b => {
       const photo = b.photo_nobg || b.product.photo_base64 || b.product.photo_url;
       const photoHtml = photo
-        ? `<div style="width:80px;height:80px;flex-shrink:0;border-radius:8px;overflow:hidden;background:#1a1a2a;border:1px solid var(--border);">
-            <img src="${photo}" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none'"/>
-            ${b.photo_nobg ? '<div style="font-size:9px;text-align:center;color:#22C55E;margin-top:2px;">✓ BG supprimé</div>' : ''}
-           </div>`
-        : `<div style="width:80px;height:80px;flex-shrink:0;border-radius:8px;background:#1a1a2a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:22px;">📦</div>`;
+        ? `<img src="${photo}" style="width:44px;height:44px;border-radius:8px;object-fit:contain;background:#1a1a2a;border:1px solid var(--border);flex-shrink:0;" onerror="this.style.display='none'"/>`
+        : `<div style="width:44px;height:44px;flex-shrink:0;border-radius:8px;background:#1a1a2a;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:16px;">📦</div>`;
 
-      const couleurs = b.product.couleurs?.filter(Boolean) || [];
-      const couleursHtml = couleurs.map(c => `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${c};border:1px solid rgba(255,255,255,0.2);"></span>`).join('');
+      const pret = estPretAEnvoyer(b);
+      const dotColor = pret ? '#A855F7' : statusColor[b.status];
+      const label = pret ? 'Prêt à envoyer' : (statusLabel[b.status] || b.status);
+
+      const actions = b.status === 'pending'
+        ? `<button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">▶ Lancer</button>`
+        : b.status === 'in_production'
+        ? `<button onclick="lancerProduction('${b.id}')" style="padding:7px 12px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;white-space:nowrap;">↻ Relancer</button>
+           <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:${pret ? '#A855F7' : 'var(--blue)'};border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Envoyer au client</button>`
+        : b.status === 'done'
+        ? `<button onclick="lancerProduction('${b.id}')" style="padding:7px 12px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;white-space:nowrap;">↻ Nouveau lot</button>
+           <button onclick="marquerLivre('${b.id}')" title="Renvoyer si le client signale un manque" style="padding:7px 12px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;white-space:nowrap;">↻ Renvoyer</button>`
+        : '';
 
       return `
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:12px;display:flex;gap:16px;align-items:flex-start;">
+      <div style="background:${pret ? '#A855F70D' : 'var(--bg2)'};border:1px solid ${pret ? '#A855F740' : 'var(--border)'};border-radius:12px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};flex-shrink:0;"></span>
         ${photoHtml}
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-            <span style="font-size:15px;font-weight:700;color:var(--t1);">${b.product.nom}</span>
-            <span id="status-${b.id}" style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${estPretAEnvoyer(b) ? '#A855F718' : statusColor[b.status]+'18'};color:${estPretAEnvoyer(b) ? '#A855F7' : statusColor[b.status]};">${estPretAEnvoyer(b) ? '🟣 Prêt à envoyer' : (statusLabel[b.status] || b.status)}</span>
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:14px;font-weight:600;color:var(--t1);">${b.product.nom}</span>
+            <span style="font-size:11px;font-weight:600;color:${dotColor};">${label}</span>
           </div>
-          <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">
-            ${b.client?.email || b.client?.user_id?.slice(0,8)+'...'} · ${b.client?.plan?.toUpperCase()} · ${new Date(b.created_at).toLocaleString('fr-FR')} · <span style="color:var(--t2);">${b.quantity} images</span>
+          <div style="font-size:11.5px;color:var(--t3);margin-top:2px;">
+            ${b.client?.email || b.client?.user_id?.slice(0,8)+'...'} · ${b.client?.plan?.toUpperCase() || ''} · ${b.quantity} images
+            ${b.status==='pending' ? `· <span id="timer-${b.id}" data-created="${b.created_at}">⏱ calcul...</span>` : ''}
+            ${b.status==='in_production' && b.started_at ? `· <span id="timer36-${b.id}" class="prodv2-timer36" data-started="${b.started_at}">⏱ calcul...</span>` : ''}
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--t2);margin-bottom:10px;">
-            ${b.product.pricing ? `<span>${b.product.pricing}${b.product.pays ? ' · '+b.product.pays : ''}</span>` : ''}
-            ${b.product.cible ? `<span style="color:var(--t3);">${b.product.cible}</span>` : ''}
-            ${couleurs.length ? `<span style="display:inline-flex;gap:4px;align-items:center;">${couleursHtml}</span>` : ''}
-            ${b.history?.batches_count > 0 ? `<span style="color:var(--t3);">${b.history.batches_count} batch(es) précédent(s)</span>` : ''}
-          </div>
-          ${b.status==='pending' ? `<div id="timer-${b.id}" style="font-size:11px;color:var(--t3);margin-bottom:10px;" data-created="${b.created_at}">⏱ calcul...</div>` : ''}
-          ${b.status==='in_production' && b.started_at ? `<div id="timer36-${b.id}" class="prodv2-timer36" style="font-size:11px;color:var(--t3);margin-bottom:10px;" data-started="${b.started_at}">⏱ calcul...</div>` : ''}
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${b.status === 'pending' ? `
-              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">▶ Lancer la production</button>
-            ` : b.status === 'in_production' ? `
-              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Relancer</button>
-              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:var(--blue);border:none;border-radius:7px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">Envoyer au client</button>
-            ` : b.status === 'done' ? `
-              <button onclick="lancerProduction('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Nouveau lot</button>
-              <button onclick="marquerLivre('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">↻ Renvoyer</button>
-            ` : ''}
-            <button onclick="voirBrief('${b.id}')" style="padding:7px 14px;background:rgba(255,255,255,0.08);border:1px solid var(--border2);border-radius:7px;color:var(--t2);font-size:12px;cursor:pointer;">Voir le brief</button>
-            <button onclick="supprimerTicket('${b.id}')" style="padding:7px 14px;background:transparent;border:1px solid var(--border2);border-radius:7px;color:var(--t3);font-size:12px;cursor:pointer;margin-left:auto;">Supprimer</button>
-          </div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0;align-items:center;">
+          ${actions}
+          <button onclick="voirBrief('${b.id}')" title="Voir le brief" style="padding:7px 9px;background:transparent;border:1px solid var(--border2);border-radius:7px;color:var(--t3);font-size:12px;cursor:pointer;">📄</button>
+          <button onclick="supprimerTicket('${b.id}')" title="Supprimer" style="padding:7px 9px;background:transparent;border:1px solid var(--border2);border-radius:7px;color:var(--t3);font-size:12px;cursor:pointer;">🗑</button>
         </div>
       </div>`;
     }).join('');
@@ -6759,9 +6822,10 @@ async function lancerProduction(id) {
     const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json()).catch(()=>[]);
     const b = briefs.find(x=>x.id===id);
     if (!b) { alert('Commande introuvable.'); return; }
-    setMode('prod');
-    showProduction();
-    await prodv2LoadBriefFromCommande(b);
+    // Restaure ET affiche tout ce qui a déjà été généré — jusqu'ici, cliquer sur un ticket
+    // avec du contenu existant retombait sur un écran de brief vide, prêt à relancer, sans
+    // aucune trace visuelle du travail déjà fait et sauvegardé.
+    await prodv2RestoreAndRenderDeliverables(b);
     loadCommandes();
   } catch(e) { alert('Erreur: ' + e.message); }
 }
@@ -7084,6 +7148,102 @@ function showTab(tab){
   document.getElementById('panel'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('show');
 }
 
+// Restaure ET affiche tout le contenu déjà généré/sauvegardé pour une commande — créatives,
+// ad copies, données marché. Réutilisée par la reprise après rafraîchissement ET par un clic
+// direct sur un ticket depuis la file d'attente (voir lancerProduction) : jusqu'ici, cliquer
+// sur un ticket "Prêt à envoyer" n'affichait qu'un écran de brief vide, prêt à relancer —
+// aucune trace visuelle du travail déjà fait, malgré des données bien sauvegardées côté serveur.
+async function prodv2RestoreAndRenderDeliverables(b) {
+  const dejaLivre = b.status === 'done';
+  const d = b.deliverables || {};
+  const nbCrea = d.creatives ? d.creatives.filter(c=>c && (c.imgB64 || c.url)).length : 0;
+  const nbCopy = d.copies ? d.copies.filter(Boolean).length : 0;
+
+  await prodv2LoadBriefFromCommande(b);
+  prodv2State.synthesis = d.synthesis || null;
+  prodv2State.angles = d.angles || [];
+  prodv2State.creatives = d.creatives || [];
+  prodv2State.copies = d.copies || [];
+  prodv2State.marche = d.marche || null;
+
+  setMode('prod'); showProduction();
+
+  const nbAngles = Math.max(prodv2GetAngleCount(), prodv2State.angles.length, Math.ceil(prodv2State.creatives.length / 3), prodv2State.copies.length);
+  const nbCreativesTotal = nbAngles * 3;
+  prodv2BuildAngleUI(nbAngles);
+
+  if (dejaLivre) { try { localStorage.removeItem('adstack_active_production'); } catch(e) {} }
+
+  const banner = document.createElement('div');
+  banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
+  banner.textContent = dejaLivre
+    ? `✓ Cette commande a déjà été livrée au client — "${b.product?.nom || '?'}" (${nbCrea}/${nbCreativesTotal} créatives, ${nbCopy}/${nbAngles} sets ad copy). Affichage en lecture seule.`
+    : nbCrea || nbCopy
+    ? `↻ Contenu déjà généré restauré — "${b.product?.nom || '?'}" (${nbCrea}/${nbCreativesTotal} créatives, ${nbCopy}/${nbAngles} sets ad copy déjà sauvegardés). Rien n'a été perdu.`
+    : `Brief chargé — "${b.product?.nom || '?'}". Aucune génération n'a encore commencé.`;
+  const container = document.getElementById('viewProduction');
+  if (container) container.insertBefore(banner, container.firstChild);
+
+  if (nbCrea === 0 && nbCopy === 0) return;
+
+  document.getElementById('prodv2PipelineSection').style.display = '';
+  document.getElementById('prodv2DelivSection').style.display = '';
+
+  if (prodv2State.synthesis) {
+    document.getElementById('prodv2SynBody').innerHTML = prodv2RenderMarcheSummary(prodv2State.marche, prodv2State.synthesis);
+    prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(prodv2State.synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
+  }
+  document.querySelectorAll('.prodv2-angle-tab').forEach((el,i) => {
+    const angle = prodv2State.angles[i] || ('Angle ' + (i+1));
+    const short = angle.length > 50 ? angle.slice(0,47) + '…' : angle;
+    el.textContent = `Angle ${i+1} · ${short.replace(/^[Aa]ngle\s*\d\s*[:—–-]?\s*/,'')}`;
+  });
+
+  // Reconstruire les cartes créatives depuis l'état restauré (nbAngles × 3)
+  for (let a = 0; a < nbAngles; a++) {
+    const cont = document.getElementById('prodv2Creas' + a);
+    if (!cont) continue;
+    cont.innerHTML = '';
+    for (let c = 0; c < 3; c++) {
+      const idx = a*3 + c;
+      const item = prodv2State.creatives[idx] || { angleIdx:a, ctIdx:c, ct:'?', status:'pending' };
+      const card = document.createElement('div');
+      card.className = 'prodv2-crea' + (item.status === 'done' ? ' done' : '');
+      card.id = 'prodv2Crea_' + idx;
+      card.innerHTML = `
+        <div class="prodv2-crea-img">${item.url ? `<img src="${item.url}" alt="Créative ${idx+1}">` : item.imgB64 ? `<img src="data:${item.imageMime||'image/png'};base64,${item.imgB64}" alt="Créative ${idx+1}">` : '<div class="prodv2-crea-img-empty"></div>'}</div>
+        <div class="prodv2-crea-body">
+          <div class="prodv2-crea-meta">
+            <div class="prodv2-crea-ct">${item.ct || '?'}</div>
+            <div class="prodv2-crea-status">${item.status === 'done' ? 'Prêt' : 'En attente'}</div>
+          </div>
+          <div class="prodv2-crea-desc" ${item.status!=='done' ? 'style="color:var(--t3);font-style:italic;"' : ''}>${item.status==='done' ? (item.desc||'') : 'Génération à venir…'}</div>
+          <div class="prodv2-crea-actions">
+            <button class="prodv2-crea-btn" ${item.status!=='done'?'disabled':''}>Télécharger</button>
+            <button class="prodv2-crea-btn icon" title="Régénérer" ${item.status!=='done'?'disabled':''}>↻</button>
+            <button class="prodv2-crea-btn icon" title="Envoyer cette créative" ${item.status!=='done'?'disabled':''}>📤</button>
+          </div>
+        </div>`;
+      cont.appendChild(card);
+      if (item.status === 'done') {
+        const btns = card.querySelectorAll('.prodv2-crea-btn');
+        btns[0].onclick = () => prodv2DownloadCrea(idx);
+        btns[1].onclick = () => prodv2RegenerateCrea(idx);
+        btns[2].onclick = (e) => prodv2ShowSendChoice(e.currentTarget, () => prodv2SendOneCreative(idx), () => prodv2OpenManualSendScoped('creative', idx));
+      }
+    }
+  }
+  prodv2SetAgentState(2, nbCrea===nbCreativesTotal?'done':'active', `${nbCrea} / ${nbCreativesTotal} créatives générées`, Math.round(nbCrea/nbCreativesTotal*100));
+
+  for (let i = 0; i < nbAngles; i++) {
+    if (prodv2State.copies[i]) prodv2RenderCopy(i);
+  }
+  prodv2SetAgentState(3, nbCopy===nbAngles?'done':'active', `${nbCopy} / ${nbAngles} sets ad copy générés`, Math.round(nbCopy/nbAngles*100));
+
+  const launchBtn = document.getElementById('prodv2LaunchBtn');
+  if (launchBtn) { launchBtn.textContent = 'Relancer la production'; launchBtn.disabled = false; }
+}
+
 // ── Reprise après refresh accidentel ──────────────────────────────
 // Ne stocke jamais d'images en localStorage (risque de dépassement de quota) — juste l'id
 // de la commande. Au retour, va chercher ce qui a déjà été sauvegardé côté serveur et
@@ -7126,106 +7286,9 @@ async function prodv2CheckResume() {
     // maintenant aussi dans ce cas (en lecture, avec un message adapté), et on n'abandonne que
     // si le ticket n'existe plus du tout ou a été annulé.
     if (!b || b.status === 'cancelled' || b.status === 'probleme_agence') { clearTimeout(timeoutGlobal); localStorage.removeItem('adstack_active_production'); if (resumeBanner) resumeBanner.style.display = 'none'; return; }
-    const dejaLivre = b.status === 'done';
-    const d = b.deliverables || {};
-    const nbCrea = d.creatives ? d.creatives.filter(c=>c && (c.imgB64 || c.url)).length : 0;
-    const nbCopy = d.copies ? d.copies.filter(Boolean).length : 0;
-
-    await prodv2LoadBriefFromCommande(b);
-    prodv2State.synthesis = d.synthesis || null;
-    prodv2State.angles = d.angles || [];
-    prodv2State.creatives = d.creatives || [];
-    prodv2State.copies = d.copies || [];
-    prodv2State.marche = d.marche || null;
-
-    setMode('prod'); showProduction();
-
-    // Cause profonde corrigée (contenu déjà généré qui "s'efface" au rechargement) :
-    // prodv2GetAngleCount() se base sur la quantité de LA DEMANDE ACTUELLE (ex: 9 → 3 angles),
-    // pas sur le nombre réel d'angles dans les données restaurées. Si la restauration porte sur
-    // plusieurs batches accumulés (ex: 6 ou 9 angles au total), les conteneurs construits étaient
-    // bien trop petits — tout ce qui dépassait les 3 premiers angles était silencieusement perdu,
-    // jamais affiché malgré des données parfaitement valides en mémoire.
-    const nbAngles = Math.max(prodv2GetAngleCount(), prodv2State.angles.length, Math.ceil(prodv2State.creatives.length / 3), prodv2State.copies.length);
-    const nbCreativesTotal = nbAngles * 3;
-    prodv2BuildAngleUI(nbAngles);
-
-    // Une fois un ticket déjà livré affiché une fois, plus besoin de le restaurer aux prochains
-    // chargements — mais on garde le marqueur pour un ticket encore actif (pending/in_production).
-    if (dejaLivre) { try { localStorage.removeItem('adstack_active_production'); } catch(e) {} }
-
-    // Bannière discrète — jamais bloquante, juste informative
     clearTimeout(timeoutGlobal);
     if (resumeBanner) resumeBanner.style.display = 'none';
-    const banner = document.createElement('div');
-    banner.style.cssText = 'margin-bottom:14px;padding:10px 14px;border-radius:8px;background:rgba(45,127,249,0.1);border:1px solid rgba(45,127,249,0.3);color:var(--blue);font-size:12px;';
-    banner.textContent = dejaLivre
-      ? `✓ Cette commande a déjà été livrée au client — "${b.product?.nom || '?'}" (${nbCrea}/${nbCreativesTotal} créatives, ${nbCopy}/${nbAngles} sets ad copy). Affichage en lecture seule.`
-      : nbCrea || nbCopy
-      ? `↻ État restauré après rechargement — "${b.product?.nom || '?'}" (${nbCrea}/${nbCreativesTotal} créatives, ${nbCopy}/${nbAngles} sets ad copy déjà sauvegardés). Rien n'a été perdu.`
-      : `↻ Brief restauré après rechargement — "${b.product?.nom || '?'}". Aucune génération n'avait encore commencé.`;
-    const container = document.getElementById('viewProduction');
-    if (container) container.insertBefore(banner, container.firstChild);
-
-    if (nbCrea === 0 && nbCopy === 0) return; // rien d'autre à reconstruire visuellement
-
-    document.getElementById('prodv2PipelineSection').style.display = '';
-    document.getElementById('prodv2DelivSection').style.display = '';
-
-    if (prodv2State.synthesis) {
-      document.getElementById('prodv2SynBody').innerHTML = prodv2RenderMarcheSummary(prodv2State.marche, prodv2State.synthesis);
-      prodv2SetAgentState(1, 'done', `Synthèse · ${Math.round(prodv2State.synthesis.length/1000)}K chars · ${nbAngles} angles extraits`, 100);
-    }
-    document.querySelectorAll('.prodv2-angle-tab').forEach((el,i) => {
-      const angle = prodv2State.angles[i] || ('Angle ' + (i+1));
-      const short = angle.length > 50 ? angle.slice(0,47) + '…' : angle;
-      el.textContent = `Angle ${i+1} · ${short.replace(/^[Aa]ngle\s*\d\s*[:—–-]?\s*/,'')}`;
-    });
-
-    // Reconstruire les cartes créatives depuis l'état restauré (nbAngles × 3)
-    for (let a = 0; a < nbAngles; a++) {
-      const container = document.getElementById('prodv2Creas' + a);
-      if (!container) continue;
-      container.innerHTML = '';
-      for (let c = 0; c < 3; c++) {
-        const idx = a*3 + c;
-        const item = prodv2State.creatives[idx] || { angleIdx:a, ctIdx:c, ct:'?', status:'pending' };
-        const card = document.createElement('div');
-        card.className = 'prodv2-crea' + (item.status === 'done' ? ' done' : '');
-        card.id = 'prodv2Crea_' + idx;
-        card.innerHTML = `
-          <div class="prodv2-crea-img">${item.url ? `<img src="${item.url}" alt="Créative ${idx+1}">` : item.imgB64 ? `<img src="data:${item.imageMime||'image/png'};base64,${item.imgB64}" alt="Créative ${idx+1}">` : '<div class="prodv2-crea-img-empty"></div>'}</div>
-          <div class="prodv2-crea-body">
-            <div class="prodv2-crea-meta">
-              <div class="prodv2-crea-ct">${item.ct || '?'}</div>
-              <div class="prodv2-crea-status">${item.status === 'done' ? 'Prêt' : 'En attente'}</div>
-            </div>
-            <div class="prodv2-crea-desc" ${item.status!=='done' ? 'style="color:var(--t3);font-style:italic;"' : ''}>${item.status==='done' ? (item.desc||'') : 'Génération à venir…'}</div>
-            <div class="prodv2-crea-actions">
-              <button class="prodv2-crea-btn" ${item.status!=='done'?'disabled':''}>Télécharger</button>
-              <button class="prodv2-crea-btn icon" title="Régénérer" ${item.status!=='done'?'disabled':''}>↻</button>
-              <button class="prodv2-crea-btn icon" title="Envoyer cette créative au client" ${item.status!=='done'?'disabled':''}>📤</button>
-            </div>
-          </div>`;
-        container.appendChild(card);
-        if (item.status === 'done') {
-          const btns = card.querySelectorAll('.prodv2-crea-btn');
-          btns[0].onclick = () => prodv2DownloadCrea(idx);
-          btns[1].onclick = () => prodv2RegenerateCrea(idx);
-          btns[2].onclick = () => prodv2SendOneCreative(idx);
-        }
-      }
-    }
-    prodv2SetAgentState(2, nbCrea===nbCreativesTotal?'done':'active', `${nbCrea} / ${nbCreativesTotal} créatives générées`, Math.round(nbCrea/nbCreativesTotal*100));
-
-    for (let i = 0; i < nbAngles; i++) {
-      if (prodv2State.copies[i]) prodv2RenderCopy(i);
-    }
-    prodv2SetAgentState(3, nbCopy===nbAngles?'done':'active', `${nbCopy} / ${nbAngles} sets ad copy générés`, Math.round(nbCopy/nbAngles*100));
-    // Données marché déjà restaurée via prodv2State.marche plus haut — pas de carte dédiée
-
-    const launchBtn = document.getElementById('prodv2LaunchBtn');
-    if (launchBtn) { launchBtn.textContent = 'Relancer la production'; launchBtn.disabled = false; }
+    await prodv2RestoreAndRenderDeliverables(b);
   } catch(e) { console.warn('[Reprise] Échec :', e.message); clearTimeout(timeoutGlobal); if (resumeBanner) resumeBanner.style.display = 'none'; }
 }
 
