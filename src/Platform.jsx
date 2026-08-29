@@ -2455,7 +2455,15 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
     if (d.ticketId) dateParTicket[d.ticketId] = d.created_at || 0;
   }));
   const dateCreative = (c) => {
-    const ticketId = c.id ? c.id.split('_').slice(0,-1).join('_') : null;
+    // Cause profonde corrigée (créative fraîchement livrée immédiatement marquable Top
+    // Performer, sans attendre les 7 jours prévus) : le nouveau format d'id des créatives
+    // (ticketId_g{version}_{i}, ajouté pour éviter les collisions lors d'une relance) a deux
+    // segments finaux au lieu d'un seul — retirer seulement le dernier laissait "ticketId_g{N}",
+    // qui ne matche plus jamais dateParTicket (toujours 0 en retour), rendant la créative
+    // éligible immédiatement par la clause de repli. Gère maintenant les deux formats.
+    const ticketId = c.id
+      ? (c.id.match(/_g\d+_\d+$/) ? c.id.replace(/_g\d+_\d+$/, '') : c.id.replace(/_\d+$/, ''))
+      : null;
     return (ticketId && dateParTicket[ticketId]) ? new Date(dateParTicket[ticketId]).getTime() : 0;
   };
   const realCreatives = products.flatMap(p => p.creatives || []).sort((a,b) => dateCreative(b) - dateCreative(a));
