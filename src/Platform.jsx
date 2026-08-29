@@ -3832,7 +3832,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
           session_id: user?.id || sessionId,
           context: {
             user: user ? { email: user.email, name: user.user_metadata?.full_name } : null,
-            subscription, products: products.slice(0,5),
+            subscription, products,
             credits: computeCredits(subscription, allBriefs),
             section, language,
             currency: priceCtx?.currency || 'XOF',
@@ -5432,9 +5432,9 @@ const views = {
           @keyframes ctaPulse { 0%,100%{ box-shadow:0 6px 28px rgba(45,127,239,0.55); } 50%{ box-shadow:0 6px 36px rgba(45,127,249,0.80); } }
         `}</style>
         <div style={{display:'flex',alignItems:'center',gap:10,padding:'10px 20px',borderRadius:50,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontFamily:"'Inter',sans-serif",animation:'ctaPulse 2.5s ease infinite',cursor:'pointer',whiteSpace:'nowrap',userSelect:'none'}}
-          onClick={() => setSection('tarifs')}>
+          onClick={() => window.location.href = 'https://www.adstackofficial.com'}>
           <Icon name="sparkle" size={16} color="#fff"/>
-          <div style={{display:'flex',flexDirection:'column',lineHeight:1.25}}>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',lineHeight:1.25}}>
             <span style={{fontWeight:700,fontSize:13}}>S'abonner à nos offres</span>
             <span style={{fontWeight:500,fontSize:10,opacity:0.85}}>Travaillez dès maintenant avec notre agence</span>
           </div>
