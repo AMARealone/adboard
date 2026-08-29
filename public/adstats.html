@@ -3776,7 +3776,15 @@ async function renderApiCosts() {
   const toEl   = document.getElementById('dash-date-to');
   const from   = fromEl ? fromEl.value : '';
   const to     = toEl   ? toEl.value   : '';
-  let query = `${SB}/api_usage_log?select=cout_usd,created_at`;
+  // Cause profonde corrigée (coût d'acquisition/coût par lead faussés, gonflés par la
+  // production et les tests d'agents) : cette requête ne filtrait jamais par catégorie — elle
+  // additionnait TOUT api_usage_log, peu importe la source réelle de la dépense. Filtré
+  // maintenant à la seule catégorie 'demo' (génération de démonstrations pour prospects) —
+  // catégorie déjà correctement posée par categoriserAppel() côté serveur, juste jamais
+  // exploitée ici. Note : le Prospecteur (script Python séparé) n'a jamais été vu dans cette
+  // conversation — si lui aussi dépense en API et doit compter dans ce chiffre, il faudrait
+  // vérifier comment (et si) il logue ses coûts dans api_usage_log, avec sa propre catégorie.
+  let query = `${SB}/api_usage_log?select=cout_usd,created_at&source=eq.demo`;
   if (from || to) {
     if (from) query += `&created_at=gte.${from}T00:00:00`;
     if (to)   query += `&created_at=lte.${to}T23:59:59`;
@@ -3831,7 +3839,7 @@ async function renderApiCosts() {
   const fmt = (v) => v === null ? '—' : '$' + v.toFixed(4);
 
   const items = [
-    { label: 'Dépense API',  val: '$' + budget.toFixed(4) },
+    { label: 'Dépense API (démo)',  val: '$' + budget.toFixed(4) },
     { label: 'Coût / lead',  val: fmt(cLead) },
     { label: 'Coût / achat', val: fmt(cAchat) },
   ];
