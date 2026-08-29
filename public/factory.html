@@ -2608,9 +2608,31 @@ let prodAbortController = null;
 // Appelée après CHAQUE créative/copy individuelle, avec un léger debounce pour ne pas spammer
 // le serveur si plusieurs complétions arrivent presque en même temps.
 let _prodv2AutosaveTimer = null;
-function prodv2AutosaveDeliverables() {
+// Filet de sécurité GLOBAL, en plus du debounce ci-dessous — sendBeacon() est conçu
+// spécifiquement pour survivre à une fermeture/rafraîchissement immédiat de la page (contrairement
+// à un fetch() classique, souvent interrompu à ce moment précis). Se déclenche à chaque
+// changement d'état de visibilité (couvre aussi bien le cas mobile où "beforeunload" ne se
+// déclenche pas toujours de façon fiable) — sans condition sur un debounce en attente ou non,
+// pour ne jamais dépendre de deviner correctement s'il y avait quelque chose "en cours".
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'hidden') return;
+  if (typeof prodv2State === 'undefined' || prodv2State.briefSource !== 'commande' || !prodv2State.commandeId) return;
+  try {
+    const body = JSON.stringify({ creatives: prodv2State.creatives, copies: prodv2State.copies, synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche });
+    navigator.sendBeacon(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, new Blob([body], { type: 'application/json' }));
+  } catch(e) { /* sendBeacon indisponible — le debounce normal reste le seul filet dans ce cas */ }
+});
+
+function prodv2AutosaveDeliverables(immediat = false) {
   if (prodv2State.briefSource !== 'commande' || !prodv2State.commandeId) return;
   clearTimeout(_prodv2AutosaveTimer);
+  // Cause profonde corrigée (reprise après rafraîchissement affiche un ancien batch au lieu du
+  // tout dernier généré, alors que même produit/même ticket) : le debounce de 800ms annule et
+  // retarde à chaque appel — si l'utilisateur quitte la page dans cette fenêtre après la TOUTE
+  // DERNIÈRE créative ou copy générée, cette ultime sauvegarde ne s'exécute jamais, et la
+  // reprise ne peut restaurer que l'avant-dernier état déjà confirmé sauvegardé. Sur un point de
+  // complétion finale, sauvegarde immédiate — jamais de fenêtre de perte possible. Même
+  // principe déjà en place pour les sessions démo (voir demoSessionAutosave).
   _prodv2AutosaveTimer = setTimeout(async () => {
     try {
       await fetch(`https://adstack-server.onrender.com/commandes/${prodv2State.commandeId}/save-deliverables`, {
@@ -2618,7 +2640,7 @@ function prodv2AutosaveDeliverables() {
         body: JSON.stringify({ creatives: prodv2State.creatives, copies: prodv2State.copies, synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche })
       });
     } catch(e) { console.warn('[Commande] Autosave échoué :', e.message); }
-  }, 800);
+  }, immediat ? 0 : 800);
 }
 
 // ── Autosave de session démo — même principe que prodv2AutosaveDeliverables, adapté au mode
@@ -2873,7 +2895,7 @@ async function prodv2Launch() {
           // Espacé à tous les 3 créatives + toujours sur la dernière — garde une vraie
           // protection contre la perte de données sans multiplier les écritures lourdes.
           if (creativesDone % 3 === 0 || creativesDone === nbCreativesTotal) {
-            prodv2AutosaveDeliverables();
+            prodv2AutosaveDeliverables(creativesDone === nbCreativesTotal);
           }
         }
       }
@@ -3163,7 +3185,7 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
     if (description && description !== '(description vide — Gemini n\'a pas suivi le format)') {
       prodv2State.copies[angleIdx] = { hooks, description };
       prodv2RenderCopy(angleIdx);
-      prodv2AutosaveDeliverables();
+      prodv2AutosaveDeliverables(angleIdx === prodv2State.angles.length - 1);
       return;
     }
     if (tentative < 2) console.warn(`[Copywriter] Description vide pour l'angle ${angleIdx+1}, nouvelle tentative...`);
@@ -3172,7 +3194,7 @@ async function prodv2GenerateOneCopy(angleIdx, signal) {
   const { hooks, description } = await prodv2GenerateOneCopyAttempt(angleIdx, signal);
   prodv2State.copies[angleIdx] = { hooks, description };
   prodv2RenderCopy(angleIdx);
-  prodv2AutosaveDeliverables();
+  prodv2AutosaveDeliverables(angleIdx === prodv2State.angles.length - 1);
 }
 
 async function prodv2GenerateOneCopyAttempt(angleIdx, signal) {
@@ -6493,6 +6515,21 @@ async function loadCommandes() {
     const statusColor = { pending: '#F59E0B', in_production: '#3B82F6', done: '#22C55E', cancelled: '#6B7280' };
     const statusLabel = { pending: '⏳ En attente', in_production: '🔵 En production', done: '✅ Livré', cancelled: '✗ Annulé' };
 
+    // Distingue "vient de démarrer" de "tout est généré, prêt à envoyer" — jusqu'ici les deux
+    // affichaient exactement le même badge bleu "En production", rendant impossible de repérer
+    // d'un coup d'œil quelle commande peut être quittée sans risque pour en démarrer une autre.
+    // Calculé sur les vraies données sauvegardées, pas sur le statut brut (qui ne distingue pas
+    // ces deux cas), pour ne jamais dépendre d'un nouvel état à faire vivre partout ailleurs.
+    const estPretAEnvoyer = (b) => {
+      if (b.status !== 'in_production') return false;
+      const d = b.deliverables || {};
+      const nbCreaAttendu = b.quantity || 9;
+      const nbAnglesAttendu = Math.ceil(nbCreaAttendu / 3);
+      const nbCrea = (d.creatives || []).filter(c => c && (c.imgB64 || c.url)).length;
+      const nbCopy = (d.copies || []).filter(Boolean).length;
+      return nbCrea >= nbCreaAttendu && nbCopy >= nbAnglesAttendu;
+    };
+
     el.innerHTML = briefs.map(b => {
       const photo = b.photo_nobg || b.product.photo_base64 || b.product.photo_url;
       const photoHtml = photo
@@ -6511,7 +6548,7 @@ async function loadCommandes() {
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
             <span style="font-size:15px;font-weight:700;color:var(--t1);">${b.product.nom}</span>
-            <span id="status-${b.id}" style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${statusColor[b.status]}18;color:${statusColor[b.status]};">${statusLabel[b.status] || b.status}</span>
+            <span id="status-${b.id}" style="padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;background:${estPretAEnvoyer(b) ? '#A855F718' : statusColor[b.status]+'18'};color:${estPretAEnvoyer(b) ? '#A855F7' : statusColor[b.status]};">${estPretAEnvoyer(b) ? '🟣 Prêt à envoyer' : (statusLabel[b.status] || b.status)}</span>
           </div>
           <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">
             ${b.client?.email || b.client?.user_id?.slice(0,8)+'...'} · ${b.client?.plan?.toUpperCase()} · ${new Date(b.created_at).toLocaleString('fr-FR')} · <span style="color:var(--t2);">${b.quantity} images</span>
@@ -6655,7 +6692,28 @@ async function prodv2LoadBriefFromCommande(b) {
   }
 }
 
+// Vrai/faux : la production ACTUELLEMENT chargée en mémoire (prodv2State) est-elle
+// entièrement générée (toutes créatives + tous les sets ad copy) ? Si oui, rien à perdre en la
+// quittant — tout est déjà en sécurité côté serveur (autosave). Si non, quitter maintenant
+// risquerait de perdre ce qui n'est pas encore sauvegardé.
+function prodv2EstActuellementComplet() {
+  if (!prodv2State.commandeId) return true; // rien de chargé, rien à perdre
+  const nbAnglesAttendu = prodv2GetAngleCount();
+  const nbCreaAttendu = nbAnglesAttendu * 3;
+  const nbCrea = (prodv2State.creatives || []).filter(c => c && (c.imgB64 || c.url)).length;
+  const nbCopy = (prodv2State.copies || []).filter(Boolean).length;
+  return nbCrea >= nbCreaAttendu && nbCopy >= nbAnglesAttendu;
+}
+
 async function lancerProduction(id) {
+  // Garde intelligente : avertir seulement si une AUTRE production est chargée en mémoire ET
+  // pas encore complète — jamais si elle est déjà entièrement générée (rien à perdre dans ce
+  // cas, juste un cache local d'une donnée déjà en sécurité côté serveur). Permet d'enchaîner
+  // librement sur un nouveau client une fois le précédent terminé, sans avertissement inutile.
+  if (prodv2State.commandeId && prodv2State.commandeId !== id && !prodv2EstActuellementComplet()) {
+    const nomActuel = prodv2State.brief?.product?.nom || 'la production en cours';
+    if (!confirm(`⚠️ "${nomActuel}" est encore en cours de génération (pas encore terminée). La quitter maintenant risque de perdre ce qui n'est pas encore sauvegardé.\n\nContinuer quand même ?`)) return;
+  }
   try {
     await fetch(`https://adstack-server.onrender.com/commandes/${id}/start`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
     const briefs = await fetch('https://adstack-server.onrender.com/commandes', {headers:{'ngrok-skip-browser-warning':'1'}}).then(r=>r.json()).catch(()=>[]);
