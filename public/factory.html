@@ -6832,6 +6832,20 @@ async function lancerProduction(id) {
 
 async function marquerLivre(id) {
   if (!confirm('Marquer cette commande comme livrée ?')) return;
+  // Cause profonde corrigée (la toute dernière créative du batch parfois absente de l'envoi,
+  // arrivant seulement dans un envoi séparé juste après) : ce bouton appelait /done directement,
+  // sans jamais s'assurer que la state la plus fraîche avait bien atteint le serveur avant —
+  // une vraie course entre la sauvegarde de la dernière créative et cet envoi, que l'envoi
+  // pouvait gagner. Si ce ticket est celui actuellement chargé en mémoire, on force ici une
+  // sauvegarde synchrone (attendue) avant de déclencher l'envoi, éliminant la course.
+  if (prodv2State.commandeId === id) {
+    try {
+      await fetch(`https://adstack-server.onrender.com/commandes/${id}/save-deliverables`, {
+        method: 'POST', headers: {'Content-Type':'application/json','ngrok-skip-browser-warning':'1'},
+        body: JSON.stringify({ creatives: prodv2State.creatives, copies: prodv2State.copies, synthesis: prodv2State.synthesis, angles: prodv2State.angles, marche: prodv2State.marche })
+      });
+    } catch(e) { console.warn('[Envoi] Sauvegarde de sécurité pré-envoi échouée (le /done tentera quand même) :', e.message); }
+  }
   await fetch(`https://adstack-server.onrender.com/commandes/${id}/done`, { method: 'POST', headers: { 'ngrok-skip-browser-warning': '1' } });
   try {
     const marker = JSON.parse(localStorage.getItem('adstack_active_production') || 'null');

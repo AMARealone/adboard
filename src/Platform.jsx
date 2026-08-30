@@ -3044,7 +3044,10 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
 // peut donc l'emporter sur un marquage unique très récent : ni le volume ni la fraîcheur seule
 // ne dominent, les deux se combinent dans UN seul score par angle.
 function getAngleGagnantActuel(product, cible) {
-  const deliveries = (product?.deliveries || []).filter(d => (d.cible || null) === (cible || null));
+  // Comparaison alignée sur cible_signature (stable, sans le prénom généré par l'IA) quand
+  // disponible — voir buildCiblesDepuisDeliveries pour le même correctif appliqué au
+  // regroupement d'affichage. Repli sur l'ancien texte pour les commandes déjà en base.
+  const deliveries = (product?.deliveries || []).filter(d => ((d.cible_signature || d.cible) || null) === (cible || null));
   const creativesTopPerformer = (product?.creatives || []).filter(c => c.topPerformer);
   if (!creativesTopPerformer.length || !deliveries.length) return null;
 
@@ -3093,10 +3096,17 @@ const Copies = ({products, setSection}) => {
   // doit être calculé PAR CIBLE, jamais un seul gagnant "global" mélangeant tout. On construit
   // donc une correspondance cible → angle gagnant, calculée une fois par cible distincte
   // présente dans les angles de ce produit.
-  const cibleSetPourGagnant = selected ? [...new Set((selected.deliveries||[]).map(d => d.cible || null))] : [];
+  // Cause profonde corrigée (la même cible apparaît listée plusieurs fois — un batch = une
+  // entrée distincte au lieu d'un seul regroupement) : comparaisons faites sur le texte affiché
+  // (cible), qui inclut le prénom généré par l'IA, susceptible de varier légèrement même pour
+  // la même cible logique. Tout ce qui suit compare maintenant sur cible_signature (stable)
+  // quand disponible, avec repli sur l'ancien texte pour les commandes déjà en base. Le
+  // libellé affiché (avec le prénom) reste séparé, uniquement pour l'affichage.
+  const cibleSig = (x) => (x?.cible_signature || x?.cible || null);
+  const cibleSetPourGagnant = selected ? [...new Set((selected.deliveries||[]).map(cibleSig))] : [];
   const angleGagnantParCible = {};
   cibleSetPourGagnant.forEach(cible => { angleGagnantParCible[cible] = getAngleGagnantActuel(selected, cible); });
-  const cibleSetCopies = [...new Set(allAngles.map(a => a.cible).filter(Boolean))];
+  const cibleSetCopies = [...new Map(allAngles.map(a => [cibleSig(a), a.cible])).entries()].filter(([k]) => k);
   const batchSetCopies = [...new Set(allAngles.map(a => a.semaine).filter(Boolean))];
 
   const filtered = products.filter(p => p.nom.toLowerCase().includes(query.toLowerCase()));
@@ -3216,23 +3226,29 @@ const Copies = ({products, setSection}) => {
               {/* Barre de filtres STICKY — recherche + cible + angle. Cliquer un filtre isole
                   les angles correspondants (les autres disparaissent) au lieu d'y faire
                   défiler — retour direct pris en compte. */}
-              <div style={{position:'sticky',top:0,zIndex:20,background:C.bg,margin:'0 -16px 18px',padding:'10px 16px',borderBottom:`1px solid ${C.border}`}}>
-                <div style={{position:'relative',marginBottom:10}}>
+              {/* Barre de recherche seule STICKY — cause profonde corrigée (tout le bloc
+                  recherche+cible+batch+angles restait collé en haut, mangeant énormément
+                  d'espace visible pendant le défilement) : seule la recherche reste collante
+                  maintenant, le reste défile normalement comme demandé. */}
+              <div style={{position:'sticky',top:0,zIndex:20,background:C.bg,margin:'0 -16px',padding:'10px 16px',borderBottom:`1px solid ${C.border}`}}>
+                <div style={{position:'relative'}}>
                   <div style={{position:'absolute',left:11,top:0,bottom:0,display:'flex',alignItems:'center',color:C.sec,pointerEvents:'none'}}>
                     <Icon name="search" size={13}/>
                   </div>
                   <input value={angleQuery} onChange={e=>setAngleQuery(e.target.value)} placeholder="Rechercher un angle, un hook..."
                     style={{width:'100%',padding:'8px 12px 8px 32px',borderRadius:8,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:11.5,fontFamily:'inherit',outline:'none'}}/>
                 </div>
+              </div>
+              <div style={{margin:'10px -16px 18px',padding:'0 16px'}}>
                 {cibleSetCopies.length > 1 && (
                   <div style={{marginBottom:10}}>
                     <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Cible</div>
                     <div style={{display:'flex',gap:7,flexWrap:'wrap'}}>
                       <button onClick={()=>setCibleFilter(null)} style={{padding:'8px 16px',borderRadius:20,border:`1.5px solid ${!cibleFilter?C.accent:C.border}`,background:!cibleFilter?'rgba(91,141,239,0.12)':'transparent',color:!cibleFilter?C.text:C.sec,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Toutes</button>
-                      {cibleSetCopies.map(c => (
-                        <button key={c} onClick={()=>setCibleFilter(cibleFilter===c?null:c)} title={c}
-                          style={{padding:'8px 16px',borderRadius:20,border:`1.5px solid ${cibleFilter===c?C.accent:C.border}`,background:cibleFilter===c?'rgba(91,141,239,0.12)':'transparent',color:cibleFilter===c?C.text:C.sec,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                          {c.split(',')[0]}
+                      {cibleSetCopies.map(([sig, label]) => (
+                        <button key={sig} onClick={()=>setCibleFilter(cibleFilter===sig?null:sig)} title={label}
+                          style={{padding:'8px 16px',borderRadius:20,border:`1.5px solid ${cibleFilter===sig?C.accent:C.border}`,background:cibleFilter===sig?'rgba(91,141,239,0.12)':'transparent',color:cibleFilter===sig?C.text:C.sec,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',maxWidth:200,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {(label||'').split(',')[0]}
                         </button>
                       ))}
                     </div>
@@ -3252,25 +3268,33 @@ const Copies = ({products, setSection}) => {
                     </div>
                   </div>
                 )}
-                <div>
-                  <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Angle</div>
-                  <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
-                    {allAngles.map(a => (
-                      <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}${a.nom===angleGagnantParCible[a.cible||null] ? ' · Angle Top Performer actuel' : ''}`}
-                        style={{padding:'4px 10px',borderRadius:20,border:`1px solid ${a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.5)' : C.border}`,background:a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)',color:a.nom===angleGagnantParCible[a.cible||null] ? '#EAB308' : C.sec,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',animation:a.nom===angleGagnantParCible[a.cible||null] ? 'tpGlow 2.4s ease-in-out infinite' : 'none'}}
-                        onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
-                        onMouseLeave={e=>{e.currentTarget.style.borderColor=a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.5)' : C.border;e.currentTarget.style.background=a.nom===angleGagnantParCible[a.cible||null] ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)';e.currentTarget.style.color=a.nom===angleGagnantParCible[a.cible||null] ? '#EAB308' : C.sec;}}
-                      >{a.nom===angleGagnantParCible[a.cible||null] && '⚡ '}A{a.numero} {allAngles.length > 3 ? `· B${a.semaine.replace(/^[SB]/,'')}` : ''}</button>
-                    ))}
+                {/* Cause profonde corrigée (toutes les balises d'angle, de tous les batches,
+                    apparaissaient à plat en permanence — illisible dès que plusieurs batches
+                    existent) : les angles n'apparaissent maintenant que si un batch précis est
+                    sélectionné ci-dessus, jamais tous en même temps. */}
+                {batchFilterCopies ? (
+                  <div>
+                    <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Angle</div>
+                    <div style={{display:'flex',gap:5,flexWrap:'wrap'}}>
+                      {allAngles.filter(a => a.semaine === batchFilterCopies).map(a => (
+                        <button key={a.idUnique} onClick={()=>scrollTo(a.idUnique)} title={`Angle ${a.numero} · ${a.nom}${a.cible ? ` · Cible : ${a.cible}` : ''}${a.nom===angleGagnantParCible[cibleSig(a)] ? ' · Angle Top Performer actuel' : ''}`}
+                            style={{padding:'4px 10px',borderRadius:20,border:`1px solid ${a.nom===angleGagnantParCible[cibleSig(a)] ? 'rgba(234,179,8,0.5)' : C.border}`,background:a.nom===angleGagnantParCible[cibleSig(a)] ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)',color:a.nom===angleGagnantParCible[cibleSig(a)] ? '#EAB308' : C.sec,fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s',animation:a.nom===angleGagnantParCible[cibleSig(a)] ? 'tpGlow 2.4s ease-in-out infinite' : 'none'}}
+                            onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent;e.currentTarget.style.background=C.accentS;e.currentTarget.style.color=C.accent;}}
+                            onMouseLeave={e=>{e.currentTarget.style.borderColor=a.nom===angleGagnantParCible[cibleSig(a)] ? 'rgba(234,179,8,0.5)' : C.border;e.currentTarget.style.background=a.nom===angleGagnantParCible[cibleSig(a)] ? 'rgba(234,179,8,0.1)' : 'rgba(255,255,255,0.07)';e.currentTarget.style.color=a.nom===angleGagnantParCible[cibleSig(a)] ? '#EAB308' : C.sec;}}
+                          >{a.nom===angleGagnantParCible[cibleSig(a)] && '⚡ '}A{a.numero}</button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ) : (
+                  <div style={{fontSize:11,color:C.muted,fontStyle:'italic'}}>Choisis un batch ci-dessus pour voir ses angles</div>
+                )}
               </div>
 
               {/* Deliveries + Angles */}
               {(selected.deliveries||[]).map(delivery => {
                 if (batchFilterCopies && delivery.semaine !== batchFilterCopies) return null;
                 // Filtre cible sur le batch entier — un batch appartient à une seule cible
-                if (cibleFilter && delivery.cible !== cibleFilter) return null;
+                if (cibleFilter && cibleSig(delivery) !== cibleFilter) return null;
                 const anglesVisibles = delivery.angles.filter(angle => {
                   if (angleQuery.trim()) {
                     const q = angleQuery.toLowerCase();
@@ -3314,7 +3338,7 @@ const Copies = ({products, setSection}) => {
                         <div style={{position:'relative'}}>
                           <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
                             <div style={{fontSize:9.5,color:C.accent,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase'}}>Angle {angle.numero}</div>
-                            {angle.nom===angleGagnantParCible[delivery.cible||null] && (
+                            {angle.nom===angleGagnantParCible[cibleSig(delivery)] && (
                               <span className="tp-badge">⚡ Angle Top Performer actuel</span>
                             )}
                           </div>
@@ -3503,14 +3527,21 @@ function buildCiblesDepuisDeliveries(deliveries, marche) {
     }];
   }
   const groups = [];
+  // Cause profonde corrigée (la même cible apparaît dupliquée — une entrée par batch au lieu
+  // d'une seule regroupant tous les batches) : ce regroupement comparait le texte affiché
+  // (cible), qui inclut le prénom généré par l'IA — susceptible de varier légèrement d'un batch
+  // à l'autre même pour "la même" cible logique. Regroupe maintenant par cible_signature (stable,
+  // sans prénom) quand disponible ; repli sur l'ancien texte pour les commandes déjà en base,
+  // livrées avant l'ajout de ce champ.
   deliveries.forEach(d => {
+    const cleGroupe = d.cible_signature || d.cible || 'Cible';
     const nom = d.cible || 'Cible';
-    let g = groups.find(x => x.nom === nom);
-    if (!g) { g = { nom, batches: [] }; groups.push(g); }
+    let g = groups.find(x => x.cle === cleGroupe);
+    if (!g) { g = { cle: cleGroupe, nom, batches: [] }; groups.push(g); }
     g.batches.push({ numero: g.batches.length + 1, date: d.date, angles: d.angles || [] });
   });
-  const dernierNomCible = deliveries[deliveries.length - 1]?.cible;
-  groups.forEach(g => { g.statut = g.nom === dernierNomCible ? 'actuelle' : 'precedente'; });
+  const dernierGroupeCle = deliveries[deliveries.length - 1]?.cible_signature || deliveries[deliveries.length - 1]?.cible;
+  groups.forEach(g => { g.statut = g.cle === dernierGroupeCle ? 'actuelle' : 'precedente'; });
   groups.sort((a, b) => (a.statut === 'actuelle' ? -1 : 0) - (b.statut === 'actuelle' ? -1 : 0));
   return groups;
 }
@@ -5451,19 +5482,19 @@ const views = {
 
 
       {subscription?.plan === 'discovery' && !d2sBannerDismissed && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?6:16,padding:isMobile?'6px 8px 6px 58px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,overflow:'hidden'}}>
-          <div style={{display:'flex',alignItems:'center',gap:isMobile?5:10,minWidth:0,flex:'1 1 auto'}}>
-            <span style={{fontSize:isMobile?9.5:12.5,fontWeight:600,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?6:16,padding:isMobile?'8px 8px 8px 56px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,overflow:'hidden'}}>
+          <div style={{display:'flex',alignItems:'center',gap:isMobile?6:10,minWidth:0,flex:'1 1 auto'}}>
+            <span style={{fontSize:isMobile?11.5:12.5,fontWeight:600,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>
               {isMobile ? <>Passe à <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Starter</strong> pour scaler.</> : <>
                 <strong style={{background:'linear-gradient(90deg,#FFE082,#FFC107)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Discovery</strong> t'a montré ce qu'on sait faire. <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Starter</strong>, c'est fait pour scaler.
               </>}
             </span>
-            <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'4px 8px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?9.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
+            <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?10.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
               {isMobile ? 'Acheter' : 'Acheter Starter'}
             </button>
           </div>
           <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
-            <Icon name="x" size={isMobile?11:13} color="rgba(255,255,255,0.75)"/>
+            <Icon name="x" size={isMobile?13:13} color="rgba(255,255,255,0.75)"/>
           </button>
         </div>
       )}
