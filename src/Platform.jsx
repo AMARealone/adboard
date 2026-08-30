@@ -2427,7 +2427,7 @@ async function shareOrDownloadMultiple(items, isMobile) {
   }
 }
 
-const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment}) => {
+const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null);
@@ -3010,13 +3010,14 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
               WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
               animation:'d2sGradientMove 3s ease infinite',
             }}>
-              Félicitations, vous avez trouvé une créative qui performe.
+              Félicitations {user?.user_metadata?.full_name?.split(' ')[0] || ''} 🎉 !!!
             </div>
             <div style={{fontSize:13,color:'rgba(255,255,255,0.75)',lineHeight:1.55,marginBottom:22}}>
-              Avec Discovery, vous avez trouvé ce qui performe. Mais c'est uniquement avec <strong style={{color:'#fff'}}>Starter</strong> que vous pouvez en tirer le maximum de profit et faire exploser vos revenus.
+              Avec Discovery vous avez trouvé ce qui performe. Mais avec <strong style={{color:'#fff'}}>Starter</strong> multipliez ce qui <em>performe</em> et faites <em>exploser vos revenus</em>.
             </div>
-            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{width:'100%',padding:'13px',borderRadius:10,border:'none',background:`linear-gradient(135deg, ${C.accent}, #7C3AED)`,color:'#fff',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:'inherit',boxShadow:`0 4px 18px ${C.accent}55`}}>
-              Commencer avec Starter
+            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{width:'100%',padding:'11px',borderRadius:10,border:'none',background:`linear-gradient(135deg, ${C.accent}, #7C3AED)`,color:'#fff',cursor:'pointer',fontFamily:'inherit',boxShadow:`0 4px 18px ${C.accent}55`,display:'flex',flexDirection:'column',alignItems:'center',gap:1}}>
+              <span style={{fontWeight:700,fontSize:14}}>Commencer avec Starter</span>
+              <span style={{fontWeight:500,fontSize:10.5,opacity:0.85}}>9 images/semaine</span>
             </button>
             <div style={{fontSize:10,color:'rgba(255,255,255,0.45)',marginTop:11}}>🔒 Paiement 100% sécurisé · Satisfait ou remboursé</div>
           </div>
@@ -5425,7 +5426,7 @@ const views = {
               return;
             }
             setCreativesTarget(p); }}/>,
-    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
+    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
