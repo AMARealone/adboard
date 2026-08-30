@@ -635,7 +635,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
               popup.location.href = cycleData.checkout;
             }}
               style={{display:'flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-              {subscription?.active ? 'Upgrader' : 'Commencer'} <Icon name="arrow" size={11} color="#fff"/>
+              {subscription?.active ? 'Changer d\'offre' : 'Commencer'} <Icon name="arrow" size={11} color="#fff"/>
             </button>
           </div>
         );
@@ -1715,7 +1715,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     return (
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11}}>
         <div style={{width:12,height:12,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.muted,animation:'spin 0.7s linear infinite'}}/>
-        Vérification de vos crédits...
+        Vérification de tes images...
       </div>
     );
   }
@@ -1729,13 +1729,13 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
           const productId = PLAN_CHECKOUT_IDS['discovery-once'];
           if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
         }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-          <Icon name="plus" size={13} color="#fff"/> Rechargez vos images
+          <Icon name="plus" size={13} color="#fff"/> Commandez plus d'images
         </button>
       );
     }
     return (
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
-        <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochain crédit le ${nextCreditDate}` : 'Crédits épuisés cette semaine'}
+        <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochaine livraison le ${nextCreditDate}` : 'Plus d\'images disponibles cette semaine'}
       </div>
     );
   }
@@ -4198,7 +4198,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Puis-je annuler une demande en cours ?",
-    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les images correspondantes sont automatiquement recréditées."
+    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les images correspondantes redeviennent immédiatement disponibles."
   },
   {
     q: "Qui est Ava, l'assistante dans le coin de l'écran ?",
@@ -4453,9 +4453,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                     : isCycleDowngradeCycle
                       ? (<>Repasser au mensuel</>)
                       : isDowngrade
-                        ? (<>Downgrade <Icon name="arrow" size={13} color="#fff"/></>)
+                        ? (<>Repasser à cette offre <Icon name="arrow" size={13} color="#fff"/></>)
                         : isUpgrade
-                          ? (<>Upgrade <Icon name="arrow" size={13} color="#fff"/></>)
+                          ? (<>Passer à cette offre <Icon name="arrow" size={13} color="#fff"/></>)
                           : (<>{p.ctaText} <Icon name="arrow" size={13} color="#fff"/></>)
                 }
               </button>
