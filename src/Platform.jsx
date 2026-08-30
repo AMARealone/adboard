@@ -3013,7 +3013,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
               Félicitations {user?.user_metadata?.full_name?.split(' ')[0] || ''} 🎉 !!!
             </div>
             <div style={{fontSize:13,color:'rgba(255,255,255,0.75)',lineHeight:1.55,marginBottom:22}}>
-              Avec Discovery vous avez trouvé ce qui performe. Mais avec <strong style={{color:'#fff'}}>Starter</strong> multipliez ce qui <em>performe</em> et faites <em>exploser vos revenus</em>.
+              Avec Discovery vous avez trouvé ce qui marche. Mais avec <strong style={{color:'#fff'}}>Starter</strong> multipliez ce qui <em>performe</em> et faites <em>exploser vos revenus</em>.
             </div>
             <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{width:'100%',padding:'11px',borderRadius:10,border:'none',background:`linear-gradient(135deg, ${C.accent}, #7C3AED)`,color:'#fff',cursor:'pointer',fontFamily:'inherit',boxShadow:`0 4px 18px ${C.accent}55`,display:'flex',flexDirection:'column',alignItems:'center',gap:1}}>
               <span style={{fontWeight:700,fontSize:14}}>Commencer avec Starter</span>
