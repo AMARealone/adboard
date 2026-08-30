@@ -3043,6 +3043,16 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
 // plus récent = poids plus fort). Un angle avec PLUSIEURS marquages, même un peu plus anciens,
 // peut donc l'emporter sur un marquage unique très récent : ni le volume ni la fraîcheur seule
 // ne dominent, les deux se combinent dans UN seul score par angle.
+// Première apparition chronologique d'un nom d'angle donné, dans les livraisons DE CETTE
+// CIBLE — sert à afficher "repris depuis B3" à côté du badge Top Performer, sans rien stocker
+// de nouveau côté serveur : purement dérivé des livraisons déjà là.
+function getBatchOrigineAngle(product, cible, nomAngle) {
+  if (!nomAngle) return null;
+  const deliveries = (product?.deliveries || []).filter(d => ((d.cible_signature || d.cible) || null) === (cible || null));
+  const premiereApparition = deliveries.find(d => (d.angles || []).some(a => a.nom === nomAngle));
+  return premiereApparition?.semaine || null;
+}
+
 function getAngleGagnantActuel(product, cible) {
   // Comparaison alignée sur cible_signature (stable, sans le prénom généré par l'IA) quand
   // disponible — voir buildCiblesDepuisDeliveries pour le même correctif appliqué au
@@ -3341,6 +3351,17 @@ const Copies = ({products, setSection}) => {
                             {angle.nom===angleGagnantParCible[cibleSig(delivery)] && (
                               <span className="tp-badge">⚡ Angle Top Performer actuel</span>
                             )}
+                            {(() => {
+                              // Filet visuel — rend la filiation explicite même si, pour une
+                              // raison quelconque, la reconnaissance automatique par nom échouait
+                              // un jour (dérive de formulation par exemple, comme déjà vu pour le
+                              // persona). Affiché seulement sur une VRAIE reprise, jamais sur le
+                              // batch d'origine lui-même.
+                              if (angle.nom !== angleGagnantParCible[cibleSig(delivery)]) return null;
+                              const batchOrigine = getBatchOrigineAngle(selected, cibleSig(delivery), angle.nom);
+                              if (!batchOrigine || batchOrigine === delivery.semaine) return null;
+                              return <span style={{fontSize:9.5,color:C.muted,fontWeight:600}}>🏆 Repris depuis {batchOrigine.replace(/^[SB]/,'B')}</span>;
+                            })()}
                           </div>
                           <div style={{fontSize:16.5,fontWeight:800,color:C.text,marginBottom:22}}>{angle.nom}</div>
 
@@ -3809,6 +3830,13 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
                       <div style={{fontSize:9,color:accent,fontFamily:"'DM Mono',monospace",fontWeight:700}}>BATCH {b.numero} · ANGLE {a.numero || ai+1}</div>
                       {a.nom===angleGagnantActuel && <span className="tp-badge">⚡ Top Performer</span>}
                     </div>
+                    {a.nom===angleGagnantActuel && (() => {
+                      // Filet visuel — même principe que dans Ad Copies : rend la filiation
+                      // explicite indépendamment de la reconnaissance automatique par nom.
+                      const batchOrigineNum = cible.batches.find(bb => bb.angles.some(aa => aa.nom === a.nom))?.numero;
+                      if (!batchOrigineNum || batchOrigineNum === b.numero) return null;
+                      return <div style={{fontSize:9.5,color:C.muted,fontWeight:600,marginBottom:6}}>🏆 Repris depuis Batch {batchOrigineNum}</div>;
+                    })()}
                     <div style={{fontSize:14,fontWeight:800,marginBottom:8,lineHeight:1.3}}>{a.nom}</div>
                     {a.justification && <div style={{fontSize:11,color:C.sec,lineHeight:1.55,paddingTop:10,borderTop:`1px dashed ${C.border}`}}><b style={{color:C.muted,fontWeight:700,textTransform:'uppercase',fontSize:9,display:'block',marginBottom:4}}>Pourquoi cet angle</b>{a.justification}</div>}
                   </div>
