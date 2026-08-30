@@ -2427,7 +2427,7 @@ async function shareOrDownloadMultiple(items, isMobile) {
   }
 }
 
-const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) => {
+const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null);
@@ -2563,7 +2563,12 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
         ...p,
         creatives: (p.creatives||[]).map(c => c.id === creative.id ? {...c, topPerformer: nextValue} : c)
       }));
-      setSelected(s => s && s.id === creative.id ? {...s, topPerformer: nextValue} : s);
+      // Sur Discovery, marquer Top Performer révèle le bump upsell à la place de la créative
+      // dans la grille (voir le rendu de filtered.map plus bas) — fermer la modale renvoie
+      // naturellement l'utilisateur vers ce moment-là, plutôt que de le laisser face à la
+      // créative comme si de rien n'était.
+      if (nextValue && subscription?.plan === 'discovery') { setSelected(null); }
+      else { setSelected(s => s && s.id === creative.id ? {...s, topPerformer: nextValue} : s); }
     } catch(e) {
       console.error('Marquage Top Performer échoué :', e.message);
     } finally {
@@ -2859,6 +2864,23 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
           const isTpMode = filterMode==='topPerformer';
           const isSelectedForSwap = selectedForSwap === c.id;
           const isJustRanked = justRanked.includes(c.id);
+
+          // Sur Discovery, une créative fraîchement marquée Top Performer laisse place à un
+          // bump upsell — "tu viens de trouver un winner, mais sans flux continu impossible de
+          // vraiment l'exploiter". Remplace la carte, même position dans la grille, même clé.
+          if (c.topPerformer && subscription?.plan === 'discovery') {
+            return (
+              <div key={c.id} style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',position:'relative',background:'linear-gradient(160deg,#1B2A4A,#0d1220)',border:`1px solid ${C.accent}55`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'14px 10px',textAlign:'center',gap:6}}>
+                <Icon name="star" size={18} color="#FFC107"/>
+                <div style={{fontSize:11.5,fontWeight:800,color:'#fff',lineHeight:1.25}}>Tu viens de trouver un winner.</div>
+                <div style={{fontSize:9.5,color:'rgba(255,255,255,0.65)',lineHeight:1.4}}>Starter te donne 9 nouvelles images chaque semaine pour aller plus loin sur cet angle — pendant qu'il performe encore.</div>
+                <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{marginTop:4,padding:'6px 12px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:10.5,cursor:'pointer',fontFamily:'inherit'}}>
+                  Passer sur Starter
+                </button>
+              </div>
+            );
+          }
+
           return (
           <div key={c.id} className="gallery-item"
             onClick={() => {
@@ -2915,6 +2937,24 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify}) 
           );
         })}
       </div>
+
+      {subscription?.plan === 'discovery' && filtered.length > 0 && filterMode !== 'topPerformer' && (
+        <div style={{marginTop:20}}>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Ça, c'était ton aperçu.</div>
+          <div style={{fontSize:11,color:C.sec,marginBottom:12}}>Avec Starter, tu reçois ce niveau de qualité chaque semaine — moins cher à l'image, et de mieux en mieux au fil des semaines grâce à ce qu'on apprend de tes résultats.</div>
+          <div className="gallery-grid" style={{opacity:0.9}}>
+            {Array.from({length:9}).map((_,i) => (
+              <div key={'ph'+i} style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',position:'relative',background:'linear-gradient(160deg,#2a2a35,#14141a)',filter:'blur(2px)'}}>
+                <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.35)'}}/>
+                <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}><Icon name="lock" size={14} color="rgba(255,255,255,0.5)"/></div>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{marginTop:12,padding:'9px 18px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
+            Débloquer le flux hebdo
+          </button>
+        </div>
+      )}
 
       {filtered.length===0 && query && (
         <div style={{textAlign:'center',padding:'60px 0',color:C.sec,fontSize:12}}>Aucune créative trouvée pour cette recherche</div>
@@ -3331,7 +3371,7 @@ const Copies = ({products, setSection}) => {
 };
 
 
-const Marche = ({products, isDemo, setSection}) => {
+const Marche = ({products, isDemo, setSection, subscription, onOpenPayment}) => {
   const isMobile = useIsMobile();
   const [query, setQuery] = useState('');
   const [selected, setSelected] = useState(null);
@@ -3644,6 +3684,12 @@ const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
               <h1 style={{fontSize:24,fontWeight:800,color:'#fff',textShadow:'0 2px 12px rgba(0,0,0,0.5)',margin:0}}>{persona.nom}</h1>
               <p style={{fontSize:12.5,color:'rgba(255,255,255,0.75)',marginTop:3}}>{persona.age} ans · {persona.role} · {persona.ville}</p>
             </div>
+            {subscription?.plan === 'discovery' && (
+              <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])}
+                style={{position:'absolute',top:14,right:14,zIndex:2,padding:'5px 11px',borderRadius:20,border:'1px solid rgba(255,255,255,0.25)',background:'rgba(0,0,0,0.45)',backdropFilter:'blur(4px)',color:'#fff',fontSize:10.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}}>
+                <Icon name="clock" size={11} color="#fff"/> Se met à jour chaque semaine avec Starter
+              </button>
+            )}
           </div>
           <div style={{background:C.card,padding:isMobile?20:28}}>
             {persona.quote && <p style={{fontSize:14,lineHeight:1.6,color:C.text,paddingBottom:16,marginBottom:16,borderBottom:`1px solid ${C.border}`}}>"{persona.quote}"</p>}
@@ -4916,6 +4962,12 @@ export default function Platform() {
   const plafondActionEnCoursRef = useRef(false);
   const [plafondBriefEnCours, setPlafondBriefEnCours] = useState(null); // id du brief en cours d'annulation, pour l'affichage
   const [paymentProductId, setPaymentProductId] = useState(null); // id produit Chariow pour la modale de paiement intégrée
+  // Bande upsell Discovery→Starter — fermée pour la session courante (sessionStorage, pas
+  // localStorage) : réapparaît à chaque nouvelle visite, comme demandé, sans jamais réapparaître
+  // en boucle sur les mêmes pages consultées dans la même session déjà.
+  const [d2sBannerDismissed, setD2sBannerDismissed] = useState(() => {
+    try { return sessionStorage.getItem('adstack_d2s_banner_dismissed') === '1'; } catch(e) { return false; }
+  });
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
 
@@ -5387,9 +5439,9 @@ const views = {
               return;
             }
             setCreativesTarget(p); }}/>,
-    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify}/>,
+    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     copies: <Copies products={products} setSection={setSection}/>,
-    marche: <Marche products={products} isDemo={isDemo} setSection={setSection}/>,
+    marche: <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     faq: <Faq/>,
     commentaires: <Commentaires user={user}/>,
@@ -5410,6 +5462,18 @@ const views = {
     <>
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Inter',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
 
+
+      {subscription?.plan === 'discovery' && !d2sBannerDismissed && (
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:14,padding:'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,flexWrap:'wrap'}}>
+          <span style={{fontSize:12.5,fontWeight:600,color:'#fff',textAlign:'center'}}>Discovery t'a montré ce qu'on sait faire. Starter, c'est fait pour scaler.</span>
+          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0}}>
+            Découvrir Starter
+          </button>
+          <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:4,display:'flex',flexShrink:0}} aria-label="Fermer">
+            <Icon name="x" size={13} color="rgba(255,255,255,0.75)"/>
+          </button>
+        </div>
+      )}
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
         <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription} activeBriefsCount={allBriefs.filter(b=>b.status==='pending'||b.status==='in_production').length} onOpenPayment={(productId)=>setPaymentProductId(productId)} onOpenLogin={()=>setShowLogin(true)} sectionBadges={sectionBadges}/>
