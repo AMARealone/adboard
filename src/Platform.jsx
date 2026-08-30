@@ -5485,12 +5485,10 @@ const views = {
         <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?6:16,padding:isMobile?'8px 8px 8px 56px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,overflow:'hidden'}}>
           <div style={{display:'flex',alignItems:'center',gap:isMobile?6:10,minWidth:0,flex:'1 1 auto'}}>
             <span style={{fontSize:isMobile?11.5:12.5,fontWeight:600,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>
-              {isMobile ? <>Passe à <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Starter</strong> pour scaler.</> : <>
-                <strong style={{background:'linear-gradient(90deg,#FFE082,#FFC107)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Discovery</strong> t'a montré ce qu'on sait faire. <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Starter</strong>, c'est fait pour scaler.
-              </>}
+              Passe aux choses sérieuses avec <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>CONVERSION STARTER</strong>.
             </span>
             <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?10.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
-              {isMobile ? 'Acheter' : 'Acheter Starter'}
+              S'abonner
             </button>
           </div>
           <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
