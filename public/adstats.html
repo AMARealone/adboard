@@ -5301,17 +5301,28 @@ async function renderComptabilite() {
     blocsEl.innerHTML = blocDepenses + blocRevenus;
 
     // ── Revenu potentiel — projection depuis le funnel réel ──
-    const totalProspects = DB.length;
+    // Cause profonde corrigée (taux artificiellement bas) : calculé jusqu'ici sur DB.length —
+    // toute la base, y compris les prospects jamais contactés, qui n'ont mathématiquement
+    // aucune chance de devenir lead. Basé maintenant sur les VRAIMENT contactés, même
+    // définition que "Contactés" utilisée partout ailleurs dans le CRM (statut !== 'a_contacter').
+    const totalContactes = DB.filter(p => p.statut !== 'a_contacter').length;
     const totalLeads = DB.filter(p => ['lead','acheteur','standard','scale'].includes(p.statut)).length;
-    const tauxProspectLead = totalProspects > 0 ? (totalLeads / totalProspects * 100) : 0;
-    const panierMoyen = txRows.length > 0 ? revenuNetFcfa / txRows.length : 0;
+    const tauxProspectLead = totalContactes > 0 ? (totalLeads / totalContactes * 100) : 0;
+    // Toute la projection ci-dessous tourne volontairement en TOUT TEMPS (TX, pas txRows filtré
+    // par période) — cohérent avec totalContactes/totalLeads, déjà en tout temps par nature (DB
+    // n'est jamais filtré par période). Plus fiable statistiquement qu'un ratio calculé sur une
+    // courte fenêtre (ex: "7 jours" pourrait donner 1 achat sur 2 leads, un chiffre bruyant qui
+    // ne reflète pas la vraie tendance) — le cumul depuis toujours lisse ce bruit.
+    const panierMoyenToutTemps = TX.length > 0 ? TX.reduce((s,t) => s + (t.montant_net_fcfa||0), 0) / TX.length : 0;
+    const tauxLeadAchatToutTemps = totalLeads > 0 ? TX.length / totalLeads : 0;
     potentielEl.innerHTML = `
       <div style="background:linear-gradient(135deg, rgba(45,127,249,0.08), rgba(139,92,246,0.05));border:1px solid var(--border);border-radius:12px;padding:18px">
         <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:10px">Revenu potentiel — projection</div>
+        <div style="font-size:10.5px;color:var(--muted);margin-bottom:12px">Basé sur le cumul depuis toujours (pas la période sélectionnée ci-dessus) — plus fiable pour une projection, une fenêtre courte donnerait un ratio trop bruyant pour être exploitable.</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;font-size:12px;color:var(--text)">
-          <div>Taux actuel prospect → lead : <strong>${tauxProspectLead.toFixed(1)}%</strong> (${totalLeads}/${totalProspects})</div>
-          <div>Panier moyen par vente : <strong>${fmtFcfa(panierMoyen)}</strong></div>
-          <div>Si +10 points sur ce taux : <strong style="color:#22C55E">+${fmtFcfa(totalProspects * 0.10 * (txRows.length && totalLeads ? txRows.length/totalLeads : 0) * panierMoyen)}</strong> estimé</div>
+          <div>Taux actuel contacté → lead : <strong>${tauxProspectLead.toFixed(1)}%</strong> (${totalLeads}/${totalContactes})</div>
+          <div>Panier moyen par vente (tout temps) : <strong>${fmtFcfa(panierMoyenToutTemps)}</strong></div>
+          <div>Si +10 points sur ce taux : <strong style="color:#22C55E">+${fmtFcfa(totalContactes * 0.10 * tauxLeadAchatToutTemps * panierMoyenToutTemps)}</strong> estimé</div>
         </div>
       </div>`;
 
