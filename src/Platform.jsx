@@ -2551,6 +2551,9 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const chips = filterMode==='angle' ? angleSet : filterMode==='batch' ? batchSet : (filterMode==='cible' || filterMode==='topPerformer') ? cibleSet : [];
 
   const [togglingTopPerformer, setTogglingTopPerformer] = useState(false);
+  // Popup upsell — s'affiche au marquage Top Performer sur Discovery, jamais de modification
+  // des créatives elles-mêmes dans la grille ni dans la vue de classement.
+  const [showTopPerformerBump, setShowTopPerformerBump] = useState(false);
   const toggleTopPerformer = async (creative) => {
     setTogglingTopPerformer(true);
     const nextValue = !creative.topPerformer;
@@ -2563,12 +2566,10 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         ...p,
         creatives: (p.creatives||[]).map(c => c.id === creative.id ? {...c, topPerformer: nextValue} : c)
       }));
-      // Sur Discovery, marquer Top Performer révèle le bump upsell à la place de la créative
-      // dans la grille (voir le rendu de filtered.map plus bas) — fermer la modale renvoie
-      // naturellement l'utilisateur vers ce moment-là, plutôt que de le laisser face à la
-      // créative comme si de rien n'était.
-      if (nextValue && subscription?.plan === 'discovery') { setSelected(null); }
-      else { setSelected(s => s && s.id === creative.id ? {...s, topPerformer: nextValue} : s); }
+      // Sur Discovery, marquer Top Performer déclenche une popup upsell — jamais de
+      // modification de la créative elle-même, ni dans la grille ni dans la vue de classement.
+      if (nextValue && subscription?.plan === 'discovery') { setShowTopPerformerBump(true); }
+      setSelected(s => s && s.id === creative.id ? {...s, topPerformer: nextValue} : s);
     } catch(e) {
       console.error('Marquage Top Performer échoué :', e.message);
     } finally {
@@ -2865,22 +2866,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
           const isSelectedForSwap = selectedForSwap === c.id;
           const isJustRanked = justRanked.includes(c.id);
 
-          // Sur Discovery, une créative fraîchement marquée Top Performer laisse place à un
-          // bump upsell — "tu viens de trouver un winner, mais sans flux continu impossible de
-          // vraiment l'exploiter". Remplace la carte, même position dans la grille, même clé.
-          if (c.topPerformer && subscription?.plan === 'discovery') {
-            return (
-              <div key={c.id} style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',position:'relative',background:'linear-gradient(160deg,#1B2A4A,#0d1220)',border:`1px solid ${C.accent}55`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'14px 10px',textAlign:'center',gap:6}}>
-                <Icon name="star" size={18} color="#FFC107"/>
-                <div style={{fontSize:11.5,fontWeight:800,color:'#fff',lineHeight:1.25}}>Tu viens de trouver un winner.</div>
-                <div style={{fontSize:9.5,color:'rgba(255,255,255,0.65)',lineHeight:1.4}}>Starter te donne 9 nouvelles images chaque semaine pour aller plus loin sur cet angle — pendant qu'il performe encore.</div>
-                <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{marginTop:4,padding:'6px 12px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:10.5,cursor:'pointer',fontFamily:'inherit'}}>
-                  Passer sur Starter
-                </button>
-              </div>
-            );
-          }
-
           return (
           <div key={c.id} className="gallery-item"
             onClick={() => {
@@ -2937,24 +2922,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
           );
         })}
       </div>
-
-      {subscription?.plan === 'discovery' && filtered.length > 0 && filterMode !== 'topPerformer' && (
-        <div style={{marginTop:20}}>
-          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:2}}>Ça, c'était ton aperçu.</div>
-          <div style={{fontSize:11,color:C.sec,marginBottom:12}}>Avec Starter, tu reçois ce niveau de qualité chaque semaine — moins cher à l'image, et de mieux en mieux au fil des semaines grâce à ce qu'on apprend de tes résultats.</div>
-          <div className="gallery-grid" style={{opacity:0.9}}>
-            {Array.from({length:9}).map((_,i) => (
-              <div key={'ph'+i} style={{aspectRatio:'4/5',borderRadius:6,overflow:'hidden',position:'relative',background:'linear-gradient(160deg,#2a2a35,#14141a)',filter:'blur(2px)'}}>
-                <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.35)'}}/>
-                <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)'}}><Icon name="lock" size={14} color="rgba(255,255,255,0.5)"/></div>
-              </div>
-            ))}
-          </div>
-          <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{marginTop:12,padding:'9px 18px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>
-            Débloquer le flux hebdo
-          </button>
-        </div>
-      )}
 
       {filtered.length===0 && query && (
         <div style={{textAlign:'center',padding:'60px 0',color:C.sec,fontSize:12}}>Aucune créative trouvée pour cette recherche</div>
@@ -3029,6 +2996,24 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
           onCancel={()=>!deleting && setDeleteConfirm(false)}
           onConfirm={confirmDeleteSelected}
         />
+      )}
+      {showTopPerformerBump && (
+        <div onClick={() => setShowTopPerformerBump(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:600,padding:20}}>
+          <div onClick={e => e.stopPropagation()} style={{position:'relative',width:'100%',maxWidth:340,borderRadius:16,background:'linear-gradient(165deg,#1B2A4A,#0d1220)',border:`1px solid ${C.accent}55`,padding:'32px 24px 24px',textAlign:'center'}}>
+            <button onClick={() => setShowTopPerformerBump(false)} style={{position:'absolute',top:12,right:12,width:28,height:28,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Icon name="x" size={13} color="#fff"/>
+            </button>
+            <div style={{width:44,height:44,borderRadius:'50%',background:'rgba(255,193,7,0.15)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
+              <Icon name="star" size={20} color="#FFC107"/>
+            </div>
+            <div style={{fontSize:17,fontWeight:800,color:'#fff',marginBottom:6}}>Un vrai winner.</div>
+            <div style={{fontSize:12.5,color:'rgba(255,255,255,0.7)',lineHeight:1.5,marginBottom:20}}>Starter t'aide à en tirer le maximum — nouveaux angles chaque semaine, tant qu'il performe.</div>
+            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{width:'100%',padding:'12px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13.5,cursor:'pointer',fontFamily:'inherit'}}>
+              Acheter Starter
+            </button>
+            <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:10}}>🔒 Paiement 100% sécurisé</div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -3478,7 +3463,7 @@ const Marche = ({products, isDemo, setSection, subscription, onOpenPayment}) => 
           </div>
         ) : (
           <>
-            <MarcheDossier m={m} selected={selected} isMobile={isMobile} isDemo={isDemo}/>
+            <MarcheDossier m={m} selected={selected} isMobile={isMobile} isDemo={isDemo} subscription={subscription} onOpenPayment={onOpenPayment}/>
           </>
         )}
       </div>
@@ -3543,7 +3528,7 @@ const Mdv4Ic = ({name, size=14, color='currentColor', fill='none'}) => (
 // unifié barres/camembert/saisonnalité, recommandation de prix personnalisée, angles avec
 // justification client-safe + accumulation par cible via buildCiblesDepuisDeliveries, avantages
 // clés, recommandations personnalisées). Remplace l'ancien "dossier narratif".
-const MarcheDossier = ({m, selected, isMobile, isDemo}) => {
+const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayment}) => {
   const p = m.positionnement || {};
   const persona = m.persona || {};
   const angles = m.angles || [];
@@ -5464,13 +5449,16 @@ const views = {
 
 
       {subscription?.plan === 'discovery' && !d2sBannerDismissed && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:14,padding:'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,flexWrap:'wrap'}}>
-          <span style={{fontSize:12.5,fontWeight:600,color:'#fff',textAlign:'center'}}>Discovery t'a montré ce qu'on sait faire. Starter, c'est fait pour scaler.</span>
-          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0}}>
-            Découvrir Starter
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?8:14,padding:isMobile?'7px 10px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,overflow:'hidden'}}>
+          <span style={{flex:'1 1 auto',fontSize:isMobile?10.5:12.5,fontWeight:600,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>
+            <strong style={{background:'linear-gradient(90deg,#FFE082,#FFC107)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Discovery</strong>{isMobile ? ', c\'est fait. ' : ' t\'a montré ce qu\'on sait faire. '}
+            <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Starter</strong>{', c\'est fait pour scaler.'}
+          </span>
+          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?10.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
+            Acheter Starter
           </button>
-          <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:4,display:'flex',flexShrink:0}} aria-label="Fermer">
-            <Icon name="x" size={13} color="rgba(255,255,255,0.75)"/>
+          <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
+            <Icon name="x" size={isMobile?12:13} color="rgba(255,255,255,0.75)"/>
           </button>
         </div>
       )}
