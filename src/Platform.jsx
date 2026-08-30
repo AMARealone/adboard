@@ -2999,19 +2999,26 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       )}
       {showTopPerformerBump && (
         <div onClick={() => setShowTopPerformerBump(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:600,padding:20}}>
-          <div onClick={e => e.stopPropagation()} style={{position:'relative',width:'100%',maxWidth:340,borderRadius:16,background:'linear-gradient(165deg,#1B2A4A,#0d1220)',border:`1px solid ${C.accent}55`,padding:'32px 24px 24px',textAlign:'center'}}>
+          <style>{`@keyframes d2sGradientMove{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}`}</style>
+          <div onClick={e => e.stopPropagation()} style={{position:'relative',width:'100%',maxWidth:380,borderRadius:16,background:'linear-gradient(165deg,#1B2A4A,#0d1220)',border:`1px solid ${C.accent}55`,padding:'36px 26px 24px',textAlign:'center'}}>
             <button onClick={() => setShowTopPerformerBump(false)} style={{position:'absolute',top:12,right:12,width:28,height:28,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Icon name="x" size={13} color="#fff"/>
             </button>
-            <div style={{width:44,height:44,borderRadius:'50%',background:'rgba(255,193,7,0.15)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
-              <Icon name="star" size={20} color="#FFC107"/>
+            <div style={{
+              fontSize:21,fontWeight:800,lineHeight:1.25,marginBottom:12,
+              background:'linear-gradient(90deg,#5B8DEF,#8B5CF6,#5B8DEF)',backgroundSize:'200% auto',
+              WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
+              animation:'d2sGradientMove 3s ease infinite',
+            }}>
+              Félicitations, vous avez trouvé une créative qui performe.
             </div>
-            <div style={{fontSize:17,fontWeight:800,color:'#fff',marginBottom:6}}>Un vrai winner.</div>
-            <div style={{fontSize:12.5,color:'rgba(255,255,255,0.7)',lineHeight:1.5,marginBottom:20}}>Starter t'aide à en tirer le maximum — nouveaux angles chaque semaine, tant qu'il performe.</div>
-            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{width:'100%',padding:'12px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13.5,cursor:'pointer',fontFamily:'inherit'}}>
-              Acheter Starter
+            <div style={{fontSize:13,color:'rgba(255,255,255,0.75)',lineHeight:1.55,marginBottom:22}}>
+              Avec Discovery, vous avez trouvé ce qui performe. Mais c'est uniquement avec <strong style={{color:'#fff'}}>Starter</strong> que vous pouvez en tirer le maximum de profit et faire exploser vos revenus.
+            </div>
+            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{width:'100%',padding:'13px',borderRadius:10,border:'none',background:`linear-gradient(135deg, ${C.accent}, #7C3AED)`,color:'#fff',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:'inherit',boxShadow:`0 4px 18px ${C.accent}55`}}>
+              Commencer avec Starter
             </button>
-            <div style={{fontSize:10,color:'rgba(255,255,255,0.4)',marginTop:10}}>🔒 Paiement 100% sécurisé</div>
+            <div style={{fontSize:10,color:'rgba(255,255,255,0.45)',marginTop:11}}>🔒 Paiement 100% sécurisé · Satisfait ou remboursé</div>
           </div>
         </div>
       )}
@@ -3669,12 +3676,6 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
               <h1 style={{fontSize:24,fontWeight:800,color:'#fff',textShadow:'0 2px 12px rgba(0,0,0,0.5)',margin:0}}>{persona.nom}</h1>
               <p style={{fontSize:12.5,color:'rgba(255,255,255,0.75)',marginTop:3}}>{persona.age} ans · {persona.role} · {persona.ville}</p>
             </div>
-            {subscription?.plan === 'discovery' && (
-              <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])}
-                style={{position:'absolute',top:14,right:14,zIndex:2,padding:'5px 11px',borderRadius:20,border:'1px solid rgba(255,255,255,0.25)',background:'rgba(0,0,0,0.45)',backdropFilter:'blur(4px)',color:'#fff',fontSize:10.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:5}}>
-                <Icon name="clock" size={11} color="#fff"/> Se met à jour chaque semaine avec Starter
-              </button>
-            )}
           </div>
           <div style={{background:C.card,padding:isMobile?20:28}}>
             {persona.quote && <p style={{fontSize:14,lineHeight:1.6,color:C.text,paddingBottom:16,marginBottom:16,borderBottom:`1px solid ${C.border}`}}>"{persona.quote}"</p>}
@@ -5449,14 +5450,16 @@ const views = {
 
 
       {subscription?.plan === 'discovery' && !d2sBannerDismissed && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?8:14,padding:isMobile?'7px 10px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,overflow:'hidden'}}>
-          <span style={{flex:'1 1 auto',fontSize:isMobile?10.5:12.5,fontWeight:600,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>
-            <strong style={{background:'linear-gradient(90deg,#FFE082,#FFC107)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Discovery</strong>{isMobile ? ', c\'est fait. ' : ' t\'a montré ce qu\'on sait faire. '}
-            <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Starter</strong>{', c\'est fait pour scaler.'}
-          </span>
-          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?10.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
-            Acheter Starter
-          </button>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?10:16,padding:isMobile?'7px 10px 7px 60px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,overflow:'hidden'}}>
+          <div style={{display:'flex',alignItems:'center',gap:isMobile?7:10,minWidth:0,flex:'1 1 auto'}}>
+            <span style={{fontSize:isMobile?10.5:12.5,fontWeight:600,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>
+              <strong style={{background:'linear-gradient(90deg,#FFE082,#FFC107)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Discovery</strong>{isMobile ? ', c\'est fait. ' : ' t\'a montré ce qu\'on sait faire. '}
+              <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>Starter</strong>{', c\'est fait pour scaler.'}
+            </span>
+            <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?10.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
+              Acheter Starter
+            </button>
+          </div>
           <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
             <Icon name="x" size={isMobile?12:13} color="rgba(255,255,255,0.75)"/>
           </button>
