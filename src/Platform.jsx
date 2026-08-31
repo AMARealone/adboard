@@ -2430,7 +2430,19 @@ async function shareOrDownloadMultiple(items, isMobile) {
 const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
-  const [activeChip, setActiveChip] = useState(null);
+  const [activeChip, setActiveChip] = useState(null); // reste utilisé tel quel pour Top Performer (cible unique — un classement mélangeant plusieurs cibles n'a pas de sens)
+  // Filtres multi-sélection du mode normal — chacun un Set de valeurs actives. Vide = pas de
+  // restriction sur cette dimension. Combinés en ET entre dimensions (Cible ET Batch ET Angle),
+  // en OU à l'intérieur d'une même dimension (Cible A OU Cible B).
+  const [filtreCibles, setFiltreCibles] = useState(() => new Set());
+  const [filtreBatches, setFiltreBatches] = useState(() => new Set());
+  const [filtreAngles, setFiltreAngles] = useState(() => new Set());
+  const toggleFiltre = (setter) => (valeur) => setter(prev => {
+    const next = new Set(prev);
+    next.has(valeur) ? next.delete(valeur) : next.add(valeur);
+    return next;
+  });
+  const nbFiltresActifs = filtreCibles.size + filtreBatches.size + filtreAngles.size;
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [selected, setSelected] = useState(null);
@@ -2522,9 +2534,13 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     if (selectedProduct && c.productId !== selectedProduct) return false;
     const q = query.trim().toLowerCase();
     if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q) && !(c.cible||'').toLowerCase().includes(q) && !(nomProduitParId[c.productId]||'').toLowerCase().includes(q)) return false;
-    if (filterMode==='angle' && activeChip && c.angle!==activeChip) return false;
-    if (filterMode==='batch' && activeChip && batchKey(c)!==activeChip) return false;
-    if (filterMode==='cible' && activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
+    // Mode normal — les 3 dimensions se combinent en ET, chacune en OU à l'intérieur d'elle-même.
+    // Un Set vide sur une dimension = aucune restriction sur cette dimension précise.
+    if (filterMode==='tous') {
+      if (filtreCibles.size && !filtreCibles.has(c.cible||CIBLE_INCONNUE)) return false;
+      if (filtreBatches.size && !filtreBatches.has(batchKey(c))) return false;
+      if (filtreAngles.size && !filtreAngles.has(c.angle)) return false;
+    }
     // Top Performer exige un produit ET une cible précis — un angle marketing joue sur les
     // émotions d'UNE cible, mélanger plusieurs produits/cibles dans le même classement n'aurait
     // aucun sens (voir garde-fou plus bas qui bloque tant que ces deux choix ne sont pas faits).
@@ -2548,7 +2564,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     return ra - rb;
   });
 
-  const chips = filterMode==='angle' ? angleSet : filterMode==='batch' ? batchSet : (filterMode==='cible' || filterMode==='topPerformer') ? cibleSet : [];
+  const chips = filterMode==='topPerformer' ? cibleSet : []; // mode normal : les 3 groupes (cibleSet/batchSet/angleSet) s'affichent directement, plus besoin de ce sélecteur unique
 
   const [togglingTopPerformer, setTogglingTopPerformer] = useState(false);
   // Popup upsell — s'affiche au marquage Top Performer sur Discovery, jamais de modification
@@ -2611,6 +2627,9 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   // Il reste libre de changer via les filtres juste en dessous, comme d'habitude.
   const handleFilterModeClick = (id) => {
     setFilterMode(id);
+    // Réinitialise les filtres multi-sélection en changeant de mode — un filtre "Cible=X" actif
+    // en mode normal n'a pas de sens à conserver caché en passant sur Top Performer ou Date.
+    setFiltreCibles(new Set()); setFiltreBatches(new Set()); setFiltreAngles(new Set());
     if (id === 'topPerformer') {
       const produitsAvecTopPerformer = products.filter(p => (p.creatives||[]).some(c => c.topPerformer));
       if (produitsAvecTopPerformer.length) {
@@ -2794,14 +2813,21 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         />
       </div>
 
-      {/* Hiérarchie voulue : Tous → Cible → Batch → Angle (Date se cumule avec n'importe lequel) */}
-      <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:18, flexWrap:'wrap'}}>
-        {[['tous','Tous','grid'],['cible','Cible','person'],['batch','Batch','card'],['angle','Angle','tag'],['topPerformer','Top Performer','star'],['date','Date','calendar']].map(([id,label,icon]) => (
+      {/* Cible/Batch/Angle ne sont plus des onglets séparés — ce sont maintenant 3 groupes de
+          filtres combinables, toujours visibles ensemble en mode "Tous" juste en dessous. */}
+      <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:14, flexWrap:'wrap',alignItems:'center'}}>
+        {[['tous','Tous','grid'],['topPerformer','Top Performer','star'],['date','Date','calendar']].map(([id,label,icon]) => (
           <button key={id} onClick={() => handleFilterModeClick(id)}
             style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
           </button>
         ))}
+        {filterMode==='tous' && nbFiltresActifs > 0 && (
+          <button onClick={() => { setFiltreCibles(new Set()); setFiltreBatches(new Set()); setFiltreAngles(new Set()); }}
+            style={{display:'flex',alignItems:'center',gap:5,padding:'7px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+            <Icon name="x" size={11}/> {nbFiltresActifs} filtre{nbFiltresActifs>1?'s':''} actif{nbFiltresActifs>1?'s':''} — effacer
+          </button>
+        )}
       </div>
 
       {filterMode==='date' && (
@@ -2825,13 +2851,37 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         </div>
       )}
 
-      {(filterMode==='angle' || filterMode==='batch' || filterMode==='cible' || filterMode==='topPerformer') && (
+      {filterMode==='tous' && (cibleSet.length>0 || batchSet.length>0 || angleSet.length>0) && (
+        <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:16}}>
+          {[
+            ['Cible', cibleSet, filtreCibles, toggleFiltre(setFiltreCibles), (v)=>v],
+            ['Batch', batchSet, filtreBatches, toggleFiltre(setFiltreBatches), (v)=>batchLabelParKey[v]],
+            ['Angle', angleSet, filtreAngles, toggleFiltre(setFiltreAngles), (v)=>v],
+          ].filter(([,ensemble]) => ensemble.length > 0).map(([label, ensemble, actifs, toggle, libelle]) => (
+            <div key={label}>
+              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:5}}>{label}</div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                {ensemble.map(ch => (
+                  <button key={ch} onClick={() => toggle(ch)}
+                    style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${actifs.has(ch)?C.accent:C.border}`,cursor:'pointer',background:actifs.has(ch)?'rgba(91,141,239,0.14)':'transparent',color:actifs.has(ch)?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}
+                    title={libelle(ch)}>
+                    {actifs.has(ch) && <Icon name="check" size={10}/>}
+                    {libelle(ch)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {filterMode==='topPerformer' && (
         <div style={{display:'flex',gap:6,marginBottom:18,flexWrap:'wrap'}}>
           {chips.map(ch => (
             <button key={ch} onClick={() => setActiveChip(activeChip===ch?null:ch)}
               style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${activeChip===ch?C.borderM:C.border}`,cursor:'pointer',background:activeChip===ch?'rgba(255,255,255,0.09)':'transparent',color:activeChip===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}
               title={ch}>
-              {filterMode==='batch' ? batchLabelParKey[ch] : ch}
+              {ch}
             </button>
           ))}
         </div>
@@ -5510,17 +5560,17 @@ const views = {
 
 
       {subscription?.plan === 'discovery' && !d2sBannerDismissed && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?6:16,padding:isMobile?'8px 8px 8px 56px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0,overflow:'hidden'}}>
-          <div style={{display:'flex',alignItems:'center',gap:isMobile?6:10,minWidth:0,flex:'1 1 auto'}}>
-            <span style={{fontSize:isMobile?11.5:12.5,fontWeight:600,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',minWidth:0}}>
+        <div style={{display:'flex',flexDirection:isMobile?'column':'row',alignItems:isMobile?'stretch':'center',justifyContent:'center',gap:isMobile?8:16,padding:isMobile?'10px 12px 10px 56px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0}}>
+          <div style={{display:'flex',alignItems:isMobile?'flex-start':'center',justifyContent:'space-between',gap:10,minWidth:0}}>
+            <span style={{fontSize:isMobile?12:12.5,fontWeight:600,color:'#fff',lineHeight:1.35,minWidth:0}}>
               Passe aux choses sérieuses avec <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>CONVERSION STARTER</strong>.
             </span>
-            <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'5px 10px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?10.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
-              S'abonner
+            <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
+              <Icon name="x" size={13} color="rgba(255,255,255,0.75)"/>
             </button>
           </div>
-          <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
-            <Icon name="x" size={isMobile?13:13} color="rgba(255,255,255,0.75)"/>
+          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'8px 14px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?12:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap',alignSelf:isMobile?'flex-start':'auto'}}>
+            S'abonner
           </button>
         </div>
       )}
