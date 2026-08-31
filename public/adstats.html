@@ -5436,6 +5436,13 @@ async function renderEmailsSequences() {
   try {
     const r = await fetch(`${SB}/email_sequence_log?select=user_id,email_key,created_at&order=created_at.desc`, { headers: H });
     const rows = await r.json();
+    // Cause du message trompeur ("rows.forEach is not a function") : Supabase renvoie un objet
+    // d'erreur, pas un tableau, quand quelque chose bloque côté base (RLS, colonne absente,
+    // table inexistante...) — jamais visible tant qu'on ne vérifie pas explicitement la forme
+    // de la réponse avant de l'utiliser comme un tableau.
+    if (!Array.isArray(rows)) {
+      throw new Error(rows?.message || rows?.hint || JSON.stringify(rows));
+    }
 
     const parFamille = {};
     rows.forEach(row => {
