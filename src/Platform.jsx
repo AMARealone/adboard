@@ -2471,11 +2471,23 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   // Sections de filtre repliées par défaut — un clic sur le bouton du filtre affiche ses puces,
   // reclic les cache. Plusieurs sections peuvent rester ouvertes en même temps (pour combiner).
   const [sectionsOuvertes, setSectionsOuvertes] = useState(() => new Set());
-  const toggleSection = (nom) => setSectionsOuvertes(prev => {
-    const next = new Set(prev);
-    next.has(nom) ? next.delete(nom) : next.add(nom);
-    return next;
-  });
+  // Fermer la section vide aussi sa sélection — sinon le filtre restait actif en arrière-plan
+  // (résultats toujours filtrés) alors que l'utilisateur pense l'avoir désélectionné en
+  // refermant le bouton.
+  const toggleSection = (nom) => {
+    setSectionsOuvertes(prev => {
+      const next = new Set(prev);
+      const estOuvert = next.has(nom);
+      estOuvert ? next.delete(nom) : next.add(nom);
+      if (estOuvert) {
+        if (nom === 'cible') setFiltreCibles(new Set());
+        if (nom === 'batch') setFiltreBatches(new Set());
+        if (nom === 'angle') setFiltreAngles(new Set());
+        if (nom === 'date') { setDateDebut(''); setDateFin(''); }
+      }
+      return next;
+    });
+  };
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [selected, setSelected] = useState(null);
