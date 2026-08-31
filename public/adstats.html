@@ -5434,7 +5434,7 @@ async function renderEmailsSequences() {
   if (!el) return;
   el.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:13px">Chargement...</div>';
   try {
-    const r = await fetch(`${SB}/email_sequence_log?select=user_id,email_key,created_at&order=created_at.desc`, { headers: H });
+    const r = await fetch(`${SB}/email_sequence_log?select=user_id,email_key,sent_at&order=sent_at.desc`, { headers: H });
     const rows = await r.json();
     // Cause du message trompeur ("rows.forEach is not a function") : Supabase renvoie un objet
     // d'erreur, pas un tableau, quand quelque chose bloque côté base (RLS, colonne absente,
@@ -5448,11 +5448,11 @@ async function renderEmailsSequences() {
     rows.forEach(row => {
       const famille = FAMILLE_SEQUENCE(row.email_key);
       if (!parFamille[famille]) parFamille[famille] = {};
-      if (!parFamille[famille][row.email_key]) parFamille[famille][row.email_key] = { count: 0, premiere: row.created_at, derniere: row.created_at };
+      if (!parFamille[famille][row.email_key]) parFamille[famille][row.email_key] = { count: 0, premiere: row.sent_at, derniere: row.sent_at };
       const g = parFamille[famille][row.email_key];
       g.count++;
-      if (row.created_at < g.premiere) g.premiere = row.created_at;
-      if (row.created_at > g.derniere) g.derniere = row.created_at;
+      if (row.sent_at < g.premiere) g.premiere = row.sent_at;
+      if (row.sent_at > g.derniere) g.derniere = row.sent_at;
     });
 
     const blocFamille = (nom, cles) => `
