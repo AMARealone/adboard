@@ -3987,8 +3987,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     if (type === 'navigate' && parts[1]) { setSection(parts[1]); setOpen(false); }
     if (type === 'openProductForm') { setSection('produits'); setOpen(false); setTimeout(() => openProductForm?.(), 200); }
     if (type === 'login') { sbAuth.signInWithGoogle(); }
-    if (type === 'checkout' || type === 'checkout-annual') {
-      const cycle = type === 'checkout-annual' ? 'annual' : 'monthly';
+    if (type === 'checkout' || type === 'checkout-quarterly') {
+      const cycle = type === 'checkout-quarterly' ? 'quarterly' : 'monthly';
       const productId = PLAN_CHECKOUT_IDS[`${parts[1]}-${cycle}`];
       if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
@@ -4009,9 +4009,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
-    'checkout-annual:starter': 'Starter annuel (-25%) →',
-    'checkout-annual:pro': 'Pro annuel (-25%) →',
-    'checkout-annual:scale': 'Scale annuel (-25%) →',
+    'checkout-quarterly:starter': 'Starter trimestriel (-30%) →',
+    'checkout-quarterly:pro': 'Pro trimestriel (-30%) →',
+    'checkout-quarterly:scale': 'Scale trimestriel (-30%) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4139,39 +4139,39 @@ const PLANS = [
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
     ctaText:'Testez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    once: { price:12900, priceBarre:20000, prixImg:1433, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    once: { price:16900, priceBarre:26900, prixImg:1878, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
   },
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Pour tester vos produits sereinement et obtenir vos premières ventes rentables, sans brûler votre budget.',
     ctaText:'Vendez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    monthly: { price:39900, priceBarre:80000, prixImg:1108, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    annual:  { price:29900, priceBarre:40000, prixImg:831, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:49900, priceBarre:100000, prixImg:1386, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:34900, priceBarre:50000, prixImg:969, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Pour dominer votre marché, écraser vos coûts d\'acquisition et positionner votre marque en leader.',
     ctaText:'Dominez Votre Marché',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
-    monthly: { price:79900, priceBarre:160000, prixImg:1110, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    annual:  { price:59900, priceBarre:80000, prixImg:832, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:99900, priceBarre:200000, prixImg:1388, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:69900, priceBarre:100000, prixImg:971, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'L\'arsenal complet pour inonder de multiples marchés en simultané et faire exploser votre ROAS.',
     ctaText:'Explosez Votre Croissance',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
-    monthly: { price:119900, priceBarre:320000, prixImg:833, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    annual:  { price:89900, priceBarre:120000,  prixImg:624, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:149900, priceBarre:400000, prixImg:1041, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:104900, priceBarre:150000, prixImg:728, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
 const PLAN_CHECKOUT_IDS = {
   'discovery-once':  'prd_ywk7ik14',
-  'starter-monthly': 'prd_ljowq8',   'starter-annual': 'prd_wdya3v9h',
-  'pro-monthly':     'prd_34w031',   'pro-annual':     'prd_lnp4ax0b',
-  'scale-monthly':   'prd_9fi79y',   'scale-annual':   'prd_dn4fb72l',
+  'starter-monthly': 'prd_ljowq8',   'starter-quarterly': 'prd_wdya3v9h',
+  'pro-monthly':     'prd_34w031',   'pro-quarterly':     'prd_lnp4ax0b',
+  'scale-monthly':   'prd_9fi79y',   'scale-quarterly':   'prd_dn4fb72l',
 };
 
 // Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
@@ -4301,9 +4301,9 @@ const Faq = () => {
 
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, credits=null, onOpenPayment=null}) => {
   const isMobile = useIsMobile();
-  const [annual, setAnnual] = useState(false); // par défaut sur mensuel
+  const [quarterly, setQuarterly] = useState(false); // par défaut sur mensuel
   const onCta = async (plan) => {
-    const cycle = plan.isPack ? 'once' : (annual ? 'annual' : 'monthly');
+    const cycle = plan.isPack ? 'once' : (quarterly ? 'quarterly' : 'monthly');
     const cycleData = plan[cycle];
     try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
     const productId = PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`];
@@ -4361,23 +4361,23 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         </p>
       </div>
 
-      {/* ── Toggle Mensuel / Annuel ── */}
+      {/* ── Toggle Mensuel / Trimestriel ── */}
       <div style={{display:'flex',flexDirection:'column',alignItems:isMobile?'center':'flex-start',marginBottom:24}}>
         <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <span style={{fontSize:13,fontWeight:600,color:!annual?C.text:C.sec}}>Mensuel</span>
+          <span style={{fontSize:13,fontWeight:600,color:!quarterly?C.text:C.sec}}>Mensuel</span>
           <button
-            onClick={() => setAnnual(a => !a)}
-            style={{width:44,height:24,borderRadius:99,border:'none',cursor:'pointer',position:'relative',background:annual?C.accent:'rgba(255,255,255,0.15)',transition:'background 0.2s',flexShrink:0}}
+            onClick={() => setQuarterly(a => !a)}
+            style={{width:44,height:24,borderRadius:99,border:'none',cursor:'pointer',position:'relative',background:quarterly?C.accent:'rgba(255,255,255,0.15)',transition:'background 0.2s',flexShrink:0}}
           >
-            <div style={{position:'absolute',top:2,left:annual?22:2,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
+            <div style={{position:'absolute',top:2,left:quarterly?22:2,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
           </button>
-          <span style={{fontSize:13,fontWeight:600,color:annual?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
-            Annuel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-25%</span>
+          <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
+            Trimestriel
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-30%</span>
           </span>
         </div>
         <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par an. <strong style={{color:C.accent}}>L'annuel te fait économiser jusqu'à 25%.</strong>
+          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 30%.</strong>
         </p>
       </div>
 
@@ -4397,19 +4397,19 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         : {display:'flex',flexDirection:'row',gap:14,marginBottom:20,overflowX:'auto',paddingBottom:8}
       }>
         {PLANS.filter(p => p.id !== 'discovery').map(p => {
-          const selectedCycle = annual ? 'annual' : 'monthly';
+          const selectedCycle = quarterly ? 'quarterly' : 'monthly';
           const sameTier = userPlan === p.id;
-          // Abonnements créés avant l'ajout du cycle annuel → toujours mensuel historiquement
+          // Abonnements créés avant l'ajout du cycle trimestriel → toujours mensuel historiquement
           const currentCycle = subscription?.cycle || 'monthly';
           const isCurrent = subscription?.active && sameTier && (p.isPack || currentCycle === selectedCycle);
-          const isCycleUpsell = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'annual';   // même palier, passer à l'annuel
+          const isCycleUpsell = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'quarterly';   // même palier, passer au trimestriel
           const isCycleDowngradeCycle = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
           const PLAN_ORDER = { discovery:0, starter:1, pro:2, scale:3 };
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           // Le pack Discovery n'a pas de cycle mensuel/annuel — toujours son propre prix "once",
           // peu importe l'état du toggle global de la page.
-          const cycleData = p.isPack ? p.once : (annual ? p.annual : p.monthly);
+          const cycleData = p.isPack ? p.once : (quarterly ? p.quarterly : p.monthly);
           const visuelsLabel = p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
                               : p.id === 'pro' ? `${p.imagesPerWeek} Visuels Haute Performance`
                               : `${p.imagesPerWeek} Visuels Multi-Angles`;
@@ -4471,7 +4471,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
                 <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
-                {!p.isPack && annual && (
+                {!p.isPack && quarterly && (
                   <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan annuel</span>
                 )}
               </div>
@@ -5131,7 +5131,7 @@ export default function Platform() {
           if (pendingRaw) {
             localStorage.removeItem('adstack_pending_plan');
             const pendingPlan = JSON.parse(pendingRaw);
-            const pendingCycle = pendingPlan.cycle || 'annual';
+            const pendingCycle = pendingPlan.cycle || 'quarterly';
             setSection('tarifs');
             const productId = PLAN_CHECKOUT_IDS[`${pendingPlan.id}-${pendingCycle}`];
             setTimeout(() => {
