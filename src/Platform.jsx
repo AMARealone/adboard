@@ -5657,17 +5657,15 @@ const views = {
 
 
       {subscription?.plan === 'discovery' && !d2sBannerDismissed && (
-        <div style={{display:'flex',flexDirection:isMobile?'column':'row',alignItems:isMobile?'stretch':'center',justifyContent:'center',gap:isMobile?8:16,padding:isMobile?'10px 12px 10px 56px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0}}>
-          <div style={{display:'flex',alignItems:isMobile?'flex-start':'center',justifyContent:'space-between',gap:10,minWidth:0}}>
-            <span style={{fontSize:isMobile?12:12.5,fontWeight:600,color:'#fff',lineHeight:1.35,minWidth:0}}>
-              Passe aux choses sérieuses avec <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>CONVERSION STARTER</strong>.
-            </span>
-            <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
-              <Icon name="x" size={13} color="rgba(255,255,255,0.75)"/>
-            </button>
-          </div>
-          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'8px 14px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?12:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap',alignSelf:isMobile?'flex-start':'auto'}}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?10:16,padding:isMobile?'10px 12px 10px 56px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0}}>
+          <span style={{flex:'1 1 auto',fontSize:isMobile?12:12.5,fontWeight:600,color:'#fff',lineHeight:1.35,minWidth:0}}>
+            Passe aux choses sérieuses avec <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>CONVERSION STARTER</strong>.
+          </span>
+          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'7px 12px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?11.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
             S'abonner
+          </button>
+          <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
+            <Icon name="x" size={13} color="rgba(255,255,255,0.75)"/>
           </button>
         </div>
       )}

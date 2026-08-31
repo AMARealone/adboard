@@ -5426,8 +5426,21 @@ const LABELS_SEQUENCES = {
   d2s_j7: "Discovery→Starter — J7 (urgence)",
   d2s_dernier_rappel_1: "Discovery→Starter — J9 (push dernier rappel)",
   d2s_j10: "Discovery→Starter — J10 (breakup)",
+  push_no_product: "Push quotidien — sans produit ajouté",
+  push_no_plan: "Push quotidien — sans abonnement",
+  renewal_reminder: "Push — rappel de renouvellement",
+  push_saw_pricing: "Push — a consulté la tarification",
+  push_no_brief: "Push — brief incomplet",
+  renewal: "Renouvellement effectué",
 };
 const FAMILLE_SEQUENCE = (cle) => cle.startsWith('d2s_') ? 'Discovery → Starter (post-achat)' : 'Pré-achat (prospect → premier client)';
+// Les push quotidiens (rappels récurrents) portent la date du jour dans leur clé, pour la
+// déduplication d'envoi côté serveur — ex: push_no_product_2026-08-26. Sans ça, chaque jour
+// devient une ligne séparée : des centaines de lignes pour ce qui est en réalité UNE seule
+// campagne récurrente. Normalisé ici pour regrouper toutes ces variantes datées ensemble.
+function normaliserCleCampagne(cle) {
+  return cle.replace(/_\d{4}-\d{2}-\d{2}$/, '');
+}
 
 async function renderEmailsSequences() {
   const el = document.getElementById('es-content');
@@ -5442,54 +5455,101 @@ async function renderEmailsSequences() {
     const rows = await rSent.json();
     const eventsRows = await rEvents.json();
     const funnelRows = await rFunnel.json();
-    // Cause du message trompeur ("rows.forEach is not a function") : Supabase renvoie un objet
-    // d'erreur, pas un tableau, quand quelque chose bloque côté base (RLS, colonne absente,
-    // table inexistante...) — jamais visible tant qu'on ne vérifie pas explicitement la forme
-    // de la réponse avant de l'utiliser comme un tableau.
     if (!Array.isArray(rows)) throw new Error(rows?.message || rows?.hint || JSON.stringify(rows));
     const eventsOk = Array.isArray(eventsRows) ? eventsRows : [];
     const funnelOk = Array.isArray(funnelRows) ? funnelRows : [];
 
-    const parFamille = {};
+    // Regroupement par campagne normalisée (date retirée) plutôt que par email_key brut — sinon
+    // un push quotidien envoyé sur 60 jours devient 60 lignes au lieu d'une seule campagne.
+    const parCampagne = {};
     rows.forEach(row => {
-      const famille = FAMILLE_SEQUENCE(row.email_key);
-      if (!parFamille[famille]) parFamille[famille] = {};
-      if (!parFamille[famille][row.email_key]) parFamille[famille][row.email_key] = { count: 0, premiere: row.sent_at, derniere: row.sent_at, ouverts: 0, clics: 0, panier: 0, paiement: 0 };
-      const g = parFamille[famille][row.email_key];
+      const cle = normaliserCleCampagne(row.email_key);
+      if (!parCampagne[cle]) parCampagne[cle] = { count: 0, premiere: row.sent_at, derniere: row.sent_at, ouverts: 0, clics: 0, panier: 0, paiement: 0, famille: FAMILLE_SEQUENCE(row.email_key) };
+      const g = parCampagne[cle];
       g.count++;
       if (row.sent_at < g.premiere) g.premiere = row.sent_at;
       if (row.sent_at > g.derniere) g.derniere = row.sent_at;
     });
+    eventsOk.forEach(ev => {
+      const g = parCampagne[normaliserCleCampagne(ev.email_key)];
+      if (!g) return;
+      if (ev.event_type === 'opened') g.ouverts++;
+      if (ev.event_type === 'clicked') g.clics++;
+    });
+    funnelOk.forEach(ev => {
+      const g = parCampagne[normaliserCleCampagne(ev.campagne)];
+      if (!g) return;
+      if (ev.type === 'ajout_panier') g.panier++;
+      if (ev.type === 'paiement_initie') g.paiement++;
+    });
 
-    // Ouvertures/clics — comptés par email_key, peu importe la famille (le regroupement
-    // ci-dessus sert juste à répartir dans le bon tableau une fois trouvé).
-    for (const ev of eventsOk) {
-      for (const famille in parFamille) {
-        const g = parFamille[famille][ev.email_key];
-        if (!g) continue;
-        if (ev.event_type === 'opened') g.ouverts++;
-        if (ev.event_type === 'clicked') g.clics++;
-      }
-    }
-    // Conversions — funnel_events.campagne porte la clé de l'étape (utm_campaign transmis
-    // depuis le lien de l'email/push jusqu'à AdBoard ou vente.html).
-    for (const ev of funnelOk) {
-      for (const famille in parFamille) {
-        const g = parFamille[famille][ev.campagne];
-        if (!g) continue;
-        if (ev.type === 'ajout_panier') g.panier++;
-        if (ev.type === 'paiement_initie') g.paiement++;
-      }
-    }
-
+    const campagnes = Object.entries(parCampagne).sort((a,b) => b[1].count - a[1].count);
+    const totalEnvoyes = rows.length;
+    const totalOuverts = eventsOk.filter(e => e.event_type==='opened').length;
+    const totalClics = eventsOk.filter(e => e.event_type==='clicked').length;
+    const totalConversions = funnelOk.filter(e => e.type==='ajout_panier' || e.type==='paiement_initie').length;
     const pct = (n, total) => total > 0 ? Math.round(n/total*100) + '%' : '—';
+    const branchee = eventsOk.length > 0 || funnelOk.length > 0;
 
-    const blocFamille = (nom, cles) => `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;overflow-x:auto">
-        <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">${nom}</div>
+    // ── KPI globaux ──
+    const kpi = (label, valeur, sousTexte) => `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">
+        <div style="font-size:10.5px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">${label}</div>
+        <div style="font-size:24px;font-weight:800;color:var(--white)">${valeur}</div>
+        ${sousTexte ? `<div style="font-size:11px;color:var(--muted);margin-top:3px">${sousTexte}</div>` : ''}
+      </div>`;
+
+    // ── Graphique — barres horizontales des 8 campagnes les plus envoyées, en SVG pur ──
+    const top8 = campagnes.slice(0, 8);
+    const maxCount = Math.max(...top8.map(([,d]) => d.count), 1);
+    const largeurGraph = 640, hauteurBarre = 26, gapBarre = 10;
+    const hauteurGraph = top8.length * (hauteurBarre + gapBarre);
+    const graphique = top8.length ? `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;overflow-x:auto">
+        <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">Volume d'envoi — top 8 campagnes</div>
+        <svg viewBox="0 0 ${largeurGraph} ${hauteurGraph}" style="width:100%;max-width:${largeurGraph}px;height:auto">
+          ${top8.map(([cle, d], i) => {
+            const y = i * (hauteurBarre + gapBarre);
+            const largeurBarre = Math.max((d.count / maxCount) * 420, 3);
+            return `
+              <text x="0" y="${y + hauteurBarre/2 + 4}" font-size="11" fill="var(--muted)">${(LABELS_SEQUENCES[cle] || cle).slice(0,28)}</text>
+              <rect x="200" y="${y}" width="${largeurBarre}" height="${hauteurBarre}" rx="4" fill="var(--blue)" opacity="0.85"/>
+              <text x="${200 + largeurBarre + 8}" y="${y + hauteurBarre/2 + 4}" font-size="11" font-weight="700" fill="var(--white)">${d.count}</text>
+            `;
+          }).join('')}
+        </svg>
+      </div>` : '';
+
+    // ── Classement performance — seulement pertinent une fois qu'il y a de vraies ouvertures ──
+    const classementPerf = branchee && totalOuverts > 0 ? (() => {
+      const avecTaux = campagnes.filter(([,d]) => d.count >= 3).map(([cle,d]) => [cle, d, d.ouverts/d.count]);
+      const meilleures = [...avecTaux].sort((a,b) => b[2]-a[2]).slice(0,3);
+      const pires = [...avecTaux].sort((a,b) => a[2]-b[2]).slice(0,3);
+      const ligne = ([cle,d,taux], bon) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:12px;color:var(--text)">${LABELS_SEQUENCES[cle]||cle}</span>
+          <span style="font-size:12px;font-weight:700;color:${bon?'var(--green)':'#EF4444'}">${Math.round(taux*100)}%</span>
+        </div>`;
+      return `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">
+            <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">✓ Ce qui performe (ouverture, min. 3 envois)</div>
+            ${meilleures.map(x=>ligne(x,true)).join('') || '<div style="font-size:11px;color:var(--muted)">Pas encore assez de données</div>'}
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px">
+            <div style="font-size:12px;font-weight:700;color:#EF4444;margin-bottom:8px">✗ Ce qui performe le moins (min. 3 envois)</div>
+            ${pires.map(x=>ligne(x,false)).join('') || '<div style="font-size:11px;color:var(--muted)">Pas encore assez de données</div>'}
+          </div>
+        </div>`;
+    })() : '';
+
+    const tableau = `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;overflow-x:auto">
+        <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">Toutes les campagnes</div>
         <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:680px">
           <thead><tr style="border-bottom:1px solid var(--border)">
-            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Étape</th>
+            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Campagne</th>
+            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Famille</th>
             <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Envoyés</th>
             <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Ouverture</th>
             <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Clic</th>
@@ -5498,9 +5558,10 @@ async function renderEmailsSequences() {
             <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Dernier envoi</th>
           </tr></thead>
           <tbody>
-            ${Object.entries(cles).sort((a,b) => b[1].count - a[1].count).map(([cle, d]) => `
+            ${campagnes.map(([cle, d]) => `
               <tr style="border-bottom:1px solid var(--border)">
                 <td style="padding:8px 10px;color:var(--text)">${LABELS_SEQUENCES[cle] || cle}</td>
+                <td style="padding:8px 10px;color:var(--muted);font-size:11px">${d.famille.split(' (')[0]}</td>
                 <td style="padding:8px 10px;text-align:right;color:var(--text);font-weight:700">${d.count}</td>
                 <td style="padding:8px 10px;text-align:right;color:var(--text)">${pct(d.ouverts, d.count)}</td>
                 <td style="padding:8px 10px;text-align:right;color:var(--text)">${pct(d.clics, d.count)}</td>
@@ -5512,8 +5573,6 @@ async function renderEmailsSequences() {
         </table>
       </div>`;
 
-    const familles = Object.keys(parFamille);
-    const branchee = eventsOk.length > 0 || funnelOk.length > 0;
     el.innerHTML = `
       ${!branchee ? `
       <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:10px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.3);margin-bottom:20px">
@@ -5522,7 +5581,15 @@ async function renderEmailsSequences() {
           <strong>Branchement fait, mais aucune donnée encore reçue.</strong> Les colonnes Ouverture/Clic/Panier/Paiement sont prêtes — elles se rempliront dès les premiers événements réels (ouverture d'un email envoyé après ce déploiement, webhook Resend configuré côté dashboard).
         </div>
       </div>` : ''}
-      ${familles.length ? familles.map(f => blocFamille(f, parFamille[f])).join('') : '<div style="padding:30px;text-align:center;color:var(--muted);font-size:12px">Aucun envoi enregistré pour l\'instant.</div>'}
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px">
+        ${kpi('Envoyés (total)', totalEnvoyes)}
+        ${kpi('Taux d\'ouverture', pct(totalOuverts, totalEnvoyes), branchee ? `${totalOuverts} ouverts` : 'en attente de données')}
+        ${kpi('Taux de clic', pct(totalClics, totalEnvoyes), branchee ? `${totalClics} clics` : 'en attente de données')}
+        ${kpi('Conversions', totalConversions, 'panier + paiement attribuables')}
+      </div>
+      ${graphique}
+      ${classementPerf}
+      ${campagnes.length ? tableau : '<div style="padding:30px;text-align:center;color:var(--muted);font-size:12px">Aucun envoi enregistré pour l\'instant.</div>'}
     `;
   } catch(e) {
     el.innerHTML = `<div style="padding:20px;color:#EF4444;font-size:12px">Erreur : ${e.message}</div>`;
