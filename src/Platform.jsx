@@ -2443,6 +2443,14 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     return next;
   });
   const nbFiltresActifs = filtreCibles.size + filtreBatches.size + filtreAngles.size;
+  // Groupes fermés par défaut — jusqu'ici les 3 s'affichaient toujours grands ouverts avec
+  // toutes leurs puces d'un coup, trop encombré dès qu'il y a plusieurs cibles/batches/angles.
+  const [groupesOuverts, setGroupesOuverts] = useState(() => new Set());
+  const toggleGroupeOuvert = (label) => setGroupesOuverts(prev => {
+    const next = new Set(prev);
+    next.has(label) ? next.delete(label) : next.add(label);
+    return next;
+  });
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [selected, setSelected] = useState(null);
@@ -2852,26 +2860,39 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       )}
 
       {filterMode==='tous' && (cibleSet.length>0 || batchSet.length>0 || angleSet.length>0) && (
-        <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:16}}>
+        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16}}>
           {[
             ['Cible', cibleSet, filtreCibles, toggleFiltre(setFiltreCibles), (v)=>v],
             ['Batch', batchSet, filtreBatches, toggleFiltre(setFiltreBatches), (v)=>batchLabelParKey[v]],
             ['Angle', angleSet, filtreAngles, toggleFiltre(setFiltreAngles), (v)=>v],
-          ].filter(([,ensemble]) => ensemble.length > 0).map(([label, ensemble, actifs, toggle, libelle]) => (
-            <div key={label}>
-              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:5}}>{label}</div>
-              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                {ensemble.map(ch => (
-                  <button key={ch} onClick={() => toggle(ch)}
-                    style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${actifs.has(ch)?C.accent:C.border}`,cursor:'pointer',background:actifs.has(ch)?'rgba(91,141,239,0.14)':'transparent',color:actifs.has(ch)?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}
-                    title={libelle(ch)}>
-                    {actifs.has(ch) && <Icon name="check" size={10}/>}
-                    {libelle(ch)}
-                  </button>
-                ))}
-              </div>
+          ].filter(([,ensemble]) => ensemble.length > 0).map(([label, ensemble, actifs, toggle, libelle]) => {
+            const estOuvert = groupesOuverts.has(label);
+            return (
+            <div key={label} style={{border:`1px solid ${actifs.size?C.accent+'55':C.border}`,borderRadius:9,overflow:'hidden'}}>
+              <button onClick={() => toggleGroupeOuvert(label)}
+                style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:actifs.size?'rgba(91,141,239,0.08)':'transparent',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
+                <span style={{display:'flex',alignItems:'center',gap:7}}>
+                  <span style={{fontSize:10.5,color:C.text,fontWeight:700,textTransform:'uppercase',letterSpacing:.6}}>{label}</span>
+                  {actifs.size > 0 && <span style={{fontSize:10,fontWeight:700,color:C.accent,background:'rgba(91,141,239,0.15)',borderRadius:20,padding:'1px 7px'}}>{actifs.size}</span>}
+                  <span style={{fontSize:10,color:C.muted}}>({ensemble.length})</span>
+                </span>
+                <span style={{color:C.muted,fontSize:11,transform:estOuvert?'rotate(180deg)':'none',transition:'transform 0.15s'}}>▾</span>
+              </button>
+              {estOuvert && (
+                <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'0 12px 10px'}}>
+                  {ensemble.map(ch => (
+                    <button key={ch} onClick={() => toggle(ch)}
+                      style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${actifs.has(ch)?C.accent:C.border}`,cursor:'pointer',background:actifs.has(ch)?'rgba(91,141,239,0.14)':'transparent',color:actifs.has(ch)?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}
+                      title={libelle(ch)}>
+                      {actifs.has(ch) && <Icon name="check" size={10}/>}
+                      {libelle(ch)}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
