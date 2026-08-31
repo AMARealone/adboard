@@ -4248,12 +4248,20 @@ async function renderDashboard() {
         const cutoffDateFunnel = new Date(); cutoffDateFunnel.setDate(cutoffDateFunnel.getDate() - dashPeriod); cutoffDateFunnel.setHours(0,0,0,0);
         queryFunnel += `&created_at=gte.${cutoffDateFunnel.toISOString()}`;
       }
-      let totalAjoutsPanier = 0, totalPaiementsInities = 0;
+      let totalAjoutsPanier = 0, totalPaiementsInities = 0, erreurFunnel = null;
       const panierParCampagne = {}, paiementParCampagne = {};
       try {
         const rFunnel = await fetch(queryFunnel, { headers: H });
         const funnelData = await rFunnel.json();
-        if (Array.isArray(funnelData)) {
+        // Cause profonde du bug "plus d'ajout panier depuis la migration" : Supabase renvoie un
+        // objet d'erreur (souvent RLS manquante après une migration), pas un tableau — le simple
+        // test Array.isArray échouait silencieusement, sans lever d'exception ni logguer quoi
+        // que ce soit. Le total restait à zéro sans aucun signal visible, même en cas d'échec
+        // total de la requête.
+        if (!Array.isArray(funnelData)) {
+          erreurFunnel = funnelData?.message || funnelData?.hint || 'réponse inattendue de Supabase';
+          console.error('[Dashboard] funnel_events — réponse non-tableau :', funnelData);
+        } else {
           funnelData.forEach(f => {
             if (f.type === 'ajout_panier') {
               totalAjoutsPanier++;
@@ -4264,7 +4272,7 @@ async function renderDashboard() {
             }
           });
         }
-      } catch(eFunnel) { console.warn('[Dashboard] funnel_events indisponible :', eFunnel.message); }
+      } catch(eFunnel) { erreurFunnel = eFunnel.message; console.error('[Dashboard] funnel_events — erreur réseau :', eFunnel.message); }
       const MESSAGES = [
         { cle: 'pitch', label: 'Pitch', envoyes: envoyes.pitch, achats: null },
         { cle: 'demo',  label: 'Démo',  envoyes: envoyes.demo,  achats: null },
@@ -4312,7 +4320,8 @@ async function renderDashboard() {
       const ovEl = document.getElementById('dash-clics-overview');
       if (ovEl) {
         ovEl.innerHTML =
-          '<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;flex-wrap:wrap">'
+          (erreurFunnel ? '<div style="padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#EF4444;font-size:11.5px;margin-bottom:10px">⚠️ Ajouts panier / paiements non chargés : ' + erreurFunnel + '</div>' : '')
+          + '<div style="display:flex;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;flex-wrap:wrap">'
           + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalEnvoyes + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Messages envoyés</div></div>'
           + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--blue)">' + totalClics + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Clics</div><div style="font-size:10px;color:var(--yellow);font-weight:600;margin-top:2px">CTR ' + ctrGlobal + (ctrGlobal!=='—'?'%':'') + '</div></div>'
           + '<div style="flex:1;min-width:110px;padding:16px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:20px;font-weight:800;color:var(--text)">' + totalAjoutsPanier + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Ajouts au panier</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">' + ratioPanier + (ratioPanier!=='—'?'%':'') + ' des clics</div></div>'
