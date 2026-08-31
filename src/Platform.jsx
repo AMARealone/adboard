@@ -1,6 +1,22 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
 
+// Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
+// interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
+// séquences email/push (Discovery→Starter notamment), jamais captée avant ce changement.
+(function() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const campagne = params.get('utm_campaign');
+    const source = params.get('utm_source');
+    if (campagne) {
+      localStorage.setItem('adstack_attribution', JSON.stringify({
+        campagne, source: source || null, capture_le: new Date().toISOString()
+      }));
+    }
+  } catch(e) {}
+})();
+
 // ── Supabase Auth ──────────────────────────────────────────────────────────
 const SUPABASE_URL = 'https://hgxcpkrqdahmxhmpouvm.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneGNwa3JxZGFobXhobXBvdXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODE1MjYsImV4cCI6MjEwMzM1NzUyNn0.xms5HtCq05O6o1ddWCDZyc3ITf0sZZbA0ltS9z1GIRw';
@@ -93,10 +109,19 @@ function adstackTrackFunnelAdboard(type, userId) {
     const flagKey = 'adstack_tracked_' + type;
     if (sessionStorage.getItem(flagKey)) return;
     sessionStorage.setItem(flagKey, '1');
+    let campagne = null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      campagne = params.get('utm_campaign');
+      if (!campagne) {
+        const attr = JSON.parse(localStorage.getItem('adstack_attribution') || 'null');
+        if (attr) campagne = attr.campagne;
+      }
+    } catch(e) {}
     fetch('https://adstack-server.onrender.com/track-funnel-event', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ type, source: 'adboard', user_id: userId || null }),
+      body: JSON.stringify({ type, source: 'adboard', user_id: userId || null, campagne }),
       keepalive: true
     }).catch(()=>{});
   } catch(e) {}
@@ -2443,12 +2468,12 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     return next;
   });
   const nbFiltresActifs = filtreCibles.size + filtreBatches.size + filtreAngles.size;
-  // Groupes fermés par défaut — jusqu'ici les 3 s'affichaient toujours grands ouverts avec
-  // toutes leurs puces d'un coup, trop encombré dès qu'il y a plusieurs cibles/batches/angles.
-  const [groupesOuverts, setGroupesOuverts] = useState(() => new Set());
-  const toggleGroupeOuvert = (label) => setGroupesOuverts(prev => {
+  // Sections de filtre repliées par défaut — un clic sur le bouton du filtre affiche ses puces,
+  // reclic les cache. Plusieurs sections peuvent rester ouvertes en même temps (pour combiner).
+  const [sectionsOuvertes, setSectionsOuvertes] = useState(() => new Set());
+  const toggleSection = (nom) => setSectionsOuvertes(prev => {
     const next = new Set(prev);
-    next.has(label) ? next.delete(label) : next.add(label);
+    next.has(nom) ? next.delete(nom) : next.add(nom);
     return next;
   });
   const [dateDebut, setDateDebut] = useState('');
@@ -2514,7 +2539,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   // hiérarchie voulue est Tous → Produit → Cible → Batch → Angle (Date se cumule avec n'importe
   // laquelle) — chaque niveau doit filtrer réellement ce que le niveau suivant propose.
   const creativesDuProduit = selectedProduct ? realCreatives.filter(c => c.productId === selectedProduct) : realCreatives;
-  const angleSet = [...new Set(creativesDuProduit.map(c => c.angle))];
   // "Batch" — anciennement affiché sous le nom "Date", ce qui prêtait à confusion avec la vraie
   // date de livraison (voir le nouveau filtre "Date" en dessous).
   // Cause profonde corrigée (collision "Batch 1" entre deux produits différents) : le numéro de
@@ -2526,28 +2550,64 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const nomProduitParId = {};
   products.forEach(p => { nomProduitParId[p.id] = p.nom; });
   const batchKey = (c) => `${c.productId}::${c.week}`;
-  const batchLabelParKey = {};
-  creativesDuProduit.forEach(c => {
-    if (c.week) batchLabelParKey[batchKey(c)] = `Batch ${c.week.replace(/^[SB]/,'')} · ${nomProduitParId[c.productId] || '?'}`;
-  });
-  const batchSet = Object.keys(batchLabelParKey)
-    .sort((a,b) => batchLabelParKey[a].localeCompare(batchLabelParKey[b], undefined, {numeric:true}));
   // Nouveau filtre Cible — chaque créative porte maintenant sa cible d'origine (voir serveur).
   // Les créatives livrées avant ce fix n'ont pas ce champ — regroupées sous un intitulé honnête
   // plutôt que d'être silencieusement exclues du filtre.
   const CIBLE_INCONNUE = 'Cible non identifiée (livrée avant ce fix)';
-  const cibleSet = [...new Set(creativesDuProduit.map(c => c.cible || CIBLE_INCONNUE))];
+
+  // Filtrage à facettes — chaque dimension calcule ses options possibles en tenant compte des
+  // AUTRES filtres déjà actifs (jamais d'elle-même, pour rester multi-sélection dans sa propre
+  // dimension). Ex : choisir une cible précise ne laisse apparaître, dans Batch et Angle, que
+  // ce qui existe réellement pour cette cible — plus d'options qui mèneraient à zéro résultat.
+  const creativesFiltreesSauf = (dimensionExclue) => creativesDuProduit.filter(c => {
+    if (dimensionExclue !== 'cible' && filtreCibles.size && !filtreCibles.has(c.cible||CIBLE_INCONNUE)) return false;
+    if (dimensionExclue !== 'batch' && filtreBatches.size && !filtreBatches.has(batchKey(c))) return false;
+    if (dimensionExclue !== 'angle' && filtreAngles.size && !filtreAngles.has(c.angle)) return false;
+    if (dimensionExclue !== 'date' && (dateDebut || dateFin)) {
+      const t = dateCreative(c);
+      if (dateDebut && t < new Date(dateDebut).getTime()) return false;
+      if (dateFin && t > new Date(dateFin).getTime() + 86400000) return false;
+    }
+    return true;
+  });
+
+  const angleSet = [...new Set(creativesFiltreesSauf('angle').map(c => c.angle))];
+  const batchLabelParKey = {};
+  creativesFiltreesSauf('batch').forEach(c => {
+    if (c.week) batchLabelParKey[batchKey(c)] = `Batch ${c.week.replace(/^[SB]/,'')} · ${nomProduitParId[c.productId] || '?'}`;
+  });
+  const batchSet = Object.keys(batchLabelParKey)
+    .sort((a,b) => batchLabelParKey[a].localeCompare(batchLabelParKey[b], undefined, {numeric:true}));
+  const cibleSet = [...new Set(creativesFiltreesSauf('cible').map(c => c.cible || CIBLE_INCONNUE))];
+
+  // Si une valeur déjà sélectionnée disparaît des options possibles (devenue incompatible avec
+  // un autre filtre choisi entre-temps), la retirer automatiquement — sinon elle reste active
+  // mais invisible, et peut vider les résultats sans qu'on comprenne pourquoi.
+  useEffect(() => {
+    setFiltreCibles(prev => { const next = new Set([...prev].filter(v => cibleSet.includes(v))); return next.size===prev.size ? prev : next; });
+  }, [cibleSet.join('|')]);
+  useEffect(() => {
+    setFiltreBatches(prev => { const next = new Set([...prev].filter(v => batchSet.includes(v))); return next.size===prev.size ? prev : next; });
+  }, [batchSet.join('|')]);
+  useEffect(() => {
+    setFiltreAngles(prev => { const next = new Set([...prev].filter(v => angleSet.includes(v))); return next.size===prev.size ? prev : next; });
+  }, [angleSet.join('|')]);
 
   const filtered = realCreatives.filter(c => {
     if (selectedProduct && c.productId !== selectedProduct) return false;
     const q = query.trim().toLowerCase();
     if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q) && !(c.cible||'').toLowerCase().includes(q) && !(nomProduitParId[c.productId]||'').toLowerCase().includes(q)) return false;
-    // Mode normal — les 3 dimensions se combinent en ET, chacune en OU à l'intérieur d'elle-même.
-    // Un Set vide sur une dimension = aucune restriction sur cette dimension précise.
+    // Les 4 dimensions se combinent en ET, chacune en OU à l'intérieur d'elle-même (sauf Date,
+    // une seule plage). Un Set vide/une date vide = aucune restriction sur cette dimension.
     if (filterMode==='tous') {
       if (filtreCibles.size && !filtreCibles.has(c.cible||CIBLE_INCONNUE)) return false;
       if (filtreBatches.size && !filtreBatches.has(batchKey(c))) return false;
       if (filtreAngles.size && !filtreAngles.has(c.angle)) return false;
+      if (dateDebut || dateFin) {
+        const t = dateCreative(c);
+        if (dateDebut && t < new Date(dateDebut).getTime()) return false;
+        if (dateFin && t > new Date(dateFin).getTime() + 86400000) return false; // inclut toute la journée de fin
+      }
     }
     // Top Performer exige un produit ET une cible précis — un angle marketing joue sur les
     // émotions d'UNE cible, mélanger plusieurs produits/cibles dans le même classement n'aurait
@@ -2556,11 +2616,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       if (!c.topPerformer) return false;
       if (!selectedProduct) return false;
       if (activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
-    }
-    if (filterMode==='date') {
-      const t = dateCreative(c);
-      if (dateDebut && t < new Date(dateDebut).getTime()) return false;
-      if (dateFin && t > new Date(dateFin).getTime() + 86400000) return false; // inclut toute la journée de fin
     }
     return true;
   }).sort((a, b) => {
@@ -2821,78 +2876,87 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         />
       </div>
 
-      {/* Cible/Batch/Angle ne sont plus des onglets séparés — ce sont maintenant 3 groupes de
-          filtres combinables, toujours visibles ensemble en mode "Tous" juste en dessous. */}
-      <div style={{display:'flex',gap:6,marginBottom:filterMode!=='tous'?10:14, flexWrap:'wrap',alignItems:'center'}}>
-        {[['tous','Tous','grid'],['topPerformer','Top Performer','star'],['date','Date','calendar']].map(([id,label,icon]) => (
+      {/* Cible/Batch/Angle/Date sont combinables entre eux (comme demandé), mais chacun garde
+          ses puces cachées tant qu'on n'a pas cliqué sur son bouton — reclic = referme. */}
+      <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap',alignItems:'center'}}>
+        {[['tous','Tous','grid'],['topPerformer','Top Performer','star']].map(([id,label,icon]) => (
           <button key={id} onClick={() => handleFilterModeClick(id)}
             style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
           </button>
         ))}
-        {filterMode==='tous' && nbFiltresActifs > 0 && (
-          <button onClick={() => { setFiltreCibles(new Set()); setFiltreBatches(new Set()); setFiltreAngles(new Set()); }}
+        {filterMode==='tous' && [
+          ['Cible', 'cible', cibleSet.length, filtreCibles.size],
+          ['Batch', 'batch', batchSet.length, filtreBatches.size],
+          ['Angle', 'angle', angleSet.length, filtreAngles.size],
+          ['Date', 'date', 1, (dateDebut||dateFin) ? 1 : 0],
+        ].filter(([,,nbOptions]) => nbOptions > 0).map(([label, id, , nbActifs]) => (
+          <button key={id} onClick={() => toggleSection(id)}
+            style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:`1px solid ${sectionsOuvertes.has(id)?C.accent:C.border}`,cursor:'pointer',background:sectionsOuvertes.has(id)?'rgba(91,141,239,0.1)':'transparent',color:sectionsOuvertes.has(id)?C.text:C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
+            {label}
+            {nbActifs > 0 && <span style={{fontSize:10,fontWeight:700,color:C.accent,background:'rgba(91,141,239,0.15)',borderRadius:20,padding:'1px 6px'}}>{nbActifs}</span>}
+          </button>
+        ))}
+        {filterMode==='tous' && (nbFiltresActifs > 0 || dateDebut || dateFin) && (
+          <button onClick={() => { setFiltreCibles(new Set()); setFiltreBatches(new Set()); setFiltreAngles(new Set()); setDateDebut(''); setDateFin(''); setSectionsOuvertes(new Set()); }}
             style={{display:'flex',alignItems:'center',gap:5,padding:'7px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
-            <Icon name="x" size={11}/> {nbFiltresActifs} filtre{nbFiltresActifs>1?'s':''} actif{nbFiltresActifs>1?'s':''} — effacer
+            <Icon name="x" size={11}/> Effacer les filtres
           </button>
         )}
       </div>
 
-      {filterMode==='date' && (
-        <div style={{display:'flex',gap:10,alignItems:'center',marginBottom:18,flexWrap:'wrap'}}>
-          <div style={{display:'flex',flexDirection:'column',gap:3}}>
-            <span style={{fontSize:10,color:C.muted,textTransform:'uppercase',letterSpacing:.5}}>Du</span>
-            <input type="date" value={dateDebut} onChange={e=>setDateDebut(e.target.value)}
-              style={{padding:'7px 10px',borderRadius:7,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none'}}/>
-          </div>
-          <div style={{display:'flex',flexDirection:'column',gap:3}}>
-            <span style={{fontSize:10,color:C.muted,textTransform:'uppercase',letterSpacing:.5}}>Au</span>
-            <input type="date" value={dateFin} onChange={e=>setDateFin(e.target.value)}
-              style={{padding:'7px 10px',borderRadius:7,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none'}}/>
-          </div>
-          {(dateDebut || dateFin) && (
-            <button onClick={()=>{setDateDebut('');setDateFin('');}}
-              style={{alignSelf:'flex-end',padding:'7px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
-              Effacer
-            </button>
-          )}
-        </div>
-      )}
-
-      {filterMode==='tous' && (cibleSet.length>0 || batchSet.length>0 || angleSet.length>0) && (
-        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16}}>
-          {[
-            ['Cible', cibleSet, filtreCibles, toggleFiltre(setFiltreCibles), (v)=>v],
-            ['Batch', batchSet, filtreBatches, toggleFiltre(setFiltreBatches), (v)=>batchLabelParKey[v]],
-            ['Angle', angleSet, filtreAngles, toggleFiltre(setFiltreAngles), (v)=>v],
-          ].filter(([,ensemble]) => ensemble.length > 0).map(([label, ensemble, actifs, toggle, libelle]) => {
-            const estOuvert = groupesOuverts.has(label);
-            return (
-            <div key={label} style={{border:`1px solid ${actifs.size?C.accent+'55':C.border}`,borderRadius:9,overflow:'hidden'}}>
-              <button onClick={() => toggleGroupeOuvert(label)}
-                style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 12px',background:actifs.size?'rgba(91,141,239,0.08)':'transparent',border:'none',cursor:'pointer',fontFamily:'inherit'}}>
-                <span style={{display:'flex',alignItems:'center',gap:7}}>
-                  <span style={{fontSize:10.5,color:C.text,fontWeight:700,textTransform:'uppercase',letterSpacing:.6}}>{label}</span>
-                  {actifs.size > 0 && <span style={{fontSize:10,fontWeight:700,color:C.accent,background:'rgba(91,141,239,0.15)',borderRadius:20,padding:'1px 7px'}}>{actifs.size}</span>}
-                  <span style={{fontSize:10,color:C.muted}}>({ensemble.length})</span>
-                </span>
-                <span style={{color:C.muted,fontSize:11,transform:estOuvert?'rotate(180deg)':'none',transition:'transform 0.15s'}}>▾</span>
-              </button>
-              {estOuvert && (
-                <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'0 12px 10px'}}>
-                  {ensemble.map(ch => (
-                    <button key={ch} onClick={() => toggle(ch)}
-                      style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${actifs.has(ch)?C.accent:C.border}`,cursor:'pointer',background:actifs.has(ch)?'rgba(91,141,239,0.14)':'transparent',color:actifs.has(ch)?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}
-                      title={libelle(ch)}>
-                      {actifs.has(ch) && <Icon name="check" size={10}/>}
-                      {libelle(ch)}
-                    </button>
-                  ))}
-                </div>
-              )}
+      {filterMode==='tous' && (
+        <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:16}}>
+          {sectionsOuvertes.has('cible') && cibleSet.length > 0 && (
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {cibleSet.map(ch => (
+                <button key={ch} onClick={() => toggleFiltre(setFiltreCibles)(ch)}
+                  style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${filtreCibles.has(ch)?C.accent:C.border}`,cursor:'pointer',background:filtreCibles.has(ch)?'rgba(91,141,239,0.14)':'transparent',color:filtreCibles.has(ch)?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}
+                  title={ch}>
+                  {filtreCibles.has(ch) && <Icon name="check" size={10}/>}
+                  {ch}
+                </button>
+              ))}
             </div>
-            );
-          })}
+          )}
+          {sectionsOuvertes.has('batch') && batchSet.length > 0 && (
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {batchSet.map(ch => (
+                <button key={ch} onClick={() => toggleFiltre(setFiltreBatches)(ch)}
+                  style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${filtreBatches.has(ch)?C.accent:C.border}`,cursor:'pointer',background:filtreBatches.has(ch)?'rgba(91,141,239,0.14)':'transparent',color:filtreBatches.has(ch)?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}
+                  title={batchLabelParKey[ch]}>
+                  {filtreBatches.has(ch) && <Icon name="check" size={10}/>}
+                  {batchLabelParKey[ch]}
+                </button>
+              ))}
+            </div>
+          )}
+          {sectionsOuvertes.has('angle') && angleSet.length > 0 && (
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {angleSet.map(ch => (
+                <button key={ch} onClick={() => toggleFiltre(setFiltreAngles)(ch)}
+                  style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${filtreAngles.has(ch)?C.accent:C.border}`,cursor:'pointer',background:filtreAngles.has(ch)?'rgba(91,141,239,0.14)':'transparent',color:filtreAngles.has(ch)?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}
+                  title={ch}>
+                  {filtreAngles.has(ch) && <Icon name="check" size={10}/>}
+                  {ch}
+                </button>
+              ))}
+            </div>
+          )}
+          {sectionsOuvertes.has('date') && (
+            <div style={{display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+              <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                <span style={{fontSize:9,color:C.muted}}>Du</span>
+                <input type="date" value={dateDebut} onChange={e=>setDateDebut(e.target.value)}
+                  style={{padding:'6px 9px',borderRadius:7,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:11.5,fontFamily:'inherit',outline:'none'}}/>
+              </div>
+              <div style={{display:'flex',flexDirection:'column',gap:3}}>
+                <span style={{fontSize:9,color:C.muted}}>Au</span>
+                <input type="date" value={dateFin} onChange={e=>setDateFin(e.target.value)}
+                  style={{padding:'6px 9px',borderRadius:7,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:11.5,fontFamily:'inherit',outline:'none'}}/>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

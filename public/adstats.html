@@ -5434,35 +5434,67 @@ async function renderEmailsSequences() {
   if (!el) return;
   el.innerHTML = '<div style="padding:20px;color:var(--muted);font-size:13px">Chargement...</div>';
   try {
-    const r = await fetch(`${SB}/email_sequence_log?select=user_id,email_key,sent_at&order=sent_at.desc`, { headers: H });
-    const rows = await r.json();
+    const [rSent, rEvents, rFunnel] = await Promise.all([
+      fetch(`${SB}/email_sequence_log?select=user_id,email_key,sent_at&order=sent_at.desc`, { headers: H }),
+      fetch(`${SB}/email_events?select=email_key,event_type`, { headers: H }),
+      fetch(`${SB}/funnel_events?select=type,campagne&campagne=not.is.null`, { headers: H }),
+    ]);
+    const rows = await rSent.json();
+    const eventsRows = await rEvents.json();
+    const funnelRows = await rFunnel.json();
     // Cause du message trompeur ("rows.forEach is not a function") : Supabase renvoie un objet
     // d'erreur, pas un tableau, quand quelque chose bloque côté base (RLS, colonne absente,
     // table inexistante...) — jamais visible tant qu'on ne vérifie pas explicitement la forme
     // de la réponse avant de l'utiliser comme un tableau.
-    if (!Array.isArray(rows)) {
-      throw new Error(rows?.message || rows?.hint || JSON.stringify(rows));
-    }
+    if (!Array.isArray(rows)) throw new Error(rows?.message || rows?.hint || JSON.stringify(rows));
+    const eventsOk = Array.isArray(eventsRows) ? eventsRows : [];
+    const funnelOk = Array.isArray(funnelRows) ? funnelRows : [];
 
     const parFamille = {};
     rows.forEach(row => {
       const famille = FAMILLE_SEQUENCE(row.email_key);
       if (!parFamille[famille]) parFamille[famille] = {};
-      if (!parFamille[famille][row.email_key]) parFamille[famille][row.email_key] = { count: 0, premiere: row.sent_at, derniere: row.sent_at };
+      if (!parFamille[famille][row.email_key]) parFamille[famille][row.email_key] = { count: 0, premiere: row.sent_at, derniere: row.sent_at, ouverts: 0, clics: 0, panier: 0, paiement: 0 };
       const g = parFamille[famille][row.email_key];
       g.count++;
       if (row.sent_at < g.premiere) g.premiere = row.sent_at;
       if (row.sent_at > g.derniere) g.derniere = row.sent_at;
     });
 
+    // Ouvertures/clics — comptés par email_key, peu importe la famille (le regroupement
+    // ci-dessus sert juste à répartir dans le bon tableau une fois trouvé).
+    for (const ev of eventsOk) {
+      for (const famille in parFamille) {
+        const g = parFamille[famille][ev.email_key];
+        if (!g) continue;
+        if (ev.event_type === 'opened') g.ouverts++;
+        if (ev.event_type === 'clicked') g.clics++;
+      }
+    }
+    // Conversions — funnel_events.campagne porte la clé de l'étape (utm_campaign transmis
+    // depuis le lien de l'email/push jusqu'à AdBoard ou vente.html).
+    for (const ev of funnelOk) {
+      for (const famille in parFamille) {
+        const g = parFamille[famille][ev.campagne];
+        if (!g) continue;
+        if (ev.type === 'ajout_panier') g.panier++;
+        if (ev.type === 'paiement_initie') g.paiement++;
+      }
+    }
+
+    const pct = (n, total) => total > 0 ? Math.round(n/total*100) + '%' : '—';
+
     const blocFamille = (nom, cles) => `
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;overflow-x:auto">
         <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">${nom}</div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:680px">
           <thead><tr style="border-bottom:1px solid var(--border)">
             <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Étape</th>
             <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Envoyés</th>
-            <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Premier envoi</th>
+            <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Ouverture</th>
+            <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Clic</th>
+            <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Panier</th>
+            <th style="text-align:right;padding:8px 10px;color:var(--muted);font-weight:600">Paiement</th>
             <th style="text-align:left;padding:8px 10px;color:var(--muted);font-weight:600">Dernier envoi</th>
           </tr></thead>
           <tbody>
@@ -5470,7 +5502,10 @@ async function renderEmailsSequences() {
               <tr style="border-bottom:1px solid var(--border)">
                 <td style="padding:8px 10px;color:var(--text)">${LABELS_SEQUENCES[cle] || cle}</td>
                 <td style="padding:8px 10px;text-align:right;color:var(--text);font-weight:700">${d.count}</td>
-                <td style="padding:8px 10px;color:var(--muted)">${new Date(d.premiere).toLocaleDateString('fr-FR')}</td>
+                <td style="padding:8px 10px;text-align:right;color:var(--text)">${pct(d.ouverts, d.count)}</td>
+                <td style="padding:8px 10px;text-align:right;color:var(--text)">${pct(d.clics, d.count)}</td>
+                <td style="padding:8px 10px;text-align:right;color:var(--green)">${d.panier || '—'}</td>
+                <td style="padding:8px 10px;text-align:right;color:var(--green)">${d.paiement || '—'}</td>
                 <td style="padding:8px 10px;color:var(--muted)">${new Date(d.derniere).toLocaleDateString('fr-FR')}</td>
               </tr>`).join('')}
           </tbody>
@@ -5478,13 +5513,15 @@ async function renderEmailsSequences() {
       </div>`;
 
     const familles = Object.keys(parFamille);
+    const branchee = eventsOk.length > 0 || funnelOk.length > 0;
     el.innerHTML = `
+      ${!branchee ? `
       <div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:10px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.3);margin-bottom:20px">
         <span style="font-size:16px">⚠️</span>
         <div style="font-size:12px;color:var(--text);line-height:1.6">
-          <strong>Cette page montre uniquement les envois confirmés pour l'instant.</strong> Taux d'ouverture, taux de clic et conversions (ajout panier / paiement / achat attribuables à un email) ne sont pas encore captés — ça demande de brancher le webhook Resend et d'ajouter des UTM sur les liens des emails, pas encore fait. Dès que c'est branché, ces colonnes s'ajoutent ici sans rien changer à cette vue.
+          <strong>Branchement fait, mais aucune donnée encore reçue.</strong> Les colonnes Ouverture/Clic/Panier/Paiement sont prêtes — elles se rempliront dès les premiers événements réels (ouverture d'un email envoyé après ce déploiement, webhook Resend configuré côté dashboard).
         </div>
-      </div>
+      </div>` : ''}
       ${familles.length ? familles.map(f => blocFamille(f, parFamille[f])).join('') : '<div style="padding:30px;text-align:center;color:var(--muted);font-size:12px">Aucun envoi enregistré pour l\'instant.</div>'}
     `;
   } catch(e) {
