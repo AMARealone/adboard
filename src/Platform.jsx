@@ -1893,10 +1893,14 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     // Filet de sécurité — garantit que le spinner ne reste JAMAIS bloqué indéfiniment, même si
     // le serveur ou le site cible se comporte mal d'une façon qu'on n'a pas anticipée. Timeout
     // manuel via AbortController (pas AbortSignal.timeout(), déjà identifié comme peu fiable
-    // selon les environnements navigateur) — 25s, légèrement au-dessus du timeout serveur (20s)
-    // pour lui laisser la priorité de répondre proprement avant de couper côté client.
+    // selon les environnements navigateur).
+    // Cause du fix précédent (extraction réussie côté serveur, mais champs jamais remplis) : ce
+    // timeout était à 25s, alors que le serveur peut légitimement dépasser 40s à lui seul —
+    // jusqu'à 25s pour fetchPageText, PLUS jusqu'à 3 réessais Gemini en cas de limite de débit
+    // (attente croissante 8s/16s/32s). Le client abandonnait avant que le serveur ait fini de
+    // réussir. Porté à 70s, avec une vraie marge au-dessus du pire cas serveur observé.
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 70000);
     try {
       const r = await fetch('https://adstack-server.onrender.com/fetch-product-info', {
         method: 'POST',
@@ -1916,7 +1920,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         }));
       }
     } catch(e) {
-      console.warn('[fetchProductInfoFromLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 25s dépassé' : e.message);
+      console.warn('[fetchProductInfoFromLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 70s dépassé' : e.message);
     } finally {
       clearTimeout(timeoutId);
       setFetchingLien(false);
@@ -2260,7 +2264,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 )}
               </div>
               <div style={{fontSize:10,color:C.muted,marginTop:6}}>
-                {fetchingLien ? 'On regarde votre page produit — ça va préremplir les champs ci-dessous...' : "Collez le lien, on préremplit le nom, le prix, le pays et le reste pour vous."}
+                {fetchingLien ? 'On regarde votre page produit — ça peut prendre jusqu\'à une minute sur certains sites...' : "Collez le lien, on préremplit le nom, le prix, le pays et le reste pour vous."}
               </div>
             </div>
 
