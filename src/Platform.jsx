@@ -770,6 +770,7 @@ const sbProducts = {
       lien: product.lien||'', utilite: product.utilite||'', cible: product.cible||'',
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
       couleur3: product.couleur3||'', photo_url: photoUrl,
+      galerie_images: product.galerie_images || [],
     };
     console.log('[Save] Body envoyé à Supabase:', JSON.stringify({...body, photo_url: photoUrl ? '(url)' : null}));
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
@@ -797,6 +798,7 @@ const sbProducts = {
       lien: product.lien||'', utilite: product.utilite||'', cible: product.cible||'',
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
       couleur3: product.couleur3||'', photo_url: photoUrl,
+      galerie_images: product.galerie_images || [],
       updated_at: new Date().toISOString(),
     };
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
@@ -1950,7 +1952,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     window.addEventListener('openProductForm', handler);
     return () => window.removeEventListener('openProductForm', handler);
   }, [user]);
-  const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); };
+  const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); setImagesTrouvees(p.galerie_images || []); };
 
   const handleFile = (e, fieldKey) => {
     const file = e.target.files?.[0];
@@ -1984,13 +1986,16 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
     const session = await sbAuth.refreshSession();
+    // Carrousel récupéré depuis le lien produit — rattaché ici au formulaire juste avant l'envoi,
+    // pas stocké directement dans form au fil du form (état séparé, voir imagesTrouvees).
+    const formAvecGalerie = { ...form, galerie_images: imagesTrouvees };
     if (editingId) {
-      setProducts(prev => prev.map(p => p.id===editingId ? {...form, id:editingId} : p));
-      if (session) sbProducts.update(session, editingId, form);
+      setProducts(prev => prev.map(p => p.id===editingId ? {...formAvecGalerie, id:editingId} : p));
+      if (session) sbProducts.update(session, editingId, formAvecGalerie);
       notify(`"${form.nom}" mis à jour`, 'product');
     } else {
       if (session) {
-        const saved = await sbProducts.save(session, form);
+        const saved = await sbProducts.save(session, formAvecGalerie);
         if (saved) {
           setProducts(prev => [...prev, saved]);
           notify(`Produit "${saved.nom}" créé avec succès`, 'product');
@@ -5142,6 +5147,10 @@ export default function Platform() {
         couleur1: product.couleur1 || '', couleur2: product.couleur2 || '', couleur3: product.couleur3 || '',
         photo_url: product.photo_url || null,
         photo_base64: product.photo?.startsWith('data:') ? product.photo : null,
+        // Carrousel complet — Factory choisit lui-même la vraie photo produit dedans (pas
+        // forcément celle présélectionnée côté AdBoard), avant de lancer le pipeline qualité
+        // habituel sur l'image retenue.
+        galerie_images: product.galerie_images || [],
         lien_page_produit: product.lien || null,
         marque: product.marque || null,
       },
