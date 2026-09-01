@@ -1733,6 +1733,7 @@ textarea::placeholder { color: var(--muted); }
         </div>
       </div>
       <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
+      <button class="btn btn-ghost btn-sm" onclick="exporterDashboardMd()">Télécharger (.md)</button>
     </div>
   </div>
 
@@ -4080,6 +4081,40 @@ async function renderApiCosts() {
   ).join('');
 }
 
+// Export .md du dashboard — lit les données déjà calculées par le dernier rendu (window.
+// _dashExportData), jamais un recalcul séparé, pour garantir que le fichier correspond
+// exactement à ce qui est affiché à l'écran au moment du clic.
+function exporterDashboardMd() {
+  const d = window._dashExportData;
+  if (!d) { alert('Le dashboard doit être chargé avant de pouvoir exporter — attends la fin du chargement et réessaie.'); return; }
+  const fmt = (v) => v === null || v === undefined ? '—' : (typeof v === 'number' ? v.toFixed(1) + '%' : v);
+  let md = '# Dashboard AdStack — export\n\n';
+  md += '**Période :** ' + d.periode + '\n';
+  md += '**Généré le :** ' + new Date().toLocaleString('fr-FR') + '\n\n';
+  md += '## Vue d\'ensemble\n\n';
+  md += '| Indicateur | Valeur |\n|---|---|\n';
+  md += '| Messages envoyés | ' + d.totalEnvoyes + ' |\n';
+  md += '| Clics | ' + d.totalClics + ' (CTR ' + d.ctrGlobal + (d.ctrGlobal!=='—'?'%':'') + ') |\n';
+  md += '| Ajouts au panier | ' + d.totalAjoutsPanier + ' (' + d.ratioPanier + (d.ratioPanier!=='—'?'%':'') + ' des clics) |\n';
+  md += '| Paiements initiés | ' + d.totalPaiementsInities + ' (' + d.ratioPaiement + (d.ratioPaiement!=='—'?'%':'') + ' des clics) |\n';
+  md += '| Acheteurs | ' + d.totalAcheteurs + ' (' + d.ratioAcheteurs + (d.ratioAcheteurs!=='—'?'%':'') + ' des clics) |\n\n';
+  md += '## Performance par message\n\n';
+  const avecConv = d.lignes.some(l => l.achats !== null);
+  md += '| Étape | Envoyés | Clics | CTR | Panier | Paiement' + (avecConv ? ' | Conversion' : '') + ' |\n';
+  md += '|---|---|---|---|---|---' + (avecConv ? '|---' : '') + '|\n';
+  d.lignes.forEach(l => {
+    md += '| ' + l.label + ' | ' + l.envoyes + ' | ' + l.clics + ' | ' + fmt(l.ctr) + ' | ' + fmt(l.panier) + ' | ' + fmt(l.paiement)
+        + (avecConv ? ' | ' + (l.achats !== null ? fmt(l.conv) : '—') : '') + ' |\n';
+  });
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dashboard_adstack_' + new Date().toISOString().slice(0,10) + '.md';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 async function renderDashboard() {
   if (!document.getElementById('dash-hero-funnel')) return;
 
@@ -4329,6 +4364,16 @@ async function renderDashboard() {
           + '<div style="flex:1;min-width:110px;padding:16px;text-align:center"><div style="font-size:20px;font-weight:800;color:var(--green)">' + totalAcheteurs + '</div><div style="font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Acheteurs</div><div style="font-size:10px;color:var(--muted);font-weight:600;margin-top:2px">' + ratioAcheteurs + (ratioAcheteurs!=='—'?'%':'') + ' des clics</div></div>'
           + '</div>';
       }
+      // Données mises de côté pour le bouton d'export .md — évite de tout recalculer séparément,
+      // et garantit que le fichier exporté correspond exactement à ce qui est affiché à l'écran.
+      window._dashExportData = {
+        periode: (from && to) ? (from + ' au ' + to) : (dashPeriod >= 9999 ? 'Toute la période' : ('Derniers ' + dashPeriod + ' jours')),
+        totalEnvoyes, totalClics, ctrGlobal,
+        totalAjoutsPanier, ratioPanier,
+        totalPaiementsInities, ratioPaiement,
+        totalAcheteurs, ratioAcheteurs,
+        lignes,
+      };
     } catch(e) {
       jpEl.innerHTML = '<div style="font-size:12px;color:var(--red)">Erreur de chargement des clics</div>';
     }
