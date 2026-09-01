@@ -1890,11 +1890,19 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     if (lienFetchedRef.current === url) return; // déjà tenté pour cette URL exacte
     lienFetchedRef.current = url;
     setFetchingLien(true);
+    // Filet de sécurité — garantit que le spinner ne reste JAMAIS bloqué indéfiniment, même si
+    // le serveur ou le site cible se comporte mal d'une façon qu'on n'a pas anticipée. Timeout
+    // manuel via AbortController (pas AbortSignal.timeout(), déjà identifié comme peu fiable
+    // selon les environnements navigateur) — 25s, légèrement au-dessus du timeout serveur (20s)
+    // pour lui laisser la priorité de répondre proprement avant de couper côté client.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     try {
       const r = await fetch('https://adstack-server.onrender.com/fetch-product-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
+        body: JSON.stringify({ url }),
+        signal: controller.signal,
       });
       const j = await r.json();
       if (j.ok && j.data) {
@@ -1908,8 +1916,9 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         }));
       }
     } catch(e) {
-      console.warn('[fetchProductInfoFromLien] échec silencieux:', e.message);
+      console.warn('[fetchProductInfoFromLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 25s dépassé' : e.message);
     } finally {
+      clearTimeout(timeoutId);
       setFetchingLien(false);
     }
   };
