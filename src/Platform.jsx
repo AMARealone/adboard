@@ -2266,13 +2266,29 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 traité, permet de choisir une autre image que celle présélectionnée sans tout
                 re-uploader manuellement. */}
             {imagesTrouvees.length > 1 && (
-              <div style={{marginBottom:20,marginTop:-8}}>
-                <div style={{fontSize:10,color:C.muted,marginBottom:6}}>{imagesTrouvees.length} images trouvées sur la page — cliquez pour choisir</div>
-                <div style={{display:'flex',gap:7,overflowX:'auto',paddingBottom:4}}>
-                  {imagesTrouvees.map((imgUrl, i) => (
-                    <div key={i} onClick={() => setForm(f => ({...f, photo: imgUrl}))}
-                      style={{width:46,height:46,flexShrink:0,borderRadius:9,border:`1.5px solid ${form.photo===imgUrl?C.accent:C.border}`,background:`url(${imgUrl}) center/cover no-repeat`,cursor:'pointer',transition:'border-color 0.15s'}}/>
-                  ))}
+              <div style={{marginBottom:20,marginTop:-8,padding:14,borderRadius:12,background:'rgba(91,141,239,0.05)',border:`1px solid rgba(91,141,239,0.18)`}}>
+                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
+                  <Icon name="grid" size={13} color={C.accent}/>
+                  <span style={{fontSize:11.5,fontWeight:700,color:C.text}}>{imagesTrouvees.length} images trouvées sur la page</span>
+                  <span style={{fontSize:10,color:C.muted}}>— cliquez pour choisir</span>
+                </div>
+                <div style={{display:'flex',gap:9,overflowX:'auto',paddingBottom:4}}>
+                  {imagesTrouvees.map((imgUrl, i) => {
+                    const selectionnee = form.photo === imgUrl;
+                    return (
+                      <div key={i} onClick={() => setForm(f => ({...f, photo: imgUrl}))}
+                        style={{position:'relative',width:58,height:58,flexShrink:0,borderRadius:10,border:`2px solid ${selectionnee?C.accent:'transparent'}`,background:`url(${imgUrl}) center/cover no-repeat`,cursor:'pointer',transition:'transform 0.15s, border-color 0.15s',boxShadow:selectionnee?`0 0 0 3px rgba(91,141,239,0.2)`:'none'}}
+                        onMouseEnter={e=>{ if(!selectionnee) e.currentTarget.style.transform='scale(1.06)'; }}
+                        onMouseLeave={e=>{ e.currentTarget.style.transform='scale(1)'; }}
+                      >
+                        {selectionnee && (
+                          <div style={{position:'absolute',top:-5,right:-5,width:18,height:18,borderRadius:'50%',background:C.accent,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
+                            <Icon name="check" size={10} color="#fff"/>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
