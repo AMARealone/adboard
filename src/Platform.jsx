@@ -1888,6 +1888,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const photoRef = useRef(null);
   const [fetchingLien, setFetchingLien] = useState(false);
   const [imagesTrouvees, setImagesTrouvees] = useState([]);
+  const [lienMessage, setLienMessage] = useState(''); // message affiché après tentative d'extraction, succès ou échec
   const lienFetchedRef = useRef('');
 
   // Pré-remplissage intelligent depuis le lien de la page produit — jamais écrasant :
@@ -1898,6 +1899,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     if (lienFetchedRef.current === url) return; // déjà tenté pour cette URL exacte
     lienFetchedRef.current = url;
     setFetchingLien(true);
+    setLienMessage('');
     // Filet de sécurité — garantit que le spinner ne reste JAMAIS bloqué indéfiniment, même si
     // le serveur ou le site cible se comporte mal d'une façon qu'on n'a pas anticipée. Timeout
     // manuel via AbortController (pas AbortSignal.timeout(), déjà identifié comme peu fiable
@@ -1932,16 +1934,22 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           utilite: f.utilite || j.data.utilite || f.utilite,
           promo: f.promo || j.data.promo || f.promo,
         }));
+        setLienMessage('success');
+      } else {
+        // Le client doit savoir que ça n'a pas marché — sinon il croit que les champs vides sont
+        // normaux, ou pense que quelque chose est cassé, plutôt que de simplement les remplir.
+        setLienMessage('manuel');
       }
     } catch(e) {
       console.warn('[fetchProductInfoFromLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 70s dépassé' : e.message);
+      setLienMessage('manuel');
     } finally {
       clearTimeout(timeoutId);
       setFetchingLien(false);
     }
   };
 
-  const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); setImagesTrouvees([]); };
+  const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); setImagesTrouvees([]); setLienMessage(''); };
 
   // Cause profonde corrigée (le bouton "Créer mon produit maintenant" du chatbot ne faisait
   // jamais rien de visible à part changer de section) : ce window event était dispatché à deux
@@ -1952,7 +1960,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     window.addEventListener('openProductForm', handler);
     return () => window.removeEventListener('openProductForm', handler);
   }, [user]);
-  const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); setImagesTrouvees(p.galerie_images || []); };
+  const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); setImagesTrouvees(p.galerie_images || []); setLienMessage(''); };
 
   const handleFile = (e, fieldKey) => {
     const file = e.target.files?.[0];
@@ -2311,8 +2319,14 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',width:14,height:14,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>
                 )}
               </div>
-              <div style={{fontSize:10,color:C.muted,marginTop:6}}>
-                {fetchingLien ? 'On regarde votre page produit — ça peut prendre jusqu\'à une minute sur certains sites...' : "Collez le lien, on préremplit le nom, le prix, le pays et le reste pour vous."}
+              <div style={{fontSize:10,marginTop:6,color:fetchingLien?C.muted:lienMessage==='manuel'?'#EAB308':lienMessage==='success'?C.accent:C.muted}}>
+                {fetchingLien
+                  ? 'On regarde votre page produit — ça peut prendre jusqu\'à une minute sur certains sites...'
+                  : lienMessage==='success'
+                    ? '✓ On a trouvé pas mal d\'infos sur cette page — vérifiez que tout est correct ci-dessous.'
+                    : lienMessage==='manuel'
+                      ? "On n'a pas réussi à tout récupérer automatiquement sur cette page — pas de souci, complétez simplement les champs ci-dessous 👇"
+                      : "Collez le lien, on préremplit le nom, le prix, le pays et le reste pour vous."}
               </div>
             </div>
 
