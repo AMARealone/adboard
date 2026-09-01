@@ -1809,7 +1809,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
             <img src={p.logo} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
           </div>
         )}
-        <div style={{position:'absolute',top:7,right:7,display:'flex',gap:5,opacity:hovered?1:0,transition:'opacity 0.15s'}}>
+        <div style={{position:'absolute',top:7,right:7,display:'flex',gap:5,opacity:hovered?1:0,transition:'opacity 0.15s',zIndex:3}}>
           <button onClick={() => openEdit(p)} style={{width:22,height:22,borderRadius:6,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(91,141,239,0.85)'}
             onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
@@ -1823,8 +1823,13 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
             <Icon name="x" size={11} color="#E4E7EC"/>
           </button>
         </div>
-        <div style={{position:'absolute',top:7,left:7,display:'flex',gap:5}}>
-          {p.promo && <Tag ch={p.promo} color="red"/>}
+        {/* Cause du bug bloquant (produit ni supprimable ni modifiable) : ce badge n'avait aucune
+            contrainte de largeur — une promo au texte un peu long grossissait librement et
+            venait recouvrir les boutons modifier/supprimer ci-dessus, les rendant inatteignables
+            au clic. Largeur maintenant plafonnée avec troncature, et z-index explicite en
+            dessous des boutons pour qu'ils restent TOUJOURS cliquables, même dans un cas imprévu. */}
+        <div style={{position:'absolute',top:7,left:7,right:hovered?62:7,display:'flex',gap:5,zIndex:2,overflow:'hidden'}}>
+          {p.promo && <span style={{padding:'2px 8px',borderRadius:4,fontSize:10,fontWeight:700,letterSpacing:'0.4px',background:C.accentS,color:C.accent,border:'1px solid rgba(45,127,249,0.2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'100%'}} title={p.promo}>{p.promo}</span>}
         </div>
         <div style={{position:'absolute',bottom:7,left:7}}>
           <span style={{fontSize:9,fontWeight:700,letterSpacing:'0.02em',padding:'3px 8px',borderRadius:99,background: hasActiveBrief ? 'rgba(91,141,239,0.16)' : 'rgba(255,255,255,0.09)', color: hasActiveBrief ? C.accent : C.muted, border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
@@ -1880,6 +1885,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const [briefCopied, setBriefCopied] = useState(false);
   const photoRef = useRef(null);
   const [fetchingLien, setFetchingLien] = useState(false);
+  const [imagesTrouvees, setImagesTrouvees] = useState([]);
   const lienFetchedRef = useRef('');
 
   // Pré-remplissage intelligent depuis le lien de la page produit — jamais écrasant :
@@ -1909,6 +1915,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         signal: controller.signal,
       });
       const j = await r.json();
+      if (Array.isArray(j.images) && j.images.length) {
+        setImagesTrouvees(j.images);
+        // Présélectionne la première comme photo principale si le client n'a pas déjà uploadé
+        // la sienne — reste libre de la changer en cliquant une autre miniature juste en dessous.
+        setForm(f => ({ ...f, photo: f.photo || j.images[0] }));
+      }
       if (j.ok && j.data) {
         setForm(f => ({
           ...f,
@@ -1927,7 +1939,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     }
   };
 
-  const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); };
+  const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); setImagesTrouvees([]); };
 
   // Cause profonde corrigée (le bouton "Créer mon produit maintenant" du chatbot ne faisait
   // jamais rien de visible à part changer de section) : ce window event était dispatché à deux
@@ -2244,6 +2256,21 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 <div style={{fontSize:11,color:C.muted}}>Cliquez pour uploader</div>
               </div>
             </div>
+
+            {/* Carrousel des images retrouvées sur la page produit — apparaît une fois le lien
+                traité, permet de choisir une autre image que celle présélectionnée sans tout
+                re-uploader manuellement. */}
+            {imagesTrouvees.length > 1 && (
+              <div style={{marginBottom:20,marginTop:-8}}>
+                <div style={{fontSize:10,color:C.muted,marginBottom:6}}>{imagesTrouvees.length} images trouvées sur la page — cliquez pour choisir</div>
+                <div style={{display:'flex',gap:7,overflowX:'auto',paddingBottom:4}}>
+                  {imagesTrouvees.map((imgUrl, i) => (
+                    <div key={i} onClick={() => setForm(f => ({...f, photo: imgUrl}))}
+                      style={{width:46,height:46,flexShrink:0,borderRadius:9,border:`1.5px solid ${form.photo===imgUrl?C.accent:C.border}`,background:`url(${imgUrl}) center/cover no-repeat`,cursor:'pointer',transition:'border-color 0.15s'}}/>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Lien de la page produit — sorti volontairement de la zone repliable ci-dessous.
                 Toujours visible dès l'ouverture du formulaire : c'est un raccourci, pas un
