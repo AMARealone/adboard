@@ -1992,7 +1992,13 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
   const submit = async () => {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      // Les 3 essentiels (dont la photo) sont tous en haut du formulaire — un simple retour en
+      // haut suffit à les ramener sous les yeux, sans avoir besoin de cibler un champ précis.
+      document.getElementById('form-produit-scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
     const session = await sbAuth.refreshSession();
     // Carrousel récupéré depuis le lien produit — rattaché ici au formulaire juste avant l'envoi,
     // pas stocké directement dans form au fil du form (état séparé, voir imagesTrouvees).
@@ -2254,7 +2260,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             </div>
 
             {/* Zone scrollable — photo + champs uniquement, jamais le bouton */}
-            <div style={{position:'relative',overflow:'hidden auto',padding:'0 20px',flex:1}}>
+            <div id="form-produit-scroll" style={{position:'relative',overflow:'hidden auto',padding:'0 20px',flex:1}}>
             <div style={{marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
               <input ref={photoRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e,'photo')}/>
               <div onClick={()=>photoRef.current?.click()}
@@ -2416,16 +2422,21 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               );
             })()}
 
-            {Object.keys(errors).length>0 && (
-              <div style={{marginTop:16,padding:'10px 14px',borderRadius:8,background:C.accentS,border:'1px solid rgba(45,127,249,0.2)',fontSize:11,color:C.accent}}>
-                Merci de renseigner les champs marqués d'un astérisque.
-              </div>
-            )}
-            <div style={{height:16}}/>
             </div>
 
             {/* Bouton — hors zone de scroll, toujours visible */}
             <div style={{position:'relative',padding:'14px 20px 20px',flexShrink:0,borderTop:`1px solid ${C.border}`}}>
+              {/* Cause probable des tentatives répétées observées (Clarity) : ce message
+                  n'existait qu'à l'intérieur de la zone défilable, potentiellement hors du champ
+                  de vision une fois le formulaire scrollé vers le bouton — fixe, toujours visible,
+                  lui. Un clic sur "Créer le produit" ne provoquait alors visuellement RIEN pour
+                  l'utilisateur, qui recliquait sans comprendre. Déplacé ici, dans la même zone
+                  fixe que le bouton — ne peut plus jamais être hors champ. */}
+              {Object.keys(errors).length>0 && (
+                <div style={{marginBottom:10,padding:'10px 14px',borderRadius:8,background:'rgba(239,107,91,0.12)',border:'1px solid rgba(239,107,91,0.3)',fontSize:11.5,color:'#EF6B5B',display:'flex',alignItems:'center',gap:7}}>
+                  ⚠️ Il manque : {[!form.photo&&'la photo',!form.nom&&'le nom',!form.pricing&&'le prix',!form.pays&&'le pays',errors.couleurs&&'2-3 couleurs (ou aucune)'].filter(Boolean).join(', ')}
+                </div>
+              )}
               <button onClick={submit} style={{width:'100%',padding:'13px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 4px 16px rgba(45,127,249,0.3)'}}>
                 <Icon name="check" size={14} color="#fff"/> {editingId ? 'Enregistrer les modifications' : 'Créer le produit'}
               </button>
