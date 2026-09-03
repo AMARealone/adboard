@@ -2979,7 +2979,7 @@ async function sendPitchMsg(pid) {
     try {
       const _rShort = await fetch('https://adstack-server.onrender.com/shorten', {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ url: curLien, thumbnail: 'adstack_thumb_default', campagne: 'pitch' })
+        body: JSON.stringify({ url: curLien, thumbnail: 'adstack_thumb_main', campagne: 'pitch' })
       });
       const _dShort = await _rShort.json();
       if (_dShort.short_url) curLien = _dShort.short_url;
