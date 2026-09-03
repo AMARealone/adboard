@@ -4728,21 +4728,20 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 </div>
               )}
 
-              <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:isCurrent||p.best?8:0,marginBottom:4,letterSpacing:'0.3px'}}>{p.name}</div>
+              <div className="headline-gradient" style={{fontSize:22,fontWeight:900,marginTop:isCurrent||p.best?10:2,marginBottom:8,letterSpacing:'-0.3px',textTransform:'uppercase',lineHeight:1.05}}>{p.name}</div>
               {p.badge && (
-                <div style={{display:'inline-flex',alignSelf:'flex-start',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,background:p.best?'rgba(45,127,249,0.15)':'rgba(255,255,255,0.06)',border:`1px solid ${p.best?'rgba(45,127,249,0.3)':C.border}`,marginBottom:8}}>
-                  <Icon name="image" size={10} color={p.color}/>
+                <div style={{display:'inline-flex',alignSelf:'flex-start',alignItems:'center',padding:'3px 10px',borderRadius:20,background:p.best?'rgba(45,127,249,0.15)':'rgba(255,255,255,0.06)',border:`1px solid ${p.best?'rgba(45,127,249,0.3)':C.border}`,marginBottom:10}}>
                   <span style={{fontSize:10,fontWeight:800,color:p.color,letterSpacing:'0.2px'}}>{p.badge}</span>
                 </div>
               )}
-              <div style={{fontSize:11,color:C.text,lineHeight:1.4,marginBottom:10,minHeight:28}}>{p.tagline}</div>
+              <div style={{fontSize:11,color:C.text,lineHeight:1.4,marginBottom:14,minHeight:28}}>{p.tagline}</div>
 
-              <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
+              <div style={{fontSize:13,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:3,fontWeight:600}}>
                 {convertPrice(cycleData.priceBarre)}
               </div>
 
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-                <span style={{fontSize:28,fontWeight:800,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
+                <span style={{fontSize:36,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
                 {!p.isPack && quarterly && (
                   <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan annuel</span>
@@ -4760,7 +4759,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                     <div style={{display:'flex',flexDirection:'column',gap:11}}>
                       {groupe.items.map((f,j) => (
                         <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
-                          <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={f.icon} size={12} color={p.color}/></span>
+                          <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={12} color={p.color}/></span>
                           <div style={{fontSize:12,color:C.sec,lineHeight:1.45}}><strong style={{color:C.text,fontWeight:700}}>{f.bold}</strong> {f.rest}</div>
                         </div>
                       ))}
@@ -4769,7 +4768,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                   </div>
                 )) : features.map((f,j) => (
                   <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
-                    <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={f.icon} size={12} color={p.color}/></span>
+                    <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={12} color={p.color}/></span>
                     <div style={{fontSize:12,color:C.sec,lineHeight:1.45}}><strong style={{color:C.text,fontWeight:700}}>{f.bold}</strong> {f.rest}</div>
                   </div>
                 ))}

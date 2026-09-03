@@ -265,6 +265,7 @@ body,.adstack-hero-v2,.wu-section,.wi-section,.fd-section,.transform-section,.cv
 .nav-logo img{height:30px;width:auto;display:block}
 .nav-logo-name{font-size:16px;font-weight:900;letter-spacing:-.4px;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:nav-grad 3s ease infinite}
 @keyframes nav-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .nav-right{display:flex;align-items:center;gap:8px}
 .nav-cart{display:flex;align-items:center;gap:6px;cursor:pointer;text-decoration:none;background:rgba(31,182,255,0.06);border:1px solid rgba(31,182,255,0.2);border-radius:50px;padding:7px 13px;transition:background .2s,border-color .2s}
 .nav-cart:hover{background:rgba(31,182,255,0.12);border-color:rgba(31,182,255,0.4)}
@@ -1045,13 +1046,13 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 @keyframes cardIn-lp{to{opacity:1;transform:translateY(0)}}
 .offer-card-lp:hover{transform:translateY(-3px);box-shadow:0 14px 32px rgba(0,0,0,0.35)}
 .lp-best-badge{position:absolute;top:0;left:50%;transform:translateX(-50%);background:linear-gradient(90deg,#1FB6FF,#0B5CFF);color:#fff;font-size:9px;font-weight:900;padding:3px 14px;border-radius:0 0 7px 7px;letter-spacing:.5px;text-transform:uppercase;white-space:nowrap}
-.lp-pack-name{font-size:12px;font-weight:700;letter-spacing:.3px;margin-bottom:4px;margin-top:0}
-.offer-card-lp.lp-best .lp-pack-name{margin-top:8px}
-.lp-pack-type{font-size:11px;color:#B8BAC0;line-height:1.4;margin-bottom:10px;min-height:28px}
+.lp-pack-name{font-size:22px;font-weight:900;letter-spacing:-0.3px;text-transform:uppercase;line-height:1.05;margin-bottom:8px;margin-top:2px;background:linear-gradient(90deg,#1FB6FF,#5B8DEF,#8AB4F8,#1FB6FF);background-size:250% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 4s ease infinite;display:inline-block}
+.offer-card-lp.lp-best .lp-pack-name{margin-top:10px}
+.lp-pack-type{font-size:11px;color:#B8BAC0;line-height:1.4;margin-bottom:14px;min-height:28px}
 .lp-card-divider{height:1px;background:rgba(255,255,255,0.08);margin-bottom:16px}
-.lp-price-old{font-size:11px;color:#5A5D65;text-decoration:line-through;margin-bottom:2px}
+.lp-price-old{font-size:13px;font-weight:600;color:#5A5D65;text-decoration:line-through;margin-bottom:3px}
 .lp-price-main{display:flex;align-items:baseline;gap:4px;margin-bottom:6px;flex-wrap:wrap}
-.lp-price-amount{font-size:28px;font-weight:800;color:#fff;line-height:1}
+.lp-price-amount{font-size:36px;font-weight:900;color:#fff;line-height:1}
 .lp-price-currency{font-size:14px;font-weight:700;color:#fff}
 .lp-quarterly-pill{font-size:9px;font-weight:800;color:#1FB6FF;background:rgba(31,182,255,0.12);padding:2px 7px;border-radius:20px;letter-spacing:.3px;text-transform:uppercase}
 .lp-price-img{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;margin-bottom:18px;width:fit-content;font-size:11px;font-weight:800}
@@ -1198,6 +1199,7 @@ var LP_ICONS = {
   upload:  '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/><path d="M4 20h16"/>',
   search:  '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
   bulb:    '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.6c.6.5 1 1.4 1 2.4h6c0-1 .4-1.9 1-2.4A7 7 0 0 0 12 2z"/>',
+  check:   '<polyline points="20 6 9 17 4 12"/>',
 };
 var LP_ICONS_FILLED = {
   sparkle: '<path d="M12 2l1.5 6.5L20 10l-6.5 1.5L12 18l-1.5-6.5L4 10l6.5-1.5z"/>',
@@ -1271,21 +1273,21 @@ function lpRenderOffers() {
     html += '<div class="offer-card-lp' + (o.best ? ' lp-best' : '') + '">';
     if (o.best) html += '<div class="lp-best-badge">Recommandé</div>';
     html += '<div class="lp-pack-name" style="color:' + o.color + '">' + o.name + '</div>';
-    if (o.badge) html += '<div style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:' + (o.best?'rgba(31,182,255,0.15)':'rgba(255,255,255,0.06)') + ';border:1px solid ' + (o.best?'rgba(31,182,255,0.3)':'#2A2D33') + ';margin-bottom:8px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="' + o.color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + LP_ICONS.image + '</svg><span style="font-size:10px;font-weight:800;color:' + o.color + ';letter-spacing:0.2px">' + o.badge + '</span></div>';
+    if (o.badge) html += '<div style="display:inline-flex;align-self:flex-start;width:fit-content;align-items:center;padding:3px 10px;border-radius:20px;background:' + (o.best?'rgba(31,182,255,0.15)':'rgba(255,255,255,0.06)') + ';border:1px solid ' + (o.best?'rgba(31,182,255,0.3)':'#2A2D33') + ';margin-bottom:10px"><span style="font-size:10px;font-weight:800;color:' + o.color + ';letter-spacing:0.2px">' + o.badge + '</span></div>';
     html += '<div class="lp-pack-type">' + o.tagline + '</div>';
     html += '<div class="lp-price-old" data-fcfa="' + cycleData.priceBarre + '">' + lpFmt(cycleData.priceBarre) + ' FCFA</div>';
     html += '<div class="lp-price-main"><span class="lp-price-amount" data-fcfa="' + cycleData.price + '">' + lpFmt(cycleData.price) + '</span><span class="lp-price-currency">FCFA' + (o.isPack ? '' : '<span style="font-size:11px;color:#8A8D95">/mois</span>') + '</span>' + (!o.isPack && lpQuarterly ? '<span class="lp-quarterly-pill">Plan trimestriel</span>' : '') + '</div>';
     html += '<div class="lp-card-divider"></div>';
     if (o.isPack) {
       html += '<ul class="lp-features">';
-      lpFeatures(o, cycleData).forEach(function(f) { html += '<li><span class="lp-feat-icon" style="background:' + o.color + '18">' + lpIcon(f.icon, o.color) + '</span><span class="lp-feat-text"><strong>' + f.bold + '</strong> ' + f.rest + '</span></li>'; });
+      lpFeatures(o, cycleData).forEach(function(f) { html += '<li><span class="lp-feat-icon" style="background:' + o.color + '18">' + lpIcon('check', o.color) + '</span><span class="lp-feat-text"><strong>' + f.bold + '</strong> ' + f.rest + '</span></li>'; });
       html += '</ul>';
     } else {
       var groupes = lpFeatureGroups(o);
       groupes.forEach(function(groupe, g) {
         html += '<div style="font-size:9.5px;font-weight:800;color:' + o.color + ';letter-spacing:1.2px;opacity:0.85;margin:' + (g===0?'0':'16px') + ' 0 9px">' + groupe.titre + '</div>';
         html += '<ul class="lp-features">';
-        groupe.items.forEach(function(f) { html += '<li><span class="lp-feat-icon" style="background:' + o.color + '18">' + lpIcon(f.icon, o.color) + '</span><span class="lp-feat-text"><strong>' + f.bold + '</strong> ' + f.rest + '</span></li>'; });
+        groupe.items.forEach(function(f) { html += '<li><span class="lp-feat-icon" style="background:' + o.color + '18">' + lpIcon('check', o.color) + '</span><span class="lp-feat-text"><strong>' + f.bold + '</strong> ' + f.rest + '</span></li>'; });
         html += '</ul>';
       });
     }
