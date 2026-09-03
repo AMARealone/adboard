@@ -2974,7 +2974,8 @@ async function sendPitchMsg(pid) {
   try {
     // Lien vers la page de vente — pas encore de démo à ce stade (le prospect n'a pas encore
     // confirmé son intérêt), donc rien à raccourcir de spécifique à lui hormis le tracking.
-    // Miniature réutilisée : la même que J+3 (adstack_thumb_default), comme demandé.
+    // Miniature réutilisée : la même que J+3 (adstack_thumb_main, corrigé — l'ancien nom
+    // "_default" n'a jamais réellement existé dans le bucket).
     let curLien = 'https://adstackofficial.com/?utm_source=crm&utm_medium=pitch&utm_campaign=pitch&utm_content=' + pid;
     try {
       const _rShort = await fetch('https://adstack-server.onrender.com/shorten', {
@@ -6812,13 +6813,11 @@ async function construireLienRelance(relanceIndex, prospectId) {
   // mécanisme de shortlink inchangés — seule la destination finale change.
   const baseUrl = `https://adstackofficial.com/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
   // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp, y compris J+3) :
-  // thumbnail:null faisait faire au raccourcisseur une redirection HTTP brute (302), sans
-  // aucune balise OG — l'hypothèse "J+3 garde la miniature par défaut d'AdBoard via la
-  // redirection" ne tient pas, WhatsApp ne suit pas cette redirection pour lire les balises
-  // de la page finale. J+3 utilise maintenant aussi un nom de miniature explicite.
-  // ⚠️ Vérifier qu'un fichier "adstack_thumb_default.png" existe bien dans le bucket Supabase
-  // "demos" (même bucket que adstack_thumb_j10/j21) — sinon l'uploader une fois, comme les 2 autres.
-  const thumbnail = relanceIndex === 1 ? 'adstack_thumb_j10' : relanceIndex === 2 ? 'adstack_thumb_j21' : 'adstack_thumb_default';
+  // Cause profonde confirmée (miniature pitch ET J+3 absente) : un 4ème visuel dédié
+  // ("adstack_thumb_default") était prévu à l'origine mais n'a jamais été réellement généré —
+  // seuls _main, _j10 et _j21 existent vraiment dans le bucket (voir /setup-thumbnails côté
+  // serveur). J+3 retombe maintenant sur _main comme le pitch, en attendant un visuel dédié.
+  const thumbnail = relanceIndex === 1 ? 'adstack_thumb_j10' : relanceIndex === 2 ? 'adstack_thumb_j21' : 'adstack_thumb_main';
   try {
     const r = await fetch('https://adstack-server.onrender.com/shorten', {
       method: 'POST', headers: {'Content-Type':'application/json'},
