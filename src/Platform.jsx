@@ -4392,11 +4392,12 @@ const PLANS = [
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
     ctaText:'Testez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    once: { price:16900, priceBarre:26900, prixImg:1878, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    once: { price:16900, priceBarre:20000, prixImg:1878, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
   },
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
-    tagline:'Pour tester vos produits sereinement et obtenir vos premières ventes rentables, sans brûler votre budget.',
+    tagline:'Pour augmenter vos ventes sur votre produit phare, tout en ne gaspillant pas votre budget pub.',
+    badge:'36 Créatives Images',
     ctaText:'Vendez Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
     monthly: { price:49900, priceBarre:100000, prixImg:1386, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
@@ -4404,7 +4405,8 @@ const PLANS = [
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
-    tagline:'Pour dominer votre marché, écraser vos coûts d\'acquisition et positionner votre marque en leader.',
+    tagline:'Pour accélérer vos ventes sur plusieurs produits, sans gérer toute une équipe.',
+    badge:'72 Créatives Images',
     ctaText:'Dominez Votre Marché',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
     monthly: { price:99900, priceBarre:200000, prixImg:1388, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
@@ -4412,7 +4414,8 @@ const PLANS = [
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
-    tagline:'L\'arsenal complet pour inonder de multiples marchés en simultané et faire exploser votre ROAS.',
+    tagline:'Gérez votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pub.',
+    badge:'144 Créatives Images',
     ctaText:'Explosez Votre Croissance',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
     monthly: { price:149900, priceBarre:400000, prixImg:1041, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
@@ -4607,10 +4610,10 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           Nos Tarifs
         </div>
         <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.15,letterSpacing:'-0.5px'}}>
-          <span className="headline-gradient">Des Images Qui Vendent.</span> Chaque Semaine, Sans Effort.
+          Pas du simple design. <span className="headline-gradient">Mais votre équipe créative orientée performance.</span>
         </h1>
-        <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:480}}>
-          Arrêtez de chercher quoi publier. Recevez chaque semaine toute une stratégie de contenu publicitaire performant : <strong style={{color:C.text}}>visuels, copywriting et données marché.</strong>
+        <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:520}}>
+          Chaque semaine, nous transformons les données de votre marché en angles, concepts et créatives prêtes à tester — <strong style={{color:C.text}}>puis nous utilisons vos retours pour améliorer les prochaines.</strong>
         </p>
       </div>
 
@@ -4676,16 +4679,27 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
             { icon:'document',bold:'Titres & Descriptions',   rest:'exacts à copier-coller (Ad Copies)' },
             { icon:'clock',   bold:'Suivi de la production',  rest:'en temps réel' },
             { icon:'bolt',    bold:`Vos publicités prêtes en ${cycleData.delivery}`, rest:'' },
-          ] : [
-            { icon:'image',   bold:visuelsLabel,             rest: p.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine' },
-            { icon:'box',     bold:`${p.produitsPerWeek} Produit${p.produitsPerWeek!=='1'?'s':''}`, rest: p.id==='starter' ? '/ semaine' : (p.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive') },
-            { icon:'grid',    bold:'Galerie Créative',        rest:'— tous vos visuels centralisés' },
-            { icon:'chart',   bold:'Marché analysé',          rest:'chaque semaine : cibles, concurrents & tendances' },
-            { icon:'document',bold:'Textes publicitaires',    rest:'prêts à copier-coller (Ad Copies)' },
-            { icon:'sparkle', bold:'Assistant IA',            rest:'stratégique, disponible 7j/7' },
-            { icon:'upload',  bold:'Import produits',         rest:'simple et rapide' },
-            { icon:'clock',   bold:'Suivi de production',     rest:'en temps réel' },
-            { icon:'bolt',    bold:`Prêtes en ${cycleData.delivery}`, rest:'chaque semaine' },
+          ] : null;
+          // Offres payantes (Starter/Pro/Scale) — même structure en 3 groupes pour les trois,
+          // seul le volume hebdomadaire change. Texte exact fourni, pas de reformulation.
+          const featureGroups = p.isPack ? null : [
+            { titre:'STRATÉGIE', items:[
+              { icon:'search', bold:'Recherche avant production', rest:': concurrents, cible & angles' },
+              { icon:'sparkle', bold:'Concepts créatifs', rest:'qui cartonnent en ce moment' },
+            ]},
+            { titre:'PRODUCTION', items:[
+              { icon:'image', bold:`${p.imagesPerWeek} nouvelles créatives`, rest:'livrées chaque semaine' },
+              { icon:'document', bold:'Titres et Descriptions', rest:'pour la campagne (Ad Copies)' },
+              { icon:'chart', bold:'Récapitulatif de l\'analyse de marché', rest:'+ opportunité' },
+              { icon:'clock', bold:'Suivi de la production', rest:'en temps réel' },
+              { icon:'bolt', bold:'Livraison en 48h', rest:'' },
+            ]},
+            { titre:'PERFORMANCE', items:[
+              { icon:'grid', bold:'Organisation de vos créatives', rest:'' },
+              { icon:'chart', bold:'Analyse des créatives', rest:'top performer' },
+              { icon:'sparkle', bold:'Amélioration en continu', rest:'' },
+              { icon:'bulb', bold:'Assistant IA stratégique', rest:'dispo 7j/7' },
+            ]},
           ];
           return (
             <div key={p.id}
@@ -4715,6 +4729,12 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               )}
 
               <div style={{fontSize:12,fontWeight:700,color:p.color,marginTop:isCurrent||p.best?8:0,marginBottom:4,letterSpacing:'0.3px'}}>{p.name}</div>
+              {p.badge && (
+                <div style={{display:'inline-flex',alignSelf:'flex-start',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,background:p.best?'rgba(45,127,249,0.15)':'rgba(255,255,255,0.06)',border:`1px solid ${p.best?'rgba(45,127,249,0.3)':C.border}`,marginBottom:8}}>
+                  <Icon name="image" size={10} color={p.color}/>
+                  <span style={{fontSize:10,fontWeight:800,color:p.color,letterSpacing:'0.2px'}}>{p.badge}</span>
+                </div>
+              )}
               <div style={{fontSize:11,color:C.text,lineHeight:1.4,marginBottom:10,minHeight:28}}>{p.tagline}</div>
 
               <div style={{fontSize:11,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:2}}>
@@ -4731,8 +4751,23 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
 
-              <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:13}}>
-                {features.map((f,j) => (
+              <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:featureGroups?18:13}}>
+                {featureGroups ? featureGroups.map((groupe,g) => (
+                  <div key={g}>
+                    <div style={{fontSize:9.5,fontWeight:800,color:p.color,letterSpacing:'1.2px',marginBottom:9,opacity:0.85}}>
+                      {groupe.titre}
+                    </div>
+                    <div style={{display:'flex',flexDirection:'column',gap:11}}>
+                      {groupe.items.map((f,j) => (
+                        <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
+                          <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={f.icon} size={12} color={p.color}/></span>
+                          <div style={{fontSize:12,color:C.sec,lineHeight:1.45}}><strong style={{color:C.text,fontWeight:700}}>{f.bold}</strong> {f.rest}</div>
+                        </div>
+                      ))}
+                    </div>
+                    {g < featureGroups.length-1 && <div style={{height:1,background:C.border,marginTop:16,opacity:0.6}}/>}
+                  </div>
+                )) : features.map((f,j) => (
                   <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
                     <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name={f.icon} size={12} color={p.color}/></span>
                     <div style={{fontSize:12,color:C.sec,lineHeight:1.45}}><strong style={{color:C.text,fontWeight:700}}>{f.bold}</strong> {f.rest}</div>
