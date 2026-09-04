@@ -287,9 +287,12 @@ const sbAuth = {
       // quel prospect et quel message ont mené à la conversion — sans rien cocher manuellement.
       try {
         const attribution = JSON.parse(localStorage.getItem('crm_attribution') || 'null');
-        if (attribution?.prospect_id) {
+        // Avant : gardé par prospect_id, donc une campagne sans prospect identifiable (ex: statut
+        // WhatsApp, campagne='statut_whatsapp') n'était jamais écrite sur le compte — cassait
+        // toute attribution d'achat pour ce canal en aval côté serveur (traiterAttributionCRM).
+        if (attribution?.campagne) {
           sbAuth.updateUserMetadata({
-            crm_prospect_id: attribution.prospect_id,
+            crm_prospect_id: attribution.prospect_id || null,
             crm_last_campaign: attribution.campagne,
           });
         }
@@ -5420,9 +5423,11 @@ export default function Platform() {
       // dernier message cliqué avant l'achat, donc on met à jour à chaque nouvelle capture.
       try {
         const attribution = JSON.parse(localStorage.getItem('crm_attribution') || 'null');
-        if (attribution?.prospect_id && u.user_metadata?.crm_last_campaign !== attribution.campagne) {
+        // Même fix que handleCallback : la campagne seule doit suffire à mettre à jour, un
+        // prospect_id n'est pas toujours disponible (ex: statut WhatsApp).
+        if (attribution?.campagne && u.user_metadata?.crm_last_campaign !== attribution.campagne) {
           sbAuth.updateUserMetadata({
-            crm_prospect_id: attribution.prospect_id,
+            crm_prospect_id: attribution.prospect_id || null,
             crm_last_campaign: attribution.campagne,
           });
         }

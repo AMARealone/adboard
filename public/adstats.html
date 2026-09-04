@@ -4285,7 +4285,7 @@ async function renderDashboard() {
         queryFunnel += `&created_at=gte.${cutoffDateFunnel.toISOString()}`;
       }
       let totalAjoutsPanier = 0, totalPaiementsInities = 0, erreurFunnel = null;
-      const panierParCampagne = {}, paiementParCampagne = {};
+      const panierParCampagne = {}, paiementParCampagne = {}, achatParCampagne = {};
       try {
         const rFunnel = await fetch(queryFunnel, { headers: H });
         const funnelData = await rFunnel.json();
@@ -4306,12 +4306,20 @@ async function renderDashboard() {
             // des messages envoyés. Ne compte maintenant que les événements rattachés à une
             // campagne trackée, cohérent avec ce que totalClics mesure réellement.
             if (!f.campagne) return;
+            // 'statut_whatsapp' est tallié par campagne (panierParCampagne/paiementParCampagne)
+            // pour sa propre ligne dans le détail par étape, mais exclu des totaux globaux
+            // totalAjoutsPanier/totalPaiementsInities ci-dessous : ces totaux servent de
+            // numérateur au ratio du bloc Vue d'ensemble, dont le dénominateur (totalClics) a
+            // volontairement exclu Statut WA plus bas (pas d'"envoyés" pour ce canal) — inclure
+            // l'un sans l'autre gonflerait artificiellement le ratio affiché.
             if (f.type === 'ajout_panier') {
-              totalAjoutsPanier++;
+              if (f.campagne !== 'statut_whatsapp') totalAjoutsPanier++;
               panierParCampagne[f.campagne] = (panierParCampagne[f.campagne]||0) + 1;
             } else if (f.type === 'paiement_initie') {
-              totalPaiementsInities++;
+              if (f.campagne !== 'statut_whatsapp') totalPaiementsInities++;
               paiementParCampagne[f.campagne] = (paiementParCampagne[f.campagne]||0) + 1;
+            } else if (f.type === 'achat') {
+              achatParCampagne[f.campagne] = (achatParCampagne[f.campagne]||0) + 1;
             }
           });
         }
@@ -4322,6 +4330,10 @@ async function renderDashboard() {
         { cle: 'j3',    label: 'J+3',   envoyes: envoyes.j3,    achats: jc[3]  },
         { cle: 'j10',   label: 'J+10',  envoyes: envoyes.j10,   achats: jc[10] },
         { cle: 'j21',   label: 'J+21',  envoyes: envoyes.j21,   achats: jc[21] },
+        // Pas d'"envoyés" (aucune notion d'envoi pour un statut) → CTR affiché "—" automatiquement
+        // (m.envoyes > 0 requis plus bas). Clics = short_links.campagne='statut_whatsapp'. Achats
+        // = funnel_events type 'achat' généré par traiterAttributionCRM, indépendant du prospect.
+        { cle: 'statut_whatsapp', label: 'Statut WA', envoyes: 0, achats: achatParCampagne['statut_whatsapp'] || 0 },
       ];
       const lignes = MESSAGES.map(m => {
         const clics = clicsParCampagne[m.cle] || 0;
@@ -4350,8 +4362,12 @@ async function renderDashboard() {
       ).join('');
 
       // ── VUE D'ENSEMBLE CLICS — messages envoyés / clics / acheteurs, avec CTR global ──
-      const totalEnvoyes = lignes.reduce((s,l) => s+l.envoyes, 0);
-      const totalClics = lignes.reduce((s,l) => s+l.clics, 0);
+      // Statut WA exclu de cet agrégat : il n'a pas d'"envoyés" (pas de portée connue), donc ses
+      // clics fausseraient un CTR censé mesurer la performance de messages réellement envoyés.
+      // Il reste visible séparément dans le détail par étape juste au-dessus.
+      const lignesMessages = lignes.filter(l => l.label !== 'Statut WA');
+      const totalEnvoyes = lignesMessages.reduce((s,l) => s+l.envoyes, 0);
+      const totalClics = lignesMessages.reduce((s,l) => s+l.clics, 0);
       // Chaque transaction = un événement acheteur, y compris les achats répétés d'un même
       // client (cross-sell exclus via CORE_PLANS) — plus fiable que le statut manuel des
       // prospects, dont le lien avec la transaction réelle est souvent impossible à établir.
