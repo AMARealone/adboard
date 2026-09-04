@@ -1841,9 +1841,9 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
       </div>
       <div style={{padding:'14px 16px',flex:1,display:'flex',flexDirection:'column',gap:6}}>
         <div style={{fontSize:15.5,fontWeight:700,letterSpacing:'-0.005em',color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{p.nom}</div>
-        <div style={{fontSize:12.5,color:C.sec,fontFamily:"'DM Mono',monospace"}}>{p.pricing}</div>
+        <div style={{fontSize:12.5,color:C.sec,fontFamily:"'DM Mono',monospace",whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} title={p.pricing}>{p.pricing}</div>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:3}}>
-          {p.pays ? <span style={{fontSize:11,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'4px 10px',borderRadius:99}}>{p.pays}</span> : <span/>}
+          {p.pays ? <span style={{fontSize:11,fontWeight:600,color:C.gray,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,padding:'4px 10px',borderRadius:99,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',maxWidth:150}} title={p.pays}>{p.pays}</span> : <span/>}
           <div style={{display:'flex',gap:5}}>
             {[p.couleur1,p.couleur2,p.couleur3].filter(Boolean).map((col,i)=>(
               <span key={i} style={{width:13,height:13,borderRadius:'50%',background:col,border:'1.5px solid rgba(255,255,255,0.18)'}}/>
@@ -1890,6 +1890,10 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const [imagesTrouvees, setImagesTrouvees] = useState([]);
   const [lienMessage, setLienMessage] = useState(''); // message affiché après tentative d'extraction, succès ou échec
   const lienFetchedRef = useRef('');
+  // Galerie affichée — fusionne imagesTrouvees avec l'ancienne photo unique (produits déjà
+  // existants édités avant cette fusion, où imagesTrouvees est encore vide mais form.photo est
+  // déjà rempli) — jamais de galerie vide si une photo existe déjà quelque part.
+  const galerieAffichee = imagesTrouvees.length ? imagesTrouvees : (form.photo ? [form.photo] : []);
 
   // Pré-remplissage intelligent depuis le lien de la page produit — jamais écrasant :
   // ne remplit que les champs encore vides, laisse toujours la main au client sur ce qu'il a déjà tapé.
@@ -1979,6 +1983,31 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       URL.revokeObjectURL(objUrl);
     };
     img.src = objUrl;
+  };
+
+  // Import multiple — permet d'ajouter plusieurs photos d'un coup au carrousel, pas juste une
+  // seule à la fois. Même compression que handleFile, appliquée à chaque fichier en parallèle.
+  const handleMultipleFiles = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    files.forEach(file => {
+      const img = new Image();
+      const objUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        const MAX = 800;
+        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.82);
+        setImagesTrouvees(prev => [...prev, compressed]);
+        setForm(f => ({...f, photo: f.photo || compressed})); // devient la photo principale si aucune n'est encore choisie
+        URL.revokeObjectURL(objUrl);
+      };
+      img.src = objUrl;
+    });
+    e.target.value = ''; // permet de réimporter les mêmes fichiers si besoin
   };
 
   const validate = () => {
@@ -2261,71 +2290,60 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
             {/* Zone scrollable — photo + champs uniquement, jamais le bouton */}
             <div id="form-produit-scroll" style={{position:'relative',overflow:'hidden auto',padding:'0 20px',flex:1}}>
-            <div style={{marginBottom:20,display:'flex',alignItems:'center',gap:14}}>
-              <input ref={photoRef} type="file" accept="image/*" style={{display:'none'}} onChange={e=>handleFile(e,'photo')}/>
-              <div onClick={()=>photoRef.current?.click()}
-                style={{width:80,height:80,flexShrink:0,borderRadius:14,border:`1.5px dashed ${errors.photo?C.accent:'rgba(255,255,255,0.16)'}`,background:form.photo?`url(${form.photo}) center/cover no-repeat`:'rgba(255,255,255,0.04)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'border-color 0.2s'}}
-                onMouseEnter={e=>e.currentTarget.style.borderColor='rgba(45,127,249,0.5)'}
-                onMouseLeave={e=>e.currentTarget.style.borderColor=errors.photo?C.accent:'rgba(255,255,255,0.16)'}
-              >
-                {!form.photo && <Icon name="upload" size={20} color={C.sec}/>}
-              </div>
-              <div>
-                <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Photo du produit<span style={{color:C.accent}}> *</span></div>
-                <div style={{fontSize:11,color:C.muted}}>Cliquez pour uploader</div>
+
+            {/* Galerie produit — fusion de l'ancienne zone "photo unique" et du carrousel séparé.
+                Corrige 3 problèmes remontés : (1) pas clair qu'on peut importer plusieurs photos
+                → bouton "+" explicite avec libellé ; (2) scroll horizontal difficile sans sortir
+                du formulaire → grille qui s'enroule, plus besoin de scroller du tout ; (3) bouton
+                supprimer minuscule et cach derrière un survol → toujours visible, miniatures
+                bien plus grandes (84px au lieu de 58px). */}
+            <input ref={photoRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={handleMultipleFiles}/>
+            <div style={{marginBottom:20}}>
+              <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Photo{galerieAffichee.length>1?'s':''} du produit<span style={{color:C.accent}}> *</span></div>
+              <div style={{fontSize:11,color:C.muted,marginBottom:10}}>Cliquez sur une image pour la définir comme photo principale — ajoutez-en plusieurs avec le bouton +.</div>
+              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+                {galerieAffichee.map((imgUrl, i) => {
+                  const selectionnee = form.photo === imgUrl;
+                  return (
+                    <div key={i} onClick={() => setForm(f => ({...f, photo: imgUrl}))}
+                      style={{position:'relative',width:84,height:84,flexShrink:0,borderRadius:13,border:`2px solid ${selectionnee?C.accent:'transparent'}`,background:`url(${imgUrl}) center/cover no-repeat`,cursor:'pointer',transition:'transform 0.15s, border-color 0.15s',boxShadow:selectionnee?`0 0 0 3px rgba(91,141,239,0.2)`:'none'}}
+                      onMouseEnter={e=>{ if(!selectionnee) e.currentTarget.style.transform='scale(1.04)'; }}
+                      onMouseLeave={e=>{ e.currentTarget.style.transform='scale(1)'; }}
+                    >
+                      {selectionnee && (
+                        <div style={{position:'absolute',bottom:-6,right:-6,width:22,height:22,borderRadius:'50%',background:C.accent,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
+                          <Icon name="check" size={12} color="#fff"/>
+                        </div>
+                      )}
+                      {/* Toujours visible — jamais dépendant d'un survol, injouable sur mobile/tactile */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const galerieActuelle = imagesTrouvees.length ? imagesTrouvees : (form.photo ? [form.photo] : []);
+                          const next = galerieActuelle.filter((_, idx) => idx !== i);
+                          setImagesTrouvees(next);
+                          if (selectionnee) setForm(f => ({...f, photo: next[0] || ''}));
+                        }}
+                        title="Retirer cette image"
+                        style={{position:'absolute',top:-7,right:-7,width:24,height:24,borderRadius:'50%',background:'#EF6B5B',border:'2px solid #0a0c11',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,boxShadow:'0 1px 5px rgba(0,0,0,0.5)'}}
+                      >
+                        <Icon name="x" size={12} color="#fff"/>
+                      </button>
+                    </div>
+                  );
+                })}
+                {/* Bouton d'ajout explicite — répond directement à "l'utilisateur ne sait pas s'il
+                    peut importer plusieurs médias". accept multiple sur l'input plus haut. */}
+                <div onClick={()=>photoRef.current?.click()}
+                  style={{width:84,height:84,flexShrink:0,borderRadius:13,border:`1.5px dashed ${errors.photo && !galerieAffichee.length?C.accent:'rgba(255,255,255,0.2)'}`,background:'rgba(255,255,255,0.03)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'border-color 0.2s,background 0.2s',gap:4}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(45,127,249,0.6)';e.currentTarget.style.background='rgba(45,127,249,0.06)';}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=errors.photo && !galerieAffichee.length?C.accent:'rgba(255,255,255,0.2)';e.currentTarget.style.background='rgba(255,255,255,0.03)';}}
+                >
+                  <Icon name="upload" size={18} color={C.sec}/>
+                  <span style={{fontSize:9.5,fontWeight:700,color:C.sec}}>Ajouter</span>
+                </div>
               </div>
             </div>
-
-            {/* Carrousel des images retrouvées sur la page produit — apparaît une fois le lien
-                traité, permet de choisir une autre image que celle présélectionnée sans tout
-                re-uploader manuellement. */}
-            {imagesTrouvees.length > 1 && (
-              <div style={{marginBottom:20,marginTop:-8,padding:14,borderRadius:12,background:'rgba(91,141,239,0.05)',border:`1px solid rgba(91,141,239,0.18)`}}>
-                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
-                  <Icon name="grid" size={13} color={C.accent}/>
-                  <span style={{fontSize:11.5,fontWeight:700,color:C.text}}>{imagesTrouvees.length} images trouvées sur la page</span>
-                  <span style={{fontSize:10,color:C.muted}}>— cliquez pour choisir</span>
-                </div>
-                <div style={{display:'flex',gap:9,overflowX:'auto',paddingBottom:4}}>
-                  {imagesTrouvees.map((imgUrl, i) => {
-                    const selectionnee = form.photo === imgUrl;
-                    return (
-                      <div key={i} onClick={() => setForm(f => ({...f, photo: imgUrl}))}
-                        style={{position:'relative',width:58,height:58,flexShrink:0,borderRadius:10,border:`2px solid ${selectionnee?C.accent:'transparent'}`,background:`url(${imgUrl}) center/cover no-repeat`,cursor:'pointer',transition:'transform 0.15s, border-color 0.15s',boxShadow:selectionnee?`0 0 0 3px rgba(91,141,239,0.2)`:'none'}}
-                        onMouseEnter={e=>{ if(!selectionnee) e.currentTarget.style.transform='scale(1.06)'; const del=e.currentTarget.querySelector('.carousel-thumb-delete'); if(del) del.style.opacity='1'; }}
-                        onMouseLeave={e=>{ e.currentTarget.style.transform='scale(1)'; const del=e.currentTarget.querySelector('.carousel-thumb-delete'); if(del) del.style.opacity='0'; }}
-                      >
-                        {selectionnee && (
-                          <div style={{position:'absolute',top:-5,right:-5,width:18,height:18,borderRadius:'50%',background:C.accent,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
-                            <Icon name="check" size={10} color="#fff"/>
-                          </div>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation(); // ne déclenche pas aussi la sélection de cette image
-                            setImagesTrouvees(prev => {
-                              const next = prev.filter((_, idx) => idx !== i);
-                              // Si l'image retirée était la photo choisie, repli sur la première
-                              // restante — jamais laisser le formulaire avec une photo qui n'existe
-                              // plus dans la liste visible.
-                              if (selectionnee) setForm(f => ({...f, photo: next[0] || ''}));
-                              return next;
-                            });
-                          }}
-                          title="Retirer cette image"
-                          style={{position:'absolute',top:-6,left:-6,width:17,height:17,borderRadius:'50%',background:'rgba(10,12,17,0.85)',border:`1px solid ${C.border}`,color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,opacity:0,transition:'opacity 0.15s'}}
-                          onMouseEnter={(e) => { e.currentTarget.style.background='rgba(239,107,91,0.9)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background='rgba(10,12,17,0.85)'; }}
-                          className="carousel-thumb-delete"
-                        >
-                          <Icon name="x" size={9} color="#fff"/>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             {/* Lien de la page produit — sorti volontairement de la zone repliable ci-dessous.
                 Toujours visible dès l'ouverture du formulaire : c'est un raccourci, pas un
@@ -4390,7 +4408,7 @@ const PLANS = [
   {
     id:'discovery', name:'Conversion Discovery', color:C.gray, best:false, isPack:true,
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
-    ctaText:'Testez Maintenant',
+    ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
     once: { price:16900, priceBarre:20000, prixImg:1878, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
   },
@@ -4398,7 +4416,7 @@ const PLANS = [
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Pour augmenter vos ventes sur votre produit phare, tout en ne gaspillant pas votre budget pub.',
     badge:'36 Créatives Images',
-    ctaText:'Vendez Maintenant',
+    ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
     monthly: { price:49900, priceBarre:100000, prixImg:1386, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
     quarterly: { price:34900, priceBarre:50000, prixImg:969, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
@@ -4407,7 +4425,7 @@ const PLANS = [
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Pour accélérer vos ventes sur plusieurs produits, sans gérer toute une équipe.',
     badge:'72 Créatives Images',
-    ctaText:'Dominez Votre Marché',
+    ctaText:'Démarrer Maintenant',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
     monthly: { price:99900, priceBarre:200000, prixImg:1388, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
     quarterly: { price:69900, priceBarre:100000, prixImg:971, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
@@ -4416,7 +4434,7 @@ const PLANS = [
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'Gérez votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pub.',
     badge:'144 Créatives Images',
-    ctaText:'Explosez Votre Croissance',
+    ctaText:'Démarrer Maintenant',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
     monthly: { price:149900, priceBarre:400000, prixImg:1041, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
     quarterly: { price:104900, priceBarre:150000, prixImg:728, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
