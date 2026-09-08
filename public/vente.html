@@ -386,7 +386,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <h1 class="hero-headline">Le <em>Partenaire Créatif</em> Conçu Pour Votre Croissance, Qui <em>Grandit Avec Vous</em>.</h1>
     <p class="hero-subhead">Nous construisons des créatives images à fort taux de conversion incluant : stratégie, production et amélioration continue, chaque semaine, pour un seul abonnement.</p>
     <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Pack AdStack'});">Démarrer Maintenant !</button>
-    <p class="hero-downsell">Pas encore prêt pour un abonnement ? <a href="javascript:void(0)" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',16900)" class="hero-downsell-link">Obtiens 9 créatives images stratégiques pour seulement <span data-fcfa="16900">16.900 FCFA</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a> — et voyez les résultats sur votre produit.</p>
+    <p class="hero-downsell">Pas encore prêt pour un abonnement ? <a href="javascript:void(0)" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',16900)" class="hero-downsell-link">Obtenez 9 créatives images stratégiques pour seulement <span data-fcfa="16900">16.900 FCFA</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a> — et voyez les résultats sur votre produit.</p>
     <div class="hero-stars-block">
       <div class="hero-stars"><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span></div>
       <div class="hero-proof-row">
@@ -692,7 +692,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
               <div class="sys-ghost"></div><div class="sys-ghost"></div><div class="sys-ghost"></div>
               <div class="sys-ghost"></div><div class="sys-ghost"></div><div class="sys-ghost"></div>
             </div>
-            <p class="sys-batch-note">Et ça, ce n'est qu'1 angle sur 3. Ton batch complet : 9 créatives.</p>
+            <p class="sys-batch-note">Et ça, ce n'est qu'1 angle sur 3. Votre batch complet : 9 créatives.</p>
           </div>
         </div>
       </div>
@@ -754,7 +754,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     </div>
     <div class="grw-chart">
       <div class="grw-chart-title">Ce que ça change, dans le temps</div>
-      <p class="grw-chart-sub">Toi vs deux concurrents qui repartent de zéro à chaque fois.</p>
+      <p class="grw-chart-sub">Vous vs deux concurrents qui repartent de zéro à chaque fois.</p>
       <svg viewBox="0 0 400 200" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id="grwFade" x1="0" y1="0" x2="0" y2="1">
@@ -796,7 +796,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
         <text x="380" y="180" text-anchor="middle" font-size="8.5" fill="#5A5D65">M6</text>
       </svg>
       <div class="grw-legend">
-        <div class="grw-legend-item"><span class="grw-legend-dot" style="background:#1FB6FF"></span>Toi, avec AdStack</div>
+        <div class="grw-legend-item"><span class="grw-legend-dot" style="background:#1FB6FF"></span>Vous, avec AdStack</div>
         <div class="grw-legend-item"><span class="grw-legend-dot" style="background:#FF5C5C"></span>Concurrent A</div>
         <div class="grw-legend-item"><span class="grw-legend-dot" style="background:#FFB93B"></span>Concurrent B</div>
       </div>
@@ -814,8 +814,10 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 @keyframes cvr-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 .cvr-sub{font-size:14px;color:#5A5D65!important;line-height:1.55;margin:0 0 48px;max-width:380px}
 .cvr-items{display:flex;flex-direction:column;gap:52px}
-.cvr-item-img{width:100%;aspect-ratio:8/5;background:#111318;border-radius:16px;overflow:hidden;margin-bottom:20px;border:1px solid rgba(255,255,255,0.06)}
-.cvr-item-img img{width:100%;height:100%;object-fit:cover;display:block}
+.cvr-item-img{width:100%;aspect-ratio:8/5;background:#111318;border-radius:16px;overflow:hidden;margin-top:16px;border:1px solid rgba(255,255,255,0.06);cursor:zoom-in;position:relative}
+.cvr-item-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .3s ease}
+.cvr-item-img:hover img{transform:scale(1.03)}
+.cvr-item-img-zoom{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;background:rgba(10,10,14,0.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;color:#fff;pointer-events:none}
 .cvr-item-num{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#1FB6FF!important;opacity:.6;margin-bottom:6px}
 .cvr-item-title{font-size:22px;font-weight:900;color:#fff!important;letter-spacing:-.5px;line-height:1.15;margin-bottom:8px}
 .cvr-item-desc{font-size:14px;color:#5A5D65!important;line-height:1.65}
@@ -824,41 +826,68 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 @media(min-width:1024px){
 .cvr-wrap{max-width:1160px}
 .cvr-sub{max-width:520px}
-.cvr-items{display:grid;grid-template-columns:repeat(3,1fr);gap:32px}
-.cvr-item-img{margin-bottom:16px}
-.cvr-item-title{font-size:21px}
+.cvr-items{display:grid;grid-template-columns:repeat(4,1fr);gap:28px}
+.cvr-item-img{margin-top:14px}
+.cvr-item-title{font-size:19px}
 .cvr-item-desc{font-size:13px}
 }
+.cvr-lightbox{position:fixed;inset:0;background:rgba(5,7,12,0.94);z-index:9999;display:none;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+.cvr-lightbox.is-open{display:flex}
+.cvr-lightbox img{max-width:100%;max-height:100%;border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+.cvr-lightbox-close{position:absolute;top:20px;right:20px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
 </style>
 
 
 <section class="cvr" id="ce-que-vous-recevez">
   <div class="cvr-wrap">
-    <div class="section-eyebrow">Ce que vous recevez</div>
-    <h2 class="cvr-title">Reçois depuis notre plateforme. <em>Tout ce qu'il faut pour lancer une campagne qui performe.</em></h2>
-    <p class="cvr-sub">Tout est centralisé et organisé. Zéro effort de votre part. Zéro perte de temps.</p>
+    <h2 class="cvr-title">Là où toute la magie opère, <em>sans effort de votre part.</em></h2>
+    <p class="cvr-sub">AdBoard est la plateforme intelligente où tout l'écosystème créatif évolue : Organisation, Planification, Vue d'ensemble, Amélioration etc…</p>
     <div class="cvr-items">
       <div class="cvr-item">
-        <div class="cvr-item-img"><img src="/assets/vente/adboard-galerie-item01.jpg" alt="Galerie Créatives AdBoard" loading="lazy"></div>
         <div class="cvr-item-num">01</div>
-        <div class="cvr-item-title">Galerie Créatives, toutes classées par Produit / Cible / Angle</div>
-        <p class="cvr-item-desc">Demande un batch de nouvelles créatives chaque semaine — <strong>prêtes à performer immédiatement</strong> dans vos campagnes Meta Ads.</p>
+        <div class="cvr-item-title">Votre Catalogue Produits</div>
+        <p class="cvr-item-desc">Gestion intelligente de tous vos produits, <strong>pas de formulaire compliqué</strong>.</p>
+        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-catalogue-item01.png"><img src="/assets/vente/adboard-catalogue-item01.png" alt="Catalogue Produits AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
       </div>
       <div class="cvr-item">
-        <div class="cvr-item-img"><img src="/assets/vente/adboard-copies-item02.jpg" alt="Ad Copies AdBoard" loading="lazy"></div>
         <div class="cvr-item-num">02</div>
-        <div class="cvr-item-title">Titres &amp; Descriptions (Ad Copies) prêts à coller sur votre campagne</div>
-        <p class="cvr-item-desc">Écrits pour <strong>déclencher le clic</strong>. Vous copiez-collez, vous lancez. Vous n'écrivez rien, vous ne cherchez rien.</p>
+        <div class="cvr-item-title">Suivi De Demande</div>
+        <p class="cvr-item-desc">Regardez où en est notre équipe sur votre demande <strong>en temps réel et en toute transparence</strong>.</p>
+        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-suivi-item02.png"><img src="/assets/vente/adboard-suivi-item02.png" alt="Suivi de Demande AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
       </div>
       <div class="cvr-item">
-        <div class="cvr-item-img"><img src="/assets/vente/adboard-marche-item03.jpg" alt="Données Marché AdBoard" loading="lazy"></div>
         <div class="cvr-item-num">03</div>
-        <div class="cvr-item-title">Récapitulatif de l'Analyse de Marché (Données Marché)</div>
-        <p class="cvr-item-desc">La cible identifiée, les angles retenus, le raisonnement derrière chaque choix créatif. Tu sais <strong>exactement pourquoi chaque image a été construite</strong> — et sur quelle donnée de marché.</p>
+        <div class="cvr-item-title">Galerie Créatives</div>
+        <p class="cvr-item-desc">Toutes vos créatives seront centralisées ici, <strong>après stratégie + production</strong>.</p>
+        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-galerie-item03.png"><img src="/assets/vente/adboard-galerie-item03.png" alt="Galerie Créatives AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
+      </div>
+      <div class="cvr-item">
+        <div class="cvr-item-num">04</div>
+        <div class="cvr-item-title">Données Marché</div>
+        <p class="cvr-item-desc">Vue globale de toutes les données accumulées sur votre marché, produit, cible. <strong>Pour une meilleure prise de décision</strong>.</p>
+        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-marche-item04.png"><img src="/assets/vente/adboard-marche-item04.png" alt="Données Marché AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
       </div>
     </div>
   </div>
+  <div class="cvr-lightbox" id="cvrLightbox"><div class="cvr-lightbox-close" id="cvrLightboxClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><img id="cvrLightboxImg" src="" alt="Vue agrandie"></div>
 </section>
+<script>(function(){
+  var lb=document.getElementById('cvrLightbox');
+  var lbImg=document.getElementById('cvrLightboxImg');
+  var lbClose=document.getElementById('cvrLightboxClose');
+  document.querySelectorAll('.cvr-item-img[data-lightbox]').forEach(function(el){
+    el.addEventListener('click',function(){
+      lbImg.src=el.getAttribute('data-lightbox');
+      lb.classList.add('is-open');
+    });
+  });
+  function closeLb(){lb.classList.remove('is-open');lbImg.src='';}
+  lbClose.addEventListener('click',closeLb);
+  lb.addEventListener('click',function(e){if(e.target===lb)closeLb();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLb();});
+})();</script>
+
+
 <style>
 .travaux-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden}
 .tv2-container{width:88%;max-width:960px;margin:0 auto}
@@ -885,7 +914,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <div class="tv2-title-block">
       <div class="section-eyebrow">La preuve par l'exemple</div>
       <h2 class="tv2-headline">Nos <em>travaux récents</em></h2>
-      <p class="tv2-sub">Découvre quelques exemples de ce qu'on livre. Ton produit mérite le même niveau — ou mieux.</p>
+      <p class="tv2-sub">Découvrez quelques exemples de ce qu'on livre. Votre produit mérite le même niveau — ou mieux.</p>
     </div>
     <div class="tv2-grid">
       <div class="tv2-cell" style="animation-delay:0.03s">
@@ -1089,7 +1118,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
         <div class="proc-img2-frame"><img src="/assets/vente/proc-step2-formulaire.jpg" alt="Ajout de produit dans AdBoard" loading="lazy"></div>
       </div>
       <div class="proc-step">
-        <div class="proc-step-header"><div class="proc-step-dot">3</div><div><div class="proc-step-label">Étape 3</div><div class="proc-step-title">Tu suis tout,<br>en direct.</div></div></div>
+        <div class="proc-step-header"><div class="proc-step-dot">3</div><div><div class="proc-step-label">Étape 3</div><div class="proc-step-title">Vous suivez tout,<br>en direct.</div></div></div>
         <p class="proc-step-desc">En <strong>moins de 48h</strong>, reçois tout dans AdBoard — organisé et prêt à uploader sur Meta Ads, avec suivi de production en temps réel.</p>
         <div class="proc-img-stack"><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina1.jpg" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina2.jpg" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina3.jpg" alt="" loading="lazy"></div></div>
         <div class="proc-wa-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1FB6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Livraison garantie en 48h</div>
@@ -1394,8 +1423,8 @@ function lpRenderDiscoveryDownsell() {
   el.innerHTML =
     '<div class="lp-downsell-card">' +
       '<div class="lp-downsell-price" data-fcfa="' + d.price + '">' + lpFmt(d.price) + ' FCFA</div>' +
-      '<div class="lp-downsell-title">Pas encore prêt pour un abonnement ? Teste sans risque.</div>' +
-      '<p class="lp-downsell-text">Reçois <strong>' + o.imagesPerWeek + ' visuels stratégiques</strong> pour <strong><span data-fcfa="' + d.price + '">' + lpFmt(d.price) + ' FCFA</span></strong>, achat unique, sans engagement. Convaincu ? Passez à un abonnement mensuel quand vous voulez.</p>' +
+      '<div class="lp-downsell-title">Pas encore prêt pour un abonnement ? Testez sans risque.</div>' +
+      '<p class="lp-downsell-text">Recevez <strong>' + o.imagesPerWeek + ' visuels stratégiques</strong> pour <strong><span data-fcfa="' + d.price + '">' + lpFmt(d.price) + ' FCFA</span></strong>, achat unique, sans engagement. Convaincu ? Passez à un abonnement mensuel quand vous voulez.</p>' +
       '<button onclick="lpOpenCheckout(\'' + d.productId + '\',\'' + o.name + '\',' + d.price + ')" class="lp-downsell-btn">Tester avec ' + o.name + ' <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>' +
     '</div>';
 }
@@ -1464,7 +1493,7 @@ var LP_PREPURCHASE_QUESTIONS = [
   "Si une solution vous faisait gagner plusieurs heures chaque semaine, ça changerait quoi pour vous concrètement ?",
   "Qu'est-ce qui vous ferait hésiter à essayer une nouvelle solution pour vos visuels ?",
   "Comment décririez-vous, avec vos mots, ce qui bloque vraiment vos ventes ?",
-  "T'as déjà entendu parler d'autres solutions ou agences pour ce genre de besoin ? T'en penses quoi ?",
+  "Avez-vous déjà entendu parler d'autres solutions ou agences pour ce genre de besoin ? Qu'en pensez-vous ?",
   "Qu'est-ce que vous seriez prêt à changer pour vraiment débloquer vos ventes ?",
   "Pourquoi c'est important pour vous de régler ça maintenant ?",
 ];
@@ -1560,7 +1589,7 @@ function lpPrepurchaseRenderCode(code) {
       '<h2 class="lp-pp-title" style="margin-bottom:8px">Merci pour vos réponses !</h2>' +
       '<p class="lp-pp-sub" style="margin-bottom:20px">Voici votre code pour -10% sur votre premier abonnement :</p>' +
       '<div onclick="lpPrepurchaseCopy(this)" data-code="' + code + '" class="lp-pp-code">' +
-        '<span>' + code + '</span><span class="lp-pp-copy-hint">Clique pour copier</span>' +
+        '<span>' + code + '</span><span class="lp-pp-copy-hint">Cliquez pour copier</span>' +
       '</div>' +
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-btn-accent" style="margin-top:20px">Continuer</button>' +
     '</div>';
@@ -1570,7 +1599,7 @@ function lpPrepurchaseCopy(el) {
   var code = el.getAttribute('data-code');
   if (navigator.clipboard) navigator.clipboard.writeText(code);
   var hint = el.querySelector('.lp-pp-copy-hint');
-  if (hint) { hint.textContent = 'Copié !'; setTimeout(function(){ hint.textContent = 'Clique pour copier'; }, 2000); }
+  if (hint) { hint.textContent = 'Copié !'; setTimeout(function(){ hint.textContent = 'Cliquez pour copier'; }, 2000); }
 }
 
 async function lpPrepurchaseSubmit() {
@@ -1883,7 +1912,7 @@ lpPrepurchaseInit();
     <div class="hc-dots" id="hcDots">
       <span class="hc-dot active"></span><span class="hc-dot"></span><span class="hc-dot"></span><span class="hc-dot"></span>
     </div>
-    <p class="hc-scroll-hint">← Fais glisser pour comparer aux autres options →</p>
+    <p class="hc-scroll-hint">← Faites glisser pour comparer aux autres options →</p>
   </div>
 </section>
 <div style="display:none"><script>
