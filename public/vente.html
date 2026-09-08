@@ -1099,29 +1099,24 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 </style>
 <section class="process-section" id="comment">
   <div class="proc-wrap">
-    <div class="section-eyebrow">Le process</div>
     <h2 class="proc-headline">Seulement 3 étapes simples et <em>notre équipe se met au boulot.</em></h2>
     <p class="proc-sub">Commencez à demander vos visuels stratégiques dès aujourd'hui.</p>
     <div class="proc-scroll-outer"><div class="proc-steps">
       <div class="proc-step">
         <div class="proc-step-header"><div class="proc-step-dot">1</div><div><div class="proc-step-label">Étape 1</div><div class="proc-step-title">Vous vous abonnez.<br>C'est tout.</div></div></div>
         <p class="proc-step-desc">Choisissez votre offre et réglez en <strong>moins de 2 minutes</strong>, paiement sécurisé. Annulable à tout moment.</p>
-        <div class="proc-thanks-mock">
-          <div class="proc-thanks-icon">✓</div>
-          <div class="proc-thanks-title">Bienvenue dans AdStack !</div>
-          <p class="proc-thanks-text">Merci pour votre abonnement. Vous pouvez dès maintenant commencer à profiter de nos services. Si vous avez une question, n'hésitez pas à nous écrire.</p>
-        </div>
+        <div class="proc-img2-frame"><img src="/assets/vente/proc-step1-subscribe.png" alt="Formulaire d'abonnement AdStack" loading="lazy"></div>
       </div>
       <div class="proc-step">
         <div class="proc-step-header"><div class="proc-step-dot">2</div><div><div class="proc-step-label">Étape 2</div><div class="proc-step-title">Vous importez votre produit<br>dans AdBoard.</div></div></div>
-        <p class="proc-step-desc">Connectez-vous avec votre compte Google, ajoutez votre produit et demandez vos images en <strong>1 clic</strong>. Zéro formulaire compliqué.</p>
+        <p class="proc-step-desc">Connectez-vous avec votre compte Google, ajoutez votre produit et demandez une production en <strong>1 clic</strong>. Zéro formulaire à refaire à chaque fois.</p>
         <div class="proc-img2-frame"><img src="/assets/vente/proc-step2-formulaire.jpg" alt="Ajout de produit dans AdBoard" loading="lazy"></div>
       </div>
       <div class="proc-step">
         <div class="proc-step-header"><div class="proc-step-dot">3</div><div><div class="proc-step-label">Étape 3</div><div class="proc-step-title">Vous suivez tout,<br>en direct.</div></div></div>
-        <p class="proc-step-desc">En <strong>moins de 48h</strong>, reçois tout dans AdBoard — organisé et prêt à uploader sur Meta Ads, avec suivi de production en temps réel.</p>
+        <p class="proc-step-desc">En <strong>moins de 48h</strong>, recevez tout dans AdBoard — organisé et prêt à uploader sur Meta Ads, en attendant votre prochaine demande la semaine suivante.</p>
         <div class="proc-img-stack"><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina1.jpg" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina2.jpg" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina3.jpg" alt="" loading="lazy"></div></div>
-        <div class="proc-wa-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1FB6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Livraison garantie en 48h</div>
+        <div class="proc-wa-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1FB6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Livraison en 48h</div>
       </div>
     </div></div>
   </div>
@@ -2363,57 +2358,7 @@ window.lpApplyCurrency = function(){};
   line-height:1.6!important;
 }
 </style>
-<!-- ═══ Widget trust screens — apparaît/disparaît en boucle, coin bas-gauche pour ne pas
-     empiler avec le chat (bas-droite) ni la barre upsell (centrée bas). Sur la page de vente,
-     se relance à chaque visite — seule la fermeture (croix) l'arrête pour la session en cours. ═══ -->
-<style>
-#lp-trust-widget{position:fixed;bottom:100px;left:14px;z-index:9500;opacity:0;visibility:hidden;transform:translateY(10px) scale(0.92);transition:opacity .4s ease,transform .4s ease,visibility 0s linear .4s;pointer-events:none}
-#lp-trust-widget.visible{opacity:1;visibility:visible;transform:translateY(0) scale(1);transition:opacity .4s ease,transform .4s ease,visibility 0s linear 0s}
-.lp-trust-card{position:relative;width:125px;aspect-ratio:3/4;border-radius:14px;overflow:hidden;box-shadow:0 0 20px 3px rgba(31,182,255,0.5),0 8px 22px rgba(0,0,0,0.55);border:2px solid rgba(31,182,255,0.55)}
-.lp-trust-card{background:#0F1118}
-.lp-trust-card img{width:100%;height:100%;object-fit:contain;display:block}
-.lp-trust-close{position:absolute;top:4px;right:4px;width:19px;height:19px;border-radius:50%;background:rgba(0,0,0,0.65);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;pointer-events:auto;line-height:1}
-@media(min-width:768px){.lp-trust-card{width:156px}}
-@media(min-width:1024px){#lp-trust-widget{bottom:28px;left:24px}}
-</style>
-<div id="lp-trust-widget">
-  <div class="lp-trust-card">
-    <img id="lp-trust-widget-img" src="" alt="">
-    <button class="lp-trust-close" onclick="lpTrustDismiss()" aria-label="Fermer">✕</button>
-  </div>
-</div>
-<div style="display:none"><script>
-(function(){
-  var TRUST_IMAGES = ['/assets/vente/trust/trust-01.jpg','/assets/vente/trust/trust-02.jpg','/assets/vente/trust/trust-03.jpg','/assets/vente/trust/trust-04.jpg','/assets/vente/trust/trust-05.jpg'];
-  var idx = 0, dismissed = false, cycleTimer = null, hideTimer = null;
-
-  function showNext(){
-    if (dismissed) return;
-    var wrap = document.getElementById('lp-trust-widget');
-    var img = document.getElementById('lp-trust-widget-img');
-    img.src = TRUST_IMAGES[idx % TRUST_IMAGES.length];
-    idx++;
-    wrap.classList.add('visible');
-    clearTimeout(hideTimer);
-    hideTimer = setTimeout(function(){
-      if (!dismissed) wrap.classList.remove('visible');
-    }, 5000); // visible 5s, puis se cache jusqu'au prochain cycle (10s d'intervalle total)
-  }
-
-  window.lpTrustDismiss = function(){
-    dismissed = true;
-    clearInterval(cycleTimer);
-    clearTimeout(hideTimer);
-    document.getElementById('lp-trust-widget').classList.remove('visible');
-  };
-
-  setTimeout(function(){
-    if (dismissed) return;
-    showNext();
-    cycleTimer = setInterval(showNext, 10000);
-  }, 3000); // petit délai avant le premier passage, pour ne pas surgir immédiatement au chargement
-})();
-</script></div>
+<!-- ═══ Widget trust screens (WhatsApp) — désactivé ═══ -->
 
   </body>
 </html>
