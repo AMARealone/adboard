@@ -1579,14 +1579,14 @@ var LP_QUIZ_QUESTIONS = [
     { label: "Rien de spécial, ce n'est pas mon problème principal", score: 0 },
   ]},
   { q: "Qu'est-ce qui vous ferait hésiter à essayer une nouvelle solution ?", options: [
-    { label: "Le prix", score: 0 },
+    { label: "Surtout le prix", score: 0 },
     { label: "La peur que ça ne marche pas pour mon marché", score: 1 },
     { label: "Le temps à investir pour tester", score: 1 },
     { label: "Rien, je suis prêt à essayer", score: 1 },
   ]},
   { q: "Vous gérez combien de produits ou marques actuellement ?", options: [
     { label: "Un seul produit", score: 0 },
-    { label: "2 à 3 produits", score: 2 },
+    { label: "Entre 2 et 3 produits", score: 2 },
     { label: "Plusieurs marques ou marchés en parallèle", score: 3 },
     { label: "Aucun encore, je démarre", score: 0 },
   ]},
@@ -1710,7 +1710,7 @@ function lpQuizFinish() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        source: 'prepurchase_quiz',
+        source: 'prepurchase_form',
         answers: lpQuizAnswers.map(function(a){ return { question: a.question, answer: a.answer }; })
           .concat([{ question: 'Score quiz / Offre recommandée', answer: 'Score: ' + lpQuizScore + ' — Recommandé: ' + recommended.name }]),
       })
