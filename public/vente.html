@@ -1549,10 +1549,10 @@ var LP_QUIZ_QUESTIONS = [
     { label: "Je n'ai pas encore vraiment commencé à faire de la pub", score: 0 },
   ]},
   { q: "Combien dépensez-vous par mois en publicité actuellement ?", options: [
-    { label: "Moins de 100.000 FCFA", score: 0 },
-    { label: "Entre 100.000 et 300.000 FCFA", score: 1 },
-    { label: "Entre 300.000 et 1.200.000 FCFA", score: 2 },
-    { label: "Plus de 1.200.000 FCFA", score: 3 },
+    { label: "Moins de 150 $", score: 0 },
+    { label: "Entre 150 et 450 $", score: 1 },
+    { label: "Entre 450 et 2.000 $", score: 2 },
+    { label: "Plus de 2.000 $", score: 3 },
   ]},
   { q: "Où en êtes-vous avec vos ventes en ligne ?", options: [
     { label: "Je viens de lancer, pas encore de ventes rentables", score: 0 },
@@ -1560,25 +1560,25 @@ var LP_QUIZ_QUESTIONS = [
     { label: "Ça marche, je veux accélérer", score: 2 },
     { label: "Ça marche bien, je veux structurer sur plusieurs produits", score: 3 },
   ]},
-  { q: "Qu'avez-vous déjà essayé pour vos visuels publicitaires ?", options: [
+  { q: "Qu'avez-vous déjà essayé pour vos créatives publicitaires ?", options: [
     { label: "Canva ou des outils IA (ChatGPT, Gemini…)", score: 1 },
     { label: "Un freelance ou une agence", score: 1 },
     { label: "Rien, je n'ai pas encore essayé", score: 0 },
     { label: "Une équipe interne", score: 2 },
   ]},
   { q: "Quel est votre objectif de revenus pour les prochains mois ?", options: [
-    { label: "Faire mes premiers 5.000$/mois", score: 0 },
+    { label: "Faire mes premiers 5.000$/mois de CA", score: 0 },
     { label: "Passer à 15.000$/mois", score: 2 },
     { label: "Atteindre un palier à 6 chiffres", score: 3 },
     { label: "Je ne sais pas encore précisément", score: 1 },
   ]},
-  { q: "Si une solution vous faisait gagner plusieurs heures chaque semaine, ça changerait quoi ?", options: [
+  { q: "Si notre solution vous faisait gagner plusieurs heures chaque semaine, ça changerait quoi ?", options: [
     { label: "Je pourrais enfin me concentrer sur mes ventes", score: 1 },
     { label: "Je pourrais tester plus de produits", score: 2 },
     { label: "Je pourrais enfin souffler un peu", score: 0 },
     { label: "Rien de spécial, ce n'est pas mon problème principal", score: 0 },
   ]},
-  { q: "Qu'est-ce qui vous ferait hésiter à essayer une nouvelle solution ?", options: [
+  { q: "Qu'est-ce qui vous ferait hésiter à essayer notre solution ?", options: [
     { label: "Surtout le prix", score: 0 },
     { label: "La peur que ça ne marche pas pour mon marché", score: 1 },
     { label: "Le temps à investir pour tester", score: 1 },
@@ -1618,7 +1618,7 @@ function lpPrepurchaseInit() {
     try { sessionStorage.setItem('adstack_prepurchase_shown_session', '1'); } catch(e) {}
     lpPrepurchaseRenderTeaser();
     document.getElementById('lp-prepurchase-overlay').style.display = 'flex';
-  }, 120 * 1000);
+  }, 90 * 1000);
 }
 
 function lpPrepurchaseClose() {
@@ -1629,9 +1629,9 @@ function lpPrepurchaseRenderTeaser() {
   document.getElementById('lp-prepurchase-content').innerHTML =
     '<div class="lp-pp-teaser">' +
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-close" style="position:absolute;top:12px;right:12px">✕</button>' +
-      '<div class="lp-pp-eyebrow">Offre exclusive</div>' +
+      '<div class="lp-pp-eyebrow">Offre Exclusive</div>' +
       '<div class="lp-pp-percent">-10%</div>' +
-      '<p class="lp-pp-teaser-text">Répondez à quelques questions rapides — 10 secondes chrono — et débloquez votre code de réduction.</p>' +
+      '<p class="lp-pp-teaser-text">Répondez à un QUIZ rapide — 10 secondes chrono — et débloquez votre code de réduction.</p>' +
       '<button onclick="lpQuizStart()" class="lp-pp-btn-white">Commencer</button>' +
     '</div>';
 }
@@ -1722,37 +1722,43 @@ function lpQuizFinish() {
 
 function lpQuizRenderResult(offer) {
   var isPro = offer.key === 'pro';
+  var offerNameUpper = offer.name.toUpperCase();
   var headline = isPro
-    ? 'Pro est <em>faite pour vous.</em>'
-    : 'Starter est <em>faite pour vous.</em>';
+    ? offerNameUpper + ' est <em>faite pour vous.</em>'
+    : offerNameUpper + ' est <em>faite pour vous.</em>🫵🏽';
+  var badge = isPro
+    ? '72 Créatives Images / Mois (Stratégie - Production - Amélioration)'
+    : '36 Créatives Images / Mois (Stratégie - Production - Amélioration)';
   var body = isPro
-    ? "D'après vos réponses, vous avez déjà trouvé ce qui marche — il est temps d'accélérer sans casser votre rentabilité, avec plus d'angles testés chaque semaine."
-    : "D'après vos réponses, c'est le moment idéal pour sortir de la saturation et commencer à tester ce qui marche vraiment pour votre marque, sans exploser votre budget.";
+    ? "Vous avez un ou deux produits qui marchent — il est temps d'accélérer votre croissance avec plus d'angles testés chaque semaine, sans avoir à gérer une grosse équipe. Et ainsi aller chercher les 15.000 $ ou beaucoup plus par mois."
+    : "C'est le moment idéal pour vous démarquer de votre marché et commencer à faire grandir votre marque, sans exploser votre budget. Et ainsi aller chercher les 5.000 $ ou beaucoup plus par mois.";
+  var promoCode = 'MERCI10';
   var html =
     '<div class="lp-pp-form lp-quiz-result">' +
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-close" style="position:absolute;top:16px;right:16px">✕</button>' +
       '<div class="lp-pp-check">✓</div>' +
       '<h2 class="lp-quiz-result-headline">' + headline + '</h2>' +
+      '<div class="lp-quiz-badge">' + badge + '</div>' +
       '<p class="lp-pp-sub" style="text-align:center;font-size:13.5px;margin-top:10px">' + body + '</p>' +
       '<div style="text-align:center;margin-top:20px">' +
-        '<div class="lp-pp-code" onclick="lpPrepurchaseCopyCode()">' +
-          '<span style="font-weight:800;color:#1FB6FF;letter-spacing:1px">' + AS_CODE_PROMO + '</span>' +
-          '<span style="font-size:11px;color:#8A8D95">— cliquez pour copier</span>' +
+        '<div class="lp-pp-code" onclick="lpPrepurchaseCopyCode(\'' + promoCode + '\')">' +
+          '<span style="font-weight:800;color:#1FB6FF;letter-spacing:1px">' + promoCode + '</span>' +
+          '<span style="font-size:11px;color:#8A8D95">— cliquez pour copier 👆🏾</span>' +
         '</div>' +
-        '<p class="lp-pp-copy-hint" style="margin-top:6px">Déjà appliqué à votre checkout. Collez-le si le champ n\'est pas pré-rempli.</p>' +
       '</div>' +
-      '<button onclick="lpQuizGoToCheckout(\'' + offer.productId + '\',\'' + offer.name + '\',' + offer.price + ')" class="lp-pp-submit">Profiter de -10% sur ' + offer.name + '</button>' +
+      '<button onclick="lpQuizGoToCheckout(\'' + offer.productId + '\',\'' + offer.name + '\',' + offer.price + ',\'' + promoCode + '\')" class="lp-pp-submit">' + offerNameUpper + ' — <span data-fcfa="' + offer.price + '">' + lpFmt(offer.price) + ' FCFA</span></button>' +
     '</div>';
   document.getElementById('lp-prepurchase-content').innerHTML = html;
+  if (typeof window.lpApplyCurrency === 'function') window.lpApplyCurrency();
 }
 
-function lpQuizGoToCheckout(productId, offerName, price) {
+function lpQuizGoToCheckout(productId, offerName, price, promoCode) {
   lpPrepurchaseClose();
-  lpOpenCheckout(productId, offerName, price, AS_CODE_PROMO);
+  lpOpenCheckout(productId, offerName, price, promoCode);
 }
 
-function lpPrepurchaseCopyCode() {
-  try { navigator.clipboard.writeText(AS_CODE_PROMO); } catch(e) {}
+function lpPrepurchaseCopyCode(code) {
+  try { navigator.clipboard.writeText(code); } catch(e) {}
 }
 
 lpPrepurchaseInit();
@@ -1794,6 +1800,7 @@ lpPrepurchaseInit();
 .lp-quiz-result{text-align:center}
 .lp-quiz-result-headline{font-size:22px;font-weight:900;letter-spacing:-.5px;color:#fff;line-height:1.25;margin-top:14px}
 .lp-quiz-result-headline em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:hero-grad 3s ease infinite}
+.lp-quiz-badge{display:inline-block;margin-top:12px;padding:5px 14px;border-radius:20px;background:rgba(31,182,255,0.1);border:1px solid rgba(31,182,255,0.3);color:#5A9EFF;font-size:11px;font-weight:700}
 </style></div>
 
 <style>
