@@ -1487,7 +1487,7 @@ function lpToggleCycle() {
   lpRenderOffers();
 }
 
-function lpOpenCheckout(productId, offerName, price) {
+function lpOpenCheckout(productId, offerName, price, couponCode) {
   adstackTrackFunnel('paiement_initie');
   if (typeof fbq !== 'undefined') fbq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
   document.querySelectorAll('script[src*="chariowcdn"]').forEach(function(s) { s.remove(); });
@@ -1508,6 +1508,10 @@ function lpOpenCheckout(productId, offerName, price) {
   newWidget.setAttribute('data-cta-animation', 'none');
   newWidget.setAttribute('data-locale', 'fr');
   newWidget.setAttribute('data-background-color', '#FFFFFF');
+  // Tentative de pré-remplissage du code promo — attribut non confirmé dans la doc Chariow,
+  // à vérifier en conditions réelles. Le code reste de toute façon affiché + copiable dans
+  // le popup en amont, donc le parcours fonctionne même si cet attribut est ignoré.
+  if (couponCode) newWidget.setAttribute('data-coupon-code', couponCode);
   oldWidget.parentNode.replaceChild(newWidget, oldWidget);
   document.getElementById('lp-payment-overlay').style.display = 'flex';
   if (!document.querySelector('link[href*="chariowcdn"]')) {
@@ -1529,38 +1533,81 @@ function lpCloseCheckout() {
 
 lpRenderOffers();
 
-// ── Pop-up pré-achat — même mécanique que celui d'AdBoard (InsightForm, mode prepurchase) :
-// 10 questions, code promo -10% à la clé, réponses envoyées à /save-form-response qui les
-// écrit dans data_insights (Supabase), la même table que lit déjà le CRM pour AdBoard. Seule
-// différence assumée : pas de vérification d'abonnement existant (page anonyme, sans compte
-// Google connecté) — et déclenché après 1 minute au lieu de 2, comme demandé pour cette page.
-var LP_PREPURCHASE_QUESTIONS = [
-  "Aujourd'hui, qu'est-ce qui vous frustre le plus avec vos pubs ou vos visuels ?",
-  "Si tout se passait bien pour votre business dans 6 mois, à quoi ça ressemblerait ?",
-  "Qu'est-ce que vous avez déjà essayé pour améliorer vos ventes, et qu'est-ce qui n'a pas marché ?",
-  "D'après vous, qu'est-ce qui ferait vraiment la différence pour vous en ce moment ?",
-  "Si une solution vous faisait gagner plusieurs heures chaque semaine, ça changerait quoi pour vous concrètement ?",
-  "Qu'est-ce qui vous ferait hésiter à essayer une nouvelle solution pour vos visuels ?",
-  "Comment décririez-vous, avec vos mots, ce qui bloque vraiment vos ventes ?",
-  "Avez-vous déjà entendu parler d'autres solutions ou agences pour ce genre de besoin ? Qu'en pensez-vous ?",
-  "Qu'est-ce que vous seriez prêt à changer pour vraiment débloquer vos ventes ?",
-  "Pourquoi c'est important pour vous de régler ça maintenant ?",
+// ── Pop-up pré-achat — quiz rapide à choix multiples (A/B/C/D), remplace l'ancien formulaire
+// texte libre. Objectif double : (1) récolter de la donnée qualifiée sur le visiteur, envoyée
+// à /save-form-response -> data_insights (Supabase), même table que lit le CRM ; (2) recommander
+// une offre à la fin et déclencher le checkout directement, avec le code promo -10% appliqué.
+// Le score pousse la grande majorité du trafic vers Starter par défaut — Pro seulement si les
+// réponses signalent un budget/objectif clairement au-dessus. Scale n'est jamais recommandé ici :
+// c'est une offre à plus fort engagement, pas un point d'entrée à froid. Seuil de score modifiable
+// facilement (LP_QUIZ_PRO_THRESHOLD) si la répartition réelle observée dans le CRM doit être ajustée.
+var LP_QUIZ_QUESTIONS = [
+  { q: "Aujourd'hui, qu'est-ce qui vous frustre le plus avec vos pubs ?", options: [
+    { label: "Je ne sais jamais quel visuel va marcher", score: 1 },
+    { label: "Je passe trop de temps à créer mes visuels moi-même", score: 1 },
+    { label: "Mes résultats stagnent, rien ne décolle vraiment", score: 2 },
+    { label: "Je n'ai pas encore vraiment commencé à faire de la pub", score: 0 },
+  ]},
+  { q: "Combien dépensez-vous par mois en publicité actuellement ?", options: [
+    { label: "Moins de 100.000 FCFA", score: 0 },
+    { label: "Entre 100.000 et 300.000 FCFA", score: 1 },
+    { label: "Entre 300.000 et 1.200.000 FCFA", score: 2 },
+    { label: "Plus de 1.200.000 FCFA", score: 3 },
+  ]},
+  { q: "Où en êtes-vous avec vos ventes en ligne ?", options: [
+    { label: "Je viens de lancer, pas encore de ventes rentables", score: 0 },
+    { label: "J'ai quelques ventes, mais rien de régulier", score: 1 },
+    { label: "Ça marche, je veux accélérer", score: 2 },
+    { label: "Ça marche bien, je veux structurer sur plusieurs produits", score: 3 },
+  ]},
+  { q: "Qu'avez-vous déjà essayé pour vos visuels publicitaires ?", options: [
+    { label: "Canva ou des outils IA (ChatGPT, Gemini…)", score: 1 },
+    { label: "Un freelance ou une agence", score: 1 },
+    { label: "Rien, je n'ai pas encore essayé", score: 0 },
+    { label: "Une équipe interne", score: 2 },
+  ]},
+  { q: "Quel est votre objectif de revenus pour les prochains mois ?", options: [
+    { label: "Faire mes premiers 5.000$/mois", score: 0 },
+    { label: "Passer à 15.000$/mois", score: 2 },
+    { label: "Atteindre un palier à 6 chiffres", score: 3 },
+    { label: "Je ne sais pas encore précisément", score: 1 },
+  ]},
+  { q: "Si une solution vous faisait gagner plusieurs heures chaque semaine, ça changerait quoi ?", options: [
+    { label: "Je pourrais enfin me concentrer sur mes ventes", score: 1 },
+    { label: "Je pourrais tester plus de produits", score: 2 },
+    { label: "Je pourrais enfin souffler un peu", score: 0 },
+    { label: "Rien de spécial, ce n'est pas mon problème principal", score: 0 },
+  ]},
+  { q: "Qu'est-ce qui vous ferait hésiter à essayer une nouvelle solution ?", options: [
+    { label: "Le prix", score: 0 },
+    { label: "La peur que ça ne marche pas pour mon marché", score: 1 },
+    { label: "Le temps à investir pour tester", score: 1 },
+    { label: "Rien, je suis prêt à essayer", score: 1 },
+  ]},
+  { q: "Vous gérez combien de produits ou marques actuellement ?", options: [
+    { label: "Un seul produit", score: 0 },
+    { label: "2 à 3 produits", score: 2 },
+    { label: "Plusieurs marques ou marchés en parallèle", score: 3 },
+    { label: "Aucun encore, je démarre", score: 0 },
+  ]},
+  { q: "Qu'est-ce qui compte le plus pour vous dans une offre comme la nôtre ?", options: [
+    { label: "Un prix accessible pour tester sereinement", score: 0 },
+    { label: "Un vrai volume pour accélérer", score: 2 },
+    { label: "Un accompagnement qui dure dans le temps", score: 1 },
+    { label: "La rapidité de livraison", score: 1 },
+  ]},
+  { q: "Pourquoi c'est important pour vous de régler ça maintenant ?", options: [
+    { label: "Je perds de l'argent chaque jour sans bonnes pubs", score: 1 },
+    { label: "Mes concurrents avancent plus vite que moi", score: 1 },
+    { label: "Je veux enfin passer un cap", score: 2 },
+    { label: "Pas d'urgence particulière, je me renseigne", score: 0 },
+  ]},
 ];
-// Même principe que côté AdBoard : réponses "voix ICP" en placeholder gris, jamais annoncées
-// comme "exemple", pour guider quelqu'un qui bloque devant un champ vide.
-var LP_PREPURCHASE_PLACEHOLDERS = [
-  "Je perds trop de temps sur mes visuels…",
-  "Vendre dans plusieurs pays sans y penser…",
-  "Canva, freelances… rien n'a vraiment marché…",
-  "Des créatives fraîches chaque semaine, sans effort…",
-  "Plus de temps pour mes clients, enfin…",
-  "Peur que ça colle pas à mon marché…",
-  "Mes pubs s'essoufflent trop vite…",
-  "Les agences, trop cher ou trop lentes…",
-  "Investir dans la qualité, pas mon temps…",
-  "Chaque jour sans pub, c'est des ventes perdues…",
-];
-var lpPrepurchaseAnswers = Array(LP_PREPURCHASE_QUESTIONS.length).fill('');
+var LP_QUIZ_PRO_THRESHOLD = 16; // sur 23 max — franchi seulement par des réponses constamment "hautes"
+
+var lpQuizIndex = 0;
+var lpQuizScore = 0;
+var lpQuizAnswers = [];
 
 function lpPrepurchaseInit() {
   try {
@@ -1584,97 +1631,128 @@ function lpPrepurchaseRenderTeaser() {
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-close" style="position:absolute;top:12px;right:12px">✕</button>' +
       '<div class="lp-pp-eyebrow">Offre exclusive</div>' +
       '<div class="lp-pp-percent">-10%</div>' +
-      '<p class="lp-pp-teaser-text">sur votre premier abonnement, en répondant à un rapide formulaire qui nous aide à améliorer AdStack.</p>' +
-      '<button onclick="lpPrepurchaseRenderForm()" class="lp-pp-btn-white">Obtenir mon code -10%</button>' +
+      '<p class="lp-pp-teaser-text">Répondez à quelques questions rapides — 10 secondes chrono — et débloquez votre code de réduction.</p>' +
+      '<button onclick="lpQuizStart()" class="lp-pp-btn-white">Commencer</button>' +
     '</div>';
 }
 
-function lpPrepurchaseRenderForm(erreur) {
-  var answered = lpPrepurchaseAnswers.filter(function(a){ return a && a.trim(); }).length;
-  var pct = Math.round((answered / LP_PREPURCHASE_QUESTIONS.length) * 100);
-  var html = '<div class="lp-pp-form">' +
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">' +
-      '<div><h2 class="lp-pp-title">Réponds à 10 questions, obtiens -10%</h2>' +
-      '<p class="lp-pp-sub">Terminez de répondre à ces 10 questions pour obtenir votre code de réduction.</p></div>' +
+function lpQuizStart() {
+  lpQuizIndex = 0;
+  lpQuizScore = 0;
+  lpQuizAnswers = [];
+  lpQuizRenderQuestion();
+}
+
+function lpQuizRenderQuestion() {
+  var total = LP_QUIZ_QUESTIONS.length;
+  var current = LP_QUIZ_QUESTIONS[lpQuizIndex];
+  var pct = Math.round((lpQuizIndex / total) * 100);
+  var html = '<div class="lp-pp-form lp-quiz-box">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+      (lpQuizIndex > 0
+        ? '<button onclick="lpQuizBack()" class="lp-pp-close" aria-label="Précédent">←</button>'
+        : '<span style="width:30px"></span>') +
+      '<span style="font-size:11px;color:#8A8D95;font-weight:700">' + (lpQuizIndex + 1) + ' / ' + total + '</span>' +
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-close">✕</button>' +
     '</div>' +
-    '<div style="position:sticky;top:0;z-index:5;background:#13131A;margin:0 -26px;padding:16px 26px 10px;border-bottom:1px solid rgba(255,255,255,0.06)">' +
-      '<div style="position:relative;height:8px;border-radius:99px;background:rgba(255,255,255,0.08)">' +
-        '<div id="lp-pp-gauge-fill" style="position:absolute;left:0;top:0;bottom:0;width:' + pct + '%;border-radius:99px;background:linear-gradient(90deg,#1FB6FF,#7B4AE0);transition:width .3s ease"></div>' +
-        '<div id="lp-pp-gauge-gift" style="position:absolute;right:-2px;top:50%;transform:translate(50%,-50%);width:26px;height:26px;border-radius:50%;background:' + (pct>=100?'linear-gradient(135deg,#F5C518,#F59E0B)':'#13131A') + ';border:2px solid ' + (pct>=100?'#F5C518':'rgba(255,255,255,0.15)') + ';display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .3s ease' + (pct>=100?';box-shadow:0 0 12px rgba(245,197,24,0.6)':'') + '">🎁</div>' +
-      '</div>' +
-      '<div id="lp-pp-gauge-count" style="font-size:10.5px;color:#8A8D95;margin-top:8px;text-align:right">' + answered + '/' + LP_PREPURCHASE_QUESTIONS.length + ' — plus que ' + (LP_PREPURCHASE_QUESTIONS.length-answered) + ' pour débloquer votre code</div>' +
-    '</div>' +
-    '<div style="display:flex;flex-direction:column;gap:14px;margin-top:14px">';
-  LP_PREPURCHASE_QUESTIONS.forEach(function(q, i) {
-    html += '<div><label class="lp-pp-label">' + (i+1) + '. ' + q + ' <span style="color:#E55050">*</span></label>' +
-      '<textarea rows="2" class="lp-pp-textarea" placeholder="' + LP_PREPURCHASE_PLACEHOLDERS[i].replace(/"/g,'&quot;') + '" oninput="lpPrepurchaseAnswers[' + i + ']=this.value;lpPrepurchaseUpdateGauge()">' + (lpPrepurchaseAnswers[i]||'') + '</textarea></div>';
+    '<div class="lp-quiz-progress-bar"><div class="lp-quiz-progress-fill" style="width:' + pct + '%"></div></div>' +
+    '<h2 class="lp-pp-title" style="margin-top:18px;font-size:16px;line-height:1.4">' + current.q + '</h2>' +
+    '<div class="lp-quiz-options">';
+  current.options.forEach(function(opt, i) {
+    html += '<button class="lp-quiz-option" onclick="lpQuizSelect(' + i + ')">' +
+      '<span class="lp-quiz-option-letter">' + String.fromCharCode(65 + i) + '</span>' +
+      '<span>' + opt.label + '</span>' +
+    '</button>';
   });
-  html += '</div>';
-  if (erreur) html += '<div class="lp-pp-error">' + erreur + '</div>';
-  html += '<button onclick="lpPrepurchaseSubmit()" id="lp-pp-submit-btn" class="lp-pp-submit">Valider et obtenir mon code</button></div>';
+  html += '</div></div>';
   document.getElementById('lp-prepurchase-content').innerHTML = html;
 }
 
-function lpPrepurchaseUpdateGauge() {
-  var answered = lpPrepurchaseAnswers.filter(function(a){ return a && a.trim(); }).length;
-  var pct = Math.round((answered / LP_PREPURCHASE_QUESTIONS.length) * 100);
-  var fill = document.getElementById('lp-pp-gauge-fill');
-  var gift = document.getElementById('lp-pp-gauge-gift');
-  var count = document.getElementById('lp-pp-gauge-count');
-  if (fill) fill.style.width = pct + '%';
-  if (gift) {
-    gift.style.background = pct>=100 ? 'linear-gradient(135deg,#F5C518,#F59E0B)' : '#13131A';
-    gift.style.border = '2px solid ' + (pct>=100 ? '#F5C518' : 'rgba(255,255,255,0.15)');
-    gift.style.boxShadow = pct>=100 ? '0 0 12px rgba(245,197,24,0.6)' : 'none';
-  }
-  if (count) count.textContent = answered + '/' + LP_PREPURCHASE_QUESTIONS.length + (answered>=LP_PREPURCHASE_QUESTIONS.length ? ' — code débloqué ✓' : ' — plus que ' + (LP_PREPURCHASE_QUESTIONS.length-answered) + ' pour débloquer votre code');
+function lpQuizBack() {
+  if (lpQuizIndex === 0) return;
+  lpQuizIndex--;
+  var removed = lpQuizAnswers.pop();
+  if (removed) lpQuizScore -= removed.score;
+  lpQuizRenderQuestion();
 }
 
-function lpPrepurchaseRenderCode(code) {
-  document.getElementById('lp-prepurchase-content').innerHTML =
-    '<div class="lp-pp-form" style="text-align:center;padding:30px 26px">' +
-      '<div class="lp-pp-check">✓</div>' +
-      '<h2 class="lp-pp-title" style="margin-bottom:8px">Merci pour vos réponses !</h2>' +
-      '<p class="lp-pp-sub" style="margin-bottom:20px">Voici votre code pour -10% sur votre premier abonnement :</p>' +
-      '<div onclick="lpPrepurchaseCopy(this)" data-code="' + code + '" class="lp-pp-code">' +
-        '<span>' + code + '</span><span class="lp-pp-copy-hint">Cliquez pour copier</span>' +
-      '</div>' +
-      '<button onclick="lpPrepurchaseClose()" class="lp-pp-btn-accent" style="margin-top:20px">Continuer</button>' +
-    '</div>';
+function lpQuizSelect(optIndex) {
+  var current = LP_QUIZ_QUESTIONS[lpQuizIndex];
+  var opt = current.options[optIndex];
+  lpQuizAnswers.push({ question: current.q, answer: opt.label, score: opt.score });
+  lpQuizScore += opt.score;
+  var btns = document.querySelectorAll('.lp-quiz-option');
+  btns.forEach(function(b, i) { if (i === optIndex) b.classList.add('selected'); else b.style.opacity = '0.35'; });
+  setTimeout(function() {
+    if (lpQuizIndex < LP_QUIZ_QUESTIONS.length - 1) {
+      lpQuizIndex++;
+      lpQuizRenderQuestion();
+    } else {
+      lpQuizFinish();
+    }
+  }, 280);
 }
 
-function lpPrepurchaseCopy(el) {
-  var code = el.getAttribute('data-code');
-  if (navigator.clipboard) navigator.clipboard.writeText(code);
-  var hint = el.querySelector('.lp-pp-copy-hint');
-  if (hint) { hint.textContent = 'Copié !'; setTimeout(function(){ hint.textContent = 'Cliquez pour copier'; }, 2000); }
-}
+function lpQuizFinish() {
+  try { localStorage.setItem('adstack_prepurchase_form_done', '1'); } catch(e) {}
 
-async function lpPrepurchaseSubmit() {
-  if (lpPrepurchaseAnswers.some(function(a){ return !a.trim(); })) {
-    lpPrepurchaseRenderForm('Réponds à toutes les questions pour valider — ça ne prend que quelques minutes.');
-    return;
-  }
-  var btn = document.getElementById('lp-pp-submit-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Envoi...'; btn.style.opacity = '0.6'; }
+  var recommended = lpQuizScore >= LP_QUIZ_PRO_THRESHOLD
+    ? { key:'pro', productId:'prd_34w031', name:'Conversion Pro', price:99900 }
+    : { key:'starter', productId:'prd_ljowq8', name:'Conversion Starter', price:49900 };
+
+  // Envoi en tâche de fond — n'attend pas la réponse, l'expérience visuelle ne doit jamais
+  // dépendre du réseau. Le code promo est déjà connu côté client (ADSTACK_CONFIG.code_promo).
+  // Score + offre recommandée ajoutés comme ligne de synthèse : le endpoint ne capture que
+  // question/answer, pas de champ score dédié côté data_insights — cette ligne le fait
+  // remonter quand même au CRM sans toucher au backend.
   try {
-    var filled = LP_PREPURCHASE_QUESTIONS.map(function(q, i) { return { question: q, answer: lpPrepurchaseAnswers[i] }; }).filter(function(a){ return a.answer.trim(); });
-    var res = await fetch('https://adstack-server.onrender.com/save-form-response', {
+    fetch('https://adstack-server.onrender.com/save-form-response', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: null, email: null, source: 'prepurchase_form', answers: filled })
-    });
-    var data = await res.json();
-    if (!res.ok) {
-      if (data.error === 'low_effort') { lpPrepurchaseRenderForm(data.message); return; }
-      throw new Error(data.error || 'unknown');
-    }
-    try { localStorage.setItem('adstack_prepurchase_form_done', '1'); } catch(e) {}
-    lpPrepurchaseRenderCode(data.promo_code || 'MERCI10');
-  } catch(e) {
-    lpPrepurchaseRenderForm('Un souci technique est survenu — réessaie dans un instant.');
-  }
+      body: JSON.stringify({
+        source: 'prepurchase_quiz',
+        answers: lpQuizAnswers.map(function(a){ return { question: a.question, answer: a.answer }; })
+          .concat([{ question: 'Score quiz / Offre recommandée', answer: 'Score: ' + lpQuizScore + ' — Recommandé: ' + recommended.name }]),
+      })
+    }).catch(function(){});
+  } catch(e) {}
+
+  lpQuizRenderResult(recommended);
+}
+
+function lpQuizRenderResult(offer) {
+  var isPro = offer.key === 'pro';
+  var headline = isPro
+    ? 'Pro est <em>faite pour vous.</em>'
+    : 'Starter est <em>faite pour vous.</em>';
+  var body = isPro
+    ? "D'après vos réponses, vous avez déjà trouvé ce qui marche — il est temps d'accélérer sans casser votre rentabilité, avec plus d'angles testés chaque semaine."
+    : "D'après vos réponses, c'est le moment idéal pour sortir de la saturation et commencer à tester ce qui marche vraiment pour votre marque, sans exploser votre budget.";
+  var html =
+    '<div class="lp-pp-form lp-quiz-result">' +
+      '<button onclick="lpPrepurchaseClose()" class="lp-pp-close" style="position:absolute;top:16px;right:16px">✕</button>' +
+      '<div class="lp-pp-check">✓</div>' +
+      '<h2 class="lp-quiz-result-headline">' + headline + '</h2>' +
+      '<p class="lp-pp-sub" style="text-align:center;font-size:13.5px;margin-top:10px">' + body + '</p>' +
+      '<div style="text-align:center;margin-top:20px">' +
+        '<div class="lp-pp-code" onclick="lpPrepurchaseCopyCode()">' +
+          '<span style="font-weight:800;color:#1FB6FF;letter-spacing:1px">' + AS_CODE_PROMO + '</span>' +
+          '<span style="font-size:11px;color:#8A8D95">— cliquez pour copier</span>' +
+        '</div>' +
+        '<p class="lp-pp-copy-hint" style="margin-top:6px">Déjà appliqué à votre checkout. Collez-le si le champ n\'est pas pré-rempli.</p>' +
+      '</div>' +
+      '<button onclick="lpQuizGoToCheckout(\'' + offer.productId + '\',\'' + offer.name + '\',' + offer.price + ')" class="lp-pp-submit">Profiter de -10% sur ' + offer.name + '</button>' +
+    '</div>';
+  document.getElementById('lp-prepurchase-content').innerHTML = html;
+}
+
+function lpQuizGoToCheckout(productId, offerName, price) {
+  lpPrepurchaseClose();
+  lpOpenCheckout(productId, offerName, price, AS_CODE_PROMO);
+}
+
+function lpPrepurchaseCopyCode() {
+  try { navigator.clipboard.writeText(AS_CODE_PROMO); } catch(e) {}
 }
 
 lpPrepurchaseInit();
@@ -1704,6 +1782,18 @@ lpPrepurchaseInit();
 .lp-pp-code span:first-child{font-size:18px;font-weight:800;letter-spacing:1px;color:#1FB6FF}
 .lp-pp-copy-hint{font-size:11px;color:#8A8D95}
 .lp-pp-btn-accent{padding:10px 24px;border-radius:8px;border:none;background:#1FB6FF;color:#fff;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
+.lp-quiz-box{position:relative}
+.lp-quiz-progress-bar{height:6px;border-radius:99px;background:rgba(255,255,255,0.08);overflow:hidden}
+.lp-quiz-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#1FB6FF,#0B5CFF);transition:width .3s ease}
+.lp-quiz-options{display:flex;flex-direction:column;gap:10px;margin-top:18px}
+.lp-quiz-option{display:flex;align-items:center;gap:12px;text-align:left;padding:13px 16px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#fff;font-size:13.5px;font-family:inherit;cursor:pointer;transition:opacity .2s ease,border-color .2s ease,background .2s ease}
+.lp-quiz-option:hover{border-color:rgba(31,182,255,0.4);background:rgba(31,182,255,0.06)}
+.lp-quiz-option.selected{border-color:#1FB6FF;background:rgba(31,182,255,0.12)}
+.lp-quiz-option-letter{width:24px;height:24px;border-radius:7px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#8A8D95;flex-shrink:0}
+.lp-quiz-option.selected .lp-quiz-option-letter{background:#1FB6FF;color:#fff}
+.lp-quiz-result{text-align:center}
+.lp-quiz-result-headline{font-size:22px;font-weight:900;letter-spacing:-.5px;color:#fff;line-height:1.25;margin-top:14px}
+.lp-quiz-result-headline em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:hero-grad 3s ease infinite}
 </style></div>
 
 <style>
