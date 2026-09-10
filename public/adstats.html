@@ -5200,6 +5200,58 @@ async function renderDonnees() {
   }
 }
 
+// Vue agrégée (tally) pour les réponses à choix — calcule, par question, le nombre de fois
+// chaque réponse a été choisie. Ne s'applique qu'aux questions où les réponses se regroupent
+// en peu de valeurs distinctes (≤6) : ça filtre naturellement l'ancien format texte libre
+// (réponses presque toutes uniques) et ne montre le résumé statistique que là où il a du sens,
+// sans avoir besoin de distinguer une "source" séparée pour ça.
+function calculerTallyReponses(groupes) {
+  const parQuestion = {};
+  const ordre = [];
+  (groupes || []).forEach(g => {
+    const entries = g.entries || [];
+    for (let i = 0; i < entries.length - 1; i += 2) {
+      const q = entries[i] && entries[i].texte;
+      const r = entries[i + 1] && entries[i + 1].texte;
+      if (!q || !r) continue;
+      if (!parQuestion[q]) { parQuestion[q] = {}; ordre.push(q); }
+      parQuestion[q][r] = (parQuestion[q][r] || 0) + 1;
+    }
+  });
+  return ordre.map(q => {
+    const reponses = parQuestion[q];
+    const total = Object.values(reponses).reduce((a, b) => a + b, 0);
+    return { question: q, reponses, total, distinctCount: Object.keys(reponses).length };
+  });
+}
+
+function _renderTallyReponses(groupes) {
+  const tally = calculerTallyReponses(groupes);
+  if (!tally.length) return '';
+  let html = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:18px 20px;margin-bottom:20px">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">📊 Répartition des réponses</div>';
+  tally.forEach(item => {
+    html += '<div style="margin-bottom:16px">';
+    html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:600">' + escHtml(item.question) + '</div>';
+    if (item.distinctCount > 6) {
+      html += '<div style="font-size:11px;color:var(--muted);font-style:italic">Réponses trop variées pour un résumé (' + item.distinctCount + ' valeurs différentes) — voir le détail ci-dessous.</div>';
+    } else {
+      const entries = Object.entries(item.reponses).sort((a, b) => b[1] - a[1]);
+      entries.forEach(([reponse, count]) => {
+        const pct = Math.round((count / item.total) * 100);
+        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">' +
+          '<div style="flex:1;font-size:11.5px;color:var(--text)">' + escHtml(reponse) + '</div>' +
+          '<div style="width:110px;height:6px;border-radius:99px;background:var(--border2);overflow:hidden;flex-shrink:0"><div style="width:' + pct + '%;height:100%;background:var(--blue)"></div></div>' +
+          '<div style="width:52px;text-align:right;font-size:11px;color:var(--muted);flex-shrink:0">' + count + ' (' + pct + '%)</div>' +
+          '</div>';
+      });
+    }
+    html += '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
 // Ouvre la page de détail dédiée pour UNE source — vraie navigation (comme changer de section
 // dans la sidebar), pas un simple dépliant inline. Réutilise les données déjà chargées par
 // renderDonnees(), pas de nouvel appel réseau nécessaire.
@@ -5211,7 +5263,8 @@ function ouvrirDetailDonnees(sourceId) {
   document.getElementById('donnees-detail-titre').textContent = src.titre;
   document.getElementById('donnees-detail-n').textContent = src.groupes.length + ' entrée(s)';
   document.getElementById('donnees-detail-dl').onclick = () => telechargerMarkdown(src.fichier, window._mdCache[sourceId]);
-  document.getElementById('donnees-detail-corps').innerHTML = '<div id="donnees-detail-groupes"></div>';
+  const tallyHtml = sourceId === 'md-prepurchase' ? _renderTallyReponses(src.groupes) : '';
+  document.getElementById('donnees-detail-corps').innerHTML = tallyHtml + '<div id="donnees-detail-groupes"></div>';
   _renderGroupesDonnees('donnees-detail-groupes', src.groupes);
   const t = document.getElementById('mob-title');
   if (t) t.textContent = src.titre;
