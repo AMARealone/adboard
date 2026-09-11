@@ -5329,11 +5329,12 @@ export default function Platform() {
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
 
-  // ── Formulaire pré-achat : à chaque session, après 2 min, tant qu'il n'a jamais été
-  // VALIDÉ (soumis) ET qu'il n'a JAMAIS pris d'offre (active ou expirée) — vérifié à neuf
-  // au moment du déclenchement, pas au chargement de la page, pour éviter de le montrer à
-  // quelqu'un qui vient tout juste de passer client entre-temps. ──
+  // ── Formulaire pré-achat : DÉSACTIVÉ — remplacé par le quiz sur la page de vente, qui
+  // couvre déjà la collecte de data + le code promo. Code gardé intact ci-dessous (return
+  // immédiat en premier) pour pouvoir le réactiver en une ligne si besoin plus tard. ──
   useEffect(() => {
+    return; // eslint-disable-line no-unreachable
+    // eslint-disable-next-line no-unreachable
     try {
       if (localStorage.getItem('adstack_prepurchase_form_done')) return;
       // Cause profonde corrigée (réapparaît dans la même visite après un simple abandon) :
