@@ -1714,8 +1714,9 @@ function lpQuizFinish() {
         answers: lpQuizAnswers.map(function(a){ return { question: a.question, answer: a.answer }; })
           .concat([{ question: 'Score quiz / Offre recommandée', answer: 'Score: ' + lpQuizScore + ' — Recommandé: ' + recommended.name }]),
       })
-    }).catch(function(){});
-  } catch(e) {}
+    }).then(function(r){ if (!r.ok) console.error('[Quiz] Échec envoi save-form-response, status:', r.status); })
+      .catch(function(e){ console.error('[Quiz] Erreur réseau save-form-response:', e); });
+  } catch(e) { console.error('[Quiz] Exception avant envoi:', e); }
 
   lpQuizRenderResult(recommended);
 }
@@ -1737,6 +1738,7 @@ function lpQuizRenderResult(offer) {
     '<div class="lp-pp-form lp-quiz-result">' +
       '<button onclick="lpPrepurchaseClose()" class="lp-pp-close" style="position:absolute;top:16px;right:16px">✕</button>' +
       '<div class="lp-pp-check">✓</div>' +
+      '<div class="lp-quiz-won-badge">🎉 -10% débloqué !</div>' +
       '<h2 class="lp-quiz-result-headline">' + headline + '</h2>' +
       '<div class="lp-quiz-badge">' + badge + '</div>' +
       '<p class="lp-pp-sub" style="text-align:center;font-size:13.5px;margin-top:10px">' + body + '</p>' +
@@ -1801,6 +1803,7 @@ lpPrepurchaseInit();
 .lp-quiz-result-headline{font-size:22px;font-weight:900;letter-spacing:-.5px;color:#fff;line-height:1.25;margin-top:14px}
 .lp-quiz-result-headline em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:hero-grad 3s ease infinite}
 .lp-quiz-badge{display:inline-block;margin-top:12px;padding:5px 14px;border-radius:20px;background:rgba(31,182,255,0.1);border:1px solid rgba(31,182,255,0.3);color:#5A9EFF;font-size:11px;font-weight:700}
+.lp-quiz-won-badge{display:inline-block;margin-top:6px;padding:6px 16px;border-radius:20px;background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.35);color:#FFD700;font-size:13px;font-weight:800}
 </style></div>
 
 <style>
