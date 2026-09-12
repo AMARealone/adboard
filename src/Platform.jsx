@@ -5556,11 +5556,13 @@ export default function Platform() {
               content_name: boughtPlan?.name || sub.plan,
             });
           } catch(e) {}
+          const conversionId = `${user?.id || 'anon'}-${sub.plan}-${Date.now()}`;
           try {
-            window.twq && window.twq('track', 'Purchase', {
-              currency: 'XOF',
+            window.twq && window.twq('event', 'tw-rf8c2-rf8cp', {
               value: boughtPlan?.price || 0,
-              content_name: boughtPlan?.name || sub.plan,
+              currency: 'XOF',
+              email_address: user?.email || undefined,
+              conversion_id: conversionId,
             });
           } catch(e) {}
           // Doublon serveur (Conversions API X) — ne dépend pas du navigateur/bloqueurs de pub.
@@ -5573,7 +5575,7 @@ export default function Platform() {
                   email: user.email,
                   value: boughtPlan?.price || 0,
                   plan_name: boughtPlan?.name || sub.plan,
-                  conversion_id: `${user.id}-${sub.plan}-${Date.now()}`,
+                  conversion_id: conversionId,
                 })
               }).catch(()=>{});
             }
