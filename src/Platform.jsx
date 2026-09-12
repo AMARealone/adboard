@@ -5563,6 +5563,21 @@ export default function Platform() {
               content_name: boughtPlan?.name || sub.plan,
             });
           } catch(e) {}
+          // Doublon serveur (Conversions API X) — ne dépend pas du navigateur/bloqueurs de pub.
+          try {
+            if (user?.email) {
+              fetch('https://adstack-server.onrender.com/x-conversion', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  email: user.email,
+                  value: boughtPlan?.price || 0,
+                  plan_name: boughtPlan?.name || sub.plan,
+                  conversion_id: `${user.id}-${sub.plan}-${Date.now()}`,
+                })
+              }).catch(()=>{});
+            }
+          } catch(e) {}
         }
         // Charger notifications si pas encore chargées
         if (notifications.length === 0) {
