@@ -212,6 +212,15 @@
       fbq('track', 'PageView');
     </script>
 
+    <!-- X (Twitter) Pixel -->
+    <script>
+      !function(e,t,n,s,u,a){e.twq||(s=e.twq=function(){s.exe?s.exe.apply(s,arguments):s.queue.push(arguments);
+      },s.version='1.1',s.queue=[],u=t.createElement(n),u.async=!0,u.src='https://static.ads-twitter.com/uwt.js',
+      a=t.getElementsByTagName(n)[0],a.parentNode.insertBefore(u,a))}(window,document,'script');
+      twq('config','rf8c2');
+      twq('track','PageView');
+    </script>
+
     <!-- Attribution CRM — capture le prospect et le message d'origine (démo/J+3/J+10/J+21)
          dès l'arrivée, avant même toute interaction. Reprise à l'identique d'adboard.html :
          c'est justement CETTE page que visitent les prospects relancés par le CRM. -->
@@ -351,7 +360,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 <nav class="adstack-nav">
   <a class="nav-logo" href="#"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" width="80" height="28"><span class="nav-logo-name">AdStack</span></a>
   <div class="nav-right">
-    <a class="nav-cart" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});setTimeout(function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});},150);">
+    <a class="nav-cart" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});setTimeout(function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});},150);">
       <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.43H6"/></svg>
       <span class="nav-cart-label">Voir Offres</span>
     </a>
@@ -359,7 +368,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
       <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
       <div class="nav-dropdown" id="navDrop">
         <a class="nav-drop-item" href="#comparatif-honnete" onclick="event.preventDefault();document.getElementById('comparatif-honnete').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
-        <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
+        <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
         <a class="nav-drop-item" href="#faq" onclick="event.preventDefault();var el=document.getElementById('faq');if(el)el.scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
         <a class="nav-drop-item" href="/blog/fatigue-creative-facebook-ads.html" style="color:#1FB6FF!important"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Nos Blogs</a>
         <a class="nav-drop-item" href="https://www.adstackofficial.com/adboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg> Retour à AdBoard</a>
@@ -441,7 +450,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     </div>
     <h1 class="hero-headline">Le <em>Partenaire Créatif</em> Conçu Pour Votre Croissance, Qui <em>Grandit Avec Vous</em>.</h1>
     <p class="hero-subhead">Nous construisons des créatives images à fort taux de conversion incluant : stratégie, production et amélioration continue, chaque semaine, pour un seul abonnement.</p>
-    <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Pack AdStack'});">Démarrer Maintenant !</button>
+    <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Pack AdStack'});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'Pack AdStack'});">Démarrer Maintenant !</button>
     <p class="hero-downsell">Pas encore prêt pour un abonnement ? <a href="javascript:void(0)" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',16900)" class="hero-downsell-link">Obtenez 9 créatives images stratégiques pour seulement <span data-fcfa="16900">16.900 FCFA</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a> — et voyez les résultats sur votre produit.</p>
     <div class="hero-stars-block">
       <div class="hero-stars"><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span></div>
@@ -1490,6 +1499,7 @@ function lpToggleCycle() {
 function lpOpenCheckout(productId, offerName, price, couponCode) {
   adstackTrackFunnel('paiement_initie');
   if (typeof fbq !== 'undefined') fbq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
+  if (typeof twq !== 'undefined') twq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
   document.querySelectorAll('script[src*="chariowcdn"]').forEach(function(s) { s.remove(); });
   // Recrée le noeud DOM du widget à neuf à chaque ouverture, au lieu de réutiliser le même
   // élément — reproduit exactement le key={productId} de React côté AdBoard, qui force un
@@ -2148,7 +2158,7 @@ lpPrepurchaseInit();
     <button class="upsell-close" id="upsellClose" aria-label="Fermer">×</button>
   </div>
 </div>
-<div style="display:none"><script>(function(){var nudge=document.getElementById('upsellNudge');var btn=document.getElementById('upsellBtn');var closeBtn=document.getElementById('upsellClose');if(!nudge||!btn)return;var dismissed=false;var eventFired=false;btn.addEventListener('click',function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(!eventFired){eventFired=true;if(typeof fbq!=='undefined'){fbq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:34900});}}});closeBtn.addEventListener('click',function(){dismissed=true;nudge.classList.remove('visible');});function onScroll(){if(dismissed)return;var scrolled=window.scrollY||window.pageYOffset;if(scrolled>window.innerHeight*0.85){nudge.classList.add('visible');}else{nudge.classList.remove('visible');}}window._upsellScroll=onScroll;window.addEventListener('scroll',onScroll,{passive:true});})();</script></div>
+<div style="display:none"><script>(function(){var nudge=document.getElementById('upsellNudge');var btn=document.getElementById('upsellBtn');var closeBtn=document.getElementById('upsellClose');if(!nudge||!btn)return;var dismissed=false;var eventFired=false;btn.addEventListener('click',function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(!eventFired){eventFired=true;if(typeof fbq!=='undefined'){fbq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:34900});}if(typeof twq!=='undefined'){twq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:34900});}}});closeBtn.addEventListener('click',function(){dismissed=true;nudge.classList.remove('visible');});function onScroll(){if(dismissed)return;var scrolled=window.scrollY||window.pageYOffset;if(scrolled>window.innerHeight*0.85){nudge.classList.add('visible');}else{nudge.classList.remove('visible');}}window._upsellScroll=onScroll;window.addEventListener('scroll',onScroll,{passive:true});})();</script></div>
 <!-- ════ CHATBOT — Ava AdStack ════ -->
 <style>
   #as-chat-btn {
@@ -2455,7 +2465,7 @@ window.lpApplyCurrency = function(){};
   <div class="section-eyebrow">C'est le moment</div>
   <h2 class="final-cta-title">Prêt à arrêter de <em>deviner</em> ?</h2>
   <p class="final-cta-sub">Choisissez votre offre, connectez-vous à AdBoard, recevez vos premières créatives sous 48h.</p>
-  <a href="#nos-offres" class="final-cta-btn" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});">Consultez Nos Offres →</a>
+  <a href="#nos-offres" class="final-cta-btn" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:34900});document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});">Consultez Nos Offres →</a>
 </section>
 
 <footer class="ads-footer">
