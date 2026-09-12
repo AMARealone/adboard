@@ -253,8 +253,9 @@ const sbAuth = {
       localStorage.setItem('sb_user', JSON.stringify(user));
       // Événement Lead — uniquement à la toute première connexion sur cet appareil
       try {
-        if (!localStorage.getItem('adstack_lead_sent') && window.fbq) {
-          window.fbq('track', 'Lead', { content_name: 'Google Login' });
+        if (!localStorage.getItem('adstack_lead_sent')) {
+          window.fbq && window.fbq('track', 'Lead', { content_name: 'Google Login' });
+          window.twq && window.twq('track', 'Lead', { content_name: 'Google Login' });
           localStorage.setItem('adstack_lead_sent', '1');
         }
       } catch(e) {}
@@ -4583,6 +4584,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
     const cycle = plan.isPack ? 'once' : (quarterly ? 'quarterly' : 'monthly');
     const cycleData = plan[cycle];
     try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
+    try { window.twq && window.twq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
     const productId = PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`];
     if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
     // Filet de sécurité si jamais le produit n'est pas reconnu : ouvrir le checkout classique
@@ -5001,6 +5003,7 @@ export default function Platform() {
   useEffect(() => {
     if (section === 'tarifs') {
       try { window.fbq && window.fbq('track', 'AddToCart', { content_name: 'Voir les offres' }); } catch(e) {}
+      try { window.twq && window.twq('track', 'AddToCart', { content_name: 'Voir les offres' }); } catch(e) {}
       // Tracking léger pour le nudge push "vu Tarifs sans payer"
       if (user?.id) {
         fetch('https://adstack-server.onrender.com/track-event', {
@@ -5548,6 +5551,13 @@ export default function Platform() {
           const boughtPlan = PLANS.find(pl => pl.id === sub.plan);
           try {
             window.fbq && window.fbq('track', 'Purchase', {
+              currency: 'XOF',
+              value: boughtPlan?.price || 0,
+              content_name: boughtPlan?.name || sub.plan,
+            });
+          } catch(e) {}
+          try {
+            window.twq && window.twq('track', 'Purchase', {
               currency: 'XOF',
               value: boughtPlan?.price || 0,
               content_name: boughtPlan?.name || sub.plan,
