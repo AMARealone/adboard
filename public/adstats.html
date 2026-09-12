@@ -4883,6 +4883,23 @@ async function genererMarkdownChatbot() {
   return { md, n: sessions.length, groupes };
 }
 
+// Questions exactes du quiz à choix multiples (vente.html, LP_QUIZ_QUESTIONS) — sert uniquement
+// à distinguer visuellement, dans le journal détaillé, une soumission "quiz" d'une ancienne
+// soumission "texte libre" (questions différentes, format différent). Si la liste de questions
+// du quiz change côté vente.html, la mettre à jour ici aussi pour garder le badge exact.
+const QUIZ_QUESTIONS_CONNUES = new Set([
+  "Aujourd'hui, qu'est-ce qui vous frustre le plus avec vos pubs ?",
+  "Combien dépensez-vous par mois en publicité actuellement ?",
+  "Où en êtes-vous avec vos ventes en ligne ?",
+  "Qu'avez-vous déjà essayé pour vos créatives publicitaires ?",
+  "Quel est votre objectif de revenus pour les prochains mois ?",
+  "Si notre solution vous faisait gagner plusieurs heures chaque semaine, ça changerait quoi ?",
+  "Qu'est-ce qui vous ferait hésiter à essayer notre solution ?",
+  "Vous gérez combien de produits ou marques actuellement ?",
+  "Qu'est-ce qui compte le plus pour vous dans une offre comme la nôtre ?",
+  "Pourquoi c'est important pour vous de régler ça maintenant ?",
+]);
+
 async function genererMarkdownFormulaire(source, titre) {
   const r = await fetch(`${SB}/data_insights?source=eq.${source}&order=email.asc,created_at.asc&select=email,question,answer,created_at`, { headers: H });
   const rows = await r.json();
@@ -4901,7 +4918,8 @@ async function genererMarkdownFormulaire(source, titre) {
   for (const [email, reponses] of personnes) {
     const dateObj = reponses[0]?.created_at ? new Date(reponses[0].created_at) : null;
     const date = dateObj ? dateObj.toLocaleString('fr-FR') : '';
-    md += `## ${email.startsWith('anonyme_') ? 'Anonyme' : email} — ${date}\n\n`;
+    const format = reponses.some(rp => QUIZ_QUESTIONS_CONNUES.has(rp.question)) ? 'quiz' : 'libre';
+    md += `## ${email.startsWith('anonyme_') ? 'Anonyme' : email} — ${date} (${format === 'quiz' ? 'Quiz' : 'Texte libre'})\n\n`;
     reponses.forEach(rp => {
       md += `**Q :** ${mdEchapper(rp.question)}\n**R :** ${mdEchapper(rp.answer)}\n\n`;
     });
@@ -4916,6 +4934,7 @@ async function genererMarkdownFormulaire(source, titre) {
       label: email.startsWith('anonyme_') ? 'Anonyme' : email,
       date: dateObj ? dateObj.getTime() : 0,
       dateAffichee: date,
+      format,
       entries,
     });
   }
@@ -5137,7 +5156,7 @@ function _renderGroupesDonnees(conteneurId, groupes, options={}) {
       : filtres.map(g => `
         <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px">
-            <div style="font-size:12.5px;font-weight:700;color:var(--white)">${g.label}</div>
+            <div style="font-size:12.5px;font-weight:700;color:var(--white);display:flex;align-items:center;gap:8px">${g.label}${g.format === 'quiz' ? '<span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(31,182,255,0.12);color:var(--blue)">QUIZ</span>' : g.format === 'libre' ? '<span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,0.06);color:var(--muted)">TEXTE LIBRE</span>' : ''}</div>
             <div style="font-size:10.5px;color:var(--muted)">${g.dateAffichee||''}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:8px">
@@ -5200,11 +5219,12 @@ async function renderDonnees() {
   }
 }
 
-// Vue agrégée (tally) pour les réponses à choix — calcule, par question, le nombre de fois
-// chaque réponse a été choisie. Ne s'applique qu'aux questions où les réponses se regroupent
-// en peu de valeurs distinctes (≤6) : ça filtre naturellement l'ancien format texte libre
-// (réponses presque toutes uniques) et ne montre le résumé statistique que là où il a du sens,
-// sans avoir besoin de distinguer une "source" séparée pour ça.
+// Vue agrégée pour les réponses à choix — calcule, par question, le nombre de fois chaque
+// réponse a été choisie. Ne garde que les questions posées à l'IDENTIQUE à au moins 2
+// personnes (total >= 2) : ça exclut naturellement l'ancien format texte libre, où chaque
+// question était formulée différemment à chaque fois (donc jamais partagée entre deux
+// répondants) et n'apportait qu'un faux "1 (100%)" sans aucune valeur statistique — ce bruit
+// reste consultable dans le journal détaillé plus bas, juste plus dans ce résumé.
 function calculerTallyReponses(groupes) {
   const parQuestion = {};
   const ordre = [];
@@ -5214,38 +5234,85 @@ function calculerTallyReponses(groupes) {
       const q = entries[i] && entries[i].texte;
       const r = entries[i + 1] && entries[i + 1].texte;
       if (!q || !r) continue;
+      if (q === 'Score quiz / Offre recommandée') continue; // affichée séparément dans les stats globales
       if (!parQuestion[q]) { parQuestion[q] = {}; ordre.push(q); }
       parQuestion[q][r] = (parQuestion[q][r] || 0) + 1;
     }
   });
-  return ordre.map(q => {
-    const reponses = parQuestion[q];
-    const total = Object.values(reponses).reduce((a, b) => a + b, 0);
-    return { question: q, reponses, total, distinctCount: Object.keys(reponses).length };
+  return ordre
+    .map(q => {
+      const reponses = parQuestion[q];
+      const total = Object.values(reponses).reduce((a, b) => a + b, 0);
+      return { question: q, reponses, total, distinctCount: Object.keys(reponses).length };
+    })
+    .filter(item => item.total >= 2) // exclut le bruit texte libre (jamais posée deux fois à l'identique)
+    .sort((a, b) => b.total - a.total); // questions les plus répondues en premier
+}
+
+// Stats globales — lit la ligne de synthèse "Score quiz / Offre recommandée" ajoutée à chaque
+// soumission du quiz pour calculer score moyen et répartition Starter/Pro, sans rien avoir à
+// stocker de plus côté backend.
+function calculerStatsGlobales(groupes) {
+  const scores = [];
+  const offres = {};
+  (groupes || []).forEach(g => {
+    const entries = g.entries || [];
+    for (let i = 0; i < entries.length - 1; i += 2) {
+      const q = entries[i] && entries[i].texte;
+      const r = entries[i + 1] && entries[i + 1].texte;
+      if (q !== 'Score quiz / Offre recommandée' || !r) continue;
+      const m = r.match(/Score:\s*(\d+)\s*—\s*Recommandé:\s*(.+)/);
+      if (!m) continue;
+      scores.push(parseInt(m[1], 10));
+      const offre = m[2].trim();
+      offres[offre] = (offres[offre] || 0) + 1;
+    }
   });
+  if (!scores.length) return null;
+  const moyenne = scores.reduce((a, b) => a + b, 0) / scores.length;
+  return { n: scores.length, moyenne, offres };
+}
+
+function _renderStatsGlobales(groupes) {
+  const stats = calculerStatsGlobales(groupes);
+  if (!stats) return '';
+  const offresEntries = Object.entries(stats.offres).sort((a, b) => b[1] - a[1]);
+  let html = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:18px 20px;margin-bottom:16px">';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">📈 Vue d\'ensemble (quiz)</div>';
+  html += '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:' + (offresEntries.length ? '16px' : '0') + '">';
+  html += '<div><div style="font-size:22px;font-weight:800;color:var(--white)">' + stats.n + '</div><div style="font-size:11px;color:var(--muted)">quiz complétés</div></div>';
+  html += '<div><div style="font-size:22px;font-weight:800;color:var(--white)">' + stats.moyenne.toFixed(1) + '</div><div style="font-size:11px;color:var(--muted)">score moyen</div></div>';
+  html += '</div>';
+  offresEntries.forEach(([offre, count]) => {
+    const pct = Math.round((count / stats.n) * 100);
+    html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">' +
+      '<div style="width:140px;font-size:11.5px;color:var(--text)">' + escHtml(offre) + '</div>' +
+      '<div style="flex:1;height:6px;border-radius:99px;background:var(--border2);overflow:hidden"><div style="width:' + pct + '%;height:100%;background:var(--blue)"></div></div>' +
+      '<div style="width:64px;text-align:right;font-size:11px;color:var(--muted)">' + count + ' (' + pct + '%)</div>' +
+      '</div>';
+  });
+  html += '</div>';
+  return html;
 }
 
 function _renderTallyReponses(groupes) {
   const tally = calculerTallyReponses(groupes);
   if (!tally.length) return '';
   let html = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:12px;padding:18px 20px;margin-bottom:20px">';
-  html += '<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:14px">📊 Répartition des réponses</div>';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px">📊 Répartition des réponses</div>';
+  html += '<div style="font-size:10.5px;color:var(--muted);margin-bottom:14px">Uniquement les questions posées à l\'identique à plusieurs personnes (quiz) — le texte libre reste dans le journal ci-dessous.</div>';
   tally.forEach(item => {
     html += '<div style="margin-bottom:16px">';
-    html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:600">' + escHtml(item.question) + '</div>';
-    if (item.distinctCount > 6) {
-      html += '<div style="font-size:11px;color:var(--muted);font-style:italic">Réponses trop variées pour un résumé (' + item.distinctCount + ' valeurs différentes) — voir le détail ci-dessous.</div>';
-    } else {
-      const entries = Object.entries(item.reponses).sort((a, b) => b[1] - a[1]);
-      entries.forEach(([reponse, count]) => {
-        const pct = Math.round((count / item.total) * 100);
-        html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">' +
-          '<div style="flex:1;font-size:11.5px;color:var(--text)">' + escHtml(reponse) + '</div>' +
-          '<div style="width:110px;height:6px;border-radius:99px;background:var(--border2);overflow:hidden;flex-shrink:0"><div style="width:' + pct + '%;height:100%;background:var(--blue)"></div></div>' +
-          '<div style="width:52px;text-align:right;font-size:11px;color:var(--muted);flex-shrink:0">' + count + ' (' + pct + '%)</div>' +
-          '</div>';
-      });
-    }
+    html += '<div style="font-size:11.5px;color:var(--muted);margin-bottom:6px;font-weight:600">' + escHtml(item.question) + ' <span style="opacity:.6">(' + item.total + ' réponse' + (item.total > 1 ? 's' : '') + ')</span></div>';
+    const entries = Object.entries(item.reponses).sort((a, b) => b[1] - a[1]);
+    entries.forEach(([reponse, count]) => {
+      const pct = Math.round((count / item.total) * 100);
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:5px">' +
+        '<div style="flex:1;font-size:11.5px;color:var(--text)">' + escHtml(reponse) + '</div>' +
+        '<div style="width:110px;height:6px;border-radius:99px;background:var(--border2);overflow:hidden;flex-shrink:0"><div style="width:' + pct + '%;height:100%;background:var(--blue)"></div></div>' +
+        '<div style="width:52px;text-align:right;font-size:11px;color:var(--muted);flex-shrink:0">' + count + ' (' + pct + '%)</div>' +
+        '</div>';
+    });
     html += '</div>';
   });
   html += '</div>';
@@ -5263,7 +5330,7 @@ function ouvrirDetailDonnees(sourceId) {
   document.getElementById('donnees-detail-titre').textContent = src.titre;
   document.getElementById('donnees-detail-n').textContent = src.groupes.length + ' entrée(s)';
   document.getElementById('donnees-detail-dl').onclick = () => telechargerMarkdown(src.fichier, window._mdCache[sourceId]);
-  const tallyHtml = sourceId === 'md-prepurchase' ? _renderTallyReponses(src.groupes) : '';
+  const tallyHtml = sourceId === 'md-prepurchase' ? (_renderStatsGlobales(src.groupes) + _renderTallyReponses(src.groupes)) : '';
   document.getElementById('donnees-detail-corps').innerHTML = tallyHtml + '<div id="donnees-detail-groupes"></div>';
   _renderGroupesDonnees('donnees-detail-groupes', src.groupes);
   const t = document.getElementById('mob-title');
