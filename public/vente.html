@@ -450,7 +450,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <h1 class="hero-headline">Le <em>Partenaire Créatif</em> Conçu Pour Votre Croissance, Qui <em>Grandit Avec Vous</em>.</h1>
     <p class="hero-subhead">Nous construisons des créatives images à fort taux de conversion incluant : stratégie, production et amélioration continue, chaque semaine, pour un seul abonnement.</p>
     <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Pack AdStack'});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'Pack AdStack'});">Démarrer Maintenant !</button>
-    <p class="hero-downsell">Pas encore prêt pour un abonnement ? <a href="javascript:void(0)" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',12900)" class="hero-downsell-link">Obtenez 9 créatives images stratégiques pour seulement <span data-fcfa="12900">12.900 FCFA</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a> — et voyez les résultats sur votre produit.</p>
+    <p class="hero-downsell">Pas encore prêt pour un abonnement ? <a href="javascript:void(0)" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',12900)" class="hero-downsell-link">Obtenez une production complète : 9 créatives images stratégiques pour seulement <span data-fcfa="12900">12.900 FCFA</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a> — incluant AdCopies et Données Marchés.</p>
     <div class="hero-stars-block">
       <div class="hero-stars"><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span></div>
       <div class="hero-proof-row">
@@ -1481,7 +1481,7 @@ function lpRenderDiscoveryDownsell() {
     '<div class="lp-downsell-card">' +
       '<div class="lp-downsell-price" data-fcfa="' + d.price + '">' + lpFmt(d.price) + ' FCFA</div>' +
       '<div class="lp-downsell-title">Pas encore prêt pour un abonnement ? Testez sans risque.</div>' +
-      '<p class="lp-downsell-text">Recevez <strong>' + o.imagesPerWeek + ' visuels stratégiques</strong> pour <strong><span data-fcfa="' + d.price + '">' + lpFmt(d.price) + ' FCFA</span></strong>, achat unique, sans engagement. Convaincu ? Passez à un abonnement mensuel quand vous voulez.</p>' +
+      '<p class="lp-downsell-text">Notre équipe analyse votre marché puis produit pour vous <strong>' + o.imagesPerWeek + ' créatives images</strong> optimisées pour la conversion. Incluant : Titres et Descriptions pour la campagne (Ad Copies), Récapitulatif de l\'analyse de marché + opportunité, Suivi de la production en temps réel.</p>' +
       '<button onclick="lpOpenCheckout(\'' + d.productId + '\',\'' + o.name + '\',' + d.price + ')" class="lp-downsell-btn">Tester avec ' + o.name + ' <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>' +
     '</div>';
 }

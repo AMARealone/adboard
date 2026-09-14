@@ -4850,8 +4850,8 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         return (
           <div style={{maxWidth:420,margin:'8px auto 20px',background:C.card,border:`1px solid ${C.accent}30`,borderRadius:18,padding:'26px 24px',textAlign:'center'}}>
             <div style={{fontSize:32,fontWeight:900,color:C.accent,marginBottom:10,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>{convertPrice(d.price)}</div>
-            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt pour un abonnement mensuel ?</div>
-            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Obtiens <strong style={{color:C.text}}>{discovery.imagesPerWeek} visuels stratégiques</strong> pour seulement <strong style={{color:C.text}}>{convertPrice(d.price)}</strong> — et vois les résultats sur ton produit.</p>
+            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt pour un abonnement ? Testez sans risque.</div>
+            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Notre équipe analyse votre marché puis produit pour vous <strong style={{color:C.text}}>{discovery.imagesPerWeek} créatives images</strong> optimisées pour la conversion. Incluant : Titres et Descriptions pour la campagne (Ad Copies), Récapitulatif de l'analyse de marché + opportunité, Suivi de la production en temps réel.</p>
             <button onClick={() => onCta(discovery)} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:13,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontSize:13,fontWeight:700,border:'none',borderRadius:99,cursor:'pointer'}}>
               Tester avec {discovery.name} <Icon name="arrow" size={13} color="#fff"/>
             </button>
