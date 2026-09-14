@@ -364,6 +364,32 @@ body {
 
 .nav-item.active .nav-count { color: var(--blue); }
 
+/* ── Effet "nouveauté" — pulse discret sur l'onglet + badge coloré tant que du nouveau
+   contenu (lead à relancer / nouveau client) n'a pas été vu, retiré dès qu'on ouvre l'onglet ── */
+@keyframes navGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(50,255,126,.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(50,255,126,0); }
+}
+@keyframes navGlowPulseYellow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,209,102,.5); }
+  50%      { box-shadow: 0 0 0 5px rgba(255,209,102,0); }
+}
+.nav-item.nav-glow {
+  animation: navGlowPulse 1.6s ease-in-out infinite;
+  border-radius: 8px;
+}
+.nav-item.yellow.nav-glow {
+  animation: navGlowPulseYellow 1.6s ease-in-out infinite;
+}
+.nav-item.nav-glow .nav-count {
+  background: var(--green);
+  color: #0a0a0a;
+}
+.nav-item.yellow.nav-glow .nav-count {
+  background: var(--yellow);
+  color: #0a0a0a;
+}
+
 /* Pipeline mini */
 .pipeline-mini {
   padding: 14px 18px;
@@ -1636,12 +1662,12 @@ textarea::placeholder { color: var(--muted); }
           <span>Suivi</span>
           <span class="nav-count" id="nc-suivi">0</span>
         </button>
-        <button class="nav-item green" onclick="goTo('leads',this)">
+        <button class="nav-item green" id="nav-item-leads" onclick="goTo('leads',this)">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span>Leads</span>
           <span class="nav-count" id="nc-leads">0</span>
         </button>
-        <button class="nav-item yellow" onclick="goTo('acheteurs',this)">
+        <button class="nav-item yellow" id="nav-item-acheteurs" onclick="goTo('acheteurs',this)">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5L17 22l-5-3-5 3 1.5-8.5"/></svg>
           <span>Clients</span>
           <span class="nav-count" id="nc-acheteurs">0</span>
@@ -2407,6 +2433,49 @@ function toggleSidebarFold() {
   } catch(e) {}
 })();
 
+// ═══════════════════════════════════════
+// EFFET "NOUVEAUTÉ" — Leads à relancer / nouveaux clients
+// Mémorise les IDs déjà vus en localStorage (persiste entre sessions, contrairement à un
+// simple compteur qui ne détecterait pas un lead retiré-puis-remplacé par un autre au même
+// total). Le glow disparaît dès qu'on ouvre l'onglet correspondant — pas besoin d'action
+// supplémentaire, juste le fait de le consulter marque tout comme vu.
+// ═══════════════════════════════════════
+function _seenGet(key) {
+  try { return new Set(JSON.parse(localStorage.getItem(key) || '[]')); }
+  catch(e) { return new Set(); }
+}
+function _seenSave(key, set) {
+  try { localStorage.setItem(key, JSON.stringify([...set])); } catch(e) {}
+}
+
+// items: tableau des objets courants : leads ou clients actifs
+// idField: nom du champ identifiant unique dans chaque item
+// seenKey: clé localStorage dédiée à cette liste
+// navId: id du bouton nav à faire briller
+function majEffetNouveaute(items, idField, seenKey, navId) {
+  const vus = _seenGet(seenKey);
+  const idsActuels = items.map(it => String(it[idField])).filter(Boolean);
+  const nouveaux = idsActuels.filter(id => !vus.has(id));
+  const navBtn = document.getElementById(navId);
+  if (navBtn) navBtn.classList.toggle('nav-glow', nouveaux.length > 0);
+  return nouveaux.length;
+}
+
+// Appelée à l'ouverture de l'onglet leads/clients — marque tout ce qui est actuellement
+// affiché comme "vu", éteint le glow.
+function marquerVuLeads() {
+  const idsActuels = LD.map(p => String(p.id)).filter(Boolean);
+  _seenSave('crm_seen_leads', new Set(idsActuels));
+  const navBtn = document.getElementById('nav-item-leads');
+  if (navBtn) navBtn.classList.remove('nav-glow');
+}
+function marquerVuClients() {
+  const idsActuels = (window._derniersClientsActifs || []).map(c => String(c.user_id || c.email)).filter(Boolean);
+  _seenSave('crm_seen_clients', new Set(idsActuels));
+  const navBtn = document.getElementById('nav-item-acheteurs');
+  if (navBtn) navBtn.classList.remove('nav-glow');
+}
+
 function goTo(name, btn) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
@@ -2427,6 +2496,8 @@ function goTo(name, btn) {
   if (name === 'emails-sequences') renderEmailsSequences();
   if (name === 'comportement') renderComportement();
   if (name === 'utilisateurs') renderUtilisateurs();
+  if (name === 'leads') marquerVuLeads();
+  if (name === 'acheteurs') marquerVuClients();
 }
 
 function restorePage() {
@@ -2511,6 +2582,7 @@ function render() {
   set('nc-prospects', AC.length);
   set('nc-suivi', SV.length);
   set('nc-leads', LD.length);
+  majEffetNouveaute(LD, 'id', 'crm_seen_leads', 'nav-item-leads');
   set('nc-contacts', DB.length);
   // nc-acheteurs mis à jour dans renderClients() — dépend des vraies transactions, chargées
   // séparément et de façon async, pas du statut prospect (voir ACH, plus utilisé pour ça)
@@ -3659,6 +3731,8 @@ function renderClients(data) {
   const actifs = data.filter(c => c.active);
   set('ka-n', actifs.length);
   set('nc-acheteurs', actifs.length);
+  window._derniersClientsActifs = actifs;
+  majEffetNouveaute(actifs.map(c => ({ _id: c.user_id || c.email })), '_id', 'crm_seen_clients', 'nav-item-acheteurs');
   set('ka-j', fmtUSD(data.reduce((s,c) => s + (c.total_depense_fcfa||0), 0)));
   const totUsed = data.reduce((s,c) => s + (c.credits_used||0), 0);
   const totCred = data.reduce((s,c) => s + (c.credits_total||0), 0);
@@ -3705,6 +3779,7 @@ function renderClients(data) {
 
       <div style="display:flex;gap:8px">
         ${c.email ? `<a href="mailto:${c.email}" class="btn btn-ghost btn-sm">✉ Contacter</a>` : ''}
+        ${c.telephone_whatsapp ? waButton(c.telephone_whatsapp, '', 'WhatsApp', 'btn-sm', true) : ''}
         <button class="btn btn-ghost btn-sm" onclick='showClientDetail(${JSON.stringify(c).replace(/'/g,"&#39;")})'>Voir le détail</button>
         ${c.email ? `<a href="${ADBOARD_URL}/?impersonate=${encodeURIComponent(c.email)}" target="_blank" class="btn btn-purple btn-sm">👁 Aller sur son compte</a>` : ''}
       </div>
@@ -3716,6 +3791,7 @@ function showClientDetail(c) {
   const html = `
     <div style="font-size:13px;line-height:1.8">
       <div><strong>Email :</strong> ${c.email||'—'}</div>
+      <div><strong>WhatsApp :</strong> ${c.telephone_whatsapp||'—'}</div>
       <div><strong>Nom :</strong> ${c.nom||'—'}</div>
       <div><strong>Plan :</strong> ${PLAN_LABELS_CLIENTS[c.plan]||c.plan} (${c.cycle||''})</div>
       <div><strong>Statut :</strong> ${c.active ? '✅ Actif' : '❌ Inactif'}</div>
@@ -5927,7 +6003,10 @@ async function renderUtilisateurs() {
           <div style="font-size:13px;font-weight:700;color:var(--white)">${u.email||'—'}</div>
           <div style="font-size:11px;color:var(--muted)">Inscrit le ${new Date(u.created_at).toLocaleDateString('fr-FR')} · ${u.nb_produits} produit${u.nb_produits!==1?'s':''} créé${u.nb_produits!==1?'s':''}</div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">${planBadge}${achatBadge}</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          ${planBadge}${achatBadge}
+          ${u.email ? `<a href="${ADBOARD_URL}/?impersonate=${encodeURIComponent(u.email)}" target="_blank" class="btn btn-purple btn-sm">👁 Aller sur son compte</a>` : ''}
+        </div>
       </div>`;
     }).join('');
   } catch(e) {
