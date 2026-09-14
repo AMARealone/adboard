@@ -450,7 +450,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <h1 class="hero-headline">Le <em>Partenaire Créatif</em> Conçu Pour Votre Croissance, Qui <em>Grandit Avec Vous</em>.</h1>
     <p class="hero-subhead">Nous construisons des créatives images à fort taux de conversion incluant : stratégie, production et amélioration continue, chaque semaine, pour un seul abonnement.</p>
     <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Pack AdStack'});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'Pack AdStack'});">Démarrer Maintenant !</button>
-    <p class="hero-downsell">Pas encore prêt pour un abonnement ? <a href="javascript:void(0)" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',16900)" class="hero-downsell-link">Obtenez 9 créatives images stratégiques pour seulement <span data-fcfa="16900">16.900 FCFA</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a> — et voyez les résultats sur votre produit.</p>
+    <p class="hero-downsell">Pas encore prêt pour un abonnement ? <a href="javascript:void(0)" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',12900)" class="hero-downsell-link">Obtenez 9 créatives images stratégiques pour seulement <span data-fcfa="12900">12.900 FCFA</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></a> — et voyez les résultats sur votre produit.</p>
     <div class="hero-stars-block">
       <div class="hero-stars"><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span><span class="hero-star">★</span></div>
       <div class="hero-proof-row">
@@ -1327,28 +1327,28 @@ var LP_OFFERS = [
   { id:'discovery', name:'Conversion Discovery', isPack:true, color:'#1FB6FF',
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
     ctaText:'Démarrer Maintenant',
-    once:{ price:16900, priceBarre:20000, prixImg:1878, delivery:'48h', productId:'prd_ywk7ik14' },
+    once:{ price:12900, priceBarre:20000, prixImg:1433, delivery:'48h', productId:'prd_ywk7ik14' },
     imagesPerWeek:9, produitsPerWeek:'1' },
   { id:'starter', name:'Conversion Starter', isPack:false, color:'#1FB6FF',
-    tagline:'Pour augmenter vos ventes sur votre produit phare, tout en ne gaspillant pas votre budget pub.',
+    tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
     badge:'36 Créatives Images',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:49900, priceBarre:100000, prixImg:1386, delivery:'48h', productId:'prd_ljowq8' },
-    quarterly:{ price:34900, priceBarre:50000, prixImg:969, delivery:'48h', productId:'prd_wdya3v9h' },
+    monthly:{ price:34900, priceBarre:100000, prixImg:969, delivery:'48h', productId:'prd_ljowq8' },
+    quarterly:{ price:29900, priceBarre:35000, prixImg:831, delivery:'48h', productId:'prd_wdya3v9h' },
     imagesPerWeek:9, produitsPerWeek:'1', visuelsLabel:'9 Visuels' },
   { id:'pro', name:'Conversion Pro', isPack:false, color:'#1FB6FF', best:true,
-    tagline:'Pour accélérer vos ventes sur plusieurs produits, sans gérer toute une équipe.',
+    tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
     badge:'72 Créatives Images',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:99900, priceBarre:200000, prixImg:1388, delivery:'48h', productId:'prd_34w031' },
-    quarterly:{ price:69900, priceBarre:100000, prixImg:971, delivery:'48h', productId:'prd_lnp4ax0b' },
+    monthly:{ price:69900, priceBarre:200000, prixImg:971, delivery:'48h', productId:'prd_34w031' },
+    quarterly:{ price:59900, priceBarre:70000, prixImg:832, delivery:'48h', productId:'prd_lnp4ax0b' },
     imagesPerWeek:18, produitsPerWeek:'1 à 2', visuelsLabel:'18 Visuels Haute Performance' },
   { id:'scale', name:'Conversion Scale', isPack:false, color:'#1FB6FF',
-    tagline:'Gérez votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pub.',
+    tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
     badge:'144 Créatives Images',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:149900, priceBarre:400000, prixImg:1041, delivery:'48h', productId:'prd_9fi79y' },
-    quarterly:{ price:104900, priceBarre:150000, prixImg:728, delivery:'48h', productId:'prd_dn4fb72l' },
+    monthly:{ price:104900, priceBarre:400000, prixImg:728, delivery:'48h', productId:'prd_9fi79y' },
+    quarterly:{ price:99900, priceBarre:105000, prixImg:694, delivery:'48h', productId:'prd_dn4fb72l' },
     imagesPerWeek:36, produitsPerWeek:'1 à 4', visuelsLabel:'36 Visuels Multi-Angles' },
 ];
 var lpQuarterly = false;
@@ -1706,8 +1706,8 @@ function lpQuizFinish() {
   try { localStorage.setItem('adstack_prepurchase_form_done', '1'); } catch(e) {}
 
   var recommended = lpQuizScore >= LP_QUIZ_PRO_THRESHOLD
-    ? { key:'pro', productId:'prd_34w031', name:'Conversion Pro', price:99900 }
-    : { key:'starter', productId:'prd_ljowq8', name:'Conversion Starter', price:49900 };
+    ? { key:'pro', productId:'prd_34w031', name:'Conversion Pro', price:69900 }
+    : { key:'starter', productId:'prd_ljowq8', name:'Conversion Starter', price:34900 };
 
   // Envoi en tâche de fond — n'attend pas la réponse, l'expérience visuelle ne doit jamais
   // dépendre du réseau. Le code promo est déjà connu côté client (ADSTACK_CONFIG.code_promo).
@@ -1945,7 +1945,7 @@ lpPrepurchaseInit();
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Outils (Canva, ChatGPT, Gemini)</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="16900">16.900 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="12900">12.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Outils</span>~<span data-fcfa="9000">9.000 FCFA</span></div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -1981,7 +1981,7 @@ lpPrepurchaseInit();
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Vidéo Production</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="16900">16.900 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="12900">12.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Vidéo</span>Généralement élevé — shooting, montage, matériel</div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -2017,7 +2017,7 @@ lpPrepurchaseInit();
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Freelance</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="16900">16.900 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="12900">12.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Freelance</span>Variable, souvent facturé à la pièce</div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -2053,7 +2053,7 @@ lpPrepurchaseInit();
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Équipe interne</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="16900">16.900 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="12900">12.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Interne</span>Salaire + charges — généralement le plus coûteux</div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -2137,11 +2137,11 @@ lpPrepurchaseInit();
     <div class="faq-list" id="faqList">
       <div class="faq-item open"><button class="faq-question"><span class="faq-q-text">Comment ça va vraiment faire grandir mon business ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">On ne vous livre pas un lot d'images — <span class="hl">on met en place un accompagnement complet</span>, chaque semaine.<br><br><span class="hl">① On étudie</span> votre marché et vos concurrents avant de produire quoi que ce soit.<br><span class="hl">② On produit</span> plusieurs angles en simultané, pour trouver rapidement ce qui marche.<br><span class="hl">③ On capitalise</span> sur les angles gagnants — ils sont déclinés et affinés la semaine suivante.<br><br>C'est cette méthode, portée par notre équipe, qui fait grandir votre business — pas une image isolée.</p><a href="#systeme-creatif" class="faq-cta" onclick="event.preventDefault();document.getElementById('systeme-creatif').scrollIntoView({behavior:'smooth'})">Voir comment on travaille <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est quoi AdBoard, concrètement ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">La plateforme où notre équipe organise votre production, votre espace client.</span><br><br>Vous ajoutez vos produits, et chaque semaine on y dépose : l'analyse de marché, les visuels, les textes publicitaires prêts à l'emploi — <span class="hl">tout centralisé dans votre tableau de bord.</span></p></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Starter est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous voulez enfin commencer à vous démarquer de vos concurrents, et commencer à croître sérieusement.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 0 et 500$ par mois en publicité, vous êtes encore en train de faire vos premières ventes rentables,</li><li>et vous voulez aller chercher les 5.000$ de revenus/mois, sans exploser vos coûts d'acquisition sur le moyen terme.</li><li><span class="hl">Starter vous permet de tester vite, de trouver ce qui marche</span> et de l'utiliser comme levier pour dépenser plus en publicité tout en gardant un bon ROAS.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ljowq8','Conversion Starter',49900)">Voir Starter <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Pro est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous avez déjà trouvé ce qui marche, et vous voulez accélérer sans casser votre rentabilité.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 500$ et 2.000$ par mois en publicité, vous avez déjà quelques angles gagnants identifiés,</li><li>et vous voulez aller chercher les 15.000$ de revenus/mois, sans passer vos journées à chercher de nouveaux concepts.</li><li><span class="hl">Pro double votre cadence de test</span> — pour multiplier les angles gagnants au lieu de vous reposer sur un seul, et scaler votre budget pub en toute confiance.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_34w031','Conversion Pro',99900)">Voir Pro <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Scale est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous visez un vrai palier de chiffre d'affaires, pas juste quelques ventes de plus.</strong></p><ul class="faq-a-list"><li>Vous dépensez plusieurs milliers de dollars par mois en publicité, vous structurez une croissance sur plusieurs marchés ou plusieurs lancements à la fois,</li><li>et vous voulez aller chercher un revenu mensuel à 6 chiffres, sans que la production créative devienne le goulot d'étranglement.</li><li><span class="hl">Scale, c'est notre cadence la plus intensive</span> — pensée pour ne jamais ralentir une croissance ambitieuse.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_9fi79y','Conversion Scale',149900)">Voir Scale <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Starter est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous voulez enfin commencer à vous démarquer de vos concurrents, et commencer à croître sérieusement.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 0 et 500$ par mois en publicité, vous êtes encore en train de faire vos premières ventes rentables,</li><li>et vous voulez aller chercher les 5.000$ de revenus/mois, sans exploser vos coûts d'acquisition sur le moyen terme.</li><li><span class="hl">Starter vous permet de tester vite, de trouver ce qui marche</span> et de l'utiliser comme levier pour dépenser plus en publicité tout en gardant un bon ROAS.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ljowq8','Conversion Starter',34900)">Voir Starter <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Pro est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous avez déjà trouvé ce qui marche, et vous voulez accélérer sans casser votre rentabilité.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 500$ et 2.000$ par mois en publicité, vous avez déjà quelques angles gagnants identifiés,</li><li>et vous voulez aller chercher les 15.000$ de revenus/mois, sans passer vos journées à chercher de nouveaux concepts.</li><li><span class="hl">Pro double votre cadence de test</span> — pour multiplier les angles gagnants au lieu de vous reposer sur un seul, et scaler votre budget pub en toute confiance.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_34w031','Conversion Pro',69900)">Voir Pro <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Scale est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous visez un vrai palier de chiffre d'affaires, pas juste quelques ventes de plus.</strong></p><ul class="faq-a-list"><li>Vous dépensez plusieurs milliers de dollars par mois en publicité, vous structurez une croissance sur plusieurs marchés ou plusieurs lancements à la fois,</li><li>et vous voulez aller chercher un revenu mensuel à 6 chiffres, sans que la production créative devienne le goulot d'étranglement.</li><li><span class="hl">Scale, c'est notre cadence la plus intensive</span> — pensée pour ne jamais ralentir une croissance ambitieuse.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_9fi79y','Conversion Scale',104900)">Voir Scale <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Le prix, ça vaut vraiment le coup ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Comparez au vrai coût d'une alternative : un freelance ou une agence facture pour <strong>une prestation ponctuelle</strong>. Avec nous, vous payez pour <span class="hl">un accompagnement continu — étude de marché, production, ajustements</span> — sans recruter, sans gérer, sans réunion.<br><br>Le calcul est simple : le potentiel de croissance dépasse largement le coût de l'abonnement le plus bas.</p><a href="#nos-offres" class="faq-cta" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">Voir les tarifs <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Conversion Discovery, comment ça marche ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Un achat unique, pour nous tester sans engagement.</span><br><br>Vous payez une fois, vous recevez 9 créatives issues d'une vraie analyse de marché, valables 3 mois. Si vous voulez qu'on continue à produire pour vous chaque semaine, vous passez à un abonnement classique quand vous le souhaitez.</p><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',16900)">Tester Discovery <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Conversion Discovery, comment ça marche ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Un achat unique, pour nous tester sans engagement.</span><br><br>Vous payez une fois, vous recevez 9 créatives issues d'une vraie analyse de marché, valables 3 mois. Si vous voulez qu'on continue à produire pour vous chaque semaine, vous passez à un abonnement classique quand vous le souhaitez.</p><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ywk7ik14','Conversion Discovery',12900)">Tester Discovery <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je dois faire quoi de mon côté ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Vous connecter à AdBoard et importer votre produit.</span> C'est tout.<br><br>Vous vous abonnez, vous vous connectez avec Google, vous ajoutez votre produit — <strong>on s'occupe du reste chaque semaine.</strong> Zéro réunion. Zéro aller-retour. Zéro friction.</p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Comment vous vous améliorez avec le temps ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Chaque semaine, vous marquez dans AdBoard les créatives qui performent. <span class="hl">Notre équipe s'appuie sur ces angles gagnants</span> pour composer le batch suivant, au lieu de repartir de zéro.<br><br>Résultat : votre catalogue d'angles gagnants grandit chaque mois, avec une analyse de marché mise à jour en continu.</p><a href="https://www.adstackofficial.com/adboard" class="faq-cta" target="_blank" rel="noopener">Voir AdBoard <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est un abonnement ? Je peux arrêter ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui, un abonnement mensuel — résiliable à tout moment.</span><br><br>Sans contrat ni engagement longue durée. Vous pouvez aussi changer de formule quand vous voulez depuis AdBoard, <strong>le changement prend effet immédiatement.</strong></p></div></div></div>
@@ -2336,8 +2336,8 @@ function asDetectHotness(text) {
 
 function asGetCheckoutForContext() {
   var allMsgs = asHistory.map(function(m){ return m.content; }).join(' ').toLowerCase();
-  var mentionsScale = /\bscale\b|4 produit|48 image|149[.\s]?900|149900/i.test(allMsgs);
-  var mentionsPro   = /\bpro\b|24 image|2 produit|99[.\s]?900|99900/i.test(allMsgs);
+  var mentionsScale = /\bscale\b|4 produit|48 image|104[.\s]?900|104900/i.test(allMsgs);
+  var mentionsPro   = /\bpro\b|24 image|2 produit|69[.\s]?900|69900/i.test(allMsgs);
   if (mentionsScale && !mentionsPro) return {url: AS_CHECKOUT.scale, name: 'Conversion Scale'};
   if (mentionsPro && !mentionsScale) return {url: AS_CHECKOUT.standard, name: 'Conversion Pro'};
   return {url: AS_CHECKOUT.starter, name: 'Conversion Starter'};
