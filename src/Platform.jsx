@@ -4284,9 +4284,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
-    'checkout-quarterly:starter': 'Starter trimestriel (-30%) →',
-    'checkout-quarterly:pro': 'Pro trimestriel (-30%) →',
-    'checkout-quarterly:scale': 'Scale trimestriel (-30%) →',
+    'checkout-quarterly:starter': 'Starter trimestriel (-15%) →',
+    'checkout-quarterly:pro': 'Pro trimestriel (-15%) →',
+    'checkout-quarterly:scale': 'Scale trimestriel (-15%) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4652,11 +4652,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           </button>
           <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
             Trimestriel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-30%</span>
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-15%</span>
           </span>
         </div>
         <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 30%.</strong>
+          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 15%.</strong>
         </p>
       </div>
 
@@ -4767,7 +4767,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 <span style={{fontSize:36,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
                 {!p.isPack && quarterly && (
-                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan annuel</span>
+                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan trimestriel</span>
                 )}
               </div>
 
@@ -4818,7 +4818,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                     ? (<>Augmentez Vos Demandes <Icon name="arrow" size={13} color="#fff"/></>)
                     : (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
                   : isCycleUpsell
-                    ? (<>Passer à l'annuel <Icon name="arrow" size={13} color="#fff"/></>)
+                    ? (<>Passer au trimestriel <Icon name="arrow" size={13} color="#fff"/></>)
                     : isCycleDowngradeCycle
                       ? (<>Repasser au mensuel</>)
                       : isDowngrade
