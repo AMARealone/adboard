@@ -6873,12 +6873,12 @@ async function marquerLivre(id) {
   loadCommandes();
 }
 
-// Rafraîchir le badge commandes toutes les 30s
+// Rafraîchir le badge commandes toutes les 30s — endpoint léger (jamais les photos)
 setInterval(async () => {
   try {
-    const r = await fetch('https://adstack-server.onrender.com/commandes', { headers: { 'ngrok-skip-browser-warning': '1' } });
-    const briefs = await r.json();
-    const count = briefs.filter(b => b.status === 'pending').length;
+    const r = await fetch('https://adstack-server.onrender.com/commandes/count', { headers: { 'ngrok-skip-browser-warning': '1' } });
+    const data = await r.json();
+    const count = data.count || 0;
     const badge = document.getElementById('sidebarCommandesCount');
     if (badge) { badge.textContent = count; badge.style.display = count > 0 ? '' : 'none'; }
   } catch(e) {}
