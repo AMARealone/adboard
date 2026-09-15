@@ -2453,8 +2453,17 @@ function _seenSave(key, set) {
 // seenKey: clé localStorage dédiée à cette liste
 // navId: id du bouton nav à faire briller
 function majEffetNouveaute(items, idField, seenKey, navId) {
-  const vus = _seenGet(seenKey);
   const idsActuels = items.map(it => String(it[idField])).filter(Boolean);
+  const jamaisInitialise = localStorage.getItem(seenKey) === null;
+  if (jamaisInitialise) {
+    // Première exécution depuis le déploiement de cette fonctionnalité — on prend l'état
+    // actuel comme référence de départ plutôt que de tout marquer "nouveau" d'un coup.
+    _seenSave(seenKey, new Set(idsActuels));
+    const navBtn = document.getElementById(navId);
+    if (navBtn) navBtn.classList.remove('nav-glow');
+    return 0;
+  }
+  const vus = _seenGet(seenKey);
   const nouveaux = idsActuels.filter(id => !vus.has(id));
   const navBtn = document.getElementById(navId);
   if (navBtn) navBtn.classList.toggle('nav-glow', nouveaux.length > 0);
