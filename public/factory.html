@@ -5861,8 +5861,11 @@ async function _ctGetAll() {
         // Cache-busting explicite — sans ça, le navigateur (et/ou le cache par défaut de
         // Supabase Storage sur cette URL publique) pouvait continuer à servir l'ancien .json
         // après un renommage, laissant la carte affichée inchangée malgré une vraie mise à
-        // jour réussie côté serveur.
-        var mResp = await fetch(_ctPublicUrl(entry.jsonName) + '?t=' + Date.now());
+        // jour réussie côté serveur. Fenêtre d'1 minute plutôt que par milliseconde — même
+        // garantie de fraîcheur en pratique (un renommage suivi d'une relecture dans la même
+        // minute reste rare), mais évite de retélécharger CHAQUE .json à CHAQUE ouverture de
+        // la galerie pendant une session de travail active — gros contributeur d'egress inutile.
+        var mResp = await fetch(_ctPublicUrl(entry.jsonName) + '?t=' + Math.floor(Date.now() / 60000));
         if (mResp.ok) meta = await mResp.json();
       } catch(e) { /* garde le nom par défaut si le .json est illisible */ }
     }
