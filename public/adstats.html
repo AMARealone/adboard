@@ -2529,12 +2529,7 @@ async function _loadImpl() {
     // limit explicite : sans lui, PostgREST plafonne silencieusement à 1000 lignes par
     // défaut — au-delà de ce volume, triés en ordre croissant, ce sont justement les
     // prospects les PLUS RÉCENTS qui disparaissaient de cette liste.
-    // select= explicite (liste exacte des champs réellement lus par cette page, vérifiée
-    // contre tout le code) — auparavant select=* par défaut, qui traînait aussi les colonnes
-    // jamais affichées ici. Contributeur significatif à l'egress Supabase vu la fréquence
-    // d'actualisation manuelle de cette page.
-    const CHAMPS_PROSPECTS = 'a_repondu,canal_contact,date_achat,date_collecte,date_contact,date_lead,dead,dernier_canal_clique,email,engageMoyen,engagePondere,id,image_produit_url,interesse,j_plus_achat,lead_qualifie,lien_ads,lien_instagram,lien_wa,nom_marque,notes,page_facebook,page_produit,pays,produit,quickback,rage,score,scrollMoyen,scrollPondere,scroll_exces,sessions,statut,url,visiteurs,whatsapp_invalide,created_at';
-    const r = await fetch(`${SB}/prospects?order=date_collecte.asc,created_at.asc&limit=20000&select=${CHAMPS_PROSPECTS}`, { headers: H });
+    const r = await fetch(`${SB}/prospects?order=date_collecte.asc,created_at.asc&limit=20000`, { headers: H });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const rows = await r.json();
     DB = rows.filter(p => p.nom_marque !== '__config__');
