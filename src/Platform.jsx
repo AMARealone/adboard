@@ -18,8 +18,8 @@ import { createPortal } from "react-dom";
 })();
 
 // ── Supabase Auth ──────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://hgxcpkrqdahmxhmpouvm.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneGNwa3JxZGFobXhobXBvdXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODE1MjYsImV4cCI6MjEwMzM1NzUyNn0.xms5HtCq05O6o1ddWCDZyc3ITf0sZZbA0ltS9z1GIRw';
+const SUPABASE_URL = 'https://mifljhsusidgzelnswma.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
 
 // ── Web Push (notifications navigateur) ─────────────────────────────────────
 function urlBase64ToUint8Array(base64String) {
@@ -4284,9 +4284,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
-    'checkout-quarterly:starter': 'Starter trimestriel (-15%) →',
-    'checkout-quarterly:pro': 'Pro trimestriel (-15%) →',
-    'checkout-quarterly:scale': 'Scale trimestriel (-15%) →',
+    'checkout-quarterly:starter': 'Starter trimestriel (-30%) →',
+    'checkout-quarterly:pro': 'Pro trimestriel (-30%) →',
+    'checkout-quarterly:scale': 'Scale trimestriel (-30%) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4414,34 +4414,34 @@ const PLANS = [
     tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    once: { price:12900, priceBarre:20000, prixImg:1433, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    once: { price:16900, priceBarre:20000, prixImg:1878, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
   },
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
-    tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
+    tagline:'Pour augmenter vos ventes sur votre produit phare, tout en ne gaspillant pas votre budget pub.',
     badge:'36 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    monthly: { price:34900, priceBarre:100000, prixImg:969, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:29900, priceBarre:35000, prixImg:831, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:49900, priceBarre:100000, prixImg:1386, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:34900, priceBarre:50000, prixImg:969, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
-    tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
+    tagline:'Pour accélérer vos ventes sur plusieurs produits, sans gérer toute une équipe.',
     badge:'72 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
-    monthly: { price:69900, priceBarre:200000, prixImg:971, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:59900, priceBarre:70000, prixImg:832, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:99900, priceBarre:200000, prixImg:1388, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:69900, priceBarre:100000, prixImg:971, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
-    tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
+    tagline:'Gérez votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pub.',
     badge:'144 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
-    monthly: { price:104900, priceBarre:400000, prixImg:728, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:99900, priceBarre:105000, prixImg:694, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:149900, priceBarre:400000, prixImg:1041, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:104900, priceBarre:150000, prixImg:728, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -4652,11 +4652,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           </button>
           <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
             Trimestriel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-15%</span>
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-30%</span>
           </span>
         </div>
         <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 15%.</strong>
+          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 30%.</strong>
         </p>
       </div>
 
@@ -4767,7 +4767,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 <span style={{fontSize:36,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
                 {!p.isPack && quarterly && (
-                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan trimestriel</span>
+                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan annuel</span>
                 )}
               </div>
 
@@ -4818,7 +4818,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                     ? (<>Augmentez Vos Demandes <Icon name="arrow" size={13} color="#fff"/></>)
                     : (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
                   : isCycleUpsell
-                    ? (<>Passer au trimestriel <Icon name="arrow" size={13} color="#fff"/></>)
+                    ? (<>Passer à l'annuel <Icon name="arrow" size={13} color="#fff"/></>)
                     : isCycleDowngradeCycle
                       ? (<>Repasser au mensuel</>)
                       : isDowngrade
@@ -4850,8 +4850,8 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         return (
           <div style={{maxWidth:420,margin:'8px auto 20px',background:C.card,border:`1px solid ${C.accent}30`,borderRadius:18,padding:'26px 24px',textAlign:'center'}}>
             <div style={{fontSize:32,fontWeight:900,color:C.accent,marginBottom:10,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>{convertPrice(d.price)}</div>
-            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt pour un abonnement ? Testez sans risque.</div>
-            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Notre équipe analyse votre marché puis produit pour vous <strong style={{color:C.text}}>{discovery.imagesPerWeek} créatives images</strong> optimisées pour la conversion. Incluant : Titres et Descriptions pour la campagne (Ad Copies), Récapitulatif de l'analyse de marché + opportunité, Suivi de la production en temps réel.</p>
+            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt pour un abonnement mensuel ?</div>
+            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Obtiens <strong style={{color:C.text}}>{discovery.imagesPerWeek} visuels stratégiques</strong> pour seulement <strong style={{color:C.text}}>{convertPrice(d.price)}</strong> — et vois les résultats sur ton produit.</p>
             <button onClick={() => onCta(discovery)} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:13,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontSize:13,fontWeight:700,border:'none',borderRadius:99,cursor:'pointer'}}>
               Tester avec {discovery.name} <Icon name="arrow" size={13} color="#fff"/>
             </button>
