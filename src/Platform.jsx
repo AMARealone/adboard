@@ -4311,9 +4311,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
-    'checkout-quarterly:starter': 'Starter trimestriel (-15%) →',
-    'checkout-quarterly:pro': 'Pro trimestriel (-15%) →',
-    'checkout-quarterly:scale': 'Scale trimestriel (-15%) →',
+    'checkout-quarterly:starter': 'Starter trimestriel (-20%) →',
+    'checkout-quarterly:pro': 'Pro trimestriel (-20%) →',
+    'checkout-quarterly:scale': 'Scale trimestriel (-20%) →',
     'checkout-upgrade': 'Continuer avec Starter — payer le solde (22.000 FCFA) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
@@ -4452,7 +4452,6 @@ const PLANS = [
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
-    badge:'36 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
     monthly: { price:249, prixImg:7, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
@@ -4461,7 +4460,6 @@ const PLANS = [
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
-    badge:'72 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
     monthly: { price:499, prixImg:7, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
@@ -4470,7 +4468,6 @@ const PLANS = [
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
-    badge:'144 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
     monthly: { price:749, prixImg:5, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
@@ -4669,7 +4666,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           Nos Tarifs
         </div>
         <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.15,letterSpacing:'-0.5px'}}>
-          Pas du simple design. <span className="headline-gradient">Mais votre équipe créative orientée performance.</span>
+          <span className="headline-gradient">Votre équipe créative orientée scaling.</span>
         </h1>
         <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:520}}>
           Chaque semaine, nous transformons les données de votre marché en angles, concepts et créatives prêtes à tester — <strong style={{color:C.text}}>puis nous utilisons vos retours pour améliorer les prochaines.</strong>
@@ -4688,11 +4685,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           </button>
           <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
             Trimestriel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-15%</span>
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-20%</span>
           </span>
         </div>
         <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 15%.</strong>
+          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 20%.</strong>
         </p>
       </div>
 
@@ -4757,7 +4754,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               { icon:'grid', bold:'Organisation de vos créatives', rest:'' },
               { icon:'chart', bold:'Analyse des créatives', rest:'top performer' },
               { icon:'sparkle', bold:'Amélioration en continu', rest:'' },
-              { icon:'bulb', bold:'Assistant IA stratégique', rest:'dispo 7j/7' },
+              { icon:'bulb', bold:'Support WhatsApp et assistant IA stratégique', rest:'dispo 7j/7' },
             ]},
           ];
           return (
@@ -4863,21 +4860,21 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 }
               </button>
 
-              {/* Reassurance — remplacée par un lien vers First Payment sur la carte Starter,
-                  jamais de pourcentage affiché (cf. demande d'Amar). Masqué si le compte a déjà
+              {/* Lien First Payment sous le CTA Starter — uniquement en mode Mensuel (toggle
+                  trimestriel désactivé), texte exact fourni par Amar. Masqué si le compte a déjà
                   utilisé First Payment une fois (has_used_discovery, achat unique à vie). */}
-              {!isCurrent && p.id === 'starter' && !user?.user_metadata?.has_used_discovery && (() => {
+              {!isCurrent && p.id === 'starter' && !quarterly && !user?.user_metadata?.has_used_discovery && (() => {
                 const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
                 if (!discoveryPlan) return null;
                 return (
                   <div style={{marginTop:10,textAlign:'center'}}>
-                    <a href="javascript:void(0)" onClick={() => onCta(discoveryPlan)} style={{fontSize:10.5,fontWeight:700,color:C.accent,textDecoration:'underline',textUnderlineOffset:2,cursor:'pointer'}}>
-                      Pas encore prêt à vous engager sur le mois complet ? Commencez avec une première production à ${discoveryPlan.once.price}, puis complétez après avoir vu le résultat →
+                    <a href="javascript:void(0)" onClick={() => onCta(discoveryPlan)} style={{fontSize:10.5,fontWeight:600,color:C.sec,textDecoration:'underline',textUnderlineOffset:2,cursor:'pointer',lineHeight:1.4}}>
+                      ou pour <strong style={{color:C.accent}}>${discoveryPlan.once.price}</strong> laissez notre <strong style={{color:C.text}}>équipe</strong> vous faire une première <strong style={{color:C.text}}>production stratégique</strong>, puis vous complétez les <strong style={{color:C.accent}}>${discoveryPlan.completion.price}</strong> qu'après avoir vu le résultat
                     </a>
                   </div>
                 );
               })()}
-              {!isCurrent && (p.id !== 'starter' || user?.user_metadata?.has_used_discovery) && (
+              {!isCurrent && (p.id !== 'starter' || quarterly || user?.user_metadata?.has_used_discovery) && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
                   {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Satisfait ou 100% remboursé</span></>}
@@ -4887,29 +4884,6 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           );
         })}
       </div>
-
-      {/* Downsell Discovery — repositionné en bas de la grille, pour tester sans engagement
-          mensuel. Repris du style mis en place sur la page de vente. */}
-      {(() => {
-        // First Payment est un achat unique à vie (demande d'Amar) : masqué si actif OU déjà
-        // utilisé une fois par le passé (has_used_discovery posé par activateSubscription côté
-        // serveur dès la 1ère activation, jamais réinitialisé même après expiration Starter).
-        if (subscription?.plan === 'discovery') return null;
-        if (user?.user_metadata?.has_used_discovery) return null;
-        const discovery = PLANS.find(pl => pl.id === 'discovery');
-        if (!discovery) return null;
-        const d = discovery.once;
-        return (
-          <div style={{maxWidth:420,margin:'8px auto 20px',background:C.card,border:`1px solid ${C.accent}30`,borderRadius:18,padding:'26px 24px',textAlign:'center'}}>
-            <div style={{fontSize:32,fontWeight:900,color:C.accent,marginBottom:10,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>${d.price}</div>
-            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt à vous engager sur le mois complet ? Commencez avec une première production.</div>
-            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Notre équipe analyse votre marché puis produit pour vous <strong style={{color:C.text}}>{discovery.imagesPerWeek} créatives images</strong> optimisées pour la conversion. Incluant : Titres et Descriptions pour la campagne (Ad Copies), Récapitulatif de l'analyse de marché + opportunité, Suivi de la production en temps réel.</p>
-            <button onClick={() => onCta(discovery)} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:13,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontSize:13,fontWeight:700,border:'none',borderRadius:99,cursor:'pointer'}}>
-              Tester avec {discovery.name} <Icon name="arrow" size={13} color="#fff"/>
-            </button>
-          </div>
-        );
-      })()}
     </div>
   );
 };
@@ -5384,9 +5358,9 @@ export default function Platform() {
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
 
-  // ── Formulaire pré-achat : DÉSACTIVÉ — remplacé par le quiz sur la page de vente, qui
-  // couvre déjà la collecte de data + le code promo. Code gardé intact ci-dessous (return
-  // immédiat en premier) pour pouvoir le réactiver en une ligne si besoin plus tard. ──
+  // ── Formulaire pré-achat : DÉSACTIVÉ (le pop-up quiz de la page de vente a été retiré, mais
+  // ce formulaire pré-achat AdBoard reste désactivé pour l'instant). Code gardé intact ci-dessous
+  // (return immédiat en premier) pour pouvoir le réactiver en une ligne si besoin plus tard. ──
   useEffect(() => {
     return; // eslint-disable-line no-unreachable
     // eslint-disable-next-line no-unreachable
