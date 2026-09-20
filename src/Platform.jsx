@@ -18,8 +18,8 @@ import { createPortal } from "react-dom";
 })();
 
 // ── Supabase Auth ──────────────────────────────────────────────────────────
-const SUPABASE_URL = 'https://mifljhsusidgzelnswma.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
+const SUPABASE_URL = 'https://hgxcpkrqdahmxhmpouvm.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhneGNwa3JxZGFobXhobXBvdXZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3ODE1MjYsImV4cCI6MjEwMzM1NzUyNn0.xms5HtCq05O6o1ddWCDZyc3ITf0sZZbA0ltS9z1GIRw';
 
 // ── Web Push (notifications navigateur) ─────────────────────────────────────
 function urlBase64ToUint8Array(base64String) {
@@ -643,10 +643,33 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
       {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
-        // Discovery n'est jamais suggéré ici — seulement visible sur la page Nos Tarifs elle-même.
-        // Un client Discovery est traité comme "pas encore d'abonnement" pour ce bloc : la
-        // progression naturelle commence à Starter, jamais à Discovery.
-        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery') ? 'starter'
+        // Cas spécial First Payment (ex-Discovery) actif : ce bloc ne doit plus proposer de
+        // repayer Starter plein tarif (249$), mais uniquement le solde de Completion (150$) —
+        // c'est le "paiement restant pour continuer de travailler avec nous" demandé par Amar.
+        if (subscription?.active && subscription.plan === 'discovery') {
+          const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
+          const completion = discoveryPlan?.completion;
+          if (!completion) return null;
+          return (
+            <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
+              <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>Continuer avec Starter</div>
+              <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>Paiement restant pour continuer de travailler avec nous ce mois-ci</div>
+              <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>${completion.price}</div>
+              <button onClick={() => {
+                if (onOpenPayment) { startCheckout(completion.productId, onOpenPayment); return; }
+                const popup = window.open('', '_blank') || window;
+                popup.location.href = completion.checkout;
+              }}
+              style={{width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                Compléter →
+              </button>
+            </div>
+          );
+        }
+        // Sinon, progression normale : Starter → Pro → Scale. Discovery n'est jamais suggéré
+        // ici — seulement visible sur la page Nos Tarifs elle-même — un visiteur sans
+        // abonnement actif est orienté directement vers Starter.
+        const nextPlanId = !subscription?.active ? 'starter'
                           : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
@@ -656,7 +679,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
             <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images{nextPlan.isPack?' incluses':' / semaine'} · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
-            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}{!nextPlan.isPack && <span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span>}</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>${cycleData.price}{!nextPlan.isPack && <span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span>}</div>
             <button onClick={() => {
               const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-${nextCycle}`];
               if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
@@ -1778,7 +1801,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
         </div>
       )}
       <button onClick={() => onAskCreatives && onAskCreatives(p)} style={{width:"100%",display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"11px",borderRadius:8,border:"none",background:`linear-gradient(135deg,${C.accent},#0B3D91)`,color:"#fff",fontWeight:700,fontSize:12.5,cursor:"pointer",fontFamily:"inherit",boxShadow:`0 4px 18px rgba(45,127,249,0.4)`,transition:"all 0.2s",letterSpacing:"0.3px"}}>
-        <Icon name="sparkle" size={13} color="#fff"/> Demander mes images
+        <Icon name="sparkle" size={13} color="#fff"/> Demander une production
       </button>
     </div>
   );
@@ -4267,6 +4290,10 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       const productId = PLAN_CHECKOUT_IDS[`${parts[1]}-${cycle}`];
       if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
+    if (type === 'checkout-upgrade') {
+      const productId = PLAN_CHECKOUT_IDS['starter-upgrade-from-discovery'];
+      if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
+    }
     if (type === 'whatsapp') {
       const msg = encodeURIComponent("Bonjour, j'ai besoin d'aide sur AdStack.");
       window.open(`https://wa.me/221766332693?text=${msg}`, '_blank');
@@ -4284,9 +4311,10 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
-    'checkout-quarterly:starter': 'Starter trimestriel (-30%) →',
-    'checkout-quarterly:pro': 'Pro trimestriel (-30%) →',
-    'checkout-quarterly:scale': 'Scale trimestriel (-30%) →',
+    'checkout-quarterly:starter': 'Starter trimestriel (-15%) →',
+    'checkout-quarterly:pro': 'Pro trimestriel (-15%) →',
+    'checkout-quarterly:scale': 'Scale trimestriel (-15%) →',
+    'checkout-upgrade': 'Continuer avec Starter — payer le solde (22.000 FCFA) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4408,40 +4436,45 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
   );
 };
 
+// MAJ pricing (le plus récent) : dollars fixes, pas de priceBarre (aucune référence USD
+// fournie) ni de conversion de devise — Chariow gère la devise locale au checkout uniquement.
+// Discovery devient First Payment (passerelle vers Starter) + un objet `completion` pour le
+// solde (150$, prd_c0ga3snp) qui complète jusqu'au tarif Starter plein (249$).
 const PLANS = [
   {
-    id:'discovery', name:'Conversion Discovery', color:C.gray, best:false, isPack:true,
-    tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
+    id:'discovery', name:'First Payment', color:C.gray, best:false, isPack:true,
+    tagline:"Une première production stratégique complète, pour voir notre travail avant de vous engager sur le mois.",
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    once: { price:16900, priceBarre:20000, prixImg:1878, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    once: { price:99, prixImg:11, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    completion: { price:150, productId:'prd_c0ga3snp', checkout:'https://shop.adstackofficial.com/prd_c0ga3snp/checkout' },
   },
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
-    tagline:'Pour augmenter vos ventes sur votre produit phare, tout en ne gaspillant pas votre budget pub.',
+    tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
     badge:'36 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    monthly: { price:49900, priceBarre:100000, prixImg:1386, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:34900, priceBarre:50000, prixImg:969, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:249, prixImg:7, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:200, prixImg:6, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
-    tagline:'Pour accélérer vos ventes sur plusieurs produits, sans gérer toute une équipe.',
+    tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
     badge:'72 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
-    monthly: { price:99900, priceBarre:200000, prixImg:1388, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:69900, priceBarre:100000, prixImg:971, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:499, prixImg:7, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:400, prixImg:6, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
-    tagline:'Gérez votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pub.',
+    tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
     badge:'144 Créatives Images',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
-    monthly: { price:149900, priceBarre:400000, prixImg:1041, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:104900, priceBarre:150000, prixImg:728, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:749, prixImg:5, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:600, prixImg:4, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -4450,6 +4483,9 @@ const PLAN_CHECKOUT_IDS = {
   'starter-monthly': 'prd_ljowq8',   'starter-quarterly': 'prd_wdya3v9h',
   'pro-monthly':     'prd_34w031',   'pro-quarterly':     'prd_lnp4ax0b',
   'scale-monthly':   'prd_9fi79y',   'scale-quarterly':   'prd_dn4fb72l',
+  // Passerelle Discovery → Starter : solde restant (34.900 − 12.900 déjà payés) pour
+  // continuer avec 3 semaines de Starter, sans repayer le plein tarif.
+  'starter-upgrade-from-discovery': 'prd_c0ga3snp',
 };
 
 // Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
@@ -4577,7 +4613,7 @@ const Faq = () => {
   );
 };
 
-const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, credits=null, onOpenPayment=null}) => {
+const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, credits=null, onOpenPayment=null, user=null}) => {
   const isMobile = useIsMobile();
   const [quarterly, setQuarterly] = useState(false); // par défaut sur mensuel
   const onCta = async (plan) => {
@@ -4652,11 +4688,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           </button>
           <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
             Trimestriel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-30%</span>
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-15%</span>
           </span>
         </div>
         <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 30%.</strong>
+          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 15%.</strong>
         </p>
       </div>
 
@@ -4759,15 +4795,13 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               )}
               <div style={{fontSize:11,color:C.text,lineHeight:1.4,marginBottom:14,minHeight:28}}>{p.tagline}</div>
 
-              <div style={{fontSize:13,color:C.muted,textDecoration:'line-through',fontFamily:"'DM Mono',monospace",marginBottom:3,fontWeight:600}}>
-                {convertPrice(cycleData.priceBarre)}
-              </div>
-
+              {/* Plus de prix barré ni de conversion de devise : tarifs fixes en dollars pour
+                  tout le monde — Chariow affiche la devise locale uniquement au checkout. */}
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-                <span style={{fontSize:36,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
+                <span style={{fontSize:36,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>${cycleData.price}</span>
                 {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
                 {!p.isPack && quarterly && (
-                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan annuel</span>
+                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan trimestriel</span>
                 )}
               </div>
 
@@ -4818,7 +4852,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                     ? (<>Augmentez Vos Demandes <Icon name="arrow" size={13} color="#fff"/></>)
                     : (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
                   : isCycleUpsell
-                    ? (<>Passer à l'annuel <Icon name="arrow" size={13} color="#fff"/></>)
+                    ? (<>Passer au trimestriel <Icon name="arrow" size={13} color="#fff"/></>)
                     : isCycleDowngradeCycle
                       ? (<>Repasser au mensuel</>)
                       : isDowngrade
@@ -4829,8 +4863,21 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 }
               </button>
 
-              {/* Reassurance */}
-              {!isCurrent && (
+              {/* Reassurance — remplacée par un lien vers First Payment sur la carte Starter,
+                  jamais de pourcentage affiché (cf. demande d'Amar). Masqué si le compte a déjà
+                  utilisé First Payment une fois (has_used_discovery, achat unique à vie). */}
+              {!isCurrent && p.id === 'starter' && !user?.user_metadata?.has_used_discovery && (() => {
+                const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
+                if (!discoveryPlan) return null;
+                return (
+                  <div style={{marginTop:10,textAlign:'center'}}>
+                    <a href="javascript:void(0)" onClick={() => onCta(discoveryPlan)} style={{fontSize:10.5,fontWeight:700,color:C.accent,textDecoration:'underline',textUnderlineOffset:2,cursor:'pointer'}}>
+                      Pas encore prêt à vous engager sur le mois complet ? Commencez avec une première production à ${discoveryPlan.once.price}, puis complétez après avoir vu le résultat →
+                    </a>
+                  </div>
+                );
+              })()}
+              {!isCurrent && (p.id !== 'starter' || user?.user_metadata?.has_used_discovery) && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
                   {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Satisfait ou 100% remboursé</span></>}
@@ -4844,14 +4891,19 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
       {/* Downsell Discovery — repositionné en bas de la grille, pour tester sans engagement
           mensuel. Repris du style mis en place sur la page de vente. */}
       {(() => {
+        // First Payment est un achat unique à vie (demande d'Amar) : masqué si actif OU déjà
+        // utilisé une fois par le passé (has_used_discovery posé par activateSubscription côté
+        // serveur dès la 1ère activation, jamais réinitialisé même après expiration Starter).
+        if (subscription?.plan === 'discovery') return null;
+        if (user?.user_metadata?.has_used_discovery) return null;
         const discovery = PLANS.find(pl => pl.id === 'discovery');
         if (!discovery) return null;
         const d = discovery.once;
         return (
           <div style={{maxWidth:420,margin:'8px auto 20px',background:C.card,border:`1px solid ${C.accent}30`,borderRadius:18,padding:'26px 24px',textAlign:'center'}}>
-            <div style={{fontSize:32,fontWeight:900,color:C.accent,marginBottom:10,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>{convertPrice(d.price)}</div>
-            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt pour un abonnement mensuel ?</div>
-            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Obtiens <strong style={{color:C.text}}>{discovery.imagesPerWeek} visuels stratégiques</strong> pour seulement <strong style={{color:C.text}}>{convertPrice(d.price)}</strong> — et vois les résultats sur ton produit.</p>
+            <div style={{fontSize:32,fontWeight:900,color:C.accent,marginBottom:10,lineHeight:1,fontFamily:"'DM Mono',monospace"}}>${d.price}</div>
+            <div style={{fontSize:15,fontWeight:800,color:C.text,marginBottom:8,lineHeight:1.3}}>Pas encore prêt à vous engager sur le mois complet ? Commencez avec une première production.</div>
+            <p style={{fontSize:12.5,color:C.sec,lineHeight:1.55,marginBottom:18}}>Notre équipe analyse votre marché puis produit pour vous <strong style={{color:C.text}}>{discovery.imagesPerWeek} créatives images</strong> optimisées pour la conversion. Incluant : Titres et Descriptions pour la campagne (Ad Copies), Récapitulatif de l'analyse de marché + opportunité, Suivi de la production en temps réel.</p>
             <button onClick={() => onCta(discovery)} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6,width:'100%',padding:13,background:'linear-gradient(135deg,#5B8DEF,#0B3D91)',color:'#fff',fontSize:13,fontWeight:700,border:'none',borderRadius:99,cursor:'pointer'}}>
               Tester avec {discovery.name} <Icon name="arrow" size={13} color="#fff"/>
             </button>
@@ -5306,7 +5358,7 @@ export default function Platform() {
   // Cause profonde d'un bug remonté en prod : avant que ce flag existe, computeCredits()
   // tournait sur allBriefs=[] pendant la fraction de seconde du chargement, affichant un
   // volume de crédits gonflé (aucune consommation comptée) — assez pour laisser le temps à un
-  // clic rapide sur "Demander mes images" de passer avec des chiffres faux. Le bouton doit
+  // clic rapide sur "Demander une production" de passer avec des chiffres faux. Le bouton doit
   // rester désactivé tant que ce flag n'est pas true, quel que soit ce que credits.available
   // affiche dans l'intervalle.
   const [creditsDataReady, setCreditsDataReady] = useState(false);
@@ -5830,7 +5882,7 @@ const views = {
     galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
-    tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
+    tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
     faq: <Faq/>,
     commentaires: <Commentaires user={user}/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData}/>,

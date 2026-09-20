@@ -1325,38 +1325,42 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 // Source unique des offres côté page de vente — miroir de OFFERS dans server_v5_45.js et de
 // PLANS dans Platform.jsx. Si les offres changent un jour, répercuter ici aussi (pas de sync
 // automatique entre les trois pour l'instant).
+// MAJ pricing (le plus récent) : tous les tarifs front-end sont désormais en dollars fixes,
+// sans conversion de devise affichée — Chariow convertit dans la devise locale UNIQUEMENT au
+// moment du checkout. Discovery devient « First Payment » : une passerelle vers Starter, pas
+// un pack autonome. Le solde restant (« Completion ») a son propre produit Chariow.
 var LP_OFFERS = [
-  { id:'discovery', name:'Conversion Discovery', isPack:true, color:'#1FB6FF',
-    tagline:'Suffisant pour voir une nette amélioration de vos résultats, avant de vous engager sur le mois.',
+  { id:'discovery', name:'First Payment', isPack:true, color:'#1FB6FF',
+    tagline:"Une première production stratégique complète, pour voir notre travail avant de vous engager sur le mois.",
     ctaText:'Démarrer Maintenant',
-    once:{ price:12900, priceBarre:20000, prixImg:1433, delivery:'48h', productId:'prd_ywk7ik14' },
+    once:{ price:99, prixImg:11, delivery:'48h', productId:'prd_ywk7ik14' },
+    completion:{ price:150, productId:'prd_c0ga3snp' },
     imagesPerWeek:9, produitsPerWeek:'1' },
   { id:'starter', name:'Conversion Starter', isPack:false, color:'#1FB6FF',
     tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
     badge:'36 Créatives Images',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:34900, priceBarre:100000, prixImg:969, delivery:'48h', productId:'prd_ljowq8' },
-    quarterly:{ price:29900, priceBarre:35000, prixImg:831, delivery:'48h', productId:'prd_wdya3v9h' },
+    monthly:{ price:249, prixImg:7, delivery:'48h', productId:'prd_ljowq8' },
+    quarterly:{ price:200, prixImg:6, delivery:'48h', productId:'prd_wdya3v9h' },
     imagesPerWeek:9, produitsPerWeek:'1', visuelsLabel:'9 Visuels' },
   { id:'pro', name:'Conversion Pro', isPack:false, color:'#1FB6FF', best:true,
     tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
     badge:'72 Créatives Images',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:69900, priceBarre:200000, prixImg:971, delivery:'48h', productId:'prd_34w031' },
-    quarterly:{ price:59900, priceBarre:70000, prixImg:832, delivery:'48h', productId:'prd_lnp4ax0b' },
+    monthly:{ price:499, prixImg:7, delivery:'48h', productId:'prd_34w031' },
+    quarterly:{ price:400, prixImg:6, delivery:'48h', productId:'prd_lnp4ax0b' },
     imagesPerWeek:18, produitsPerWeek:'1 à 2', visuelsLabel:'18 Visuels Haute Performance' },
   { id:'scale', name:'Conversion Scale', isPack:false, color:'#1FB6FF',
     tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
     badge:'144 Créatives Images',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:104900, priceBarre:400000, prixImg:728, delivery:'48h', productId:'prd_9fi79y' },
-    quarterly:{ price:99900, priceBarre:105000, prixImg:694, delivery:'48h', productId:'prd_dn4fb72l' },
+    monthly:{ price:749, prixImg:5, delivery:'48h', productId:'prd_9fi79y' },
+    quarterly:{ price:600, prixImg:4, delivery:'48h', productId:'prd_dn4fb72l' },
     imagesPerWeek:36, produitsPerWeek:'1 à 4', visuelsLabel:'36 Visuels Multi-Angles' },
 ];
 var lpQuarterly = false;
 
-// Formatage intelligent : point comme séparateur de milliers (9.900, pas 9 900 ni 9,900) —
-// utilisé pour TOUS les prix de la page (prix principal, prix barré, prix/image).
+// Formatage intelligent : point comme séparateur de milliers, utilisé pour tous les prix $ de la page.
 function lpFmt(n) { return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 
 // Icônes reprises d'AdBoard (mêmes noms par feature, traits simples équivalents).
@@ -1446,8 +1450,9 @@ function lpRenderOffers() {
     html += '<div class="lp-pack-name">' + o.name + '</div>';
     if (o.badge) html += '<div style="display:inline-flex;align-self:flex-start;width:fit-content;align-items:center;padding:3px 10px;border-radius:20px;background:' + (o.best?'rgba(31,182,255,0.15)':'rgba(255,255,255,0.06)') + ';border:1px solid ' + (o.best?'rgba(31,182,255,0.3)':'#2A2D33') + ';margin-bottom:10px"><span style="font-size:10px;font-weight:800;color:' + o.color + ';letter-spacing:0.2px">' + o.badge + '</span></div>';
     html += '<div class="lp-pack-type">' + o.tagline + '</div>';
-    html += '<div class="lp-price-old" data-fcfa="' + cycleData.priceBarre + '">' + lpFmt(cycleData.priceBarre) + ' FCFA</div>';
-    html += '<div class="lp-price-main"><span class="lp-price-amount" data-fcfa="' + cycleData.price + '">' + lpFmt(cycleData.price) + '</span><span class="lp-price-currency">FCFA' + (o.isPack ? '' : '<span style="font-size:11px;color:#8A8D95">/mois</span>') + '</span>' + (!o.isPack && lpQuarterly ? '<span class="lp-quarterly-pill">Plan trimestriel</span>' : '') + '</div>';
+    // Tarifs fixes en dollars, sans prix barré (pas de référence USD fournie) ni conversion de
+    // devise affichée — Chariow convertit dans la devise locale uniquement au moment du checkout.
+    html += '<div class="lp-price-main"><span class="lp-price-currency" style="margin-right:2px">$</span><span class="lp-price-amount">' + lpFmt(cycleData.price) + '</span>' + (o.isPack ? '' : '<span style="font-size:11px;color:#8A8D95;margin-left:4px">/mois</span>') + (!o.isPack && lpQuarterly ? '<span class="lp-quarterly-pill">Plan trimestriel</span>' : '') + '</div>';
     html += '<div class="lp-card-divider"></div>';
     if (o.isPack) {
       html += '<ul class="lp-features">';
@@ -1463,26 +1468,34 @@ function lpRenderOffers() {
       });
     }
     html += '<button onclick="lpOpenCheckout(\'' + cycleData.productId + '\',\'' + o.name.replace(/'/g,"\\'") + '\',' + cycleData.price + ')" class="lp-cta-btn">' + o.ctaText + ' →</button>';
-    html += '<div class="lp-card-proof"><div><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Paiement sécurisé</div><div class="lp-proof-guarantee"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Satisfait ou 100% remboursé</div></div>';
+    if (o.id === 'starter' && !lpFirstPaymentAlreadyUsed()) {
+      // Sous le CTA Starter : plus de badges "Paiement sécurisé / Satisfait ou remboursé" — à la
+      // place, un lien stylisé qui explique la passerelle First Payment (99$) → Completion (150$),
+      // sans jamais afficher de pourcentage.
+      var fp = LP_OFFERS.find(function(x){ return x.id === 'discovery'; });
+      html += '<div style="margin-top:10px;text-align:center"><a href="javascript:void(0)" onclick="lpOpenCheckout(\'' + fp.once.productId + '\',\'' + fp.name + '\',' + fp.once.price + ')" style="font-size:11.5px;font-weight:700;color:#1FB6FF;text-decoration:underline;text-underline-offset:2px;cursor:pointer">Pas encore prêt à vous engager sur le mois complet ? Commencez avec une première production à ' + fp.once.price + '$, puis ne complétez qu\'après avoir vu le résultat →</a></div>';
+    } else {
+      html += '<div class="lp-card-proof"><div><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Paiement sécurisé</div><div class="lp-proof-guarantee"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Satisfait ou 100% remboursé</div></div>';
+    }
     html += '</div>';
   });
   grid.innerHTML = html;
   lpRenderDiscoveryDownsell();
-  // Réapplique la conversion de devise (data-fcfa) sur les cartes qui viennent d'être injectées —
-  // le convertisseur ne tourne qu'une fois au chargement initial, sinon.
-  if (typeof window.lpApplyCurrency === 'function') window.lpApplyCurrency();
+  // Prix fixes en dollars, plus de data-fcfa sur les cartes : la conversion de devise a été
+  // retirée du front-end (Chariow gère la devise locale au moment du checkout uniquement).
 }
 
 function lpRenderDiscoveryDownsell() {
   var el = document.getElementById('lp-discovery-downsell');
   if (!el) return;
+  if (lpFirstPaymentAlreadyUsed()) { el.innerHTML = ''; return; }
   var o = LP_OFFERS.find(function(x) { return x.id === 'discovery'; });
   if (!o) return;
   var d = o.once;
   el.innerHTML =
     '<div class="lp-downsell-card">' +
-      '<p class="lp-downsell-text">Pas encore prêt à vous abonner ? Testez notre travail une fois, sans engagement — <strong>' + o.imagesPerWeek + ' créatives</strong> pour <strong data-fcfa="' + d.price + '">' + lpFmt(d.price) + ' FCFA</strong>.</p>' +
-      '<button onclick="lpOpenCheckout(\'' + d.productId + '\',\'' + o.name + '\',' + d.price + ')" class="lp-downsell-btn">Tester Discovery <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>' +
+      '<p class="lp-downsell-text">Pas encore prêt à vous abonner sur le mois complet ? Commencez par une première production stratégique complète — <strong>' + o.imagesPerWeek + ' créatives</strong> pour <strong>' + d.price + '$</strong>. Convaincu ? Vous complétez ensuite pour continuer avec nous.</p>' +
+      '<button onclick="lpOpenCheckout(\'' + d.productId + '\',\'' + o.name + '\',' + d.price + ')" class="lp-downsell-btn">Commencer avec First Payment <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg></button>' +
     '</div>';
 }
 
@@ -1495,7 +1508,21 @@ function lpToggleCycle() {
   lpRenderOffers();
 }
 
+// Verrou "achat unique à vie" pour First Payment — BEST EFFORT seulement côté page de vente
+// anonyme (pas de session/compte avant paiement, donc pas de source de vérité fiable ici).
+// Posé de façon optimiste dès l'ouverture du checkout (pas de callback de succès Chariow
+// disponible côté widget) : efface le cache navigateur = repasse à travers. La vraie source de
+// vérité pour un compte déjà créé reste has_used_discovery côté serveur (voir server_v5_45.js /
+// Platform.jsx), qui lui ne peut pas être contourné. Prévoir mieux avant prod si l'abus s'avère
+// fréquent (ex : demander l'email avant d'ouvrir le checkout First Payment et vérifier côté API).
+var LP_FIRST_PAYMENT_PRODUCT_ID = 'prd_ywk7ik14';
+function lpFirstPaymentAlreadyUsed() {
+  try { return localStorage.getItem('adstack_first_payment_used') === '1'; } catch(e) { return false; }
+}
 function lpOpenCheckout(productId, offerName, price, couponCode) {
+  if (productId === LP_FIRST_PAYMENT_PRODUCT_ID) {
+    try { localStorage.setItem('adstack_first_payment_used', '1'); } catch(e) {}
+  }
   adstackTrackFunnel('paiement_initie');
   if (typeof fbq !== 'undefined') fbq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
   if (typeof twq !== 'undefined') twq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
