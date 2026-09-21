@@ -1305,13 +1305,16 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
           <div style={{fontSize:10,color:C.muted,marginTop:8}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
         </div>
 
-        {/* Upsell — Discovery uniquement, ouvre directement le paiement pour empiler d'autres images */}
+        {/* Ex-upsell "acheter un autre pack Discovery" retiré : First Payment est un achat
+            unique à vie, on ne doit plus jamais proposer de le repayer. À la place, on pousse
+            vers la Complétion Starter (150$) — le vrai chemin prévu après First Payment. */}
         {isPack && (
           <button onClick={() => {
-            const productId = PLAN_CHECKOUT_IDS['discovery-once'];
+            const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
+            const productId = discoveryPlan?.completion?.productId;
             if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
           }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:22}}>
-            <Icon name="plus" size={12} color={C.accent}/> Augmentez vos demandes
+            <Icon name="plus" size={12} color={C.accent}/> Continuez avec Starter
           </button>
         )}
         {!isPack && <div style={{marginBottom:26}}/>}
@@ -1774,16 +1777,16 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     );
   }
   if (subscription?.active && credits.available < 9) {
-    // Discovery épuisé : jamais "prochaine image dans une semaine" (ça n'existe pas pour un
-    // pack) — un vrai bouton qui ouvre directement le paiement pour en ajouter, empilable
-    // à l'infini. Phrase simple, sans jargon technique.
+    // First Payment épuisé : on ne repropose plus jamais le pack à 99$ (achat unique à vie) —
+    // on pousse vers la Complétion Starter (150$), le chemin prévu après First Payment.
     if (subscription?.type === 'pack') {
       return (
         <button onClick={() => {
-          const productId = PLAN_CHECKOUT_IDS['discovery-once'];
+          const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
+          const productId = discoveryPlan?.completion?.productId;
           if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
         }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-          <Icon name="plus" size={13} color="#fff"/> Commandez plus d'images
+          <Icon name="plus" size={13} color="#fff"/> Continuez avec Starter
         </button>
       );
     }
@@ -2196,10 +2199,11 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             {credits.available === 0 && (
               subscription?.type === 'pack' ? (
                 <button onClick={() => {
-                  const productId = PLAN_CHECKOUT_IDS['discovery-once'];
+                  const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
+                  const productId = discoveryPlan?.completion?.productId;
                   if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
                 }} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,color:'#fff',padding:'8px 14px',borderRadius:8,background:C.accent,border:'none',cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
-                  <Icon name="plus" size={12} color="#fff"/> Rechargez vos images
+                  <Icon name="plus" size={12} color="#fff"/> Continuez avec Starter
                 </button>
               ) : (
                 <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
@@ -4314,7 +4318,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout-quarterly:starter': 'Starter trimestriel (-20%) →',
     'checkout-quarterly:pro': 'Pro trimestriel (-20%) →',
     'checkout-quarterly:scale': 'Scale trimestriel (-20%) →',
-    'checkout-upgrade': 'Continuer avec Starter — payer le solde (22.000 FCFA) →',
+    'checkout-upgrade': 'Continuer avec Starter — payer le solde (150$) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4874,9 +4878,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               </button>
 
               {/* Lien First Payment sous le CTA Starter — uniquement en mode Mensuel (toggle
-                  trimestriel désactivé), texte exact fourni par Amar. Masqué si le compte a déjà
-                  utilisé First Payment une fois (has_used_discovery, achat unique à vie). */}
-              {!isCurrent && p.id === 'starter' && !quarterly && !user?.user_metadata?.has_used_discovery && (() => {
+                  trimestriel désactivé), texte exact fourni par Amar. Masqué dès que le compte a
+                  déjà fait UNE transaction, quelle qu'elle soit (has_used_discovery OU simplement
+                  `subscription` non-null = une ligne existe en base, même expirée/inactive) — on
+                  ne propose 99$ qu'à un tout premier achat, jamais à quelqu'un déjà client. */}
+              {!isCurrent && p.id === 'starter' && !quarterly && !user?.user_metadata?.has_used_discovery && !subscription && (() => {
                 const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
                 if (!discoveryPlan) return null;
                 return (
@@ -4887,7 +4893,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                   </div>
                 );
               })()}
-              {!isCurrent && (p.id !== 'starter' || quarterly || user?.user_metadata?.has_used_discovery) && (
+              {!isCurrent && (p.id !== 'starter' || quarterly || user?.user_metadata?.has_used_discovery || !!subscription) && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
                   {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Satisfait ou 100% remboursé</span></>}
