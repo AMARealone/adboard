@@ -3313,8 +3313,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
             <div style={{fontSize:13,color:'rgba(255,255,255,0.75)',lineHeight:1.55,marginBottom:22}}>
               Avec Discovery vous avez trouvé ce qui marche. Mais avec <strong style={{color:'#fff'}}>Starter</strong> multipliez ce qui <em>performe</em> et faites <em>exploser vos revenus</em>.
             </div>
-            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{width:'100%',padding:'11px',borderRadius:10,border:'none',background:`linear-gradient(135deg, ${C.accent}, #7C3AED)`,color:'#fff',cursor:'pointer',fontFamily:'inherit',boxShadow:`0 4px 18px ${C.accent}55`,display:'flex',flexDirection:'column',alignItems:'center',gap:1}}>
-              <span style={{fontWeight:700,fontSize:14}}>Commencer avec Starter</span>
+            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-upgrade-from-discovery'])} style={{width:'100%',padding:'11px',borderRadius:10,border:'none',background:`linear-gradient(135deg, ${C.accent}, #7C3AED)`,color:'#fff',cursor:'pointer',fontFamily:'inherit',boxShadow:`0 4px 18px ${C.accent}55`,display:'flex',flexDirection:'column',alignItems:'center',gap:1}}>
+              <span style={{fontWeight:700,fontSize:14}}>Compléter avec Starter</span>
               <span style={{fontWeight:500,fontSize:10.5,opacity:0.85}}>9 images/semaine</span>
             </button>
             <div style={{fontSize:10,color:'rgba(255,255,255,0.45)',marginTop:11}}>🔒 Paiement 100% sécurisé · Satisfait ou remboursé</div>
@@ -4614,6 +4614,19 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
   const isMobile = useIsMobile();
   const [quarterly, setQuarterly] = useState(false); // par défaut sur mensuel
   const onCta = async (plan) => {
+    // Passerelle First Payment → Starter : si le compte a déjà un First Payment actif et clique
+    // sur Starter, on ne doit JAMAIS lui facturer le plein tarif (249$) — seulement le solde de
+    // Completion (150$, prd_c0ga3snp).
+    if (plan.id === 'starter' && subscription?.active && subscription.plan === 'discovery') {
+      const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
+      const completion = discoveryPlan?.completion;
+      if (completion) {
+        if (onOpenPayment) { startCheckout(completion.productId, onOpenPayment); return; }
+        const popup = window.open('', '_blank') || window;
+        popup.location.href = completion.checkout;
+        return;
+      }
+    }
     const cycle = plan.isPack ? 'once' : (quarterly ? 'quarterly' : 'monthly');
     const cycleData = plan[cycle];
     try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
@@ -5882,8 +5895,8 @@ const views = {
           <span style={{flex:'1 1 auto',fontSize:isMobile?12:12.5,fontWeight:600,color:'#fff',lineHeight:1.35,minWidth:0}}>
             Passe aux choses sérieuses avec <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>CONVERSION STARTER</strong>.
           </span>
-          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-monthly'])} style={{padding:isMobile?'7px 12px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?11.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
-            S'abonner
+          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-upgrade-from-discovery'])} style={{padding:isMobile?'7px 12px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?11.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
+            Compléter
           </button>
           <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
             <Icon name="x" size={13} color="rgba(255,255,255,0.75)"/>
