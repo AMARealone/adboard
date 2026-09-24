@@ -644,8 +644,9 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       </button>
       {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
         // Cas spécial First Payment (ex-Discovery) actif : ce bloc ne doit plus proposer de
-        // repayer Starter plein tarif (249$), mais uniquement le solde de Completion (150$) —
-        // c'est le "paiement restant pour continuer de travailler avec nous" demandé par Amar.
+        // repayer Starter plein tarif (49.900 FCFA), mais uniquement le solde de Completion
+        // (33.000 FCFA) — c'est le "paiement restant pour continuer de travailler avec nous"
+        // demandé par Amar.
         if (subscription?.active && subscription.plan === 'discovery') {
           const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
           const completion = discoveryPlan?.completion;
@@ -654,7 +655,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
               <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>Continuer avec Starter</div>
               <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>Paiement restant pour continuer de travailler avec nous ce mois-ci</div>
-              <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>${completion.price}</div>
+              <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(completion.price)}</div>
               <button onClick={() => {
                 if (onOpenPayment) { startCheckout(completion.productId, onOpenPayment); return; }
                 const popup = window.open('', '_blank') || window;
@@ -679,7 +680,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
             <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images{nextPlan.isPack?' incluses':' / semaine'} · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
-            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>${cycleData.price}{!nextPlan.isPack && <span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span>}</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}{!nextPlan.isPack && <span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span>}</div>
             <button onClick={() => {
               const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-${nextCycle}`];
               if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
@@ -4318,7 +4319,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout-quarterly:starter': 'Starter trimestriel (-20%) →',
     'checkout-quarterly:pro': 'Pro trimestriel (-20%) →',
     'checkout-quarterly:scale': 'Scale trimestriel (-20%) →',
-    'checkout-upgrade': 'Continuer avec Starter — payer le solde (150$) →',
+    'checkout-upgrade': 'Continuer avec Starter — payer le solde (33.000 FCFA) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4440,42 +4441,41 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
   );
 };
 
-// MAJ pricing (le plus récent) : dollars fixes, pas de priceBarre (aucune référence USD
-// fournie) ni de conversion de devise — Chariow gère la devise locale au checkout uniquement.
-// Discovery devient First Payment (passerelle vers Starter) + un objet `completion` pour le
-// solde (150$, prd_c0ga3snp) qui complète jusqu'au tarif Starter plein (249$).
+// MAJ pricing (le plus récent) : retour aux tarifs en FCFA fixes, avec convertPrice() réactivé
+// pour l'affichage (voir plus bas dans le fichier) — Chariow gère toujours la devise réelle au
+// moment du checkout, ce convertisseur n'est qu'un affichage indicatif avant paiement.
 const PLANS = [
   {
     id:'discovery', name:'First Payment', color:C.gray, best:false, isPack:true,
     tagline:"Une première production stratégique complète, pour voir notre travail avant de vous engager sur le mois.",
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    once: { price:99, prixImg:11, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
-    completion: { price:150, productId:'prd_c0ga3snp', checkout:'https://shop.adstackofficial.com/prd_c0ga3snp/checkout' },
+    once: { price:17000, prixImg:1889, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
+    completion: { price:33000, productId:'prd_c0ga3snp', checkout:'https://shop.adstackofficial.com/prd_c0ga3snp/checkout' },
   },
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 9, produitsPerWeek: '1',
-    monthly: { price:249, prixImg:7, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:200, prixImg:6, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:49900, prixImg:1386, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:40000, prixImg:1111, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 18, produitsPerWeek: '1 à 2',
-    monthly: { price:499, prixImg:7, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:400, prixImg:6, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:99900, prixImg:1388, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:80000, prixImg:1111, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
     ctaText:'Démarrer Maintenant',
     imagesPerWeek: 36, produitsPerWeek: '1 à 4',
-    monthly: { price:749, prixImg:5, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:600, prixImg:4, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:149900, prixImg:1041, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:120000, prixImg:833, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -4809,10 +4809,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               )}
               <div style={{fontSize:11,color:C.text,lineHeight:1.4,marginBottom:14,minHeight:28}}>{p.tagline}</div>
 
-              {/* Plus de prix barré ni de conversion de devise : tarifs fixes en dollars pour
-                  tout le monde — Chariow affiche la devise locale uniquement au checkout. */}
+              {/* Prix en FCFA, convertis dans la devise locale du visiteur via convertPrice()
+                  (geo-détection + taux de change) — Chariow reste la source de vérité au
+                  moment du checkout, cet affichage n'est qu'indicatif. */}
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-                <span style={{fontSize:36,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>${cycleData.price}</span>
+                <span style={{fontSize:30,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
                 {!p.isPack && quarterly && (
                   <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan trimestriel</span>
@@ -4888,7 +4889,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 return (
                   <div style={{marginTop:10,textAlign:'center'}}>
                     <a href="javascript:void(0)" onClick={() => onCta(discoveryPlan)} style={{fontSize:10.5,fontWeight:600,color:C.sec,textDecoration:'underline',textUnderlineOffset:2,cursor:'pointer',lineHeight:1.4}}>
-                      ou pour <strong style={{color:C.accent}}>${discoveryPlan.once.price}</strong> laissez notre <strong style={{color:C.text}}>équipe</strong> vous faire une première <strong style={{color:C.text}}>production stratégique</strong>, puis vous complétez les <strong style={{color:C.accent}}>${discoveryPlan.completion.price}</strong> qu'après avoir vu le résultat
+                      ou pour <strong style={{color:C.accent}}>{convertPrice(discoveryPlan.once.price)}</strong> laissez notre <strong style={{color:C.text}}>équipe</strong> vous faire une première <strong style={{color:C.text}}>production stratégique</strong>, puis vous complétez les <strong style={{color:C.accent}}>{convertPrice(discoveryPlan.completion.price)}</strong> qu'après avoir vu le résultat
                     </a>
                   </div>
                 );
