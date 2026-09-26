@@ -1900,12 +1900,22 @@ textarea::placeholder { color: var(--muted); }
     <button id="f-email" class="fsel" onclick="toggleFiltreCanal('f-email')" style="cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:all .15s">
       ✉️ Email
     </button>
+    <div id="count-p" style="margin-left:auto;font-size:12.5px;font-weight:700;color:var(--muted);white-space:nowrap;padding:0 4px">—</div>
+  </div>
+
+  <div id="bulkbar-p" style="display:none;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;margin-bottom:12px">
+    <span id="bulkcount-p" style="font-size:12.5px;font-weight:700;color:var(--white)">0 sélectionné(s)</span>
+    <button class="btn btn-green btn-sm" onclick="bulkMoveToSuivi()">Déplacer vers Suivi</button>
+    <button class="btn btn-sm" onclick="bulkMarkWaInvalide()" style="background:var(--surface3);color:var(--text2)">🚫 Marquer WhatsApp invalide</button>
+    <button class="btn btn-red btn-sm" onclick="bulkDeleteProspects()">Supprimer</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearSelectionP()" style="margin-left:auto">Annuler la sélection</button>
   </div>
 
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
+          <th style="width:34px"><input type="checkbox" id="selectall-p" onchange="toggleSelectAllP(this.checked)"></th>
           <th>Date</th>
           <th>Marque</th>
           <th>Produit</th>
@@ -1914,7 +1924,7 @@ textarea::placeholder { color: var(--muted); }
         </tr>
       </thead>
       <tbody id="tbody-p">
-        <tr><td colspan="6"><div class="loading"><div class="spinner"></div>Chargement...</div></td></tr>
+        <tr><td colspan="7"><div class="loading"><div class="spinner"></div>Chargement...</div></td></tr>
       </tbody>
     </table>
   </div>
@@ -2658,6 +2668,92 @@ function toggleFiltreCanal(id) {
   filterP();
 }
 
+// Sélection multiple — vue Prospect. Réinitialisée à chaque appel de filterP() (changement de
+// filtre ou re-render après action) : on ne garde jamais une sélection sur des lignes qui ne
+// sont plus visibles ou plus dans DB, ça éviterait des actions groupées sur les mauvaises fiches.
+let selectionP = new Set();
+
+function clearSelectionP() {
+  selectionP.clear();
+  document.querySelectorAll('.chk-p').forEach(cb => cb.checked = false);
+  const selectAll = document.getElementById('selectall-p');
+  if (selectAll) selectAll.checked = false;
+  updateBulkBarP();
+}
+
+function toggleSelectAllP(checked) {
+  const visibles = Array.from(document.querySelectorAll('.chk-p'));
+  visibles.forEach(cb => {
+    cb.checked = checked;
+    if (checked) selectionP.add(cb.dataset.id); else selectionP.delete(cb.dataset.id);
+  });
+  updateBulkBarP();
+}
+
+function toggleSelectOneP(id, checked) {
+  if (checked) selectionP.add(id); else selectionP.delete(id);
+  const selectAll = document.getElementById('selectall-p');
+  const visibles = document.querySelectorAll('.chk-p');
+  if (selectAll) selectAll.checked = visibles.length > 0 && Array.from(visibles).every(cb => cb.checked);
+  updateBulkBarP();
+}
+
+function updateBulkBarP() {
+  const bar = document.getElementById('bulkbar-p');
+  const count = document.getElementById('bulkcount-p');
+  if (!bar || !count) return;
+  if (selectionP.size > 0) {
+    bar.style.display = 'flex';
+    count.textContent = `${selectionP.size} sélectionné(s)`;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+async function bulkMoveToSuivi() {
+  const ids = Array.from(selectionP);
+  if (!ids.length) return;
+  if (!confirm(`Déplacer ${ids.length} prospect(s) vers Suivi ?`)) return;
+  for (const id of ids) {
+    // Même logique que markContacted (canal réel si connu, sinon repli sur l'ancienne
+    // heuristique) — appliquée un par un pour ne pas dupliquer cette règle ailleurs.
+    const p = DB.find(x => x.id === id);
+    const canal = p?.dernier_canal_clique || (p?.lien_instagram ? 'instagram' : 'whatsapp');
+    await patch(id, { statut: 'en_suivi', date_contact: new Date().toISOString(), canal_contact: canal });
+  }
+  toast(`${ids.length} prospect(s) déplacé(s) vers Suivi`);
+  selectionP.clear();
+  render();
+}
+
+async function bulkMarkWaInvalide() {
+  const ids = Array.from(selectionP);
+  if (!ids.length) return;
+  if (!confirm(`Marquer le WhatsApp de ${ids.length} prospect(s) comme invalide ? Les numéros restent disponibles pour le SMS.`)) return;
+  for (const id of ids) {
+    const p = DB.find(x => x.id === id);
+    if (p) p.whatsapp_invalide = true;
+    await patch(id, { whatsapp_invalide: true });
+  }
+  toast(`WhatsApp retiré pour ${ids.length} prospect(s) — numéros conservés pour SMS`);
+  selectionP.clear();
+  render();
+}
+
+async function bulkDeleteProspects() {
+  const ids = Array.from(selectionP);
+  if (!ids.length) return;
+  if (!confirm(`Retirer ${ids.length} prospect(s) du pipeline ? Ils resteront dans Contacts.`)) return;
+  for (const id of ids) {
+    const p = DB.find(x => x.id === id);
+    if (p) p.statut = 'archive';
+    await patch(id, { statut: 'archive' });
+  }
+  toast(`${ids.length} prospect(s) retiré(s) du pipeline`);
+  selectionP.clear();
+  render();
+}
+
 function filterP() {
   const q = (document.getElementById('q-p')?.value || '').toLowerCase();
   const pays = document.getElementById('f-pays')?.value || '';
@@ -2683,15 +2779,25 @@ function filterP() {
     return true;
   });
 
+  // Compteur — reflète exactement ce que les filtres actifs (recherche + pays + score +
+  // canaux, seuls ou combinés) donnent, jamais une estimation.
+  const countEl = document.getElementById('count-p');
+  if (countEl) countEl.textContent = `${data.length} prospect${data.length > 1 ? 's' : ''}`;
+
+  // Sélection réinitialisée à chaque filtrage — voir commentaire sur selectionP plus haut.
+  selectionP.clear();
+  updateBulkBarP();
+
   const tb = document.getElementById('tbody-p');
   if (!data.length) {
-    tb.innerHTML = `<tr><td colspan="6"><div class="empty"><div class="empty-title">Aucun prospect</div>La liste est vide</div></td></tr>`;
+    tb.innerHTML = `<tr><td colspan="7"><div class="empty"><div class="empty-title">Aucun prospect</div>La liste est vide</div></td></tr>`;
     return;
   }
 
   tb.innerHTML = data.map(p => {
     const sc = p.score >= 80 ? 'tag-high' : p.score >= 60 ? 'tag-mid' : 'tag-low';
     return `<tr>
+      <td><input type="checkbox" class="chk-p" data-id="${p.id}" onchange="toggleSelectOneP('${p.id}', this.checked)"></td>
       <td style="color:var(--muted)">${p.date_collecte || '—'}</td>
       <td>
         <div style="font-weight:700;color:var(--white)">${p.nom_marque || '—'}</div>
