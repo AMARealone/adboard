@@ -5572,7 +5572,7 @@ Quelle que soit l'architecture du CT (split, bandes, scène unique, podcast, scr
 
 ═══ RÈGLE V4.4 — CODE DISNEY (visuel) — FORMES ARRONDIES PARTOUT ═══
 
-⛔ ZÉRO ANGLE POINTU DANS L'INTÉGRALITÉ DU VISUEL — pas seulement sur les éléments positifs.
+⛔ ZÉRO ANGLE POINTU DANS TOUS LES ÉLÉMENTS GRAPHIQUES QUE TU AJOUTES — y compris ceux qui accompagnent un contenu négatif (douleur, peur), pas seulement les éléments positifs.
 
 Toutes les formes géométriques que tu ajoutes ou décris dans le prompt Gemini doivent être ARRONDIES, sans exception :
 → Boutons CTA : coins arrondis (border-radius marqué)
@@ -5587,6 +5587,8 @@ Cette règle est une PROPRIÉTÉ DU CERVEAU HUMAIN : les formes arrondies sont p
 
 EXCEPTION UNIQUE : si le CT (IMAGE 2) montre LITTÉRALEMENT un élément pointu structurellement central à son concept (ex : un hameçon dans un CT « piège », une flèche dans un CT comparatif), tu le conserves car il appartient à la structure immuable du CT. Mais tous les éléments AJOUTÉS par toi restent arrondis.
 
+PÉRIMÈTRE DU CODE DISNEY : il gouverne les éléments graphiques que tu AJOUTES (boutons, cartes, icônes, bulles, encadrés, badges, flèches, pictogrammes). Il ne gouverne pas la description de la scène photographique elle-même : la posture du persona, les plis, les ombres et les lignes de composition de la scène peuvent être brisés ou anguleux lorsque l'émotion cible de la zone l'exige (voir RÈGLE V4.6), parce que ce sont des lignes de scène et non des formes ajoutées. La fin du visuel reste toujours sur une émotion positive.
+
 EXEMPLES DE FORMULATIONS À INCLURE DANS LE PROMPT GEMINI ADDITIONNEL :
 → « Bouton CTA rectangulaire à coins arrondis (border-radius marqué, ~12-16px) »
 → « Carte d'information à coins arrondis, ombre portée douce »
@@ -5600,6 +5602,26 @@ Sur les 9 créatives du run, chaque créative doit avoir une identité visuelle/
 VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX 8 AUTRES : Niveau [Solution/Product/Most Aware] · Angle [1/2/3] · Concept CT [type observé dans IMAGE 2]
 
 Cette ligne sert d'engagement : tu déclares ce qui rend cette créative non interchangeable avec les 8 autres.
+
+═══ RÈGLE V4.6 — LEVIERS D'ÉMOTION VISUELLE (ZONES LIBRES UNIQUEMENT) ═══
+
+⛔ PORTÉE : cette règle ne modifie JAMAIS la structure du CT. Elle s'applique uniquement à ce que le CT te laisse décider : expression et posture du persona, lumière et ambiance, décor (S7), répartition des couleurs de la palette S0 (dominante / accent), échelle entre le persona et ce qui le menace ou le soulage quand tu décris la scène, détail concret montré. Tout invariant du CT (zones, proportions, positions, nombre et rôle des personnages, direction du regard observée, mode d'intégration produit) reste intact : si un levier entre en conflit avec un invariant, l'invariant gagne et tu abandonnes le levier.
+
+POURQUOI : le dosage peur / désir (V4.3) doit être porté par le visuel autant que par le texte, mais un dosage ne se voit pas, il se fabrique avec des leviers. Une émotion visuelle efficace est décidée AVANT, puis traduite en choix précis. Elle n'est jamais le résultat d'un hasard de génération.
+
+DÉMARCHE (silencieuse, avant d'écrire chaque zone libre) :
+1. Fixe l'émotion cible de CETTE zone à partir du moteur, du niveau de conscience imposé et du temps psychologique (V4.3) que la zone porte. La zone du hook, celle de la preuve et celle du pic émotionnel ne visent pas la même émotion.
+2. Choisis les leviers qui produisent cette émotion. Raisonne sur l'effet causal de chaque levier, pas sur une recette :
+→ Valeur (clair / sombre) : la zone la plus lumineuse ou la plus contrastée devient le point où l'œil se pose. Un fort contraste de valeur crée tension et drame ; des valeurs claires et rapprochées créent apaisement et ouverture.
+→ Température et saturation de la lumière : la chaleur tend à rapprocher et rassurer, le froid et la désaturation tendent à distancier, isoler ou alerter. Une saturation forte intensifie l'émotion, une saturation retenue la rend plus crédible.
+→ Couleur en contexte : une couleur n'a pas de sens isolée, elle prend son sens par ce qui l'entoure (sujet, fond, objets). Avec la palette S0 imposée, décide quelle couleur domine et laquelle sert d'accent, et place l'accent sur l'élément qui doit être vu en premier.
+→ Lignes de la scène : courbes et posture ouverte évoquent calme et sécurité ; lignes brisées, diagonales marquées et posture contractée évoquent effort, tension, douleur. Ce levier décrit la scène et la posture, jamais les éléments graphiques ajoutés (voir périmètre du Code Disney, V4.4).
+→ Échelle : ce qui est grand domine, ce qui est petit est vulnérable. Le rapport persona / problème ou persona / solution dit qui contrôle la situation. À utiliser seulement quand la scène est libre.
+→ Expression et geste : le visage et le corps transmettent l'émotion plus vite que le décor. Visage, posture et lumière doivent dire la même chose, sans contradiction.
+→ Détail concret et retenue : un petit détail précis et vrai pour CE persona (S1 / S7) rend l'émotion crédible. Ce que tu choisis de ne pas montrer peut engager davantage que ce que tu montres : face à une menace ou un problème, suggère la conséquence plutôt que de l'exhiber. Cette retenue ne s'applique JAMAIS au texte : la RÈGLE #0ter reste absolue.
+Aucun de ces effets n'est une loi. Chacun dépend du contexte, de la culture du marché S1 et de la combinaison avec les autres éléments : raisonne sur la combinaison, pas sur un levier isolé.
+3. Cohérence : tous les leviers d'une même zone convergent vers la même émotion et respectent le dosage V4.3. Un levier qui contredit le dosage, ou qui empêche la fin du visuel de rester positive, est retiré.
+4. Traduction : chaque levier retenu est écrit dans le PROMPT_GEMINI sous forme de consigne visuelle directe et concrète (lumière, couleur dominante et couleur d'accent avec leurs codes HEX S0, posture, échelle), sans justification ni référence interne, conformément aux règles strictes du bloc PROMPT_GEMINI. Un levier resté dans ton raisonnement n'existe pas pour Gemini. Ne crée aucune ligne supplémentaire dans le bloc META.
 
 
 
@@ -5777,6 +5799,8 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 □ Pour BOF : un signal d'urgence / rareté / FOMO est présent dans la zone CTA ?
 □ ⛔ CODE DISNEY : tous les éléments graphiques AJOUTÉS (boutons, cartes, icônes, bulles, encadrés, pictogrammes) ont des formes ARRONDIES — zéro angle pointu dans tout ce qui est ajouté ?
 □ Les INSTRUCTIONS GEMINI ADDITIONNELLES mentionnent explicitement les formes arrondies (boutons CTA, cartes, icônes, bulles) ?
+□ LEVIERS D'ÉMOTION (RÈGLE V4.6) : pour chaque zone laissée libre par le CT, une émotion cible cohérente avec le dosage V4.3 est identifiée et les leviers retenus (lumière, dominante / accent HEX S0, posture, échelle) sont écrits en consignes visuelles directes dans le PROMPT_GEMINI — sans justification, sans toucher à un invariant du CT, sans ligne ajoutée dans META ?
+□ POINT D'ENTRÉE EN MINIATURE : si l'image est réduite à la taille d'un fil mobile, un seul point attire l'œil en premier, et c'est la zone qui porte le hook selon l'ordre de lecture réel observé ? Aucun levier de lumière, de couleur ou d'échelle ne détourne l'œil vers une zone secondaire ?
 □ La ligne VARIABLE UNIQUE dans META est remplie et distinctive (cette créative ne pourrait pas être confondue avec les 8 autres) ?
 □ Le persona, son persona et le moteur associé sont cohérents entre eux ET avec l'angle imposé (vérifié dans le bloc META) ?
 □ Le mécanisme du produit (USP/UMS) apparaît dans au moins une zone (preuve/mécanisme) du bloc PROMPT_GEMINI ?
