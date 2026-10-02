@@ -5411,36 +5411,6 @@ export default function Platform() {
     return () => clearTimeout(t);
   }, []);
 
-  // ── Widget trust screens — n'apparaît QUE lors de la toute première session sur cet appareil
-  // (généralement quand le prospect atterrit via un lien de démo). Le flag localStorage est posé
-  // dès le déclenchement du cycle, pas seulement à la fermeture — sinon quelqu'un qui quitte
-  // l'onglet sans cliquer la croix le reverrait à sa prochaine visite, ce qui n'est pas voulu. ──
-  const TRUST_IMAGES = ['/assets/vente/trust/trust-01.jpg','/assets/vente/trust/trust-02.jpg','/assets/vente/trust/trust-03.jpg','/assets/vente/trust/trust-04.jpg','/assets/vente/trust/trust-05.jpg'];
-  const [trustVisible, setTrustVisible] = useState(false);
-  const [trustSrc, setTrustSrc] = useState('');
-  const trustDismissedRef = useRef(false);
-  const trustIdxRef = useRef(0);
-  useEffect(() => {
-    try { if (localStorage.getItem('adstack_trust_seen')) return; } catch(e) {}
-    let cycleTimer, hideTimer;
-    const showNext = () => {
-      if (trustDismissedRef.current) return;
-      setTrustSrc(TRUST_IMAGES[trustIdxRef.current % TRUST_IMAGES.length]);
-      trustIdxRef.current++;
-      setTrustVisible(true);
-      clearTimeout(hideTimer);
-      hideTimer = setTimeout(() => { if (!trustDismissedRef.current) setTrustVisible(false); }, 5000);
-    };
-    const startTimer = setTimeout(() => {
-      if (trustDismissedRef.current) return;
-      try { localStorage.setItem('adstack_trust_seen', '1'); } catch(e) {}
-      showNext();
-      cycleTimer = setInterval(showNext, 10000);
-    }, 3000);
-    return () => { clearTimeout(startTimer); clearTimeout(hideTimer); clearInterval(cycleTimer); };
-  }, []);
-  const trustDismiss = () => { trustDismissedRef.current = true; setTrustVisible(false); };
-
   // Vérifie si un achat vient de se conclure (appelé après fermeture de la modale de paiement)
   const checkRecentPurchase = async () => {
     try {
@@ -6028,20 +5998,6 @@ const views = {
 
     {paymentProductId && (
       <PaymentModal productId={paymentProductId} userEmail={user?.email} onClose={()=>{ setPaymentProductId(null); checkRecentPurchase(); }}/>
-    )}
-
-    {trustSrc && (
-      <div style={{
-        position:'fixed', bottom:100, left:14, zIndex:550,
-        opacity: trustVisible?1:0, visibility: trustVisible?'visible':'hidden',
-        transform: trustVisible ? 'translateY(0) scale(1)' : 'translateY(10px) scale(0.92)',
-        transition: trustVisible ? 'opacity .4s ease,transform .4s ease' : 'opacity .4s ease,transform .4s ease,visibility 0s linear .4s',
-      }}>
-        <div style={{position:'relative',width: isMobile?134:180,aspectRatio:'3/4',borderRadius:14,overflow:'hidden',background:'#0F1118',boxShadow:'0 0 20px 3px rgba(31,182,255,0.5),0 8px 22px rgba(0,0,0,0.55)',border:'2px solid rgba(31,182,255,0.55)'}}>
-          <img src={trustSrc} alt="" style={{width:'100%',height:'100%',objectFit:'contain',display:'block'}}/>
-          <button onClick={trustDismiss} aria-label="Fermer" style={{position:'absolute',top:4,right:4,width:20,height:20,borderRadius:'50%',background:'rgba(0,0,0,0.65)',border:'none',color:'#fff',fontSize:11,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1}}>✕</button>
-        </div>
-      </div>
     )}
 
     {showPrepurchaseForm && (
