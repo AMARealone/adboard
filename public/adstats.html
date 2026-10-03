@@ -390,6 +390,24 @@ body {
   color: #0a0a0a;
 }
 
+/* ── Appels en retard (>24 h après la réservation, appel pas fait) : glow ROUGE persistant.
+   Contrairement au glow "nouveauté" ci-dessus, il ne s'éteint PAS à l'ouverture de l'onglet :
+   il reste tant que l'appel n'est pas coché "fait" ou la réservation annulée. Le libellé du
+   groupe (souvent replié) passe aussi en rouge pour que l'alerte reste visible. ── */
+@keyframes navGlowPulseRed {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,76,106,.55); }
+  50%      { box-shadow: 0 0 0 5px rgba(255,76,106,0); }
+}
+.nav-item.nav-glow-red {
+  animation: navGlowPulseRed 1.4s ease-in-out infinite;
+  border-radius: 8px;
+}
+.nav-item.nav-glow-red .nav-count {
+  background: var(--red);
+  color: #fff;
+}
+.nav-group.has-alert > .nav-label { color: var(--red); }
+
 /* Pipeline mini */
 .pipeline-mini {
   padding: 14px 18px;
@@ -1662,6 +1680,11 @@ textarea::placeholder { color: var(--muted); }
           <span>Suivi</span>
           <span class="nav-count" id="nc-suivi">0</span>
         </button>
+        <button class="nav-item" id="nav-item-appels" onclick="goTo('appels',this)">
+          <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <span>Appels</span>
+          <span class="nav-count" id="nc-appels">0</span>
+        </button>
         <button class="nav-item green" id="nav-item-leads" onclick="goTo('leads',this)">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span>Leads</span>
@@ -2036,6 +2059,24 @@ textarea::placeholder { color: var(--muted); }
   <div id="donnees-detail-corps"></div>
 </div>
 
+<!-- ── APPELS ── -->
+<div class="page" id="page-appels">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Appels</div>
+      <div class="page-sub">Les plus anciennes réservations en haut — alerte rouge 24 h après la réservation.</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="search-wrap" style="width:220px">
+        <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Rechercher un appel..." id="appels-search" oninput="renderAppels()" style="font-size:13px">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
+    </div>
+  </div>
+  <div id="appels-list"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+</div>
+
 <div class="page" id="page-leads">
   <div class="page-header">
     <div>
@@ -2400,7 +2441,7 @@ let noteId = null, leadId = null, achatId = null, achatSel = null;
 // NAV
 // ═══════════════════════════════════════
 const MOB_TITLES = {
-  prospects:'À contacter', suivi:'Suivi', demo:'Démo',
+  prospects:'À contacter', suivi:'Suivi', appels:'Appels', demo:'Démo',
   leads:'Leads', dashboard:'Dashboard', templates:'Templates',
   contacts:'Contacts', acheteurs:'Acheteurs', upsell:'Upsell'
 };
@@ -2511,6 +2552,7 @@ function goTo(name, btn) {
   if (name === 'emails-sequences') renderEmailsSequences();
   if (name === 'comportement') renderComportement();
   if (name === 'utilisateurs') renderUtilisateurs();
+  if (name === 'appels') renderAppels();
   if (name === 'leads') marquerVuLeads();
   if (name === 'acheteurs') marquerVuClients();
 }
@@ -2597,6 +2639,7 @@ function render() {
   set('nc-prospects', AC.length);
   set('nc-suivi', SV.length);
   set('nc-leads', LD.length);
+  majNavAppels();
   majEffetNouveaute(LD, 'id', 'crm_seen_leads', 'nav-item-leads');
   set('nc-contacts', DB.length);
   // nc-acheteurs mis à jour dans renderClients() — dépend des vraies transactions, chargées
@@ -2626,6 +2669,7 @@ function render() {
 
   filterP();
   filterSuivi(SV);
+  renderAppels();
   renderLeads(LD);
   // Restaurer la page active sans clignotement
   const _activePg = document.getElementById('page-' + _activePage);
@@ -3060,6 +3104,7 @@ function renderSuivi(data) {
     const pid = p.id;
     let _pNotes = {}; try { _pNotes = JSON.parse(p.notes||'{}'); } catch(e) {}
     const demo_envoye  = _pNotes.demo_envoye  || false;
+    const appel_reserve = !!_pNotes.appel_reserve;
     const lien_demo    = _pNotes.lien_demo    || '';
     const produit_demo = _pNotes.produit_demo || p.produit || '';
     const demoStatut = lien_demo
@@ -3081,9 +3126,14 @@ function renderSuivi(data) {
         + (produit_demo ? '<span style="font-size:10px;color:var(--blue);white-space:nowrap;" title="'+produit_demo+'">'+produit_demo+'</span>' : '')
       + '</div>'
       + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Démo (Instagram)':'📱 Envoyer Démo (WhatsApp)')+'</button></div>'
+      + '<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">'
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(demo_envoye?'#25D366':'var(--muted)')+';font-weight:'+(demo_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(demo_envoye?'checked':'')+' style="accent-color:#25D366;cursor:pointer;width:13px;height:13px" onchange="toggleDemoEnvoye(\''+pid+'\',this.checked)">'
         + 'D\u00e9mo envoy\u00e9e</label>'
+      + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(appel_reserve?'#FFB547':'var(--muted)')+';font-weight:'+(appel_reserve?'700':'400')+'">'
+        + '<input type="checkbox" '+(appel_reserve?'checked':'')+' style="accent-color:#FFB547;cursor:pointer;width:13px;height:13px" onchange="toggleAppelReserve(\''+pid+'\',this.checked)">'
+        + 'A r\u00e9serv\u00e9 un appel</label>'
+      + '</div>'
       + '</div>';
   });
 
@@ -3602,13 +3652,21 @@ function pollDemoLink(pid) {
 
 async function remettreAContacter(id) {
   if (!confirm('Remettre ce prospect dans la liste "À contacter" ?')) return;
-  await patch(id, {
+  const _bodyReset = {
     statut: 'a_contacter',
     date_contact: null,
     a_repondu: false,
     interesse: false,
     lead_qualifie: false,
-  });
+  };
+  // Une réservation d'appel n'a plus de sens une fois le suivi annulé : on l'efface aussi.
+  const _pReset = DB.find(x => x.id === id);
+  if (_pReset && appelNotes(_pReset).appel_reserve) {
+    const _nReset = appelNotes(_pReset);
+    ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at'].forEach(k => delete _nReset[k]);
+    _bodyReset.notes = JSON.stringify(_nReset);
+  }
+  await patch(id, _bodyReset);
   // Supprimer la demande de démo en attente si elle existe
   try { await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H }); } catch(e) {}
   toast('Remis dans "À contacter"');
@@ -3626,6 +3684,243 @@ async function toLead(id) {
   toast('Passé en Lead');
   render();
 }
+
+// ═══════════════════════════════════════
+// APPELS — prospects ayant réservé un appel
+// Données dans prospects.notes (JSON), comme demo_envoye / pitch_envoye : aucune colonne
+// Supabase à créer.
+//   appel_reserve    (bool)  coché dans Suivi, "A réservé un appel"
+//   appel_reserve_at (ISO)   posé AU MOMENT de la coche — départ du délai de 24 h
+//   appel_fait       (bool)  coché dans la section Appels
+//   appel_fait_at    (ISO)
+// Décocher / annuler la réservation efface les 4 champs : le délai repart de zéro si on
+// recoche plus tard.
+// ═══════════════════════════════════════
+const APPEL_DELAI_MS = 24 * 3600 * 1000;
+
+function appelNotes(p) {
+  try { return JSON.parse((p && p.notes) || '{}') || {}; } catch(e) { return {}; }
+}
+// Dans la liste Appels : réservation cochée, hors prospects remis en "À contacter" / archivés.
+function appelDansListe(p) {
+  if (!p || p.statut === 'a_contacter' || p.statut === 'archive') return false;
+  // Pré-test texte (sans dépendre du formatage du JSON) : évite de parser les notes des
+  // ~20 000 fiches à chaque rendu — seules celles qui mentionnent appel_reserve sont parsées
+  if (typeof p.notes !== 'string' || p.notes.indexOf('appel_reserve') === -1) return false;
+  return !!appelNotes(p).appel_reserve;
+}
+function appelReserveTs(n) {
+  const t = Date.parse((n && n.appel_reserve_at) || '');
+  return isNaN(t) ? null : t;
+}
+function appelEnRetard(n, now) {
+  if (!n || n.appel_fait) return false;
+  const t = appelReserveTs(n);
+  return t !== null && (now - t) >= APPEL_DELAI_MS;
+}
+function appelFormatDuree(ms) {
+  if (ms < 0) ms = 0;
+  const min = Math.floor(ms / 60000);
+  if (min < 60) return Math.max(min, 1) + ' min';
+  const h = Math.floor(min / 60);
+  if (h < 24) return h + 'h' + (min % 60 ? String(min % 60).padStart(2, '0') : '');
+  const j = Math.floor(h / 24);
+  return j + 'j' + (h % 24 ? ' ' + (h % 24) + 'h' : '');
+}
+
+// Compteur du menu (appels pas encore faits) + glow rouge si au moins un est en retard
+function majNavAppels() {
+  const now = Date.now();
+  const attente = DB.filter(appelDansListe).filter(p => !appelNotes(p).appel_fait);
+  const retard = attente.filter(p => appelEnRetard(appelNotes(p), now)).length;
+  set('nc-appels', attente.length);
+  const btn = document.getElementById('nav-item-appels');
+  if (btn) {
+    btn.classList.toggle('nav-glow-red', retard > 0);
+    const grp = btn.closest('.nav-group');
+    if (grp) grp.classList.toggle('has-alert', retard > 0);
+  }
+  return retard;
+}
+
+function rafraichirApresAppel() {
+  filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
+  renderAppels();
+  majNavAppels();
+}
+
+async function toggleAppelReserve(id, val) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  if (val) {
+    s.appel_reserve = true;
+    s.appel_reserve_at = new Date().toISOString();   // départ des 24 h
+    delete s.appel_fait; delete s.appel_fait_at;
+  } else {
+    delete s.appel_reserve; delete s.appel_reserve_at;
+    delete s.appel_fait;    delete s.appel_fait_at;
+  }
+  p.notes = JSON.stringify(s);
+  rafraichirApresAppel();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) {
+    p.notes = ancien;
+    rafraichirApresAppel();
+    return;
+  }
+  toast(val ? 'Appel réservé ✓ — rappel dans 24 h' : 'Réservation d\'appel annulée');
+}
+
+async function toggleAppelFait(id, val) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  s.appel_fait = !!val;
+  if (val) s.appel_fait_at = new Date().toISOString(); else delete s.appel_fait_at;
+  p.notes = JSON.stringify(s);
+  rafraichirApresAppel();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) {
+    p.notes = ancien;
+    rafraichirApresAppel();
+    return;
+  }
+  toast(val ? 'Appel marqué fait ✓' : 'Appel remis à faire');
+}
+
+function annulerReservationAppel(id) {
+  const p = DB.find(x => x.id === id);
+  const nom = p?.nom_marque || 'ce prospect';
+  if (!confirm('Annuler la réservation d\'appel de ' + nom + ' ?\nIl disparaît de la liste Appels (la case "A réservé un appel" est décochée dans Suivi).')) return;
+  toggleAppelReserve(id, false);
+}
+
+function contacterPourAppel(id, canal) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  if (canal === 'instagram' && p.lien_instagram) { ouvrirInstagramAvecRythme(p.lien_instagram); return; }
+  const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '');
+  if (numero) window.open('https://wa.me/' + numero, '_blank', 'noopener');
+}
+
+function renderAppels() {
+  const el = document.getElementById('appels-list');
+  if (!el) return;
+  const now = Date.now();
+  const q = (document.getElementById('appels-search')?.value || '').toLowerCase().trim();
+
+  let data = DB.filter(appelDansListe).map(p => ({ p, n: appelNotes(p) }));
+  if (q) data = data.filter(({ p }) =>
+    (p.nom_marque || '').toLowerCase().includes(q) || (p.produit || '').toLowerCase().includes(q));
+
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">' + (q ? 'Aucun résultat' : 'Aucun appel réservé') + '</div>'
+      + (q ? '' : 'Cochez "A réservé un appel" dans Suivi pour qu\'un prospect apparaisse ici') + '</div>';
+    return;
+  }
+
+  // Tri : appels à faire d'abord, du plus ancien au plus récent ; appels faits tout en bas
+  const tsRes = n => { const t = appelReserveTs(n); return t === null ? now : t; };
+  data.sort((a, b) => {
+    const fa = !!a.n.appel_fait, fb = !!b.n.appel_fait;
+    if (fa !== fb) return fa ? 1 : -1;
+    if (fa) return (Date.parse(b.n.appel_fait_at || '') || 0) - (Date.parse(a.n.appel_fait_at || '') || 0);
+    return tsRes(a.n) - tsRes(b.n);
+  });
+
+  const retards = data.filter(({ n }) => appelEnRetard(n, now)).length;
+  const STATUT_LBL = { en_suivi: 'En suivi', lead: 'Lead', acheteur: 'Client', standard: 'Client', scale: 'Client' };
+  const fmtDate = t => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+  let html = '';
+  if (retards > 0) {
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(255,76,106,.06);border:1px solid rgba(255,76,106,.18);border-radius:10px;margin-bottom:16px">'
+          + '<div style="width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse-border-red 1.5s infinite;flex-shrink:0"></div>'
+          + '<div style="font-size:13px;font-weight:700;color:var(--red)">' + retards + ' appel' + (retards > 1 ? 's' : '') + ' à passer maintenant</div>'
+          + '</div>';
+  }
+
+  html += data.map(({ p, n }) => {
+    const fait   = !!n.appel_fait;
+    const retard = appelEnRetard(n, now);
+    const t0     = appelReserveTs(n);
+    const age    = t0 === null ? 0 : now - t0;
+
+    let badge;
+    if (fait) {
+      const tf = Date.parse(n.appel_fait_at || '');
+      badge = '<span style="font-size:10px;font-weight:700;background:rgba(255,255,255,.07);color:var(--muted);padding:2px 8px;border-radius:4px;letter-spacing:.5px">APPEL FAIT' + (isNaN(tf) ? '' : ' · ' + fmtDate(tf)) + '</span>';
+    } else if (retard) {
+      badge = '<span style="font-size:10px;font-weight:800;background:rgba(255,76,106,.12);color:var(--red);padding:2px 8px;border-radius:4px;letter-spacing:.5px;border:1px solid rgba(255,76,106,.25)">À APPELER MAINTENANT</span>';
+    } else {
+      badge = '<span style="font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px">Alerte dans ' + appelFormatDuree(APPEL_DELAI_MS - age) + '</span>';
+    }
+
+    const sousTitre = esc2(p.produit || '—')
+      + (t0 !== null ? ' · Réservé le ' + fmtDate(t0) + (fait ? '' : ' (il y a ' + appelFormatDuree(age) + ')') : '');
+
+    const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '');
+    const btnBase = 'display:inline-flex;align-items:center;gap:6px;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);';
+    let contact = '';
+    if (numero) contact += '<button onclick="contacterPourAppel(\'' + p.id + '\',\'whatsapp\')" style="' + btnBase + 'background:#25D366">📱 WhatsApp</button>';
+    if (p.lien_instagram) contact += '<button onclick="contacterPourAppel(\'' + p.id + '\',\'instagram\')" style="' + btnBase + 'background:linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)">📷 Instagram</button>';
+    if (!contact) contact = '<span style="font-size:11px;color:var(--muted)">Aucun contact enregistré</span>';
+
+    const lienDemo = appelNotes(p).lien_demo || '';
+    const btnDemo = lienDemo
+      ? '<button class="btn btn-ghost btn-sm" data-demo-lien="' + encodeURIComponent(lienDemo) + '" onclick="copyDemoLien(this)" style="color:var(--blue);border-color:rgba(31,182,255,.3)">Copier lien démo</button>'
+      : '';
+
+    const border = fait ? '1px solid var(--border)' : retard ? '1px solid rgba(255,76,106,.35)' : '1px solid var(--border)';
+    const bg     = retard ? 'rgba(255,76,106,.04)' : 'transparent';
+    const anim   = retard ? 'animation:pulse-border-red 1.8s ease-in-out infinite;' : '';
+
+    return '<div style="background:' + bg + ';border:' + border + ';border-radius:12px;padding:16px 20px;margin-bottom:12px;' + anim + (fait ? 'opacity:.55;' : '') + '">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">'
+        + '<div style="min-width:0">'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">'
+            + '<div style="font-size:15px;font-weight:800;color:var(--white)">' + esc2(p.nom_marque || '—') + '</div>'
+            + '<span style="font-size:12px;color:var(--muted)">·</span>'
+            + '<span style="font-size:12px;color:var(--muted)">' + esc2(p.pays || '—') + '</span>'
+            + '<span style="font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 6px">' + (STATUT_LBL[p.statut] || p.statut) + '</span>'
+            + badge
+          + '</div>'
+          + '<div style="font-size:12px;color:var(--muted)">' + sousTitre + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
+          + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
+          + btnDemo
+          + '<button class="btn btn-ghost btn-sm" onclick="annulerReservationAppel(\'' + p.id + '\')" title="Annuler la réservation d\'appel">Annuler la réservation</button>'
+          + '<button class="btn btn-red btn-sm" onclick="deleteProspect(\'' + p.id + '\')">Supprimer</button>'
+        + '</div>'
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">'
+        + contact
+        + '<label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;user-select:none;color:' + (fait ? '#25D366' : 'var(--text2)') + ';font-weight:' + (fait ? '700' : '500') + '">'
+          + '<input type="checkbox" ' + (fait ? 'checked' : '') + ' style="accent-color:#25D366;cursor:pointer;width:15px;height:15px" onchange="toggleAppelFait(\'' + p.id + '\',this.checked)">'
+          + 'Appel fait</label>'
+      + '</div>'
+    + '</div>';
+  }).join('');
+
+  el.innerHTML = html;
+}
+
+// Échappement HTML pour les textes affichés (esc() existant échappe pour JS inline, pas pour HTML)
+function esc2(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Passage automatique en retard (24 h) sans rechargement de page : vérifié chaque minute
+setInterval(function () {
+  try {
+    majNavAppels();
+    if (document.getElementById('page-appels')?.classList.contains('active')) renderAppels();
+  } catch (e) { console.warn('Veille appels:', e.message); }
+}, 60000);
 
 // ═══════════════════════════════════════
 // LEADS
@@ -4342,6 +4637,22 @@ async function renderDashboard() {
   const r = cohorte.filter(p => p.a_repondu).length;
   const i = cohorte.filter(p => p.interesse).length;
   const l = cohorte.filter(p => ['lead','acheteur','standard','scale'].includes(p.statut)).length;
+  // Appels réservés : comptés sur la date de RÉSERVATION (appel_reserve_at, posée à la coche
+  // "A réservé un appel"), dans la même fenêtre de période que la cohorte. Pas sur la date de
+  // contact : on réserve un appel après coup, ce compteur resterait presque toujours à 0.
+  // Une réservation annulée n'a plus de date, donc ne compte plus.
+  const _dansPeriode = (dStr) => {
+    if (!dStr) return false;
+    if (from || to) {
+      if (from && dStr < from) return false;
+      if (to   && dStr > to)   return false;
+      return true;
+    }
+    if (dashPeriod >= 9999) return true;
+    const cutoff = new Date(Date.now() - dashPeriod * 86400000).toISOString().split('T')[0];
+    return dStr >= cutoff;
+  };
+  const appelsRes = DB.filter(p => appelDansListe(p) && _dansPeriode((appelNotes(p).appel_reserve_at || '').slice(0,10))).length;
   // Acheteurs distincts sur la même fenêtre de période que "cohorte" ci-dessus (from/to ou
   // dashPeriod), tirés des vraies transactions — même source que Vue Globale et Vue
   // d'ensemble clics, celui-ci avait été oublié lors du premier passage.
@@ -4371,6 +4682,7 @@ async function renderDashboard() {
     heroEl.innerHTML = etape(c, 'Contactés', 100, false) + fleche
                       + etape(r, 'Réponses',  pct(r), false) + fleche
                       + etape(i, 'Intéressé', pct(i), false) + fleche
+                      + etape(appelsRes, 'Appels', pct(appelsRes), false) + fleche
                       + etape(l, 'Leads',     pct(l), false) + fleche
                       + etape(a, 'Acheteurs', pct(a), true);
   }
@@ -7347,7 +7659,8 @@ function updateMobCounts() {
   const ac = DB.filter(p => p.statut === 'a_contacter').length;
   const sv = DB.filter(p => p.statut === 'en_suivi').length;
   const ld = DB.filter(p => p.statut === 'lead').length;
-  el.textContent = ac + ' · ' + sv + ' · ' + ld;
+  const apRetard = DB.filter(p => appelDansListe(p) && appelEnRetard(appelNotes(p), Date.now())).length;
+  el.textContent = ac + ' · ' + sv + ' · ' + ld + (apRetard ? ' · ☎ ' + apRetard : '');
 }
 // setInterval(load) retiré — provoquait des resets d'état
 loadTemplates();
