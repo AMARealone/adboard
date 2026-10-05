@@ -67,11 +67,6 @@
         },
         {
           "@type": "Question",
-          "name": "Conversion Discovery, comment ça marche ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Un achat unique, pour nous tester sans engagement. Vous payez une fois, vous recevez 9 créatives issues d'une vraie analyse de marché, valables 3 mois. Si vous voulez qu'on continue à produire pour vous chaque semaine, vous passez à un abonnement classique quand vous le souhaitez." }
-        },
-        {
-          "@type": "Question",
           "name": "Je dois faire quoi de mon côté ?",
           "acceptedAnswer": { "@type": "Answer", "text": "Vous connecter à AdBoard et importer votre produit. C'est tout. Vous vous abonnez, vous vous connectez avec Google, vous ajoutez votre produit, on s'occupe du reste chaque semaine. Zéro réunion. Zéro aller-retour. Zéro friction." }
         },
@@ -135,12 +130,7 @@
         {
           "@type": "Question",
           "name": "Quelle est la différence entre les offres ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Discovery (9 images, achat unique sans engagement), Starter (9 images/semaine, 1 produit), Pro (18 images/semaine, 1 à 2 produits), Scale (36 images/semaine, 1 à 4 produits). Plus l'offre est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané." }
-        },
-        {
-          "@type": "Question",
-          "name": "Conversion Discovery, comment ça marche ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Un achat unique, pas un abonnement. Vous payez une fois, vous recevez 9 images à utiliser librement, valables 3 mois. Contrairement aux autres offres, elles ne se renouvellent jamais automatiquement — une fois utilisées, vous pouvez passer à un abonnement classique pour continuer à en recevoir chaque semaine." }
+          "acceptedAnswer": { "@type": "Answer", "text": "Starter (6 images/semaine, 1 produit), Pro (12 images/semaine, 1 à 2 produits), Scale (24 images/semaine, 1 à 4 produits). Plus l'offre est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané." }
         },
         {
           "@type": "Question",
@@ -299,22 +289,22 @@
     /></noscript>
 <!-- ════════════════════════════════════════════════════
      ADSTACK — PAGE DE VENTE COMPLÈTE — PRIX MIS À JOUR
-     Starter: 39.900 | Pro: 79.900 | Scale: 119.900
+     Starter: 19.900 | Pro: 39.900 | Scale: 59.900 (FCFA / mois)
 ════════════════════════════════════════════════════ -->
 <script>
 var ADSTACK_CONFIG = {
-  prix_starter:        "39.900",
+  prix_starter:        "19.900",
   prix_starter_barre:  "80.000",
-  prix_starter_img:    "1108",
-  prix_standard:       "79.900",
+  prix_starter_img:    "835",
+  prix_standard:       "39.900",
   prix_standard_barre: "160.000",
-  prix_standard_img:   "1110",
-  prix_scale:          "119.900",
+  prix_standard_img:   "835",
+  prix_scale:          "59.900",
   prix_scale_barre:    "320.000",
-  prix_scale_img:      "833",
-  url_starter:  "https://ecomaster.mychariow.shop/prd_ljowq8/checkout",
-  url_standard: "https://ecomaster.mychariow.shop/prd_34w031/checkout",
-  url_scale:    "https://ecomaster.mychariow.shop/prd_9fi79y/checkout",
+  prix_scale_img:      "625",
+  url_starter:  "https://shop.adstackofficial.com/prd_ljowq8/checkout",
+  url_standard: "https://shop.adstackofficial.com/prd_34w031/checkout",
+  url_scale:    "https://shop.adstackofficial.com/prd_9fi79y/checkout",
   demo_url:     "https://thefirstquality01.systeme.io/formsdemo",
   webhook:      "https://script.google.com/macros/s/AKfycby-Znkb9OiajxzZrriH-ve-QZERbuwgN-yBYDOMTzsaoMTGSN_bCZ6CSmZB1xn5Ou7eEQ/exec",
   chatbot_api_key: "YOUR_API_KEY_HERE",
@@ -359,7 +349,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 <nav class="adstack-nav">
   <a class="nav-logo" href="#"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" width="80" height="28"><span class="nav-logo-name">AdStack</span></a>
   <div class="nav-right">
-    <a class="nav-cart" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:49900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:49900});setTimeout(function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});},150);">
+    <a class="nav-cart" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:19900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:19900});setTimeout(function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});},150);">
       <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.43H6"/></svg>
       <span class="nav-cart-label">Voir Offres</span>
     </a>
@@ -367,7 +357,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
       <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
       <div class="nav-dropdown" id="navDrop">
         <a class="nav-drop-item" href="#comparatif-honnete" onclick="event.preventDefault();document.getElementById('comparatif-honnete').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
-        <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:49900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:49900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
+        <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:19900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:19900});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
         <a class="nav-drop-item" href="#faq" onclick="event.preventDefault();var el=document.getElementById('faq');if(el)el.scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
         <a class="nav-drop-item" href="/blog/fatigue-creative-facebook-ads.html" style="color:#1FB6FF!important"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Nos Blogs</a>
         <a class="nav-drop-item" href="https://www.adstackofficial.com/adboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg> Retour à AdBoard</a>
@@ -707,6 +697,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .sys-batch-note{font-size:12.5px;max-width:260px}
 }
 </style>
+<!-- SECTION SYSTÈME CRÉATIF DÉSACTIVÉE ("C'est Quoi Un Vrai Système Créatif Qui Fait Croître Votre Marque ?") — pour la réactiver, retirer ce commentaire autour de la section.
 <section class="sys-section" id="systeme-creatif">
   <div class="sys-wrap">
     <h2 class="sys-title">C'est Quoi Un <em>Vrai Système Créatif</em> Qui Fait Croître Votre Marque ?</h2>
@@ -773,6 +764,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <p class="sys-closing">Ce système tourne, que vous soyez en train de vendre, de dormir, ou de gérer autre chose. <strong>Vous : un abonnement. Nous : tout le reste.</strong></p>
   </div>
 </section>
+-->
 <script>(function(){
   var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('is-visible');obs.unobserve(entry.target);}});},{threshold:0.15});
   document.querySelectorAll('.sys-step').forEach(function(el,i){el.style.transitionDelay=(i*0.08)+'s';obs.observe(el);});
@@ -1276,7 +1268,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 <div id="nos-offres" style="background:#0A0A0E;padding:52px 0 0;width:100vw;position:relative;left:50%;margin-left:-50vw;box-sizing:border-box">
   <div style="text-align:center;margin-bottom:24px;padding:0 4%">
     <div style="font-size:11px;color:#5A5D65;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">Nos Offres</div>
-    <h2 style="font-size:clamp(24px,5vw,38px);font-weight:900;letter-spacing:-1px;color:#fff;margin-bottom:10px;line-height:1.15"><span style="background:linear-gradient(120deg,#1FB6FF,#0B5CFF,#2EF2E8);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite">Votre équipe créative orientée scaling.</span></h2>
+    <h2 style="font-size:clamp(24px,5vw,38px);font-weight:900;letter-spacing:-1px;color:#fff;margin-bottom:10px;line-height:1.15">Votre <span style="background:linear-gradient(120deg,#1FB6FF,#0B5CFF,#2EF2E8);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite">équipe créative</span> orientée <span style="background:linear-gradient(120deg,#1FB6FF,#0B5CFF,#2EF2E8);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite">scaling</span>.</h2>
     <p style="font-size:14px;color:#5A5D65;line-height:1.55;margin:0 auto 20px;max-width:520px">Chaque semaine, nous transformons les données de votre marché en angles, concepts et créatives prêtes à tester — <strong style="color:#fff">puis nous utilisons vos retours pour améliorer les prochaines.</strong></p>
 
     <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:20px">
@@ -1327,30 +1319,24 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 // Chariow continue de gérer la devise réelle au moment du checkout, ce convertisseur n'est
 // qu'un affichage indicatif avant paiement.
 var LP_OFFERS = [
-  { id:'discovery', name:'First Payment', isPack:true, color:'#1FB6FF',
-    tagline:"Une première production stratégique complète, pour voir notre travail avant de vous engager sur le mois.",
-    ctaText:'Démarrer Maintenant',
-    once:{ price:17000, prixImg:1889, delivery:'48h', productId:'prd_ywk7ik14' },
-    completion:{ price:33000, productId:'prd_c0ga3snp' },
-    imagesPerWeek:9, produitsPerWeek:'1' },
-  { id:'starter', name:'Conversion Starter', isPack:false, color:'#1FB6FF',
+  { id:'starter', name:'Conversion Starter', color:'#1FB6FF',
     tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:49900, prixImg:1386, delivery:'48h', productId:'prd_ljowq8' },
-    quarterly:{ price:40000, prixImg:1111, delivery:'48h', productId:'prd_wdya3v9h' },
-    imagesPerWeek:9, produitsPerWeek:'1', visuelsLabel:'9 Visuels' },
-  { id:'pro', name:'Conversion Pro', isPack:false, color:'#1FB6FF', best:true,
+    monthly:{ price:19900, prixImg:835, delivery:'24h', productId:'prd_ljowq8' },
+    quarterly:{ price:16000, prixImg:667, delivery:'24h', productId:'prd_wdya3v9h' },
+    imagesPerWeek:6, produitsPerWeek:'1' },
+  { id:'pro', name:'Conversion Pro', color:'#1FB6FF', best:true,
     tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:99900, prixImg:1388, delivery:'48h', productId:'prd_34w031' },
-    quarterly:{ price:80000, prixImg:1111, delivery:'48h', productId:'prd_lnp4ax0b' },
-    imagesPerWeek:18, produitsPerWeek:'1 à 2', visuelsLabel:'18 Visuels Haute Performance' },
-  { id:'scale', name:'Conversion Scale', isPack:false, color:'#1FB6FF',
+    monthly:{ price:39900, prixImg:835, delivery:'24h', productId:'prd_34w031' },
+    quarterly:{ price:32000, prixImg:667, delivery:'24h', productId:'prd_lnp4ax0b' },
+    imagesPerWeek:12, produitsPerWeek:'1 à 2' },
+  { id:'scale', name:'Conversion Scale', color:'#1FB6FF',
     tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
     ctaText:'Démarrer Maintenant',
-    monthly:{ price:149900, prixImg:1041, delivery:'48h', productId:'prd_9fi79y' },
-    quarterly:{ price:120000, prixImg:833, delivery:'48h', productId:'prd_dn4fb72l' },
-    imagesPerWeek:36, produitsPerWeek:'1 à 4', visuelsLabel:'36 Visuels Multi-Angles' },
+    monthly:{ price:59900, prixImg:625, delivery:'24h', productId:'prd_9fi79y' },
+    quarterly:{ price:48000, prixImg:500, delivery:'24h', productId:'prd_dn4fb72l' },
+    imagesPerWeek:24, produitsPerWeek:'1 à 4' },
 ];
 var lpQuarterly = false;
 
@@ -1379,53 +1365,27 @@ function lpIcon(name, color) {
   return '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="' + color + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + (LP_ICONS[name]||'') + '</svg>';
 }
 
-// Features EXACTES d'AdBoard (mêmes libellés, même icône par ligne) — seule différence :
-// tutoiement au lieu du vouvoiement, pour matcher le reste de la page de vente.
-function lpFeatures(o, cycleData) {
-  if (o.isPack) {
-    return [
-      { icon:'image', bold:o.imagesPerWeek + ' Visuels Stratégique Livrés', rest:'' },
-      { icon:'box', bold:o.produitsPerWeek + ' Produit Couvert', rest:'' },
-      { icon:'grid', bold:'Galerie Créative', rest:'(tous vos visuels centralisés)' },
-      { icon:'chart', bold:'Marché Analysé', rest:': Cibles, Concurrents & Tendances' },
-      { icon:'document', bold:'Titres & Descriptions', rest:'exacts à copier-coller (Ad Copies)' },
-      { icon:'clock', bold:'Suivi de la production', rest:'en temps réel' },
-      { icon:'bolt', bold:'Vos publicités prêtes en ' + cycleData.delivery, rest:'' },
-    ];
-  }
-  var produitsRest = o.id==='starter' ? '/ semaine' : (o.id==='pro' ? '/ semaine, couverts simultanément' : '/ semaine, couverture massive');
-  return [
-    { icon:'image', bold:o.visuelsLabel, rest: o.id==='starter' ? 'livrés / semaine (angles et concepts variés)' : 'livrés / semaine' },
-    { icon:'box', bold:o.produitsPerWeek + ' Produit' + (o.produitsPerWeek!=='1'?'s':''), rest:produitsRest },
-    { icon:'grid', bold:'Galerie Créative', rest:'— tous vos visuels centralisés' },
-    { icon:'chart', bold:'Marché analysé', rest:'chaque semaine : cibles, concurrents & tendances' },
-    { icon:'document', bold:'Textes publicitaires', rest:'prêts à copier-coller (Ad Copies)' },
-    { icon:'sparkle', bold:'Assistant IA', rest:'stratégique, disponible 7j/7' },
-    { icon:'upload', bold:'Import produits', rest:'simple et rapide' },
-    { icon:'clock', bold:'Suivi de production', rest:'en temps réel' },
-    { icon:'bolt', bold:'Prêtes en ' + cycleData.delivery, rest:'chaque semaine' },
-  ];
-}
-
 // Groupes pour les offres payantes (Starter/Pro/Scale) — même structure en 3 catégories pour
 // les trois, seul le volume hebdomadaire change. Texte exact fourni par Amar, pas de reformulation.
 function lpFeatureGroups(o) {
+  // Texte exact fourni par Amar. « Suivi de la production en temps réel » n'est listé que sur Starter.
+  var production = [
+    { icon:'image', bold:o.imagesPerWeek + ' nouvelles créatives images', rest:'livrées chaque semaine' },
+    { icon:'document', bold:'Titres et Descriptions', rest:'pour la campagne (Ad Copies)' },
+    { icon:'chart', bold:"Récapitulatif de l'analyse de marché", rest:'' },
+  ];
+  if (o.id === 'starter') production.push({ icon:'clock', bold:'Suivi de la production', rest:'en temps réel' });
+  production.push({ icon:'bolt', bold:'Production en 24h', rest:'' });
   return [
     { titre:'STRATÉGIE', items:[
       { icon:'search', bold:'Recherche avant production', rest:': concurrents, cible & angles' },
       { icon:'sparkle', bold:'Concepts créatifs', rest:'qui cartonnent en ce moment' },
     ]},
-    { titre:'PRODUCTION', items:[
-      { icon:'image', bold:o.imagesPerWeek + ' nouvelles créatives', rest:'livrées chaque semaine' },
-      { icon:'document', bold:'Titres et Descriptions', rest:'pour la campagne (Ad Copies)' },
-      { icon:'chart', bold:"Récapitulatif de l'analyse de marché", rest:'+ opportunité' },
-      { icon:'clock', bold:'Suivi de la production', rest:'en temps réel' },
-      { icon:'bolt', bold:'Livraison en 48h', rest:'' },
-    ]},
+    { titre:'PRODUCTION', items:production },
     { titre:'PERFORMANCE', items:[
       { icon:'grid', bold:'Organisation de vos créatives', rest:'' },
       { icon:'chart', bold:'Analyse des créatives', rest:'top performer' },
-      { icon:'sparkle', bold:'Amélioration en continu', rest:'' },
+      { icon:'sparkle', bold:'Amélioration et Itération', rest:'en continu' },
       { icon:'bulb', bold:'Support WhatsApp et assistant IA stratégique', rest:'dispo 7j/7' },
     ]},
   ];
@@ -1434,10 +1394,8 @@ function lpFeatureGroups(o) {
 function lpRenderOffers() {
   var grid = document.getElementById('lp-offers-grid');
   var html = '';
-  // Discovery/First Payment n'est plus affiché comme offre à part ni en downsell séparé — il
-  // n'apparaît plus que sous le CTA Starter (lien stylisé), et uniquement en mode Mensuel.
-  LP_OFFERS.filter(function(o) { return o.id !== 'discovery'; }).forEach(function(o) {
-    var cycleData = o.isPack ? o.once : (lpQuarterly ? o.quarterly : o.monthly);
+  LP_OFFERS.forEach(function(o) {
+    var cycleData = lpQuarterly ? o.quarterly : o.monthly;
     html += '<div class="offer-card-lp' + (o.best ? ' lp-best' : '') + '">';
     if (o.best) html += '<div class="lp-best-badge">Recommandé</div>';
     html += '<div class="lp-pack-name">' + o.name + '</div>';
@@ -1445,13 +1403,10 @@ function lpRenderOffers() {
     html += '<div class="lp-pack-type">' + o.tagline + '</div>';
     // Tarifs fixes en dollars, sans prix barré (pas de référence USD fournie) ni conversion de
     // devise affichée — Chariow convertit dans la devise locale uniquement au moment du checkout.
-    html += '<div class="lp-price-main"><span class="lp-price-amount" data-fcfa="' + cycleData.price + '">' + lpFmt(cycleData.price) + '</span><span class="lp-price-currency">FCFA' + (o.isPack ? '' : '<span style="font-size:11px;color:#8A8D95;font-weight:400">/mois</span>') + '</span>' + (!o.isPack && lpQuarterly ? '<span class="lp-quarterly-pill">Plan trimestriel</span>' : '') + '</div>';
+    html += '<div class="lp-price-main"><span class="lp-price-amount" data-fcfa="' + cycleData.price + '">' + lpFmt(cycleData.price) + '</span><span class="lp-price-currency">FCFA<span style="font-size:11px;color:#8A8D95;font-weight:400">/mois</span></span>' + (lpQuarterly ? '<span class="lp-quarterly-pill">Plan trimestriel</span>' : '') + '</div>';
+    html += '<div class="lp-price-img" data-fcfa="' + cycleData.prixImg + '" style="background:rgba(31,182,255,0.1);color:#1FB6FF;margin-top:10px;margin-bottom:0"><span>' + lpFmt(cycleData.prixImg) + ' FCFA</span><span>/ image</span></div>';
     html += '<div class="lp-card-divider"></div>';
-    if (o.isPack) {
-      html += '<ul class="lp-features">';
-      lpFeatures(o, cycleData).forEach(function(f) { html += '<li><span class="lp-feat-icon" style="background:' + o.color + '18">' + lpIcon('check', o.color) + '</span><span class="lp-feat-text"><strong>' + f.bold + '</strong> ' + f.rest + '</span></li>'; });
-      html += '</ul>';
-    } else {
+    {
       var groupes = lpFeatureGroups(o);
       groupes.forEach(function(groupe, g) {
         html += '<div style="font-size:9.5px;font-weight:800;color:' + o.color + ';letter-spacing:1.2px;opacity:0.85;margin:' + (g===0?'0':'16px') + ' 0 9px">' + groupe.titre + '</div>';
@@ -1461,12 +1416,7 @@ function lpRenderOffers() {
       });
     }
     html += '<button onclick="lpOpenCheckout(\'' + cycleData.productId + '\',\'' + o.name.replace(/'/g,"\\'") + '\',' + cycleData.price + ')" class="lp-cta-btn">' + o.ctaText + ' →</button>';
-    if (o.id === 'starter' && !lpQuarterly && !lpFirstPaymentAlreadyUsed()) {
-      // Sous le CTA Starter, uniquement en mode Mensuel (toggle trimestriel désactivé) — texte
-      // exact fourni par Amar, pas de reformulation, pas de pourcentage.
-      var fp = LP_OFFERS.find(function(x){ return x.id === 'discovery'; });
-      html += '<div style="margin-top:10px;text-align:center"><a href="javascript:void(0)" onclick="lpOpenCheckout(\'' + fp.once.productId + '\',\'' + fp.name + '\',' + fp.once.price + ')" style="font-size:11.5px;font-weight:600;color:#8A8D95;text-decoration:underline;text-underline-offset:2px;cursor:pointer;line-height:1.4">ou pour <strong style="color:#1FB6FF" data-fcfa="' + fp.once.price + '">' + lpFmt(fp.once.price) + ' FCFA</strong> laissez notre <strong style="color:#fff">équipe</strong> vous faire une première <strong style="color:#fff">production stratégique</strong>, puis vous complétez les <strong style="color:#1FB6FF" data-fcfa="' + fp.completion.price + '">' + lpFmt(fp.completion.price) + ' FCFA</strong> qu\'après avoir vu le résultat</a></div>';
-    } else {
+    {
       html += '<div class="lp-card-proof"><div><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Paiement sécurisé</div><div class="lp-proof-guarantee"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Satisfait ou 100% remboursé</div></div>';
     }
     html += '</div>';
@@ -1489,21 +1439,7 @@ function lpToggleCycle() {
 
 lpRenderOffers();
 
-// Verrou "achat unique à vie" pour First Payment — BEST EFFORT seulement côté page de vente
-// anonyme (pas de session/compte avant paiement, donc pas de source de vérité fiable ici).
-// Posé de façon optimiste dès l'ouverture du checkout (pas de callback de succès Chariow
-// disponible côté widget) : efface le cache navigateur = repasse à travers. La vraie source de
-// vérité pour un compte déjà créé reste has_used_discovery côté serveur (voir server_v5_45.js /
-// Platform.jsx), qui lui ne peut pas être contourné. Prévoir mieux avant prod si l'abus s'avère
-// fréquent (ex : demander l'email avant d'ouvrir le checkout First Payment et vérifier côté API).
-var LP_FIRST_PAYMENT_PRODUCT_ID = 'prd_ywk7ik14';
-function lpFirstPaymentAlreadyUsed() {
-  try { return localStorage.getItem('adstack_first_payment_used') === '1'; } catch(e) { return false; }
-}
 function lpOpenCheckout(productId, offerName, price, couponCode) {
-  if (productId === LP_FIRST_PAYMENT_PRODUCT_ID) {
-    try { localStorage.setItem('adstack_first_payment_used', '1'); } catch(e) {}
-  }
   adstackTrackFunnel('paiement_initie');
   if (typeof fbq !== 'undefined') fbq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
   if (typeof twq !== 'undefined') twq('track', 'InitiateCheckout', { content_name: offerName, currency: 'XOF', value: price });
@@ -1703,7 +1639,7 @@ function lpCloseCheckout() {
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Outils (Canva, ChatGPT, Gemini)</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="17000">17.000 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="19900">19.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Outils</span>~<span data-fcfa="9000">9.000 FCFA</span></div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -1739,7 +1675,7 @@ function lpCloseCheckout() {
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Vidéo Production</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="17000">17.000 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="19900">19.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Vidéo</span>Généralement élevé — shooting, montage, matériel</div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -1775,7 +1711,7 @@ function lpCloseCheckout() {
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Freelance</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="17000">17.000 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="19900">19.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Freelance</span>Variable, souvent facturé à la pièce</div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -1811,7 +1747,7 @@ function lpCloseCheckout() {
       <div class="hc-card">
         <div class="hc-card-header">AdStack <span class="hc-vs">vs</span> Équipe interne</div>
         <div class="hc-crow"><span class="hc-clabel">Coût mensuel estimé</span><div class="hc-cvals">
-          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="17000">17.000 FCFA</span></div>
+          <div class="hc-cval hc-cval-us"><span class="hc-cval-tag">AdStack</span>à partir de <span data-fcfa="19900">19.900 FCFA</span></div>
           <div class="hc-cval hc-cval-them"><span class="hc-cval-tag">Interne</span>Salaire + charges — généralement le plus coûteux</div>
         </div></div>
         <div class="hc-crow"><span class="hc-clabel">Premier lot livré sous</span><div class="hc-cvals">
@@ -1897,12 +1833,11 @@ function lpCloseCheckout() {
     <div class="faq-list" id="faqList">
       <div class="faq-item open"><button class="faq-question"><span class="faq-q-text">Comment ça va vraiment faire grandir mon business ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">On ne vous livre pas un lot d'images — <span class="hl">on met en place un accompagnement complet</span>, chaque semaine.<br><br><span class="hl">① On étudie</span> votre marché et vos concurrents avant de produire quoi que ce soit.<br><span class="hl">② On produit</span> plusieurs angles en simultané, pour trouver rapidement ce qui marche.<br><span class="hl">③ On capitalise</span> sur les angles gagnants — ils sont déclinés et affinés la semaine suivante.<br><br>C'est cette méthode, portée par notre équipe, qui fait grandir votre business — pas une image isolée.</p><a href="#systeme-creatif" class="faq-cta" onclick="event.preventDefault();document.getElementById('systeme-creatif').scrollIntoView({behavior:'smooth'})">Voir comment on travaille <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est quoi AdBoard, concrètement ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">La plateforme où notre équipe organise votre production, votre espace client.</span><br><br>Vous ajoutez vos produits, et chaque semaine on y dépose : l'analyse de marché, les visuels, les textes publicitaires prêts à l'emploi — <span class="hl">tout centralisé dans votre tableau de bord.</span></p></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Starter est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous voulez enfin commencer à vous démarquer de vos concurrents, et commencer à croître sérieusement.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 0 et 500$ par mois en publicité, vous êtes encore en train de faire vos premières ventes rentables,</li><li>et vous voulez aller chercher les 5.000$ de revenus/mois, sans exploser vos coûts d'acquisition sur le moyen terme.</li><li><span class="hl">Starter vous permet de tester vite, de trouver ce qui marche</span> et de l'utiliser comme levier pour dépenser plus en publicité tout en gardant un bon ROAS.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ljowq8','Conversion Starter',49900)">Voir Starter <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Pro est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous avez déjà trouvé ce qui marche, et vous voulez accélérer sans casser votre rentabilité.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 500$ et 2.000$ par mois en publicité, vous avez déjà quelques angles gagnants identifiés,</li><li>et vous voulez aller chercher les 15.000$ de revenus/mois, sans passer vos journées à chercher de nouveaux concepts.</li><li><span class="hl">Pro double votre cadence de test</span> — pour multiplier les angles gagnants au lieu de vous reposer sur un seul, et scaler votre budget pub en toute confiance.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_34w031','Conversion Pro',99900)">Voir Pro <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Scale est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous visez un vrai palier de chiffre d'affaires, pas juste quelques ventes de plus.</strong></p><ul class="faq-a-list"><li>Vous dépensez plusieurs milliers de dollars par mois en publicité, vous structurez une croissance sur plusieurs marchés ou plusieurs lancements à la fois,</li><li>et vous voulez aller chercher un revenu mensuel à 6 chiffres, sans que la production créative devienne le goulot d'étranglement.</li><li><span class="hl">Scale, c'est notre cadence la plus intensive</span> — pensée pour ne jamais ralentir une croissance ambitieuse.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_9fi79y','Conversion Scale',149900)">Voir Scale <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Starter est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous voulez enfin commencer à vous démarquer de vos concurrents, et commencer à croître sérieusement.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 0 et 500$ par mois en publicité, vous êtes encore en train de faire vos premières ventes rentables,</li><li>et vous voulez aller chercher les 5.000$ de revenus/mois, sans exploser vos coûts d'acquisition sur le moyen terme.</li><li><span class="hl">Starter vous permet de tester vite, de trouver ce qui marche</span> et de l'utiliser comme levier pour dépenser plus en publicité tout en gardant un bon ROAS.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ljowq8','Conversion Starter',19900)">Voir Starter <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Pro est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous avez déjà trouvé ce qui marche, et vous voulez accélérer sans casser votre rentabilité.</strong></p><ul class="faq-a-list"><li>Vous dépensez entre 500$ et 2.000$ par mois en publicité, vous avez déjà quelques angles gagnants identifiés,</li><li>et vous voulez aller chercher les 15.000$ de revenus/mois, sans passer vos journées à chercher de nouveaux concepts.</li><li><span class="hl">Pro double votre cadence de test</span> — pour multiplier les angles gagnants au lieu de vous reposer sur un seul, et scaler votre budget pub en toute confiance.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_34w031','Conversion Pro',39900)">Voir Pro <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Scale est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous visez un vrai palier de chiffre d'affaires, pas juste quelques ventes de plus.</strong></p><ul class="faq-a-list"><li>Vous dépensez plusieurs milliers de dollars par mois en publicité, vous structurez une croissance sur plusieurs marchés ou plusieurs lancements à la fois,</li><li>et vous voulez aller chercher un revenu mensuel à 6 chiffres, sans que la production créative devienne le goulot d'étranglement.</li><li><span class="hl">Scale, c'est notre cadence la plus intensive</span> — pensée pour ne jamais ralentir une croissance ambitieuse.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_9fi79y','Conversion Scale',59900)">Voir Scale <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Le prix, ça vaut vraiment le coup ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Comparez au vrai coût d'une alternative : un freelance ou une agence facture pour <strong>une prestation ponctuelle</strong>. Avec nous, vous payez pour <span class="hl">un accompagnement continu — étude de marché, production, ajustements</span> — sans recruter, sans gérer, sans réunion.<br><br>Le calcul est simple : le potentiel de croissance dépasse largement le coût de l'abonnement le plus bas.</p><a href="#nos-offres" class="faq-cta" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">Voir les tarifs <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">First Payment, comment ça marche ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Une première production complète, avant de vous engager sur le mois.</span><br><br>Vous payez <span data-fcfa="17000">17.000 FCFA</span>, vous recevez une production stratégique complète — recherche, concepts, 9 créatives prêtes à tester. Convaincu ? Vous complétez ensuite avec les <span data-fcfa="33000">33.000 FCFA</span> restants pour continuer avec nous ce mois-ci, sans jamais repayer les <span data-fcfa="49900">49.900 FCFA</span> en entier.</p><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ywk7ik14','First Payment',17000)">Commencer avec First Payment <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
-      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je dois faire quoi de mon côté ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Vous connecter à AdBoard et importer votre produit.</span> C'est tout.<br><br>Vous vous abonnez, vous vous connectez avec Google, vous ajoutez votre produit — <strong>on s'occupe du reste chaque semaine.</strong> Zéro réunion. Zéro aller-retour. Zéro friction.</p></div></div></div>
+            <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je dois faire quoi de mon côté ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Vous connecter à AdBoard et importer votre produit.</span> C'est tout.<br><br>Vous vous abonnez, vous vous connectez avec Google, vous ajoutez votre produit — <strong>on s'occupe du reste chaque semaine.</strong> Zéro réunion. Zéro aller-retour. Zéro friction.</p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Comment vous vous améliorez avec le temps ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Chaque semaine, vous marquez dans AdBoard les créatives qui performent. <span class="hl">Notre équipe s'appuie sur ces angles gagnants</span> pour composer le batch suivant, au lieu de repartir de zéro.<br><br>Résultat : votre catalogue d'angles gagnants grandit chaque mois, avec une analyse de marché mise à jour en continu.</p><a href="https://www.adstackofficial.com/adboard" class="faq-cta" target="_blank" rel="noopener">Voir AdBoard <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est un abonnement ? Je peux arrêter ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui, un abonnement mensuel — résiliable à tout moment.</span><br><br>Sans contrat ni engagement longue durée. Vous pouvez aussi changer de formule quand vous voulez depuis AdBoard, <strong>le changement prend effet immédiatement.</strong></p></div></div></div>
       <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Et si les résultats ne sont pas au rendez-vous ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Satisfait ou 100% remboursé.</span><br><br>Si le travail livré ne vous donne pas entière satisfaction, on retravaille — ou on vous rembourse intégralement. <strong>Zéro risque.</strong></p></div></div></div>
@@ -1917,7 +1852,7 @@ function lpCloseCheckout() {
     <button class="upsell-close" id="upsellClose" aria-label="Fermer">×</button>
   </div>
 </div>
-<div style="display:none"><script>(function(){var nudge=document.getElementById('upsellNudge');var btn=document.getElementById('upsellBtn');var closeBtn=document.getElementById('upsellClose');if(!nudge||!btn)return;var dismissed=false;var eventFired=false;btn.addEventListener('click',function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(!eventFired){eventFired=true;if(typeof fbq!=='undefined'){fbq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:49900});}if(typeof twq!=='undefined'){twq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:49900});}}});closeBtn.addEventListener('click',function(){dismissed=true;nudge.classList.remove('visible');});function onScroll(){if(dismissed)return;var scrolled=window.scrollY||window.pageYOffset;if(scrolled>window.innerHeight*0.85){nudge.classList.add('visible');}else{nudge.classList.remove('visible');}}window._upsellScroll=onScroll;window.addEventListener('scroll',onScroll,{passive:true});})();</script></div>
+<div style="display:none"><script>(function(){var nudge=document.getElementById('upsellNudge');var btn=document.getElementById('upsellBtn');var closeBtn=document.getElementById('upsellClose');if(!nudge||!btn)return;var dismissed=false;var eventFired=false;btn.addEventListener('click',function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(!eventFired){eventFired=true;if(typeof fbq!=='undefined'){fbq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:19900});}if(typeof twq!=='undefined'){twq('track','AddToCart',{content_name:'AdStack Offres',currency:'XOF',value:19900});}}});closeBtn.addEventListener('click',function(){dismissed=true;nudge.classList.remove('visible');});function onScroll(){if(dismissed)return;var scrolled=window.scrollY||window.pageYOffset;if(scrolled>window.innerHeight*0.85){nudge.classList.add('visible');}else{nudge.classList.remove('visible');}}window._upsellScroll=onScroll;window.addEventListener('scroll',onScroll,{passive:true});})();</script></div>
 <!-- ════ CHATBOT — Ava AdStack ════ -->
 <style>
   #as-chat-btn {
@@ -2096,8 +2031,8 @@ function asDetectHotness(text) {
 
 function asGetCheckoutForContext() {
   var allMsgs = asHistory.map(function(m){ return m.content; }).join(' ').toLowerCase();
-  var mentionsScale = /\bscale\b|4 produit|36 image|149[.\s]?900|149900/i.test(allMsgs);
-  var mentionsPro   = /\bpro\b|18 image|2 produit|99[.\s]?900|99900/i.test(allMsgs);
+  var mentionsScale = /\bscale\b|4 produit|24 image|59[.\s]?900|59900/i.test(allMsgs);
+  var mentionsPro   = /\bpro\b|12 image|2 produit|39[.\s]?900|39900/i.test(allMsgs);
   if (mentionsScale && !mentionsPro) return {url: AS_CHECKOUT.scale, name: 'Conversion Scale'};
   if (mentionsPro && !mentionsScale) return {url: AS_CHECKOUT.standard, name: 'Conversion Pro'};
   return {url: AS_CHECKOUT.starter, name: 'Conversion Starter'};
@@ -2224,7 +2159,7 @@ window.lpApplyCurrency = function(){};
   <div class="section-eyebrow">C'est le moment</div>
   <h2 class="final-cta-title">Prêt à arrêter de <em>deviner</em> ?</h2>
   <p class="final-cta-sub">Choisissez votre offre, connectez-vous à AdBoard, recevez vos premières créatives sous 48h.</p>
-  <a href="#nos-offres" class="final-cta-btn" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:49900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:49900});document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});">Consultez Nos Offres →</a>
+  <a href="#nos-offres" class="final-cta-btn" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:19900});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:19900});document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});">Consultez Nos Offres →</a>
 </section>
 
 <footer class="ads-footer">

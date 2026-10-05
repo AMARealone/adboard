@@ -2251,7 +2251,7 @@ textarea::placeholder { color: var(--muted); }
   <div class="page-header">
     <div>
       <div class="page-title">Emails & Séquences</div>
-      <div class="page-sub">Suivi des séquences automatisées — pré-achat et Discovery → Starter</div>
+      <div class="page-sub">Suivi des séquences automatisées — pré-achat</div>
     </div>
     <button class="btn btn-ghost btn-sm" onclick="renderEmailsSequences()">Actualiser</button>
   </div>
@@ -7176,20 +7176,6 @@ async function loadTemplates() {
           ${carteDb('email_monthly_social_proof', 'Preuve sociale')}
           ${carteDb('email_monthly_novelty', 'Nouveautés produit')}
           ${carteDb('email_monthly_checkin', 'Simple prise de nouvelles')}
-        </div>
-        <div class="tpl-groupe">
-          <div class="tpl-groupe-titre">✉️ Discovery → Starter — emails (4)</div>
-          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Cible les clients ayant pris Discovery, ancré sur la vraie fin du pack (9 images, une fois) — voir la page Emails & Séquences pour le suivi des envois.</div>
-          ${carteDb('d2s_j0', 'J0 — juste après livraison')}
-          ${carteDb('d2s_j4', 'J4 — vision / fatigue créative')}
-          ${carteDb('d2s_j7', 'J7 — urgence, fin du pack')}
-          ${carteDb('d2s_j10', 'J10 — dernier message (breakup)')}
-        </div>
-        <div class="tpl-groupe">
-          <div class="tpl-groupe-titre">🔔 Discovery → Starter — notifications push (3)</div>
-          ${carteDb('d2s_checkin_1', 'J2 — check-in pratique')}
-          ${carteDb('d2s_fin_pack_1', 'J6 — rappel fin de pack')}
-          ${carteDb('d2s_dernier_rappel_1', 'J9 — dernier rappel')}
         </div>
       </div>
     </div>

@@ -315,7 +315,7 @@ const C = {
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
 
-const PLAN_QUANTITY = { 'Conversion Starter':9, 'Conversion Pro':18, 'Conversion Scale':36 };
+const PLAN_QUANTITY = { 'Conversion Starter':6, 'Conversion Pro':12, 'Conversion Scale':24 };
 
 const ANGLES = [];
 
@@ -643,44 +643,19 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
       {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
-        // Cas spécial First Payment (ex-Discovery) actif : ce bloc ne doit plus proposer de
-        // repayer Starter plein tarif (49.900 FCFA), mais uniquement le solde de Completion
-        // (33.000 FCFA) — c'est le "paiement restant pour continuer de travailler avec nous"
-        // demandé par Amar.
-        if (subscription?.active && subscription.plan === 'discovery') {
-          const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
-          const completion = discoveryPlan?.completion;
-          if (!completion) return null;
-          return (
-            <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
-              <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>Continuer avec Starter</div>
-              <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>Paiement restant pour continuer de travailler avec nous ce mois-ci</div>
-              <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(completion.price)}</div>
-              <button onClick={() => {
-                if (onOpenPayment) { startCheckout(completion.productId, onOpenPayment); return; }
-                const popup = window.open('', '_blank') || window;
-                popup.location.href = completion.checkout;
-              }}
-              style={{width:'100%',padding:'8px',borderRadius:6,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-                Compléter →
-              </button>
-            </div>
-          );
-        }
-        // Sinon, progression normale : Starter → Pro → Scale. Discovery n'est jamais suggéré
-        // ici — seulement visible sur la page Nos Tarifs elle-même — un visiteur sans
-        // abonnement actif est orienté directement vers Starter.
-        const nextPlanId = !subscription?.active ? 'starter'
+        // Progression normale : Starter → Pro → Scale. Un visiteur sans abonnement actif — ou un
+        // ancien compte Discovery (offre retirée de la vente) — est orienté vers Starter.
+        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery') ? 'starter'
                           : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
-        const nextCycle = nextPlan.isPack ? 'once' : 'monthly';
+        const nextCycle = 'monthly';
         const cycleData = nextPlan[nextCycle];
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
-            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images{nextPlan.isPack?' incluses':' / semaine'} · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
-            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}{!nextPlan.isPack && <span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span>}</div>
+            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
+            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => {
               const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-${nextCycle}`];
               if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
@@ -890,7 +865,7 @@ const sbBriefs = {
 };
 
 // ── Supabase Subscription API ──────────────────────────────────────────────
-const PLAN_CREDITS = { starter: 9, pro: 18, scale: 36 };
+const PLAN_CREDITS = { starter: 6, pro: 12, scale: 24 };
 
 const sbSub = {
   async load(session) {
@@ -1276,10 +1251,11 @@ const PaymentModal = ({ productId, userEmail, onClose }) => {
 
 // ── Modal demande de créatives ─────────────────────────────────────────────
 const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, C}) => {
-  const [qty, setQty] = useState(9);
+  // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 6 / 12 / 24 par semaine.
+  const [qty, setQty] = useState(6);
   const max = credits.available;
-  const canIncrease = qty + 9 <= max;
-  const canDecrease = qty > 9;
+  const canIncrease = qty + 6 <= max;
+  const canDecrease = qty > 6;
   const isPack = subscription?.type === 'pack';
 
   return (
@@ -1306,13 +1282,10 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
           <div style={{fontSize:10,color:C.muted,marginTop:8}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
         </div>
 
-        {/* Ex-upsell "acheter un autre pack Discovery" retiré : First Payment est un achat
-            unique à vie, on ne doit plus jamais proposer de le repayer. À la place, on pousse
-            vers la Complétion Starter (150$) — le vrai chemin prévu après First Payment. */}
+        {/* Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement Starter. */}
         {isPack && (
           <button onClick={() => {
-            const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
-            const productId = discoveryPlan?.completion?.productId;
+            const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
             if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
           }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:22}}>
             <Icon name="plus" size={12} color={C.accent}/> Continuez avec Starter
@@ -1324,13 +1297,13 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
         <div style={{position:'relative',marginBottom:26}}>
           <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:16,textAlign:'center'}}>Nombre de visuels à recevoir</div>
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:26}}>
-            <button onClick={()=>canDecrease&&setQty(q=>q-9)} style={{width:42,height:42,borderRadius:'50%',border:`1px solid ${canDecrease?'rgba(255,255,255,0.14)':'rgba(255,255,255,0.05)'}`,background:canDecrease?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)',color:canDecrease?C.text:C.muted,fontSize:20,cursor:canDecrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.15s'}}>−</button>
+            <button onClick={()=>canDecrease&&setQty(q=>q-6)} style={{width:42,height:42,borderRadius:'50%',border:`1px solid ${canDecrease?'rgba(255,255,255,0.14)':'rgba(255,255,255,0.05)'}`,background:canDecrease?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)',color:canDecrease?C.text:C.muted,fontSize:20,cursor:canDecrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.15s'}}>−</button>
             <div style={{textAlign:'center',minWidth:76}}>
               <div style={{fontFamily:"'DM Mono',monospace",fontSize:42,fontWeight:800,lineHeight:1,
                 background:'linear-gradient(90deg, #ffffff 0%, #9fbcff 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>{qty}</div>
               <div style={{fontSize:11,color:C.sec,marginTop:5}}>visuels</div>
             </div>
-            <button onClick={()=>canIncrease&&setQty(q=>q+9)} style={{width:42,height:42,borderRadius:'50%',border:'none',background:canIncrease?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.02)',color:canIncrease?'#fff':C.muted,fontSize:20,cursor:canIncrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:canIncrease?'0 4px 14px rgba(45,127,249,0.3)':'none',transition:'all 0.15s'}}>+</button>
+            <button onClick={()=>canIncrease&&setQty(q=>q+6)} style={{width:42,height:42,borderRadius:'50%',border:'none',background:canIncrease?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.02)',color:canIncrease?'#fff':C.muted,fontSize:20,cursor:canIncrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:canIncrease?'0 4px 14px rgba(45,127,249,0.3)':'none',transition:'all 0.15s'}}>+</button>
           </div>
         </div>
 
@@ -1777,14 +1750,12 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
       </div>
     );
   }
-  if (subscription?.active && credits.available < 9) {
-    // First Payment épuisé : on ne repropose plus jamais le pack à 99$ (achat unique à vie) —
-    // on pousse vers la Complétion Starter (150$), le chemin prévu après First Payment.
+  if (subscription?.active && credits.available < 6) {
+    // Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement Starter.
     if (subscription?.type === 'pack') {
       return (
         <button onClick={() => {
-          const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
-          const productId = discoveryPlan?.completion?.productId;
+          const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
           if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
         }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
           <Icon name="plus" size={13} color="#fff"/> Continuez avec Starter
@@ -1910,7 +1881,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const isMobile = useIsMobile();
   const [showForm, setShowForm] = useState(false);
   const [requestModal, setRequestModal] = useState(null); // { product }
-  const [requestQty, setRequestQty] = useState(9);
+  const [requestQty, setRequestQty] = useState(6);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_PRODUCT);
   const [errors, setErrors] = useState({});
@@ -2091,8 +2062,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     if (!user) { onNeedLogin(); return; }
     if (!subscription?.active) return; // pas d'abonnement
     const credits = computeCredits(subscription, allBriefs);
-    if (credits.available < 9) return; // pas assez
-    setRequestQty(9);
+    if (credits.available < 6) return; // pas assez
+    setRequestQty(6);
     setRequestModal({ product: p });
   };
 
@@ -2200,8 +2171,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             {credits.available === 0 && (
               subscription?.type === 'pack' ? (
                 <button onClick={() => {
-                  const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
-                  const productId = discoveryPlan?.completion?.productId;
+                  const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
                   if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
                 }} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,color:'#fff',padding:'8px 14px',borderRadius:8,background:C.accent,border:'none',cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                   <Icon name="plus" size={12} color="#fff"/> Continuez avec Starter
@@ -2798,9 +2768,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const chips = filterMode==='topPerformer' ? cibleSet : []; // mode normal : les 3 groupes (cibleSet/batchSet/angleSet) s'affichent directement, plus besoin de ce sélecteur unique
 
   const [togglingTopPerformer, setTogglingTopPerformer] = useState(false);
-  // Popup upsell — s'affiche au marquage Top Performer sur Discovery, jamais de modification
-  // des créatives elles-mêmes dans la grille ni dans la vue de classement.
-  const [showTopPerformerBump, setShowTopPerformerBump] = useState(false);
   const toggleTopPerformer = async (creative) => {
     setTogglingTopPerformer(true);
     const nextValue = !creative.topPerformer;
@@ -2813,9 +2780,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         ...p,
         creatives: (p.creatives||[]).map(c => c.id === creative.id ? {...c, topPerformer: nextValue} : c)
       }));
-      // Sur Discovery, marquer Top Performer déclenche une popup upsell — jamais de
-      // modification de la créative elle-même, ni dans la grille ni dans la vue de classement.
-      if (nextValue && subscription?.plan === 'discovery') { setShowTopPerformerBump(true); }
       setSelected(s => s && s.id === creative.id ? {...s, topPerformer: nextValue} : s);
     } catch(e) {
       console.error('Marquage Top Performer échoué :', e.message);
@@ -3299,32 +3263,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
           onCancel={()=>!deleting && setDeleteConfirm(false)}
           onConfirm={confirmDeleteSelected}
         />
-      )}
-      {showTopPerformerBump && (
-        <div onClick={() => setShowTopPerformerBump(false)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:600,padding:20}}>
-          <style>{`@keyframes d2sGradientMove{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}`}</style>
-          <div onClick={e => e.stopPropagation()} style={{position:'relative',width:'100%',maxWidth:380,borderRadius:16,background:'linear-gradient(165deg,#1B2A4A,#0d1220)',border:`1px solid ${C.accent}55`,padding:'36px 26px 24px',textAlign:'center'}}>
-            <button onClick={() => setShowTopPerformerBump(false)} style={{position:'absolute',top:12,right:12,width:28,height:28,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <Icon name="x" size={13} color="#fff"/>
-            </button>
-            <div style={{
-              fontSize:21,fontWeight:800,lineHeight:1.25,marginBottom:12,
-              background:'linear-gradient(90deg,#5B8DEF,#8B5CF6,#5B8DEF)',backgroundSize:'200% auto',
-              WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',
-              animation:'d2sGradientMove 3s ease infinite',
-            }}>
-              Félicitations {user?.user_metadata?.full_name?.split(' ')[0] || ''} 🎉 !!!
-            </div>
-            <div style={{fontSize:13,color:'rgba(255,255,255,0.75)',lineHeight:1.55,marginBottom:22}}>
-              Avec Discovery vous avez trouvé ce qui marche. Mais avec <strong style={{color:'#fff'}}>Starter</strong> multipliez ce qui <em>performe</em> et faites <em>exploser vos revenus</em>.
-            </div>
-            <button onClick={() => onOpenPayment && onOpenPayment(PLAN_CHECKOUT_IDS['starter-upgrade-from-discovery'])} style={{width:'100%',padding:'11px',borderRadius:10,border:'none',background:`linear-gradient(135deg, ${C.accent}, #7C3AED)`,color:'#fff',cursor:'pointer',fontFamily:'inherit',boxShadow:`0 4px 18px ${C.accent}55`,display:'flex',flexDirection:'column',alignItems:'center',gap:1}}>
-              <span style={{fontWeight:700,fontSize:14}}>Compléter avec Starter</span>
-              <span style={{fontWeight:500,fontSize:10.5,opacity:0.85}}>9 images/semaine</span>
-            </button>
-            <div style={{fontSize:10,color:'rgba(255,255,255,0.45)',marginTop:11}}>🔒 Paiement 100% sécurisé · Satisfait ou remboursé</div>
-          </div>
-        </div>
       )}
     </div>
   );
@@ -4295,10 +4233,6 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       const productId = PLAN_CHECKOUT_IDS[`${parts[1]}-${cycle}`];
       if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
-    if (type === 'checkout-upgrade') {
-      const productId = PLAN_CHECKOUT_IDS['starter-upgrade-from-discovery'];
-      if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
-    }
     if (type === 'whatsapp') {
       const msg = encodeURIComponent("Bonjour, j'ai besoin d'aide sur AdStack.");
       window.open(`https://wa.me/221766332693?text=${msg}`, '_blank');
@@ -4319,7 +4253,6 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout-quarterly:starter': 'Starter trimestriel (-20%) →',
     'checkout-quarterly:pro': 'Pro trimestriel (-20%) →',
     'checkout-quarterly:scale': 'Scale trimestriel (-20%) →',
-    'checkout-upgrade': 'Continuer avec Starter — payer le solde (33.000 FCFA) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4446,47 +4379,35 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
 // moment du checkout, ce convertisseur n'est qu'un affichage indicatif avant paiement.
 const PLANS = [
   {
-    id:'discovery', name:'First Payment', color:C.gray, best:false, isPack:true,
-    tagline:"Une première production stratégique complète, pour voir notre travail avant de vous engager sur le mois.",
-    ctaText:'Démarrer Maintenant',
-    imagesPerWeek: 9, produitsPerWeek: '1',
-    once: { price:17000, prixImg:1889, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ywk7ik14/checkout' },
-    completion: { price:33000, productId:'prd_c0ga3snp', checkout:'https://shop.adstackofficial.com/prd_c0ga3snp/checkout' },
-  },
-  {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
     tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
     ctaText:'Démarrer Maintenant',
-    imagesPerWeek: 9, produitsPerWeek: '1',
-    monthly: { price:49900, prixImg:1386, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:40000, prixImg:1111, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    imagesPerWeek: 6, produitsPerWeek: '1',
+    monthly: { price:19900, prixImg:835, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:16000, prixImg:667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
     ctaText:'Démarrer Maintenant',
-    imagesPerWeek: 18, produitsPerWeek: '1 à 2',
-    monthly: { price:99900, prixImg:1388, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:80000, prixImg:1111, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    imagesPerWeek: 12, produitsPerWeek: '1 à 2',
+    monthly: { price:39900, prixImg:835, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:32000, prixImg:667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
     ctaText:'Démarrer Maintenant',
-    imagesPerWeek: 36, produitsPerWeek: '1 à 4',
-    monthly: { price:149900, prixImg:1041, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:120000, prixImg:833, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    imagesPerWeek: 24, produitsPerWeek: '1 à 4',
+    monthly: { price:59900, prixImg:625, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:48000, prixImg:500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
 const PLAN_CHECKOUT_IDS = {
-  'discovery-once':  'prd_ywk7ik14',
   'starter-monthly': 'prd_ljowq8',   'starter-quarterly': 'prd_wdya3v9h',
   'pro-monthly':     'prd_34w031',   'pro-quarterly':     'prd_lnp4ax0b',
   'scale-monthly':   'prd_9fi79y',   'scale-quarterly':   'prd_dn4fb72l',
-  // Passerelle Discovery → Starter : solde restant (34.900 − 12.900 déjà payés) pour
-  // continuer avec 3 semaines de Starter, sans repayer le plein tarif.
-  'starter-upgrade-from-discovery': 'prd_c0ga3snp',
 };
 
 // Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
@@ -4536,11 +4457,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "Conversion Discovery (9 images incluses, achat unique sans engagement), Conversion Starter (9 images/semaine, 1 produit), Conversion Pro (18 images/semaine, 1 à 2 produits), et Conversion Scale (36 images/semaine, 1 à 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
-  },
-  {
-    q: "Conversion Discovery, comment ça marche exactement ?",
-    a: "C'est un achat unique, pas un abonnement : vous payez une fois, vous recevez 9 images à utiliser librement, valables 3 mois. Contrairement aux autres formules, elles ne se renouvellent jamais automatiquement — une fois utilisées, vous pouvez passer à un abonnement classique pour continuer à en recevoir chaque semaine."
+    a: "Conversion Starter (6 images/semaine, 1 produit), Conversion Pro (12 images/semaine, 1 à 2 produits), et Conversion Scale (24 images/semaine, 1 à 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
   },
   {
     q: "En combien de temps mes visuels sont-ils livrés ?",
@@ -4618,20 +4535,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
   const isMobile = useIsMobile();
   const [quarterly, setQuarterly] = useState(false); // par défaut sur mensuel
   const onCta = async (plan) => {
-    // Passerelle First Payment → Starter : si le compte a déjà un First Payment actif et clique
-    // sur Starter, on ne doit JAMAIS lui facturer le plein tarif (249$) — seulement le solde de
-    // Completion (150$, prd_c0ga3snp).
-    if (plan.id === 'starter' && subscription?.active && subscription.plan === 'discovery') {
-      const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
-      const completion = discoveryPlan?.completion;
-      if (completion) {
-        if (onOpenPayment) { startCheckout(completion.productId, onOpenPayment); return; }
-        const popup = window.open('', '_blank') || window;
-        popup.location.href = completion.checkout;
-        return;
-      }
-    }
-    const cycle = plan.isPack ? 'once' : (quarterly ? 'quarterly' : 'monthly');
+    const cycle = quarterly ? 'quarterly' : 'monthly';
     const cycleData = plan[cycle];
     try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
     try { window.twq && window.twq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
@@ -4725,52 +4629,38 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         ? {display:'flex',flexDirection:'column',gap:14,marginBottom:20}
         : {display:'flex',flexDirection:'row',gap:14,marginBottom:20,overflowX:'auto',paddingBottom:8}
       }>
-        {PLANS.filter(p => p.id !== 'discovery').map(p => {
+        {PLANS.map(p => {
           const selectedCycle = quarterly ? 'quarterly' : 'monthly';
           const sameTier = userPlan === p.id;
           // Abonnements créés avant l'ajout du cycle trimestriel → toujours mensuel historiquement
           const currentCycle = subscription?.cycle || 'monthly';
-          const isCurrent = subscription?.active && sameTier && (p.isPack || currentCycle === selectedCycle);
-          const isCycleUpsell = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'quarterly';   // même palier, passer au trimestriel
-          const isCycleDowngradeCycle = !p.isPack && sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
+          const isCurrent = subscription?.active && sameTier && (currentCycle === selectedCycle);
+          const isCycleUpsell = sameTier && currentCycle !== selectedCycle && selectedCycle === 'quarterly';   // même palier, passer au trimestriel
+          const isCycleDowngradeCycle = sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
           const PLAN_ORDER = { discovery:0, starter:1, pro:2, scale:3 };
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
-          // Le pack Discovery n'a pas de cycle mensuel/annuel — toujours son propre prix "once",
-          // peu importe l'état du toggle global de la page.
-          const cycleData = p.isPack ? p.once : (quarterly ? p.quarterly : p.monthly);
-          const visuelsLabel = p.id === 'starter' ? `${p.imagesPerWeek} Visuels`
-                              : p.id === 'pro' ? `${p.imagesPerWeek} Visuels Haute Performance`
-                              : `${p.imagesPerWeek} Visuels Multi-Angles`;
-          // Discovery : texte exact fourni, sans reformulation — liste volontairement plus
-          // courte que les autres offres (pas d'Assistant IA ni d'Import produits sur ce pack).
-          const features = p.isPack ? [
-            { icon:'image',   bold:`${p.imagesPerWeek} Visuels Stratégique Livrés`, rest:'' },
-            { icon:'box',     bold:`${p.produitsPerWeek} Produit Couvert`, rest:'' },
-            { icon:'grid',    bold:'Galerie Créative',        rest:'(tous vos visuels centralisés)' },
-            { icon:'chart',   bold:'Marché Analysé',          rest:': Cibles, Concurrents & Tendances' },
-            { icon:'document',bold:'Titres & Descriptions',   rest:'exacts à copier-coller (Ad Copies)' },
-            { icon:'clock',   bold:'Suivi de la production',  rest:'en temps réel' },
-            { icon:'bolt',    bold:`Vos publicités prêtes en ${cycleData.delivery}`, rest:'' },
-          ] : null;
-          // Offres payantes (Starter/Pro/Scale) — même structure en 3 groupes pour les trois,
-          // seul le volume hebdomadaire change. Texte exact fourni, pas de reformulation.
-          const featureGroups = p.isPack ? null : [
+          const cycleData = quarterly ? p.quarterly : p.monthly;
+          // Offres payantes (Starter/Pro/Scale) — même structure en 3 groupes pour les trois, seul le
+          // volume hebdomadaire change. Texte exact fourni par Amar ; « Suivi de la production en temps
+          // réel » n'est listé que sur Starter.
+          const productionItems = [
+            { icon:'image', bold:`${p.imagesPerWeek} nouvelles créatives images`, rest:'livrées chaque semaine' },
+            { icon:'document', bold:'Titres et Descriptions', rest:'pour la campagne (Ad Copies)' },
+            { icon:'chart', bold:'Récapitulatif de l\'analyse de marché', rest:'' },
+            ...(p.id === 'starter' ? [{ icon:'clock', bold:'Suivi de la production', rest:'en temps réel' }] : []),
+            { icon:'bolt', bold:'Production en 24h', rest:'' },
+          ];
+          const featureGroups = [
             { titre:'STRATÉGIE', items:[
               { icon:'search', bold:'Recherche avant production', rest:': concurrents, cible & angles' },
               { icon:'sparkle', bold:'Concepts créatifs', rest:'qui cartonnent en ce moment' },
             ]},
-            { titre:'PRODUCTION', items:[
-              { icon:'image', bold:`${p.imagesPerWeek} nouvelles créatives`, rest:'livrées chaque semaine' },
-              { icon:'document', bold:'Titres et Descriptions', rest:'pour la campagne (Ad Copies)' },
-              { icon:'chart', bold:'Récapitulatif de l\'analyse de marché', rest:'+ opportunité' },
-              { icon:'clock', bold:'Suivi de la production', rest:'en temps réel' },
-              { icon:'bolt', bold:'Livraison en 48h', rest:'' },
-            ]},
+            { titre:'PRODUCTION', items:productionItems },
             { titre:'PERFORMANCE', items:[
               { icon:'grid', bold:'Organisation de vos créatives', rest:'' },
               { icon:'chart', bold:'Analyse des créatives', rest:'top performer' },
-              { icon:'sparkle', bold:'Amélioration en continu', rest:'' },
+              { icon:'sparkle', bold:'Amélioration et Itération', rest:'en continu' },
               { icon:'bulb', bold:'Support WhatsApp et assistant IA stratégique', rest:'dispo 7j/7' },
             ]},
           ];
@@ -4790,7 +4680,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
             >
               {/* Badge — masqué si le pack est épuisé (il a "déjà tout reçu de nous", ce n'est
                   plus vraiment "son plan actuel" au sens où on l'entend pour un abonnement) */}
-              {isCurrent && !(p.isPack && (credits?.available || 0) <= 0) && (
+              {isCurrent && (
                 <div style={{position:'absolute',top:-1,left:'50%',transform:'translateX(-50%)',background:'rgba(255,255,255,0.9)',color:'#0A0A0E',fontSize:9,fontWeight:900,padding:'3px 14px',borderRadius:'0 0 7px 7px',letterSpacing:'0.5px',textTransform:'uppercase',whiteSpace:'nowrap'}}>
                   VOTRE PLAN ACTUEL
                 </div>
@@ -4814,16 +4704,20 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                   moment du checkout, cet affichage n'est qu'indicatif. */}
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
                 <span style={{fontSize:30,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
-                {!p.isPack && <span style={{fontSize:11,color:C.sec}}>/ mois</span>}
-                {!p.isPack && quarterly && (
+                <span style={{fontSize:11,color:C.sec}}>/ mois</span>
+                {quarterly && (
                   <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan trimestriel</span>
                 )}
               </div>
 
+              <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,background:'rgba(45,127,249,0.10)',color:C.accent,fontSize:11,fontWeight:800,marginBottom:14}}>
+                {convertPrice(cycleData.prixImg)} <span style={{fontSize:10,fontWeight:400}}>/ image</span>
+              </div>
+
               <div style={{height:1,background:C.border,marginBottom:16}}/>
 
-              <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:featureGroups?18:13}}>
-                {featureGroups ? featureGroups.map((groupe,g) => (
+              <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:18}}>
+                {featureGroups.map((groupe,g) => (
                   <div key={g}>
                     <div style={{fontSize:9.5,fontWeight:800,color:p.color,letterSpacing:'1.2px',marginBottom:9,opacity:0.85}}>
                       {groupe.titre}
@@ -4837,11 +4731,6 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                       ))}
                     </div>
                     {g < featureGroups.length-1 && <div style={{height:1,background:C.border,marginTop:16,opacity:0.6}}/>}
-                  </div>
-                )) : features.map((f,j) => (
-                  <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
-                    <span style={{flexShrink:0,marginTop:1,width:22,height:22,borderRadius:7,background:`${p.color}18`,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={12} color={p.color}/></span>
-                    <div style={{fontSize:12,color:C.sec,lineHeight:1.45}}><strong style={{color:C.text,fontWeight:700}}>{f.bold}</strong> {f.rest}</div>
                   </div>
                 ))}
               </div>
@@ -4863,9 +4752,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 }}
               >
                 {isCurrent
-                  ? (p.isPack && (credits?.available || 0) > 0)
-                    ? (<>Augmentez Vos Demandes <Icon name="arrow" size={13} color="#fff"/></>)
-                    : (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
+                  ? (<>Renouveler le forfait <Icon name="arrow" size={13} color="#fff"/></>)
                   : isCycleUpsell
                     ? (<>Passer au trimestriel <Icon name="arrow" size={13} color="#fff"/></>)
                     : isCycleDowngradeCycle
@@ -4878,23 +4765,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 }
               </button>
 
-              {/* Lien First Payment sous le CTA Starter — uniquement en mode Mensuel (toggle
-                  trimestriel désactivé), texte exact fourni par Amar. Masqué dès que le compte a
-                  déjà fait UNE transaction, quelle qu'elle soit (has_used_discovery OU simplement
-                  `subscription` non-null = une ligne existe en base, même expirée/inactive) — on
-                  ne propose 99$ qu'à un tout premier achat, jamais à quelqu'un déjà client. */}
-              {!isCurrent && p.id === 'starter' && !quarterly && !user?.user_metadata?.has_used_discovery && !subscription && (() => {
-                const discoveryPlan = PLANS.find(pl => pl.id === 'discovery');
-                if (!discoveryPlan) return null;
-                return (
-                  <div style={{marginTop:10,textAlign:'center'}}>
-                    <a href="javascript:void(0)" onClick={() => onCta(discoveryPlan)} style={{fontSize:10.5,fontWeight:600,color:C.sec,textDecoration:'underline',textUnderlineOffset:2,cursor:'pointer',lineHeight:1.4}}>
-                      ou pour <strong style={{color:C.accent}}>{convertPrice(discoveryPlan.once.price)}</strong> laissez notre <strong style={{color:C.text}}>équipe</strong> vous faire une première <strong style={{color:C.text}}>production stratégique</strong>, puis vous complétez les <strong style={{color:C.accent}}>{convertPrice(discoveryPlan.completion.price)}</strong> qu'après avoir vu le résultat
-                    </a>
-                  </div>
-                );
-              })()}
-              {!isCurrent && (p.id !== 'starter' || quarterly || user?.user_metadata?.has_used_discovery || !!subscription) && (
+              {!isCurrent && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
                   {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Satisfait ou 100% remboursé</span></>}
@@ -5369,12 +5240,6 @@ export default function Platform() {
   const plafondActionEnCoursRef = useRef(false);
   const [plafondBriefEnCours, setPlafondBriefEnCours] = useState(null); // id du brief en cours d'annulation, pour l'affichage
   const [paymentProductId, setPaymentProductId] = useState(null); // id produit Chariow pour la modale de paiement intégrée
-  // Bande upsell Discovery→Starter — fermée pour la session courante (sessionStorage, pas
-  // localStorage) : réapparaît à chaque nouvelle visite, comme demandé, sans jamais réapparaître
-  // en boucle sur les mêmes pages consultées dans la même session déjà.
-  const [d2sBannerDismissed, setD2sBannerDismissed] = useState(() => {
-    try { return sessionStorage.getItem('adstack_d2s_banner_dismissed') === '1'; } catch(e) { return false; }
-  });
   const [showPrepurchaseForm, setShowPrepurchaseForm] = useState(false);
   const [showPostpurchaseForm, setShowPostpurchaseForm] = useState(false);
 
@@ -5867,19 +5732,6 @@ const views = {
     <div style={{display:'flex',flexDirection:'column',height:'100dvh',overflow:'hidden',background:C.bg,fontFamily:"'Inter',sans-serif",color:C.text,WebkitFontSmoothing:'antialiased',MozOsxFontSmoothing:'grayscale'}}>
 
 
-      {subscription?.plan === 'discovery' && !d2sBannerDismissed && (
-        <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:isMobile?10:16,padding:isMobile?'10px 12px 10px 56px':'9px 16px',background:`linear-gradient(90deg, ${C.accent}, #7C3AED)`,flexShrink:0}}>
-          <span style={{flex:'1 1 auto',fontSize:isMobile?12:12.5,fontWeight:600,color:'#fff',lineHeight:1.35,minWidth:0}}>
-            Passe aux choses sérieuses avec <strong style={{background:'linear-gradient(90deg,#fff,#E0E7FF)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>CONVERSION STARTER</strong>.
-          </span>
-          <button onClick={() => setPaymentProductId(PLAN_CHECKOUT_IDS['starter-upgrade-from-discovery'])} style={{padding:isMobile?'7px 12px':'5px 14px',borderRadius:20,border:'none',background:'#fff',color:C.accent,fontWeight:700,fontSize:isMobile?11.5:11.5,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
-            Compléter
-          </button>
-          <button onClick={() => { setD2sBannerDismissed(true); try { sessionStorage.setItem('adstack_d2s_banner_dismissed','1'); } catch(e){} }} style={{background:'transparent',border:'none',color:'rgba(255,255,255,0.75)',cursor:'pointer',padding:2,display:'flex',flexShrink:0}} aria-label="Fermer">
-            <Icon name="x" size={13} color="rgba(255,255,255,0.75)"/>
-          </button>
-        </div>
-      )}
 
       <div style={{display:'flex',flex:1,overflow:'hidden',position:'relative'}}>
         <Sidebar active={section} set={setSection} isDemo={isDemo} setDemo={setIsDemo} collapsed={collapsed} setCollapsed={setCollapsed} isMobile={isMobile} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} convertPrice={convertPrice} user={user} setUser={setUser} unreadCount={unreadCount} subscription={subscription} activeBriefsCount={allBriefs.filter(b=>b.status==='pending'||b.status==='in_production').length} onOpenPayment={(productId)=>setPaymentProductId(productId)} onOpenLogin={()=>setShowLogin(true)} sectionBadges={sectionBadges}/>
