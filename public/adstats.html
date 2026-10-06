@@ -2081,7 +2081,7 @@ textarea::placeholder { color: var(--muted); }
   <div class="page-header">
     <div>
       <div class="page-title">Leads</div>
-      <div class="page-sub">Génération automatique des 3 relances à partir de la mindmap</div>
+      <div class="page-sub">Relances J+3 / J+10 / J+21 — objectif : faire réserver un call</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <div class="search-wrap" style="width:220px">
@@ -2638,7 +2638,7 @@ function render() {
   // Nav counts
   set('nc-prospects', AC.length);
   set('nc-suivi', SV.length);
-  set('nc-leads', LD.length);
+  set('nc-leads', LD.filter(p => !appelDansListe(p)).length);
   majNavAppels();
   majEffetNouveaute(LD, 'id', 'crm_seen_leads', 'nav-item-leads');
   set('nc-contacts', DB.length);
@@ -3060,7 +3060,7 @@ function renderSuivi(data) {
           </div>`).join('')}
       </div>
       <div id="wa-reponse-${p.id}"></div>
-      <div id="wa-demo-${p.id}"></div>
+      <div id="wa-appel-${p.id}"></div>
 
     </div>`;
   }).join('');
@@ -3093,47 +3093,21 @@ function renderSuivi(data) {
       + '</div>';
   });
 
-    // ── Bloc D\u00e9mo : s'affiche seulement une fois "Int\u00e9ress\u00e9" coch\u00e9 — plus tôt que ça,
-    // aucune démo n'a été demandée à Factory, donc rien à envoyer. ──
+    // ── Bloc Call : s'affiche dès que "Intéressé" est coché. À ce stade, le seul objectif est
+    // de faire réserver un call (plus aucun envoi de démo). Cocher → le prospect apparaît
+    // dans la section Appels (voir toggleAppelReserve). ──
   data.forEach(p => {
-    const elD = document.getElementById('wa-demo-' + p.id);
-    if (!elD) return;
-    if (!p.interesse) { elD.innerHTML = ''; return; }
-    const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0];
-    if (!numero && !p.lien_instagram) { elD.innerHTML = ''; return; }
+    const elA = document.getElementById('wa-appel-' + p.id);
+    if (!elA) return;
+    if (!p.interesse) { elA.innerHTML = ''; return; }
     const pid = p.id;
-    let _pNotes = {}; try { _pNotes = JSON.parse(p.notes||'{}'); } catch(e) {}
-    const demo_envoye  = _pNotes.demo_envoye  || false;
-    const appel_reserve = !!_pNotes.appel_reserve;
-    const lien_demo    = _pNotes.lien_demo    || '';
-    const produit_demo = _pNotes.produit_demo || p.produit || '';
-    const demoStatut = lien_demo
-      ? '<span style="font-size:10px;font-weight:700;color:#25D366;">\u2713 D\u00e9mo pr\u00eate</span>'
-      : '<span id="demo-wait-'+pid+'" style="font-size:10px;color:var(--muted);">\u23f3 En attente Factory\u2026 <button onclick="refreshDemoLink(\''+pid+'\');" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:10px;padding:0;font-family:var(--font);">\u21bb Actualiser</button></span>';
-    let _tpl = "Voici l'*aper\u00e7u concret* de notre m\u00e9thode sur votre [Produit] \ud83d\udc47\ud83c\udffd:\n\n[lien_demo]\n\nH\u00e2te de recevoir votre avis ?";
-    try { const _c=DB._config||{}; if(_c.tpl_demo_msg) _tpl=_c.tpl_demo_msg; } catch(e) {}
-    // Stocker données pour sendDemoMsg
-    window._demoData = window._demoData || {};
-    window._demoData[pid] = { numero: numero, produit: produit_demo || p.produit || '', pays: p.pays || '', marque: p.nom_marque || '', tpl: _tpl };
-    elD.innerHTML =
-      '<div style="margin:10px 0 0;padding:10px 12px;background:rgba(37,211,102,.05);border:1px solid rgba(37,211,102,.2);border-radius:8px;">'
-      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">'
-        + '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#25D366;">Int\u00e9ress\u00e9 \u2014 D\u00e9mo</div>'
-        + demoStatut
-      + '</div>'
-      + '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px;">'
-        + '<input id="lien-demo-'+pid+'" type="text" value="'+lien_demo+'" placeholder="Lien d\u00e9mo (auto via Factory)\u2026" oninput="saveLienDemo(\''+pid+'\',this.value)" onpaste="setTimeout(()=>extractProduitFromDemo(\''+pid+'\',this.value),300)" style="flex:1;background:var(--surface3);border:1px solid var(--border2);border-radius:7px;padding:5px 9px;color:var(--text);font-family:var(--font);font-size:11px;outline:none;">'
-        + (produit_demo ? '<span style="font-size:10px;color:var(--blue);white-space:nowrap;" title="'+produit_demo+'">'+produit_demo+'</span>' : '')
-      + '</div>'
-      + '<div id="wa-btn-demo-'+pid+'" style="margin-top:4px;"><button id="btn-send-demo-'+pid+'" onclick="sendDemoMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'#25D366')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Démo (Instagram)':'📱 Envoyer Démo (WhatsApp)')+'</button></div>'
-      + '<div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">'
-      + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(demo_envoye?'#25D366':'var(--muted)')+';font-weight:'+(demo_envoye?'700':'400')+'">'
-        + '<input type="checkbox" '+(demo_envoye?'checked':'')+' style="accent-color:#25D366;cursor:pointer;width:13px;height:13px" onchange="toggleDemoEnvoye(\''+pid+'\',this.checked)">'
-        + 'D\u00e9mo envoy\u00e9e</label>'
-      + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(appel_reserve?'#FFB547':'var(--muted)')+';font-weight:'+(appel_reserve?'700':'400')+'">'
+    const appel_reserve = !!appelNotes(p).appel_reserve;
+    elA.innerHTML =
+      '<div style="margin:10px 0 0;padding:10px 12px;background:rgba(255,181,71,.05);border:1px solid rgba(255,181,71,.2);border-radius:8px;">'
+      + '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#FFB547;margin-bottom:8px;">Intéressé — Call</div>'
+      + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:'+(appel_reserve?'#FFB547':'var(--muted)')+';font-weight:'+(appel_reserve?'700':'400')+'">'
         + '<input type="checkbox" '+(appel_reserve?'checked':'')+' style="accent-color:#FFB547;cursor:pointer;width:13px;height:13px" onchange="toggleAppelReserve(\''+pid+'\',this.checked)">'
-        + 'A r\u00e9serv\u00e9 un appel</label>'
-      + '</div>'
+        + 'A réservé un call</label>'
       + '</div>';
   });
 
@@ -3190,7 +3164,7 @@ async function togglePitchEnvoye(id, val) {
 }
 
 async function sendPitchMsg(pid) {
-  // Même fix que sendDemoMsg (window.open bloqué sur mobile si fait après un await)
+  // Fix mobile (window.open bloqué sur mobile si fait après un await)
   const _pCheck = DB.find(x => x.id === pid);
   const _canalCheck = _pCheck?.canal_contact;
   const _tabWa = (_canalCheck !== 'instagram') ? window.open('', '_blank') : null;
@@ -3207,7 +3181,7 @@ async function sendPitchMsg(pid) {
   }
   { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh && estCanalInstagram(_pFresh)) ? (_pFresh?.lien_instagram || '') : ''; }
   // Toujours relire le template actuel — jamais mis en cache, même pour un prospect déjà
-  // préparé dans cette session (même logique que sendDemoMsg, même raison : fix templates périmés).
+  // préparé dans cette session (fix templates périmés).
   let _tpl = "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*💵 grâce à :\n\n👉🏾 Une vraie stratégie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous intéressé par une *DÉMONSTRATION* sur votre [Produit] ?";
   try { const _c = DB._config || {}; if (_c.tpl_pitch) _tpl = _c.tpl_pitch; } catch(e) {}
   d.tpl = _tpl;
@@ -3230,7 +3204,7 @@ async function sendPitchMsg(pid) {
 
     // Pas de Gemini ici — une seule variable [Produit], substitution directe. Les infos par
     // défaut du prospect font foi à ce stade (la mindmap n'existe pas encore, elle ne sera
-    // produite qu'après confirmation d'intérêt — voir sendDemoMsg pour ce cas-là).
+    // produite qu'après confirmation d'intérêt).
     let msg = d.tpl.replace(/\[Produit\]/gi, d.produit || 'votre produit');
     // Fix : le template mentionne "(adstackofficial.com)" en clair (juste pour nommer l'agence,
     // pas comme lien à cliquer) — l'ancienne logique voyait cette mention et pensait qu'un lien
@@ -3261,217 +3235,6 @@ async function sendPitchMsg(pid) {
   }
 }
 
-async function sendDemoMsg(pid) {
-  // Cause profonde corrigée (window.open bloqué sur mobile) : on ouvre une tab vide
-  // immédiatement au tap (avant tout await), puis on la redirige une fois le message prêt.
-  // Sur Instagram, window.open n'est pas utilisé donc le fix ne s'applique pas.
-  const _pCheck = DB.find(x => x.id === pid);
-  const _canalCheck = _pCheck?.canal_contact;
-  const _tabWa = (_canalCheck !== 'instagram') ? window.open('', '_blank') : null;
-
-  let d = (window._demoData || {})[pid];
-  if (!d) {
-    const p = DB.find(x => x.id === pid);
-    const btnEl = document.getElementById('btn-send-demo-' + pid);
-    if (!p && !btnEl) { toast('Données introuvables — actualise la page'); return; }
-    const numero = (p?.lien_wa || btnEl?.dataset?.numero || '').replace('https://wa.me/','').split('?')[0];
-    let _pNotes = {}; try { _pNotes = JSON.parse(p?.notes||'{}'); } catch(e) {}
-    d = { numero, produit: _pNotes.produit_demo || p?.produit || '', pays: p?.pays || btnEl?.dataset?.pays || '', marque: p?.nom_marque || '', lien_instagram: p?.lien_instagram || '' };
-    window._demoData = window._demoData || {};
-    window._demoData[pid] = d;
-  }
-  // canal_contact (enregistré au moment du premier "Contacté") fait foi — jamais une
-  // supposition depuis la présence de lien_instagram, qui peut exister même si le contact
-  // initial a été fait par WhatsApp (cause du bug signalé : bascule vers le mauvais canal
-  // lors de la relance Pitch + Démo).
-  { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh && estCanalInstagram(_pFresh)) ? (_pFresh?.lien_instagram || '') : ''; }
-  // Le template n'est JAMAIS mis en cache avec le reste — toujours relu depuis la config actuelle,
-  // même pour un prospect déjà préparé dans cette session (fix : template obsolète après modification).
-  let _tpl = "Voici l'*aper\u00e7u concret* de notre m\u00e9thode sur votre [Produit] \ud83d\udc47\ud83c\udffd:\n\n[lien_demo]\n\nH\u00e2te de recevoir votre avis ?";
-  try { const _c = DB._config || {}; if (_c.tpl_demo_msg) _tpl = _c.tpl_demo_msg; } catch(e) {}
-  d.tpl = _tpl;
-  const btn = document.getElementById('btn-send-demo-' + pid);
-  if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Préparation…'; }
-  try {
-    let curLien = (document.getElementById('lien-demo-'+pid)||{}).value || '';
-    if (!curLien) { toast('Lien démo manquant'); if (btn){btn.disabled=false;btn.innerHTML='📱 Envoyer Démo';} return; }
-    curLien += (curLien.includes('?') ? '&' : '?') + 'utm_source=crm&utm_medium=demo&utm_campaign=demo&utm_content=' + pid;
-    // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp) : thumbnail:null
-    // faisait faire au raccourcisseur une redirection HTTP brute (302), sans aucune balise OG —
-    // WhatsApp ne suit pas cette redirection pour aller chercher les balises de la page de
-    // démo elle-même. Le nom du fichier miniature est le même slug que celui de l'URL de la
-    // démo (voir /fill-demo-msg côté serveur, qui fait la même extraction) — on le transmet
-    // maintenant explicitement pour que le lien court serve directement les bonnes balises OG.
-    const _slugDemo = curLien.split('/demo/')[1]?.split('?')[0]?.replace('.html', '') || null;
-    try {
-      const _rShort = await fetch('https://adstack-server.onrender.com/shorten', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ url: curLien, thumbnail: _slugDemo, campagne: 'demo' })
-      });
-      const _dShort = await _rShort.json();
-      if (_dShort.short_url) curLien = _dShort.short_url;
-    } catch(e) {}
-
-    let msg = '';
-    // Appel serveur : Gemini lit la mindmap et remplit les variables + préserve les *
-    try {
-      const r = await fetch(PROSP_API + '/fill-demo-msg', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lien_demo: curLien, pays_code: d.pays, tpl: d.tpl }),
-        signal: AbortSignal.timeout(20000)
-      });
-      if (r.ok) {
-        const rd = await r.json();
-        msg = (rd.message || '').trim();
-        // Vérifier que le message est complet (pas tronqué)
-        if (msg && msg.length < 50) msg = ''; // trop court = réponse invalide
-      }
-    } catch(e) { console.warn('fill-demo-msg:', e.message); }
-
-    // Fallback local si serveur indispo ou réponse invalide
-    if (!msg) {
-      const niche = await fetchNiche(d.produit).catch(()=>d.produit) || d.produit;
-      const paysAdj = getPaysAdjectif(d.pays) || d.pays;
-      msg = (d.tpl||'')
-        .replace(/\[Niche\]/gi, niche)
-        .replace(/\[Pays(?:[^\]]*)\]/gi, paysAdj)
-        .replace(/\[lien_demo\]/gi, curLien)
-        .replace(/\[Produit\]/gi, d.produit||'[Produit]')
-        .replace(/\[nom marque\]/gi, d.marque||'');
-    }
-    msg = msg.replace(/\n/g, '\n');
-    if (d.lien_instagram) {
-      const copie = await copierTexteAvecRepli(msg);
-      toast(copie ? 'Texte copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Impossible de copier automatiquement — copie le texte manuellement');
-      if (_tabWa) { _tabWa.close(); } // on a ouvert une tab inutilement, on la referme
-      ouvrirInstagramAvecRythme(d.lien_instagram);
-    } else {
-      const waUrl = 'https://wa.me/'+d.numero.replace(/\D/g,'')+'?text='+encodeURIComponent(msg);
-      if (_tabWa) { _tabWa.location.href = waUrl; } else { window.open(waUrl,'_blank'); }
-    }
-  } catch(e) {
-    toast('Erreur : ' + e.message);
-    if (_tabWa) { try { _tabWa.close(); } catch(e2) {} }
-  } finally {
-    if (btn) { btn.disabled = false; btn.innerHTML = d.lien_instagram ? '📷 Envoyer Démo (Instagram)' : '📱 Envoyer Démo (WhatsApp)'; }
-  }
-}
-
-
-async function sendInteresse(id, numero) {
-  const p = DB.find(x => x.id === id);
-  if (!p || !numero) return;
-  // Toujours lire le template depuis DB._config (mis à jour après chaque save)
-  let tpl = "Je posais la question car on aide des *marques*\ndans la niche *[Niche]* à *vendre plus*.\n*Uniquement* grâce à des *Images Publicitaires* basés sur :\nUne analyse de votre marché *\"[Pays]\"*\npour définir et comprendre *la cible* qui achète vraiment votre *[Produit]*;\nÇa vous intéresserez de voir une *démonstration* et ce qu'on *peut mettre en place* pour vous concrètement ?";
-  // Lire template depuis DB._config (mis à jour au save) OU localStorage (fallback)
-  try {
-    const c = DB._config || {};
-    const ls = localStorage.getItem('tpl_interesse') || '';
-    const saved = c.tpl_interesse || ls;
-    if (saved) tpl = saved;
-  } catch(e) {}
-  // Await fetchNiche pour avoir la vraie niche au moment du clic
-  const niche = await fetchNiche(p.produit || '') || p.produit || '';
-  const msg = tpl
-    .replace(/\[Niche\]/gi, niche)
-    .replace(/\[Pays(?:[^\]]*)\]/gi, getPaysAdjectif(p.pays||''))
-    .replace(/\[Produit\]/gi, p.produit||'')
-    .replace(/\[nom marque\]/gi, p.nom_marque||'')
-    .replace(/\\n/g,'\n').replace(/\r\n/g,'\n');
-  window.open('https://wa.me/'+numero.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
-}
-
-async function toggleInteresseEnvoye(id, val) {
-  const p = DB.find(x => x.id === id);
-  if (!p) return;
-  let notes = {}; try { notes = JSON.parse(p.notes||'{}'); } catch(e) {}
-  notes.interesse_envoye = val;
-  p.notes = JSON.stringify(notes);
-  await patch(id, { notes: p.notes });
-  toast(val ? 'Message envoyé marqué' : 'Marqué non envoyé');
-}
-
-const _saveLienDemoDebounce = {};
-async function saveLienDemo(id, lien) {
-  const p = DB.find(x => x.id === id);
-  if (!p) return;
-  const numero = (p.lien_wa||'').replace('https://wa.me/','').split('?')[0];
-  let tpl = "Salut *[nom marque]*,\nVoici le lien de la démonstration  : *[lien_demo]*\npour *[Produit]*\nVous verrez aussi ce qu'on pourra mettre en place concrètement pour vous !!!\nEt on attend impatiemment votre avis.";
-  try {
-    const c = DB._config || {};
-    const ls = localStorage.getItem('tpl_demo_msg') || '';
-    const saved = c.tpl_demo_msg || ls;
-    if (saved) tpl = saved;
-  } catch(e) {}
-
-  const wbEl = document.getElementById('wa-btn-interesse-'+id);
-  // Repli immédiat — substitution simple, affichée tout de suite pendant que Gemini lit la
-  // mindmap en tâche de fond. Sert aussi de filet de sécurité si la lecture Gemini échoue.
-  const prodRepli = (()=>{ let n={}; try{n=JSON.parse(p.notes||'{}')}catch(e){} return n.produit_demo||p.produit||''; })();
-  const msgRepli = tpl.replace(/\[nom marque\]/gi,p.nom_marque||'').replace(/\[Produit\]/gi,prodRepli).replace(/\[lien_demo\]/gi,lien||'[lien_demo]').replace(/\\n/g,'\n');
-  if (wbEl) wbEl.innerHTML = waButton(numero, msgRepli, 'Envoyer la démo WhatsApp','',true);
-
-  clearTimeout(_saveLienDemoDebounce[id]);
-  _saveLienDemoDebounce[id] = setTimeout(async()=>{
-    let notes={}; try{notes=JSON.parse(p.notes||'{}')}catch(e){}
-    notes.lien_demo=lien; p.notes=JSON.stringify(notes);
-    await patch(id,{notes:p.notes});
-    if(p.statut==='lead') renderLeads(DB.filter(x=>x.statut==='lead'));
-
-    // Cause profonde corrigée (message Pitch+Démo utilisant un produit périmé) : la
-    // substitution simple se basait sur un champ stocké sur la fiche prospect, qui peut avoir
-    // changé depuis (démo régénérée pour un autre produit). La vraie mindmap générée, elle,
-    // contient toujours l'info exacte et à jour — on la lit maintenant via Gemini, comme pour
-    // les relances J+3/J+10/J+21, au lieu de faire confiance à un champ potentiellement obsolète.
-    if (!lien || !/^https?:\/\//i.test(lien)) return; // pas de lien valide, rien à lire
-    try {
-      const htmlRes = await fetch(lien, { signal: AbortSignal.timeout(15000) });
-      if (!htmlRes.ok) return; // échec silencieux — le repli déjà affiché reste valable
-      const html = await htmlRes.text();
-      const briefText = (() => {
-        const sansScriptsEtStyles = html
-          .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-          .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ');
-        const d = document.createElement('div');
-        d.innerHTML = sansScriptsEtStyles;
-        return (d.textContent || '').replace(/\s+/g, ' ').trim().substring(0, 8000);
-      })();
-      const prompt = 'Tu es expert copywriter WhatsApp pour e-commerce africain francophone.\n\n'
-        + 'Lis et comprends ENTIÈREMENT le brief ci-dessous avant de remplir quoi que ce soit.\n\n'
-        + 'BRIEF ADSTACK (mindmap complète du prospect) :\n' + briefText + '\n\n'
-        + 'TEMPLATE À REMPLIR :\n' + tpl + '\n\n'
-        + 'VARIABLES À EXTRAIRE DU BRIEF ET INJECTER :\n'
-        + '- [nom marque] = nom de la marque/boutique\n'
-        + '- [Produit] = nom du produit — utilise TOUJOURS celui du brief ci-dessus, jamais une supposition, c\'est la source de vérité la plus à jour\n'
-        + '- [lien_demo] = ne JAMAIS remplacer ce crochet, laisse-le tel quel, il sera substitué séparément par le code\n\n'
-        + 'RÈGLE ABSOLUE : aucun texte entre crochets du type [Xxx] (sauf [lien_demo], à laisser tel quel) ne doit JAMAIS apparaître dans le résultat final.\n'
-        + 'CONSIGNES : CONSERVE tous les *astérisques*, ne modifie pas les liens, garde le ton du template.\n\n'
-        + 'Retourne UNIQUEMENT ce JSON valide : {"marque":"...","produit":"...","message":"..."}';
-      const res = await fetch(PROSP_API + '/gen-messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt }), signal: AbortSignal.timeout(30000)
-      });
-      const d = await res.json();
-      if (!res.ok || !d.text) return;
-      const raw = d.text.replace(/```json|```/g, '').trim();
-      const a = raw.indexOf('{'), b = raw.lastIndexOf('}');
-      const vars = JSON.parse(raw.slice(a, b + 1));
-      if (!vars.message) return;
-      const msgFinal = vars.message.replace(/\[lien_demo\]/gi, lien).replace(/\\n/g, '\n');
-      // Ne remplace le bouton QUE si le champ lien n'a pas changé entre-temps (utilisateur qui
-      // aurait déjà collé un autre lien pendant que Gemini traitait celui-ci).
-      const inputActuel = document.getElementById('lien-demo-'+id);
-      if (inputActuel && inputActuel.value !== lien) return;
-      if (wbEl) wbEl.innerHTML = waButton(numero, msgFinal, 'Envoyer la démo WhatsApp','',true);
-      // Met aussi à jour le produit sur la fiche si Gemini en a trouvé un plus précis/à jour.
-      if (vars.produit) { notes.produit_demo = vars.produit; p.notes = JSON.stringify(notes); await patch(id,{notes:p.notes}); }
-    } catch(e) {
-      console.warn('[Demo Msg] Lecture mindmap via Gemini échouée, repli simple conservé :', e.message);
-    }
-  },700);
-}
-
 async function remettreEnSuivi(id) {
   if (!confirm('Remettre ce lead en suivi ?')) return;
   const p = DB.find(x => x.id === id);
@@ -3483,45 +3246,6 @@ async function remettreEnSuivi(id) {
   if (!ok) { p.statut = 'lead'; renderLeads(DB.filter(x=>x.statut==='lead')); }
   else toast('Lead remis en suivi');
 }
-
-// Cause profonde corrigée (nom de produit périmé dans le message Pitch+Démo, malgré un
-// changement de produit fait dans la fiche prospect après génération d'une nouvelle démo) :
-// deux bugs cumulés rendaient cette fonction totalement inopérante depuis longtemps —
-// 1) le domaine vérifié (adstack.duckdns.org/demos/) est un ancien prototype abandonné,
-//    remplacé depuis par adstackofficial.com/demo/ — la condition était donc TOUJOURS fausse,
-//    la fonction ne s'exécutait jamais, silencieusement.
-// 2) même corrigé, l'extraction lisait og:title ("Marque — Démo AdStack"), qui ne contient PAS
-//    le nom du produit — elle aurait extrait "Démo AdStack" au lieu du vrai produit.
-// Utilise maintenant la même extraction fiable que /fill-demo-msg côté serveur (lecture directe
-// de <div class="prod">...</div> dans le HTML de la mindmap — jamais une déduction).
-// Et surtout : met à jour p.produit DIRECTEMENT (pas seulement notes.produit_demo, qui n'était
-// lu que par le seul flux Pitch+Démo) — pour que le bon produit apparaisse PARTOUT dans le CRM
-// dès qu'une démo révèle qu'il a changé, exactement comme demandé.
-async function extractProduitFromDemo(id, url) {
-  if (!url || !url.includes('/demo/')) return;
-  try {
-    const r = await fetch(url);
-    const html = await r.text();
-    const m = html.match(/<div class="prod">([^<]{2,80})<\/div>/i);
-    const produit = m ? m[1].trim() : '';
-    if (!produit) return;
-    const p = DB.find(x => x.id === id);
-    if (!p) return;
-    let notes={}; try{notes=JSON.parse(p.notes||'{}')}catch(e){}
-    notes.produit_demo=produit; p.notes=JSON.stringify(notes);
-    const inp=document.getElementById('lien-demo-'+id);
-    if(inp) saveLienDemo(id,inp.value);
-    const _patchBody = { notes: p.notes };
-    if (p.produit !== produit) {
-      p.produit = produit;
-      _patchBody.produit = produit;
-      toast(`Produit mis à jour : "${produit}" (détecté depuis la démo)`);
-      render();
-    }
-    await patch(id, _patchBody);
-  } catch(e) {}
-}
-
 
 function copyDemoLien(el) {
   const lien = decodeURIComponent(el.dataset.demoLien || '');
@@ -3539,115 +3263,6 @@ async function toggleCheck(id, field, val) {
     filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
     return;
   }
-  // Quand interesse passe à true → créer une demande de démo en Factory (si pas déjà existante)
-  // Déplacé depuis a_repondu : la démo ne doit être produite qu'après confirmation d'intérêt
-  // au pitch, pas dès la simple réponse (qui ne signifie plus "veut une démo" dans le nouveau
-  // funnel Contacté → Réponse → Intéressé → Lead).
-  if (field === 'interesse' && val === true && p) {
-    try {
-      // Vérifier qu'il n'y a pas déjà une demo en_attente pour ce prospect
-      const check = await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente&select=id`, { headers: H });
-      const existing = await check.json();
-      if (Array.isArray(existing) && existing.length > 0) {
-        toast('Démo déjà en attente pour ce prospect');
-      } else {
-        await fetch(`${SB}/demos`, {
-          method: 'POST',
-          headers: { ...H, 'Prefer': 'return=minimal' },
-          body: JSON.stringify({
-            prospect_id: id,
-            nom_marque:  p.nom_marque || '',
-            produit:     p.produit    || '',
-            pays:        p.pays       || '',
-            telephone:   (p.lien_wa||'').replace('https://wa.me/','').split('?')[0],
-            statut:      'en_attente',
-          })
-        });
-        toast('Démo ajoutée à la file d\'attente Factory ✓');
-      }
-    } catch(e) {
-      console.warn('Demos insert error:', e.message);
-    }
-    pollDemoLink(id);
-  }
-
-  // Quand interesse repasse à false → retirer la démo en attente de la Factory
-  if (field === 'interesse' && val === false && p) {
-    try {
-      await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H });
-      toast('Démo retirée de la file Factory');
-    } catch(e) { console.warn('Demos delete error:', e.message); }
-    // Arrêter le polling si actif
-    if (_demoPollers[id]) { clearInterval(_demoPollers[id]); delete _demoPollers[id]; }
-  }
-
-  // Quand lead_qualifie passe à true → retirer la démo en attente (le prospect avance dans le funnel)
-  if (field === 'lead_qualifie' && val === true && p) {
-    try {
-      await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H });
-    } catch(e) { console.warn('Demos delete error:', e.message); }
-    if (_demoPollers[id]) { clearInterval(_demoPollers[id]); delete _demoPollers[id]; }
-  }
-}
-
-async function toggleDemoEnvoye(id, val) {
-  const p = DB.find(x => x.id === id);
-  if (!p) return;
-  let s = {};
-  try { s = JSON.parse(p.notes || '{}'); } catch(e) {}
-  s.demo_envoye = val;
-  if (val && !s.demo_envoye_at) s.demo_envoye_at = new Date().toISOString();
-  p.notes = JSON.stringify(s);
-  // Re-render immédiat
-  filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
-  await patch(id, { notes: p.notes });
-  // Mise à jour visuelle locale sans reload complet
-  const lbl = document.querySelector(`[onchange="toggleDemoEnvoye('${id}',this.checked)"]`)?.parentElement;
-  if (lbl) {
-    lbl.style.color = val ? '#25D366' : 'var(--muted)';
-    lbl.style.fontWeight = val ? '700' : '400';
-  }
-  toast(val ? 'Démo marquée envoyée ✓' : 'Marquée non envoyée');
-}
-
-// Actualisation manuelle du lien démo dans la carte prospect
-async function refreshDemoLink(pid) {
-  try {
-    const r = await fetch(`${SB}/prospects?id=eq.${pid}&select=notes`, { headers: H });
-    const rows = await r.json();
-    if (!rows.length) return;
-    const notes = (() => { try { return JSON.parse(rows[0].notes||'{}'); } catch(e) { return {}; } })();
-    if (!notes.lien_demo) { toast('Démo pas encore prête…'); return; }
-    // Mettre à jour DB local
-    const p = DB.find(x => x.id === pid);
-    if (p) p.notes = rows[0].notes;
-    filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
-    toast('Lien démo rechargé ✓');
-  } catch(e) { toast('Erreur actualisation : ' + e.message); }
-}
-
-// Polling automatique : vérifie toutes les 30s si la Factory a livré le lien démo (max 30 min)
-const _demoPollers = {};
-function pollDemoLink(pid) {
-  if (_demoPollers[pid]) return;
-  let attempts = 0;
-  _demoPollers[pid] = setInterval(async () => {
-    attempts++;
-    if (attempts > 60) { clearInterval(_demoPollers[pid]); delete _demoPollers[pid]; return; }
-    try {
-      const r = await fetch(`${SB}/prospects?id=eq.${pid}&select=notes`, { headers: H });
-      const rows = await r.json();
-      if (!rows.length) return;
-      const notes = (() => { try { return JSON.parse(rows[0].notes||'{}'); } catch(e) { return {}; } })();
-      if (notes.lien_demo) {
-        const p = DB.find(x => x.id === pid);
-        if (p) p.notes = rows[0].notes;
-        filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
-        toast('✓ Démo prête — lien chargé dans la carte !');
-        clearInterval(_demoPollers[pid]); delete _demoPollers[pid];
-      }
-    } catch(e) {}
-  }, 30000);
 }
 
 async function remettreAContacter(id) {
@@ -3663,12 +3278,10 @@ async function remettreAContacter(id) {
   const _pReset = DB.find(x => x.id === id);
   if (_pReset && appelNotes(_pReset).appel_reserve) {
     const _nReset = appelNotes(_pReset);
-    ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at'].forEach(k => delete _nReset[k]);
+    ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via'].forEach(k => delete _nReset[k]);
     _bodyReset.notes = JSON.stringify(_nReset);
   }
   await patch(id, _bodyReset);
-  // Supprimer la demande de démo en attente si elle existe
-  try { await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H }); } catch(e) {}
   toast('Remis dans "À contacter"');
   render();
 }
@@ -3678,9 +3291,6 @@ async function toLead(id) {
   const p = DB.find(x => x.id === id);
   if (p) { p.statut = 'lead'; p.date_lead = date_lead; }
   await patch(id, { statut: 'lead', date_lead });
-  // Nettoyer la démo en attente puisque le prospect avance dans le funnel
-  try { await fetch(`${SB}/demos?prospect_id=eq.${id}&statut=eq.en_attente`, { method:'DELETE', headers: H }); } catch(e) {}
-  if (_demoPollers[id]) { clearInterval(_demoPollers[id]); delete _demoPollers[id]; }
   toast('Passé en Lead');
   render();
 }
@@ -3689,7 +3299,8 @@ async function toLead(id) {
 // APPELS — prospects ayant réservé un appel
 // Données dans prospects.notes (JSON), comme demo_envoye / pitch_envoye : aucune colonne
 // Supabase à créer.
-//   appel_reserve    (bool)  coché dans Suivi, "A réservé un appel"
+//   appel_reserve    (bool)  coché dans Suivi (Intéressé) ou dans Leads, "A réservé un call"
+//   appel_via        (str)   relance d'origine ("J+3"/"J+10"/"J+21") si coché depuis Leads
 //   appel_reserve_at (ISO)   posé AU MOMENT de la coche — départ du délai de 24 h
 //   appel_fait       (bool)  coché dans la section Appels
 //   appel_fait_at    (ISO)
@@ -3745,11 +3356,15 @@ function majNavAppels() {
 
 function rafraichirApresAppel() {
   filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
+  filterLeads();      // un lead qui réserve un call quitte Leads (et y revient si on annule)
   renderAppels();
   majNavAppels();
+  set('nc-leads', DB.filter(p => p.statut === 'lead' && !appelDansListe(p)).length);
 }
 
-async function toggleAppelReserve(id, val) {
+// via (optionnel) : relance à l'origine de la réservation ("J+3" / "J+10" / "J+21"), posée quand
+// on coche depuis la carte d'un lead. Absent quand on coche depuis Suivi (étape Intéressé).
+async function toggleAppelReserve(id, val, via) {
   const p = DB.find(x => x.id === id);
   if (!p) return;
   const ancien = p.notes;
@@ -3757,9 +3372,10 @@ async function toggleAppelReserve(id, val) {
   if (val) {
     s.appel_reserve = true;
     s.appel_reserve_at = new Date().toISOString();   // départ des 24 h
+    if (via) s.appel_via = via; else delete s.appel_via;
     delete s.appel_fait; delete s.appel_fait_at;
   } else {
-    delete s.appel_reserve; delete s.appel_reserve_at;
+    delete s.appel_reserve; delete s.appel_reserve_at; delete s.appel_via;
     delete s.appel_fait;    delete s.appel_fait_at;
   }
   p.notes = JSON.stringify(s);
@@ -3770,7 +3386,7 @@ async function toggleAppelReserve(id, val) {
     rafraichirApresAppel();
     return;
   }
-  toast(val ? 'Appel réservé ✓ — rappel dans 24 h' : 'Réservation d\'appel annulée');
+  toast(val ? 'Call réservé ✓ — il est maintenant dans Appels (rappel dans 24 h)' : 'Réservation de call annulée — le prospect retrouve son étape');
 }
 
 async function toggleAppelFait(id, val) {
@@ -3794,7 +3410,7 @@ async function toggleAppelFait(id, val) {
 function annulerReservationAppel(id) {
   const p = DB.find(x => x.id === id);
   const nom = p?.nom_marque || 'ce prospect';
-  if (!confirm('Annuler la réservation d\'appel de ' + nom + ' ?\nIl disparaît de la liste Appels (la case "A réservé un appel" est décochée dans Suivi).')) return;
+  if (!confirm('Annuler la réservation d\'appel de ' + nom + ' ?\nIl disparaît de la liste Appels et retrouve son étape (Suivi ou Leads).')) return;
   toggleAppelReserve(id, false);
 }
 
@@ -3818,7 +3434,7 @@ function renderAppels() {
 
   if (!data.length) {
     el.innerHTML = '<div class="empty"><div class="empty-title">' + (q ? 'Aucun résultat' : 'Aucun appel réservé') + '</div>'
-      + (q ? '' : 'Cochez "A réservé un appel" dans Suivi pour qu\'un prospect apparaisse ici') + '</div>';
+      + (q ? '' : 'Cochez "A réservé un call" dans Suivi (Intéressé) ou dans Leads pour qu\'un prospect apparaisse ici') + '</div>';
     return;
   }
 
@@ -3887,13 +3503,14 @@ function renderAppels() {
             + '<span style="font-size:12px;color:var(--muted)">' + esc2(p.pays || '—') + '</span>'
             + '<span style="font-size:10px;font-weight:700;color:var(--muted);border:1px solid var(--border);border-radius:4px;padding:1px 6px">' + (STATUT_LBL[p.statut] || p.statut) + '</span>'
             + badge
+            + (n.appel_via ? '<span style="font-size:10px;font-weight:700;color:#FFB547;border:1px solid rgba(255,181,71,.3);border-radius:4px;padding:1px 6px">via relance ' + esc2(n.appel_via) + '</span>' : '')
           + '</div>'
           + '<div style="font-size:12px;color:var(--muted)">' + sousTitre + '</div>'
         + '</div>'
         + '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
           + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
           + btnDemo
-          + '<button class="btn btn-ghost btn-sm" onclick="annulerReservationAppel(\'' + p.id + '\')" title="Annuler la réservation d\'appel">Annuler la réservation</button>'
+          + '<button class="btn btn-ghost btn-sm" onclick="annulerReservationAppel(\'' + p.id + '\')" title="Annuler la réservation de call">Annuler la réservation</button>'
           + '<button class="btn btn-red btn-sm" onclick="deleteProspect(\'' + p.id + '\')">Supprimer</button>'
         + '</div>'
       + '</div>'
@@ -3947,8 +3564,14 @@ function filterLeads() {
 
 function renderLeads(data) {
   const el = document.getElementById('leads-list');
+  // But des relances = faire réserver un call. Un lead qui a réservé est dans Appels : on ne
+  // le relance plus ici (il revient si la réservation est annulée).
+  const _avantFiltre = data.length;
+  data = data.filter(p => !appelDansListe(p));
   if (!data.length) {
-    el.innerHTML = '<div class="empty"><div class="empty-title">Aucun lead qualifié</div>Les leads apparaissent ici après avoir coché les 4 étapes dans le suivi</div>';
+    el.innerHTML = _avantFiltre
+      ? '<div class="empty"><div class="empty-title">Aucun lead à relancer</div>Les leads qui ont réservé un call sont dans la section Appels</div>'
+      : '<div class="empty"><div class="empty-title">Aucun lead qualifié</div>Les leads apparaissent ici après avoir coché les 4 étapes dans le suivi</div>';
     return;
   }
 
@@ -4032,7 +3655,6 @@ function renderLeads(data) {
       const est_auj       = jDep === j;
       const est_futur     = jDep < j;
       const sent          = jStatus['sent_j' + j];
-      const achete        = jStatus['achat_j' + j];
       const notesObj = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
       // Priorité : lien pré-généré par genMessages (variables Claude remplies)
       // Fallback : template brut avec [Marque]/[Produit] seulement
@@ -4094,7 +3716,7 @@ function renderLeads(data) {
 
       // Cases à cocher (uniquement si le J+ est passé ou aujourd'hui)
       const checkHtml = (jours_ecoules || est_auj) ? (
-        '<div style="display:flex;gap:14px;margin-top:4px;padding:0 2px">'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" ' + (sent ? 'checked' : '') + ' data-id="' + p.id + '" data-key="sent_j' + j + '" style="accent-color:var(--blue);cursor:pointer;width:12px;height:12px" onchange="saveJStatus(this.dataset.id,this.dataset.key,this.checked)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:' + (sent ? 'var(--blue)' : 'var(--muted)') + ';font-weight:' + (sent ? '600' : '400') + '">Envoyé</span>'        + '</label>'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" ' + (achete ? 'checked' : '') + ' data-id="' + p.id + '" data-key="achat_j' + j + '" style="accent-color:#FFB547;cursor:pointer;width:12px;height:12px" onchange="saveJStatus(this.dataset.id,this.dataset.key,this.checked)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:' + (achete ? '#FFB547' : 'var(--muted)') + ';font-weight:' + (achete ? '600' : '400') + '">A acheté</span>'        + '</label>'        + '</div>'      ) : '';
+        '<div style="display:flex;gap:14px;margin-top:4px;padding:0 2px">'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" ' + (sent ? 'checked' : '') + ' data-id="' + p.id + '" data-key="sent_j' + j + '" style="accent-color:var(--blue);cursor:pointer;width:12px;height:12px" onchange="saveJStatus(this.dataset.id,this.dataset.key,this.checked)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:' + (sent ? 'var(--blue)' : 'var(--muted)') + ';font-weight:' + (sent ? '600' : '400') + '">Envoyé</span>'        + '</label>'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" data-id="' + p.id + '" data-via="J+' + j + '" style="accent-color:#FFB547;cursor:pointer;width:12px;height:12px" onchange="if(this.checked) toggleAppelReserve(this.dataset.id,true,this.dataset.via)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:var(--muted);font-weight:400">A réservé un call</span>'        + '</label>'        + '</div>'      ) : '';
 
       return '<div style="flex-shrink:0">' + btnHtml + checkHtml + '</div>';
     }).join('');
@@ -4682,8 +4304,8 @@ async function renderDashboard() {
     heroEl.innerHTML = etape(c, 'Contactés', 100, false) + fleche
                       + etape(r, 'Réponses',  pct(r), false) + fleche
                       + etape(i, 'Intéressé', pct(i), false) + fleche
-                      + etape(appelsRes, 'Appels', pct(appelsRes), false) + fleche
                       + etape(l, 'Leads',     pct(l), false) + fleche
+                      + etape(appelsRes, 'Appels', pct(appelsRes), false) + fleche
                       + etape(a, 'Acheteurs', pct(a), true);
   }
 
@@ -4843,7 +4465,10 @@ async function renderDashboard() {
         // = funnel_events type 'achat' généré par traiterAttributionCRM, indépendant du prospect.
         { cle: 'statut_whatsapp', label: 'Statut WA', envoyes: 0, achats: achatParCampagne['statut_whatsapp'] || 0 },
       ];
-      const lignes = MESSAGES.map(m => {
+      // Plus d'envoi de démo : la ligne "Démo" ne reste affichée que s'il y a de l'historique
+      // (démos déjà envoyées / clics déjà enregistrés sur la période).
+      const MESSAGES_AFFICHES = MESSAGES.filter(m => m.cle !== 'demo' || m.envoyes > 0 || (clicsParCampagne.demo || 0) > 0);
+      const lignes = MESSAGES_AFFICHES.map(m => {
         const clics = clicsParCampagne[m.cle] || 0;
         const ctr = m.envoyes > 0 ? (clics/m.envoyes)*100 : null;
         const conv = (m.achats !== null && clics > 0) ? (m.achats/clics)*100 : null;
