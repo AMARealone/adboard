@@ -1265,6 +1265,21 @@ const PaymentModal = ({ productId, userEmail, onClose }) => {
 };
 
 // ── Modal demande de créatives ─────────────────────────────────────────────
+// Vignette de galerie : si le fichier image n'existe plus (projet de stockage supprimé, fichier perdu),
+// on affiche un état « Image indisponible » lisible au lieu d'un cadre vide ou d'une icône cassée.
+const ImageGalerie = ({ src, alt, style }) => {
+  const [ko, setKo] = useState(false);
+  if (ko) {
+    return (
+      <div style={{...style,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,background:'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',color:'#8A8D95',fontSize:10,textAlign:'center',padding:8}}>
+        <Icon name="image" size={20} color="#8A8D95"/>
+        <span>Image indisponible</span>
+      </div>
+    );
+  }
+  return <img src={src} alt={alt} loading="lazy" decoding="async" draggable={false} onError={()=>setKo(true)} style={style}/>;
+};
+
 const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, C}) => {
   // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 6 / 12 / 24 par semaine.
   const [qty, setQty] = useState(6);
@@ -3190,7 +3205,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 (original, potentiellement 500 Ko-2 Mo) pour la grille — repli sur imageUrl pour
                 les créatives livrées avant ce fix, qui n'ont pas de thumbUrl. */}
             {c.imageUrl && (
-              <img src={c.thumbUrl || c.imageUrl} alt={c.angle} loading="lazy" decoding="async" draggable={false}
+              <ImageGalerie src={c.thumbUrl || c.imageUrl} alt={c.angle}
                 style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',pointerEvents:'none'}}/>
             )}
             {selectMode && !isTpMode && (
