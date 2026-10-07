@@ -1800,6 +1800,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
 const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user, onNeedLogin, onAskCreatives, cancelCreatives, notify, setProducts, openEdit, onOpenPayment, C}) => {
   const [hovered, setHovered] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [photoCassee, setPhotoCassee] = useState(false); // l'image du produit n'a pas pu être chargée
   const brief = briefs[p.id];
   const hasActiveBrief = briefEstActif(brief);
 
@@ -1827,8 +1828,19 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
       onMouseEnter={e=>{setHovered(true); e.currentTarget.style.borderColor='rgba(45,127,249,0.35)'; e.currentTarget.style.transform='translateY(-3px)'; e.currentTarget.style.boxShadow='0 12px 32px rgba(45,127,249,0.12)';}}
       onMouseLeave={e=>{setHovered(false); e.currentTarget.style.borderColor=C.border; e.currentTarget.style.transform='translateY(0)'; e.currentTarget.style.boxShadow='none';}}
     >
-      <div style={{aspectRatio:'4/3',position:'relative',background: p.photo ? `url(${p.photo}) center/cover no-repeat` : 'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-        {!p.photo && <Icon name="box" size={26} color={C.muted}/>}
+      <div style={{aspectRatio:'4/3',position:'relative',overflow:'hidden',background:'repeating-linear-gradient(135deg,#171B24,#171B24 10px,#14161D 10px,#14161D 20px)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        {/* <img> et non un fond CSS : referrerPolicy="no-referrer" contourne les CDN qui bloquent les images
+            appelées depuis un autre site, et onError remplace une image cassée par l'icône au lieu d'un vide noir. */}
+        {p.photo && !photoCassee && (
+          <img src={p.photo} alt="" referrerPolicy="no-referrer" loading="lazy" onError={()=>setPhotoCassee(true)}
+            style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
+        )}
+        {(!p.photo || photoCassee) && (
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
+            <Icon name="box" size={26} color={C.muted}/>
+            {photoCassee && <span style={{fontSize:10,color:C.muted}}>Photo indisponible — modifiez le produit pour la remplacer</span>}
+          </div>
+        )}
         {/* Voile dégradé bas — meilleure lisibilité du badge de statut, plus tech qu'un fond plat */}
         <div style={{position:'absolute',bottom:0,left:0,right:0,height:'45%',background:'linear-gradient(transparent, rgba(0,0,0,0.55))',pointerEvents:'none'}}/>
         {p.logo && (
