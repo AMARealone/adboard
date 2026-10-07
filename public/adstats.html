@@ -3090,6 +3090,11 @@ function renderSuivi(data) {
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(pitch_envoye?'var(--blue)':'var(--muted)')+';font-weight:'+(pitch_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(pitch_envoye?'checked':'')+' style="accent-color:var(--blue);cursor:pointer;width:13px;height:13px" onchange="togglePitchEnvoye(\''+pid+'\',this.checked)">'
         + 'Pitch envoy\u00e9</label>'
+      + (pitch_envoye && !p.interesse
+          ? '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:6px;color:var(--muted)">'
+            + '<input type="checkbox" style="accent-color:#FF5C5C;cursor:pointer;width:13px;height:13px" onchange="marquerPasInteresse(\''+pid+'\',this.checked)">'
+            + 'Pas intéressé</label>'
+          : '')
       + '</div>';
   });
 
@@ -3161,6 +3166,50 @@ async function togglePitchEnvoye(id, val) {
     lbl.style.color = val ? 'var(--blue)' : 'var(--muted)';
     lbl.style.fontWeight = val ? '700' : '400';
   }
+}
+
+// "Pas intéressé" : le prospect a reçu le pitch et décline. Il sort du Suivi (statut 'archive' →
+// aussi absent de Leads et d'Appels) mais garde tout son historique ; le motif est dans notes
+// (pas_interesse). Réversible depuis Contacts (bouton "↩ Suivi").
+async function marquerPasInteresse(id, val) {
+  const p = DB.find(x => x.id === id);
+  const reafficher = () => filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
+  if (!p || !val) { reafficher(); return; }
+  if (!confirm('Marquer ce prospect "pas intéressé" ?\nIl sera retiré du Suivi (archivé) et reste retrouvable dans Contacts.')) {
+    reafficher(); return;   // la case est décochée
+  }
+  const ancienStatut = p.statut, ancienNotes = p.notes;
+  const s = appelNotes(p);
+  s.pas_interesse = true;
+  s.pas_interesse_at = new Date().toISOString();
+  // une éventuelle réservation d'appel n'a plus de sens
+  ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via'].forEach(k => delete s[k]);
+  p.notes = JSON.stringify(s);
+  p.statut = 'archive';
+  render();
+  const ok = await patch(id, { statut: 'archive', notes: p.notes });
+  if (!ok) {
+    p.statut = ancienStatut; p.notes = ancienNotes;
+    render();
+    toast('Échec — non enregistré, réessaie');
+    return;
+  }
+  toast('Pas intéressé — retiré du Suivi');
+}
+
+async function remettreArchiveEnSuivi(id) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm('Remettre ce prospect dans le Suivi ?')) return;
+  const ancienStatut = p.statut, ancienNotes = p.notes;
+  const s = appelNotes(p);
+  delete s.pas_interesse; delete s.pas_interesse_at;
+  p.notes = JSON.stringify(s);
+  p.statut = 'en_suivi';
+  render();
+  const ok = await patch(id, { statut: 'en_suivi', notes: p.notes });
+  if (!ok) { p.statut = ancienStatut; p.notes = ancienNotes; render(); toast('Échec — non enregistré, réessaie'); return; }
+  toast('Prospect remis dans le Suivi');
 }
 
 async function sendPitchMsg(pid) {
@@ -4953,8 +5002,10 @@ async function renderContacts() {
 
   el.innerHTML = data.map(p => {
     const dateStr = p.date_contact ? new Date(p.date_contact).toLocaleDateString('fr-FR') : '—';
-    const statut  = statutLabel[p.statut] || p.statut || '—';
-    const color   = statutColor[p.statut] || 'var(--muted)';
+    let _nC = {}; try { _nC = JSON.parse(p.notes || '{}'); } catch(e) {}
+    const pasInt  = p.statut === 'archive' && _nC.pas_interesse;
+    const statut  = pasInt ? 'Pas intéressé' : (statutLabel[p.statut] || p.statut || '—');
+    const color   = pasInt ? '#FF5C5C' : (statutColor[p.statut] || 'var(--muted)');
     return `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px">
       <div style="flex:1;min-width:0">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
@@ -4965,6 +5016,7 @@ async function renderContacts() {
         ${p.page_produit ? `<div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px"><a href="${p.page_produit}" target="_blank" style="color:var(--blue);text-decoration:none">${p.page_produit}</a></div>` : ''}
       </div>
       <div style="display:flex;gap:6px;flex-shrink:0">
+        ${pasInt ? `<button onclick="remettreArchiveEnSuivi('${p.id}')" title="Remettre dans le Suivi" class="btn btn-ghost btn-sm">↩ Suivi</button>` : ''}
         <button onclick="copyProspectInfo('${p.id}')" title="Copier infos" class="btn btn-ghost btn-sm">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"/></svg>
         </button>
