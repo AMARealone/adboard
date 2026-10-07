@@ -891,13 +891,13 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
             <div class="prodv2-agent-head"><div class="prodv2-agent-badge">2</div><div class="prodv2-agent-name">Creative Image</div></div>
             <div class="prodv2-agent-model">gemini-2.5-pro + gemini-3-pro-image</div>
             <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
-            <div class="prodv2-agent-status">En attente — 9 créatives à produire</div>
+            <div class="prodv2-agent-status">En attente — créatives à produire (3 par angle)</div>
           </div>
           <div class="prodv2-agent pending" id="prodv2Agent3">
             <div class="prodv2-agent-head"><div class="prodv2-agent-badge">3</div><div class="prodv2-agent-name">Copywriter</div></div>
             <div class="prodv2-agent-model">gemini-2.5-pro</div>
             <div class="prodv2-progress"><div class="prodv2-progress-fill" style="width:0%"></div></div>
-            <div class="prodv2-agent-status">En attente — 5 hooks + 1 description × 3 angles</div>
+            <div class="prodv2-agent-status">En attente — 5 hooks + 1 description par angle</div>
           </div>
         </div>
       </div>
@@ -2300,7 +2300,7 @@ async function compressImg(b64, mime) {
 
 // ════════════════════════════════════════════════════════════
 // PRODUCTION V2 — Orchestrateur 3 agents
-// Brief → Analyste (synthèse + 3 angles) → Creative ×9 → Copywriter ×3
+// Brief → Analyste (synthèse + 2 à 8 angles) → Creative ×(3 par angle : 6/12/18/24) → Copywriter ×(1 par angle)
 // ════════════════════════════════════════════════════════════
 
 let prodv2State = {
@@ -2489,7 +2489,7 @@ function prodv2SetAgentState(idx, state, statusText, progressPct) {
 // production passe par selectCTsForGeneration(..., 'production', ...), qui active la
 // logique intelligente (niveaux de conscience, diversification, rotation) côté serveur.
 
-// Extract angles from synthesis text (S2 section : 3 angles)
+// Extract angles from synthesis text (S2 section : 2 à 8 angles selon la quantité commandée)
 // Sépare la réponse unique de l'Analyste en deux parties : la synthèse texte (S0-S8, pour
 // Creative Image / Copywriter) et le JSON données marché (pour le client, dans AdBoard).
 // Remplace l'ancien appel séparé au 4e agent — les deux sortent du même appel, garantissant
@@ -2674,11 +2674,12 @@ function demoSessionAutosave(demoSessionId, state, status, finalUrl) {
 }
 
 // ── Nombre d'angles dynamique selon la quantité commandée ──
-// 3 visuels par angle, toujours. Quantités valides : 6/12/18/24… → 2/4/6/8… angles (les forfaits
-// donnent 6 / 12 / 24 par semaine ; le palier de commande est de 6).
-// Bornes défensives (2 à 12) au cas où une quantité inattendue arriverait un jour.
+// 3 visuels par angle, toujours. Quantités valides : 6 / 12 / 18 / 24 → 2 / 4 / 6 / 8 angles (minimum 2,
+// maximum 8 ; chaque palier ajoute 2 angles). Les forfaits donnent 6 / 12 / 24 par semaine.
+// Tolérance haute à 12 angles UNIQUEMENT pour d'anciennes commandes (27 / 36) encore en file : AdBoard
+// ne permet plus de demander plus de 24.
 function prodv2GetAngleCount() {
-  const q = Number(prodv2State.brief?.quantite) || 9;
+  const q = Number(prodv2State.brief?.quantite) || 6;
   const nb = Math.round(q / 3);
   return Math.max(2, Math.min(12, nb));
 }
@@ -3087,7 +3088,7 @@ async function prodv2GenerateOneCreative(idx, angleIdx, ctPositionInAngle, ctNam
 
   const creativeSystem = COMP_FILES['COMPETENCE_CREATIVE_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
-  const nbAnglesTotal = prodv2State.angles.length || 3;
+  const nbAnglesTotal = prodv2State.angles.length || 2;
   const nbCreativesTotalRun = nbAnglesTotal * 3;
 
   // ── Routing niveau de conscience par position CT dans l'angle ──
@@ -4648,21 +4649,21 @@ Un seul persona pour toute la synthèse — pas de facettes ni de sous-avatars. 
 ÉTAPE 3 — S2 : 3 ANGLES MARKETING (peur / désir / douleur / scepticisme du marché)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-DÉFAUT (aucune indication contraire dans le brief) : 3 angles nouveaux, 9 créatives au total, comme décrit dans toute cette étape. Le sous-bloc ci-dessous ne s'applique QUE si le brief contient les signaux qu'il décrit — sinon, ignore-le et passe directement à CONSTRUCTION DES 3 ANGLES.
+DÉFAUT (aucune indication contraire dans le brief) : 2 angles nouveaux, 6 créatives au total — c'est le minimum d'une commande. Chaque angle se décline toujours en 3 créatives (une par niveau de conscience). Les mentions « 3 angles » et « 9 créatives » qui apparaissent dans la suite de ce document sont historiques : elles s'entendent TOUJOURS comme « le nombre d'angles de CETTE commande » et « la quantité de créatives de cette commande ». Le sous-bloc ci-dessous ne s'applique QUE si le brief contient les signaux qu'il décrit — sinon, ignore-le et passe directement à CONSTRUCTION DES 3 ANGLES, avec 2 angles.
 
 ━━━ GESTION DU VOLUME ÉTENDU ET DE L'ANGLE GAGNANT (feedback loop — cas non-défaut) ━━━
 
 Deux signaux possibles dans le brief, indépendants l'un de l'autre :
 
-→ QUANTITE_DEMANDEE : si présent et différent de 9, le batch n'est plus 3×3. Calcule le nombre total de créatives directement depuis cette valeur (ex : 18 au lieu de 9).
+→ QUANTITE_DEMANDEE : si présent, c'est le nombre total de créatives de la commande. Les quantités possibles sont 6, 12, 18 ou 24, soit 2, 4, 6 ou 8 angles — chaque angle représente 3 créatives. Calcule le nombre d'angles en divisant cette valeur par 3 et construis exactement ce nombre d'angles : jamais moins de 2, jamais plus de 8.
 
 → ANGLE_GAGNANT : si présent, le brief fournit la formulation complète d'un angle d'un batch précédent pour CE produit et CETTE cible, marqué comme performant par le client (moteur dominant, moteur secondaire, formulation — mêmes champs que ceux que tu produis normalement à l'étape C). Si ce signal est présent :
 
 1. NE RECONSTRUIS PAS cet angle. Ne repasse pas par les étapes A/B/C pour lui — reprends sa formulation exactement telle que fournie. Une performance réelle mesurée est une preuve plus forte que le processus de sourcing lui-même ; le remettre en question ici serait un pas en arrière.
-2. Calcule son volume : QUANTITE_DEMANDEE ÷ 3, arrondi à l'entier le plus proche (ex : 18÷3=6, 9÷3=3). C'est le nombre de créatives allouées à cet angle repris — toujours le tiers du total, quelle que soit la quantité demandée.
-3. Le reste (QUANTITE_DEMANDEE − volume de l'angle gagnant) se répartit en nouveaux angles à raison de 3 créatives chacun (ex : 18−6=12 → 4 nouveaux angles ; 9−3=6 → 2 nouveaux angles). Si le reste n'est pas exactement divisible par 3, arrondis au multiple de 3 le plus proche et signale l'ajustement dans S9/notes internes plutôt que de produire un angle incomplet.
+2. L'angle repris occupe exactement UN angle de la commande, soit 3 créatives : une par niveau de conscience (Solution Aware, Product Aware, Most Aware). Il compte dans le nombre d'angles de la commande fixé par l'orchestrateur, il ne s'y ajoute pas.
+3. Tous les autres angles de la commande (le nombre d'angles moins un) sont NOUVEAUX. Le résultat est toujours un nombre entier d'angles : aucun arrondi, aucun angle incomplet.
 4. Construis UNIQUEMENT ce nombre de nouveaux angles (pas 3) selon CONSTRUCTION DES 3 ANGLES ci-dessous — les mêmes règles de non-redondance, sourcing par pools, dosage et validation s'appliquent à l'identique, juste appliquées à ce nombre variable plutôt qu'à 3 fixes.
-5. Répartition des créatives de l'angle gagnant sur les 3 niveaux de conscience (voir ÉTAPE 3bis plus bas) : distribue le volume calculé à l'étape 2 le plus également possible entre Solution/Product/Most Aware (ex : 6 → 2 par niveau ; 3 → 1 par niveau, comme le cas par défaut). CHAQUE créative doit être un concept visuel ENTIÈREMENT NOUVEAU, jamais produit pour ce produit auparavant — jamais une variation ou un rapprochement du concept d'origine qui a performé. Ce qui est repris, c'est l'angle (le message, l'émotion ciblée) — jamais le concept visuel exact. Répéter le même concept ou une simple variante dilue la valeur du test : le but est de savoir si c'est L'ANGLE qui gagne, pas juste UNE exécution.
+5. Répartition des créatives de l'angle gagnant sur les 3 niveaux de conscience (voir ÉTAPE 3bis plus bas) : attribue une créative à chacun des trois niveaux Solution/Product/Most Aware (3 créatives au total pour cet angle). CHAQUE créative doit être un concept visuel ENTIÈREMENT NOUVEAU, jamais produit pour ce produit auparavant — jamais une variation ou un rapprochement du concept d'origine qui a performé. Ce qui est repris, c'est l'angle (le message, l'émotion ciblée) — jamais le concept visuel exact. Répéter le même concept ou une simple variante dilue la valeur du test : le but est de savoir si c'est L'ANGLE qui gagne, pas juste UNE exécution.
 
 Partout ailleurs dans ce document, "3 angles" et "9 créatives" s'entendent alors comme "le nombre de nouveaux angles calculé ici" et "QUANTITE_DEMANDEE" — mêmes règles, volume variable.
 
@@ -4728,11 +4729,15 @@ Les 3 angles ne doivent JAMAIS partager le même moteur dominant. Mais ne pas pa
 RÈGLE RENFORCÉE : les 3 moteurs dominants doivent, sauf impossibilité réelle, couvrir les 3 pools différents — un dominant peur, un dominant désir, un dominant douleur, un par angle. Ne réutilise un pool pour un deuxième moteur dominant QUE si DONNÉES BRUTES ne fournit vraiment aucune entrée assez forte ET crédible (voir ÉTAPE B) dans un des deux pools restants — et dans ce cas, signale-le explicitement en note interne (S9) plutôt que de le faire silencieusement, pour que ce soit visible plutôt que caché dans le résultat final.
 Test : si tu regroupais les 3 moteurs dominants des 3 angles, couvrent-ils bien peur + désir + douleur, ou est-ce que 2 (ou 3) d'entre eux viennent du même pool sans raison réelle ? Si c'est le cas sans justification de type "aucune entrée suffisamment forte/crédible dans ce pool" → REFAIRE l'un des trois à partir d'un pool sous-représenté.
 
+NOMBRE D'ANGLES RÉDUIT : avec 2 angles, couvrir les 3 pools est impossible par construction. Les 2 moteurs dominants doivent alors venir de 2 pools DIFFÉRENTS — jamais 2 entrées du même pool — en retenant les 2 pools où DONNÉES BRUTES fournit les entrées les plus fortes et les plus crédibles (voir ÉTAPE B), et l'écart de texture émotionnelle entre les 2 angles doit être évident à la lecture. Avec 4 angles ou plus, couvre d'abord chacun des pools avant d'en répéter un.
+
 RÈGLE DE DIVERSITÉ EPIC (dimension séparée, à vérifier EN PLUS de la précédente) :
 Un batch réel a déjà produit 3 angles avec 3 moteurs dominants distincts (donc conforme à la règle ci-dessus), mais 2 des 3 étaient classés Identitaire au quadrant EPIC — le batch entier "sonnait" pareil malgré des moteurs différents, parce que la diversité de moteur ne garantit pas la diversité de ton. Les deux règles sont indépendantes et DOIVENT être vérifiées séparément.
 Avec 3 angles (cas par défaut) : les 3 quadrants EPIC doivent être différents — jamais 2 angles dans le même quadrant, sauf si les 4 quadrants ont réellement été essayés et que DONNÉES BRUTES ne permet honnêtement pas de construire un angle crédible dans le quadrant manquant (signale-le en note interne S9 si c'est le cas, plutôt que de le faire silencieusement).
 Avec un nombre d'angles différent (voir GESTION DU VOLUME ÉTENDU) : répartis sur les 4 quadrants le plus également possible avant d'en répéter un — jamais 2 répétitions d'un quadrant tant qu'un autre quadrant n'a pas encore été utilisé au moins une fois.
 Test : si tu listais le quadrant EPIC de chaque angle du batch, verrais-tu au moins 3 lettres différentes parmi É/P/I/C (ou 4 si le volume le permet), ou est-ce que 2+ angles répètent la même lettre alors qu'une autre n'a jamais été utilisée ? Si oui → REFAIRE l'un des angles redondants dans un quadrant sous-représenté, sans changer son moteur dominant s'il était déjà correct — seule la façon dont le message s'adresse à la cible doit changer.
+
+Avec 2 angles : les 2 angles doivent se situer dans 2 quadrants EPIC différents — le test des 3 lettres ci-dessus devient un test de 2 lettres différentes.
 
 CRITÈRES DE QUALITÉ — tous doivent être remplis :
 
@@ -4870,9 +4875,9 @@ Si aucune donnée chiffrée n'est trouvée nulle part, écris explicitement [AUC
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 9bis — S9 : FIL DE MARQUE (BIG IDEA — NIVEAU BATCH, INFORMATIF, NE SUR-CONTRAINS RIEN)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Cette section se raisonne à l'échelle du BATCH ENTIER (les 3 angles × 3 niveaux = 9 créatives minimum), jamais à l'échelle d'un angle ou d'une créative isolée — une seule créative ne doit JAMAIS chercher à porter la big idea à elle seule, ce serait la diluer.
+Cette section se raisonne à l'échelle du BATCH ENTIER (tous les angles de la commande × 3 niveaux, soit 6 créatives au minimum), jamais à l'échelle d'un angle ou d'une créative isolée — une seule créative ne doit JAMAIS chercher à porter la big idea à elle seule, ce serait la diluer.
 
-En 1-2 phrases, décris le fil de marque que quelqu'un exposé à l'ENSEMBLE des 9 créatives de ce batch (pas une seule) reconnaîtrait progressivement, par répétition et association — pas par déclaration explicite dans chaque créative individuelle.
+En 1-2 phrases, décris le fil de marque que quelqu'un exposé à l'ENSEMBLE de toutes les créatives de ce batch (pas une seule) reconnaîtrait progressivement, par répétition et association — pas par déclaration explicite dans chaque créative individuelle.
 
 ⚠️ Cette section est un REPÈRE DE COHÉRENCE pour Creative Image et Copywriter, pas une contrainte supplémentaire sur le contenu de chaque angle. Les 3 angles de S2 restent construits indépendamment selon leur propre moteur (voir ÉTAPE 3) — ne force JAMAIS un angle à "coller" artificiellement à cette phrase après coup. Le fil de marque doit émerger naturellement des 3 angles déjà choisis, pas l'inverse. Si les 3 angles ne partagent naturellement aucun fil reconnaissable, écris [FIL DE MARQUE FAIBLE — angles trop dispersés thématiquement] plutôt que d'inventer une phrase artificielle a posteriori — c'est un signal utile, pas une case à remplir à tout prix.
 
@@ -5064,7 +5069,7 @@ Tu reçois :
 1. IMAGE 1 (CT) — image de référence publicitaire choisie comme template structurel.
 2. IMAGE 2 (PRODUIT) — extraite du brief.json, fidélité absolue dans l'output Gemini.
 3. NOM DE MARQUE (TEXTE) — extrait du brief.json (champ "marque"). À intégrer en TEXTE dans le visuel final (voir RÈGLE V4 — NOM DE MARQUE EN TEXTE ci-dessous). Pas d'image logo fournie.
-4. SYNTHÈSE COMPLÈTE — S0 à S8 produite par l'Analyste de Marché : 1 persona validé 4/4 critères (pas de facettes), 3 angles marketing construits chacun sur un moteur dominant (peur/désir/douleur) distinct, avec leur formulation complète, ancrage scepticisme du marché, ancrage différenciant et raison de non-réplicabilité. Chaque angle est décliné en 3 niveaux de conscience (Solution/Product/Most Aware, voir S3) — l'orchestrateur t'indique QUEL angle ET QUEL niveau de conscience produire pour cette créative précise (1 des 9 au total).
+4. SYNTHÈSE COMPLÈTE — S0 à S8 produite par l'Analyste de Marché : 1 persona validé 4/4 critères (pas de facettes), des angles marketing (2 à 8 selon la commande) construits chacun sur un moteur dominant (peur/désir/douleur) distinct, avec leur formulation complète, ancrage scepticisme du marché, ancrage différenciant et raison de non-réplicabilité. Chaque angle est décliné en 3 niveaux de conscience (Solution/Product/Most Aware, voir S3) — l'orchestrateur t'indique QUEL angle ET QUEL niveau de conscience produire pour cette créative précise (1 des créatives de la commande, 3 par angle).
 5. BRIEF JSON — marque, produit, pays, couleurs_marque (si fourni), pricing, offre_promo, lien_page_produit.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -5134,7 +5139,7 @@ Cette compréhension d'INTENTION du CT est cruciale pour la phase 2 — choix de
 PHASE 2 — CHOIX DE L'ANGLE PARMI LES 3
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Tu disposes de 3 angles marketing. Tu dois en choisir UN — celui qui s'aligne le mieux avec l'intention/mécanisme du CT identifié en phase 1.4.
+Tu disposes des angles marketing de la synthèse. Tu dois en choisir UN — celui qui s'aligne le mieux avec l'intention/mécanisme du CT identifié en phase 1.4.
 
 CRITÈRE DE SÉLECTION :
 L'angle choisi est celui dont le moteur dominant (peur/désir/douleur) + mécanisme de persuasion correspond le mieux à ce que le CT essaie de faire psychologiquement chez son spectateur.
@@ -5149,7 +5154,7 @@ Ces correspondances sont des templates de raisonnement, jamais des règles méca
 
 NOTE — MODE TEST : si une instruction explicite force un angle particulier (« utilise l'angle 2 »), tu obéis à cette instruction au lieu de choisir — c'est utile pour tester le même CT avec plusieurs angles. Sinon, choisis selon le critère ci-dessus.
 
-NOTE — MODE PRODUCTION (9 créatives) : voir section finale « MODE PRODUCTION COMPLÈTE » — n'est PAS active en mode test (une seule créative par appel).
+NOTE — MODE PRODUCTION (6 à 24 créatives, 3 par angle) : voir section finale « MODE PRODUCTION COMPLÈTE » — n'est PAS active en mode test (une seule créative par appel).
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE SILENCIEUSE OBLIGATOIRE — DÉCODAGE IMAGE 1 (CT)
@@ -5502,7 +5507,7 @@ Cette créative est l'identité unique de : cet angle + ce niveau de conscience.
 
 ═══ RÈGLE V4.2 — NIVEAU DE CONSCIENCE IMPOSÉ (INDÉPENDANT DE L'ANGLE) — LEVIER PSY ASSOCIÉ ═══
 
-Contrairement à l'ancienne version, l'awareness n'est plus fixée par angle entier — chacun des 3 angles peut produire une créative à N'IMPORTE LEQUEL des 3 niveaux ci-dessous, selon ce que l'orchestrateur impose pour CETTE créative précise :
+Contrairement à l'ancienne version, l'awareness n'est plus fixée par angle entier — chacun des angles peut produire une créative à N'IMPORTE LEQUEL des 3 niveaux ci-dessous, selon ce que l'orchestrateur impose pour CETTE créative précise :
 
 → SOLUTION AWARE
    • LEVIER PSY DOMINANT : storytelling + identification émotionnelle + invalidation douce des solutions déjà connues
@@ -5598,7 +5603,7 @@ EXEMPLES DE FORMULATIONS À INCLURE DANS LE PROMPT GEMINI ADDITIONNEL :
 
 ═══ RÈGLE V4.5 — VARIABLE UNIQUE DE LA CRÉATIVE (déclarée dans META) ═══
 
-Sur les 9 créatives du run, chaque créative doit avoir une identité visuelle/narrative UNIQUE. Pour garantir cela, tu déclares dans le bloc ===META=== une ligne explicite :
+Sur les créatives du run, chaque créative doit avoir une identité visuelle/narrative UNIQUE. Pour garantir cela, tu déclares dans le bloc ===META=== une ligne explicite :
 
 VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX 8 AUTRES : Niveau [Solution/Product/Most Aware] · Angle [1/2/3] · Concept CT [type observé dans IMAGE 2]
 
@@ -5817,22 +5822,22 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MODE PRODUCTION COMPLÈTE (9 CRÉATIVES) — INACTIF EN MODE TEST
+MODE PRODUCTION COMPLÈTE (6 À 24 CRÉATIVES) — INACTIF EN MODE TEST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Cette section documente le comportement futur de cet agent lorsqu'il sera invoqué en mode production complète (9 créatives par client). En mode test (1 créative par appel, ce que tu fais actuellement), cette section est INACTIVE et ne s'applique pas — tu choisis 1 angle parmi les 3 selon la PHASE 2 et tu produis 1 prompt.
+Cette section documente le comportement futur de cet agent lorsqu'il sera invoqué en mode production complète (6 à 24 créatives par commande). En mode test (1 créative par appel, ce que tu fais actuellement), cette section est INACTIVE et ne s'applique pas — tu choisis 1 angle parmi ceux de la synthèse selon la PHASE 2 et tu produis 1 prompt.
 
 Quand l'agent sera invoqué en mode production complète, il devra :
 
 → Produire 9 prompts, organisés en 3 groupes de 3 (un groupe par angle marketing).
 → Pour CHAQUE angle, choisir 3 CONCEPTS VISUELS distincts (3 CT distincts ou 3 variations radicales du même CT) — chaque concept étant une approche visuelle/structurelle différente pour porter cet angle.
-→ Garantir l'ABSENCE TOTALE DE REDONDANCE entre les 9 créatives finales. Deux créatives sont redondantes si :
+→ Garantir l'ABSENCE TOTALE DE REDONDANCE entre toutes les créatives finales du run. Deux créatives sont redondantes si :
   · elles utilisent la même structure CT (split, panneaux, type de scène)
   · ET le même niveau de conscience dans la mise en scène
   · ET le même mécanisme S4 mis en avant dans le hook
 Une seule de ces conditions ne suffit pas à créer redondance — c'est la combinaison qui crée le doublon perçu.
 
-→ La diversité des 9 créatives se construit sur 4 axes orthogonaux :
+→ La diversité des créatives du run se construit sur 4 axes orthogonaux :
   1. Structure CT (split / hero / UGC / podcast / témoignage carte / lifestyle / before-after / screenshot social…)
   2. Moteur dominant de l'angle (peur/désir/douleur — déjà 3 différents par construction de la synthèse)
   3. Niveau de conscience mobilisé (3 niveaux différents par construction de la synthèse — Solution/Product/Most Aware)
@@ -6508,7 +6513,7 @@ const AGENTS_DEMO = [
 ];
 
 const AGENTS_PROD = [
-  {name:'Analyste de Marché',sub:'Brief client (JSON) → Synthèse S0→S7, persona + 3 angles',model:'gemini-2.5-pro',file:'COMPETENCE_ANALYSTE.md',status:'wip',color:'#5C7A99',
+  {name:'Analyste de Marché',sub:'Brief client (JSON) → Synthèse S0→S7, persona + angles (2 à 8 selon la quantité)',model:'gemini-2.5-pro',file:'COMPETENCE_ANALYSTE.md',status:'wip',color:'#5C7A99',
    hasJsonBrief:true,
    maxTokens:64000,
    placeholder:'Charge le brief.json du client via le bouton ci-dessus...',
@@ -6523,11 +6528,11 @@ const AGENTS_PROD = [
    maxTokens:8000,
    placeholder:'Colle ici la Synthèse complète S0→S7 produite par l\'Analyste de Marché...',
    comp:'[Chargement COMPETENCE_CREATIVE_PROD.md...]'},
-  {name:'Copywriter',sub:'Synthèse → 3 angles × (5 hooks + 1 description AIDA)',model:'gemini-2.5-pro',file:'COMPETENCE_COPYWRITER_PROD.md',status:'wip',color:'#7FA8D9',
+  {name:'Copywriter',sub:'Synthèse → chaque angle × (5 hooks + 1 description AIDA)',model:'gemini-2.5-pro',file:'COMPETENCE_COPYWRITER_PROD.md',status:'wip',color:'#7FA8D9',
    isCopywriter:true,
    maxTokens:8000,
    placeholder:'Colle ici la Synthèse complète S0→S7 produite par l\'Analyste de Marché...',
-   prompt:'Produis les Ad Copy complets pour les 3 angles selon ta compétence — 5 hooks variés + 1 description AIDA paragraphée par angle, registre Most Aware.',
+   prompt:'Produis les Ad Copy complets pour TOUS les angles présents dans la synthèse selon ta compétence — 5 hooks variés + 1 description AIDA paragraphée par angle, registre Most Aware.',
    comp:'[Chargement COMPETENCE_COPYWRITER_PROD.md...]'}
 ];
 
@@ -6746,7 +6751,7 @@ async function prodv2LoadBriefFromCommande(b) {
     cible: b.product.cible || '',
     utilite: b.product.utilite || '',
     couleurs: b.product.couleurs || [],
-    quantite: b.quantity || 9,
+    quantite: b.quantity || 6,
     // Cause profonde corrigée : ce champ existe dans la fiche produit AdBoard depuis le début,
     // mais n'était jamais extrait ici — aucun agent (Analyste, Creative Image, Copywriter) n'en
     // avait donc jamais connaissance, malgré une vraie offre renseignée par le client.
@@ -6984,13 +6989,13 @@ setInterval(() => {
       el.textContent = `⏱ ${h}h${m.toString().padStart(2,'0')}m${s.toString().padStart(2,'0')}s restantes`;
     }
   });
-  // ── Minuteur interne 36h (marge de 12h avant le délai client de 48h) ──
+  // ── Minuteur interne 18h (marge de 6h avant le délai client de 24h) ──
   // Une fois dépassé, clignote pour signaler qu'il est temps d'envoyer les livrables
   // si la production est terminée.
   document.querySelectorAll('[id^="timer36-"]').forEach(el => {
     const started = new Date(el.dataset.started).getTime();
     const elapsed = Date.now() - started;
-    const WINDOW36 = 36 * 60 * 60 * 1000;
+    const WINDOW36 = 18 * 60 * 60 * 1000;
     const remaining = WINDOW36 - elapsed;
     if (remaining <= 0) {
       el.textContent = '🔴 Urgent — envoie les livrables';

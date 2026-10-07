@@ -925,6 +925,9 @@ function computeCredits(sub, allBriefs) {
 // sur une fenêtre glissante de 24h depuis la création de chaque demande — protège la capacité
 // de production réelle, indépendant des crédits d'abonnement (qui, eux, se rechargent par semaine).
 const PLAFOND_PRODUCTION_24H = 36;
+// Volumes de production : 6 / 12 / 18 / 24 visuels (2 / 4 / 6 / 8 angles), par paliers de 6.
+const QTE_PALIER = 6;
+const QTE_MAX_DEMANDE = 24;
 const MS_24H = 24 * 60 * 60 * 1000;
 
 function briefsActifsDans24h(allBriefs) {
@@ -1253,7 +1256,7 @@ const PaymentModal = ({ productId, userEmail, onClose }) => {
 const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, C}) => {
   // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 6 / 12 / 24 par semaine.
   const [qty, setQty] = useState(6);
-  const max = credits.available;
+  const max = Math.min(credits.available, QTE_MAX_DEMANDE); // 24 visuels (8 angles) max par demande
   const canIncrease = qty + 6 <= max;
   const canDecrease = qty > 6;
   const isPack = subscription?.type === 'pack';
@@ -1275,11 +1278,11 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
         {/* Jauge semaine — hero, citation à bordure latérale au lieu d'un encart fermé */}
         <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:14}}>
           <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:6}}>{isPack ? 'Images disponibles' : 'Disponibles cette semaine'}</div>
-          <div style={{fontFamily:"'DM Mono',monospace",fontSize:28,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{max}</div>
+          <div style={{fontFamily:"'DM Mono',monospace",fontSize:28,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{credits.available}</div>
           <div style={{marginTop:10,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:220}}>
             <div style={{height:'100%',borderRadius:2,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
           </div>
-          <div style={{fontSize:10,color:C.muted,marginTop:8}}>{qty} sélectionné{qty>1?'s':''} · {max-qty} restant{max-qty>1?'s':''} après</div>
+          <div style={{fontSize:10,color:C.muted,marginTop:8}}>{qty} sélectionné{qty>1?'s':''} · {credits.available-qty} restant{credits.available-qty>1?'s':''} après</div>
         </div>
 
         {/* Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement Starter. */}
@@ -1585,7 +1588,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   }, []); // tableau vide intentionnel — l'intervalle est créé UNE FOIS, lit toujours l'état le plus récent via les refs
 
   const CANCEL_WIN = 12*60*60*1000;
-  const DELIVERY_WIN = 48*60*60*1000;
+  const DELIVERY_WIN = 24*60*60*1000; // délai de livraison client : 24h (avant : 48h)
 
   const formatCountdown = (ms) => {
     if (ms <= 0) return null;
@@ -2206,7 +2209,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
-          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos visuels — livrés en 48h.</p>
+          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos visuels — livrés en 24h.</p>
         </div>
         <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
           <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
@@ -2229,8 +2232,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           </div>
           <div style={{position:'relative',fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>
             {subscription?.active
-              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes visuels juste après. Livraison sous 48h max.'
-              : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 48h.'}
+              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes visuels juste après. Livraison sous 24h max.'
+              : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 24h.'}
           </div>
           <button onClick={openNew} style={{position:'relative',marginTop:6,padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7,boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
             <Icon name="plus" size={14} color="#fff"/> {subscription?.active ? 'Ajouter mon produit' : 'Ajouter mon premier produit'}
@@ -2475,7 +2478,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 </div>
                 <div>
                   <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:0}}>Demande envoyée</h2>
-                  <p style={{fontSize:11,color:C.sec,marginTop:2}}>Livraison sous 48h</p>
+                  <p style={{fontSize:11,color:C.sec,marginTop:2}}>Livraison sous 24h</p>
                 </div>
               </div>
               <button onClick={() => setBrief(null)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -4461,7 +4464,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "En combien de temps mes visuels sont-ils livrés ?",
-    a: "Comptez généralement jusqu'à 48h après votre demande. Vous êtes notifié dès que vos visuels sont prêts, directement dans l'onglet Notifications."
+    a: "Comptez généralement jusqu'à 24h après votre demande. Vous êtes notifié dès que vos visuels sont prêts, directement dans l'onglet Notifications."
   },
   {
     q: "Comment fonctionne l'analyse de marché ?",
@@ -5168,7 +5171,7 @@ export default function Platform() {
     if (!brief) return null;
     setAllBriefs(prev => [...prev, brief]);
     setBriefs(prev => ({...prev, [product.id]: brief}));
-    notify(`Demande de ${qty} visuels envoyée — livraison sous 48h`, 'brief');
+    notify(`Demande de ${qty} visuels envoyée — livraison sous 24h`, 'brief');
 
     const pastBriefs = allBriefs.filter(b => b.product_id === product.id && briefCompteCredits(b));
     const webhookPayload = {
