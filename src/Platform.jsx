@@ -812,13 +812,25 @@ const sbProducts = {
     });
     return r.ok;
   },
+  // Retourne { ok, reason }. Prefer: return=representation permet de savoir si une ligne a VRAIMENT été
+  // supprimée : sans lui, une politique RLS qui interdit le DELETE répond « OK » sans rien supprimer.
   async delete(session, id) {
-    if (!session?.access_token) return false;
+    if (!session?.access_token) return { ok: false, reason: 'session' };
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
       method: 'DELETE',
-      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` }
+      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`, Prefer: 'return=representation' }
     });
-    return r.ok;
+    if (!r.ok) {
+      let detail = ''; try { const e = await r.json(); detail = e.message || e.details || ''; } catch(_) {}
+      console.error('[Suppression produit] refusée par Supabase', r.status, detail);
+      return { ok: false, reason: r.status === 409 ? 'liens' : 'refus', status: r.status, detail };
+    }
+    let rows = []; try { rows = await r.json(); } catch(_) {}
+    if (!Array.isArray(rows) || rows.length === 0) {
+      console.error('[Suppression produit] aucune ligne supprimée (droit de suppression manquant côté base ?)');
+      return { ok: false, reason: 'aucune_ligne' };
+    }
+    return { ok: true };
   }
 };
 
@@ -1793,11 +1805,19 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
 
   const doDelete = async () => {
     const session = await sbAuth.refreshSession();
-    if (session) await sbProducts.delete(session, p.id);
+    const res = session ? await sbProducts.delete(session, p.id) : { ok: false, reason: 'session' };
+    setConfirmDelete(false);
+    // Plus de faux « supprimé » : le produit ne quitte la liste que si la base l'a vraiment supprimé.
+    if (!res.ok) {
+      const msg = res.reason === 'session' ? 'Session expirée — reconnectez-vous puis réessayez.'
+        : res.reason === 'liens' ? `Impossible de supprimer "${p.nom}" : des données liées empêchent la suppression. Contactez le support.`
+        : `Impossible de supprimer "${p.nom}" pour le moment. Contactez le support.`;
+      notify(msg, 'error');
+      return;
+    }
     setProducts(prev => prev.filter(x => x.id !== p.id));
     notify(`Produit "${p.nom}" supprimé`, 'info');
     notifyAction(sbAuth.getUser()?.id, 'product_deleted', p.nom);
-    setConfirmDelete(false);
   };
 
   return (
