@@ -3029,8 +3029,9 @@ function renderSuivi(data) {
   el.innerHTML = data.map(p => {
     const allOk = p.a_repondu && p.interesse && p.lead_qualifie;
     const dateStr = p.date_contact ? new Date(p.date_contact).toLocaleDateString('fr-FR') : '—';
+    const pasInt = typeof p.notes === 'string' && p.notes.indexOf('pas_interesse') !== -1 && !!appelNotes(p).pas_interesse;
 
-    return `<div class="card">
+    return `<div class="card"${pasInt ? ' style="opacity:.6"' : ''}>
       <div class="card-top">
         <div>
           <div style="display:flex;align-items:center;gap:8px">
@@ -3039,7 +3040,7 @@ function renderSuivi(data) {
               <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="5" width="9" height="9" rx="1.5"/><path d="M3 11H2a1 1 0 01-1-1V2a1 1 0 011-1h8a1 1 0 011 1v1"/></svg>
             </button>
           </div>
-          <div class="card-prod">${p.produit || '—'} · Contacté le ${dateStr}</div>
+          <div class="card-prod">${p.produit || '—'} · Contacté le ${dateStr}${pasInt ? ' · <span style="color:#FF5C5C;font-weight:700">Pas intéressé</span>' : ''}</div>
         </div>
         <div class="card-actions">
           <button class="btn btn-ghost btn-sm" data-notes-id="${p.id}" onclick="openNotes(this.dataset.notesId)">Notes</button>
@@ -3090,9 +3091,9 @@ function renderSuivi(data) {
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(pitch_envoye?'var(--blue)':'var(--muted)')+';font-weight:'+(pitch_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(pitch_envoye?'checked':'')+' style="accent-color:var(--blue);cursor:pointer;width:13px;height:13px" onchange="togglePitchEnvoye(\''+pid+'\',this.checked)">'
         + 'Pitch envoy\u00e9</label>'
-      + (pitch_envoye && !p.interesse
-          ? '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:6px;color:var(--muted)">'
-            + '<input type="checkbox" style="accent-color:#FF5C5C;cursor:pointer;width:13px;height:13px" onchange="marquerPasInteresse(\''+pid+'\',this.checked)">'
+      + ((pitch_envoye && !p.interesse) || _pNotesR.pas_interesse
+          ? '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:6px;color:'+(_pNotesR.pas_interesse?'#FF5C5C':'var(--muted)')+';font-weight:'+(_pNotesR.pas_interesse?'700':'400')+'">'
+            + '<input type="checkbox" '+(_pNotesR.pas_interesse?'checked':'')+' style="accent-color:#FF5C5C;cursor:pointer;width:13px;height:13px" onchange="marquerPasInteresse(\''+pid+'\',this.checked)">'
             + 'Pas intéressé</label>'
           : '')
       + '</div>';
@@ -3113,6 +3114,9 @@ function renderSuivi(data) {
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:'+(appel_reserve?'#FFB547':'var(--muted)')+';font-weight:'+(appel_reserve?'700':'400')+'">'
         + '<input type="checkbox" '+(appel_reserve?'checked':'')+' style="accent-color:#FFB547;cursor:pointer;width:13px;height:13px" onchange="toggleAppelReserve(\''+pid+'\',this.checked)">'
         + 'A réservé un call</label>'
+      + (appel_reserve && appelProgrammeTs(appelNotes(p)) !== null
+          ? '<div style="font-size:11px;color:#FFB547;margin-top:6px">📅 Appel programmé le ' + new Date(appelProgrammeTs(appelNotes(p))).toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' }) + '</div>'
+          : '')
       + '</div>';
   });
 
@@ -3168,33 +3172,32 @@ async function togglePitchEnvoye(id, val) {
   }
 }
 
-// "Pas intéressé" : le prospect a reçu le pitch et décline. Il sort du Suivi (statut 'archive' →
-// aussi absent de Leads et d'Appels) mais garde tout son historique ; le motif est dans notes
-// (pas_interesse). Réversible depuis Contacts (bouton "↩ Suivi").
+// "Pas intéressé" : le prospect a reçu le pitch et décline pour l'instant. Il RESTE dans le Suivi
+// (il peut redevenir intéressé à tout moment) : seul un marqueur est posé dans notes
+// (pas_interesse). Cocher "Intéressé" ou décocher "Pas intéressé" retire le marqueur.
 async function marquerPasInteresse(id, val) {
   const p = DB.find(x => x.id === id);
-  const reafficher = () => filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
-  if (!p || !val) { reafficher(); return; }
-  if (!confirm('Marquer ce prospect "pas intéressé" ?\nIl sera retiré du Suivi (archivé) et reste retrouvable dans Contacts.')) {
-    reafficher(); return;   // la case est décochée
-  }
-  const ancienStatut = p.statut, ancienNotes = p.notes;
+  if (!p) return;
+  const ancienNotes = p.notes;
   const s = appelNotes(p);
-  s.pas_interesse = true;
-  s.pas_interesse_at = new Date().toISOString();
-  // une éventuelle réservation d'appel n'a plus de sens
-  ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via'].forEach(k => delete s[k]);
+  if (val) {
+    s.pas_interesse = true;
+    s.pas_interesse_at = new Date().toISOString();
+    // une éventuelle réservation d'appel n'a plus de sens
+    ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via','appel_programme_at'].forEach(k => delete s[k]);
+  } else {
+    delete s.pas_interesse; delete s.pas_interesse_at;
+  }
   p.notes = JSON.stringify(s);
-  p.statut = 'archive';
-  render();
-  const ok = await patch(id, { statut: 'archive', notes: p.notes });
+  rafraichirApresAppel();
+  const ok = await patch(id, { notes: p.notes });
   if (!ok) {
-    p.statut = ancienStatut; p.notes = ancienNotes;
-    render();
+    p.notes = ancienNotes;
+    rafraichirApresAppel();
     toast('Échec — non enregistré, réessaie');
     return;
   }
-  toast('Pas intéressé — retiré du Suivi');
+  toast(val ? 'Pas intéressé — reste dans le Suivi' : 'Marqueur "pas intéressé" retiré');
 }
 
 async function remettreArchiveEnSuivi(id) {
@@ -3304,11 +3307,22 @@ async function toggleCheck(id, field, val) {
   const p = DB.find(x => x.id === id);
   if (!p) return;
   const old_val = p[field];
+  const ancienNotes = p.notes;
+  const body = { [field]: val };
+  if (field === 'interesse' && val) {
+    const sPI = appelNotes(p);
+    if (sPI.pas_interesse) {
+      delete sPI.pas_interesse; delete sPI.pas_interesse_at;
+      p.notes = JSON.stringify(sPI);
+      body.notes = p.notes;
+    }
+  }
   p[field] = val;
   filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
-  const ok = await patch(id, { [field]: val });
+  const ok = await patch(id, body);
   if (!ok) {
     p[field] = old_val;
+    p.notes = ancienNotes;
     filterSuivi(DB.filter(x => x.statut === 'en_suivi'));
     return;
   }
@@ -3327,7 +3341,7 @@ async function remettreAContacter(id) {
   const _pReset = DB.find(x => x.id === id);
   if (_pReset && appelNotes(_pReset).appel_reserve) {
     const _nReset = appelNotes(_pReset);
-    ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via'].forEach(k => delete _nReset[k]);
+    ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via','appel_programme_at'].forEach(k => delete _nReset[k]);
     _bodyReset.notes = JSON.stringify(_nReset);
   }
   await patch(id, _bodyReset);
@@ -3373,10 +3387,22 @@ function appelReserveTs(n) {
   const t = Date.parse((n && n.appel_reserve_at) || '');
   return isNaN(t) ? null : t;
 }
+// Date/heure programmée (optionnelle) : si présente, c'est l'échéance de l'appel ; sinon 24 h
+// après la coche "A réservé un call".
+function appelProgrammeTs(n) {
+  const t = Date.parse((n && n.appel_programme_at) || '');
+  return isNaN(t) ? null : t;
+}
+function appelEcheance(n) {
+  const pr = appelProgrammeTs(n);
+  if (pr !== null) return pr;
+  const t = appelReserveTs(n);
+  return t === null ? null : t + APPEL_DELAI_MS;
+}
 function appelEnRetard(n, now) {
   if (!n || n.appel_fait) return false;
-  const t = appelReserveTs(n);
-  return t !== null && (now - t) >= APPEL_DELAI_MS;
+  const e = appelEcheance(n);
+  return e !== null && now >= e;
 }
 function appelFormatDuree(ms) {
   if (ms < 0) ms = 0;
@@ -3413,18 +3439,89 @@ function rafraichirApresAppel() {
 
 // via (optionnel) : relance à l'origine de la réservation ("J+3" / "J+10" / "J+21"), posée quand
 // on coche depuis la carte d'un lead. Absent quand on coche depuis Suivi (étape Intéressé).
-async function toggleAppelReserve(id, val, via) {
+function _appelDtLocal(ts) {
+  const d = new Date(ts), p2 = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p2(d.getMonth() + 1) + '-' + p2(d.getDate()) + 'T' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+}
+
+// Cocher "A réservé un call" ouvre d'abord la fenêtre de programmation (date + heure, facultatives).
+// Décocher annule directement la réservation.
+function toggleAppelReserve(id, val, via) {
+  if (val) { ouvrirProgrammationAppel(id, via || '', false); return; }
+  appliquerReservationAppel(id, false);
+}
+
+// modif = true : on modifie seulement la date d'un appel déjà réservé (depuis Appels).
+function ouvrirProgrammationAppel(id, via, modif) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = document.getElementById('modal-prog-appel');
+  if (ancien) ancien.remove();
+  const prog = appelProgrammeTs(appelNotes(p));
+  const valeur = prog !== null ? _appelDtLocal(prog) : '';
+  const nom = esc2(p.nom_marque || 'ce prospect');
+  const ov = document.createElement('div');
+  ov.id = 'modal-prog-appel';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML =
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:380px;width:100%;font-family:var(--font)">'
+    + '<div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px">' + (modif ? 'Date de l\'appel' : 'Programmer le call') + '</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">' + nom + (modif ? '' : ' — choisis la date et l\'heure, ou réserve sans date.') + '</div>'
+    + '<input type="datetime-local" id="prog-appel-dt" value="' + valeur + '" style="width:100%;font-size:14px;margin-bottom:14px">'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + '<button class="btn btn-sm" id="prog-appel-ok" style="background:#FFB547;color:#000;font-weight:700;border:none">Programmer</button>'
+      + '<button class="btn btn-ghost btn-sm" id="prog-appel-sans">' + (modif ? 'Retirer la date' : 'Sans date') + '</button>'
+      + '<button class="btn btn-ghost btn-sm" id="prog-appel-annuler">' + (modif ? 'Fermer' : 'Annuler') + '</button>'
+    + '</div>'
+    + (modif ? '' : '<div style="font-size:11px;color:var(--muted);margin-top:12px">Sans date : l\'alerte rouge se déclenche 24 h après la coche. Avec une date : à l\'heure programmée.</div>')
+    + '</div>';
+  document.body.appendChild(ov);
+  const fermer = () => { ov.remove(); if (!modif) rafraichirApresAppel(); };
+  document.getElementById('prog-appel-annuler').onclick = fermer;
+  ov.addEventListener('click', e => { if (e.target === ov) fermer(); });
+  document.getElementById('prog-appel-sans').onclick = () => {
+    ov.remove();
+    if (modif) enregistrerProgrammationAppel(id, null); else appliquerReservationAppel(id, true, via, null);
+  };
+  document.getElementById('prog-appel-ok').onclick = () => {
+    const v = document.getElementById('prog-appel-dt').value;
+    const t = v ? new Date(v).getTime() : NaN;
+    if (isNaN(t)) { toast('Choisis une date et une heure'); return; }
+    ov.remove();
+    const iso = new Date(t).toISOString();
+    if (modif) enregistrerProgrammationAppel(id, iso); else appliquerReservationAppel(id, true, via, iso);
+  };
+}
+
+async function enregistrerProgrammationAppel(id, iso) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  if (iso) s.appel_programme_at = iso; else delete s.appel_programme_at;
+  p.notes = JSON.stringify(s);
+  rafraichirApresAppel();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) { p.notes = ancien; rafraichirApresAppel(); return; }
+  toast(iso ? 'Appel programmé ✓' : 'Date retirée — alerte 24 h après la réservation');
+}
+
+// via (optionnel) : relance à l'origine de la réservation ("J+3" / "J+10" / "J+21"), posée quand
+// on coche depuis la carte d'un lead. Absent quand on coche depuis Suivi (étape Intéressé).
+// progIso (optionnel) : date/heure programmée de l'appel.
+async function appliquerReservationAppel(id, val, via, progIso) {
   const p = DB.find(x => x.id === id);
   if (!p) return;
   const ancien = p.notes;
   const s = appelNotes(p);
   if (val) {
     s.appel_reserve = true;
-    s.appel_reserve_at = new Date().toISOString();   // départ des 24 h
+    s.appel_reserve_at = new Date().toISOString();   // départ des 24 h (si pas de date programmée)
     if (via) s.appel_via = via; else delete s.appel_via;
+    if (progIso) s.appel_programme_at = progIso; else delete s.appel_programme_at;
     delete s.appel_fait; delete s.appel_fait_at;
   } else {
-    delete s.appel_reserve; delete s.appel_reserve_at; delete s.appel_via;
+    delete s.appel_reserve; delete s.appel_reserve_at; delete s.appel_via; delete s.appel_programme_at;
     delete s.appel_fait;    delete s.appel_fait_at;
   }
   p.notes = JSON.stringify(s);
@@ -3435,7 +3532,7 @@ async function toggleAppelReserve(id, val, via) {
     rafraichirApresAppel();
     return;
   }
-  toast(val ? 'Call réservé ✓ — il est maintenant dans Appels (rappel dans 24 h)' : 'Réservation de call annulée — le prospect retrouve son étape');
+  toast(val ? 'Call réservé ✓ — il est maintenant dans Appels' + (progIso ? ' (programmé)' : ' (rappel dans 24 h)') : 'Réservation de call annulée — le prospect retrouve son étape');
 }
 
 async function toggleAppelFait(id, val) {
@@ -3488,7 +3585,7 @@ function renderAppels() {
   }
 
   // Tri : appels à faire d'abord, du plus ancien au plus récent ; appels faits tout en bas
-  const tsRes = n => { const t = appelReserveTs(n); return t === null ? now : t; };
+  const tsRes = n => { const t = appelEcheance(n); return t === null ? now : t; };
   data.sort((a, b) => {
     const fa = !!a.n.appel_fait, fb = !!b.n.appel_fait;
     if (fa !== fb) return fa ? 1 : -1;
@@ -3521,7 +3618,11 @@ function renderAppels() {
     } else if (retard) {
       badge = '<span style="font-size:10px;font-weight:800;background:rgba(255,76,106,.12);color:var(--red);padding:2px 8px;border-radius:4px;letter-spacing:.5px;border:1px solid rgba(255,76,106,.25)">À APPELER MAINTENANT</span>';
     } else {
-      badge = '<span style="font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px">Alerte dans ' + appelFormatDuree(APPEL_DELAI_MS - age) + '</span>';
+      const ech = appelEcheance(n);
+      const prog = appelProgrammeTs(n);
+      badge = prog !== null
+        ? '<span style="font-size:10px;font-weight:700;color:#FFB547;background:rgba(255,181,71,.1);border:1px solid rgba(255,181,71,.3);padding:2px 8px;border-radius:4px">📅 Appel le ' + fmtDate(prog) + ' · dans ' + appelFormatDuree(prog - now) + '</span>'
+        : '<span style="font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px">Alerte dans ' + appelFormatDuree((ech === null ? APPEL_DELAI_MS : ech) - now) + '</span>';
     }
 
     const sousTitre = esc2(p.produit || '—')
@@ -3559,6 +3660,7 @@ function renderAppels() {
         + '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
           + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
           + btnDemo
+          + (fait ? '' : '<button class="btn btn-ghost btn-sm" onclick="ouvrirProgrammationAppel(\'' + p.id + '\',\'\',true)" title="Programmer ou modifier la date de l\'appel">📅 ' + (appelProgrammeTs(n) !== null ? 'Modifier la date' : 'Programmer') + '</button>')
           + '<button class="btn btn-ghost btn-sm" onclick="annulerReservationAppel(\'' + p.id + '\')" title="Annuler la réservation de call">Annuler la réservation</button>'
           + '<button class="btn btn-red btn-sm" onclick="deleteProspect(\'' + p.id + '\')">Supprimer</button>'
         + '</div>'
@@ -5003,7 +5105,7 @@ async function renderContacts() {
   el.innerHTML = data.map(p => {
     const dateStr = p.date_contact ? new Date(p.date_contact).toLocaleDateString('fr-FR') : '—';
     let _nC = {}; try { _nC = JSON.parse(p.notes || '{}'); } catch(e) {}
-    const pasInt  = p.statut === 'archive' && _nC.pas_interesse;
+    const pasInt  = !!_nC.pas_interesse && (p.statut === 'archive' || p.statut === 'en_suivi');
     const statut  = pasInt ? 'Pas intéressé' : (statutLabel[p.statut] || p.statut || '—');
     const color   = pasInt ? '#FF5C5C' : (statutColor[p.statut] || 'var(--muted)');
     return `<div class="card" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px">
