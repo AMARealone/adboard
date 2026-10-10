@@ -1685,6 +1685,11 @@ textarea::placeholder { color: var(--muted); }
           <span>Appels</span>
           <span class="nav-count" id="nc-appels">0</span>
         </button>
+        <button class="nav-item" id="nav-item-closing" onclick="goTo('closing',this)">
+          <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          <span>Closing</span>
+          <span class="nav-count" id="nc-closing">0</span>
+        </button>
         <button class="nav-item green" id="nav-item-leads" onclick="goTo('leads',this)">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span>Leads</span>
@@ -2077,6 +2082,23 @@ textarea::placeholder { color: var(--muted); }
   <div id="appels-list"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
 </div>
 
+<div class="page" id="page-closing">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Closing</div>
+      <div class="page-sub">Appel fait, pas encore payé — relances douces J+3 / J+10 / J+21 comptées depuis l'appel</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="search-wrap" style="width:220px">
+        <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Rechercher..." id="closing-search" oninput="renderClosing()" style="font-size:13px">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
+    </div>
+  </div>
+  <div id="closing-list"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+</div>
+
 <div class="page" id="page-leads">
   <div class="page-header">
     <div>
@@ -2441,7 +2463,7 @@ let noteId = null, leadId = null, achatId = null, achatSel = null;
 // NAV
 // ═══════════════════════════════════════
 const MOB_TITLES = {
-  prospects:'À contacter', suivi:'Suivi', appels:'Appels', demo:'Démo',
+  prospects:'À contacter', suivi:'Suivi', appels:'Appels', closing:'Closing', demo:'Démo',
   leads:'Leads', dashboard:'Dashboard', templates:'Templates',
   contacts:'Contacts', acheteurs:'Acheteurs', upsell:'Upsell'
 };
@@ -2553,6 +2575,7 @@ function goTo(name, btn) {
   if (name === 'comportement') renderComportement();
   if (name === 'utilisateurs') renderUtilisateurs();
   if (name === 'appels') renderAppels();
+  if (name === 'closing') renderClosing();
   if (name === 'leads') marquerVuLeads();
   if (name === 'acheteurs') marquerVuClients();
 }
@@ -2640,6 +2663,7 @@ function render() {
   set('nc-suivi', SV.length);
   set('nc-leads', LD.filter(p => !appelDansListe(p)).length);
   majNavAppels();
+  majNavClosing();
   majEffetNouveaute(LD, 'id', 'crm_seen_leads', 'nav-item-leads');
   set('nc-contacts', DB.length);
   // nc-acheteurs mis à jour dans renderClients() — dépend des vraies transactions, chargées
@@ -2670,6 +2694,7 @@ function render() {
   filterP();
   filterSuivi(SV);
   renderAppels();
+  renderClosing();
   renderLeads(LD);
   // Restaurer la page active sans clignotement
   const _activePg = document.getElementById('page-' + _activePage);
@@ -3375,6 +3400,16 @@ const APPEL_DELAI_MS = 24 * 3600 * 1000;
 function appelNotes(p) {
   try { return JSON.parse((p && p.notes) || '{}') || {}; } catch(e) { return {}; }
 }
+// État du closing posé après "Appel fait" ('relance' | 'paye' | '' ) — pré-test texte pour ne
+// pas parser les notes des ~20 000 fiches à chaque rendu.
+function closingEtat(p) {
+  if (!p || typeof p.notes !== 'string' || p.notes.indexOf('closing_etat') === -1) return '';
+  return appelNotes(p).closing_etat || '';
+}
+// Visible dans la liste Appels : réservation active ET pas encore passé en Closing / payé.
+function appelAffiche(p) {
+  return appelDansListe(p) && !closingEtat(p);
+}
 // Dans la liste Appels : réservation cochée, hors prospects remis en "À contacter" / archivés.
 function appelDansListe(p) {
   if (!p || p.statut === 'a_contacter' || p.statut === 'archive') return false;
@@ -3417,14 +3452,14 @@ function appelFormatDuree(ms) {
 // Compteur du menu (appels pas encore faits) + glow rouge si au moins un est en retard
 function majNavAppels() {
   const now = Date.now();
-  const attente = DB.filter(appelDansListe).filter(p => !appelNotes(p).appel_fait);
+  const attente = DB.filter(appelAffiche).filter(p => !appelNotes(p).appel_fait);
   const retard = attente.filter(p => appelEnRetard(appelNotes(p), now)).length;
   set('nc-appels', attente.length);
   const btn = document.getElementById('nav-item-appels');
   if (btn) {
     btn.classList.toggle('nav-glow-red', retard > 0);
     const grp = btn.closest('.nav-group');
-    if (grp) grp.classList.toggle('has-alert', retard > 0);
+    if (grp) grp.classList.toggle('has-alert', !!grp.querySelector('.nav-glow-red'));
   }
   return retard;
 }
@@ -3434,6 +3469,8 @@ function rafraichirApresAppel() {
   filterLeads();      // un lead qui réserve un call quitte Leads (et y revient si on annule)
   renderAppels();
   majNavAppels();
+  renderClosing();
+  majNavClosing();
   set('nc-leads', DB.filter(p => p.statut === 'lead' && !appelDansListe(p)).length);
 }
 
@@ -3541,7 +3578,12 @@ async function toggleAppelFait(id, val) {
   const ancien = p.notes;
   const s = appelNotes(p);
   s.appel_fait = !!val;
-  if (val) s.appel_fait_at = new Date().toISOString(); else delete s.appel_fait_at;
+  if (val) s.appel_fait_at = new Date().toISOString();
+  else {
+    delete s.appel_fait_at;
+    // appel remis "à faire" : plus de relances après call tant qu'il n'est pas refait
+    if (s.closing_etat === 'relance') { delete s.closing_etat; delete s.closing_at; }
+  }
   p.notes = JSON.stringify(s);
   rafraichirApresAppel();
   const ok = await patch(id, { notes: p.notes });
@@ -3551,6 +3593,87 @@ async function toggleAppelFait(id, val) {
     return;
   }
   toast(val ? 'Appel marqué fait ✓' : 'Appel remis à faire');
+  if (val) ouvrirDecisionAppel(id);
+}
+
+// ── Après "Appel fait" : comment ça s'est passé ? (3 issues, ou "plus tard" = reste dans Appels)
+function ouvrirDecisionAppel(id) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = document.getElementById('modal-decision-appel');
+  if (ancien) ancien.remove();
+  const ov = document.createElement('div');
+  ov.id = 'modal-decision-appel';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  const btn = 'width:100%;text-align:left;padding:12px 14px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);border:1px solid;margin-bottom:8px;';
+  ov.innerHTML =
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:400px;width:100%;font-family:var(--font)">'
+    + '<div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px">Comment s\'est passé l\'appel ?</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">' + esc2(p.nom_marque || 'Ce prospect') + '</div>'
+    + '<button id="dec-paye" style="' + btn + 'background:rgba(50,255,126,.08);border-color:rgba(50,255,126,.3);color:#32FF7E">✅ Il a payé</button>'
+    + '<button id="dec-relance" style="' + btn + 'background:rgba(255,181,71,.08);border-color:rgba(255,181,71,.3);color:#FFB547">⏳ Pas encore décidé — le relancer (J+3 / J+10 / J+21)</button>'
+    + '<button id="dec-perdu" style="' + btn + 'background:rgba(255,92,92,.08);border-color:rgba(255,92,92,.3);color:#FF5C5C">❌ Pas intéressé</button>'
+    + '<button id="dec-plus-tard" class="btn btn-ghost btn-sm" style="margin-top:4px">Décider plus tard</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+  const fermer = () => ov.remove();
+  ov.addEventListener('click', e => { if (e.target === ov) fermer(); });
+  document.getElementById('dec-plus-tard').onclick = fermer;
+  document.getElementById('dec-paye').onclick = () => { fermer(); decisionAppel(id, 'paye'); };
+  document.getElementById('dec-relance').onclick = () => { fermer(); decisionAppel(id, 'relance'); };
+  document.getElementById('dec-perdu').onclick = () => { fermer(); decisionAppel(id, 'perdu'); };
+}
+
+function _effacerClesAppelClosing(s) {
+  ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via','appel_programme_at',
+   'closing_etat','closing_at','closing_paye_at',
+   'closing_sent_j3','closing_sent_j3_at','closing_sent_j10','closing_sent_j10_at','closing_sent_j21','closing_sent_j21_at'
+  ].forEach(k => delete s[k]);
+}
+
+// choix : 'paye' | 'relance' | 'perdu'
+async function decisionAppel(id, choix) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const nom = p.nom_marque || 'ce prospect';
+  if (choix === 'paye' && !confirm('Confirmer : ' + nom + ' a payé ?\nIl passe en "Acheteur" et quitte Appels / Closing.')) return;
+  if (choix === 'perdu' && !confirm('Marquer ' + nom + ' "pas intéressé" ?\nIl retourne dans Suivi avec la pastille "Pas intéressé" (réversible).')) return;
+
+  const sauve = { notes: p.notes, statut: p.statut, date_lead: p.date_lead, date_achat: p.date_achat };
+  const s = appelNotes(p);
+  const now = new Date().toISOString();
+  const body = {};
+
+  if (choix === 'relance') {
+    // nouvelle séquence : on repart de zéro, les jours comptent depuis l'appel
+    ['closing_sent_j3','closing_sent_j3_at','closing_sent_j10','closing_sent_j10_at','closing_sent_j21','closing_sent_j21_at'].forEach(k => delete s[k]);
+    s.closing_etat = 'relance';
+    s.closing_at = s.appel_fait_at || now;
+  } else if (choix === 'paye') {
+    s.closing_etat = 'paye';
+    s.closing_paye_at = now;
+    body.statut = 'acheteur'; body.date_achat = now;
+    p.statut = 'acheteur'; p.date_achat = now;
+  } else if (choix === 'perdu') {
+    _effacerClesAppelClosing(s);
+    s.pas_interesse = true;
+    s.pas_interesse_at = now;
+    if (p.statut === 'lead') { body.statut = 'en_suivi'; body.date_lead = null; p.statut = 'en_suivi'; p.date_lead = null; }
+  } else return;
+
+  p.notes = JSON.stringify(s);
+  body.notes = p.notes;
+  render();
+  const ok = await patch(id, body);
+  if (!ok) {
+    p.notes = sauve.notes; p.statut = sauve.statut; p.date_lead = sauve.date_lead; p.date_achat = sauve.date_achat;
+    render();
+    toast('Échec — non enregistré, réessaie');
+    return;
+  }
+  toast(choix === 'relance' ? 'Dans Closing — première relance à J+3 de l\'appel'
+      : choix === 'paye' ? 'Marqué payé ✓ — passé en Acheteur'
+      : 'Pas intéressé — retourné dans Suivi');
 }
 
 function annulerReservationAppel(id) {
@@ -3574,7 +3697,7 @@ function renderAppels() {
   const now = Date.now();
   const q = (document.getElementById('appels-search')?.value || '').toLowerCase().trim();
 
-  let data = DB.filter(appelDansListe).map(p => ({ p, n: appelNotes(p) }));
+  let data = DB.filter(appelAffiche).map(p => ({ p, n: appelNotes(p) }));
   if (q) data = data.filter(({ p }) =>
     (p.nom_marque || '').toLowerCase().includes(q) || (p.produit || '').toLowerCase().includes(q));
 
@@ -3686,9 +3809,203 @@ function esc2(s) {
 setInterval(function () {
   try {
     majNavAppels();
+    majNavClosing();
     if (document.getElementById('page-appels')?.classList.contains('active')) renderAppels();
   } catch (e) { console.warn('Veille appels:', e.message); }
 }, 60000);
+
+// ═══════════════════════════════════════
+// CLOSING — appel fait, pas encore payé : relances douces J+3 / J+10 / J+21 DEPUIS L'APPEL
+// Données dans prospects.notes (JSON), aucune colonne à créer :
+//   closing_etat   'relance' (en séquence) | 'paye'
+//   closing_at     (ISO)  départ des jours = moment de "Appel fait"
+//   closing_sent_j3 / _j10 / _j21 (+ _at)   relance envoyée
+// Un prospect est dans Closing si closing_etat = 'relance' (peu importe son statut Suivi/Lead) ;
+// il n'apparaît alors ni dans Appels ni dans Leads.
+// ═══════════════════════════════════════
+const CLOSING_JOURS  = [3, 10, 21];
+const CLOSING_LABELS = ['Relance 1', 'Relance 2', 'Relance 3'];
+const DEFAULT_CLOSING = ['', '', ''];
+
+function closingTemplates() {
+  let t = (DB._config && DB._config.tpl_closing) || null;
+  if (!t) { try { t = JSON.parse(localStorage.getItem('tpl_closing') || 'null'); } catch(e) {} }
+  if (!Array.isArray(t)) t = DEFAULT_CLOSING;
+  return CLOSING_JOURS.map((j, i) => t[i] || '');
+}
+function closingDansListe(p) {
+  if (!p || p.statut === 'a_contacter' || p.statut === 'archive') return false;
+  if (closingEtat(p) !== 'relance') return false;
+  return !appelNotes(p).pas_interesse;
+}
+function closingJours(n, now) {
+  const t = Date.parse((n && (n.closing_at || n.appel_fait_at)) || '');
+  return isNaN(t) ? 0 : Math.max(0, Math.floor((now - t) / 86400000));
+}
+function closingProchainJ(n) {
+  for (const j of CLOSING_JOURS) { if (!n['closing_sent_j' + j]) return j; }
+  return null;
+}
+function closingEnRetard(n, now) {
+  const pj = closingProchainJ(n);
+  return pj !== null && closingJours(n, now) >= pj;
+}
+
+function majNavClosing() {
+  const now = Date.now();
+  const liste = DB.filter(closingDansListe);
+  const dus = liste.filter(p => closingEnRetard(appelNotes(p), now)).length;
+  set('nc-closing', liste.length);
+  const btn = document.getElementById('nav-item-closing');
+  if (btn) {
+    btn.classList.toggle('nav-glow-red', dus > 0);
+    const grp = btn.closest('.nav-group');
+    if (grp) grp.classList.toggle('has-alert', !!grp.querySelector('.nav-glow-red'));
+  }
+  return dus;
+}
+
+async function saveClosingStatus(id, key, val) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  if (val) { s[key] = true; s[key + '_at'] = new Date().toISOString(); }
+  else { delete s[key]; delete s[key + '_at']; }
+  p.notes = JSON.stringify(s);
+  renderClosing(); majNavClosing();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) { p.notes = ancien; renderClosing(); majNavClosing(); }
+}
+
+async function envoyerClosing(id, i) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const tpl = (closingTemplates()[i] || '').trim();
+  if (!tpl) { toast('Relance vide — écris-la dans Templates › Conversion › Relances après call'); return; }
+  const msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '').replace(/\[Produit\]/gi, p.produit || '');
+  const restant = msg.match(/\[[^\]]{2,40}\]/);
+  if (restant) { toast('Variable non remplie : ' + restant[0] + ' — vérifie le template'); return; }
+
+  if (estCanalInstagram(p)) {
+    if (!p.lien_instagram) { toast('Pas de lien Instagram pour ce prospect'); return; }
+    const copie = await copierTexteAvecRepli(msg);
+    toast(copie ? 'Texte copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Copie automatique impossible — copie le texte manuellement');
+    window.open(p.lien_instagram, '_blank');
+  } else {
+    const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '');
+    if (!numero) { toast('Pas de numéro WhatsApp pour ce prospect'); return; }
+    window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(msg), '_blank');
+  }
+  // marqué envoyé tout de suite (décochable avec la case "Envoyé" si l'envoi n'a pas eu lieu)
+  await saveClosingStatus(id, 'closing_sent_j' + CLOSING_JOURS[i], true);
+}
+
+async function closingReprogrammer(id) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm('Reprogrammer un nouvel appel avec ' + (p.nom_marque || 'ce prospect') + ' ?\nIl retourne dans Appels et sort du Closing.')) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  delete s.appel_fait; delete s.appel_fait_at; delete s.appel_programme_at;
+  delete s.closing_etat; delete s.closing_at;
+  s.appel_reserve = true;
+  s.appel_reserve_at = new Date().toISOString();
+  p.notes = JSON.stringify(s);
+  rafraichirApresAppel();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) { p.notes = ancien; rafraichirApresAppel(); toast('Échec — non enregistré, réessaie'); return; }
+  ouvrirProgrammationAppel(id, '', true);
+}
+
+function renderClosing() {
+  const el = document.getElementById('closing-list');
+  if (!el) return;
+  const now = Date.now();
+  const q = (document.getElementById('closing-search')?.value || '').toLowerCase().trim();
+  let data = DB.filter(closingDansListe).map(p => ({ p, n: appelNotes(p) }));
+  if (q) data = data.filter(({ p }) => (p.nom_marque || '').toLowerCase().includes(q) || (p.produit || '').toLowerCase().includes(q));
+
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">' + (q ? 'Aucun résultat' : 'Aucun prospect en closing') + '</div>'
+      + (q ? '' : 'Dans Appels, coche « Appel fait » puis choisis « Pas encore décidé — le relancer »') + '</div>';
+    return;
+  }
+
+  // Tri : relances dues (les plus en retard d'abord) > à venir (les plus proches) > séquence terminée
+  const score = ({ n }) => {
+    const pj = closingProchainJ(n);
+    if (pj === null) return -9999;
+    const j = closingJours(n, now);
+    return j >= pj ? (j - pj) : -(pj - j);
+  };
+  data.sort((a, b) => score(b) - score(a));
+
+  const dus = data.filter(({ n }) => closingEnRetard(n, now)).length;
+  let html = '';
+  if (dus > 0) {
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(255,76,106,.06);border:1px solid rgba(255,76,106,.18);border-radius:10px;margin-bottom:16px">'
+          + '<div style="width:7px;height:7px;border-radius:50%;background:var(--red);animation:pulse-border-red 1.5s infinite;flex-shrink:0"></div>'
+          + '<div style="font-size:13px;font-weight:700;color:var(--red)">' + dus + ' relance' + (dus > 1 ? 's' : '') + ' à envoyer maintenant</div>'
+          + '</div>';
+  }
+
+  html += data.map(({ p, n }) => {
+    const jDep = closingJours(n, now);
+    const pj = closingProchainJ(n);
+    const du = pj !== null && jDep >= pj;
+    const retard = pj !== null && jDep > pj;
+    let badge;
+    if (pj === null) badge = '<span style="font-size:10px;font-weight:700;background:rgba(255,255,255,.07);color:var(--muted);padding:2px 8px;border-radius:4px">SÉQUENCE TERMINÉE</span>';
+    else if (retard) badge = '<span style="font-size:10px;font-weight:800;background:rgba(255,76,106,.12);color:var(--red);padding:2px 8px;border-radius:4px;border:1px solid rgba(255,76,106,.25)">EN RETARD · J+' + pj + '</span>';
+    else if (du) badge = '<span style="font-size:10px;font-weight:800;background:rgba(31,182,255,.1);color:var(--blue);padding:2px 8px;border-radius:4px;border:1px solid rgba(31,182,255,.25)">À ENVOYER AUJOURD\'HUI · J+' + pj + '</span>';
+    else badge = '<span style="font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px">Prochaine relance dans ' + (pj - jDep) + 'j · J+' + pj + '</span>';
+
+    const btns = CLOSING_JOURS.map((j, i) => {
+      const sent = !!n['closing_sent_j' + j];
+      const passe = jDep >= j, auj = jDep === j, futur = jDep < j, enRet = jDep > j;
+      let st = 'display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:7px;font-size:11px;font-weight:700;border:1px solid;white-space:nowrap;cursor:pointer;font-family:var(--font);';
+      let bd = 'font-size:9px;font-weight:800;padding:1px 5px;border-radius:3px;';
+      if (sent) { st += 'background:rgba(255,255,255,.04);border-color:var(--border);color:var(--muted);text-decoration:line-through;opacity:.55;'; bd += 'background:var(--surface3);color:var(--muted);'; }
+      else if (enRet) { st += 'background:rgba(255,76,106,.08);border-color:rgba(255,76,106,.3);color:var(--red);'; bd += 'background:rgba(255,76,106,.2);color:var(--red);'; }
+      else if (auj) { st += 'background:rgba(31,182,255,.1);border-color:rgba(31,182,255,.35);color:var(--blue);'; bd += 'background:rgba(31,182,255,.2);color:var(--blue);'; }
+      else { st += 'background:transparent;border-color:var(--border);color:var(--muted);opacity:.45;pointer-events:none;'; bd += 'background:var(--surface3);color:var(--muted);'; }
+      const ig = estCanalInstagram(p) ? ' 📷' : '';
+      const check = passe
+        ? '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none;margin-top:4px;padding:0 2px">'
+          + '<input type="checkbox" ' + (sent ? 'checked' : '') + ' style="accent-color:var(--blue);cursor:pointer;width:12px;height:12px" onchange="saveClosingStatus(\'' + p.id + '\',\'closing_sent_j' + j + '\',this.checked)">'
+          + '<span style="font-size:11px;color:' + (sent ? 'var(--blue)' : 'var(--muted)') + '">Envoyé</span></label>'
+        : '';
+      return '<div style="flex-shrink:0"><button onclick="envoyerClosing(\'' + p.id + '\',' + i + ')" style="' + st + '" ' + (futur || sent ? 'disabled' : '') + '>'
+        + '<span style="' + bd + '">J+' + j + '</span><span>' + CLOSING_LABELS[i] + ig + '</span>'
+        + (futur ? '<span style="font-size:9px;opacity:.8">dans ' + (j - jDep) + 'j</span>' : '')
+        + '</button>' + check + '</div>';
+    }).join('');
+
+    const cardBorder = retard ? '1px solid rgba(255,76,106,.2)' : du ? '1px solid rgba(31,182,255,.2)' : '1px solid var(--border)';
+    return '<div style="background:var(--surface);border:' + cardBorder + ';border-radius:12px;padding:16px 20px;margin-bottom:12px">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap">'
+        + '<div style="min-width:0">'
+          + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">'
+            + '<div style="font-size:15px;font-weight:800;color:var(--white)">' + esc2(p.nom_marque || '—') + '</div>'
+            + '<span style="font-size:12px;color:var(--muted)">·</span><span style="font-size:12px;color:var(--muted)">' + esc2(p.pays || '—') + '</span>'
+            + badge
+          + '</div>'
+          + '<div style="font-size:12px;color:var(--muted)">' + esc2(p.produit || '—') + ' · Appel fait il y a ' + jDep + 'j</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
+          + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
+          + '<button class="btn btn-ghost btn-sm" onclick="closingReprogrammer(\'' + p.id + '\')">📞 Nouvel appel</button>'
+          + '<button class="btn btn-sm" style="background:rgba(50,255,126,.1);color:#32FF7E;border:1px solid rgba(50,255,126,.25)" onclick="decisionAppel(\'' + p.id + '\',\'paye\')">✅ A payé</button>'
+          + '<button class="btn btn-ghost btn-sm" style="color:#FF5C5C" onclick="decisionAppel(\'' + p.id + '\',\'perdu\')">❌ Pas intéressé</button>'
+          + '<button class="btn btn-red btn-sm" onclick="deleteProspect(\'' + p.id + '\')">×</button>'
+        + '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">' + btns + '</div>'
+    + '</div>';
+  }).join('');
+  el.innerHTML = html;
+}
 
 // ═══════════════════════════════════════
 // LEADS
@@ -6759,6 +7076,7 @@ const DEFAULT_RELANCES = [
 async function loadTemplates() {
   let intros    = DEFAULT_INTROS;
   let relances  = DEFAULT_RELANCES;
+  let closing   = DEFAULT_CLOSING;
   let interesse = '';
   let cfg_demo_msg = '';
   let cfg_pitch = '';
@@ -6770,6 +7088,7 @@ async function loadTemplates() {
         const cfg = JSON.parse(rows[0].notes || '{}');
         if (cfg.tpl_intros)    intros    = cfg.tpl_intros;
         if (cfg.tpl_relances)  relances  = cfg.tpl_relances;
+        if (Array.isArray(cfg.tpl_closing)) closing = cfg.tpl_closing;
         if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
         if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
         if (cfg.tpl_pitch)     cfg_pitch = cfg.tpl_pitch;
@@ -6784,6 +7103,7 @@ async function loadTemplates() {
     relances  = JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
     interesse = localStorage.getItem('tpl_interesse') || '';
     cfg_pitch = localStorage.getItem('tpl_pitch') || '';
+    try { const _lc = JSON.parse(localStorage.getItem('tpl_closing') || 'null'); if (Array.isArray(_lc)) closing = _lc; } catch(e) {}
   }
   // Ancien format (5 relances) encore enregistré quelque part → périmé, on force les nouveaux templates
   if (!Array.isArray(relances) || relances.length !== RELANCE_JOURS.length) {
@@ -6911,6 +7231,11 @@ async function loadTemplates() {
           <div id="relances-templates-list"></div>
         </div>
         <div class="tpl-groupe">
+          <div class="tpl-groupe-titre">💬 Relances après call (J+3, J+10, J+21)</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Pour les prospects dont l'appel a eu lieu mais qui n'ont pas payé — section Closing. Jours comptés depuis l'appel. Variable : <span style="color:var(--green)">[Marque]</span></div>
+          <div id="closing-templates-list"></div>
+        </div>
+        <div class="tpl-groupe">
           <div class="tpl-groupe-titre">✉️ Emails</div>
           ${carteDb('email_j5_vision', 'J+5 — vision avant/après')}
           ${carteDb('email_j12_offer', 'J+12 — objection prix')}
@@ -6988,6 +7313,20 @@ async function loadTemplates() {
     `).join('');
   }
 
+  // Relances après call (Closing)
+  const closingList = document.getElementById('closing-templates-list');
+  if (closingList) {
+    closingList.innerHTML = CLOSING_JOURS.map((j, i) => `
+      <div style="margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;font-weight:800;color:#FFB547;background:rgba(255,181,71,.12);padding:3px 9px;border-radius:4px">J+${j}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">${CLOSING_LABELS[i]} après l'appel</span>
+        </div>
+        <textarea id="closing-${i}" placeholder="À rédiger — relance très courte et douce" style="min-height:90px;font-size:12px;line-height:1.5" oninput="markDirty();syncTemplatesLive()">${escHtml(closing[i] || '')}</textarea>
+      </div>
+    `).join('');
+  }
+
   // Scripts suivi
   const tplInt = document.getElementById('tpl-interesse');
   if (tplInt) tplInt.value = interesse || '';
@@ -7028,6 +7367,7 @@ function syncTemplatesLive() {
     return el ? el.value : DEFAULT_RELANCES[i];
   });
   localStorage.setItem('tpl_relances', JSON.stringify(relances));
+  if (document.getElementById('closing-0')) localStorage.setItem('tpl_closing', JSON.stringify(getClosing()));
   // Sync intros
   const intros = [];
   let k = 0;
@@ -7048,6 +7388,14 @@ function getIntros() {
   return list;
 }
 
+function getClosing() {
+  const saved = (DB._config && Array.isArray(DB._config.tpl_closing)) ? DB._config.tpl_closing : DEFAULT_CLOSING;
+  return CLOSING_JOURS.map((j, i) => {
+    const el = document.getElementById('closing-' + i);
+    return el ? el.value : (saved[i] || '');
+  });
+}
+
 function getRelances() {
   return RELANCE_JOURS.map((j, i) => {
     const el = document.getElementById('relance-' + i);
@@ -7058,13 +7406,14 @@ function getRelances() {
 async function saveAllTemplates() {
   const intros   = getIntros();
   const relances = getRelances();
+  const closing  = getClosing();
   const int      = document.getElementById('tpl-interesse');
   const interesse = int ? int.value : '';
   const pitchEl  = document.getElementById('tpl-pitch');
   const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
   const demo_msg  = demoMsgEl ? demoMsgEl.value : '';
-  const cfg = { tpl_intros: intros, tpl_relances: relances, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch };
+  const cfg = { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch };
 
   // Upsert dans la ligne config
   try {
@@ -7128,6 +7477,7 @@ async function saveAllTemplates() {
     }
     // Sync localStorage pour genMessages
     localStorage.setItem('tpl_relances', JSON.stringify(relances));
+    localStorage.setItem('tpl_closing', JSON.stringify(closing));
     localStorage.setItem('tpl_interesse', interesse);
     localStorage.setItem('tpl_demo_msg', demo_msg);
     localStorage.setItem('tpl_pitch', pitch);
