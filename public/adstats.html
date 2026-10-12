@@ -2079,6 +2079,18 @@ textarea::placeholder { color: var(--muted); }
       <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
     </div>
   </div>
+  <div id="noshow-param" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:14px;font-size:12px;color:var(--text2)">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:700;color:var(--white)">
+      <input type="checkbox" id="noshow-auto" style="accent-color:#25D366;width:15px;height:15px;cursor:pointer" onchange="saveNoShowParams()">
+      No-show automatique : renvoyer en Leads
+    </label>
+    <span>si le prospect n'a pas eu son appel programmé, après</span>
+    <select id="noshow-delai" onchange="saveNoShowParams()" style="background:var(--surface2);color:var(--white);border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:var(--font)">
+      <option value="0">0 min (à l'heure)</option><option value="0.5">30 min</option><option value="1">1 h</option>
+      <option value="2">2 h</option><option value="6">6 h</option><option value="24">24 h</option>
+    </select>
+    <span style="color:var(--muted)">de retard (appels avec date/heure uniquement)</span>
+  </div>
   <div id="appels-list"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
 </div>
 
@@ -2622,6 +2634,7 @@ async function _loadImpl() {
     return;
   }
   try { render(); } catch(e) { console.error('Erreur render:', e); }
+  try { majNoShowPanel(); noShowAuto(); } catch(e) { console.warn('No-show:', e.message); }
   setTimeout(() => { try { renderDashboard(); } catch(e) { console.error('Erreur dashboard:', e); } }, 150);
   loadClients();
 }
@@ -3691,6 +3704,110 @@ function contacterPourAppel(id, canal) {
   if (numero) window.open('https://wa.me/' + numero, '_blank', 'noopener');
 }
 
+// ═══════════════════════════════════════
+// NO-SHOW — le prospect n'est pas venu à l'appel programmé
+// Paramètre (DB._config, synchronisé Supabase) : noshow_auto (bool, défaut ON), noshow_delai_h (défaut 2)
+// Effet : la réservation est annulée et le prospect repart en Leads —
+//   • il était en Suivi  → il devient Lead (date_lead = maintenant, les relances J+3/J+10/J+21 repartent)
+//   • il était déjà Lead → il réapparaît dans Leads (sa séquence de relances continue)
+// Notes : no_show_count / no_show_at (badge "No-show" sur la carte du lead)
+// ═══════════════════════════════════════
+function noShowParams() {
+  const c = DB._config || {};
+  let auto = c.noshow_auto, delai = c.noshow_delai_h;
+  try {
+    if (auto === undefined && localStorage.getItem('noshow_auto') !== null) auto = localStorage.getItem('noshow_auto') === '1';
+    if (delai === undefined && localStorage.getItem('noshow_delai_h') !== null) delai = parseFloat(localStorage.getItem('noshow_delai_h'));
+  } catch(e) {}
+  return { auto: auto === undefined ? true : !!auto, delai: (typeof delai === 'number' && !isNaN(delai)) ? delai : 2 };
+}
+function majNoShowPanel() {
+  const a = document.getElementById('noshow-auto'), d = document.getElementById('noshow-delai');
+  if (!a || !d) return;
+  const pr = noShowParams();
+  a.checked = pr.auto;
+  d.value = String(pr.delai);
+}
+async function saveNoShowParams() {
+  const a = document.getElementById('noshow-auto'), d = document.getElementById('noshow-delai');
+  if (!a || !d) return;
+  const auto = a.checked, delai = parseFloat(d.value);
+  try { localStorage.setItem('noshow_auto', auto ? '1' : '0'); localStorage.setItem('noshow_delai_h', String(delai)); } catch(e) {}
+  DB._config = Object.assign({}, DB._config || {}, { noshow_auto: auto, noshow_delai_h: delai });
+  try {
+    const r = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { headers: H });
+    const rows = r.ok ? await r.json() : [];
+    if (rows.length) {
+      let cur = {}; try { cur = JSON.parse(rows[0].notes || '{}') || {}; } catch(e) {}
+      const merged = Object.assign(cur, { noshow_auto: auto, noshow_delai_h: delai });
+      const pr = await fetch(`${SB}/prospects?nom_marque=eq.__config__`, { method: 'PATCH', headers: H, body: JSON.stringify({ notes: JSON.stringify(merged) }) });
+      if (!pr.ok) { toast('Paramètre enregistré sur cet appareil seulement'); return; }
+      DB._config = Object.assign({}, merged);
+    } else { toast('Paramètre enregistré sur cet appareil (pas de ligne config)'); return; }
+  } catch(e) { toast('Paramètre enregistré sur cet appareil seulement'); return; }
+  toast(auto ? 'No-show automatique activé ✓' : 'No-show automatique désactivé');
+  noShowAuto();
+}
+
+// Applique le no-show à un prospect. auto = déclenché par le paramètre (sinon bouton manuel).
+async function appliquerNoShow(id, auto) {
+  const p = DB.find(x => x.id === id);
+  if (!p || (p.statut !== 'en_suivi' && p.statut !== 'lead')) return false;
+  const sauve = { notes: p.notes, statut: p.statut, date_lead: p.date_lead };
+  const s = appelNotes(p);
+  const etaitLead = p.statut === 'lead';
+  ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via','appel_programme_at'].forEach(k => delete s[k]);
+  s.no_show_count = (s.no_show_count || 0) + 1;
+  s.no_show_at = new Date().toISOString();
+  const body = {};
+  if (!etaitLead) {
+    body.statut = 'lead'; body.date_lead = new Date().toISOString();
+    p.statut = 'lead'; p.date_lead = body.date_lead;
+  }
+  p.notes = JSON.stringify(s);
+  body.notes = p.notes;
+  rafraichirApresAppel();
+  const ok = await patch(id, body);
+  if (!ok) {
+    p.notes = sauve.notes; p.statut = sauve.statut; p.date_lead = sauve.date_lead;
+    rafraichirApresAppel();
+    toast('Échec — non enregistré, réessaie');
+    return false;
+  }
+  toast((p.nom_marque || 'Prospect') + ' : no-show' + (auto ? ' (auto)' : '') + ' → ' + (etaitLead ? 'de retour dans Leads' : 'passé en Lead'));
+  return true;
+}
+function noShowManuel(id) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm((p.nom_marque || 'Ce prospect') + ' ne s\'est pas présenté ?\nIl repart en Leads.')) return;
+  appliquerNoShow(id, false);
+}
+let _noShowEnCours = false;
+async function noShowAuto() {
+  if (_noShowEnCours) return;
+  const pr = noShowParams();
+  if (!pr.auto) return;
+  _noShowEnCours = true;
+  try {
+    const now = Date.now(), seuil = pr.delai * 3600000;
+    const ids = DB.filter(appelAffiche).filter(p => {
+      const n = appelNotes(p);
+      if (n.appel_fait) return false;
+      const t = appelProgrammeTs(n);
+      return t !== null && now >= t + seuil;
+    }).map(p => p.id);
+    for (const id of ids) await appliquerNoShow(id, true);
+  } catch(e) { console.warn('No-show auto:', e.message); }
+  finally { _noShowEnCours = false; }
+}
+function noShowBadge(p) {
+  if (!p || typeof p.notes !== 'string' || p.notes.indexOf('no_show_count') === -1) return '';
+  const n = appelNotes(p);
+  if (!n.no_show_count) return '';
+  return '<span title="N\'est pas venu à l\'appel programmé" style="font-size:10px;font-weight:800;color:#FFB547;background:rgba(255,181,71,.1);border:1px solid rgba(255,181,71,.3);padding:2px 8px;border-radius:4px;letter-spacing:.5px">NO-SHOW' + (n.no_show_count > 1 ? ' ×' + n.no_show_count : '') + '</span>';
+}
+
 function renderAppels() {
   const el = document.getElementById('appels-list');
   if (!el) return;
@@ -3784,6 +3901,7 @@ function renderAppels() {
           + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
           + btnDemo
           + (fait ? '' : '<button class="btn btn-ghost btn-sm" onclick="ouvrirProgrammationAppel(\'' + p.id + '\',\'\',true)" title="Programmer ou modifier la date de l\'appel">📅 ' + (appelProgrammeTs(n) !== null ? 'Modifier la date' : 'Programmer') + '</button>')
+          + (fait ? '' : '<button class="btn btn-ghost btn-sm" onclick="noShowManuel(\'' + p.id + '\')" style="color:#FFB547;border-color:rgba(255,181,71,.3)" title="Le prospect ne s\'est pas présenté : renvoyer en Leads">No-show</button>')
           + '<button class="btn btn-ghost btn-sm" onclick="annulerReservationAppel(\'' + p.id + '\')" title="Annuler la réservation de call">Annuler la réservation</button>'
           + '<button class="btn btn-red btn-sm" onclick="deleteProspect(\'' + p.id + '\')">Supprimer</button>'
         + '</div>'
@@ -3810,6 +3928,7 @@ setInterval(function () {
   try {
     majNavAppels();
     majNavClosing();
+    noShowAuto();
     if (document.getElementById('page-appels')?.classList.contains('active')) renderAppels();
   } catch (e) { console.warn('Veille appels:', e.message); }
 }, 60000);
@@ -4202,6 +4321,7 @@ function renderLeads(data) {
             + '<span style="font-size:12px;color:var(--muted)">·</span>'
             + '<span style="font-size:12px;color:var(--muted)">' + (p.pays || '—') + '</span>'
             + statusBadge
+            + noShowBadge(p)
           + '</div>'
           + '<div style="font-size:12px;color:var(--muted)">' + esc(p.produit || '—') + ' · Lead depuis ' + jDep + 'j</div>'
         + '</div>'
@@ -7413,7 +7533,7 @@ async function saveAllTemplates() {
   const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
   const demo_msg  = demoMsgEl ? demoMsgEl.value : '';
-  const cfg = { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch };
+  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch });
 
   // Upsert dans la ligne config
   try {
