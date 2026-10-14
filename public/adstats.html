@@ -3126,6 +3126,7 @@ function renderSuivi(data) {
         + '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);">R\u00e9ponse \u2014 Pitch</div>'
       + '</div>'
       + '<div id="wa-btn-pitch-'+pid+'"><button id="btn-send-pitch-'+pid+'" onclick="sendPitchMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'var(--blue)')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Pitch (Instagram)':'📱 Envoyer Pitch (WhatsApp)')+'</button></div>'
+      + chipPitchVariante(p)
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(pitch_envoye?'var(--blue)':'var(--muted)')+';font-weight:'+(pitch_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(pitch_envoye?'checked':'')+' style="accent-color:var(--blue);cursor:pointer;width:13px;height:13px" onchange="togglePitchEnvoye(\''+pid+'\',this.checked)">'
         + 'Pitch envoy\u00e9</label>'
@@ -3253,6 +3254,66 @@ async function remettreArchiveEnSuivi(id) {
   toast('Prospect remis dans le Suivi');
 }
 
+// ── PITCH PERSONNALISÉ PAR LES DONNÉES ADS ─────────────────────────────────────
+// Le message n'affirme que ce que le relevé a vu, et le date (« il y a quelques jours on a vu que »).
+// Relevé absent, sans ad active, ou trop ancien → pitch standard (aucun chiffre).
+const PITCH_DATA_DEFAUT = {
+  tpl: "Je posais la question car notre *AGENCE CRÉATIVE* (adstackofficial.com)\n\naide des *Marques E-commerce* à accroître leurs *revenus* 📈 grâce à un système CRÉATIF performant, et il y a quelques jours on a vu que :\n\nVous avez *[ads]* ads actives depuis *[jours]* jours ce qui montre que vous *[bonne_nouvelle]* mais aussi que *[mauvaise_nouvelle]* si ça continue.\n\nOuvert à un petit *appel de 10 min* pour voir comment notre service peut combler cette faille potentielle pour aller chercher de gros résultats ?",
+  seuil_ads: 12, seuil_jours: 15, fraicheur_j: 10,
+  cas: {
+    1: { b: 'aviez de bonnes créatives qui durent', m: 'vous pouviez atteindre la fatigue publicitaire plus rapidement' },
+    2: { b: 'étiez en train de tester de bonnes nouvelles créatives', m: 'ce petit volume peut rendre vos résultats difficiles à maintenir' },
+    3: { b: 'aviez un bon rythme de créatives qui tiennent', m: 'vous pouviez avoir plus de mal à diversifier votre contenu créatif' },
+    4: { b: 'aviez lancé beaucoup de nouvelles créatives', m: 'vous pouviez avoir du mal à exploiter les créatives qui marchent' }
+  }
+};
+const PITCH_CAS_LABELS = {
+  1: 'Cas 1 — peu d\'ads · ancienneté longue', 2: 'Cas 2 — peu d\'ads · ancienneté courte',
+  3: 'Cas 3 — beaucoup d\'ads · ancienneté longue', 4: 'Cas 4 — beaucoup d\'ads · ancienneté courte'
+};
+function pitchDataParams() {
+  const c = (DB._config || {}).pitch_data || {}, d = PITCH_DATA_DEFAUT;
+  const num = (v, def) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : def; };
+  const cas = {};
+  [1, 2, 3, 4].forEach(k => { const x = (c.cas || {})[k] || {}; cas[k] = { b: (x.b || '').trim() || d.cas[k].b, m: (x.m || '').trim() || d.cas[k].m }; });
+  return { tpl: (c.tpl || '').trim() ? c.tpl : d.tpl, seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), cas };
+}
+function pitchVariante(p) {
+  const prm = pitchDataParams();
+  const ads = p ? p.nb_ads_actifs : null, jours = p ? p.anciennete_max_jours : null;
+  if (ads == null || jours == null) return { cas: null, raison: 'données ads absentes' };
+  if (ads < 1) return { cas: null, raison: 'aucune ad active relevée' };
+  const t = new Date(String(p.date_collecte || '').slice(0, 10) + 'T00:00:00').getTime();
+  if (!Number.isFinite(t)) return { cas: null, raison: 'date de relevé inconnue' };
+  const age = Math.max(0, Math.floor((Date.now() - t) / 86400000));
+  if (age > prm.fraicheur_j) return { cas: null, raison: 'relevé de ' + age + ' j (valable ' + prm.fraicheur_j + ' j)' };
+  const peu = ads <= prm.seuil_ads, courte = jours < prm.seuil_jours;
+  const cas = peu ? (courte ? 2 : 1) : (courte ? 4 : 3);
+  return { cas, ads, jours: Math.max(1, jours), age, b: prm.cas[cas].b, m: prm.cas[cas].m, tpl: prm.tpl };
+}
+function remplirPitchDonnees(msg, v) {
+  msg = msg.replace(/\[ads\]/gi, () => v.ads).replace(/\[jours\]/gi, () => v.jours)
+           .replace(/\[bonne_nouvelle\]/gi, () => v.b).replace(/\[mauvaise_nouvelle\]/gi, () => v.m);
+  if (v.ads === 1) msg = msg.replace(/\b1(\*?) ads actives\b/gi, '1$1 ad active').replace(/, la plus ancienne depuis\b/gi, ' depuis');
+  if (v.jours === 1) msg = msg.replace(/\b1(\*?) jours\b/gi, '1$1 jour');
+  return msg;
+}
+function chipPitchVariante(p) {
+  const v = pitchVariante(p);
+  const txt = v.cas ? '🎯 Pitch personnalisé · cas ' + v.cas + ' (' + v.ads + ' ads · ' + v.jours + ' j · relevé il y a ' + v.age + ' j)' : '📄 Pitch standard — ' + v.raison;
+  return '<div style="font-size:10.5px;color:var(--muted);margin-top:6px">' + txt + '</div>';
+}
+function lirePitchDataUI() {
+  const g = id => { const e = document.getElementById(id); return e ? e.value : ''; };
+  const cas = {}; [1, 2, 3, 4].forEach(k => { cas[k] = { b: g('pd-b-' + k).trim(), m: g('pd-m-' + k).trim() }; });
+  return { tpl: g('tpl-pitch-data'), seuil_ads: g('pd-seuil-ads'), seuil_jours: g('pd-seuil-jours'), fraicheur_j: g('pd-fraicheur'), cas };
+}
+function remplirPitchDataUI() {
+  const prm = pitchDataParams(), set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+  set('tpl-pitch-data', prm.tpl); set('pd-seuil-ads', prm.seuil_ads); set('pd-seuil-jours', prm.seuil_jours); set('pd-fraicheur', prm.fraicheur_j);
+  [1, 2, 3, 4].forEach(k => { set('pd-b-' + k, prm.cas[k].b); set('pd-m-' + k, prm.cas[k].m); });
+}
+
 async function sendPitchMsg(pid) {
   // Fix mobile (window.open bloqué sur mobile si fait après un await)
   const _pCheck = DB.find(x => x.id === pid);
@@ -3274,6 +3335,8 @@ async function sendPitchMsg(pid) {
   // préparé dans cette session (fix templates périmés).
   let _tpl = "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*💵 grâce à :\n\n👉🏾 Une vraie stratégie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous intéressé par une *DÉMONSTRATION* sur votre [Produit] ?";
   try { const _c = DB._config || {}; if (_c.tpl_pitch) _tpl = _c.tpl_pitch; } catch(e) {}
+  const _pv = pitchVariante(DB.find(x => x.id === pid) || {});
+  if (_pv.cas) _tpl = _pv.tpl;
   d.tpl = _tpl;
   const btn = document.getElementById('btn-send-pitch-' + pid);
   if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Préparation…'; }
@@ -3296,6 +3359,9 @@ async function sendPitchMsg(pid) {
     // défaut du prospect font foi à ce stade (la mindmap n'existe pas encore, elle ne sera
     // produite qu'après confirmation d'intérêt).
     let msg = d.tpl.replace(/\[Produit\]/gi, d.produit || 'votre produit');
+    if (_pv.cas) msg = remplirPitchDonnees(msg, _pv);
+    // Trace de la variante envoyée (sert à mesurer plus tard quel cas fait réserver des appels)
+    try { const _pp = DB.find(x => x.id === pid); if (_pp) { let _sn = {}; try { _sn = JSON.parse(_pp.notes || '{}'); } catch (e) {} _sn.pitch_variante = _pv.cas ? 'cas' + _pv.cas : 'standard'; _sn.pitch_variante_at = new Date().toISOString(); _pp.notes = JSON.stringify(_sn); patch(pid, { notes: _pp.notes }); } } catch (e) {}
     // Fix : le template mentionne "(adstackofficial.com)" en clair (juste pour nommer l'agence,
     // pas comme lien à cliquer) — l'ancienne logique voyait cette mention et pensait qu'un lien
     // était déjà là, donc n'insérait jamais le vrai lien tracké nulle part. On remplace
@@ -7342,6 +7408,28 @@ async function loadTemplates() {
           <textarea id="tpl-pitch" style="width:100%;min-height:110px;font-size:12px" oninput="markDirty()"></textarea>
         </div>
         <div class="tpl-groupe">
+          <div class="tpl-groupe-titre">🎯 Pitch personnalisé (données ads)</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Remplace le pitch standard quand le relevé est récent et que les ads actives sont connues. Variables : <span style="color:var(--green)">[Produit] [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle]</span></div>
+          <textarea id="tpl-pitch-data" style="width:100%;min-height:130px;font-size:12px" oninput="markDirty()"></textarea>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px;font-size:11px;color:var(--text2)">
+            <span>« Peu d'ads » jusqu'à <input id="pd-seuil-ads" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> ads</span>
+            <span>« Ancienneté courte » sous <input id="pd-seuil-jours" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> jours</span>
+            <span>Relevé valable <input id="pd-fraicheur" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> jours</span>
+          </div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 1 — peu d'ads · ancienneté longue</div>
+            <input id="pd-b-1" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-1" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 2 — peu d'ads · ancienneté courte</div>
+            <input id="pd-b-2" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-2" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 3 — beaucoup d'ads · ancienneté longue</div>
+            <input id="pd-b-3" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-3" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 4 — beaucoup d'ads · ancienneté courte</div>
+            <input id="pd-b-4" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-4" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+        </div>
+        <div class="tpl-groupe">
           <div class="tpl-groupe-titre">💬 Message "Envoyer la démo"</div>
           <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Variables : <span style="color:var(--green)">[Produit] [lien_demo]</span> — envoyé une fois "Intéressé" coché</div>
           <textarea id="tpl-demo-msg" style="width:100%;min-height:110px;font-size:12px" oninput="markDirty()"></textarea>
@@ -7453,6 +7541,7 @@ async function loadTemplates() {
 
   const tplPitch = document.getElementById('tpl-pitch');
   if (tplPitch) tplPitch.value = cfg_pitch || "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*💵 grâce à :\n\n👉🏾 Une vraie stratégie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous intéressé par une *DÉMONSTRATION* sur votre [Produit] ?";
+  remplirPitchDataUI();
   const tplDemoMsg = document.getElementById('tpl-demo-msg');
   if (tplDemoMsg) tplDemoMsg.value = cfg_demo_msg || "Voici l'*aperçu concret* de notre méthode sur votre [Produit] 👇🏽:\n\n[lien_demo]\n\nHâte de recevoir votre avis ?";
 }
@@ -7533,7 +7622,7 @@ async function saveAllTemplates() {
   const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
   const demo_msg  = demoMsgEl ? demoMsgEl.value : '';
-  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch });
+  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
 
   // Upsert dans la ligne config
   try {
