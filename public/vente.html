@@ -467,6 +467,9 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .exemple-card{width:130px;aspect-ratio:4/5;border-radius:12px;overflow:hidden;flex-shrink:0;background:#111318;box-shadow:0 6px 20px rgba(0,0,0,0.5);transition:transform .3s ease,box-shadow .3s ease}
 .exemple-card img{width:100%;height:100%;object-fit:cover;display:block}
 .exemple-card:hover{transform:scale(1.05);box-shadow:0 12px 32px rgba(0,0,0,0.7),0 0 0 2px rgba(31,182,255,0.2)}
+.exemple-card.exemple-video{aspect-ratio:9/16;position:relative;background:linear-gradient(160deg,#0E1B2C,#0A0A0E)}
+.exemple-video .exv-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#4A6F8F;font-size:11px;font-weight:700;letter-spacing:.3px}
+.exemple-video video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;background:transparent}
 @media(min-width:600px){.exemple-card{width:160px}.exemple-row{gap:12px}}
 @media(prefers-reduced-motion:reduce){.exemple-row-1,.exemple-row-2{animation:none}}
 </style>
@@ -484,25 +487,26 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 </section>
 <section class="exemple-section" id="exemple">
   <div style="overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
+    <!-- Bande vidéo 9:16 : pour l'instant une seule vidéo (creative-1.mp4) sur toutes les cartes — un seul téléchargement. Pour varier, remplace le src de chaque carte par creative-2.mp4, etc. -->
     <div class="exemple-row exemple-row-1">
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7da6d2c4d71.65870729_DEMO1.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7de499e7255.82247645_IMAGE3.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db0b4b0cd7.66540436_DEMO5.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dde36858c3.51602699_DEMO39.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db69509017.76096981_DEMO14.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7ddbf972198.05380784_DEMO36.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="/assets/vente/exemple-glorysmile.jpg" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="/assets/vente/exemple-skintint.jpg" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="/assets/vente/exemple-wellvita.jpg" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7da6d2c4d71.65870729_DEMO1.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7de499e7255.82247645_IMAGE3.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db0b4b0cd7.66540436_DEMO5.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dde36858c3.51602699_DEMO39.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7db69509017.76096981_DEMO14.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7ddbf972198.05380784_DEMO36.png" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="/assets/vente/exemple-glorysmile.jpg" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="/assets/vente/exemple-skintint.jpg" loading="lazy" alt=""></div>
-      <div class="exemple-card"><img src="/assets/vente/exemple-wellvita.jpg" loading="lazy" alt=""></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 1</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 2</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 3</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 4</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 5</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 6</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 1</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 2</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 3</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 4</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 5</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 6</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 1</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 2</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 3</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 4</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 5</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 6</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
     </div>
   </div>
   <div style="overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
@@ -528,6 +532,16 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     </div>
   </div>
 </section>
+<script>
+/* Bande vidéo 9:16 : lecture auto, sans son, en boucle — pause hors écran pour économiser la data/batterie */
+(function(){
+  var vids=document.querySelectorAll('.exemple-video video');
+  vids.forEach(function(v){v.muted=true;v.defaultMuted=true;v.setAttribute('muted','');v.setAttribute('playsinline','');});
+  if(!('IntersectionObserver' in window)){vids.forEach(function(v){var p=v.play();if(p&&p.catch)p.catch(function(){});});return;}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:0.1});
+  vids.forEach(function(v){io.observe(v);});
+})();
+</script>
 <style>
 .sol-v2-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 48px;color:#fff;overflow:hidden;contain:layout style}
 .sol-v2-inner{width:88%;max-width:520px;margin:0 auto}
@@ -962,7 +976,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .tv2-title{font-size:11px;font-weight:800;color:#fff;line-height:1.3}
 @keyframes tv2-fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 </style>
-<section class="travaux-section" id="travaux">
+<section class="travaux-section" id="travaux" hidden aria-hidden="true" style="display:none"><!-- SECTION DÉSACTIVÉE (oct. 2026) : retirer hidden + style="display:none" pour la réactiver -->
   <div class="tv2-container">
     <div class="tv2-title-block">
       <h2 class="tv2-headline">Nos <em>Travaux Récents</em></h2>
@@ -2169,7 +2183,6 @@ window.lpApplyCurrency = function(){};
       <div class="ads-footer-col">
         <div class="ads-footer-col-title">Explorer</div>
         <div class="ads-footer-col-links">
-          <a href="#travaux" onclick="event.preventDefault();document.getElementById('travaux').scrollIntoView({behavior:'smooth'})">Travaux récents</a>
           <a href="#comparatif-honnete" onclick="event.preventDefault();document.getElementById('comparatif-honnete').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
           <a href="#ce-que-vous-recevez" onclick="event.preventDefault();document.getElementById('ce-que-vous-recevez').scrollIntoView({behavior:'smooth'})">Ce que vous recevez</a>
           <a href="#comment" onclick="event.preventDefault();document.getElementById('comment').scrollIntoView({behavior:'smooth'})">Comment ça marche</a>
