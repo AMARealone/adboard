@@ -654,7 +654,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
-            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} images / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
+            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} créatives / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
             <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => {
               const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-${nextCycle}`];
@@ -4300,9 +4300,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
-    'checkout-quarterly:starter': 'Starter trimestriel (-20%) →',
-    'checkout-quarterly:pro': 'Pro trimestriel (-20%) →',
-    'checkout-quarterly:scale': 'Scale trimestriel (-20%) →',
+    'checkout-quarterly:starter': 'Starter trimestriel (-15%) →',
+    'checkout-quarterly:pro': 'Pro trimestriel (-15%) →',
+    'checkout-quarterly:scale': 'Scale trimestriel (-15%) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4424,33 +4424,41 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
   );
 };
 
-// MAJ pricing (le plus récent) : retour aux tarifs en FCFA fixes, avec convertPrice() réactivé
+// MAJ pricing (oct. 2026 — grille 60 000 / 110 000 / 200 000 FCFA, 24 / 48 / 96 créatives par mois : vidéos + images,
+// trimestriel -15 %) — remplace la grille précédente. Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
+// (historique) retour aux tarifs en FCFA fixes, avec convertPrice() réactivé
 // pour l'affichage (voir plus bas dans le fichier) — Chariow gère toujours la devise réelle au
 // moment du checkout, ce convertisseur n'est qu'un affichage indicatif avant paiement.
 const PLANS = [
   {
     id:'starter', name:'Conversion Starter', color:C.gray, best:false,
-    tagline:'Démarquez vous de la concurrence, et commencez enfin à grandir.',
-    ctaText:'Démarrer Maintenant',
-    imagesPerWeek: 6, produitsPerWeek: '1',
-    monthly: { price:19900, prixImg:835, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:16000, prixImg:667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
+    ctaText:"S'abonner à Cette Offre",
+    imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16,
+    badge:'24 Créatives / Mois (8 vidéos et 16 images)', promo:'',
+    
+    monthly: { price:60000, prixImg:2500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:50000, prixImg:2083, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
-    tagline:'Pour accélérer le scaling de votre marque, sans gérer une grosse équipe.',
-    ctaText:'Démarrer Maintenant',
-    imagesPerWeek: 12, produitsPerWeek: '1 à 2',
-    monthly: { price:39900, prixImg:835, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:32000, prixImg:667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
+    ctaText:"S'abonner à Cette Offre",
+    imagesPerWeek: 12, produitsPerWeek: '1 à 2', batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
+    badge:'48 Créatives / Mois (16 vidéos et 32 images)', promo:'-10% de réduction',
+    
+    monthly: { price:110000, prixImg:2292, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:90000, prixImg:1875, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
-    tagline:'Gérer votre croissance sur un ou plusieurs marchés différents, sans exploser vos coûts pubs.',
-    ctaText:'Démarrer Maintenant',
-    imagesPerWeek: 24, produitsPerWeek: '1 à 4',
-    monthly: { price:59900, prixImg:625, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:48000, prixImg:500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
+    ctaText:"S'abonner à Cette Offre",
+    imagesPerWeek: 24, produitsPerWeek: '1 à 4', batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
+    badge:'96 Créatives / Mois (32 vidéos et 64 images)', promo:'-20% de réduction',
+    
+    monthly: { price:200000, prixImg:2083, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:160000, prixImg:1667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -4503,11 +4511,11 @@ const triggerChariowCheckout = async (plan, cycle, user, popup) => {
 const FAQ_ITEMS = [
   {
     q: "Qu'est-ce qu'AdBoard exactement ?",
-    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit chaque semaine vos visuels publicitaires (images Meta Ads), une analyse de votre marché cible, et des textes publicitaires prêts à l'emploi — livrés directement sur votre tableau de bord."
+    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit chaque semaine vos visuels publicitaires (vidéos et images Meta Ads), une analyse de votre marché cible, et des textes publicitaires prêts à l'emploi — livrés directement sur votre tableau de bord."
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "Conversion Starter (6 images/semaine, 1 produit), Conversion Pro (12 images/semaine, 1 à 2 produits), et Conversion Scale (24 images/semaine, 1 à 4 produits). Plus la formule est élevée, plus vous recevez de visuels par semaine et plus vous pouvez gérer de produits en simultané."
+    a: "Conversion Starter (24 créatives par mois : 1 batch par semaine de 2 vidéos et 4 images, 1 produit), Conversion Pro (48 créatives par mois : 2 batchs par semaine, 1 à 2 produits), et Conversion Scale (96 créatives par mois : 4 batchs par semaine, 1 à 4 produits). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
   },
   {
     q: "En combien de temps mes visuels sont-ils livrés ?",
@@ -4637,10 +4645,10 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           Nos Tarifs
         </div>
         <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.15,letterSpacing:'-0.5px'}}>
-          <span className="headline-gradient">Votre équipe créative orientée scaling.</span>
+          Le <span className="headline-gradient">Système Créatif</span> Qui Accélère Votre <span className="headline-gradient">Croissance</span>
         </h1>
         <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:520}}>
-          Chaque semaine, nous transformons les données de votre marché en angles, concepts et créatives prêtes à tester — <strong style={{color:C.text}}>puis nous utilisons vos retours pour améliorer les prochaines.</strong>
+          Chaque semaine : nous nous occupons de votre stratégie marketing, produisons des créatives optimisées et enfin <strong style={{color:C.text}}>nous apprenons des créatives qui marchent pour améliorer les prochaines.</strong>
         </p>
       </div>
 
@@ -4656,11 +4664,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           </button>
           <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
             Trimestriel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-20%</span>
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-15%</span>
           </span>
         </div>
         <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser jusqu'à 20%.</strong>
+          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser au moins 15%.</strong>
         </p>
       </div>
 
@@ -4691,27 +4699,16 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           const cycleData = quarterly ? p.quarterly : p.monthly;
-          // Offres payantes (Starter/Pro/Scale) — même structure en 3 groupes pour les trois, seul le
-          // volume hebdomadaire change. Texte exact fourni par Amar ; « Suivi de la production en temps
-          // réel » n'est listé que sur Starter.
-          const productionItems = [
-            { icon:'image', bold:`${p.imagesPerWeek} nouvelles créatives images`, rest:'livrées chaque semaine' },
-            { icon:'document', bold:'Titres et Descriptions', rest:'pour la campagne (Ad Copies)' },
-            { icon:'chart', bold:'Récapitulatif de l\'analyse de marché', rest:'' },
-            ...(p.id === 'starter' ? [{ icon:'clock', bold:'Suivi de la production', rest:'en temps réel' }] : []),
-            { icon:'bolt', bold:'Production en 24h', rest:'' },
-          ];
+          // Fonctionnalités (oct. 2026) — texte fourni par Amar, identique pour les 3 offres : seuls le nombre
+          // de batchs par semaine et leur contenu (2 vidéos + 4 images par batch) changent.
           const featureGroups = [
-            { titre:'STRATÉGIE', items:[
-              { icon:'search', bold:'Recherche avant production', rest:': concurrents, cible & angles' },
-              { icon:'sparkle', bold:'Concepts créatifs', rest:'qui cartonnent en ce moment' },
-            ]},
-            { titre:'PRODUCTION', items:productionItems },
-            { titre:'PERFORMANCE', items:[
-              { icon:'grid', bold:'Organisation de vos créatives', rest:'' },
-              { icon:'chart', bold:'Analyse des créatives', rest:'top performer' },
-              { icon:'sparkle', bold:'Amélioration et Itération', rest:'en continu' },
-              { icon:'bulb', bold:'Support WhatsApp et assistant IA stratégique', rest:'dispo 7j/7' },
+            { titre:'', items:[
+              { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur concurrents, cible & angles' },
+              { icon:'image', bold:`${p.batchesPerWeek} Batch / Semaine`, rest:`: ${p.batchesPerWeek*2} vidéos et ${p.batchesPerWeek*4} images optimisés conversion` },
+              { icon:'document', bold:'Ad Copies', rest:': titres et descriptions pour la campagne' },
+              { icon:'sparkle', bold:'Apprentissage Continu', rest:': itération et amélioration des prochaines créatives' },
+              { icon:'grid', bold:'Accès Plateforme AdBoard', rest:': gestion structurée de vos produits et créatives' },
+              { icon:'bolt', bold:'Production', rest:': en max 24h après demande' },
             ]},
           ];
           return (
@@ -4758,10 +4755,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 {quarterly && (
                   <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan trimestriel</span>
                 )}
-              </div>
-
-              <div style={{display:'inline-flex',alignItems:'center',gap:5,padding:'3px 10px',borderRadius:20,background:'rgba(45,127,249,0.10)',color:C.accent,fontSize:11,fontWeight:800,marginBottom:14}}>
-                {convertPrice(cycleData.prixImg)} <span style={{fontSize:10,fontWeight:400}}>/ image</span>
+                {p.promo && (
+                  <span style={{fontSize:9,fontWeight:800,color:'#3DDC84',background:'rgba(61,220,132,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>{p.promo}</span>
+                )}
               </div>
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
@@ -4769,9 +4765,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               <div style={{flex:1,marginBottom:20,display:'flex',flexDirection:'column',gap:18}}>
                 {featureGroups.map((groupe,g) => (
                   <div key={g}>
+                    {groupe.titre && (
                     <div style={{fontSize:9.5,fontWeight:800,color:p.color,letterSpacing:'1.2px',marginBottom:9,opacity:0.85}}>
                       {groupe.titre}
                     </div>
+                    )}
                     <div style={{display:'flex',flexDirection:'column',gap:11}}>
                       {groupe.items.map((f,j) => (
                         <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
