@@ -4444,7 +4444,7 @@ const PLANS = [
     id:'pro', name:'Conversion Pro', color:C.accent, best:true,
     tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 12, produitsPerWeek: '1 à 2', batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
+    imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
     badge:'48 Créatives / Mois (16 vidéos et 32 images)', promo:'-10% de réduction',
     
     monthly: { price:110000, prixImg:2292, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
@@ -4454,7 +4454,7 @@ const PLANS = [
     id:'scale', name:'Conversion Scale', color:C.white, best:false,
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 24, produitsPerWeek: '1 à 4', batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
+    imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
     badge:'96 Créatives / Mois (32 vidéos et 64 images)', promo:'-20% de réduction',
     
     monthly: { price:200000, prixImg:2083, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
@@ -4515,7 +4515,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "Conversion Starter (24 créatives par mois : 1 batch par semaine de 2 vidéos et 4 images, 1 produit), Conversion Pro (48 créatives par mois : 2 batchs par semaine, 1 à 2 produits), et Conversion Scale (96 créatives par mois : 4 batchs par semaine, 1 à 4 produits). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
+    a: "Conversion Starter (24 créatives par mois : 1 batch par semaine de 2 vidéos et 4 images, 1 produit par semaine), Conversion Pro (48 créatives par mois : 2 batchs par semaine, jusqu'à 2 produits par semaine), et Conversion Scale (96 créatives par mois : 4 batchs par semaine, jusqu'à 4 produits par semaine). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
   },
   {
     q: "En combien de temps mes visuels sont-ils livrés ?",
@@ -4706,7 +4706,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur concurrents, cible & angles' },
               { icon:'image', bold:`${p.batchesPerWeek} Batch / Semaine`, rest:`: ${p.batchesPerWeek*2} vidéos et ${p.batchesPerWeek*4} images optimisés conversion` },
               { icon:'document', bold:'Ad Copies', rest:': titres et descriptions pour la campagne' },
-              { icon:'box', bold:'Couverture', rest:`: ${p.batchesPerWeek} produit${p.batchesPerWeek>1?'s':''} couvert${p.batchesPerWeek>1?'s':''} / semaine` },
+              { icon:'box', bold:'Couverture', rest:p.batchesPerWeek>1 ? `: jusqu'à ${p.batchesPerWeek} produits couverts / semaine` : ': 1 produit couvert / semaine' },
               { icon:'sparkle', bold:'Apprentissage Continu', rest:': itération et amélioration des prochaines créatives' },
               { icon:'grid', bold:'Accès Plateforme AdBoard', rest:': gestion structurée de vos produits et créatives' },
               { icon:'bolt', bold:'Production', rest:': en max 24h après demande' },
