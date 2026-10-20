@@ -4645,10 +4645,10 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           Nos Tarifs
         </div>
         <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.15,letterSpacing:'-0.5px'}}>
-          Le <span className="headline-gradient">Système Créatif</span> Qui Accélère Votre <span className="headline-gradient">Croissance</span>
+          Choisissez Le <span className="headline-gradient">Système Créatif</span> Adapté À Votre <span className="headline-gradient">Croissance</span>
         </h1>
         <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:520}}>
-          Chaque semaine : nous nous occupons de votre stratégie marketing, produisons des créatives optimisées et enfin <strong style={{color:C.text}}>nous apprenons des créatives qui marchent pour améliorer les prochaines.</strong>
+          Nous gérons la stratégie, la production et l'amélioration de vos publicités pour vous faire gagner du temps et vous aider à développer vos ventes, semaine après semaine.
         </p>
       </div>
 
