@@ -4706,6 +4706,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur concurrents, cible & angles' },
               { icon:'image', bold:`${p.batchesPerWeek} Batch / Semaine`, rest:`: ${p.batchesPerWeek*2} vidéos et ${p.batchesPerWeek*4} images optimisés conversion` },
               { icon:'document', bold:'Ad Copies', rest:': titres et descriptions pour la campagne' },
+              { icon:'box', bold:'Couverture', rest:`: ${p.batchesPerWeek} produit${p.batchesPerWeek>1?'s':''} couvert${p.batchesPerWeek>1?'s':''} / semaine` },
               { icon:'sparkle', bold:'Apprentissage Continu', rest:': itération et amélioration des prochaines créatives' },
               { icon:'grid', bold:'Accès Plateforme AdBoard', rest:': gestion structurée de vos produits et créatives' },
               { icon:'bolt', bold:'Production', rest:': en max 24h après demande' },
