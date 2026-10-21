@@ -489,7 +489,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
   <div style="overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
     <!-- Bande vidéo 9:16 : 9 emplacements, seul l'emplacement 1 a une vidéo (creative-1.mp4) ; les autres sont des placeholders. Pour ajouter une vidéo : remplacer le <div class="exv-ph"> par le même + <video …><source src="/assets/vente/videos/creative-N.mp4"></video> (2 fois : une par moitié de la boucle). -->
     <div class="exemple-row exemple-row-1">
-      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 1</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 1</span></div><video autoplay muted loop playsinline preload="metadata" data-full="/assets/vente/videos/creative-1-son.mp4" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 2</span></div></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 3</span></div></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 4</span></div></div>
@@ -498,7 +498,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 7</span></div></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 8</span></div></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 9</span></div></div>
-      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 1</span></div><video autoplay muted loop playsinline preload="metadata" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
+      <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 1</span></div><video autoplay muted loop playsinline preload="metadata" data-full="/assets/vente/videos/creative-1-son.mp4" poster="/assets/vente/videos/creative-1.jpg" disablepictureinpicture aria-hidden="true" tabindex="-1"><source src="/assets/vente/videos/creative-1.mp4" type="video/mp4"></video></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 2</span></div></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 3</span></div></div>
       <div class="exemple-card exemple-video"><div class="exv-ph"><svg width="22" height="22" viewBox="0 0 24 24" fill="#1FB6FF"><polygon points="7 4 20 12 7 20 7 4"/></svg><span>Vidéo 4</span></div></div>
@@ -540,6 +540,56 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
   if(!('IntersectionObserver' in window)){vids.forEach(function(v){var p=v.play();if(p&&p.catch)p.catch(function(){});});return;}
   var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:0.1});
   vids.forEach(function(v){io.observe(v);});
+})();
+</script>
+<style>
+.exemple-card.exv-clickable{cursor:pointer;position:relative}
+.exemple-card.exv-clickable::after{content:"";position:absolute;right:8px;bottom:8px;width:26px;height:26px;border-radius:50%;background:rgba(10,10,14,.62) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'/%3E%3C/svg%3E") center/14px no-repeat;pointer-events:none;z-index:3}
+.exemple-card.exv-clickable:focus-visible{outline:2px solid #1FB6FF;outline-offset:2px}
+.exv-lb{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:rgba(5,7,12,.93);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.exv-lb.open{display:flex}
+.exv-lb-stage{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.exv-lb-media{max-width:min(94vw,560px);max-height:92vh;width:auto;height:auto;object-fit:contain;border-radius:14px;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+img.exv-lb-media{max-width:94vw}
+.exv-lb-close{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:26px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+.exv-lb-close:hover{background:rgba(255,255,255,.2)}
+</style>
+<script>
+/* Bandes de créatives : clic = affichage plein écran (image ou vidéo avec son et contrôles) */
+(function(){
+  var box,stage,closeBtn,lastFocus;
+  function cardSrc(card){var vd=card.querySelector('video'),s=card.querySelector('video source');if(s)return{type:'video',src:(vd&&vd.getAttribute('data-full'))||s.getAttribute('src'),poster:(vd&&vd.poster)||''};var i=card.querySelector('img');if(i&&(i.currentSrc||i.src))return{type:'img',src:i.currentSrc||i.src};return null;}
+  document.querySelectorAll('.exemple-card').forEach(function(c){if(cardSrc(c)){c.classList.add('exv-clickable');c.setAttribute('role','button');c.setAttribute('tabindex','0');c.setAttribute('aria-label','Afficher en plein écran');}});
+  function build(){
+    if(box)return;
+    box=document.createElement('div');box.className='exv-lb';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Aperçu en plein écran');
+    box.innerHTML='<button type="button" class="exv-lb-close" aria-label="Fermer">×</button><div class="exv-lb-stage"></div>';
+    document.body.appendChild(box);stage=box.querySelector('.exv-lb-stage');closeBtn=box.querySelector('.exv-lb-close');
+    box.addEventListener('click',function(e){if(e.target===box||e.target===stage||e.target===closeBtn)close();});
+  }
+  function open(info,opener){
+    build();lastFocus=opener;stage.innerHTML='';
+    var el;
+    if(info.type==='video'){
+      el=document.createElement('video');el.className='exv-lb-media';el.controls=true;el.autoplay=true;el.loop=true;el.muted=false;el.defaultMuted=false;el.volume=1;el.playsInline=true;el.setAttribute('playsinline','');if(info.poster)el.poster=info.poster;el.src=info.src;
+      stage.appendChild(el);
+      var p=el.play();if(p&&p.catch)p.catch(function(){el.muted=true;var q=el.play();if(q&&q.catch)q.catch(function(){});});
+    }else{
+      el=document.createElement('img');el.className='exv-lb-media';el.alt='';el.src=info.src;stage.appendChild(el);
+    }
+    box.classList.add('open');document.documentElement.style.overflow='hidden';closeBtn.focus();
+  }
+  function close(){
+    if(!box||!box.classList.contains('open'))return;
+    var v=stage.querySelector('video');if(v){v.pause();v.removeAttribute('src');v.load();}
+    stage.innerHTML='';box.classList.remove('open');document.documentElement.style.overflow='';
+    if(lastFocus&&lastFocus.focus)lastFocus.focus();
+  }
+  document.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('.exemple-card.exv-clickable');if(!c)return;var info=cardSrc(c);if(info)open(info,c);});
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){close();return;}
+    if((e.key==='Enter'||e.key===' ')&&document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('exv-clickable')){e.preventDefault();var info=cardSrc(document.activeElement);if(info)open(info,document.activeElement);}
+  });
 })();
 </script>
 <style>
