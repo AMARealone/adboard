@@ -315,7 +315,7 @@ const C = {
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
 
-const PLAN_QUANTITY = { 'Conversion Starter':6, 'Conversion Pro':12, 'Conversion Scale':24 };
+const PLAN_QUANTITY = { 'Starter':6, 'Pro':12, 'Scale':24 };
 
 const ANGLES = [];
 
@@ -4300,9 +4300,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'checkout:starter': 'Commencer avec Starter →',
     'checkout:pro': 'Passer en Pro →',
     'checkout:scale': 'Passer en Scale →',
-    'checkout-quarterly:starter': 'Starter trimestriel (-15%) →',
-    'checkout-quarterly:pro': 'Pro trimestriel (-15%) →',
-    'checkout-quarterly:scale': 'Scale trimestriel (-15%) →',
+    'checkout-quarterly:starter': 'Starter trimestriel (-20%) →',
+    'checkout-quarterly:pro': 'Pro trimestriel (-20%) →',
+    'checkout-quarterly:scale': 'Scale trimestriel (-20%) →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -4424,41 +4424,41 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
   );
 };
 
-// MAJ pricing (oct. 2026 — grille 60 000 / 110 000 / 200 000 FCFA, 24 / 48 / 96 créatives par mois : vidéos + images,
-// trimestriel -15 %) — remplace la grille précédente. Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
+// MAJ pricing (oct. 2026 — grille 80 000 / 140 000 / 240 000 FCFA, 24 / 48 / 96 créatives par mois : vidéos + images,
+// trimestriel -20 % : 64 000 / 112 000 / 192 000) — remplace la grille précédente. Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
 // (historique) retour aux tarifs en FCFA fixes, avec convertPrice() réactivé
 // pour l'affichage (voir plus bas dans le fichier) — Chariow gère toujours la devise réelle au
 // moment du checkout, ce convertisseur n'est qu'un affichage indicatif avant paiement.
 const PLANS = [
   {
-    id:'starter', name:'Conversion Starter', color:C.gray, best:false,
+    id:'starter', name:'Starter', color:C.gray, best:false,
     tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16,
     badge:'24 Créatives / Mois (8 vidéos et 16 images)', promo:'',
     
-    monthly: { price:60000, prixImg:2500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:50000, prixImg:2083, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:80000, prixImg:3333, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:64000, prixImg:2667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
-    id:'pro', name:'Conversion Pro', color:C.accent, best:true,
+    id:'pro', name:'Pro', color:C.accent, best:true,
     tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
-    badge:'48 Créatives / Mois (16 vidéos et 32 images)', promo:'-10% de réduction',
+    badge:'48 Créatives / Mois (16 vidéos et 32 images)', promo:'-12,5% de réduction',
     
-    monthly: { price:110000, prixImg:2292, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:90000, prixImg:1875, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:140000, prixImg:2917, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:112000, prixImg:2333, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
-    id:'scale', name:'Conversion Scale', color:C.white, best:false,
+    id:'scale', name:'Scale', color:C.white, best:false,
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
-    badge:'96 Créatives / Mois (32 vidéos et 64 images)', promo:'-20% de réduction',
+    badge:'96 Créatives / Mois (32 vidéos et 64 images)', promo:'-25% de réduction',
     
-    monthly: { price:200000, prixImg:2083, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:160000, prixImg:1667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:240000, prixImg:2500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:192000, prixImg:2000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -4515,7 +4515,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "Conversion Starter (24 créatives par mois : 1 batch par semaine de 2 vidéos et 4 images, 1 produit par semaine), Conversion Pro (48 créatives par mois : 2 batchs par semaine, jusqu'à 2 produits par semaine), et Conversion Scale (96 créatives par mois : 4 batchs par semaine, jusqu'à 4 produits par semaine). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
+    a: "Starter (24 créatives par mois : 1 batch par semaine de 2 vidéos et 4 images, 1 produit par semaine), Pro (48 créatives par mois : 2 batchs par semaine, jusqu'à 2 produits par semaine), et Scale (96 créatives par mois : 4 batchs par semaine, jusqu'à 4 produits par semaine). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
   },
   {
     q: "En combien de temps mes visuels sont-ils livrés ?",
@@ -4664,11 +4664,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           </button>
           <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
             Trimestriel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-15%</span>
+            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-20%</span>
           </span>
         </div>
         <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser au moins 15%.</strong>
+          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser 20%.</strong>
         </p>
       </div>
 
