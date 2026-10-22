@@ -1395,21 +1395,21 @@ var LP_OFFERS = [
     monthly:{ price:80000, prixImg:3333, delivery:'24h', productId:'prd_ljowq8' },
     quarterly:{ price:64000, prixImg:2667, delivery:'24h', productId:'prd_wdya3v9h' },
     imagesPerWeek:6, batchesPerWeek:1, creativesPerMonth:24, videosPerMonth:8, imagesPerMonth:16,
-    badge:'24 Créatives / Mois (8 vidéos et 16 images)', promo:'', produitsPerWeek:'1' },
+    badge:'24 Créatives / Mois', promo:'', produitsPerWeek:'1' },
   { id:'pro', name:'Pro', color:'#1FB6FF', best:true,
     tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
     monthly:{ price:140000, prixImg:2917, delivery:'24h', productId:'prd_34w031' },
     quarterly:{ price:112000, prixImg:2333, delivery:'24h', productId:'prd_lnp4ax0b' },
     imagesPerWeek:12, batchesPerWeek:2, creativesPerMonth:48, videosPerMonth:16, imagesPerMonth:32,
-    badge:'48 Créatives / Mois (16 vidéos et 32 images)', promo:'-12,5% de réduction', produitsPerWeek:"jusqu'à 2" },
+    badge:'48 Créatives / Mois', promo:'-12,5% de réduction', produitsPerWeek:"jusqu'à 2" },
   { id:'scale', name:'Scale', color:'#1FB6FF',
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
     monthly:{ price:240000, prixImg:2500, delivery:'24h', productId:'prd_9fi79y' },
     quarterly:{ price:192000, prixImg:2000, delivery:'24h', productId:'prd_dn4fb72l' },
     imagesPerWeek:24, batchesPerWeek:4, creativesPerMonth:96, videosPerMonth:32, imagesPerMonth:64,
-    badge:'96 Créatives / Mois (32 vidéos et 64 images)', promo:'-25% de réduction', produitsPerWeek:"jusqu'à 4" },
+    badge:'96 Créatives / Mois', promo:'-25% de réduction', produitsPerWeek:"jusqu'à 4" },
 ];
 var lpQuarterly = false;
 
@@ -1661,17 +1661,14 @@ function lpCloseCheckout() {
 <style>
 .cst-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 56px;color:#fff;overflow:hidden}
 .cst-wrap{width:90%;max-width:1120px;margin:0 auto;box-sizing:border-box}
-.cst-eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#1FB6FF;margin-bottom:12px}
 .cst-title{font-size:clamp(26px,5.6vw,44px);font-weight:900;letter-spacing:-1px;line-height:1.12;color:#fff;margin:0 0 26px;max-width:680px}
 .cst-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:grad 3s ease infinite}
 .cst-card{border:1px solid rgba(255,255,255,.1);border-radius:22px;background:#111318;padding:24px 20px;display:grid;grid-template-columns:1fr;gap:30px;box-sizing:border-box}
 @media(min-width:900px){.cst-card{grid-template-columns:1fr 1.2fr;padding:36px 40px;gap:52px;align-items:center}}
 .cst-label{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:#8A8D95}
-.cst-big{font-size:clamp(68px,17vw,104px);font-weight:900;line-height:1;letter-spacing:-3px;margin:8px 0 14px;background:linear-gradient(120deg,#1FB6FF,#2EF2E8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.cst-big{font-size:clamp(40px,10vw,64px);font-weight:900;line-height:1.05;letter-spacing:-1.5px;margin:10px 0 18px;background:linear-gradient(120deg,#1FB6FF,#2EF2E8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .cst-range{width:100%;margin:6px 0 16px;accent-color:#1FB6FF;cursor:pointer;height:28px}
-.cst-plan{font-size:14.5px;line-height:1.65;color:#C9CBD1;margin:0}
-.cst-plan strong{color:#fff}
-.cst-plan .cst-q{display:block;margin-top:6px;font-size:12.5px;color:#8A8D95}
+.cst-count{font-size:12.5px;color:#8A8D95;margin-top:2px}
 .cst-bars{display:flex;flex-direction:column;gap:16px}
 .cst-row{display:grid;grid-template-columns:96px 1fr 92px;align-items:center;gap:10px;font-size:13px}
 @media(min-width:900px){.cst-row{grid-template-columns:130px 1fr 110px;gap:14px;font-size:14px}}
@@ -1689,14 +1686,13 @@ function lpCloseCheckout() {
 </style>
 <section class="cst-section" id="comparatif-honnete">
   <div class="cst-wrap">
-    <div class="cst-eyebrow">Coût par créative</div>
-    <h2 class="cst-title">De combien de <em>créatives</em> avez-vous besoin chaque mois ?</h2>
+    <h2 class="cst-title">Quel est votre <em>objectif</em> ?</h2>
     <div class="cst-card">
       <div class="cst-left">
-        <div class="cst-label">Nouvelles créatives par mois</div>
-        <div class="cst-big" id="cstBig">24</div>
-        <input type="range" class="cst-range" id="cstRange" min="24" max="96" step="6" value="24" aria-label="Nombre de nouvelles créatives par mois">
-        <p class="cst-plan" id="cstPlan"></p>
+        <div class="cst-label">Votre objectif actuel</div>
+        <div class="cst-big" id="cstBig">Performance</div>
+        <input type="range" class="cst-range" id="cstRange" min="24" max="96" step="6" value="24" aria-label="Niveau d'évolution voulu">
+        <div class="cst-count" id="cstCount">24 créatives / mois</div>
       </div>
       <div class="cst-right">
         <div class="cst-bars" id="cstBars"></div>
@@ -1721,20 +1717,20 @@ function lpCloseCheckout() {
   function m(n){return '<span data-fcfa="'+Math.round(n)+'">'+dot(n)+' FCFA</span>';}
   var range=document.getElementById('cstRange');
   if(!range)return;
+  function level(n){return n<=24?'Performance':(n<=48?'Croissance':'Expansion');}
   function render(){
     var n=parseInt(range.value,10);
     var plan=PLANS.filter(function(p){return n<=p.max;})[0]||PLANS[PLANS.length-1];
-    var unit=Math.round(plan.price/plan.max);
-    document.getElementById('cstBig').textContent=n;
-    range.setAttribute('aria-valuetext',n+' créatives par mois');
-    document.getElementById('cstPlan').innerHTML='<strong>Plan '+plan.name+' :</strong> '+m(plan.price)+' par mois pour jusqu\'à '+plan.max+' créatives, soit environ <strong>'+m(unit)+'</strong> par créative.<span class="cst-q">Avec l\'abonnement trimestriel : '+m(plan.q)+' par mois.</span>';
+    document.getElementById('cstBig').textContent=level(n);
+    document.getElementById('cstCount').textContent=n+' créatives / mois';
+    range.setAttribute('aria-valuetext',level(n)+', '+n+' créatives par mois');
     var rows=[{label:'AdStack',us:true,v:plan.price}].concat(ALT.map(function(a){return {label:a.label,note:a.note,v:a.cost(n)};}));
     var max=Math.max.apply(null,rows.map(function(r){return r.v;}));
     document.getElementById('cstBars').innerHTML=rows.map(function(r){
       return '<div class="cst-row'+(r.us?' us':'')+'"><div class="cst-name">'+r.label+(r.note?'<small>'+r.note+'</small>':'')+'</div><div class="cst-track"><div class="cst-fill" style="width:'+Math.max(3,Math.round(r.v/max*100))+'%"></div></div><div class="cst-amt">'+m(r.v)+'</div></div>';
     }).join('');
-    document.getElementById('cstCap').textContent='Coût mensuel pour '+n+' nouvelles créatives';
-    document.getElementById('cstFoot').innerHTML='Estimation indicative, hors frais de produits et frais annexes non affichés. Hypothèses pour '+BASE+' créatives par mois (au prorata au-delà) : freelance ≈ '+m(A.freelance)+' par mois ; équipe interne ≈ '+m(A.interne)+' par mois ; agence classique ≈ '+m(A.agence)+' par mois.';
+    document.getElementById('cstCap').textContent='Coût mensuel pour le niveau de service de '+plan.name;
+    document.getElementById('cstFoot').textContent='Estimation des prix basée sur la moyenne du marché, sachant que les autres n\'incluent ni la recherche marketing avant production, ni le suivi et l\'amélioration continue.';
     if(window.lpApplyCurrency)window.lpApplyCurrency();
   }
   range.addEventListener('input',render);
@@ -2081,7 +2077,7 @@ window.lpApplyCurrency = function(){};
     // après chaque re-rendu des cartes (toggle mensuel/annuel) — sinon les cartes régénérées
     // réaffichent des FCFA bruts pour tout visiteur hors zone XOF.
     window.lpApplyCurrency = function(){
-      document.querySelectorAll('[data-fcfa]').forEach(function(el){const fcfa=parseFloat(el.dataset.fcfa);if(el.classList.contains('pr-unit')||el.classList.contains('lp-price-img')){el.textContent='\u2248 '+fmt(fcfa,true)+' / créative';}else if(el.classList.contains('lp-price-amount')){el.textContent=fmtPlain(fcfa);}else{el.textContent=fmt(fcfa);}});
+      document.querySelectorAll('[data-fcfa]').forEach(function(el){const fcfa=parseFloat(el.dataset.fcfa);if(el.classList.contains('lp-price-amount')){el.textContent=fmtPlain(fcfa);}else{el.textContent=fmt(fcfa);}});
       document.querySelectorAll('.lp-price-currency').forEach(function(el){var inner=el.querySelector('span');if(inner){el.innerHTML=currencySymbol+'<span style="font-size:11px;font-weight:700;color:#1FB6FF">'+inner.textContent+'</span>';}else{el.textContent=currencySymbol;}});
       document.querySelectorAll('.pr-price sub').forEach(function(el){var txt=el.textContent;if(txt.includes('FCFA/MOIS'))el.textContent=currency+'/MOIS';else if(txt.includes('FCFA'))el.textContent=currency;});
     };

@@ -4435,7 +4435,7 @@ const PLANS = [
     tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16,
-    badge:'24 Créatives / Mois (8 vidéos et 16 images)', promo:'',
+    badge:'24 Créatives / Mois', promo:'',
     
     monthly: { price:80000, prixImg:3333, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
     quarterly: { price:64000, prixImg:2667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
@@ -4445,7 +4445,7 @@ const PLANS = [
     tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
-    badge:'48 Créatives / Mois (16 vidéos et 32 images)', promo:'-12,5% de réduction',
+    badge:'48 Créatives / Mois', promo:'-12,5% de réduction',
     
     monthly: { price:140000, prixImg:2917, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
     quarterly: { price:112000, prixImg:2333, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
@@ -4455,7 +4455,7 @@ const PLANS = [
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
-    badge:'96 Créatives / Mois (32 vidéos et 64 images)', promo:'-25% de réduction',
+    badge:'96 Créatives / Mois', promo:'-25% de réduction',
     
     monthly: { price:240000, prixImg:2500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
     quarterly: { price:192000, prixImg:2000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
