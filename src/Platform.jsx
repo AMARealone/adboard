@@ -397,6 +397,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
     check: <polyline points="20 6 9 17 4 12"/>,
     bulb: <><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a6 6 0 0 0-4 10.5c.6.5 1 1.3 1 2.1V16h6v-1.4c0-.8.4-1.6 1-2.1A6 6 0 0 0 12 2z"/></>,
     person: <><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></>,
+    play: <polygon points="6 4 20 12 6 20 6 4" fill="currentColor"/>,
     image: <><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></>,
     clock: <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></>,
     card: <><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></>,
@@ -1260,6 +1261,46 @@ const PaymentModal = ({ productId, userEmail, onClose }) => {
           data-email={userEmail || undefined}
         />
       </div>
+    </div>
+  );
+};
+
+// ── Créatives VIDÉO (9:16) ─────────────────────────────────────────────────
+// Une créative est une vidéo si elle porte type:'video' ou une videoUrl. Les champs d'une vidéo :
+//   videoUrl  = fichier vidéo (MP4 H.264 + AAC, 9:16, moov atom en tête = "faststart")
+//   thumbUrl  = affiche (poster) légère ~15-40 Ko, utilisée dans la grille ET comme image de
+//               chargement du lecteur — c'est ce qui rend l'ouverture instantanée
+//   imageUrl  = (facultatif) affiche pleine résolution, repli si thumbUrl absente
+// Les créatives image existantes n'ont aucun de ces champs : rien ne change pour elles.
+const estVideo = (c) => !!c && (c.type === 'video' || !!c.videoUrl);
+const urlFichierCreative = (c) => (estVideo(c) ? c.videoUrl : c.imageUrl);
+const nomFichierCreative = (c) => `${c.angle}-${c.week}.${estVideo(c) ? 'mp4' : 'jpg'}`.replace(/[^\w.-]+/g,'_');
+
+// Lecteur plein écran : cadre 9:16 qui tient toujours dans l'écran (jamais plus haut que la fenêtre),
+// affiche immédiatement l'affiche déjà en cache, lecture avec son. Si le navigateur refuse la lecture
+// automatique avec son, la vidéo reste simplement en pause avec ses commandes — un tap lance le son.
+const LecteurVideo = ({ c }) => {
+  const ref = useRef(null);
+  const [ko, setKo] = useState(false);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v) return;
+    const p = v.play();
+    if (p && p.catch) p.catch(() => {});
+  }, [c.id]);
+  const affiche = c.thumbUrl || c.imageUrl || undefined;
+  return (
+    <div style={{aspectRatio:'9/16',width:'100%',background:'#000',position:'relative'}}>
+      {ko ? (
+        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,color:'#8A8D95',fontSize:11,textAlign:'center',padding:16}}>
+          <Icon name="play" size={22} color="#8A8D95"/>
+          <span>Vidéo indisponible pour le moment</span>
+        </div>
+      ) : (
+        <video ref={ref} key={c.id} src={c.videoUrl} poster={affiche} controls playsInline preload="auto"
+          controlsList="nodownload" onError={()=>setKo(true)}
+          style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain',background:'#000'}}/>
+      )}
     </div>
   );
 };
@@ -2593,7 +2634,7 @@ async function shareOrDownloadImage(url, filename, isMobile) {
     try {
       const response = await fetch(url);
       const blob = await response.blob();
-      const file = new File([blob], filename || 'creative.jpg', { type: blob.type || 'image/jpeg' });
+      const file = new File([blob], filename || 'creative.jpg', { type: blob.type || (/\.mp4$/i.test(filename||'') ? 'video/mp4' : 'image/jpeg') });
       if (navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file] });
         return;
@@ -2610,9 +2651,9 @@ async function shareOrDownloadMultiple(items, isMobile) {
   if (isMobile && navigator.share && navigator.canShare) {
     try {
       const files = await Promise.all(items.map(async (item) => {
-        const response = await fetch(item.imageUrl);
+        const response = await fetch(urlFichierCreative(item));
         const blob = await response.blob();
-        return new File([blob], `${item.angle}-${item.week}.jpg`.replace(/[^\w.-]+/g,'_'), { type: blob.type || 'image/jpeg' });
+        return new File([blob], nomFichierCreative(item), { type: blob.type || (estVideo(item) ? 'video/mp4' : 'image/jpeg') });
       }));
       if (navigator.canShare({ files })) {
         await navigator.share({ files });
@@ -2623,7 +2664,7 @@ async function shareOrDownloadMultiple(items, isMobile) {
   // Retombe sur un partage/téléchargement image par image (natif si possible sur mobile,
   // téléchargement direct sur desktop)
   for (const item of items) {
-    await shareOrDownloadImage(item.imageUrl, `${item.angle}-${item.week}.jpg`.replace(/[^\w.-]+/g,'_'), isMobile);
+    await shareOrDownloadImage(urlFichierCreative(item), nomFichierCreative(item), isMobile);
     await new Promise(r => setTimeout(r, 350));
   }
 }
@@ -2667,6 +2708,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
   const [selected, setSelected] = useState(null);
+  const [filtreFormat, setFiltreFormat] = useState('tous'); // 'tous' | 'video' | 'image'
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -2781,8 +2823,14 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     setFiltreAngles(prev => { const next = new Set([...prev].filter(v => angleSet.includes(v))); return next.size===prev.size ? prev : next; });
   }, [angleSet.join('|')]);
 
+  // Le sélecteur de format n'existe QUE s'il y a au moins une vidéo : sans vidéo, la galerie reste
+  // exactement comme avant (aucun contrôle en plus, aucun changement de mise en page).
+  const aDesVideos = realCreatives.some(estVideo);
+  const formatActif = aDesVideos ? filtreFormat : 'tous';
   const filtered = realCreatives.filter(c => {
     if (selectedProduct && c.productId !== selectedProduct) return false;
+    if (formatActif==='video' && !estVideo(c)) return false;
+    if (formatActif==='image' && estVideo(c)) return false;
     const q = query.trim().toLowerCase();
     if (q && !c.angle.toLowerCase().includes(q) && !c.week.toLowerCase().includes(q) && !(c.cible||'').toLowerCase().includes(q) && !(nomProduitParId[c.productId]||'').toLowerCase().includes(q)) return false;
     // Les 4 dimensions se combinent en ET, chacune en OU à l'intérieur d'elle-même (sauf Date,
@@ -3177,6 +3225,17 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         </div>
       )}
 
+      {aDesVideos && (
+        <div style={{display:'flex',gap:6,marginBottom:10}}>
+          {[['tous','Tout'],['video','Vidéos'],['image','Images']].map(([k,l]) => (
+            <button key={k} onClick={()=>setFiltreFormat(k)}
+              style={{padding:'6px 12px',borderRadius:20,border:`1px solid ${formatActif===k?C.accent:C.border}`,background:formatActif===k?'rgba(91,141,239,0.12)':'transparent',color:formatActif===k?C.text:C.sec,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
         {filtered.map((c, i) => {
           const isTpMode = filterMode==='topPerformer';
@@ -3194,7 +3253,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
               aspectRatio:'4/5',borderRadius:6,overflow:'hidden',
               cursor:isTpMode?'pointer':'pointer',
               position:'relative',
-              background:c.imageUrl?'#14161D':`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`,
+              background:(c.imageUrl||c.thumbUrl||estVideo(c))?'#14161D':`linear-gradient(160deg,${c.g1||'#333'},${c.g2||'#111'})`,
               transform:isSelectedForSwap?'scale(1.06)':(selectMode&&selectedIds.includes(c.id)?'scale(0.94)':(isJustRanked?'scale(1.05)':'scale(1)')),
               transition: 'transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s',
               boxShadow: isSelectedForSwap ? `0 0 0 2px ${C.accent}, 0 6px 20px rgba(45,127,249,0.35)` : (isJustRanked ? '0 0 0 2px #FFC107' : (selectMode&&selectedIds.includes(c.id)?`0 0 0 2px ${C.accent}`:'none')),
@@ -3204,9 +3263,20 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
             {/* Préfère thumbUrl (vraie miniature ~15-40 Ko générée côté serveur) à imageUrl
                 (original, potentiellement 500 Ko-2 Mo) pour la grille — repli sur imageUrl pour
                 les créatives livrées avant ce fix, qui n'ont pas de thumbUrl. */}
-            {c.imageUrl && (
+            {(c.thumbUrl || c.imageUrl) && (
               <ImageGalerie src={c.thumbUrl || c.imageUrl} alt={c.angle}
                 style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',pointerEvents:'none'}}/>
+            )}
+            {/* Vidéo SANS affiche : on montre la 1re image via les seules métadonnées (léger, rien de lu
+                tant qu'on ne clique pas). Cadre toujours 4:5 comme les images, jamais déformé. */}
+            {estVideo(c) && !c.thumbUrl && !c.imageUrl && c.videoUrl && (
+              <video src={c.videoUrl + '#t=0.1'} preload="metadata" muted playsInline tabIndex={-1}
+                style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',pointerEvents:'none',background:'#14161D'}}/>
+            )}
+            {estVideo(c) && (
+              <div style={{position:'absolute',left:6,bottom:6,width:22,height:22,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(2px)',zIndex:2,pointerEvents:'none',color:'#fff'}}>
+                <Icon name="play" size={10} color="#fff"/>
+              </div>
             )}
             {selectMode && !isTpMode && (
               <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:selectedIds.includes(c.id)?C.accent:'rgba(0,0,0,0.45)',border:`1.5px solid ${selectedIds.includes(c.id)?C.accent:'rgba(255,255,255,0.6)'}`,backdropFilter:'blur(2px)',zIndex:2}}>
@@ -3232,8 +3302,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
               </div>
             )}
             <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))',zIndex:2}}>
-              <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{c.angle}</div>
-              <div style={{fontSize:8,color:'rgba(255,255,255,0.6)'}}>Batch {c.week.replace(/^[SB]/,'')}</div>
+              <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingLeft:estVideo(c)?26:0}}>{c.angle}</div>
+              <div style={{fontSize:8,color:'rgba(255,255,255,0.6)',paddingLeft:estVideo(c)?26:0}}>{estVideo(c)?'Vidéo · ':''}Batch {c.week.replace(/^[SB]/,'')}</div>
             </div>
           </div>
           );
@@ -3265,15 +3335,17 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
 
       {selected && (
         <div onClick={() => setSelected(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:320,borderRadius:14,overflow:'hidden',background:C.card,border:`1px solid ${C.borderM}`}}>
-            <div style={{aspectRatio:'4/5',background:selected.imageUrl?`url(${selected.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${selected.g1||'#333'},${selected.g2||'#111'})`}}/>
+          <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:estVideo(selected)?'min(340px, calc((100vh - 230px) * 9 / 16))':320,borderRadius:14,overflow:'hidden',background:C.card,border:`1px solid ${C.borderM}`}}>
+            {estVideo(selected)
+              ? <LecteurVideo c={selected}/>
+              : <div style={{aspectRatio:'4/5',background:selected.imageUrl?`url(${selected.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${selected.g1||'#333'},${selected.g2||'#111'})`}}/>}
             <div style={{padding:'14px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
                 <div style={{fontSize:13,fontWeight:700,color:C.text}}>{selected.angle}</div>
                 <div style={{fontSize:11,color:C.sec}}>Batch {selected.week.replace(/^[SB]/,'')}</div>
                 {selected.cible && <div style={{fontSize:10.5,color:C.muted,marginTop:2}}>{selected.cible}</div>}
               </div>
-              <button onClick={() => shareOrDownloadImage(selected.imageUrl, `${selected.angle}-${selected.week}.jpg`.replace(/[^\w.-]+/g,'_'), isMobile)}
+              <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected), isMobile)}
                 style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
                 <Icon name="download" size={15}/>
               </button>
