@@ -406,6 +406,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
     bolt: <polygon points="13 2 3 14 11 14 11 22 21 10 13 10 13 2"/>,
     box: <><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></>,
     plus: <><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></>,
+    file: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></>,
     upload: <><path d="M12 3v13"/><path d="M7 8l5-5 5 5"/><path d="M5 21h14"/></>,
     pencil: <><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></>,
     menu: <><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></>,
@@ -677,10 +678,11 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
 const EMPTY_PRODUCT = {
   nom:'', pricing:'', promo:'', lien:'', utilite:'', cible:'', pays:'', notes:'',
   couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, deliveries:[], marche:null,
+  documents:[], documents_modifies:false,
 };
 
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
-const Field = ({label, k, required, textarea, placeholder, type='text', form, setForm, errors, C}) => {
+const Field = ({label, k, required, textarea, placeholder, hint, type='text', form, setForm, errors, C}) => {
   const err = errors?.[k];
   const [focused, setFocused] = useState(false);
   const common = {
@@ -703,13 +705,119 @@ const Field = ({label, k, required, textarea, placeholder, type='text', form, se
   };
   return (
     <div>
-      <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:6,display:'block'}}>
+      <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:hint?3:6,display:'block'}}>
         {label}{required && <span style={{color:C.accent}}> *</span>}
       </label>
+      {hint && <div style={{fontSize:10.5,color:C.muted,marginBottom:6,lineHeight:1.4}}>{hint}</div>}
       {textarea ? <textarea rows={2} {...common}/> : <input type={type} {...common}/>}
     </div>
   );
 };
+
+// ── Marchés cibles ─────────────────────────────────────────────────────────
+// Un produit peut se vendre sur plusieurs marchés. On les stocke dans le champ `pays` existant,
+// séparés par des virgules ("Sénégal, Mali, Côte d'Ivoire") : aucune migration de base de données,
+// et tout ce qui lisait `pays` (serveur, Factory, Ava) continue de fonctionner.
+const parseMarches = (pays) => [...new Set(String(pays || '').split(/[,;/|\n]+/).map(x => x.trim()).filter(Boolean))];
+const MARCHES_SUGGERES = ['Sénégal','Côte d\'Ivoire','Mali','Burkina Faso','Guinée','Bénin','Togo','Niger','Cameroun','Gabon','Congo','RDC','Maroc','Algérie','Tunisie','Mauritanie','Madagascar','France','Belgique','Ghana','Nigeria','Kenya'];
+
+const MarchesField = ({ form, setForm, errors, C }) => {
+  const [rows, setRows] = useState(() => { const m = parseMarches(form.pays); return m.length ? m : ['']; });
+  // Resynchronise quand le champ change de l'extérieur (pré-remplissage depuis le lien, ouverture
+  // d'un produit existant) — sans écraser une ligne vide que le client vient d'ajouter.
+  useEffect(() => {
+    const actuel = rows.map(r => r.trim()).filter(Boolean).join(', ');
+    if (actuel !== (form.pays || '')) { const m = parseMarches(form.pays); setRows(m.length ? m : ['']); }
+  }, [form.pays]);
+  const maj = (next) => { setRows(next); setForm(f => ({ ...f, pays: next.map(r => r.trim()).filter(Boolean).join(', ') })); };
+  const err = errors?.pays;
+  return (
+    <div>
+      <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:3,display:'block'}}>Marché cible<span style={{color:C.accent}}> *</span></label>
+      <div style={{fontSize:10.5,color:C.muted,marginBottom:6,lineHeight:1.4}}>Le pays où vous vendez. Vous vendez ailleurs aussi ? Ajoutez-le avec le +.</div>
+      <datalist id="liste-marches">{MARCHES_SUGGERES.map(m => <option key={m} value={m}/>)}</datalist>
+      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+        {rows.map((r, i) => (
+          <div key={i} style={{display:'flex',gap:6,alignItems:'center'}}>
+            <input list="liste-marches" value={r} onChange={e => maj(rows.map((x, j) => j === i ? e.target.value : x))}
+              placeholder={i === 0 ? 'Ex : Sénégal' : 'Autre marché, ex : Mali'}
+              style={{flex:1,minWidth:0,padding:'9px 11px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${err && i===0 ? C.accent : C.border}`,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
+            {rows.length > 1 && (
+              <button type="button" onClick={() => maj(rows.filter((_, j) => j !== i))} title="Retirer ce marché"
+                style={{width:30,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                <Icon name="x" size={11} color={C.sec}/>
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+      <button type="button" onClick={() => setRows([...rows, ''])}
+        style={{marginTop:7,display:'inline-flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:7,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:11,fontFamily:'inherit'}}>
+        <Icon name="plus" size={11} color={C.sec}/> Ajouter un marché
+      </button>
+    </div>
+  );
+};
+
+// ── Documents internes (facultatif) ────────────────────────────────────────
+const DOC_MAX_OCTETS = 10 * 1024 * 1024;
+const DOC_EXTENSIONS = '.pdf,.md,.txt,.doc,.docx,.csv,.xlsx,.xls,.ppt,.pptx';
+const tailleLisible = (o) => o > 1048576 ? `${(o/1048576).toFixed(1)} Mo` : `${Math.max(1, Math.round(o/1024))} Ko`;
+
+const DocumentsField = ({ form, setForm, C }) => {
+  const ref = useRef(null);
+  const [envoi, setEnvoi] = useState(false);
+  const [msg, setMsg] = useState('');
+  const docs = form.documents || [];
+  const choisir = async (e) => {
+    const fichiers = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!fichiers.length) return;
+    setMsg(''); setEnvoi(true);
+    const session = await sbAuth.refreshSession();
+    const ajoutes = [];
+    const refuses = [];
+    for (const f of fichiers) {
+      if (f.size > DOC_MAX_OCTETS) { refuses.push(`${f.name} (plus de 10 Mo)`); continue; }
+      const url = session ? await sbProducts.uploadDocument(session, f) : null;
+      if (url) ajoutes.push({ name: f.name, url, size: f.size }); else refuses.push(f.name);
+    }
+    if (ajoutes.length) setForm(fm => ({ ...fm, documents: [...(fm.documents || []), ...ajoutes], documents_modifies: true }));
+    if (refuses.length) setMsg(`Non ajouté : ${refuses.join(', ')}. Vérifiez la taille (10 Mo max) et réessayez.`);
+    setEnvoi(false);
+  };
+  return (
+    <div>
+      <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:3,display:'block'}}>Documents internes (facultatif)</label>
+      <div style={{fontSize:10.5,color:C.muted,marginBottom:8,lineHeight:1.4}}>
+        Vous avez déjà des informations sur ce produit : études de marché, cibles, angles déjà testés, offres, garanties ? Envoyez-les, notre équipe s'en sert pour travailler plus juste.
+      </div>
+      <input ref={ref} type="file" accept={DOC_EXTENSIONS} multiple style={{display:'none'}} onChange={choisir}/>
+      {docs.length > 0 && (
+        <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:8}}>
+          {docs.map((d, i) => (
+            <div key={d.url || i} style={{display:'flex',alignItems:'center',gap:8,padding:'7px 10px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)'}}>
+              <Icon name="file" size={13} color={C.sec}/>
+              <span style={{flex:1,minWidth:0,fontSize:11.5,color:C.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{d.name}</span>
+              {d.size ? <span style={{fontSize:10,color:C.muted,flexShrink:0}}>{tailleLisible(d.size)}</span> : null}
+              <button type="button" title="Retirer" onClick={() => setForm(fm => ({ ...fm, documents: (fm.documents || []).filter((_, j) => j !== i), documents_modifies: true }))}
+                style={{width:20,height:20,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.12)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,padding:0}}>
+                <Icon name="x" size={9} color={C.sec}/>
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <button type="button" onClick={() => !envoi && ref.current?.click()} disabled={envoi}
+        style={{display:'inline-flex',alignItems:'center',gap:6,padding:'8px 12px',borderRadius:8,border:`1px dashed ${C.border}`,background:'transparent',cursor:envoi?'default':'pointer',color:C.sec,fontSize:11.5,fontFamily:'inherit'}}>
+        <Icon name="upload" size={13} color={C.sec}/> {envoi ? 'Envoi en cours…' : 'Ajouter un fichier'}
+      </button>
+      <div style={{fontSize:10,color:C.muted,marginTop:6}}>PDF, Word, Markdown, texte, Excel ou PowerPoint · 10 Mo max par fichier</div>
+      {msg && <div style={{fontSize:10.5,color:'#E55050',marginTop:6}}>{msg}</div>}
+    </div>
+  );
+};
+
 
 // ── Supabase Products API ──────────────────────────────────────────────────
 const sbProducts = {
@@ -756,6 +864,21 @@ const sbProducts = {
       return null;
     }
   },
+  // Documents internes du client (PDF, Word, Markdown...) — même bucket que les photos, sous docs/.
+  // Renvoie l'URL publique, ou null en cas d'échec (le formulaire affiche alors un message clair).
+  async uploadDocument(session, file) {
+    try {
+      const propre = (file.name || 'document').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_').slice(-80);
+      const chemin = `docs/${Date.now()}_${propre}`;
+      const r = await fetch(`${SUPABASE_URL}/storage/v1/object/product-photos/${chemin}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}`, apikey: SUPABASE_ANON, 'Content-Type': file.type || 'application/octet-stream', 'x-upsert': 'true' },
+        body: file
+      });
+      if (!r.ok) { console.error('[Document] upload refusé', r.status, await r.text().catch(()=>'')); return null; }
+      return `${SUPABASE_URL}/storage/v1/object/public/product-photos/${chemin}`;
+    } catch(e) { console.error('[Document] Erreur:', e); return null; }
+  },
   async save(session, product) {
     if (!session?.access_token) { console.warn('[Save] Pas de session'); return null; }
     const user = sbAuth.getUser();
@@ -775,14 +898,26 @@ const sbProducts = {
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
       couleur3: product.couleur3||'', photo_url: photoUrl,
       galerie_images: product.galerie_images || [],
+      ...(product.documents?.length ? { documents: product.documents } : {}),
     };
     console.log('[Save] Body envoyé à Supabase:', JSON.stringify({...body, photo_url: photoUrl ? '(url)' : null}));
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+    let r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
       method: 'POST',
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json', Prefer: 'return=representation' },
       body: JSON.stringify(body)
     });
+    if (!r.ok && body.documents) {
+      // Colonne `documents` pas encore créée dans Supabase : on enregistre quand même le produit, sans les fichiers.
+      console.warn('[Save] colonne documents absente ? nouvel essai sans documents');
+      const { documents: _d, ...sansDocs } = body;
+      r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
+        method: 'POST',
+        headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json', Prefer: 'return=representation' },
+        body: JSON.stringify(sansDocs)
+      });
+    }
     if (!r.ok) {
       const err = await r.text();
       console.error('sbProducts.save error:', err);
@@ -803,14 +938,24 @@ const sbProducts = {
       pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
       couleur3: product.couleur3||'', photo_url: photoUrl,
       galerie_images: product.galerie_images || [],
+      ...(product.documents_modifies ? { documents: product.documents || [] } : {}),
       updated_at: new Date().toISOString(),
     };
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+    let r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
       method: 'PATCH',
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
         'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
+    if (!r.ok && 'documents' in body) {
+      const { documents: _d, ...sansDocs } = body;
+      r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json' },
+        body: JSON.stringify(sansDocs)
+      });
+    }
     return r.ok;
   },
   // Retourne { ok, reason }. Prefer: return=representation permet de savoir si une ligne a VRAIMENT été
@@ -846,7 +991,7 @@ const sbBriefs = {
     );
     return r.ok ? r.json() : [];
   },
-  async create(session, productId, quantity=9) {
+  async create(session, productId, quantity=9, marchesChoisis=null) {
     if (!session?.access_token) return null;
     const user = sbAuth.getUser();
     if (!user?.id) return null;
@@ -858,7 +1003,7 @@ const sbBriefs = {
     const r = await fetch('https://adstack-server.onrender.com/briefs/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, productId, quantity })
+      body: JSON.stringify({ userId: user.id, productId, quantity, ...(marchesChoisis?.length ? { marchesChoisis } : {}) })
     });
     if (!r.ok) return { error: 'reseau' };
     const data = await r.json();
@@ -1324,6 +1469,10 @@ const ImageGalerie = ({ src, alt, style }) => {
 const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, C}) => {
   // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 6 / 12 / 24 par semaine.
   const [qty, setQty] = useState(6);
+  // Marchés du produit : le client choisit pour quels marchés cette demande est produite (tous par défaut).
+  const marchesProduit = parseMarches(product.pays);
+  const [marchesCoches, setMarchesCoches] = useState(marchesProduit);
+  const plusieursMarches = marchesProduit.length > 1;
   const max = Math.min(credits.available, QTE_MAX_DEMANDE); // 24 visuels (8 angles) max par demande
   const canIncrease = qty + 6 <= max;
   const canDecrease = qty > 6;
@@ -1378,10 +1527,28 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
           </div>
         </div>
 
+        {plusieursMarches && (
+          <div style={{position:'relative',marginBottom:22}}>
+            <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:8,textAlign:'center'}}>Pour quel marché ?</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>
+              {marchesProduit.map(m => {
+                const on = marchesCoches.includes(m);
+                return (
+                  <button key={m} type="button" onClick={() => setMarchesCoches(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])}
+                    style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:`1px solid ${on?C.accent:C.border}`,background:on?'rgba(91,141,239,0.14)':'transparent',color:on?C.text:C.sec,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+                    {on && <Icon name="check" size={11} color={C.accent}/>} {m}
+                  </button>
+                );
+              })}
+            </div>
+            {marchesCoches.length === 0 && <div style={{fontSize:10.5,color:'#E55050',textAlign:'center',marginTop:6}}>Choisissez au moins un marché.</div>}
+          </div>
+        )}
+
         {/* Boutons */}
         <div style={{position:'relative',display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:'12px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
-          <button onClick={()=>max>0&&onConfirm(qty)} disabled={max===0} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:'inherit',boxShadow:max===0?'none':'0 4px 16px rgba(45,127,249,0.3)'}}>
+          <button onClick={()=>max>0&&(!plusieursMarches||marchesCoches.length>0)&&onConfirm(qty, plusieursMarches ? marchesCoches : null)} disabled={max===0||(plusieursMarches&&marchesCoches.length===0)} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:'inherit',boxShadow:max===0?'none':'0 4px 16px rgba(45,127,249,0.3)'}}>
             {max===0 ? 'Aucune créative disponible' : `Confirmer · ${qty} créatives`}
           </button>
         </div>
@@ -2365,7 +2532,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               {/* Jauge — se remplit avec chaque champ complété, sans jamais dire explicitement
                   "plus vous remplissez, mieux c'est" (implicite via le copywriting + la jauge). */}
               {(() => {
-                const champs = [form.photo, form.nom, form.pricing, form.pays, form.lien, form.promo, form.cible, form.utilite];
+                const champs = [form.photo, form.nom, form.pricing, form.pays, form.lien, form.promo, form.cible, form.utilite, (form.documents||[]).length];
                 const remplis = champs.filter(Boolean).length;
                 const pct = Math.round((remplis / champs.length) * 100);
                 return (
@@ -2463,7 +2630,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                     ? '✓ On a trouvé pas mal d\'infos sur cette page — vérifiez que tout est correct ci-dessous.'
                     : lienMessage==='manuel'
                       ? "On n'a pas réussi à tout récupérer automatiquement sur cette page — pas de souci, complétez simplement les champs ci-dessous 👇"
-                      : "Collez le lien, on préremplit le nom, le prix, le pays et le reste pour vous."}
+                      : "Collez le lien, on préremplit le nom, l'offre, le marché et le reste pour vous."}
               </div>
             </div>
 
@@ -2479,20 +2646,18 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
                   <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-                    <Field label="Prix actuel" k="pricing" required placeholder="Ex : 12 900" form={form} setForm={setForm} errors={errors} C={C}/>
-                    <Field label="Pays de vente" k="pays" required placeholder="Ex : Sénégal — ou Sénégal, Mali, Guinée" form={form} setForm={setForm} errors={errors} C={C}/>
-                  </div>
+                  <Field label="Offre actuelle" k="pricing" required hint="Le prix auquel vous vendez, avec l'ancien prix barré si vous en avez un." placeholder="Ex : 20 000 FCFA au lieu de 35 000 FCFA" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <MarchesField form={form} setForm={setForm} errors={errors} C={C}/>
                 </div>
               </div>
 
               {!requisRemplis && (
                 <div style={{fontSize:11,color:C.muted,display:'flex',alignItems:'center',gap:6,padding:'2px 2px 0'}}>
-                  <Icon name="sparkle" size={12} color={C.muted}/> Photo + ces 3 infos, et votre produit est créé
+                  <Icon name="sparkle" size={12} color={C.muted}/> Les champs marqués d'une * suffisent pour créer votre produit
                 </div>
               )}
 
-              <div style={{overflow:'hidden',...(requisRemplis ? {animation:'revealOptional 0.5s ease forwards'} : {maxHeight:0,opacity:0,margin:0})}}>
+              <div style={{overflow:'hidden'}}>
               <div style={{display:'flex',flexDirection:'column',gap:16}}>
 
               <div>
@@ -2501,12 +2666,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Pour aller plus loin</div>
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <Field label="Offre promo en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="Qui achète ce produit ?" k="cible" textarea placeholder="Ex : Femme, 25-40 ans, Dakar" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="À quoi il sert" k="utilite" textarea placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Promotion en cours (facultatif)" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="Résumé de votre cible actuelle (facultatif)" k="cible" textarea hint="Pas de cible définie ? Aucun souci : sans cette information, nous réalisons une analyse de marché pour la trouver." placeholder="Ex : Femmes de 25 à 40 ans, Dakar, soucieuses de leur peau" form={form} setForm={setForm} errors={errors} C={C}/>
+                  <Field label="À quoi sert ce produit ? (facultatif)" k="utilite" textarea placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
                   <div>
-                    <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque</label>
-                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>2 ou 3 couleurs, utilisées dans vos créatives</div>
+                    <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque (facultatif)</label>
+                    <div style={{fontSize:10.5,color:C.muted,marginBottom:8}}>Ajoutez 2 ou 3 couleurs : nous les utilisons dans vos créatives</div>
                     <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                       {[1,2,3].map(n => {
                         const key = `couleur${n}`;
@@ -2523,6 +2688,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                     </div>
                     {errors.couleurs && <div style={{fontSize:10.5,color:'#E55050',marginTop:6}}>Ajoutez au moins 2 couleurs, ou aucune.</div>}
                   </div>
+                  <DocumentsField form={form} setForm={setForm} C={C}/>
                 </div>
               </div>
 
@@ -2545,7 +2711,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   fixe que le bouton — ne peut plus jamais être hors champ. */}
               {Object.keys(errors).length>0 && (
                 <div style={{marginBottom:10,padding:'10px 14px',borderRadius:8,background:'rgba(239,107,91,0.12)',border:'1px solid rgba(239,107,91,0.3)',fontSize:11.5,color:'#EF6B5B',display:'flex',alignItems:'center',gap:7}}>
-                  ⚠️ Il manque : {[!form.photo&&'la photo',!form.nom&&'le nom',!form.pricing&&'le prix',!form.pays&&'le pays',errors.couleurs&&'2-3 couleurs (ou aucune)'].filter(Boolean).join(', ')}
+                  ⚠️ Il manque : {[!form.photo&&'la photo',!form.nom&&'le nom',!form.pricing&&'l\'offre actuelle',!form.pays&&'le marché cible',errors.couleurs&&'2-3 couleurs (ou aucune)'].filter(Boolean).join(', ')}
                 </div>
               )}
               <button onClick={submit} style={{width:'100%',padding:'13px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 4px 16px rgba(45,127,249,0.3)'}}>
@@ -2578,7 +2744,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               {[
                 ['Produit', brief.produit?.nom],
                 ['Quantité', `${brief.quantite_demandee} créatives`],
-                ['Pays de vente', brief.produit?.pays_de_vente || '—'],
+                ['Marché cible', brief.produit?.pays_de_vente || '—'],
                 ['Date de la demande', brief.date_demande],
               ].map(([label, value], i) => (
                 <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'11px 14px',borderTop:i>0?`1px solid ${C.border}`:'none',fontSize:12.5}}>
@@ -5287,9 +5453,9 @@ export default function Platform() {
   // le popup de plafond appelait sbBriefs.create() en direct, sans jamais reproduire l'envoi du
   // webhook vers Factory qui suit — Factory ne recevait donc jamais ces demandes-là, exactement
   // comme cancelCreatives() existe déjà pour éviter la même erreur côté annulation.
-  const creerDemandeEtNotifierFactory = async (product, qty) => {
+  const creerDemandeEtNotifierFactory = async (product, qty, marchesChoisis = null) => {
     const session = await sbAuth.refreshSession();
-    const brief = await sbBriefs.create(session, product.id, qty);
+    const brief = await sbBriefs.create(session, product.id, qty, marchesChoisis);
     if (!brief) return null;
     setAllBriefs(prev => [...prev, brief]);
     setBriefs(prev => ({...prev, [product.id]: brief}));
@@ -5303,7 +5469,11 @@ export default function Platform() {
       plan: subscription?.plan || 'starter',
       quantity: qty,
       product: {
-        id: product.id, nom: product.nom, pricing: product.pricing, pays: product.pays,
+        id: product.id, nom: product.nom, pricing: product.pricing,
+        // Marchés choisis pour CETTE demande (sous-ensemble des marchés du produit) ; à défaut, tous les marchés du produit.
+        pays: (marchesChoisis?.length ? marchesChoisis.join(', ') : product.pays),
+        marches: marchesChoisis?.length ? marchesChoisis : parseMarches(product.pays),
+        documents: (product.documents || []).map(d => ({ name: d.name, url: d.url })),
         promo: product.promo || '', cible: product.cible || '', utilite: product.utilite || '',
         couleur1: product.couleur1 || '', couleur2: product.couleur2 || '', couleur3: product.couleur3 || '',
         photo_url: product.photo_url || null,
@@ -6055,7 +6225,7 @@ const views = {
                             // Assez de place libérée — on crée directement la demande initialement
                             // bloquée, en notifiant Factory correctement cette fois (même chemin que
                             // le flux normal de création, voir creerDemandeEtNotifierFactory).
-                            await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty);
+                            await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty, plafondModal.marches);
                             setPlafondModal(null);
                           } else {
                             // Toujours au-dessus du plafond — on met juste la modale à jour
@@ -6087,17 +6257,17 @@ const views = {
         onOpenPayment={(productId)=>setPaymentProductId(productId)}
         C={C}
         onClose={()=>setCreativesTarget(null)}
-        onConfirm={async (qty) => {
+        onConfirm={async (qty, marches) => {
           // Plafond de charge — 36 images max en production simultanée, tous produits
           // confondus, sur une fenêtre glissante de 24h. Vérifié AVANT toute création,
           // indépendant des crédits d'abonnement (qui suivent une autre logique de rechargement).
           const verif = verifierPlafondProduction(allBriefs, qty);
           if (!verif.autorise) {
-            setPlafondModal({ product: creativesTarget, qty, ...verif });
+            setPlafondModal({ product: creativesTarget, qty, marches, ...verif });
             setCreativesTarget(null);
             return;
           }
-          await creerDemandeEtNotifierFactory(creativesTarget, qty);
+          await creerDemandeEtNotifierFactory(creativesTarget, qty, marches);
           setCreativesTarget(null);
         }}
       />
