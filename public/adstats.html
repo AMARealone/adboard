@@ -2122,6 +2122,7 @@ textarea::placeholder { color: var(--muted); }
         <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
         <input type="text" placeholder="Rechercher un lead..." id="leads-search" oninput="filterLeads()" style="font-size:13px">
       </div>
+      <button class="btn btn-ghost btn-sm" onclick="ouvrirMajJ10()" title="Relire les ads des leads à J+10">🔄 Ads J+10 <span id="btn-maj-j10-n" style="background:var(--blue-dim);color:var(--blue);padding:1px 6px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
       <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
     </div>
   </div>
@@ -3116,7 +3117,7 @@ function renderSuivi(data) {
     const pid = p.id;
     let _pNotesR = {}; try { _pNotesR = JSON.parse(p.notes||'{}'); } catch(e) {}
     const pitch_envoye = _pNotesR.pitch_envoye || false;
-    let _tplPitch = "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*\ud83d\udcb5 gr\u00e2ce \u00e0 :\n\n\ud83d\udc49\ud83c\udffe Une vraie strat\u00e9gie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous int\u00e9ress\u00e9 par une *D\u00c9MONSTRATION* sur votre [Produit] ?";
+    let _tplPitch = "Je posais la question car notre *AGENCE*\n\naide des *Marques E-commerce* à accroître leurs *revenus* 📈 grâce à un système complet de *publicités pensées pour vendre* :\n\nNous analysons votre marché, concevons vos publicités *(vidéos et images)* et améliorons les prochaines à partir de ce qui a le mieux performé pour vous.\n\nÊtes-vous ouvert à un *Google Meet* pour identifier ensemble comment améliorer vos performances publicitaires afin de soutenir une croissance continue pour *[Marque]* ?\n\nEt si vous voulez voir nos *réalisations et offres* en premier, voici notre site web : adstackofficial.com\n\nPassez une excellente semaine !";
     try { const _c=DB._config||{}; if(_c.tpl_pitch) _tplPitch=_c.tpl_pitch; } catch(e) {}
     window._pitchData = window._pitchData || {};
     window._pitchData[pid] = { numero: numero, produit: p.produit || '', pays: p.pays || '', marque: p.nom_marque || '', tpl: _tplPitch };
@@ -3126,7 +3127,6 @@ function renderSuivi(data) {
         + '<div style="font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);">R\u00e9ponse \u2014 Pitch</div>'
       + '</div>'
       + '<div id="wa-btn-pitch-'+pid+'"><button id="btn-send-pitch-'+pid+'" onclick="sendPitchMsg(\''+pid+'\')" data-numero="'+numero+'" data-pays="'+(p.pays||'')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(estCanalInstagram(p)?'linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d)':'var(--blue)')+';color:#fff;border:none;border-radius:8px;padding:8px 15px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);">'+(estCanalInstagram(p)?'📷 Envoyer Pitch (Instagram)':'📱 Envoyer Pitch (WhatsApp)')+'</button></div>'
-      + chipPitchVariante(p)
       + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;margin-top:7px;color:'+(pitch_envoye?'var(--blue)':'var(--muted)')+';font-weight:'+(pitch_envoye?'700':'400')+'">'
         + '<input type="checkbox" '+(pitch_envoye?'checked':'')+' style="accent-color:var(--blue);cursor:pointer;width:13px;height:13px" onchange="togglePitchEnvoye(\''+pid+'\',this.checked)">'
         + 'Pitch envoy\u00e9</label>'
@@ -3254,65 +3254,135 @@ async function remettreArchiveEnSuivi(id) {
   toast('Prospect remis dans le Suivi');
 }
 
-// ── PITCH PERSONNALISÉ PAR LES DONNÉES ADS ─────────────────────────────────────
-// Le message n'affirme que ce que le relevé a vu, et le date (« il y a quelques jours on a vu que »).
-// Relevé absent, sans ad active, ou trop ancien → pitch standard (aucun chiffre).
+// ── J+10 PERSONNALISÉ PAR LES ADS DU JOUR ───────────────────────────────────────
+// Le message J+10 (relance n°2) ne s'appuie que sur des chiffres relevés par le script PC (maj_ads_j10.py)
+// juste avant l'envoi (colonne ads_j10 : nb d'ads actives + durée moyenne/médiane de toutes ces ads).
+// Relevé absent, ancien, ou sans ad active → texte de repli (sans chiffres, avec [Marque] et [Produit]).
+const J10_REPLI_DEFAUT = "Re-bonjour *[Marque]*, j'espère que vous allez bien 😊\n\nQuand on a vu votre publicité pour *[Produit]*, une question nous est venue : comment garder des publicités qui vendent dans la durée, sans que les mêmes visuels s'essoufflent ?\n\nUne partie de notre service consiste justement à éviter *l'essoufflement publicitaire* via *la diversité créative*, et à repartir de ce qui marche pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.";
 const PITCH_DATA_DEFAUT = {
-  tpl: "Je posais la question car notre *AGENCE CRÉATIVE* (adstackofficial.com)\n\naide des *Marques E-commerce* à accroître leurs *revenus* 📈 grâce à un système CRÉATIF performant, et il y a quelques jours on a vu que :\n\nVous avez *[ads]* ads actives depuis *[jours]* jours ce qui montre que vous *[bonne_nouvelle]* mais aussi que *[mauvaise_nouvelle]* si ça continue.\n\nOuvert à un petit *appel de 10 min* pour voir comment notre service peut combler cette faille potentielle pour aller chercher de gros résultats ?",
-  seuil_ads: 12, seuil_jours: 15, fraicheur_j: 10,
+  seuil_ads: 12, seuil_jours: 15, fraicheur_j: 3, duree: 'med',
+  repli: J10_REPLI_DEFAUT,
   cas: {
-    1: { b: 'aviez de bonnes créatives qui durent', m: 'vous pouviez atteindre la fatigue publicitaire plus rapidement' },
-    2: { b: 'étiez en train de tester de bonnes nouvelles créatives', m: 'ce petit volume peut rendre vos résultats difficiles à maintenir' },
-    3: { b: 'aviez un bon rythme de créatives qui tiennent', m: 'vous pouviez avoir plus de mal à diversifier votre contenu créatif' },
-    4: { b: 'aviez lancé beaucoup de nouvelles créatives', m: 'vous pouviez avoir du mal à exploiter les créatives qui marchent' }
+    1: { b: 'aviez de bonnes créatives qui durent', m: 'vous pouviez atteindre la fatigue publicitaire plus rapidement', n: "l'essoufflement publicitaire", s: 'un renouvellement régulier de vos créatives' },
+    2: { b: 'étiez en train de tester de bonnes nouvelles créatives', m: 'ce petit volume peut rendre vos résultats difficiles à maintenir', n: "l'instabilité des résultats", s: 'un flux constant de nouvelles créatives' },
+    3: { b: 'aviez un bon rythme de créatives qui tiennent', m: 'vous pouviez avoir plus de mal à diversifier votre contenu créatif', n: 'la répétition créative', s: 'la diversité créative' },
+    4: { b: 'aviez lancé beaucoup de nouvelles créatives', m: 'vous pouviez avoir du mal à exploiter les créatives qui marchent', n: 'la dispersion créative', s: 'un suivi des créatives qui gagnent' }
   }
 };
 const PITCH_CAS_LABELS = {
-  1: 'Cas 1 — peu d\'ads · ancienneté longue', 2: 'Cas 2 — peu d\'ads · ancienneté courte',
-  3: 'Cas 3 — beaucoup d\'ads · ancienneté longue', 4: 'Cas 4 — beaucoup d\'ads · ancienneté courte'
+  1: 'Cas 1 — peu d\'ads · durée longue', 2: 'Cas 2 — peu d\'ads · durée courte',
+  3: 'Cas 3 — beaucoup d\'ads · durée longue', 4: 'Cas 4 — beaucoup d\'ads · durée courte'
 };
+const J10_VARS = /\[(?:ads|jours|bonne_nouvelle|mauvaise_nouvelle(?:_en_2_mots|_2_mots)?|solution)\]/i;
 function pitchDataParams() {
   const c = (DB._config || {}).pitch_data || {}, d = PITCH_DATA_DEFAUT;
   const num = (v, def) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : def; };
   const cas = {};
-  [1, 2, 3, 4].forEach(k => { const x = (c.cas || {})[k] || {}; cas[k] = { b: (x.b || '').trim() || d.cas[k].b, m: (x.m || '').trim() || d.cas[k].m }; });
-  return { tpl: (c.tpl || '').trim() ? c.tpl : d.tpl, seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), cas };
+  [1, 2, 3, 4].forEach(k => {
+    const x = (c.cas || {})[k] || {};
+    cas[k] = { b: (x.b || '').trim() || d.cas[k].b, m: (x.m || '').trim() || d.cas[k].m, n: (x.n || '').trim() || d.cas[k].n, s: (x.s || '').trim() || d.cas[k].s };
+  });
+  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j),
+           duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() ? c.repli : d.repli, cas };
 }
+// Cas du prospect d'après le dernier relevé du script PC. maj = true si le relevé est récent (même s'il n'y a aucune ad).
 function pitchVariante(p) {
-  const prm = pitchDataParams();
-  const ads = p ? p.nb_ads_actifs : null, jours = p ? p.anciennete_max_jours : null;
-  if (ads == null || jours == null) return { cas: null, raison: 'données ads absentes' };
-  if (ads < 1) return { cas: null, raison: 'aucune ad active relevée' };
-  const t = new Date(String(p.date_collecte || '').slice(0, 10) + 'T00:00:00').getTime();
-  if (!Number.isFinite(t)) return { cas: null, raison: 'date de relevé inconnue' };
+  const prm = pitchDataParams(), a = p && p.ads_j10;
+  if (!a || !a.maj_at) return { cas: null, maj: false, raison: 'ads pas encore mises à jour (lance la mise à jour J+10 sur ton PC)' };
+  const t = Date.parse(a.maj_at);
+  if (!Number.isFinite(t)) return { cas: null, maj: false, raison: 'date du relevé illisible' };
   const age = Math.max(0, Math.floor((Date.now() - t) / 86400000));
-  if (age > prm.fraicheur_j) return { cas: null, raison: 'relevé de ' + age + ' j (valable ' + prm.fraicheur_j + ' j)' };
+  if (age > prm.fraicheur_j) return { cas: null, maj: false, age, raison: 'relevé vieux de ' + age + ' j (valable ' + prm.fraicheur_j + ' j)' };
+  const ads = parseInt(a.nb, 10);
+  if (!Number.isFinite(ads) || ads < 1) return { cas: null, maj: true, age, raison: 'aucune ad active trouvée aujourd\'hui' };
+  const dur = a[prm.duree] != null ? a[prm.duree] : (a.med != null ? a.med : a.moy);
+  if (dur == null) return { cas: null, maj: true, age, raison: 'durée des ads illisible' };
+  const jours = Math.max(1, parseInt(dur, 10) || 1);
   const peu = ads <= prm.seuil_ads, courte = jours < prm.seuil_jours;
   const cas = peu ? (courte ? 2 : 1) : (courte ? 4 : 3);
-  return { cas, ads, jours: Math.max(1, jours), age, b: prm.cas[cas].b, m: prm.cas[cas].m, tpl: prm.tpl };
+  return { cas, maj: true, ads, jours, age, moy: a.moy, med: a.med, max: a.max, b: prm.cas[cas].b, m: prm.cas[cas].m, n: prm.cas[cas].n, s: prm.cas[cas].s };
 }
 function remplirPitchDonnees(msg, v) {
-  msg = msg.replace(/\[ads\]/gi, () => v.ads).replace(/\[jours\]/gi, () => v.jours)
-           .replace(/\[bonne_nouvelle\]/gi, () => v.b).replace(/\[mauvaise_nouvelle\]/gi, () => v.m);
-  if (v.ads === 1) msg = msg.replace(/\b1(\*?) ads actives\b/gi, '1$1 ad active').replace(/, la plus ancienne depuis\b/gi, ' depuis');
+  msg = msg.replace(/\s*\((?:ex|exemple)\s*:[^)]*\)/gi, '');   // retire les « (ex: …) » restés dans un texte copié
+  const put = (nom, val) => { msg = msg.replace(new RegExp('\\[' + nom + '\\]', 'gi'), () => val); };
+  put('ads', v.ads); put('jours', v.jours); put('bonne_nouvelle', v.b);
+  put('mauvaise_nouvelle_en_2_mots', v.n); put('mauvaise_nouvelle_2_mots', v.n);
+  put('mauvaise_nouvelle', v.m); put('solution', v.s);
+  if (v.ads === 1) msg = msg.replace(/\b1(\*?) ads actives\b/gi, '1$1 ad active');
   if (v.jours === 1) msg = msg.replace(/\b1(\*?) jours\b/gi, '1$1 jour');
   return msg;
 }
-function chipPitchVariante(p) {
+// Texte du J+10 pour un prospect : { msg, v, trace, avertir }
+function garnirRelance(p, relanceIndex, tpl) {
+  if (relanceIndex === 1 && J10_VARS.test(tpl || '')) {
+    const v = pitchVariante(p);
+    if (v.cas) return { msg: remplirPitchDonnees(tpl, v), v, trace: 'cas' + v.cas, avertir: false };
+    return { msg: pitchDataParams().repli, v, trace: 'repli', avertir: !v.maj };
+  }
+  return { msg: tpl || '', v: null, trace: '', avertir: false };
+}
+function chipJ10(p) {
   const v = pitchVariante(p);
-  const txt = v.cas ? '🎯 Pitch personnalisé · cas ' + v.cas + ' (' + v.ads + ' ads · ' + v.jours + ' j · relevé il y a ' + v.age + ' j)' : '📄 Pitch standard — ' + v.raison;
-  return '<div style="font-size:10.5px;color:var(--muted);margin-top:6px">' + txt + '</div>';
+  const t = v.cas
+    ? '✅ ' + v.ads + ' ads · ' + v.jours + ' j (' + (pitchDataParams().duree === 'moy' ? 'moyenne' : 'médiane') + ') · cas ' + v.cas + ' · relevé il y a ' + v.age + ' j'
+    : (v.maj ? '○ ' : '⚠ ') + 'Texte de repli — ' + v.raison;
+  const col = v.cas ? 'var(--green)' : (v.maj ? 'var(--muted)' : '#FFB547');
+  return '<div style="font-size:10px;color:' + col + ';margin-top:4px;max-width:230px;line-height:1.35">' + t + '</div>';
 }
 function lirePitchDataUI() {
   const g = id => { const e = document.getElementById(id); return e ? e.value : ''; };
-  const cas = {}; [1, 2, 3, 4].forEach(k => { cas[k] = { b: g('pd-b-' + k).trim(), m: g('pd-m-' + k).trim() }; });
-  return { tpl: g('tpl-pitch-data'), seuil_ads: g('pd-seuil-ads'), seuil_jours: g('pd-seuil-jours'), fraicheur_j: g('pd-fraicheur'), cas };
+  const cas = {}; [1, 2, 3, 4].forEach(k => { cas[k] = { b: g('pd-b-' + k).trim(), m: g('pd-m-' + k).trim(), n: g('pd-n-' + k).trim(), s: g('pd-s-' + k).trim() }; });
+  return { seuil_ads: g('pd-seuil-ads'), seuil_jours: g('pd-seuil-jours'), fraicheur_j: g('pd-fraicheur'), duree: g('pd-duree'), repli: g('pd-repli'), cas };
 }
 function remplirPitchDataUI() {
   const prm = pitchDataParams(), set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
-  set('tpl-pitch-data', prm.tpl); set('pd-seuil-ads', prm.seuil_ads); set('pd-seuil-jours', prm.seuil_jours); set('pd-fraicheur', prm.fraicheur_j);
-  [1, 2, 3, 4].forEach(k => { set('pd-b-' + k, prm.cas[k].b); set('pd-m-' + k, prm.cas[k].m); });
+  set('pd-seuil-ads', prm.seuil_ads); set('pd-seuil-jours', prm.seuil_jours); set('pd-fraicheur', prm.fraicheur_j); set('pd-duree', prm.duree); set('pd-repli', prm.repli);
+  [1, 2, 3, 4].forEach(k => { set('pd-b-' + k, prm.cas[k].b); set('pd-m-' + k, prm.cas[k].m); set('pd-n-' + k, prm.cas[k].n); set('pd-s-' + k, prm.cas[k].s); });
 }
+
+// ── Mise à jour des ads J+10 : liste des leads concernés + lancement du script sur le PC ──
+function leadsJ10() {
+  return (DB || []).filter(p => {
+    if (p.statut !== 'lead' || appelDansListe(p)) return false;
+    let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch (e) {}
+    if (n.sent_j10 || n.j10_envoye) return false;
+    const j = Math.floor((Date.now() - new Date(p.date_lead || p.date_contact || Date.now())) / 86400000);
+    return j >= 10;
+  });
+}
+function majJ10Badge() {
+  const e = document.getElementById('btn-maj-j10-n'); if (!e) return;
+  const l = leadsJ10(), sans = l.filter(p => !pitchVariante(p).maj).length;
+  e.textContent = l.length ? (sans ? sans + '/' + l.length : String(l.length)) : '0';
+}
+function ouvrirMajJ10() {
+  const l = leadsJ10();
+  const lignes = l.map(p => {
+    const v = pitchVariante(p);
+    const j = Math.floor((Date.now() - new Date(p.date_lead || p.date_contact || Date.now())) / 86400000);
+    const etat = v.cas ? '<span style="color:var(--green)">✅ ' + v.ads + ' ads · ' + v.jours + ' j · cas ' + v.cas + '</span>'
+      : (v.maj ? '<span style="color:var(--muted)">○ ' + esc(v.raison) + '</span>' : '<span style="color:#FFB547">⏳ à mettre à jour</span>');
+    return '<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><span><b>' + esc(p.nom_marque || '—') + '</b> <span style="color:var(--muted)">· lead depuis ' + j + ' j</span></span>' + etat + '</div>';
+  }).join('') || '<div style="color:var(--muted);font-size:12px;padding:8px 0">Aucun lead à J+10 pour le moment.</div>';
+  let ov = document.getElementById('ov-maj-j10');
+  if (ov) ov.remove();
+  ov = document.createElement('div'); ov.id = 'ov-maj-j10';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:20px">'
+    + '<div style="font-size:16px;font-weight:800;color:var(--white);margin-bottom:4px">Mettre à jour les ads des leads J+10</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Le script de ton PC relit la bibliothèque publicitaire de chaque lead ci-dessous (nombre d\'ads + durée moyenne) pour que le message J+10 soit vrai au moment de l\'envoi.</div>'
+    + lignes
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">'
+    + '<button class="btn btn-sm" style="background:var(--blue);color:#fff" onclick="lancerMajJ10()">▶ Lancer sur mon PC</button>'
+    + '<button class="btn btn-ghost btn-sm" onclick="actualiserMajJ10()">Actualiser la liste</button>'
+    + '<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'ov-maj-j10\').remove()">Fermer</button></div>'
+    + '<div style="font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.5">« Lancer sur mon PC » ouvre le script s\'il a été installé (une seule fois, voir installer_maj_j10.ps1). Sinon, double-clique sur MAJ_J10.bat dans le dossier du prospecteur. Quand il affiche « Terminé », clique sur « Actualiser la liste ».</div>'
+    + '</div>';
+  ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+  document.body.appendChild(ov);
+}
+function lancerMajJ10() { toast('Ouverture du script sur ton PC…'); window.location.href = 'adstack-maj://j10'; }
+async function actualiserMajJ10() { try { await load(); } catch (e) {} ouvrirMajJ10(); majJ10Badge(); }
 
 async function sendPitchMsg(pid) {
   // Fix mobile (window.open bloqué sur mobile si fait après un await)
@@ -3333,10 +3403,8 @@ async function sendPitchMsg(pid) {
   { const _pFresh = DB.find(x => x.id === pid); d.lien_instagram = (_pFresh && estCanalInstagram(_pFresh)) ? (_pFresh?.lien_instagram || '') : ''; }
   // Toujours relire le template actuel — jamais mis en cache, même pour un prospect déjà
   // préparé dans cette session (fix templates périmés).
-  let _tpl = "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*💵 grâce à :\n\n👉🏾 Une vraie stratégie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous intéressé par une *DÉMONSTRATION* sur votre [Produit] ?";
+  let _tpl = "Je posais la question car notre *AGENCE*\n\naide des *Marques E-commerce* à accroître leurs *revenus* 📈 grâce à un système complet de *publicités pensées pour vendre* :\n\nNous analysons votre marché, concevons vos publicités *(vidéos et images)* et améliorons les prochaines à partir de ce qui a le mieux performé pour vous.\n\nÊtes-vous ouvert à un *Google Meet* pour identifier ensemble comment améliorer vos performances publicitaires afin de soutenir une croissance continue pour *[Marque]* ?\n\nEt si vous voulez voir nos *réalisations et offres* en premier, voici notre site web : adstackofficial.com\n\nPassez une excellente semaine !";
   try { const _c = DB._config || {}; if (_c.tpl_pitch) _tpl = _c.tpl_pitch; } catch(e) {}
-  const _pv = pitchVariante(DB.find(x => x.id === pid) || {});
-  if (_pv.cas) _tpl = _pv.tpl;
   d.tpl = _tpl;
   const btn = document.getElementById('btn-send-pitch-' + pid);
   if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Préparation…'; }
@@ -3358,10 +3426,7 @@ async function sendPitchMsg(pid) {
     // Pas de Gemini ici — une seule variable [Produit], substitution directe. Les infos par
     // défaut du prospect font foi à ce stade (la mindmap n'existe pas encore, elle ne sera
     // produite qu'après confirmation d'intérêt).
-    let msg = d.tpl.replace(/\[Produit\]/gi, d.produit || 'votre produit');
-    if (_pv.cas) msg = remplirPitchDonnees(msg, _pv);
-    // Trace de la variante envoyée (sert à mesurer plus tard quel cas fait réserver des appels)
-    try { const _pp = DB.find(x => x.id === pid); if (_pp) { let _sn = {}; try { _sn = JSON.parse(_pp.notes || '{}'); } catch (e) {} _sn.pitch_variante = _pv.cas ? 'cas' + _pv.cas : 'standard'; _sn.pitch_variante_at = new Date().toISOString(); _pp.notes = JSON.stringify(_sn); patch(pid, { notes: _pp.notes }); } } catch (e) {}
+    let msg = d.tpl.replace(/\[Produit\]/gi, d.produit || 'votre produit').replace(/\[Marque\]/gi, d.marque || (DB.find(x => x.id === pid) || {}).nom_marque || '');
     // Fix : le template mentionne "(adstackofficial.com)" en clair (juste pour nommer l'agence,
     // pas comme lien à cliquer) — l'ancienne logique voyait cette mention et pensait qu'un lien
     // était déjà là, donc n'insérait jamais le vrai lien tracké nulle part. On remplace
@@ -4217,6 +4282,7 @@ function filterLeads() {
 
 function renderLeads(data) {
   const el = document.getElementById('leads-list');
+  try { majJ10Badge(); } catch (e) {}
   // But des relances = faire réserver un call. Un lead qui a réservé est dans Appels : on ne
   // le relance plus ici (il revient si la réservation est annulée).
   const _avantFiltre = data.length;
@@ -4229,7 +4295,7 @@ function renderLeads(data) {
   }
 
   const JOURS  = [3, 10, 21];
-  const LABELS = ['Vu la démo ?', 'Tendance marché', 'Score & urgence'];
+  const LABELS = ['Relance douce', 'Pitch personnalisé', 'Dernier message'];
 
   function getJStatus(id) {
     const p = DB.find(x => x.id === id);
@@ -4371,7 +4437,7 @@ function renderLeads(data) {
       const checkHtml = (jours_ecoules || est_auj) ? (
         '<div style="display:flex;gap:14px;margin-top:4px;padding:0 2px">'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" ' + (sent ? 'checked' : '') + ' data-id="' + p.id + '" data-key="sent_j' + j + '" style="accent-color:var(--blue);cursor:pointer;width:12px;height:12px" onchange="saveJStatus(this.dataset.id,this.dataset.key,this.checked)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:' + (sent ? 'var(--blue)' : 'var(--muted)') + ';font-weight:' + (sent ? '600' : '400') + '">Envoyé</span>'        + '</label>'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" data-id="' + p.id + '" data-via="J+' + j + '" style="accent-color:#FFB547;cursor:pointer;width:12px;height:12px" onchange="if(this.checked) toggleAppelReserve(this.dataset.id,true,this.dataset.via)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:var(--muted);font-weight:400">A réservé un call</span>'        + '</label>'        + '</div>'      ) : '';
 
-      return '<div style="flex-shrink:0">' + btnHtml + checkHtml + '</div>';
+      return '<div style="flex-shrink:0">' + btnHtml + ((i === 1 && !sent && jours_ecoules) ? chipJ10(p) : '') + checkHtml + '</div>';
     }).join('');
 
     const cardBorder = isRetard ? '1px solid rgba(255,76,106,.2)' : isToday ? '1px solid rgba(31,182,255,.2)' : '1px solid var(--border)';
@@ -5386,7 +5452,7 @@ async function genMessages(html) {
     }
 
     const JOURS  = [3, 10, 21];
-    const LABELS = ['Vu la démo ?', 'Tendance marché', 'Score & urgence'];
+    const LABELS = ['Relance douce', 'Pitch personnalisé', 'Dernier message'];
     const _waNumero = (prospect?.lien_wa || '').replace('https://wa.me/', '').replace(/\D/g, '');
 
     const messages = vars.messages.map((texte, i) => {
@@ -7249,14 +7315,14 @@ const _origGoTo = typeof goTo === 'function' ? goTo : null;
 // ═══════════════════════════════════════
 
 const RELANCE_JOURS  = [3, 10, 21];
-const RELANCE_LABELS = ['Vu la démo ?', 'Tendance marché', 'Score & urgence'];
+const RELANCE_LABELS = ['Relance douce', 'Pitch personnalisé (ads du jour)', 'Dernier message'];
 
 const DEFAULT_INTROS = ["Bonjour *[Marque]*,\nje viens de voir votre pub pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nvotre pub sur *[Produit]*\nJe me demandais, est-ce vous qui l'avez créée ?", "Bonjour *[Marque]*,\nje suis tombé sur votre pub *[Produit]* en scrollant\nEst-ce vous qui êtes derrière ?", "Bonjour *[Marque]*, petite question\nLa pub *[Produit]* que je viens de voir,\nest-ce vous qui l'avez faite ?", "Bonjour *[Marque]*\nJe viens de voir votre pub avec *[Produit]*\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje regardais votre pub sur *[Produit]*. J'avais une question !\nEst-ce vous qui l'avez faites ?", "Bonjour *[Marque]*,\nj'ai vu votre pub pour *[Produit]* passer aujourd'hui\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje viens de consulter votre publicité pour *[Produit]*\nEst-ce vous qui l'avez réalisée ?", "Bonjour *[Marque]*,\nje suis tombé sur vos pubs, notamment celle pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nje viens de tomber sur votre pub avec *[Produit]* à l'instant\nEst-ce vous qui êtes derrière ?"];
 
 const DEFAULT_RELANCES = [
-  `Bonjour *[Marque]* 👋🏾,\n\nAvec les outils actuels *(ChatGpt, Gemini…)* faire du contenu publicitaire *c'est facile*✅.\n\nMais produire des *pubs qui vendent* est encore plus *difficile*❌. \n\nSimplement à cause de la *saturation* qui tue en silence, même (angle, cible, accroche, design) que *tes concurrents*.\n\nAlors que ce qu'il vous faut c'est une stratégie sur mesure, pas une *IA qui s'en fout du résultat final*📉.\n\nD'où notre offre mensuel *CONVERSION STARTER* 👇🏽 : \n\nadstackofficial.com\n\noù chaque semaine notre équipe (Marketer, Copywriter, Designer…) travaille pour vous faire évoluer 📈.`,
-  `Salut *[Marque]* 👋🏾,\n\nDepuis la dernière mise à jour Meta *(Andromeda)*, la fenêtre de fatigue créative est passée de *6 semaines à 2-3 semaines*⏳.\n\nConcrètement : une pub qui cartonnait un mois entier avant s'essouffle maintenant en *15-20 jours*❌.\n\nLe problème n'est *jamais* la qualité d'une créative isolée, mais l'absence d'un *flux continu* pour prendre le relais avant l'essoufflement.\n\nExactement ce que *CONVERSION STARTER* résout : *9 nouvelles créatives chaque semaine*, jamais un trou dans votre test 👇🏽 : \n\nadstackofficial.com\n\nPendant que la concurrence s'essouffle, vous gardez le rythme📈.`,
-  `Hello *[Marque]* 👋🏾,\n\nRécemment *facebook* a publié un article révélant que le top 10% des entreprises qui *génère le plus de revenus📈* testait entre : \n\n*8 à 20 pubs / semaine* minimum et cela n'est pas un hasard, \n\nC'est juste la *magie de la diversité publicitaire*✨ : + tu testes + t'as de chances de trouver ce qui marche💵.\n\nMais du volume sans qualité (cible x angle x hook x concept…) ne mène nulle part❌.\n\nC'est ainsi qu'on produit une *stratégie complète* de *9 créatives images* pour votre produit.\n\nEt cela pas 1 fois par mois❌, mais 1 fois par semaine✅ avec *CONVERSION STARTER* 👇🏽 :\n\nadstackofficial.com\n\nLe tout sans que vous passiez des heures à faire de la recherche marketing.`
+  "Bonjour *[Marque]*, j'espère que je ne vous ai pas trop dérangé il y a 3 jours 😊\n\ncar je sais qu'en tant qu'e-commerçant, vous avez déjà beaucoup de choses à gérer au quotidien.\n\nAlors, devoir aussi gérer la recherche marketing, suivie de la production de publicités performantes, peut vite devenir épuisant.\n\nC'est justement pour ça qu'on s'occupe de tout ce *processus publicitaire* destiné à faire grandir votre business, avec un minimum d'intervention de votre part.\n\nEt si cette idée vous intéresse, on peut faire un *Google Meet* ?\n\nAfin que vous voyiez ce qu'on va mettre en place sur *[Marque]* pour optimiser votre temps et vos résultats.",
+  "Re-bonjour *[Marque]*, il y a quelques jours nous avions vu que :\n\nVous aviez *[ads]* ads actives, en moyenne depuis *[jours]* jours, ce qui montre que vous *[bonne_nouvelle]* mais aussi que *[mauvaise_nouvelle]*.\n\nEt une partie de notre service consiste à éviter *[mauvaise_nouvelle_en_2_mots]* via *[solution]* pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.",
+  "Salut *[Marque]*,\n\nRécemment une étude a montré que *80%* des profits d'une marque e-commerce sur Facebook Ads venaient de l'exploitation des créatives performantes, recyclées correctement sur d'autres concepts créatifs.\n\nMais cela n'est possible que si l'on a un bon suivi et une organisation qui permet d'agir vite.\n\nC'est pour ça qu'on a *AdBoard* (adstackofficial.com/adboard) : notre plateforme où toutes vos créatives sont organisées et classées, afin de repartir de ce qui marche et d'améliorer les prochaines.\n\nLe tout pour que vous ne ratiez pas ces *80%* de revenus potentiels.\n\nEn tout cas voici mon dernier message ! J'espère que vous passerez une excellente semaine."
 ];
 
 async function loadTemplates() {
@@ -7404,30 +7470,40 @@ async function loadTemplates() {
       <div class="tpl-etape-body">
         <div class="tpl-groupe">
           <div class="tpl-groupe-titre">💬 Message "Pitch"</div>
-          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Variables : <span style="color:var(--green)">[Produit]</span> — envoyé dès que le prospect répond, avant toute démo</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Variables : <span style="color:var(--green)">[Marque] [Produit]</span> — envoyé dès que le prospect répond, avant toute démo</div>
           <textarea id="tpl-pitch" style="width:100%;min-height:110px;font-size:12px" oninput="markDirty()"></textarea>
         </div>
         <div class="tpl-groupe">
-          <div class="tpl-groupe-titre">🎯 Pitch personnalisé (données ads)</div>
-          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Remplace le pitch standard quand le relevé est récent et que les ads actives sont connues. Variables : <span style="color:var(--green)">[Produit] [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle]</span></div>
-          <textarea id="tpl-pitch-data" style="width:100%;min-height:130px;font-size:12px" oninput="markDirty()"></textarea>
-          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px;font-size:11px;color:var(--text2)">
+          <div class="tpl-groupe-titre">🎯 J+10 personnalisé (ads relues le jour de l'envoi)</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Le texte du J+10 est dans « Relances leads » ci-dessous. Variables : <span style="color:var(--green)">[Marque] [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [mauvaise_nouvelle_en_2_mots] [solution]</span>. Les ads sont relues par le script PC (bouton « Ads J+10 » dans Leads).</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:4px;font-size:11px;color:var(--text2)">
             <span>« Peu d'ads » jusqu'à <input id="pd-seuil-ads" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> ads</span>
-            <span>« Ancienneté courte » sous <input id="pd-seuil-jours" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> jours</span>
+            <span>« Durée courte » sous <input id="pd-seuil-jours" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> jours</span>
             <span>Relevé valable <input id="pd-fraicheur" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> jours</span>
+            <span>Durée utilisée <select id="pd-duree" style="font-size:12px" onchange="markDirty()"><option value="med">médiane (recommandé)</option><option value="moy">moyenne</option></select></span>
           </div>
-          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 1 — peu d'ads · ancienneté longue</div>
-            <input id="pd-b-1" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
-            <input id="pd-m-1" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
-          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 2 — peu d'ads · ancienneté courte</div>
-            <input id="pd-b-2" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
-            <input id="pd-m-2" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
-          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 3 — beaucoup d'ads · ancienneté longue</div>
-            <input id="pd-b-3" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
-            <input id="pd-m-3" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
-          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 4 — beaucoup d'ads · ancienneté courte</div>
-            <input id="pd-b-4" type="text" placeholder="Bonne nouvelle (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
-            <input id="pd-m-4" type="text" placeholder="Mauvaise nouvelle (après « peut-être que »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 1 — peu d'ads · durée longue</div>
+            <input id="pd-b-1" type="text" placeholder="[bonne_nouvelle] (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-1" type="text" placeholder="[mauvaise_nouvelle] (après « mais aussi que »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-n-1" type="text" placeholder="[mauvaise_nouvelle_en_2_mots] (après « éviter »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-s-1" type="text" placeholder="[solution] (après « via »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 2 — peu d'ads · durée courte</div>
+            <input id="pd-b-2" type="text" placeholder="[bonne_nouvelle] (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-2" type="text" placeholder="[mauvaise_nouvelle] (après « mais aussi que »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-n-2" type="text" placeholder="[mauvaise_nouvelle_en_2_mots] (après « éviter »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-s-2" type="text" placeholder="[solution] (après « via »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 3 — beaucoup d'ads · durée longue</div>
+            <input id="pd-b-3" type="text" placeholder="[bonne_nouvelle] (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-3" type="text" placeholder="[mauvaise_nouvelle] (après « mais aussi que »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-n-3" type="text" placeholder="[mauvaise_nouvelle_en_2_mots] (après « éviter »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-s-3" type="text" placeholder="[solution] (après « via »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:8px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Cas 4 — beaucoup d'ads · durée courte</div>
+            <input id="pd-b-4" type="text" placeholder="[bonne_nouvelle] (après « vous »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-m-4" type="text" placeholder="[mauvaise_nouvelle] (après « mais aussi que »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-n-4" type="text" placeholder="[mauvaise_nouvelle_en_2_mots] (après « éviter »)" style="width:100%;font-size:12px;margin-bottom:4px" oninput="markDirty()">
+            <input id="pd-s-4" type="text" placeholder="[solution] (après « via »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
+          <div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Texte de repli — aucune ad trouvée ou relevé non fait (variables : [Marque] [Produit])</div>
+            <textarea id="pd-repli" style="width:100%;min-height:130px;font-size:12px" oninput="markDirty()"></textarea></div>
         </div>
         <div class="tpl-groupe">
           <div class="tpl-groupe-titre">💬 Message "Envoyer la démo"</div>
@@ -7540,7 +7616,7 @@ async function loadTemplates() {
   if (tplInt) tplInt.value = interesse || '';
 
   const tplPitch = document.getElementById('tpl-pitch');
-  if (tplPitch) tplPitch.value = cfg_pitch || "Je posais la question car notre *AGENCE* (adstackofficial.com) aide des E-commerçants à faire *plus de ventes*💵 grâce à :\n\n👉🏾 Une vraie stratégie d'*Images Publicitaires* faites pour convertir votre audience en clients.\n\nSeriez vous intéressé par une *DÉMONSTRATION* sur votre [Produit] ?";
+  if (tplPitch) tplPitch.value = cfg_pitch || "Je posais la question car notre *AGENCE*\n\naide des *Marques E-commerce* à accroître leurs *revenus* 📈 grâce à un système complet de *publicités pensées pour vendre* :\n\nNous analysons votre marché, concevons vos publicités *(vidéos et images)* et améliorons les prochaines à partir de ce qui a le mieux performé pour vous.\n\nÊtes-vous ouvert à un *Google Meet* pour identifier ensemble comment améliorer vos performances publicitaires afin de soutenir une croissance continue pour *[Marque]* ?\n\nEt si vous voulez voir nos *réalisations et offres* en premier, voici notre site web : adstackofficial.com\n\nPassez une excellente semaine !";
   remplirPitchDataUI();
   const tplDemoMsg = document.getElementById('tpl-demo-msg');
   if (tplDemoMsg) tplDemoMsg.value = cfg_demo_msg || "Voici l'*aperçu concret* de notre méthode sur votre [Produit] 👇🏽:\n\n[lien_demo]\n\nHâte de recevoir votre avis ?";
@@ -7777,12 +7853,13 @@ async function openInstagramIntro(id, variantIndex) {
 
 // Construit le lien final pour une relance : UTM toujours, + raccourcisseur avec
 // miniature dédiée pour J+10/J+21 (J+3 garde la miniature par défaut d'AdBoard).
-async function construireLienRelance(relanceIndex, prospectId) {
+async function construireLienRelance(relanceIndex, prospectId, chemin) {
   const campagne = ['j3', 'j10', 'j21'][relanceIndex] || 'relance';
   // Page de vente terminée et validée par Amvr — les 3 relances (J+3, J+10, J+21) redirigent
   // maintenant vers adstackofficial.com/ au lieu de /adboard/offers. Miniatures, UTM et
   // mécanisme de shortlink inchangés — seule la destination finale change.
-  const baseUrl = `https://adstackofficial.com/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
+  const _ch = (chemin && /^\/[\w\-\/]*$/.test(chemin)) ? chemin.replace(/\/+$/, '') : '';
+  const baseUrl = `https://adstackofficial.com${_ch}/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${prospectId}`;
   // Cause profonde corrigée (miniature qui n'apparaît plus sur WhatsApp, y compris J+3) :
   // Cause profonde confirmée (miniature pitch ET J+3 absente) : un 4ème visuel dédié
   // ("adstack_thumb_default") était prévu à l'origine mais n'a jamais été réellement généré —
@@ -7815,7 +7892,9 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   // template s'applique immédiatement à tous les leads, même ceux déjà préparés auparavant.
   const relanceTpls = (DB._config && DB._config.tpl_relances) || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
   const tpl = relanceTpls[relanceIndex] || '';
-  let msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '');
+  const _g = garnirRelance(p, relanceIndex, tpl);
+  if (_g.avertir && !confirm('Les ads de ' + (p.nom_marque || 'ce lead') + ' n\'ont pas été mises à jour (' + _g.v.raison + ').\n\nEnvoyer quand même la version SANS chiffres ?')) return;
+  let msg = _g.msg.replace(/\[Marque\]/gi, p.nom_marque || '');
   // Filet de sécurité : si un template contient encore [Produit]/[Pays] (ancienne variable
   // remise par erreur, ou template personnalisé), on les remplit quand même plutôt que de
   // laisser un crochet vide visible dans le message envoyé.
@@ -7835,7 +7914,7 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
   // On ouvre la fenêtre IMMÉDIATEMENT (avant le premier await), puis on redirige une fois le
   // message prêt — l'onglet reste ouvert et reçoit l'URL finale.
   const tab = window.open('', '_blank');
-  const lienFinal = await construireLienRelance(relanceIndex, prospectId);
+  const lienFinal = await construireLienRelance(relanceIndex, prospectId, ((msg.match(/adstackofficial\.com(\/[\w\-\/]*)?/i) || [])[1] || ''));
   // Remplacement robuste : couvre le texte "offers" actuel ET un éventuel ancien
   // template resté sur [lien_demo] — sinon un template pas à jour garde son vieux lien.
   // Astérisques autour du lien retirées AVANT insertion : une URL entourée de *...* (gras
@@ -7875,6 +7954,7 @@ async function envoyerRelanceWhatsApp(prospectId, relanceIndex, btnEl) {
     const s = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
     s['j' + jourEnvoi + '_envoye'] = true;
     s['j' + jourEnvoi + '_envoye_at'] = new Date().toISOString();
+    if (relanceIndex === 1 && _g.trace) { s.j10_variante = _g.trace; if (_g.v && _g.v.cas) s.j10_ads = { ads: _g.v.ads, jours: _g.v.jours }; }
     p.notes = JSON.stringify(s);
     await patch(prospectId, { notes: p.notes });
   } catch(e) { console.warn('Marquage envoi relance échoué:', e.message); }
@@ -7895,7 +7975,9 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   const relanceTpls = (DB._config && DB._config.tpl_relances)
                     || JSON.parse(localStorage.getItem('tpl_relances') || 'null') || DEFAULT_RELANCES;
   const tpl = relanceTpls[relanceIndex] || '';
-  let msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '');
+  const _g = garnirRelance(p, relanceIndex, tpl);
+  if (_g.avertir && !confirm('Les ads de ' + (p.nom_marque || 'ce lead') + ' n\'ont pas été mises à jour (' + _g.v.raison + ').\n\nEnvoyer quand même la version SANS chiffres ?')) return;
+  let msg = _g.msg.replace(/\[Marque\]/gi, p.nom_marque || '');
   if (/\[Produit\]/i.test(msg)) msg = msg.replace(/\[Produit\]/gi, p.produit || '');
   if (/\[Pays\]/i.test(msg)) {
     const { phrase: paysPhrase } = resoudrePays(p.pays);
@@ -7910,7 +7992,7 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
   // focus — copier après avoir ouvert la fenêtre échoue silencieusement. On raccourcit le lien
   // D'ABORD (généralement <1s, un seul appel réseau simple — contrairement au flux précédent qui
   // enchaînait plusieurs appels plus lourds), PUIS on copie, PUIS seulement on ouvre Instagram.
-  const lienFinal = await construireLienRelance(relanceIndex, prospectId);
+  const lienFinal = await construireLienRelance(relanceIndex, prospectId, ((msg.match(/adstackofficial\.com(\/[\w\-\/]*)?/i) || [])[1] || ''));
   // Astérisques autour du lien retirées avant insertion — perturbent l'auto-détection de lien.
   msg = msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*]*)?\*?/gi, lienFinal)
            .replace(/\*?\[lien_demo\]\*?/gi, lienFinal)
@@ -7931,6 +8013,7 @@ async function envoyerRelanceInstagram(prospectId, relanceIndex, btnEl) {
     const s = (() => { try { return JSON.parse(p.notes || '{}'); } catch(e) { return {}; } })();
     s['j' + jourEnvoi + '_envoye'] = true;
     s['j' + jourEnvoi + '_envoye_at'] = new Date().toISOString();
+    if (relanceIndex === 1 && _g.trace) { s.j10_variante = _g.trace; if (_g.v && _g.v.cas) s.j10_ads = { ads: _g.v.ads, jours: _g.v.jours }; }
     p.notes = JSON.stringify(s);
     await patch(prospectId, { notes: p.notes });
   } catch(e) { console.warn('Marquage envoi relance échoué:', e.message); }
