@@ -4496,8 +4496,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
   );
 };
 
-// MAJ pricing (oct. 2026 — grille 80 000 / 140 000 / 240 000 FCFA, 24 / 48 / 96 créatives par mois : vidéos + images,
-// trimestriel -20 % : 64 000 / 112 000 / 192 000) — remplace la grille précédente. Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
+// MAJ pricing (oct. 2026 — grille 150 000 / 255 000 / 430 000 FCFA, 24 / 48 / 96 créatives par mois : vidéos + images,
+// trimestriel -20 % : 120 000 / 205 000 / 345 000) — remplace la grille précédente. Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
 // (historique) retour aux tarifs en FCFA fixes, avec convertPrice() réactivé
 // pour l'affichage (voir plus bas dans le fichier) — Chariow gère toujours la devise réelle au
 // moment du checkout, ce convertisseur n'est qu'un affichage indicatif avant paiement.
@@ -4509,28 +4509,28 @@ const PLANS = [
     imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16,
     badge:'24 Créatives / Mois', promo:'',
     
-    monthly: { price:80000, prixImg:3333, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:64000, prixImg:2667, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    monthly: { price:150000, prixImg:6250, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    quarterly: { price:120000, prixImg:5000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
   },
   {
     id:'pro', name:'Pro', color:C.accent, best:true,
     tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
-    badge:'48 Créatives / Mois', promo:'-12,5% de réduction',
+    badge:'48 Créatives / Mois', promo:'-15% de réduction',
     
-    monthly: { price:140000, prixImg:2917, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:112000, prixImg:2333, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    monthly: { price:255000, prixImg:5313, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    quarterly: { price:205000, prixImg:4271, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
   },
   {
     id:'scale', name:'Scale', color:C.white, best:false,
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
-    badge:'96 Créatives / Mois', promo:'-25% de réduction',
+    badge:'96 Créatives / Mois', promo:'-30% de réduction',
     
-    monthly: { price:240000, prixImg:2500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:192000, prixImg:2000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    monthly: { price:430000, prixImg:4479, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    quarterly: { price:345000, prixImg:3594, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
   },
 ];
 
@@ -4604,6 +4604,10 @@ const FAQ_ITEMS = [
   {
     q: "Comment se passe le paiement ?",
     a: "Le paiement est traité de façon sécurisée par notre partenaire Chariow. Nous ne stockons jamais vos informations bancaires directement."
+  },
+  {
+    q: "Comment fonctionne la garantie « Résultats en 30 jours ou remboursé » ?",
+    a: "Vous publiez les créatives livrées et investissez en publicité avec elles pendant un mois. Si vous ne constatez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire (vos dépenses du mois et vos résultats : ROAS, coût par achat…). Nous vérifions, puis nous vous remboursons l'intégralité de votre paiement."
   },
   {
     q: "Que faire si une créative ne me convient pas ?",
@@ -4749,7 +4753,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.22)`,marginBottom:20,flexWrap:'wrap'}}>
           <span style={{width:30,height:30,borderRadius:9,background:'rgba(45,127,249,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="lock" size={15} color={C.accent}/></span>
           <div style={{fontSize:12.5,color:C.text,lineHeight:1.4}}>
-            <strong style={{color:C.accent}}>Satisfait ou 100% remboursé.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
+            <strong style={{color:C.accent}}>Résultats en 30 jours ou remboursé.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
           </div>
         </div>
       )}
@@ -4889,7 +4893,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {!isCurrent && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
-                  {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Satisfait ou 100% remboursé</span></>}
+                  {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Résultats en 30 jours ou remboursé</span></>}
                 </div>
               )}
             </div>
