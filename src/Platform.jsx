@@ -556,7 +556,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       {showLogoutConfirm && (
         <ConfirmModal
           title="Se déconnecter ?"
-          message="Tu devras te reconnecter pour retrouver tes produits et tes visuels."
+          message="Tu devras te reconnecter pour retrouver tes produits et tes créatives."
           confirmLabel="Se déconnecter" cancelLabel="Rester connecté" danger={true}
           onCancel={()=>setShowLogoutConfirm(false)}
           onConfirm={()=>{ sbAuth.signOut(); setUser(null); setShowLogoutConfirm(false); }}
@@ -908,7 +908,7 @@ function briefCompteCredits(b) { return !!b && b.status !== 'cancelled' && b.sta
 // production 24h, ou afficher "en production" sur une carte produit.
 function briefEstActif(b) { return !!b && (b.status === 'pending' || b.status === 'in_production'); }
 
-// Calcule les images publicitaires disponibles dynamiquement
+// Calcule les créatives disponibles dynamiquement
 function computeCredits(sub, allBriefs) {
   if (!sub || !sub.active) return { total: 0, used: 0, available: 0, nextCreditDate: null };
   const used = allBriefs
@@ -996,12 +996,12 @@ const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
 
 // ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
 const PREPURCHASE_QUESTIONS = [
-  "Aujourd'hui, qu'est-ce qui te frustre le plus avec tes pubs ou tes visuels ?",
+  "Aujourd'hui, qu'est-ce qui te frustre le plus avec tes pubs ou tes créatives ?",
   "Si tout se passait bien pour ton business dans 6 mois, à quoi ça ressemblerait ?",
   "Qu'est-ce que t'as déjà essayé pour améliorer tes ventes, et qu'est-ce qui n'a pas marché ?",
   "D'après toi, qu'est-ce qui ferait vraiment la différence pour toi en ce moment ?",
   "Si une solution te faisait gagner plusieurs heures chaque semaine, ça changerait quoi pour toi concrètement ?",
-  "Qu'est-ce qui te ferait hésiter à essayer une nouvelle solution pour tes visuels ?",
+  "Qu'est-ce qui te ferait hésiter à essayer une nouvelle solution pour tes créatives ?",
   "Comment tu décrirais, avec tes mots, ce qui bloque vraiment tes ventes ?",
   "T'as déjà entendu parler d'autres solutions ou agences pour ce genre de besoin ? T'en penses quoi ?",
   "Qu'est-ce que tu serais prêt à changer pour vraiment débloquer tes ventes ?",
@@ -1012,7 +1012,7 @@ const PREPURCHASE_QUESTIONS = [
 // "exemple", juste une réponse plausible pour guider quelqu'un qui bloque devant un champ
 // vide face à une question assez précise. Terminés par "…" pour signaler qu'il peut développer.
 const PREPURCHASE_PLACEHOLDERS = [
-  "Je perds trop de temps sur mes visuels…",
+  "Je perds trop de temps sur mes créatives…",
   "Vendre dans plusieurs pays sans y penser…",
   "Canva, freelances… rien n'a vraiment marché…",
   "Des créatives fraîches chaque semaine, sans effort…",
@@ -1298,13 +1298,13 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
 
         {/* Header */}
         <div style={{position:'relative',marginBottom:22,paddingRight:32}}>
-          <h3 style={{fontSize:16,fontWeight:800,color:C.text,margin:'0 0 3px'}}>Demander des visuels</h3>
+          <h3 style={{fontSize:16,fontWeight:800,color:C.text,margin:'0 0 3px'}}>Demander des créatives</h3>
           <p style={{fontSize:12,color:C.sec,margin:0}}>Pour <strong style={{color:C.text}}>{product.nom}</strong></p>
         </div>
 
         {/* Jauge semaine — hero, citation à bordure latérale au lieu d'un encart fermé */}
         <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:14}}>
-          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:6}}>{isPack ? 'Images disponibles' : 'Disponibles cette semaine'}</div>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:6}}>{isPack ? 'Créatives disponibles' : 'Disponibles cette semaine'}</div>
           <div style={{fontFamily:"'DM Mono',monospace",fontSize:28,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{credits.available}</div>
           <div style={{marginTop:10,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:220}}>
             <div style={{height:'100%',borderRadius:2,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
@@ -1325,13 +1325,13 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
 
         {/* Compteur */}
         <div style={{position:'relative',marginBottom:26}}>
-          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:16,textAlign:'center'}}>Nombre de visuels à recevoir</div>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:16,textAlign:'center'}}>Nombre de créatives à recevoir</div>
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:26}}>
             <button onClick={()=>canDecrease&&setQty(q=>q-6)} style={{width:42,height:42,borderRadius:'50%',border:`1px solid ${canDecrease?'rgba(255,255,255,0.14)':'rgba(255,255,255,0.05)'}`,background:canDecrease?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)',color:canDecrease?C.text:C.muted,fontSize:20,cursor:canDecrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.15s'}}>−</button>
             <div style={{textAlign:'center',minWidth:76}}>
               <div style={{fontFamily:"'DM Mono',monospace",fontSize:42,fontWeight:800,lineHeight:1,
                 background:'linear-gradient(90deg, #ffffff 0%, #9fbcff 100%)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>{qty}</div>
-              <div style={{fontSize:11,color:C.sec,marginTop:5}}>visuels</div>
+              <div style={{fontSize:11,color:C.sec,marginTop:5}}>créatives</div>
             </div>
             <button onClick={()=>canIncrease&&setQty(q=>q+6)} style={{width:42,height:42,borderRadius:'50%',border:'none',background:canIncrease?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.02)',color:canIncrease?'#fff':C.muted,fontSize:20,cursor:canIncrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:canIncrease?'0 4px 14px rgba(45,127,249,0.3)':'none',transition:'all 0.15s'}}>+</button>
           </div>
@@ -1341,7 +1341,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
         <div style={{position:'relative',display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:'12px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
           <button onClick={()=>max>0&&onConfirm(qty)} disabled={max===0} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:'inherit',boxShadow:max===0?'none':'0 4px 16px rgba(45,127,249,0.3)'}}>
-            {max===0 ? 'Aucun visuel disponible' : `Confirmer · ${qty} visuels`}
+            {max===0 ? 'Aucune créative disponible' : `Confirmer · ${qty} créatives`}
           </button>
         </div>
       </div>
@@ -1527,7 +1527,7 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
                 {pushStatus==='denied' ? 'Bloquées dans les réglages de ton navigateur' :
                  pushStatus==='enabled' ? 'Activées sur cet appareil' :
                  pushStatus==='checking' ? 'Vérification...' :
-                 'Reçois un signal quand tes visuels sont prêts'}
+                 'Reçois un signal quand tes créatives sont prêtes'}
               </div>
             </div>
           </div>
@@ -1654,7 +1654,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
           <Icon name="clock" size={24} color={C.accent}/>
         </div>
         <div style={{fontSize:16,fontWeight:700,color:C.text}}>Aucune demande en cours</div>
-        <div style={{fontSize:12,color:C.sec,maxWidth:300}}>Vos demandes de visuels apparaîtront ici avec leur statut et le temps restant avant livraison.</div>
+        <div style={{fontSize:12,color:C.sec,maxWidth:300}}>Vos demandes de créatives apparaîtront ici avec leur statut et le temps restant avant livraison.</div>
       </div>
     </div>
   );
@@ -1702,7 +1702,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:14.5,fontWeight:800,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{prod?.nom||'Produit inconnu'}</div>
                   <div style={{fontSize:11,color:C.muted}}>
-                    <span style={{color:C.accent,fontWeight:700}}>{b.quantity||9} visuels</span>
+                    <span style={{color:C.accent,fontWeight:700}}>{b.quantity||9} créatives</span>
                     {' · '}{new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
                   </div>
                 </div>
@@ -1776,7 +1776,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     return (
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11}}>
         <div style={{width:12,height:12,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.muted,animation:'spin 0.7s linear infinite'}}/>
-        Vérification de tes images...
+        Vérification de tes créatives...
       </div>
     );
   }
@@ -1794,7 +1794,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     }
     return (
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
-        <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochaine livraison le ${nextCreditDate}` : 'Plus d\'images disponibles cette semaine'}
+        <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochaine livraison le ${nextCreditDate}` : 'Plus de créatives disponibles cette semaine'}
       </div>
     );
   }
@@ -2130,7 +2130,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       // Le serveur a revérifié avec des données fraîches et a refusé — jamais un succès
       // silencieux ni un faux brief local dans ce cas. Message honnête selon la vraie raison.
       const messages = {
-        credits_insuffisants: `Vous n'avez plus assez d'images disponibles pour cette demande (${brief?.available ?? 0} restantes). La page va se rafraîchir.`,
+        credits_insuffisants: `Vous n'avez plus assez de créatives disponibles pour cette demande (${brief?.available ?? 0} restantes). La page va se rafraîchir.`,
         plafond_production: 'Notre capacité de production est temporairement au maximum — réessayez dans quelques heures.',
         abonnement_inactif: 'Votre abonnement ne semble plus actif — vérifiez votre statut avant de réessayer.',
         reseau: 'Connexion au serveur impossible — vérifiez votre connexion et réessayez.',
@@ -2195,13 +2195,13 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   return (
     <div>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      {/* ── Jauge images publicitaires ── */}
+      {/* ── Jauge créatives ── */}
       {subscription?.active ? (
         <div style={{position:'relative',overflow:'hidden',marginBottom:18,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'22px 24px'}}>
           <div style={{position:'absolute',top:-50,right:-30,width:170,height:170,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.16), transparent 70%)',pointerEvents:'none'}}/>
           <div style={{position:'relative',display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:16,flexWrap:'wrap'}}>
             <div style={{flex:1,minWidth:180}}>
-              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Images publicitaires disponibles</div>
+              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Créatives disponibles</div>
               <div style={{display:'flex',alignItems:'baseline',gap:8}}>
                 <span style={{
                   fontFamily:"'DM Mono',monospace",fontSize:38,fontWeight:800,letterSpacing:'-0.5px',lineHeight:1,
@@ -2228,7 +2228,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 </button>
               ) : (
                 <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
-                  {nextCreditDate ? `Prochaines images le ${nextCreditDate}` : 'Prochaines images la semaine prochaine'}
+                  {nextCreditDate ? `Prochaines créatives le ${nextCreditDate}` : 'Prochaines créatives la semaine prochaine'}
                 </div>
               )
             )}
@@ -2242,8 +2242,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
               <Icon name="bolt" size={16} color={C.accent}/>
             </div>
             <div>
-              <div style={{fontSize:14,fontWeight:800,color:C.text}}>Images publicitaires</div>
-              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonne-toi pour recevoir tes visuels chaque semaine</div>
+              <div style={{fontSize:14,fontWeight:800,color:C.text}}>Créatives publicitaires</div>
+              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonne-toi pour recevoir tes créatives chaque semaine</div>
             </div>
           </div>
           <button onClick={()=>setSection && setSection('tarifs')} style={{position:'relative',padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(45,127,249,0.35)'}}>
@@ -2256,7 +2256,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
-          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos visuels — livrés en 24h.</p>
+          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos créatives — livrées en 24h.</p>
         </div>
         <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
           <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
@@ -2275,12 +2275,12 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             <Icon name="box" size={20}/>
           </div>
           <div style={{position:'relative',fontSize:17,fontWeight:700,color:C.text}}>
-            {subscription?.active ? 'Plus qu\'une étape avant tes premières images' : 'Aucun produit pour l\'instant'}
+            {subscription?.active ? 'Plus qu\'une étape avant tes premières créatives' : 'Aucun produit pour l\'instant'}
           </div>
           <div style={{position:'relative',fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>
             {subscription?.active
-              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes visuels juste après. Livraison sous 24h max.'
-              : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos visuels publicitaires, livrés sous 24h.'}
+              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes créatives juste après. Livraison sous 24h max.'
+              : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos créatives publicitaires, livrées sous 24h.'}
           </div>
           <button onClick={openNew} style={{position:'relative',marginTop:6,padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7,boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
             <Icon name="plus" size={14} color="#fff"/> {subscription?.active ? 'Ajouter mon produit' : 'Ajouter mon premier produit'}
@@ -2465,7 +2465,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   <Field label="À quoi il sert" k="utilite" textarea placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
                   <div>
                     <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque</label>
-                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>2 ou 3 couleurs, utilisées dans vos visuels</div>
+                    <div style={{fontSize:10,color:C.muted,marginBottom:8}}>2 ou 3 couleurs, utilisées dans vos créatives</div>
                     <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                       {[1,2,3].map(n => {
                         const key = `couleur${n}`;
@@ -2536,7 +2536,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             <div style={{display:'flex',flexDirection:'column',gap:0,borderRadius:10,border:`1px solid ${C.border}`,overflow:'hidden'}}>
               {[
                 ['Produit', brief.produit?.nom],
-                ['Quantité', `${brief.quantite_demandee} visuels`],
+                ['Quantité', `${brief.quantite_demandee} créatives`],
                 ['Pays de vente', brief.produit?.pays_de_vente || '—'],
                 ['Date de la demande', brief.date_demande],
               ].map(([label, value], i) => (
@@ -2953,7 +2953,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     <div>
       <div style={{marginBottom:14}}>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Galerie Créatives</h1>
-        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Vos visuels produits · {filtered.length} créative{filtered.length!==1?'s':''}</p>
+        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Vos créatives produits · {filtered.length} créative{filtered.length!==1?'s':''}</p>
       </div>
 
       {/* ═══ Barre d'action STICKY — reste visible en scrollant, bascule selon le mode ═══
@@ -3252,7 +3252,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
           <div>
             <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos créatives apparaîtront ici</div>
             <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
-              Dès que votre agence aura produit vos visuels Meta Ads, vous les retrouverez ici — triés par angle, par semaine, prêts à télécharger et à publier.
+              Dès que votre agence aura produit vos créatives Meta Ads, vous les retrouverez ici — triées par angle, par semaine, prêtes à télécharger et à publier.
             </div>
           </div>
           <button onClick={() => setSection && setSection('tarifs')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
@@ -4511,15 +4511,15 @@ const triggerChariowCheckout = async (plan, cycle, user, popup) => {
 const FAQ_ITEMS = [
   {
     q: "Qu'est-ce qu'AdBoard exactement ?",
-    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit chaque semaine vos visuels publicitaires (vidéos et images Meta Ads), une analyse de votre marché cible, et des textes publicitaires prêts à l'emploi — livrés directement sur votre tableau de bord."
+    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit chaque semaine vos créatives publicitaires (vidéos et images Meta Ads), une analyse de votre marché cible, et des textes publicitaires prêts à l'emploi — livrés directement sur votre tableau de bord."
   },
   {
     q: "Quelle est la différence entre les formules ?",
     a: "Starter (24 créatives par mois : 1 batch par semaine de 2 vidéos et 4 images, 1 produit par semaine), Pro (48 créatives par mois : 2 batchs par semaine, jusqu'à 2 produits par semaine), et Scale (96 créatives par mois : 4 batchs par semaine, jusqu'à 4 produits par semaine). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
   },
   {
-    q: "En combien de temps mes visuels sont-ils livrés ?",
-    a: "Comptez généralement jusqu'à 24h après votre demande. Vous êtes notifié dès que vos visuels sont prêts, directement dans l'onglet Notifications."
+    q: "En combien de temps mes créatives sont-elles livrées ?",
+    a: "Comptez généralement jusqu'à 24h après votre demande. Vous êtes notifié dès que vos créatives sont prêtes, directement dans l'onglet Notifications."
   },
   {
     q: "Comment fonctionne l'analyse de marché ?",
@@ -4534,7 +4534,7 @@ const FAQ_ITEMS = [
     a: "Le paiement est traité de façon sécurisée par notre partenaire Chariow. Nous ne stockons jamais vos informations bancaires directement."
   },
   {
-    q: "Que faire si un visuel ne me convient pas ?",
+    q: "Que faire si une créative ne me convient pas ?",
     a: "Contactez-nous directement — nous ajustons en fonction de vos retours pour que vos prochains lots correspondent mieux à vos attentes."
   },
   {
@@ -4542,12 +4542,12 @@ const FAQ_ITEMS = [
     a: "Oui. Vos informations sont hébergées de façon sécurisée et ne sont jamais revendues à des tiers à des fins publicitaires. Le détail complet est disponible dans notre Politique de confidentialité ci-dessous."
   },
   {
-    q: "Pourquoi ma demande d'images est-elle parfois refusée ?",
-    a: "Pour garantir que tout le monde soit livré dans les temps, la production est plafonnée à 36 images en cours simultanément sur une fenêtre glissante de 24h, tous produits confondus. Si vous atteignez cette limite, on vous indique l'heure exacte à laquelle vous pourrez réessayer — ou vous pouvez annuler une demande en cours pour libérer de la place immédiatement."
+    q: "Pourquoi ma demande est-elle parfois refusée ?",
+    a: "Pour garantir que tout le monde soit livré dans les temps, la production est plafonnée à 36 créatives en cours simultanément sur une fenêtre glissante de 24h, tous produits confondus. Si vous atteignez cette limite, on vous indique l'heure exacte à laquelle vous pourrez réessayer — ou vous pouvez annuler une demande en cours pour libérer de la place immédiatement."
   },
   {
     q: "Puis-je annuler une demande en cours ?",
-    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les images correspondantes redeviennent immédiatement disponibles."
+    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les créatives correspondantes redeviennent immédiatement disponibles."
   },
   {
     q: "Qui est Ava, l'assistante dans le coin de l'écran ?",
@@ -5217,7 +5217,7 @@ export default function Platform() {
     if (!brief) return null;
     setAllBriefs(prev => [...prev, brief]);
     setBriefs(prev => ({...prev, [product.id]: brief}));
-    notify(`Demande de ${qty} visuels envoyée — livraison sous 24h`, 'brief');
+    notify(`Demande de ${qty} créatives envoyée — livraison sous 24h`, 'brief');
 
     const pastBriefs = allBriefs.filter(b => b.product_id === product.id && briefCompteCredits(b));
     const webhookPayload = {
@@ -5471,7 +5471,7 @@ export default function Platform() {
           let dejaNotifie = false;
           try { dejaNotifie = !!sessionStorage.getItem('adstack_expired_notified_session'); } catch(e) {}
           if (!dejaNotifie) {
-            notify(`Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos visuels chaque semaine.`, 'warning');
+            notify(`Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos créatives chaque semaine.`, 'warning');
             try { sessionStorage.setItem('adstack_expired_notified_session', '1'); } catch(e) {}
           }
         }
@@ -5862,7 +5862,7 @@ const views = {
           <Icon name="bell" size={17} color="#5B8DEF"/>
         </div>
         <div style={{flex:1,fontSize:12,color:'#E8EAF0',lineHeight:1.5}}>
-          Ajoute AdBoard à ton écran d'accueil pour recevoir tes notifications (visuels prêts, suivi de commande...).
+          Ajoute AdBoard à ton écran d'accueil pour recevoir tes notifications (créatives prêtes, suivi de commande...).
           {!canAutoInstall && (
             <div style={{marginTop:4,color:'#8891A0',fontSize:11}}>
               Appuie sur <strong>Partager</strong> <span style={{fontSize:13}}>⎋</span> puis <strong>"Sur l'écran d'accueil"</strong>.
@@ -5886,7 +5886,7 @@ const views = {
           <Icon name="bell" size={17} color="#5B8DEF"/>
         </div>
         <div style={{flex:1,fontSize:12,color:'#E8EAF0',lineHeight:1.5}}>
-          Sois prévenu dès que tes visuels sont prêts, sans avoir à revenir vérifier.
+          Sois prévenu dès que tes créatives sont prêtes, sans avoir à revenir vérifier.
         </div>
         <button onClick={activerNotifications} style={{padding:'8px 14px',borderRadius:8,border:'none',background:'#5B8DEF',color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
           Activer
@@ -5919,7 +5919,7 @@ const views = {
           <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:0}}>
             {reAskConfirm.canCancel
               ? 'Vous avez déjà une commande en cours pour ce produit. Voulez-vous en ajouter une supplémentaire ?'
-              : 'Vos visuels pour ce produit sont déjà en production. Voulez-vous commander un batch supplémentaire ?'}
+              : 'Vos créatives pour ce produit sont déjà en production. Voulez-vous commander un batch supplémentaire ?'}
           </p>
           <div style={{display:'flex',gap:8,marginTop:18}}>
             <button onClick={()=>setReAskConfirm(null)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
@@ -5937,7 +5937,7 @@ const views = {
           </div>
           <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Capacité de production atteinte</h2>
           <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:'0 0 16px'}}>
-            Vous avez déjà <b style={{color:C.text}}>{plafondModal.totalActuel} visuels</b> en cours de production sur les dernières 24h — la limite est de {PLAFOND_PRODUCTION_24H} à la fois, pour garantir que tout soit livré dans les temps. Cette nouvelle demande de {plafondModal.qty} visuels devra attendre, à moins d'annuler une commande en cours.
+            Vous avez déjà <b style={{color:C.text}}>{plafondModal.totalActuel} créatives</b> en cours de production sur les dernières 24h — la limite est de {PLAFOND_PRODUCTION_24H} à la fois, pour garantir que tout soit livré dans les temps. Cette nouvelle demande de {plafondModal.qty} créatives devra attendre, à moins d'annuler une commande en cours.
           </p>
 
           {plafondModal.prochaineDateLibre && (
@@ -5957,7 +5957,7 @@ const views = {
                   <div key={b.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 12px',borderRadius:9,background:C.sidebar,border:`1px solid ${C.border}`}}>
                     <div style={{minWidth:0}}>
                       <div style={{fontSize:12,fontWeight:600,color:C.text,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{products.find(p => p.id === b.product_id)?.nom || 'Produit'}</div>
-                      <div style={{fontSize:10.5,color:C.muted}}>{b.credits_used || b.quantity} visuels · demandé {new Date(b.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à {new Date(b.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                      <div style={{fontSize:10.5,color:C.muted}}>{b.credits_used || b.quantity} créatives · demandé {new Date(b.created_at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à {new Date(b.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                     </div>
                     <button
                       disabled={plafondActionEnCoursRef.current}
