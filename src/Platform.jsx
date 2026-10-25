@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.1-fiche-auto
+// ADBOARD_VERSION v7.2-documents
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -765,7 +765,7 @@ const MarchesField = ({ form, setForm, errors, C }) => {
 
 // ── Document sur le produit (facultatif) ────────────────────────────────────────
 const DOC_MAX_OCTETS = 10 * 1024 * 1024;
-const DOC_EXTENSIONS = '.pdf,.md,.txt,.doc,.docx,.csv,.xlsx,.xls,.ppt,.pptx';
+const DOC_EXTENSIONS = '.pdf,.md,.txt,.csv,.docx,.xlsx,.pptx';
 const tailleLisible = (o) => o > 1048576 ? `${(o/1048576).toFixed(1)} Mo` : `${Math.max(1, Math.round(o/1024))} Ko`;
 
 const DocumentsField = ({ form, setForm, C }) => {

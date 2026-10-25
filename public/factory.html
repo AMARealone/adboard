@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.1-fiche-auto -->
+<!-- FACTORY_VERSION v7.2-faits-client -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -2330,6 +2330,12 @@ function prodv2BriefTextOnly() {
   for (const k in b) {
     if (k === 'photo_produit' || k === 'logo') {
       clean[k] = (b[k] && b[k].mime) ? `[IMAGE FOURNIE EN PIÈCE JOINTE — ${b[k].mime}]` : '[IMAGE FOURNIE EN PIÈCE JOINTE]';
+    } else if (k === 'documents') {
+      clean[k] = (b[k] || []).map(d => d.name || 'document');   // le texte intégral est ajouté par le serveur
+    } else if (k === 'galerie_images' || k === 'packaging_images' || k === 'avis_captures') {
+      clean[k] = Array.isArray(b[k]) ? (b[k].length + ' image(s) fournie(s)') : b[k];
+    } else if (k === 'logo_url') {
+      clean[k] = b[k] ? '[LOGO FOURNI EN PIÈCE JOINTE]' : '';
     } else {
       clean[k] = b[k];
     }
@@ -2842,6 +2848,35 @@ async function prodv2Launch() {
     if(prodv2State.logoB64) {
       analysteParts.push({ type:'image', source:{ type:'base64', media_type: prodv2State.logoMime, data: prodv2State.logoB64 } });
     }
+    // v7.2 — logo, emballage et autres angles du produit : chargés ici pour que l'Analyste les REGARDE
+    // (description précise du logo en S11, vérification du packaging). Jamais bloquant : un échec = on continue sans.
+    try {
+      const _b = prodv2State.brief || {};
+      const _charger = async (url) => {
+        try {
+          const r = await fetch(url); if (!r.ok) return null;
+          const blob = await r.blob();
+          const dataUrl = await new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = ko; fr.readAsDataURL(blob); });
+          const m = String(dataUrl).match(/^data:(image\/[a-z+]+);base64,(.+)$/);
+          if (!m) return null;
+          let mime = m[1], data = m[2];
+          if (!/png|jpeg|webp/.test(mime)) return null;
+          if (mime !== 'image/png') { try { const c = await Promise.race([compressImg(data, mime), new Promise(r => setTimeout(() => r(null), 8000))]); if (c) { data = c; mime = 'image/jpeg'; } } catch(e) {} }
+          return { mime, data };
+        } catch(e) { return null; }
+      };
+      if (!prodv2State.logoB64 && _b.logo_url) {
+        const lg = await _charger(_b.logo_url);
+        if (lg) { analysteParts.push({ type:'text', text:'IMAGE SUIVANTE = LOGO DU CLIENT (à décrire avec une précision maximale dans S11 — FICHE LOGO) :' }); analysteParts.push({ type:'image', source:{ type:'base64', media_type: lg.mime, data: lg.data } }); }
+      }
+      const _sup = [];
+      (_b.packaging_images || []).slice(0, 3).forEach(u => _sup.push(['PACKAGING / EMBALLAGE', u]));
+      (_b.galerie_images || []).slice(0, 3).forEach(u => _sup.push(['AUTRE ANGLE DU PRODUIT', u]));
+      for (const [lib, u] of _sup) {
+        const im = await _charger(u);
+        if (im) { analysteParts.push({ type:'text', text:'IMAGE SUIVANTE = ' + lib + ' (même produit que la photo principale ; sert à comprendre le mécanisme, le format, l\'étiquette et la composition) :' }); analysteParts.push({ type:'image', source:{ type:'base64', media_type: im.mime, data: im.data } }); }
+      }
+    } catch(e) { console.warn('[Analyste] images supplémentaires ignorées :', e.message); }
     const rawResponse = await apiAnalysteSynthese(analysteSystem, analysteParts, 32000, prodv2State.brief, prodAbortController.signal);
     const { synthesisText, marche } = prodv2SplitSynthesisAndMarche(rawResponse);
     prodv2State.synthesis = synthesisText;
@@ -3854,6 +3889,11 @@ COMP_FILES['COMPETENCE_COPYWRITER_PROD.md'] = `Tu es l'agent COPYWRITER — Mode
 Ton seul output : pour CHACUN des angles marketing présents dans la synthèse, produire 5 hooks (variantes de titres) + 1 description (corps du post Meta Ads, structure AIDA). Le nombre d'ad copies à produire N'EST PAS FIXÉ À 3 — il suit exactement le nombre d'angles réellement présents dans le S2 de la synthèse reçue. Une synthèse avec 3 angles → 3 ad copies. Une synthèse avec 6 angles (plusieurs batches cumulés) → 6 ad copies. Compte les angles présents avant d'écrire quoi que ce soit, et ne t'arrête jamais avant d'avoir traité chacun.
 
 Tu reçois UNIQUEMENT la Synthèse S0→S8 complète. Pas d'image, pas de brief séparé. Tout ce dont tu as besoin est dans la synthèse.
+La synthèse se termine par une section S11 (FAITS CLIENT) : ce que le client a lui-même fourni. Tu t'en sers ainsi :
+→ S11-A (offre, garantie, livraison, paiement) : vérité du client. Tu peux t'appuyer dessus dans la description et dans l'appel à l'action, sous réserve des règles de niveau de conscience déjà en vigueur. Tu n'ajoutes jamais une garantie, une offre ou une condition de livraison qui n'y figure pas.
+→ S11-B (document du client) : source fiable sur le produit (composition, mode d'emploi, certifications, histoire de la marque). Tout chiffre que tu utilises doit y figurer, converti selon tes règles habituelles.
+→ S11-C (avis fournis par la marque) : ce sont de vrais avis, utilisables comme preuve ou comme matière de ton, jamais réécrits en faux avis, jamais cités sans la mention de leur nature quand le format le demande. Tu n'en fabriques jamais d'autres.
+→ S11-D (fiche logo) : ne te concerne pas, tu l'ignores.
 
 ⚠️ RAPPEL DE CADRE — CE QUE CE TEXTE DOIT FAIRE RESSENTIR : pour mériter le clic, cet ad copy doit fonctionner comme une offre implicite — même sans jamais afficher de prix avant le bloc Action. Le persona doit sentir que le résultat qu'il veut est atteignable ici, avec peu d'effort perçu, rapidement, et de façon crédible. Ce n'est pas une checklist séparée : c'est le test de fond derrière chaque bloc que tu écris.
 
@@ -4887,6 +4927,35 @@ En 1-2 phrases, décris le fil de marque que quelqu'un exposé à l'ENSEMBLE de 
 ⚠️ Cette section est un REPÈRE DE COHÉRENCE pour Creative Image et Copywriter, pas une contrainte supplémentaire sur le contenu de chaque angle. Les 3 angles de S2 restent construits indépendamment selon leur propre moteur (voir ÉTAPE 3) — ne force JAMAIS un angle à "coller" artificiellement à cette phrase après coup. Le fil de marque doit émerger naturellement des 3 angles déjà choisis, pas l'inverse. Si les 3 angles ne partagent naturellement aucun fil reconnaissable, écris [FIL DE MARQUE FAIBLE — angles trop dispersés thématiquement] plutôt que d'inventer une phrase artificielle a posteriori — c'est un signal utile, pas une case à remplir à tout prix.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÉTAPE 9ter — S11 : FAITS CLIENT & FICHE LOGO (À ÉCRIRE APRÈS S9, AVANT LE BLOC DONNÉES MARCHÉ)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cette section rassemble, en un seul endroit relu par TOUS les agents suivants (Creative Image, Copywriter, Creative Vidéo), ce que le CLIENT a lui-même fourni. Elle ne contient AUCUNE recherche externe : uniquement le brief, les documents du client, la page produit et les images jointes. Un fait absent de ces sources s'écrit "non fourni" — jamais déduit, jamais inventé.
+
+Écris S11 avec exactement ces rubriques, dans cet ordre :
+
+A. FAITS CLIENT (vérité du client, prioritaire sur toute donnée externe en cas de contradiction)
+→ Nom exact du produit, marque (ou [AUCUNE MARQUE FOURNIE]), offre en cours, prix, garantie, livraison et paiement : recopiés tels que le client les a donnés. Le client écrit parfois ces infos de façon imprécise : reformule-les nettement, sans rien ajouter ni retirer.
+→ Si "cible_suggeree" existe dans le brief : rappelle qu'elle n'est qu'un indice automatique et que la cible de S1 est celle que tu as construite.
+
+B. DOCUMENT(S) DU CLIENT
+→ Si des documents sont fournis (bloc DOCUMENTS FOURNIS PAR LE CLIENT) : lis-les en entier, ce sont ta source la plus fiable sur le produit lui-même. Extrais-en tout ce qui est utile à la vente et à l'image : composition, dosage, mode d'emploi, certifications, résultats annoncés, histoire de la marque, lien entre la marque et le produit, spécificités qui le distinguent, conditions d'offre. Chaque fait est recopié fidèlement (chiffres inclus) avec la mention "(document client)". N'ajoute rien qui n'y figure pas. Un document marqué NON LU se signale tel quel : "document non lu, rien n'en est déduit".
+→ Si aucun document : écris "aucun document fourni".
+
+C. AVIS CLIENTS FOURNIS PAR LA MARQUE
+→ Recopie mot pour mot chaque avis du champ avis_textes (maximum 5, les plus concrets), avec la mention "(avis fourni par la marque)". Ces avis sont choisis par la marque : ils servent de PREUVE, jamais de donnée de marché (S5 reste nourri par les verbatims externes). N'invente, ne reformule et ne combine jamais un avis.
+→ Indique le nombre de captures d'avis fournies (champ avis_captures_nb). Tu ne les vois pas : ne décris pas leur contenu.
+
+D. FICHE LOGO
+→ Si une image LOGO DU CLIENT t'a été fournie : décris-la avec une précision maximale, pour qu'un agent qui NE VERRA PAS l'image puisse la reproduire fidèlement. Ordre obligatoire : (1) type : mot seul / icône + mot / emblème / monogramme ; (2) texte exact lettre par lettre, avec majuscules et accents ; (3) typographie : famille la plus proche (sans empattement géométrique, serif, script, manuscrite...), graisse, casse, espacement des lettres, particularités des lettres ; (4) icône ou symbole : forme précise, nombre d'éléments, orientation, position par rapport au texte ; (5) couleurs : code hexadécimal approché de CHAQUE couleur, et où elle s'applique ; (6) composition : horizontale ou verticale, proportion largeur/hauteur approximative, espaces ; (7) fond sur lequel il est prévu (transparent, clair, foncé) et version lisible sur fond sombre ; (8) ce qui ne doit JAMAIS être modifié (couleurs, proportions, texte).
+→ Si aucun logo n'a été fourni : écris exactement "[AUCUN LOGO FOURNI]".
+→ Le logo n'est destiné qu'aux créatives dont le modèle (CT) comporte une zone logo : S11 ne demande à personne d'en ajouter ailleurs.
+
+E. COULEURS DE MARQUE
+→ Si le brief porte des couleurs, elles priment pour la palette de S0 : cite-les ici avec leurs codes. Sinon : "non fournies".
+
+Cohérence : S11 ne contredit jamais S0 à S9. Si un fait client contredit une donnée externe, le fait client l'emporte et tu le signales en une ligne.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 10 — DONNÉES MARCHÉ (LIVRABLE CLIENT, DANS CETTE MÊME RÉPONSE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Une fois S0 à S8 terminés, tu produis ICI, dans cette même réponse, un second bloc destiné cette fois au CLIENT (pas aux autres agents) : les données marché. Ce n'est pas un second appel, pas un second agent — c'est la suite immédiate de ton travail, sur les MÊMES données que tu viens d'analyser.
@@ -5022,6 +5091,7 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Section S2/S5/S7 où les 3 entrées sont en fait des reformulations d'une seule idée
 ❌ S8 absent ou réduit à une phrase vague sans avoir vraiment cherché dans DONNÉES BRUTES et dans le S4 pricing map
 ❌ Ligne "===DONNEES_MARCHE===" absente, mal orthographiée, ou du texte présent après le JSON qui la suit
+❌ S11 absente, ou ses rubriques A à E incomplètes, ou un fait/avis/chiffre de S11 qui ne figure ni dans le brief, ni dans les documents du client, ni sur la page produit, ni sur les images jointes (S11 ne contient aucune donnée externe et rien d'inventé)
 ❌ Le JSON données marché contredit S0-S8 sur un point quelconque : nom de cible différent, angle absent ou renommé, chiffre de prix/marché/concurrence différent
 ❌ Le nombre d'angles dans le JSON données marché ne correspond pas exactement au nombre d'angles dans S2
 ❌ "concurrents_directs" ou "concurrents_indirects" contient un nom inventé, non trouvé dans DONNÉES BRUTES
@@ -5452,10 +5522,25 @@ Si IMAGE 2 montre une zone logo → remplace le logo par le nom de marque en TEX
 
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RÈGLE V5 — FICHE LOGO (SECTION S11-D DE LA SYNTHÈSE) : PRIORITAIRE SUR V4 QUAND ELLE EXISTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tu ne reçois jamais l'image du logo. L'Analyste l'a vue et l'a décrite en S11, rubrique D (FICHE LOGO). Cette rubrique remplace la règle V4 "nom en texte simple" UNIQUEMENT si les deux conditions suivantes sont réunies :
+→ IMAGE 2 (le CT) possède une zone logo ou marque (bandeau, coin, signature). Si le CT n'a aucune zone de ce genre : tu ignores totalement la FICHE LOGO, rien n'est ajouté, exactement comme avant.
+→ S11-D contient une vraie fiche (pas "[AUCUN LOGO FOURNI]").
+
+Quand les deux conditions sont réunies : dans la zone logo du CT, à la même position et à la même échelle, tu fais reproduire le logo du client en recopiant sa fiche mot pour mot dans le prompt de l'image : texte exact, typographie décrite, couleurs avec leurs codes, forme de l'icône, composition. Le logo doit rester lisible, net, sans déformation, et ses couleurs ne sont jamais "harmonisées" avec la palette de la créative. Tu n'inventes aucun détail absent de la fiche. Si la fiche décrit une icône trop complexe pour être reproduite fidèlement en texte, tu reproduis uniquement le mot (texte exact + typographie + couleurs) et tu n'ajoutes pas d'icône approximative.
+Dans ce cas, la Condition 2 de V4 (brief.marque vide) ne bloque pas : le texte du logo décrit en S11-D fait foi pour le nom affiché.
+
+Faits à ne jamais contredire sur la créative : prix, offre, garantie, livraison tels qu'écrits en S11-A. Une créative n'affiche une garantie ou une offre que si le CT a une zone pour cela ET que S11-A la fournit.
+
+Les captures d'avis du client ne sont JAMAIS utilisées dans une créative image.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ADAPTATION — CONSERVER LA STRUCTURE, REMPLACER LE CONTENU
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-(Rappel : RÈGLE #0quater s'applique à toutes les branches ci-dessous — IMAGE 2 est toujours intégrée. RÈGLE V4 — NOM DE MARQUE EN TEXTE s'applique également : pas d'image logo, le nom de marque est intégré en TEXTE.)
+(Rappel : RÈGLE #0quater s'applique à toutes les branches ci-dessous — IMAGE 2 est toujours intégrée. RÈGLE V4 — NOM DE MARQUE EN TEXTE s'applique également : pas d'image logo, le nom de marque est intégré en TEXTE. Exception : la RÈGLE V5 — FICHE LOGO (S11-D) prime sur V4 quand elle existe ET que IMAGE 2 a une zone logo.)
 
 | Élément CT | Source |
 |---|---|
@@ -5793,6 +5878,7 @@ GATE FINAL (silencieux — si un point échoue, réécris tout)
 ⚠️ ERREUR RÉELLE DÉJÀ OBSERVÉE À NE JAMAIS REPRODUIRE : écrire dans une zone "Le nom de la marque 'la marque' est écrit en texte..." ou "→ Nom de marque : Le nom 'la marque' est intégré en TEXTE en bas au centre" — ici "la marque" a été traité comme si c'était un vrai nom propre à afficher sur la créative, alors que c'est un terme générique qui n'existe dans aucun brief réel. Si tu t'apprêtes à écrire les mots "la marque" (ou "le vendeur", "la boutique") ENTRE GUILLEMETS comme texte à afficher sur l'image — ARRÊTE-TOI : c'est le signal exact de cette erreur. Soit brief.marque contient un vrai nom (utilise-le), soit il est vide (n'écris aucune zone marque du tout, pas même avec un mot générique à sa place).
 □ ⛔ MARQUE VENDEUR ≠ MARQUE PRODUIT — CAUSE PROFONDE 2 : le produit est décrit dans chaque zone par "(IMAGE 1 — fidélité absolue, même étiquette, même couleurs, même texte visible sur le packaging)" et JAMAIS par "(le flacon [nom quelconque])", que ce nom soit réel ou générique ?
 □ Produit (IMAGE 1) intégré de manière fidèle au packaging et au mode d'intégration du CT (IMAGE 2 ignoré pour son produit, gardé pour sa structure) ?
+□ RÈGLE V5 : si IMAGE 2 a une zone logo ET que S11-D contient une vraie fiche logo, le logo est reproduit d'après la fiche (texte, typographie, couleurs avec codes, composition) dans CETTE zone, à la même échelle ? Si IMAGE 2 n'a pas de zone logo, la fiche est totalement ignorée et rien n'est ajouté ?
 □ Si brief.marque contient un vrai nom (pas [AUCUNE MARQUE FOURNIE]) ET qu'IMAGE 2 a une zone marque : ce nom apparaît en TEXTE dans cette zone, aucun logo image (IMAGE 3) référencé ? Si brief.marque est vide/absent, AUCUN nom de marque n'apparaît nulle part, même si IMAGE 2 a une zone marque disponible ?
 □ ⛔ ORDRE DE LECTURE RÉEL : j'ai identifié l'ordre dans lequel un œil rencontre réellement les zones de CE CT (pas supposé un schéma haut-bas générique), et les 4 temps psychologiques (hook/preuve/pic émotionnel/CTA) suivent CET ordre observé, pas un ordre par défaut ?
 □ TYPE CT (dans le bloc META) décrit la vraie structure d'IMAGE 2 — pas un format substitué ?
@@ -6762,6 +6848,14 @@ async function prodv2LoadBriefFromCommande(b) {
     avis_textes: Array.isArray(b.product.avis_textes) ? b.product.avis_textes : [],
     logo_url: b.product.logo_url || '',
     notes: b.product.notes || '',
+    // v7.2 : documents écrits du client (lus en entier côté serveur au moment de l'analyse), photos supplémentaires
+    // (emballage, autres angles) et nombre de captures d'avis. Seul l'Analyste reçoit tout cela ; les autres agents
+    // en profitent via la section S11 de la synthèse.
+    documents: Array.isArray(b.product.documents) ? b.product.documents.filter(d => d && d.url).slice(0, 5) : [],
+    galerie_images: Array.isArray(b.product.galerie_images) ? b.product.galerie_images.slice(0, 8) : [],
+    packaging_images: Array.isArray(b.product.packaging_images) ? b.product.packaging_images.slice(0, 4) : [],
+    avis_captures_nb: Array.isArray(b.product.avis_captures) ? b.product.avis_captures.length : 0,
+    avis_captures: Array.isArray(b.product.avis_captures) ? b.product.avis_captures.slice(0, 8) : [],
     utilite: b.product.utilite || '',
     couleurs: b.product.couleurs || [],
     quantite: b.quantity || 6,
