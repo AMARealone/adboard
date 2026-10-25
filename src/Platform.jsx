@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
+// ADBOARD_VERSION v7.0-page-produit
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -679,6 +680,8 @@ const EMPTY_PRODUCT = {
   nom:'', pricing:'', promo:'', lien:'', utilite:'', cible:'', pays:'', notes:'',
   couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, deliveries:[], marche:null,
   documents:[], documents_modifies:false,
+  galerie_images:[], packaging_images:[], avis_captures:[], avis_textes:[],
+  garantie:'', livraison_paiement:'',
 };
 
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
@@ -819,8 +822,27 @@ const DocumentsField = ({ form, setForm, C }) => {
 };
 
 
+// Passage ligne Supabase -> produit AdBoard (et inversement). Les nouvelles infos (emballage, avis, garanties)
+// vivent dans UNE colonne jsonb `perso` ; logo et notes ont leur colonne. Rien d'autre à migrer.
+const depuisLigneProduit = (p) => {
+  const perso = (p && p.perso && typeof p.perso === 'object') ? p.perso : {};
+  return {
+    ...p,
+    photo: p.photo_url,
+    logo: p.logo_url || null,
+    notes: p.notes || '',
+    galerie_images: Array.isArray(p.galerie_images) ? p.galerie_images : [],
+    packaging_images: Array.isArray(perso.packaging_images) ? perso.packaging_images : [],
+    avis_captures: Array.isArray(perso.avis_captures) ? perso.avis_captures : [],
+    avis_textes: Array.isArray(perso.avis_textes) ? perso.avis_textes : [],
+    garantie: perso.garantie || '',
+    livraison_paiement: perso.livraison_paiement || '',
+  };
+};
+
 // ── Supabase Products API ──────────────────────────────────────────────────
 const sbProducts = {
+  lastWarnings: [],
   async load(session) {
     if (!session?.access_token) return [];
     const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=created_at.asc`, {
@@ -828,7 +850,7 @@ const sbProducts = {
     });
     if (!r.ok) return [];
     const rows = await r.json();
-    return rows.map(p => ({ ...p, photo: p.photo_url }));
+    return rows.map(depuisLigneProduit);
   },
   async uploadPhoto(session, base64DataUrl) {
     if (!base64DataUrl || !base64DataUrl.startsWith('data:')) {
@@ -840,7 +862,7 @@ const sbProducts = {
       const blob = await fetch(base64DataUrl).then(r => r.blob());
       console.log(`[Photo] Blob: ${blob.type}, ${(blob.size/1024).toFixed(1)}KB`);
       const ext = blob.type.split('/')[1] || 'jpg';
-      const filename = `${Date.now()}.${ext}`;
+      const filename = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const url = `${SUPABASE_URL}/storage/v1/object/product-photos/${filename}`;
       console.log('[Photo] Upload vers:', url);
       const r = await fetch(url, {
@@ -879,84 +901,91 @@ const sbProducts = {
       return `${SUPABASE_URL}/storage/v1/object/public/product-photos/${chemin}`;
     } catch(e) { console.error('[Document] Erreur:', e); return null; }
   },
+  // Prépare le contenu à écrire : toute image encore en base64 est envoyée au stockage (jamais de gros base64
+  // dans la base : risque de timeout). Retourne l'URL de la photo principale + les champs prêts à écrire.
+  async preparerCorps(session, product) {
+    sbProducts.lastWarnings = [];
+    const cache = {};
+    const perdu = () => { if (!sbProducts.lastWarnings.includes('images')) sbProducts.lastWarnings.push('images'); };
+    const up = async (d) => {
+      if (!d || typeof d !== 'string' || !d.startsWith('data:')) return d || null;
+      if (!(d in cache)) cache[d] = await sbProducts.uploadPhoto(session, d);
+      if (!cache[d]) perdu();
+      return cache[d] || null;
+    };
+    const liste = async (l) => { const out = []; for (const u of (l || [])) { const r = await up(u); if (r) out.push(r); } return out; };
+    const photoUrl = await up(product.photo);
+    const logoUrl = await up(product.logo);
+    const galerie = await liste(product.galerie_images);
+    const packaging = await liste(product.packaging_images);
+    const avis = await liste(product.avis_captures);
+    return {
+      photoUrl, logoUrl,
+      champs: {
+        nom: product.nom, pricing: product.pricing, promo: product.promo || '',
+        lien: product.lien || '', utilite: product.utilite || '', cible: product.cible || '',
+        pays: product.pays, couleur1: product.couleur1 || '', couleur2: product.couleur2 || '',
+        couleur3: product.couleur3 || '', photo_url: photoUrl,
+        galerie_images: galerie,
+        logo_url: logoUrl, notes: product.notes || '',
+        perso: {
+          packaging_images: packaging, avis_captures: avis, avis_textes: product.avis_textes || [],
+          garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '',
+        },
+      },
+      locaux: { logo: logoUrl, notes: product.notes || '', galerie_images: galerie, packaging_images: packaging, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '' },
+    };
+  },
+  // Écrit en base. Si une colonne récente n'existe pas encore (migration SQL non faite), retente sans elle plutôt que
+  // de perdre tout le produit — et le signale (lastWarnings contient 'colonnes') pour que l'écran prévienne.
+  async envoyerProduit(url, method, headers, body) {
+    const paliers = [[], ['logo_url', 'notes', 'perso'], ['logo_url', 'notes', 'perso', 'documents']];
+    let r = null, dernier = '';
+    for (let i = 0; i < paliers.length; i++) {
+      const b = { ...body }; paliers[i].forEach(k => { delete b[k]; });
+      const corps = JSON.stringify(b);
+      if (corps === dernier) continue;
+      dernier = corps;
+      r = await fetch(url, { method, headers, body: corps });
+      if (r.ok) { if (i > 0 && !sbProducts.lastWarnings.includes('colonnes')) sbProducts.lastWarnings.push('colonnes'); return r; }
+      if (![400, 404, 422].includes(r.status)) return r;
+    }
+    return r;
+  },
   async save(session, product) {
     if (!session?.access_token) { console.warn('[Save] Pas de session'); return null; }
     const user = sbAuth.getUser();
     const userId = user?.id;
     if (!userId) { console.warn('[Save] Pas de user_id'); return null; }
-
-    let photoUrl = product.photo || null;
-    console.log('[Save] Photo initiale:', photoUrl ? `base64 (${(photoUrl.length/1024).toFixed(0)}KB)` : 'null');
-    if (photoUrl && photoUrl.startsWith('data:')) {
-      photoUrl = await sbProducts.uploadPhoto(session, photoUrl);
-      console.log('[Save] Photo URL après upload:', photoUrl);
-    }
+    const prep = await sbProducts.preparerCorps(session, product);
     const body = {
       user_id: userId,
-      nom: product.nom, pricing: product.pricing, promo: product.promo||'',
-      lien: product.lien||'', utilite: product.utilite||'', cible: product.cible||'',
-      pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
-      couleur3: product.couleur3||'', photo_url: photoUrl,
-      galerie_images: product.galerie_images || [],
+      ...prep.champs,
       ...(product.documents?.length ? { documents: product.documents } : {}),
     };
-    console.log('[Save] Body envoyé à Supabase:', JSON.stringify({...body, photo_url: photoUrl ? '(url)' : null}));
-    let r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
-      method: 'POST',
-      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json', Prefer: 'return=representation' },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok && body.documents) {
-      // Colonne `documents` pas encore créée dans Supabase : on enregistre quand même le produit, sans les fichiers.
-      console.warn('[Save] colonne documents absente ? nouvel essai sans documents');
-      const { documents: _d, ...sansDocs } = body;
-      r = await fetch(`${SUPABASE_URL}/rest/v1/products`, {
-        method: 'POST',
-        headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json', Prefer: 'return=representation' },
-        body: JSON.stringify(sansDocs)
-      });
-    }
-    if (!r.ok) {
-      const err = await r.text();
+    const r = await sbProducts.envoyerProduit(`${SUPABASE_URL}/rest/v1/products`, 'POST',
+      { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }, body);
+    if (!r || !r.ok) {
+      const err = r ? await r.text() : 'pas de réponse';
       console.error('sbProducts.save error:', err);
       return null;
     }
     const rows = await r.json();
-    return { ...rows[0], photo: rows[0].photo_url };
+    const out = depuisLigneProduit(rows[0]);
+    if (sbProducts.lastWarnings.includes('colonnes')) Object.assign(out, prep.locaux); // colonnes absentes : on garde au moins l'affichage local
+    return out;
   },
   async update(session, id, product) {
     if (!session?.access_token) return false;
-    let photoUrl = product.photo || null;
-    if (photoUrl && photoUrl.startsWith('data:')) {
-      photoUrl = await sbProducts.uploadPhoto(session, photoUrl);
-    }
+    const prep = await sbProducts.preparerCorps(session, product);
     const body = {
-      nom: product.nom, pricing: product.pricing, promo: product.promo||'',
-      lien: product.lien||'', utilite: product.utilite||'', cible: product.cible||'',
-      pays: product.pays, couleur1: product.couleur1||'', couleur2: product.couleur2||'',
-      couleur3: product.couleur3||'', photo_url: photoUrl,
-      galerie_images: product.galerie_images || [],
+      ...prep.champs,
       ...(product.documents_modifies ? { documents: product.documents || [] } : {}),
       updated_at: new Date().toISOString(),
     };
-    let r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
-      method: 'PATCH',
-      headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-    if (!r.ok && 'documents' in body) {
-      const { documents: _d, ...sansDocs } = body;
-      r = await fetch(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, {
-        method: 'PATCH',
-        headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json' },
-        body: JSON.stringify(sansDocs)
-      });
-    }
-    return r.ok;
+    const r = await sbProducts.envoyerProduit(`${SUPABASE_URL}/rest/v1/products?id=eq.${id}`, 'PATCH',
+      { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }, body);
+    return !!(r && r.ok);
   },
   // Retourne { ok, reason }. Prefer: return=representation permet de savoir si une ligne a VRAIMENT été
   // supprimée : sans lui, une politique RLS qui interdit le DELETE répond « OK » sans rien supprimer.
@@ -2130,6 +2159,631 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
   );
 };
 
+// ═══════════════════════════════════════════════════════════════════════════
+// PAGE PRODUIT — ajout / modification (remplace l'ancien pop-up)
+// v7.0 : page complète, brouillon enregistré automatiquement (rien ne saute si le client quitte,
+// change d'onglet, ferme le navigateur ou perd la connexion), images envoyées au stockage dès
+// l'import (jamais de gros base64 en base), sections guidées avec mini-descriptions.
+// ═══════════════════════════════════════════════════════════════════════════
+const BROUILLON_PREFIX = 'adstack_brouillon_produit_';
+const cleBrouillon = (userId, produitId) => `${BROUILLON_PREFIX}${userId || 'anon'}_${produitId || 'new'}`;
+const CHAMPS_FICHE = ['nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','packaging_images','avis_captures','avis_textes','documents'];
+// Empreinte du contenu utile de la fiche : sert à savoir si le client a vraiment saisi / modifié quelque chose
+// (pas de brouillon enregistré pour une page ouverte puis refermée sans toucher à rien).
+const signatureFiche = (f) => {
+  try {
+    return JSON.stringify(CHAMPS_FICHE.map(k => {
+      const v = f ? f[k] : null;
+      if (v === undefined || v === null || v === '') return null;
+      if (Array.isArray(v) && !v.length) return null;
+      return v;
+    }));
+  } catch(e) { return ''; }
+};
+const lireBrouillon = (key) => { try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch(e) { return null; } };
+const effacerBrouillon = (key) => { try { localStorage.removeItem(key); } catch(e) {} };
+// Écrit le brouillon ; si le stockage du navigateur est plein (images locales lourdes), retente sans les images locales
+// plutôt que de tout perdre. Retourne 'ok' | 'partiel' | 'echec'.
+const ecrireBrouillon = (key, data) => {
+  try { localStorage.setItem(key, JSON.stringify(data)); return 'ok'; }
+  catch(e) {
+    try {
+      const f = { ...data.form };
+      Object.keys(f).forEach(k => {
+        if (Array.isArray(f[k])) f[k] = f[k].filter(x => !(typeof x === 'string' && x.startsWith('data:')));
+        else if (typeof f[k] === 'string' && f[k].startsWith('data:')) f[k] = null;
+      });
+      localStorage.setItem(key, JSON.stringify({ ...data, form: f }));
+      return 'partiel';
+    } catch(e2) { return 'echec'; }
+  }
+};
+
+// Compression côté navigateur avant envoi. JPEG fond blanc pour les photos ; PNG pour le logo (transparence conservée).
+const compresserImage = (file, { max = 1000, type = 'image/jpeg', qualite = 0.85 } = {}) => new Promise((resolve) => {
+  const objUrl = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    try {
+      const scale = Math.min(1, max / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (type === 'image/jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); }
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL(type, qualite));
+    } catch(e) { resolve(null); }
+    URL.revokeObjectURL(objUrl);
+  };
+  img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(null); };
+  img.src = objUrl;
+});
+
+const LIMITES_IMAGES = { galerie_images: 8, packaging_images: 4, avis_captures: 8 };
+
+// Carte de section : numéro, titre, mini-description qui guide le client, contenu.
+const CartePage = ({ id, numero, titre, description, optionnel, children }) => (
+  <section id={id} style={{scrollMarginTop:84,borderRadius:16,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',padding:'20px 20px 22px'}}>
+    <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:18}}>
+      <div style={{width:26,height:26,borderRadius:8,background:C.accentS,color:C.accent,fontSize:12,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>{numero}</div>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+          <h2 style={{fontSize:15,fontWeight:800,color:C.text,margin:0}}>{titre}</h2>
+          {optionnel && <span style={{fontSize:9.5,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:'2px 8px'}}>facultatif</span>}
+        </div>
+        {description && <p style={{fontSize:12,color:C.sec,lineHeight:1.55,margin:'5px 0 0'}}>{description}</p>}
+      </div>
+    </div>
+    <div style={{display:'flex',flexDirection:'column',gap:20}}>{children}</div>
+  </section>
+);
+
+// Champ images (plusieurs fichiers) : miniatures toujours avec bouton retirer visible, envoi en cours affiché.
+const ImagesField = ({ titre, aide, liste, max, onAdd, onRemove, principale, onPick, enCours = 0, erreur, labelAjout = 'Ajouter', requis }) => {
+  const ref = useRef(null);
+  const plein = liste.length + enCours >= max;
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8,marginBottom:3}}>
+        <div style={{fontSize:12.5,fontWeight:700,color:C.text}}>{titre}{requis && <span style={{color:C.accent}}> *</span>}</div>
+        <div style={{fontSize:10.5,color:C.muted}}>{liste.length}/{max}</div>
+      </div>
+      {aide && <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>{aide}</div>}
+      <input ref={ref} type="file" accept="image/*" multiple style={{display:'none'}} onChange={e => { onAdd(e.target.files); e.target.value = ''; }}/>
+      <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
+        {liste.map((url, i) => {
+          const sel = principale && url === principale;
+          return (
+            <div key={i} onClick={onPick ? () => onPick(url) : undefined}
+              style={{position:'relative',width:88,height:88,flexShrink:0,borderRadius:13,border:`2px solid ${sel?C.accent:'rgba(255,255,255,0.08)'}`,background:`#0a0c11 url(${url}) center/cover no-repeat`,cursor:onPick?'pointer':'default',boxShadow:sel?'0 0 0 3px rgba(91,141,239,0.2)':'none'}}>
+              {sel && <div style={{position:'absolute',left:4,bottom:4,fontSize:9,fontWeight:800,color:'#fff',background:C.accent,borderRadius:5,padding:'2px 6px'}}>Principale</div>}
+              <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(i); }} title="Retirer cette image"
+                style={{position:'absolute',top:-8,right:-8,width:26,height:26,borderRadius:'50%',background:'#EF6B5B',border:'2px solid #0a0c11',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,boxShadow:'0 1px 5px rgba(0,0,0,0.5)'}}>
+                <Icon name="x" size={12} color="#fff"/>
+              </button>
+            </div>
+          );
+        })}
+        {Array.from({ length: enCours }).map((_, i) => (
+          <div key={'e'+i} style={{width:88,height:88,flexShrink:0,borderRadius:13,border:`1px dashed ${C.border}`,background:'rgba(255,255,255,0.03)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6}}>
+            <div style={{width:18,height:18,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>
+            <span style={{fontSize:9.5,color:C.muted}}>Envoi…</span>
+          </div>
+        ))}
+        {!plein && (
+          <button type="button" onClick={() => ref.current?.click()}
+            style={{width:88,height:88,flexShrink:0,borderRadius:13,border:`1.5px dashed ${erreur?C.accent:'rgba(255,255,255,0.22)'}`,background:'rgba(255,255,255,0.03)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',gap:5,fontFamily:'inherit'}}>
+            <Icon name="upload" size={18} color={C.sec}/>
+            <span style={{fontSize:10,fontWeight:700,color:C.sec}}>{labelAjout}</span>
+          </button>
+        )}
+      </div>
+      {erreur && <div style={{fontSize:11,color:'#EF6B5B',marginTop:8}}>{erreur}</div>}
+    </div>
+  );
+};
+
+const LogoField = ({ logo, onSet, onRemove, enCours }) => {
+  const ref = useRef(null);
+  return (
+    <div>
+      <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Logo de la marque</div>
+      <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Idéalement un fichier PNG à fond transparent. Si votre page produit affiche votre logo, nous essayons de le récupérer — vous pouvez le remplacer ici.</div>
+      <input ref={ref} type="file" accept="image/*" style={{display:'none'}} onChange={e => { onSet(e.target.files?.[0]); e.target.value = ''; }}/>
+      <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+        <div style={{width:88,height:88,borderRadius:13,border:`1px solid ${C.border}`,backgroundColor:'#e8eaef',backgroundImage:logo?`url(${logo})`:'none',backgroundSize:'contain',backgroundPosition:'center',backgroundRepeat:'no-repeat',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+          {!logo && !enCours && <Icon name="image" size={24} color="#9aa1ae"/>}
+          {enCours && <div style={{width:18,height:18,borderRadius:'50%',border:'2px solid #c5c9d3',borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>}
+        </div>
+        <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+          <button type="button" onClick={() => ref.current?.click()} style={{display:'inline-flex',alignItems:'center',gap:6,padding:'9px 13px',borderRadius:8,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:12,fontFamily:'inherit'}}>
+            <Icon name="upload" size={13} color={C.sec}/> {logo ? 'Remplacer' : 'Ajouter le logo'}
+          </button>
+          {logo && <button type="button" onClick={onRemove} style={{padding:'9px 13px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:12,fontFamily:'inherit'}}>Retirer</button>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
+  const editingId = produit?.id || null;
+  const draftKey = cleBrouillon(user?.id, editingId);
+
+  // Fiche de départ (produit existant, ou vierge) + brouillon éventuel plus récent.
+  const base = useMemo(() => {
+    const b = { ...EMPTY_PRODUCT, ...(produit || {}) };
+    const g = Array.isArray(b.galerie_images) ? b.galerie_images : [];
+    b.galerie_images = g.length ? g : (b.photo ? [b.photo] : []);
+    ['packaging_images','avis_captures','avis_textes'].forEach(k => { if (!Array.isArray(b[k])) b[k] = []; });
+    ['garantie','livraison_paiement','notes'].forEach(k => { if (typeof b[k] !== 'string') b[k] = b[k] || ''; });
+    return b;
+  }, []);
+  const baseSig = useMemo(() => signatureFiche(base), []);
+  const [init] = useState(() => {
+    const d = lireBrouillon(draftKey);
+    const plusRecent = d && d.form && (!produit?.updated_at || (d.savedAt || 0) > new Date(produit.updated_at).getTime());
+    if (plusRecent && signatureFiche(d.form) !== baseSig) return { form: { ...base, ...d.form }, repris: true, savedAt: d.savedAt || null };
+    return { form: base, repris: false, savedAt: null };
+  });
+
+  const [form, setForm] = useState(init.form);
+  const [repris, setRepris] = useState(init.repris);
+  const [savedAt, setSavedAt] = useState(init.savedAt);
+  const [errors, setErrors] = useState({});
+  const [envois, setEnvois] = useState({});
+  const [logoEnvoi, setLogoEnvoi] = useState(false);
+  const [msgImages, setMsgImages] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [erreurGlobale, setErreurGlobale] = useState('');
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [fetchingLien, setFetchingLien] = useState(false);
+  const [lienMessage, setLienMessage] = useState('');
+  const [avisProposes, setAvisProposes] = useState([]);
+  const lienFetchedRef = useRef(produit?.lien || '');
+  const dernierRef = useRef(form);
+  dernierRef.current = form;
+  const termineRef = useRef(false);
+
+  // ── Brouillon : écrit après chaque pause de frappe, et aussi quand la page se ferme / se cache / se démonte.
+  const sauverBrouillon = (silencieux) => {
+    if (termineRef.current) return;
+    const f = dernierRef.current;
+    if (signatureFiche(f) === baseSig) { effacerBrouillon(draftKey); return; }
+    const t = Date.now();
+    const res = ecrireBrouillon(draftKey, { form: f, savedAt: t });
+    if (!silencieux && res !== 'echec') setSavedAt(t);
+  };
+  useEffect(() => {
+    const t = setTimeout(() => sauverBrouillon(false), 500);
+    return () => clearTimeout(t);
+  }, [form]);
+  useEffect(() => {
+    const h = () => sauverBrouillon(true);
+    window.addEventListener('pagehide', h);
+    document.addEventListener('visibilitychange', h);
+    return () => {
+      window.removeEventListener('pagehide', h);
+      document.removeEventListener('visibilitychange', h);
+      sauverBrouillon(true); // sortie de la page (bouton retour, menu latéral...) : rien n'est perdu
+    };
+  }, []);
+
+  // ── Images : compressées puis envoyées au stockage tout de suite → le brouillon ne contient que des adresses.
+  const ajouterImages = async (fichiers, cible) => {
+    let liste = Array.from(fichiers || []);
+    if (!liste.length) return;
+    const place = LIMITES_IMAGES[cible] - (dernierRef.current[cible] || []).length - (envois[cible] || 0);
+    if (place <= 0) return;
+    if (liste.length > place) { liste = liste.slice(0, place); setMsgImages(`Maximum atteint : seules ${place} image${place>1?'s':''} ont été ajoutées.`); } else setMsgImages('');
+    setEnvois(e => ({ ...e, [cible]: (e[cible] || 0) + liste.length }));
+    const session = await sbAuth.refreshSession();
+    await Promise.all(liste.map(async (file) => {
+      try {
+        const data = await compresserImage(file, { max: cible === 'avis_captures' ? 1400 : 1000 });
+        if (!data) { setMsgImages('Une image n\'a pas pu être lue — essayez un autre fichier (JPG ou PNG).'); return; }
+        let url = data;
+        if (session) { const u = await sbProducts.uploadPhoto(session, data); if (u) url = u; }
+        setForm(f => {
+          const next = { ...f, [cible]: [...(f[cible] || []), url] };
+          if (cible === 'galerie_images' && !f.photo) next.photo = url;
+          return next;
+        });
+      } finally {
+        setEnvois(e => ({ ...e, [cible]: Math.max(0, (e[cible] || 1) - 1) }));
+      }
+    }));
+  };
+  const retirerImage = (cible, i) => setForm(f => {
+    const liste = (f[cible] || []).filter((_, j) => j !== i);
+    const next = { ...f, [cible]: liste };
+    if (cible === 'galerie_images' && f.photo === (f[cible] || [])[i]) next.photo = liste[0] || '';
+    return next;
+  });
+  const changerLogo = async (file) => {
+    if (!file) return;
+    setLogoEnvoi(true);
+    try {
+      const data = await compresserImage(file, { max: 600, type: 'image/png' });
+      if (!data) { setMsgImages('Le logo n\'a pas pu être lu — essayez un fichier PNG ou JPG.'); return; }
+      let url = data;
+      const session = await sbAuth.refreshSession();
+      if (session) { const u = await sbProducts.uploadPhoto(session, data); if (u) url = u; }
+      setForm(f => ({ ...f, logo: url }));
+    } finally { setLogoEnvoi(false); }
+  };
+
+  // ── Pré-remplissage depuis le lien (jamais écrasant : ne remplit que ce qui est vide).
+  const analyserLien = async () => {
+    const url = (form.lien || '').trim();
+    if (!url || !/^https?:\/\//.test(url)) { setLienMessage('invalide'); return; }
+    if (lienFetchedRef.current === url) return;
+    lienFetchedRef.current = url;
+    setFetchingLien(true); setLienMessage('');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 70000); // le serveur peut légitimement dépasser 40 s (page + réessais IA)
+    try {
+      const r = await fetch('https://adstack-server.onrender.com/fetch-product-info', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }), signal: controller.signal,
+      });
+      const j = await r.json();
+      const d = (j && j.data) || {};
+      setForm(f => {
+        const next = { ...f };
+        if (Array.isArray(j.images) && j.images.length) {
+          const deja = new Set(f.galerie_images || []);
+          const nouvelles = j.images.filter(u => typeof u === 'string' && !deja.has(u));
+          next.galerie_images = [...(f.galerie_images || []), ...nouvelles].slice(0, LIMITES_IMAGES.galerie_images);
+          next.photo = f.photo || next.galerie_images[0] || '';
+        }
+        if (j.ok && j.data) {
+          next.nom = f.nom || d.nom || f.nom;
+          next.pricing = f.pricing || d.prix || f.pricing;
+          next.pays = f.pays || d.pays || f.pays;
+          next.utilite = f.utilite || d.utilite || f.utilite;
+          next.promo = f.promo || d.promo || f.promo;
+          // Éléments repérés sur la page (si le serveur les renvoie) — toujours modifiables par le client.
+          if (!f.logo && typeof d.logo === 'string' && /^https?:\/\//.test(d.logo)) next.logo = d.logo;
+          if (!f.garantie && typeof d.garantie === 'string') next.garantie = d.garantie;
+          if (!f.livraison_paiement && typeof d.livraison_paiement === 'string') next.livraison_paiement = d.livraison_paiement;
+        }
+        return next;
+      });
+      if (Array.isArray(d.avis)) setAvisProposes(d.avis.filter(a => typeof a === 'string' && a.trim()).slice(0, 12));
+      setLienMessage(j.ok && j.data ? 'success' : 'manuel');
+    } catch(e) {
+      console.warn('[analyserLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 70s dépassé' : e.message);
+      setLienMessage('manuel');
+    } finally { clearTimeout(timeoutId); setFetchingLien(false); }
+  };
+
+  // ── Validation + enregistrement
+  const manques = () => {
+    const e = {};
+    ['nom','pricing','pays','photo'].forEach(k => { if (!form[k]) e[k] = true; });
+    const nbCouleurs = [form.couleur1, form.couleur2, form.couleur3].filter(Boolean).length;
+    if (nbCouleurs === 1) e.couleurs = true;
+    return e;
+  };
+  const enCoursEnvoi = Object.values(envois).some(n => n > 0) || logoEnvoi;
+  const enregistrer = async () => {
+    if (saving) return;
+    setErreurGlobale('');
+    const e = manques();
+    if (Object.keys(e).length) {
+      setErrors(e);
+      const cible = (e.photo && !e.nom && !e.pricing && !e.pays) ? 'pp-photos' : (e.couleurs && !e.nom && !e.pricing && !e.pays && !e.photo) ? 'pp-marque' : 'pp-essentiel';
+      document.getElementById(cible)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    if (enCoursEnvoi) { setErreurGlobale('Vos images sont encore en cours d\'envoi — quelques secondes et c\'est bon.'); return; }
+    setErrors({});
+    setSaving(true);
+    let res;
+    try { res = await onSubmit({ ...form }); } catch(err) { res = { ok: false, raison: 'serveur' }; }
+    setSaving(false);
+    if (res && res.ok) {
+      termineRef.current = true;
+      effacerBrouillon(draftKey);
+      onClose(true);
+    } else {
+      // Rien n'est perdu : tout ce qui a été saisi reste là (et dans le brouillon).
+      setErreurGlobale(res?.raison === 'session'
+        ? 'Votre session a expiré. Reconnectez-vous : tout ce que vous avez saisi est conservé.'
+        : 'L\'enregistrement n\'a pas abouti (connexion ?). Tout ce que vous avez saisi est conservé — réessayez dans un instant.');
+    }
+  };
+
+  const repartirDeZero = () => {
+    effacerBrouillon(draftKey);
+    termineRef.current = false;
+    setForm(base); setRepris(false); setSavedAt(null); setErrors({}); setConfirmReset(false);
+    lienFetchedRef.current = produit?.lien || ''; setLienMessage(''); setAvisProposes([]);
+  };
+
+  // ── Complétude
+  const items = [
+    { k:'photo', label:'Photo du produit', ok:!!form.photo, essentiel:true, cible:'pp-photos' },
+    { k:'nom', label:'Nom du produit', ok:!!form.nom, essentiel:true, cible:'pp-essentiel' },
+    { k:'pricing', label:'Offre actuelle', ok:!!form.pricing, essentiel:true, cible:'pp-essentiel' },
+    { k:'pays', label:'Marché cible', ok:!!form.pays, essentiel:true, cible:'pp-essentiel' },
+    { k:'lien', label:'Lien de la page produit', ok:!!form.lien, cible:'pp-lien' },
+    { k:'angles', label:'Plusieurs angles du produit', ok:(form.galerie_images||[]).length > 1, cible:'pp-photos' },
+    { k:'pack', label:'Photo de l\'emballage', ok:(form.packaging_images||[]).length > 0, cible:'pp-photos' },
+    { k:'garantie', label:'Garantie et livraison', ok:!!(form.garantie || form.livraison_paiement), cible:'pp-offre' },
+    { k:'cible', label:'Cible et usage', ok:!!(form.cible && form.utilite), cible:'pp-client' },
+    { k:'logo', label:'Logo', ok:!!form.logo, cible:'pp-marque' },
+    { k:'couleurs', label:'Couleurs de la marque', ok:!!(form.couleur1 && form.couleur2), cible:'pp-marque' },
+    { k:'avis', label:'Avis clients', ok:(form.avis_captures||[]).length > 0 || (form.avis_textes||[]).length > 0, cible:'pp-preuves' },
+  ];
+  const pct = Math.round((items.filter(i => i.ok).length / items.length) * 100);
+  const essentielsOk = items.filter(i => i.essentiel).every(i => i.ok);
+  const aller = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const heureBrouillon = savedAt ? new Date(savedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : null;
+  const dateBrouillon = savedAt ? new Date(savedAt).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+  const boutonLabel = saving ? 'Enregistrement…' : (editingId ? 'Enregistrer les modifications' : 'Créer le produit');
+  const BoutonPrincipal = ({ pleineLargeur }) => (
+    <button type="button" onClick={enregistrer} disabled={saving}
+      style={{width:pleineLargeur?'100%':'auto',padding:pleineLargeur?'14px':'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13,cursor:saving?'default':'pointer',opacity:saving?0.7:1,fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 4px 16px rgba(45,127,249,0.3)',whiteSpace:'nowrap'}}>
+      <Icon name="check" size={14} color="#fff"/> {boutonLabel}
+    </button>
+  );
+
+  const nomsManquants = [errors.photo&&'la photo',errors.nom&&'le nom',errors.pricing&&'l\'offre actuelle',errors.pays&&'le marché cible',errors.couleurs&&'2-3 couleurs (ou aucune)'].filter(Boolean);
+
+  return (
+    <div className="pp-page">
+      <style>{`
+        @keyframes spin { to{ transform:rotate(360deg); } }
+        @media (max-width:768px){ .pp-page input:not([type=file]):not([type=color]), .pp-page textarea { font-size:16px !important; } }
+      `}</style>
+
+      {/* ── Barre du haut — reste visible pendant le défilement ── */}
+      <div style={{position:'sticky',top:isMobile?'calc(-16px - env(safe-area-inset-top, 0px))':-28,zIndex:20,margin:isMobile?'calc(-16px - env(safe-area-inset-top, 0px)) -16px 18px':'-28px -30px 22px',padding:isMobile?'calc(10px + env(safe-area-inset-top, 0px)) 16px 10px':'14px 30px',background:'rgba(10,12,17,0.94)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',borderBottom:`1px solid ${C.border}`}}>
+        <div style={{maxWidth:1100,margin:'0 auto',display:'flex',alignItems:'center',gap:12}}>
+          <button type="button" onClick={() => onClose(false)} title="Retour à mes produits"
+            style={{display:'flex',alignItems:'center',gap:7,padding:'8px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.04)',color:C.text,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',flexShrink:0}}>
+            <span style={{display:'inline-flex',transform:'rotate(180deg)'}}><Icon name="arrow" size={13} color={C.text}/></span>
+            {isMobile ? 'Retour' : 'Mes produits'}
+          </button>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:isMobile?14:15.5,fontWeight:800,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>
+              {editingId ? (form.nom || 'Modifier le produit') : (form.nom || 'Nouveau produit')}
+            </div>
+            <div style={{fontSize:10.5,color:C.muted,marginTop:2}}>
+              {heureBrouillon ? `Brouillon enregistré automatiquement · ${heureBrouillon}` : 'Vos saisies sont enregistrées automatiquement'}
+            </div>
+          </div>
+          {!isMobile && <BoutonPrincipal/>}
+        </div>
+      </div>
+
+      <div style={{maxWidth:1100,margin:'0 auto'}}>
+
+        {repris && (
+          <div style={{marginBottom:16,padding:'11px 14px',borderRadius:11,background:'rgba(234,179,8,0.09)',border:'1px solid rgba(234,179,8,0.3)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+            <Icon name="clock" size={15} color="#EAB308"/>
+            <div style={{flex:1,minWidth:200,fontSize:12,color:C.text,lineHeight:1.5}}>
+              {editingId ? 'Vos modifications non enregistrées ont été retrouvées' : 'Votre brouillon a été retrouvé'}{dateBrouillon ? ` (${dateBrouillon})` : ''}.
+            </div>
+            <button type="button" onClick={() => setConfirmReset(true)} style={{padding:'6px 12px',borderRadius:7,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.05)',color:C.sec,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+              {editingId ? 'Annuler ces modifications' : 'Repartir de zéro'}
+            </button>
+          </div>
+        )}
+
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'minmax(0,1fr)':'minmax(0,1fr) 270px',gap:24,alignItems:'start'}}>
+
+          {/* ═════════ Colonne principale ═════════ */}
+          <div style={{display:'flex',flexDirection:'column',gap:18,minWidth:0}}>
+
+            {isMobile && (
+              <div style={{padding:'12px 14px',borderRadius:12,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.03)'}}>
+                <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
+                  <div style={{height:'100%',width:pct+'%',borderRadius:3,background:`linear-gradient(90deg, ${C.accent}, #8B5CF6)`,transition:'width 0.4s'}}/>
+                </div>
+                <div style={{fontSize:10.5,color:C.muted,marginTop:7}}>
+                  {essentielsOk ? `Fiche ${pct}% complète — chaque détail affine vos futures créatives` : 'Il vous faut seulement 4 informations pour créer le produit : photo, nom, offre, marché'}
+                </div>
+              </div>
+            )}
+
+            {/* 1 — Lien */}
+            <CartePage id="pp-lien" numero="1" titre="Votre page produit" optionnel
+              description="Vous avez une page de vente ? Collez son lien : nous remplissons pour vous le nom, l'offre, le marché, les images, et nous repérons le logo et les garanties. Vous vérifiez ensuite tout ci-dessous.">
+              <div>
+                <div style={{display:'flex',gap:8,flexWrap:isMobile?'wrap':'nowrap'}}>
+                  <input value={form.lien || ''} onChange={e => setForm(f => ({ ...f, lien: e.target.value }))} onBlur={analyserLien}
+                    inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://votre-boutique.com/produit"
+                    style={{flex:1,minWidth:0,width:isMobile?'100%':'auto',boxSizing:'border-box',padding:'10px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+                  <button type="button" onClick={analyserLien} disabled={fetchingLien || !(form.lien || '').trim()}
+                    style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px 16px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontSize:12.5,fontWeight:700,cursor:(fetchingLien||!(form.lien||'').trim())?'default':'pointer',opacity:(fetchingLien||!(form.lien||'').trim())?0.55:1,fontFamily:'inherit',whiteSpace:'nowrap',width:isMobile?'100%':'auto'}}>
+                    {fetchingLien
+                      ? <><div style={{width:13,height:13,borderRadius:'50%',border:'2px solid rgba(255,255,255,0.4)',borderTopColor:'#fff',animation:'spin 0.7s linear infinite'}}/> Analyse…</>
+                      : <><Icon name="sparkle" size={13} color="#fff"/> Remplir pour moi</>}
+                  </button>
+                </div>
+                <div style={{fontSize:11,marginTop:8,lineHeight:1.5,color:fetchingLien?C.muted:lienMessage==='manuel'||lienMessage==='invalide'?'#EAB308':lienMessage==='success'?C.accent:C.muted}}>
+                  {fetchingLien
+                    ? 'On regarde votre page produit — ça peut prendre jusqu\'à une minute sur certains sites. Vous pouvez continuer à remplir en attendant.'
+                    : lienMessage === 'success'
+                      ? 'On a trouvé des informations sur cette page — vérifiez que tout est correct ci-dessous.'
+                      : lienMessage === 'manuel'
+                        ? 'On n\'a pas réussi à tout récupérer sur cette page — pas de souci, complétez simplement les champs ci-dessous.'
+                        : lienMessage === 'invalide'
+                          ? 'Le lien doit commencer par https:// — copiez-le depuis la barre d\'adresse de votre navigateur.'
+                          : 'Facultatif, mais ça vous fait gagner du temps.'}
+                </div>
+              </div>
+            </CartePage>
+
+            {/* 2 — Essentiel */}
+            <CartePage id="pp-essentiel" numero="2" titre="L'essentiel"
+              description="Ces trois informations, plus une photo, suffisent pour créer votre produit et demander vos premières créatives.">
+              <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Offre actuelle" k="pricing" required hint="Le prix auquel vous vendez, avec l'ancien prix barré si vous en avez un." placeholder="Ex : 20 000 FCFA au lieu de 35 000 FCFA" form={form} setForm={setForm} errors={errors} C={C}/>
+              <MarchesField form={form} setForm={setForm} errors={errors} C={C}/>
+            </CartePage>
+
+            {/* 3 — Photos */}
+            <CartePage id="pp-photos" numero="3" titre="Photos de votre produit"
+              description="C'est à partir de ces images que nous reproduisons votre produit fidèlement. Photos nettes, produit bien visible, sans filtre.">
+              <ImagesField titre="Photos du produit" requis
+                aide="Une photo principale (cliquez sur une image pour la choisir), puis d'autres angles : de face, de côté, en main, en situation."
+                liste={form.galerie_images || []} max={LIMITES_IMAGES.galerie_images}
+                enCours={envois.galerie_images || 0}
+                principale={form.photo} onPick={(url) => setForm(f => ({ ...f, photo: url }))}
+                onAdd={(fs) => ajouterImages(fs, 'galerie_images')} onRemove={(i) => retirerImage('galerie_images', i)}
+                erreur={errors.photo && !(form.galerie_images || []).length ? 'Ajoutez au moins une photo du produit.' : ''}/>
+              <ImagesField titre="Emballage / packaging" labelAjout="Ajouter"
+                aide="Photo de la boîte, du sachet ou de l'étiquette — face avant et face arrière si possible. Elle sert à reproduire votre emballage sans erreur, ni dans les textes ni dans les couleurs."
+                liste={form.packaging_images || []} max={LIMITES_IMAGES.packaging_images}
+                enCours={envois.packaging_images || 0}
+                onAdd={(fs) => ajouterImages(fs, 'packaging_images')} onRemove={(i) => retirerImage('packaging_images', i)}/>
+              {msgImages && <div style={{fontSize:11,color:'#EAB308'}}>{msgImages}</div>}
+            </CartePage>
+
+            {/* 4 — Offre et garanties */}
+            <CartePage id="pp-offre" numero="4" titre="Votre offre et vos garanties" optionnel
+              description="Ce qui rassure votre client au moment d'acheter. Nous l'affichons tel que vous l'écrivez : n'indiquez que ce qui est vrai.">
+              <Field label="Promotion en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Garantie" k="garantie" textarea placeholder="Ex : Satisfait ou remboursé pendant 30 jours" hint="Remboursement, échange, durée de garantie…" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Livraison et paiement" k="livraison_paiement" textarea placeholder="Ex : Paiement à la livraison. Livraison en 48 h à Dakar, 3 à 5 jours ailleurs." hint="Mode de paiement, délais, zones livrées." form={form} setForm={setForm} errors={errors} C={C}/>
+            </CartePage>
+
+            {/* 5 — Client */}
+            <CartePage id="pp-client" numero="5" titre="Votre client et l'usage du produit" optionnel
+              description="Pas de cible définie ? Aucun souci : sans cette information, nous réalisons une analyse de marché pour la trouver.">
+              <Field label="Votre cible actuelle" k="cible" textarea placeholder="Ex : Femmes de 25 à 40 ans, Dakar, soucieuses de leur peau" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="À quoi sert ce produit ?" k="utilite" textarea placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
+            </CartePage>
+
+            {/* 6 — Marque */}
+            <CartePage id="pp-marque" numero="6" titre="Votre marque" optionnel
+              description="Pour que vos créatives soient reconnaissables au premier coup d'œil.">
+              <LogoField logo={form.logo} enCours={logoEnvoi} onSet={changerLogo} onRemove={() => setForm(f => ({ ...f, logo: null }))}/>
+              <div>
+                <label style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3,display:'block'}}>Couleurs de la marque</label>
+                <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Ajoutez 2 ou 3 couleurs : nous les utilisons dans vos créatives.</div>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
+                  {[1,2,3].map(n => {
+                    const key = `couleur${n}`;
+                    return form[key]
+                      ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)'}}>
+                          <input type="color" value={form[key]} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={{width:32,height:32,borderRadius:5,border:'none',cursor:'pointer',padding:0,background:'none'}}/>
+                          <span style={{fontSize:10.5,color:C.sec,fontFamily:'monospace'}}>{form[key].toUpperCase()}</span>
+                          <button type="button" onClick={() => setForm(f => ({ ...f, [key]: '' }))} style={{width:18,height:18,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.15)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,padding:0}}><Icon name="x" size={9} color={C.sec}/></button>
+                        </div>
+                      : <button key={n} type="button" onClick={() => setForm(f => ({ ...f, [key]: '#1E3A8A' }))} style={{display:'flex',alignItems:'center',gap:5,padding:'8px 12px',borderRadius:8,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:11.5,fontFamily:'inherit'}}>
+                          <Icon name="plus" size={11} color={C.sec}/> Couleur
+                        </button>;
+                  })}
+                </div>
+                {errors.couleurs && <div style={{fontSize:11,color:'#E55050',marginTop:8}}>Ajoutez au moins 2 couleurs, ou aucune.</div>}
+              </div>
+            </CartePage>
+
+            {/* 7 — Preuves clients */}
+            <CartePage id="pp-preuves" numero="7" titre="Preuves de vos clients" optionnel
+              description="Les vrais avis de vos clients rendent une publicité bien plus crédible. Envoyez uniquement de vrais avis : nous ne rédigeons ni n'inventons jamais un témoignage.">
+              <ImagesField titre="Captures d'avis ou de messages clients"
+                aide="Captures d'écran de messages WhatsApp, commentaires Facebook / Instagram, avis Google ou de votre site. Assurez-vous que le texte est lisible."
+                liste={form.avis_captures || []} max={LIMITES_IMAGES.avis_captures}
+                enCours={envois.avis_captures || 0}
+                onAdd={(fs) => ajouterImages(fs, 'avis_captures')} onRemove={(i) => retirerImage('avis_captures', i)}/>
+              {(avisProposes.length > 0 || (form.avis_textes || []).length > 0) && (
+                <div>
+                  <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Avis trouvés sur votre page</div>
+                  <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Cochez ceux que nous pouvons utiliser. Les autres seront ignorés.</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                    {[...new Set([...(form.avis_textes || []), ...avisProposes])].map((a, i) => {
+                      const coche = (form.avis_textes || []).includes(a);
+                      return (
+                        <label key={i} style={{display:'flex',alignItems:'flex-start',gap:10,padding:'10px 12px',borderRadius:9,border:`1px solid ${coche?'rgba(91,141,239,0.4)':C.border}`,background:coche?C.accentS:'rgba(255,255,255,0.03)',cursor:'pointer',fontSize:12,color:C.text,lineHeight:1.5}}>
+                          <input type="checkbox" checked={coche} onChange={() => setForm(f => ({ ...f, avis_textes: coche ? (f.avis_textes || []).filter(x => x !== a) : [...(f.avis_textes || []), a] }))} style={{marginTop:3,flexShrink:0}}/>
+                          <span>{a}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CartePage>
+
+            {/* 8 — Aller plus loin */}
+            <CartePage id="pp-plus" numero="8" titre="Aller plus loin" optionnel
+              description="Tout ce qui peut aider notre équipe à travailler plus juste.">
+              <DocumentsField form={form} setForm={setForm} C={C}/>
+              <Field label="Autre chose à nous dire ?" k="notes" textarea hint="Une contrainte, une consigne de marque, un détail important sur le produit ou sur vos clients." placeholder="Ex : Ne jamais montrer le produit à côté d'un téléphone." form={form} setForm={setForm} errors={errors} C={C}/>
+            </CartePage>
+
+            {nomsManquants.length > 0 && (
+              <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,107,91,0.12)',border:'1px solid rgba(239,107,91,0.3)',fontSize:12,color:'#EF6B5B'}}>
+                Il manque : {nomsManquants.join(', ')}
+              </div>
+            )}
+            {erreurGlobale && (
+              <div style={{padding:'10px 14px',borderRadius:8,background:'rgba(239,107,91,0.12)',border:'1px solid rgba(239,107,91,0.3)',fontSize:12,color:'#EF6B5B',lineHeight:1.5}}>{erreurGlobale}</div>
+            )}
+          </div>
+
+          {/* ═════════ Colonne de droite (ordinateur) ═════════ */}
+          {!isMobile && (
+            <aside style={{position:'sticky',top:56,display:'flex',flexDirection:'column',gap:14}}>
+              <div style={{padding:'16px 16px 14px',borderRadius:14,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)'}}>
+                <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase',marginBottom:10}}>Votre fiche produit</div>
+                <div style={{display:'flex',alignItems:'baseline',gap:6,marginBottom:8}}>
+                  <span style={{fontFamily:"'DM Mono',monospace",fontSize:28,fontWeight:800,color:C.text}}>{pct}%</span>
+                  <span style={{fontSize:11,color:C.muted}}>complète</span>
+                </div>
+                <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden',marginBottom:12}}>
+                  <div style={{height:'100%',width:pct+'%',borderRadius:3,background:`linear-gradient(90deg, ${C.accent}, #8B5CF6)`,transition:'width 0.4s'}}/>
+                </div>
+                <div style={{fontSize:11,color:C.sec,lineHeight:1.5,marginBottom:12}}>
+                  {essentielsOk ? 'Le minimum est là : vous pouvez créer le produit. Chaque détail en plus affine vos futures créatives.' : 'Il vous faut seulement 4 informations pour créer le produit.'}
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:2}}>
+                  {items.map(it => (
+                    <button key={it.k} type="button" onClick={() => aller(it.cible)}
+                      style={{display:'flex',alignItems:'center',gap:9,padding:'6px 4px',border:'none',background:'transparent',cursor:'pointer',fontFamily:'inherit',textAlign:'left',borderRadius:6}}>
+                      <span style={{width:16,height:16,borderRadius:'50%',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:it.ok?C.accent:'transparent',border:`1.5px solid ${it.ok?C.accent:'rgba(255,255,255,0.2)'}`}}>
+                        {it.ok && <Icon name="check" size={9} color="#fff" strokeWidth={3}/>}
+                      </span>
+                      <span style={{fontSize:11.5,color:it.ok?C.text:C.sec,flex:1}}>{it.label}</span>
+                      {it.essentiel && !it.ok && <span style={{fontSize:9,fontWeight:700,color:C.accent}}>requis</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{fontSize:11,color:C.muted,lineHeight:1.55,padding:'0 4px'}}>
+                Vous pouvez quitter cette page, aller chercher un fichier sur votre téléphone ou fermer l'onglet : vos saisies sont conservées sur cet appareil et vous les retrouvez en revenant.
+              </div>
+            </aside>
+          )}
+        </div>
+      </div>
+
+      {/* ── Barre du bas (mobile) — toujours à portée de pouce ── */}
+      {isMobile && (
+        <div style={{position:'sticky',bottom:'calc(-16px - env(safe-area-inset-bottom, 0px))',zIndex:20,margin:'22px -16px calc(-16px - env(safe-area-inset-bottom, 0px))',padding:'12px 16px calc(12px + env(safe-area-inset-bottom, 0px))',background:'rgba(10,12,17,0.96)',backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',borderTop:`1px solid ${C.border}`}}>
+          <BoutonPrincipal pleineLargeur/>
+        </div>
+      )}
+
+      {confirmReset && (
+        <ConfirmModal
+          title={editingId ? 'Annuler vos modifications ?' : 'Repartir de zéro ?'}
+          message={editingId ? 'Les modifications non enregistrées seront supprimées et la fiche reviendra à son dernier état enregistré.' : 'Tout ce que vous avez saisi dans ce brouillon sera supprimé.'}
+          confirmLabel={editingId ? 'Annuler les modifications' : 'Repartir de zéro'} cancelLabel="Garder mon brouillon"
+          onConfirm={repartirDeZero} onCancel={() => setConfirmReset(false)}/>
+      )}
+    </div>
+  );
+};
+
 const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBriefs, allBriefs=[], setAllBriefs, creditsDataReady=false, subscription, credits:_credits={available:0,used:0,earned:0}, onAskCreatives, notify=()=>{}, cancelCreatives=()=>{}, setSection, onOpenPayment}) => {
   // Recalculer les crédits en temps réel depuis allBriefs
   const credits = computeCredits(subscription, allBriefs);
@@ -2140,80 +2794,35 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const [showForm, setShowForm] = useState(false);
   const [requestModal, setRequestModal] = useState(null); // { product }
   const [requestQty, setRequestQty] = useState(6);
-  const [editingId, setEditingId] = useState(null);
-  const [form, setForm] = useState(EMPTY_PRODUCT);
-  const [errors, setErrors] = useState({});
+  const [produitEdite, setProduitEdite] = useState(null); // null = nouveau produit
   const [brief, setBrief] = useState(null);
   const [briefCopied, setBriefCopied] = useState(false);
-  const photoRef = useRef(null);
-  const [fetchingLien, setFetchingLien] = useState(false);
-  const [imagesTrouvees, setImagesTrouvees] = useState([]);
-  const [lienMessage, setLienMessage] = useState(''); // message affiché après tentative d'extraction, succès ou échec
-  const lienFetchedRef = useRef('');
-  // Galerie affichée — fusionne imagesTrouvees avec l'ancienne photo unique (produits déjà
-  // existants édités avant cette fusion, où imagesTrouvees est encore vide mais form.photo est
-  // déjà rempli) — jamais de galerie vide si une photo existe déjà quelque part.
-  const galerieAffichee = imagesTrouvees.length ? imagesTrouvees : (form.photo ? [form.photo] : []);
+  const [brouillonTick, setBrouillonTick] = useState(0);
+  const showFormRef = useRef(false);
+  showFormRef.current = showForm;
 
-  // Pré-remplissage intelligent depuis le lien de la page produit — jamais écrasant :
-  // ne remplit que les champs encore vides, laisse toujours la main au client sur ce qu'il a déjà tapé.
-  const fetchProductInfoFromLien = async () => {
-    const url = (form.lien || '').trim();
-    if (!url || !/^https?:\/\//.test(url)) return;
-    if (lienFetchedRef.current === url) return; // déjà tenté pour cette URL exacte
-    lienFetchedRef.current = url;
-    setFetchingLien(true);
-    setLienMessage('');
-    // Filet de sécurité — garantit que le spinner ne reste JAMAIS bloqué indéfiniment, même si
-    // le serveur ou le site cible se comporte mal d'une façon qu'on n'a pas anticipée. Timeout
-    // manuel via AbortController (pas AbortSignal.timeout(), déjà identifié comme peu fiable
-    // selon les environnements navigateur).
-    // Cause du fix précédent (extraction réussie côté serveur, mais champs jamais remplis) : ce
-    // timeout était à 25s, alors que le serveur peut légitimement dépasser 40s à lui seul —
-    // jusqu'à 25s pour fetchPageText, PLUS jusqu'à 3 réessais Gemini en cas de limite de débit
-    // (attente croissante 8s/16s/32s). Le client abandonnait avant que le serveur ait fini de
-    // réussir. Porté à 70s, avec une vraie marge au-dessus du pire cas serveur observé.
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 70000);
-    try {
-      const r = await fetch('https://adstack-server.onrender.com/fetch-product-info', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-        signal: controller.signal,
-      });
-      const j = await r.json();
-      if (Array.isArray(j.images) && j.images.length) {
-        setImagesTrouvees(j.images);
-        // Présélectionne la première comme photo principale si le client n'a pas déjà uploadé
-        // la sienne — reste libre de la changer en cliquant une autre miniature juste en dessous.
-        setForm(f => ({ ...f, photo: f.photo || j.images[0] }));
-      }
-      if (j.ok && j.data) {
-        setForm(f => ({
-          ...f,
-          nom: f.nom || j.data.nom || f.nom,
-          pricing: f.pricing || j.data.prix || f.pricing,
-          pays: f.pays || j.data.pays || f.pays,
-          utilite: f.utilite || j.data.utilite || f.utilite,
-          promo: f.promo || j.data.promo || f.promo,
-        }));
-        setLienMessage('success');
-      } else {
-        // Le client doit savoir que ça n'a pas marché — sinon il croit que les champs vides sont
-        // normaux, ou pense que quelque chose est cassé, plutôt que de simplement les remplir.
-        setLienMessage('manuel');
-      }
-    } catch(e) {
-      console.warn('[fetchProductInfoFromLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 70s dépassé' : e.message);
-      setLienMessage('manuel');
-    } finally {
-      clearTimeout(timeoutId);
-      setFetchingLien(false);
-    }
+  // La page produit s'ouvre à la place de la liste (plus de pop-up). Une entrée d'historique est ajoutée
+  // (sans changer l'adresse) : le bouton Retour du téléphone / du navigateur ramène à la liste, brouillon conservé.
+  const ouvrirPage = (p) => {
+    setProduitEdite(p || null);
+    setShowForm(true);
+    try { window.history.pushState({ adProduitPage: true }, ''); } catch(e) {}
+    setTimeout(() => { try { document.querySelector('main')?.scrollTo({ top: 0 }); } catch(e) {} }, 0);
   };
+  const fermerPage = () => {
+    setShowForm(false);
+    setBrouillonTick(t => t + 1);
+    try { if (window.history.state && window.history.state.adProduitPage) window.history.back(); } catch(e) {}
+    setTimeout(() => { try { document.querySelector('main')?.scrollTo({ top: 0 }); } catch(e) {} }, 0);
+  };
+  const openNew = () => { if (!user) { onNeedLogin(); return; } ouvrirPage(null); };
+  const openEdit = (p) => { ouvrirPage(p); };
 
-  const openNew = () => { if (!user) { onNeedLogin(); return; } setForm(EMPTY_PRODUCT); setEditingId(null); setErrors({}); setShowForm(true); setImagesTrouvees([]); setLienMessage(''); };
+  useEffect(() => {
+    const h = () => { if (showFormRef.current) { setShowForm(false); setBrouillonTick(t => t + 1); } };
+    window.addEventListener('popstate', h);
+    return () => window.removeEventListener('popstate', h);
+  }, []);
 
   // Cause profonde corrigée (le bouton "Créer mon produit maintenant" du chatbot ne faisait
   // jamais rien de visible à part changer de section) : ce window event était dispatché à deux
@@ -2224,96 +2833,28 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     window.addEventListener('openProductForm', handler);
     return () => window.removeEventListener('openProductForm', handler);
   }, [user]);
-  const openEdit = (p) => { setForm(p); setEditingId(p.id); setErrors({}); setShowForm(true); setImagesTrouvees(p.galerie_images || []); setLienMessage(''); };
 
-  const handleFile = (e, fieldKey) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const img = new Image();
-    const objUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX = 800;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const canvas = document.createElement('canvas');
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      const compressed = canvas.toDataURL('image/jpeg', 0.82);
-      setForm(f => ({...f, [fieldKey]: compressed}));
-      URL.revokeObjectURL(objUrl);
-    };
-    img.src = objUrl;
-  };
-
-  // Import multiple — permet d'ajouter plusieurs photos d'un coup au carrousel, pas juste une
-  // seule à la fois. Même compression que handleFile, appliquée à chaque fichier en parallèle.
-  const handleMultipleFiles = (e) => {
-    const files = Array.from(e.target.files || []);
-    if (!files.length) return;
-    files.forEach(file => {
-      const img = new Image();
-      const objUrl = URL.createObjectURL(file);
-      img.onload = () => {
-        const MAX = 800;
-        const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        const compressed = canvas.toDataURL('image/jpeg', 0.82);
-        setImagesTrouvees(prev => [...prev, compressed]);
-        setForm(f => ({...f, photo: f.photo || compressed})); // devient la photo principale si aucune n'est encore choisie
-        URL.revokeObjectURL(objUrl);
-      };
-      img.src = objUrl;
-    });
-    e.target.value = ''; // permet de réimporter les mêmes fichiers si besoin
-  };
-
-  const validate = () => {
-    const req = ['nom','pricing','pays','photo'];
-    const e = {};
-    req.forEach(k => { if (!form[k]) e[k] = true; });
-    const nbCouleurs = [form.couleur1, form.couleur2, form.couleur3].filter(Boolean).length;
-    if (nbCouleurs === 1) e.couleurs = true;
-    return e;
-  };
-
-  const submit = async () => {
-    const e = validate();
-    if (Object.keys(e).length) {
-      setErrors(e);
-      // Les 3 essentiels (dont la photo) sont tous en haut du formulaire — un simple retour en
-      // haut suffit à les ramener sous les yeux, sans avoir besoin de cibler un champ précis.
-      document.getElementById('form-produit-scroll')?.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
+  // Enregistrement appelé par la page produit. Ne renvoie ok:true que si la base a VRAIMENT enregistré :
+  // sinon la page garde tout ce que le client a saisi (jamais de produit fantôme visible mais non sauvegardé).
+  const enregistrerProduit = async (formData) => {
     const session = await sbAuth.refreshSession();
-    // Carrousel récupéré depuis le lien produit — rattaché ici au formulaire juste avant l'envoi,
-    // pas stocké directement dans form au fil du form (état séparé, voir imagesTrouvees).
-    const formAvecGalerie = { ...form, galerie_images: imagesTrouvees };
+    if (!session) return { ok: false, raison: 'session' };
+    const editingId = produitEdite?.id || null;
     if (editingId) {
-      setProducts(prev => prev.map(p => p.id===editingId ? {...formAvecGalerie, id:editingId} : p));
-      if (session) sbProducts.update(session, editingId, formAvecGalerie);
-      notify(`"${form.nom}" mis à jour`, 'product');
+      const ok = await sbProducts.update(session, editingId, formData);
+      if (!ok) return { ok: false, raison: 'serveur' };
+      setProducts(prev => prev.map(p => p.id === editingId ? { ...p, ...formData, id: editingId } : p));
+      notify(`"${formData.nom}" mis à jour`, 'product');
     } else {
-      if (session) {
-        const saved = await sbProducts.save(session, formAvecGalerie);
-        if (saved) {
-          setProducts(prev => [...prev, saved]);
-          notify(`Produit "${saved.nom}" créé avec succès`, 'product');
-          notifyAction(sbAuth.getUser()?.id, 'product_created', saved.nom);
-        } else {
-          setProducts(prev => [...prev, {...form, id: Date.now()}]);
-          notify(`Produit "${form.nom}" ajouté`, 'product');
-        }
-      } else {
-        setProducts(prev => [...prev, {...form, id: Date.now()}]);
-        notify(`Produit "${form.nom}" ajouté`, 'product');
-      }
+      const saved = await sbProducts.save(session, formData);
+      if (!saved) return { ok: false, raison: 'serveur' };
+      setProducts(prev => [...prev, saved]);
+      notify(`Produit "${saved.nom}" créé avec succès`, 'product');
+      notifyAction(sbAuth.getUser()?.id, 'product_created', saved.nom);
     }
-    setShowForm(false);
-    if (document.activeElement) document.activeElement.blur();
+    if (sbProducts.lastWarnings.includes('colonnes')) notify('Produit enregistré, mais le logo, l\'emballage, les avis et les garanties n\'ont pas pu être sauvegardés (mise à jour de la base à faire).', 'error');
+    else if (sbProducts.lastWarnings.includes('images')) notify('Produit enregistré, mais certaines images n\'ont pas pu être envoyées — rouvrez la fiche pour les ajouter à nouveau.', 'error');
+    return { ok: true };
   };
 
   const requestCreatives = (p) => {
@@ -2382,6 +2923,10 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         couleurs_principales: [p.couleur1, p.couleur2, p.couleur3].filter(Boolean),
         photo: p.photo ? '[fichier image joint]' : null,
         logo: p.logo ? '[fichier logo joint]' : null,
+        garantie: p.garantie || null,
+        livraison_et_paiement: p.livraison_paiement || null,
+        photos_emballage: (p.packaging_images || []).length || null,
+        captures_avis_clients: (p.avis_captures || []).length || null,
         contexte_additionnel: p.notes || null,
       },
     });
@@ -2399,6 +2944,13 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   };
 
   // Field est défini au niveau module (au-dessus de Produits)
+
+  if (showForm) {
+    return (
+      <ProduitPage key={produitEdite?.id || 'nouveau'} produit={produitEdite} user={user} isMobile={isMobile}
+        onClose={fermerPage} onSubmit={enregistrerProduit} C={C}/>
+    );
+  }
 
   return (
     <div>
@@ -2471,6 +3023,24 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         </button>
       </div>
 
+      {(() => {
+        void brouillonTick;
+        if (!user) return null;
+        const d = lireBrouillon(cleBrouillon(user.id, null));
+        if (!d || !d.form || !(d.form.nom || d.form.lien || d.form.pricing || d.form.photo)) return null;
+        const quand = d.savedAt ? new Date(d.savedAt).toLocaleString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '';
+        return (
+          <div style={{marginBottom:16,padding:'12px 16px',borderRadius:12,background:'rgba(234,179,8,0.09)',border:'1px solid rgba(234,179,8,0.3)',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+            <Icon name="clock" size={16} color="#EAB308"/>
+            <div style={{flex:1,minWidth:200,fontSize:12.5,color:C.text,lineHeight:1.5}}>
+              <b>Produit en cours de création</b>{d.form.nom ? ` : « ${d.form.nom} »` : ''}{quand ? ` — enregistré le ${quand}` : ''}
+            </div>
+            <button onClick={openNew} style={{padding:'8px 14px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Reprendre</button>
+            <button onClick={() => { effacerBrouillon(cleBrouillon(user.id, null)); setBrouillonTick(t => t + 1); }} style={{padding:'8px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Supprimer</button>
+          </div>
+        );
+      })()}
+
       {products.length === 0 && (
         <div style={{position:'relative',overflow:'hidden',borderRadius:16,border:`1px solid ${subscription?.active ? C.accent+'55' : C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',padding:'60px 24px',display:'flex',flexDirection:'column',alignItems:'center',gap:12,textAlign:'center',marginBottom:14}}>
           <div style={{position:'absolute',top:-60,left:'50%',transform:'translateX(-50%)',width:220,height:220,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
@@ -2511,216 +3081,6 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           <span style={{fontSize:13.5,fontWeight:600}}>Ajouter un produit</span>
         </button>
       </div>
-
-      {showForm && (
-        <div onClick={() => setShowForm(false)} style={{position:'fixed',top:0,bottom:0,left:isMobile?52:0,right:0,background:'rgba(0,0,0,0.75)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:'16px'}}>
-          <style>{`
-            @keyframes revealOptional { from{ opacity:0; max-height:0; } to{ opacity:1; max-height:900px; } }
-            @keyframes spin { to{ transform:rotate(360deg); } }
-          `}</style>
-          <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden',width:'100%',maxWidth:460,maxHeight:'82vh',borderRadius:16,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.borderM}`,boxShadow:'0 24px 64px rgba(0,0,0,0.6)',display:'flex',flexDirection:'column'}}>
-            <div style={{position:'absolute',top:-60,right:-40,width:200,height:200,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.12), transparent 70%)',pointerEvents:'none'}}/>
-
-            {/* En-tête — fixe, hors zone de scroll */}
-            <div style={{position:'relative',flexShrink:0}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'22px 20px 14px'}}>
-                <h2 style={{fontSize:16,fontWeight:800,color:C.text,margin:0}}>{editingId ? 'Modifier le produit' : 'Ajouter un produit'}</h2>
-                <button onClick={() => setShowForm(false)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                  <Icon name="x" size={14}/>
-                </button>
-              </div>
-              {/* Jauge — se remplit avec chaque champ complété, sans jamais dire explicitement
-                  "plus vous remplissez, mieux c'est" (implicite via le copywriting + la jauge). */}
-              {(() => {
-                const champs = [form.photo, form.nom, form.pricing, form.pays, form.lien, form.promo, form.cible, form.utilite, (form.documents||[]).length];
-                const remplis = champs.filter(Boolean).length;
-                const pct = Math.round((remplis / champs.length) * 100);
-                return (
-                  <div style={{padding:'0 20px 16px'}}>
-                    <div style={{height:5,borderRadius:3,background:'rgba(255,255,255,0.08)',overflow:'hidden'}}>
-                      <div style={{height:'100%',width:pct+'%',borderRadius:3,background:`linear-gradient(90deg, ${C.accent}, #8B5CF6)`,transition:'width 0.4s cubic-bezier(.4,0,.2,1)'}}/>
-                    </div>
-                    <div style={{fontSize:10,color:C.muted,marginTop:6}}>
-                      {pct < 100 ? `Fiche ${pct}% complète — chaque détail affine vos futures créatives` : 'Fiche complète — parfait pour un travail sur-mesure'}
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
-            {/* Zone scrollable — photo + champs uniquement, jamais le bouton */}
-            <div id="form-produit-scroll" style={{position:'relative',overflow:'hidden auto',padding:'0 20px',flex:1}}>
-
-            {/* Galerie produit — fusion de l'ancienne zone "photo unique" et du carrousel séparé.
-                Corrige 3 problèmes remontés : (1) pas clair qu'on peut importer plusieurs photos
-                → bouton "+" explicite avec libellé ; (2) scroll horizontal difficile sans sortir
-                du formulaire → grille qui s'enroule, plus besoin de scroller du tout ; (3) bouton
-                supprimer minuscule et cach derrière un survol → toujours visible, miniatures
-                bien plus grandes (84px au lieu de 58px). */}
-            <input ref={photoRef} type="file" accept="image/*" multiple style={{display:'none'}} onChange={handleMultipleFiles}/>
-            <div style={{marginBottom:20}}>
-              <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Photo{galerieAffichee.length>1?'s':''} du produit<span style={{color:C.accent}}> *</span></div>
-              <div style={{fontSize:11,color:C.muted,marginBottom:10}}>Cliquez sur une image pour la définir comme photo principale — ajoutez-en plusieurs avec le bouton +.</div>
-              <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
-                {galerieAffichee.map((imgUrl, i) => {
-                  const selectionnee = form.photo === imgUrl;
-                  return (
-                    <div key={i} onClick={() => setForm(f => ({...f, photo: imgUrl}))}
-                      style={{position:'relative',width:84,height:84,flexShrink:0,borderRadius:13,border:`2px solid ${selectionnee?C.accent:'transparent'}`,background:`url(${imgUrl}) center/cover no-repeat`,cursor:'pointer',transition:'transform 0.15s, border-color 0.15s',boxShadow:selectionnee?`0 0 0 3px rgba(91,141,239,0.2)`:'none'}}
-                      onMouseEnter={e=>{ if(!selectionnee) e.currentTarget.style.transform='scale(1.04)'; }}
-                      onMouseLeave={e=>{ e.currentTarget.style.transform='scale(1)'; }}
-                    >
-                      {selectionnee && (
-                        <div style={{position:'absolute',bottom:-6,right:-6,width:22,height:22,borderRadius:'50%',background:C.accent,display:'flex',alignItems:'center',justifyContent:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.4)'}}>
-                          <Icon name="check" size={12} color="#fff"/>
-                        </div>
-                      )}
-                      {/* Toujours visible — jamais dépendant d'un survol, injouable sur mobile/tactile */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const galerieActuelle = imagesTrouvees.length ? imagesTrouvees : (form.photo ? [form.photo] : []);
-                          const next = galerieActuelle.filter((_, idx) => idx !== i);
-                          setImagesTrouvees(next);
-                          if (selectionnee) setForm(f => ({...f, photo: next[0] || ''}));
-                        }}
-                        title="Retirer cette image"
-                        style={{position:'absolute',top:-7,right:-7,width:24,height:24,borderRadius:'50%',background:'#EF6B5B',border:'2px solid #0a0c11',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,boxShadow:'0 1px 5px rgba(0,0,0,0.5)'}}
-                      >
-                        <Icon name="x" size={12} color="#fff"/>
-                      </button>
-                    </div>
-                  );
-                })}
-                {/* Bouton d'ajout explicite — répond directement à "l'utilisateur ne sait pas s'il
-                    peut importer plusieurs médias". accept multiple sur l'input plus haut. */}
-                <div onClick={()=>photoRef.current?.click()}
-                  style={{width:84,height:84,flexShrink:0,borderRadius:13,border:`1.5px dashed ${errors.photo && !galerieAffichee.length?C.accent:'rgba(255,255,255,0.2)'}`,background:'rgba(255,255,255,0.03)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'border-color 0.2s,background 0.2s',gap:4}}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(45,127,249,0.6)';e.currentTarget.style.background='rgba(45,127,249,0.06)';}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=errors.photo && !galerieAffichee.length?C.accent:'rgba(255,255,255,0.2)';e.currentTarget.style.background='rgba(255,255,255,0.03)';}}
-                >
-                  <Icon name="upload" size={18} color={C.sec}/>
-                  <span style={{fontSize:9.5,fontWeight:700,color:C.sec}}>Ajouter</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Lien de la page produit — sorti volontairement de la zone repliable ci-dessous.
-                Toujours visible dès l'ouverture du formulaire : c'est un raccourci, pas un
-                champ "en plus" — le client doit pouvoir le remplir EN PREMIER pour que le
-                pré-remplissage automatique lui évite de taper le reste à la main. Le caché
-                derrière "requisRemplis" annulait complètement cet objectif. */}
-            <div style={{marginBottom:20,padding:'12px 14px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.25)`}}>
-              <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:8}}>
-                <Icon name="sparkle" size={13} color={C.accent}/>
-                <div style={{fontSize:11.5,fontWeight:700,color:C.text}}>Lien de la page produit</div>
-                <span style={{fontSize:9,color:C.muted,fontWeight:400}}>(optionnel — mais commencez par là si vous l'avez)</span>
-              </div>
-              <div style={{position:'relative'}}>
-                <input value={form.lien||''} onChange={e=>setForm(f=>({...f,lien:e.target.value}))} onBlur={fetchProductInfoFromLien} placeholder="https://..."
-                  style={{width:'100%',boxSizing:'border-box',padding:'9px 36px 9px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
-                {fetchingLien && (
-                  <div style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',width:14,height:14,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>
-                )}
-              </div>
-              <div style={{fontSize:10,marginTop:6,color:fetchingLien?C.muted:lienMessage==='manuel'?'#EAB308':lienMessage==='success'?C.accent:C.muted}}>
-                {fetchingLien
-                  ? 'On regarde votre page produit — ça peut prendre jusqu\'à une minute sur certains sites...'
-                  : lienMessage==='success'
-                    ? '✓ On a trouvé pas mal d\'infos sur cette page — vérifiez que tout est correct ci-dessous.'
-                    : lienMessage==='manuel'
-                      ? "On n'a pas réussi à tout récupérer automatiquement sur cette page — pas de souci, complétez simplement les champs ci-dessous 👇"
-                      : "Collez le lien, on préremplit le nom, l'offre, le marché et le reste pour vous."}
-              </div>
-            </div>
-
-            {(() => {
-              const requisRemplis = !!(form.photo && form.nom && form.pricing && form.pays);
-              return (
-            <div style={{display:'flex',flexDirection:'column',gap:18}}>
-
-              <div>
-                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
-                  <div style={{width:5,height:5,borderRadius:'50%',background:C.accent}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Les 3 essentiels</div>
-                </div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="Offre actuelle" k="pricing" required hint="Le prix auquel vous vendez, avec l'ancien prix barré si vous en avez un." placeholder="Ex : 20 000 FCFA au lieu de 35 000 FCFA" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <MarchesField form={form} setForm={setForm} errors={errors} C={C}/>
-                </div>
-              </div>
-
-              {!requisRemplis && (
-                <div style={{fontSize:11,color:C.muted,display:'flex',alignItems:'center',gap:6,padding:'2px 2px 0'}}>
-                  <Icon name="sparkle" size={12} color={C.muted}/> Les champs marqués d'une * suffisent pour créer votre produit
-                </div>
-              )}
-
-              <div style={{overflow:'hidden'}}>
-              <div style={{display:'flex',flexDirection:'column',gap:16}}>
-
-              <div>
-                <div style={{display:'flex',alignItems:'center',gap:7,marginBottom:10}}>
-                  <div style={{width:5,height:5,borderRadius:'50%',background:C.muted}}/>
-                  <div style={{fontSize:10,fontWeight:700,letterSpacing:'0.08em',color:C.muted,textTransform:'uppercase'}}>Pour aller plus loin</div>
-                </div>
-                <div style={{display:'flex',flexDirection:'column',gap:10}}>
-                  <Field label="Promotion en cours (facultatif)" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="Résumé de votre cible actuelle (facultatif)" k="cible" textarea hint="Pas de cible définie ? Aucun souci : sans cette information, nous réalisons une analyse de marché pour la trouver." placeholder="Ex : Femmes de 25 à 40 ans, Dakar, soucieuses de leur peau" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <Field label="À quoi sert ce produit ? (facultatif)" k="utilite" textarea placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
-                  <div>
-                    <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:4,display:'block'}}>Couleurs de la marque (facultatif)</label>
-                    <div style={{fontSize:10.5,color:C.muted,marginBottom:8}}>Ajoutez 2 ou 3 couleurs : nous les utilisons dans vos créatives</div>
-                    <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
-                      {[1,2,3].map(n => {
-                        const key = `couleur${n}`;
-                        return form[key]
-                          ? <div key={n} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px 4px 4px',borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)'}}>
-                              <input type="color" value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} style={{width:28,height:28,borderRadius:5,border:'none',cursor:'pointer',padding:0,background:'none'}}/>
-                              <span style={{fontSize:10,color:C.sec,fontFamily:'monospace'}}>{form[key].toUpperCase()}</span>
-                              <button type="button" onClick={()=>setForm(f=>({...f,[key]:''}))} style={{width:14,height:14,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.15)',color:C.sec,fontSize:9,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="x" size={8} color={C.sec}/></button>
-                            </div>
-                          : <button key={n} type="button" onClick={()=>setForm(f=>({...f,[key]:'#1E3A8A'}))} style={{display:'flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:7,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:11,fontFamily:'inherit'}}>
-                              <Icon name="plus" size={11} color={C.sec}/> Ajouter
-                            </button>;
-                      })}
-                    </div>
-                    {errors.couleurs && <div style={{fontSize:10.5,color:'#E55050',marginTop:6}}>Ajoutez au moins 2 couleurs, ou aucune.</div>}
-                  </div>
-                  <DocumentsField form={form} setForm={setForm} C={C}/>
-                </div>
-              </div>
-
-              </div>
-              </div>
-
-            </div>
-              );
-            })()}
-
-            </div>
-
-            {/* Bouton — hors zone de scroll, toujours visible */}
-            <div style={{position:'relative',padding:'14px 20px 20px',flexShrink:0,borderTop:`1px solid ${C.border}`}}>
-              {/* Cause probable des tentatives répétées observées (Clarity) : ce message
-                  n'existait qu'à l'intérieur de la zone défilable, potentiellement hors du champ
-                  de vision une fois le formulaire scrollé vers le bouton — fixe, toujours visible,
-                  lui. Un clic sur "Créer le produit" ne provoquait alors visuellement RIEN pour
-                  l'utilisateur, qui recliquait sans comprendre. Déplacé ici, dans la même zone
-                  fixe que le bouton — ne peut plus jamais être hors champ. */}
-              {Object.keys(errors).length>0 && (
-                <div style={{marginBottom:10,padding:'10px 14px',borderRadius:8,background:'rgba(239,107,91,0.12)',border:'1px solid rgba(239,107,91,0.3)',fontSize:11.5,color:'#EF6B5B',display:'flex',alignItems:'center',gap:7}}>
-                  ⚠️ Il manque : {[!form.photo&&'la photo',!form.nom&&'le nom',!form.pricing&&'l\'offre actuelle',!form.pays&&'le marché cible',errors.couleurs&&'2-3 couleurs (ou aucune)'].filter(Boolean).join(', ')}
-                </div>
-              )}
-              <button onClick={submit} style={{width:'100%',padding:'13px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:7,boxShadow:'0 4px 16px rgba(45,127,249,0.3)'}}>
-                <Icon name="check" size={14} color="#fff"/> {editingId ? 'Enregistrer les modifications' : 'Créer le produit'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {brief && (
         <div onClick={() => setBrief(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.8)',zIndex:300,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
@@ -5482,6 +5842,14 @@ export default function Platform() {
         // forcément celle présélectionnée côté AdBoard), avant de lancer le pipeline qualité
         // habituel sur l'image retenue.
         galerie_images: product.galerie_images || [],
+        // Infos de personnalisation (page produit v7.0) — toutes facultatives ; l'absence d'une info = on ne l'invente jamais.
+        logo_url: product.logo || product.logo_url || null,
+        packaging_images: product.packaging_images || [],
+        avis_captures: product.avis_captures || [],
+        avis_textes: product.avis_textes || [],
+        garantie: product.garantie || '',
+        livraison_paiement: product.livraison_paiement || '',
+        notes: product.notes || '',
         lien_page_produit: product.lien || null,
         marque: product.marque || null,
       },
