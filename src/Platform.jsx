@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.2-documents
+// ADBOARD_VERSION v7.3-offres
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -316,7 +316,7 @@ const C = {
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
 
-const PLAN_QUANTITY = { 'Starter':6, 'Pro':12, 'Scale':24 };
+const PLAN_QUANTITY = { 'PERF+':6, 'GROWTH':12, 'SCALE':24 };
 
 const ANGLES = [];
 
@@ -658,7 +658,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
             <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} créatives / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
-            <div style={{fontSize:15,color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
+            <div style={{fontSize:taillePrix(convertPrice(cycleData.price),15),color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => {
               const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-${nextCycle}`];
               if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
@@ -1169,7 +1169,7 @@ const sbSubs = {
   }
 };
 
-const PLAN_LABELS = { starter: 'Starter', pro: 'Pro', scale: 'Scale' };
+const PLAN_LABELS = { starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
 const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
 
 // ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
@@ -1540,7 +1540,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
             const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
             if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
           }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:22}}>
-            <Icon name="plus" size={12} color={C.accent}/> Continuez avec Starter
+            <Icon name="plus" size={12} color={C.accent}/> Continuez avec PERF+
           </button>
         )}
         {!isPack && <div style={{marginBottom:26}}/>}
@@ -2028,7 +2028,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
           const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
           if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
         }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-          <Icon name="plus" size={13} color="#fff"/> Continuez avec Starter
+          <Icon name="plus" size={13} color="#fff"/> Continuez avec PERF+
         </button>
       );
     }
@@ -3024,7 +3024,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
                   if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
                 }} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,color:'#fff',padding:'8px 14px',borderRadius:8,background:C.accent,border:'none',cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
-                  <Icon name="plus" size={12} color="#fff"/> Continuez avec Starter
+                  <Icon name="plus" size={12} color="#fff"/> Continuez avec PERF+
                 </button>
               ) : (
                 <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
@@ -4935,12 +4935,9 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'navigate:galerie': '→ Galerie créatives',
     'openProductForm': '+ Créer mon produit maintenant',
     'login': '→ Connecter mon compte Google',
-    'checkout:starter': 'Commencer avec Starter →',
-    'checkout:pro': 'Passer en Pro →',
-    'checkout:scale': 'Passer en Scale →',
-    'checkout-quarterly:starter': 'Starter trimestriel (-20%) →',
-    'checkout-quarterly:pro': 'Pro trimestriel (-20%) →',
-    'checkout-quarterly:scale': 'Scale trimestriel (-20%) →',
+    'checkout:starter': 'Commencer avec PERF+ →',
+    'checkout:pro': 'Passer en GROWTH →',
+    'checkout:scale': 'Passer en SCALE →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
   };
 
@@ -5062,44 +5059,61 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
   );
 };
 
-// MAJ pricing (oct. 2026 — grille 150 000 / 255 000 / 430 000 FCFA, 24 / 48 / 96 créatives par mois : vidéos + images,
-// trimestriel -20 % : 120 000 / 205 000 / 345 000) — remplace la grille précédente. Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
-// (historique) retour aux tarifs en FCFA fixes, avec convertPrice() réactivé
-// pour l'affichage (voir plus bas dans le fichier) — Chariow gère toujours la devise réelle au
-// moment du checkout, ce convertisseur n'est qu'un affichage indicatif avant paiement.
+// Arrondi COMMERCIAL à la hausse (devises converties) : le chiffre le plus rond possible, avec la plus petite hausse possible
+// (3 % maximum). On essaie des pas de plus en plus fins (1, 0,5, 0,25, 0,1, 0,05... fois la puissance de 10 du montant) et on garde le
+// premier dont la hausse reste sous 3 %. Au pire, le pas le plus fin ajoute moins de 1 %.
+const arrondirPrixHausse = (valeur, avecDecimales) => {
+  if (!(valeur > 0)) return valeur;
+  const base = Math.pow(10, Math.floor(Math.log10(valeur)));
+  const pas = [1, 0.5, 0.25, 0.1, 0.05, 0.025, 0.01, 0.005, 0.0025, 0.001];
+  for (let i = 0; i < pas.length; i++) {
+    const st = base * pas[i];
+    let c = Math.ceil(valeur / st - 1e-9) * st;
+    if (c / valeur - 1 <= 0.03 || i === pas.length - 1) {
+      c = Math.round(c * 1e6) / 1e6;
+      return avecDecimales ? Math.round(c * 100) / 100 : Math.round(c);
+    }
+  }
+  return valeur;
+};
+// Taille du texte d'un prix : les devises faibles (franc guinéen...) donnent de très longs nombres — on réduit pour que tout reste propre.
+const taillePrix = (texte, base, limite = 9) => {
+  const n = String(texte || '').replace(/\s/g, '').length;
+  return n <= limite ? base : Math.max(Math.round(base * 0.5), Math.round(base * limite / n * 10) / 10);
+};
+
+// MAJ pricing (oct. 2026 — grille 180 000 / 330 000 / 600 000 FCFA par mois, 24 / 48 / 96 créatives par mois : vidéos + images,
+// abonnement mensuel uniquement, garantie 45 jours). Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
+// Les identifiants internes (starter / pro / scale) restent ceux de la base et des webhooks ; seuls les noms affichés changent.
+// convertPrice() (plus bas) n'est qu'un affichage indicatif : Chariow gère la devise réelle au moment du checkout.
 const PLANS = [
   {
-    id:'starter', name:'Starter', color:C.gray, best:false,
+    id:'starter', name:'PERF+', color:C.gray, best:false,
     tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16,
-    badge:'24 Créatives / Mois', promo:'',
-    
-    monthly: { price:150000, prixImg:6250, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
-    quarterly: { price:120000, prixImg:5000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_wdya3v9h/checkout' },
+    badge:'24 Créatives / Mois', garantie:'Performance en 45 jours',
+    monthly: { price:180000, prixImg:7500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
   },
   {
-    id:'pro', name:'Pro', color:C.accent, best:true,
+    id:'pro', name:'GROWTH', color:C.accent, best:true,
     tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
-    badge:'48 Créatives / Mois', promo:'-15% de réduction',
-    
-    monthly: { price:255000, prixImg:5313, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
-    quarterly: { price:205000, prixImg:4271, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_lnp4ax0b/checkout' },
+    badge:'48 Créatives / Mois', garantie:'Croissance en 45 jours',
+    monthly: { price:330000, prixImg:6875, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
   },
   {
-    id:'scale', name:'Scale', color:C.white, best:false,
+    id:'scale', name:'SCALE', color:C.white, best:false,
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
     imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
-    badge:'96 Créatives / Mois', promo:'-30% de réduction',
-    
-    monthly: { price:430000, prixImg:4479, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
-    quarterly: { price:345000, prixImg:3594, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_dn4fb72l/checkout' },
+    badge:'96 Créatives / Mois', garantie:'Scaling en 45 jours',
+    monthly: { price:600000, prixImg:6250, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
   },
 ];
 
+// Les ids trimestriels restent pour les abonnés existants ; l'offre trimestrielle n'est plus vendue.
 const PLAN_CHECKOUT_IDS = {
   'starter-monthly': 'prd_ljowq8',   'starter-quarterly': 'prd_wdya3v9h',
   'pro-monthly':     'prd_34w031',   'pro-quarterly':     'prd_lnp4ax0b',
@@ -5153,7 +5167,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "Starter (24 créatives par mois : 1 batch par semaine de 2 vidéos et 4 images, 1 produit par semaine), Pro (48 créatives par mois : 2 batchs par semaine, jusqu'à 2 produits par semaine), et Scale (96 créatives par mois : 4 batchs par semaine, jusqu'à 4 produits par semaine). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
+    a: "PERF+ (24 créatives par mois : 1 lot par semaine de 2 vidéos et 4 images, 1 produit par semaine, garantie Performance en 45 jours), GROWTH (48 créatives par mois : 2 lots par semaine, jusqu'à 2 produits par semaine, garantie Croissance en 45 jours), et SCALE (96 créatives par mois : 4 lots par semaine, jusqu'à 4 produits par semaine, garantie Scaling en 45 jours). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
   },
   {
     q: "En combien de temps mes créatives sont-elles livrées ?",
@@ -5172,8 +5186,8 @@ const FAQ_ITEMS = [
     a: "Le paiement est traité de façon sécurisée par notre partenaire Chariow. Nous ne stockons jamais vos informations bancaires directement."
   },
   {
-    q: "Comment fonctionne la garantie « Résultats en 30 jours ou remboursé » ?",
-    a: "Vous publiez les créatives livrées et investissez en publicité avec elles pendant un mois. Si vous ne constatez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire (vos dépenses du mois et vos résultats : ROAS, coût par achat…). Nous vérifions, puis nous vous remboursons l'intégralité de votre paiement."
+    q: "Comment fonctionne la garantie « Résultats en 45 jours ou remboursé » ?",
+    a: "Vous publiez les créatives livrées et investissez en publicité avec elles pendant 45 jours. Si vous ne constatez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire (vos dépenses du mois et vos résultats : ROAS, coût par achat…). Nous vérifions, puis nous vous remboursons l'intégralité de votre paiement."
   },
   {
     q: "Que faire si une créative ne me convient pas ?",
@@ -5233,7 +5247,7 @@ const Faq = () => {
 
 const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscription=null, credits=null, onOpenPayment=null, user=null}) => {
   const isMobile = useIsMobile();
-  const [quarterly, setQuarterly] = useState(false); // par défaut sur mensuel
+  const quarterly = false; // abonnement mensuel uniquement (le trimestriel n'est plus vendu)
   const onCta = async (plan) => {
     const cycle = quarterly ? 'quarterly' : 'monthly';
     const cycleData = plan[cycle];
@@ -5294,32 +5308,12 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         </p>
       </div>
 
-      {/* ── Toggle Mensuel / Trimestriel ── */}
-      <div style={{display:'flex',flexDirection:'column',alignItems:isMobile?'center':'flex-start',marginBottom:24}}>
-        <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <span style={{fontSize:13,fontWeight:600,color:!quarterly?C.text:C.sec}}>Mensuel</span>
-          <button
-            onClick={() => setQuarterly(a => !a)}
-            style={{width:44,height:24,borderRadius:99,border:'none',cursor:'pointer',position:'relative',background:quarterly?C.accent:'rgba(255,255,255,0.15)',transition:'background 0.2s',flexShrink:0}}
-          >
-            <div style={{position:'absolute',top:2,left:quarterly?22:2,width:20,height:20,borderRadius:'50%',background:'#fff',transition:'left 0.2s'}}/>
-          </button>
-          <span style={{fontSize:13,fontWeight:600,color:quarterly?C.text:C.sec,display:'flex',alignItems:'center',gap:7}}>
-            Trimestriel
-            <span style={{fontSize:10,fontWeight:800,padding:'2px 8px',borderRadius:99,background:C.accentS,color:C.accent}}>-20%</span>
-          </span>
-        </div>
-        <p style={{fontSize:11.5,color:C.muted,marginTop:8,textAlign:isMobile?'center':'left'}}>
-          Facturation au choix — paie mensuellement ou une fois par trimestre. <strong style={{color:C.accent}}>Le trimestriel te fait économiser 20%.</strong>
-        </p>
-      </div>
-
       {/* ── Garantie — visible sur PC ; sur mobile, trop encombrante ici, déplacée sous chaque CTA ── */}
       {!isMobile && (
         <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.22)`,marginBottom:20,flexWrap:'wrap'}}>
           <span style={{width:30,height:30,borderRadius:9,background:'rgba(45,127,249,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="lock" size={15} color={C.accent}/></span>
           <div style={{fontSize:12.5,color:C.text,lineHeight:1.4}}>
-            <strong style={{color:C.accent}}>Résultats en 30 jours ou remboursé.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
+            <strong style={{color:C.accent}}>Garantie résultats en 45 jours.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
           </div>
         </div>
       )}
@@ -5342,16 +5336,17 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           const cycleData = quarterly ? p.quarterly : p.monthly;
           // Fonctionnalités (oct. 2026) — texte fourni par Amar, identique pour les 3 offres : seuls le nombre
-          // de batchs par semaine et leur contenu (2 vidéos + 4 images par batch) changent.
+          // de lots par semaine, la capacité en produits et le nom de la garantie changent.
           const featureGroups = [
             { titre:'', items:[
-              { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur concurrents, cible & angles' },
-              { icon:'image', bold:`${p.batchesPerWeek} Batch / Semaine`, rest:`: ${p.batchesPerWeek*2} vidéos et ${p.batchesPerWeek*4} images optimisés conversion` },
-              { icon:'document', bold:'Ad Copies', rest:': titres et descriptions pour la campagne' },
-              { icon:'box', bold:'Couverture', rest:p.batchesPerWeek>1 ? `: jusqu'à ${p.batchesPerWeek} produits couverts / semaine` : ': 1 produit couvert / semaine' },
-              { icon:'sparkle', bold:'Apprentissage Continu', rest:': itération et amélioration des prochaines créatives' },
-              { icon:'grid', bold:'Accès Plateforme AdBoard', rest:': gestion structurée de vos produits et créatives' },
-              { icon:'bolt', bold:'Production', rest:': en max 24h après demande' },
+              { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
+              { icon:'image', bold:`${p.batchesPerWeek} ${p.batchesPerWeek>1?'lots':'lot'} / Semaine`, rest:`: ${p.batchesPerWeek*2} vidéos et ${p.batchesPerWeek*4} images optimisés conversion` },
+              { icon:'document', bold:'Ad Copies', rest:': titres et textes optimisés conversion' },
+              { icon:'box', bold:'Capacité', rest:p.batchesPerWeek>1 ? `: jusqu'à ${p.batchesPerWeek} produits couverts / semaine` : ': 1 produit couvert / semaine' },
+              { icon:'sparkle', bold:'Apprentissage', rest:': itération et amélioration des prochains lots' },
+              { icon:'grid', bold:'Accès Plateforme AdBoard', rest:': gestion des créatives, données et produits' },
+              { icon:'bolt', bold:'Production', rest:': maximum 24h après demande' },
+              { icon:'check', bold:'Garantie', rest:`: ${p.garantie}` },
             ]},
           ];
           return (
@@ -5393,14 +5388,8 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                   (geo-détection + taux de change) — Chariow reste la source de vérité au
                   moment du checkout, cet affichage n'est qu'indicatif. */}
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-                <span style={{fontSize:30,fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
+                <span style={{fontSize:taillePrix(convertPrice(cycleData.price),30),fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 <span style={{fontSize:11,color:C.sec}}>/ mois</span>
-                {quarterly && (
-                  <span style={{fontSize:9,fontWeight:800,color:C.accent,background:'rgba(45,127,249,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>Plan trimestriel</span>
-                )}
-                {p.promo && (
-                  <span style={{fontSize:9,fontWeight:800,color:'#3DDC84',background:'rgba(61,220,132,0.12)',padding:'2px 7px',borderRadius:20,letterSpacing:'0.3px',textTransform:'uppercase'}}>{p.promo}</span>
-                )}
               </div>
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
@@ -5459,7 +5448,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {!isCurrent && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
-                  {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Résultats en 30 jours ou remboursé</span></>}
+                  {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Garantie résultats en 45 jours</span></>}
                 </div>
               )}
             </div>
@@ -6227,9 +6216,10 @@ export default function Platform() {
     const CHARIOW_COEFF = 1.035; // +3.5% pour rester légèrement au-dessus de Chariow
     const NO_DECIMALS = ['XOF','XAF','GNF','KMF','DJF','RWF','BIF','UGX','TZS','MGA','JPY','KRW','VND','CLP','PYG','IDR','MMK'];
     const hasDecimals = !NO_DECIMALS.includes(currency);
-    const decimals = hasDecimals ? 2 : 0;
     const raw = fcfa * rate * CHARIOW_COEFF;
-    return new Intl.NumberFormat(undefined, { style:'currency', currency, minimumFractionDigits:decimals, maximumFractionDigits:decimals }).format(raw);
+    const arrondi = arrondirPrixHausse(raw, hasDecimals);
+    const decimals = hasDecimals && !Number.isInteger(arrondi) ? 2 : 0;
+    return new Intl.NumberFormat(undefined, { style:'currency', currency, minimumFractionDigits:decimals, maximumFractionDigits:hasDecimals ? 2 : 0 }).format(arrondi);
   };
   useEffect(() => {
     const style = document.createElement('style');
