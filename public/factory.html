@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.2-faits-client -->
+<!-- FACTORY_VERSION v7.3-aspects-photo -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -2870,8 +2870,11 @@ async function prodv2Launch() {
         if (lg) { analysteParts.push({ type:'text', text:'IMAGE SUIVANTE = LOGO DU CLIENT (à décrire avec une précision maximale dans S11 — FICHE LOGO) :' }); analysteParts.push({ type:'image', source:{ type:'base64', media_type: lg.mime, data: lg.data } }); }
       }
       const _sup = [];
-      (_b.packaging_images || []).slice(0, 3).forEach(u => _sup.push(['PACKAGING / EMBALLAGE', u]));
-      (_b.galerie_images || []).slice(0, 3).forEach(u => _sup.push(['AUTRE ANGLE DU PRODUIT', u]));
+      // v7.3 — plus d'« emballage » : chaque photo porte un ASPECT (face, côté, dos, forme, préparé, en main, détail).
+      const _ASP = { face:'FACE', cote:'CÔTÉ', dos:'DOS (étiquette arrière)', forme:'LE PRODUIT LUI-MÊME (poudre, gélule, texture…)', prepare:'PRÉPARÉ / EN USAGE', en_main:'EN MAIN', detail:'DÉTAIL' };
+      const _asps = _b.galerie_aspects || {};
+      (_b.packaging_images || []).slice(0, 2).forEach(u => _sup.push(['AUTRE VUE DU PRODUIT', u])); // anciens briefs
+      (_b.galerie_images || []).filter(u => u !== _b.photo_url).slice(0, 5).forEach(u => _sup.push([_asps[u] && _ASP[_asps[u]] ? 'ASPECT DU PRODUIT : ' + _ASP[_asps[u]] : 'AUTRE ANGLE DU PRODUIT', u]));
       for (const [lib, u] of _sup) {
         const im = await _charger(u);
         if (im) { analysteParts.push({ type:'text', text:'IMAGE SUIVANTE = ' + lib + ' (même produit que la photo principale ; sert à comprendre le mécanisme, le format, l\'étiquette et la composition) :' }); analysteParts.push({ type:'image', source:{ type:'base64', media_type: im.mime, data: im.data } }); }
@@ -4931,7 +4934,7 @@ En 1-2 phrases, décris le fil de marque que quelqu'un exposé à l'ENSEMBLE de 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Cette section rassemble, en un seul endroit relu par TOUS les agents suivants (Creative Image, Copywriter, Creative Vidéo), ce que le CLIENT a lui-même fourni. Elle ne contient AUCUNE recherche externe : uniquement le brief, les documents du client, la page produit et les images jointes. Un fait absent de ces sources s'écrit "non fourni" — jamais déduit, jamais inventé.
 
-Écris S11 avec exactement ces rubriques, dans cet ordre :
+Écris S11 avec exactement ces rubriques (A à F), dans cet ordre :
 
 A. FAITS CLIENT (vérité du client, prioritaire sur toute donnée externe en cas de contradiction)
 → Nom exact du produit, marque (ou [AUCUNE MARQUE FOURNIE]), offre en cours, prix, garantie, livraison et paiement : recopiés tels que le client les a donnés. Le client écrit parfois ces infos de façon imprécise : reformule-les nettement, sans rien ajouter ni retirer.
@@ -4952,6 +4955,9 @@ D. FICHE LOGO
 
 E. COULEURS DE MARQUE
 → Si le brief porte des couleurs, elles priment pour la palette de S0 : cite-les ici avec leurs codes. Sinon : "non fournies".
+
+F. ASPECTS DU PRODUIT FOURNIS
+→ Pour chaque photo supplémentaire reçue (face, côté, dos, forme, préparé, en main, détail) : une ligne qui dit ce qu'on y voit EXACTEMENT (étiquette arrière lisible ? couleur et texture de la poudre ? taille de la tasse ?), pour que les agents qui ne voient pas ces photos reproduisent chaque aspect sans erreur. S'il n'y a que la photo principale : "aspect unique fourni". Il n'existe plus de catégorie « emballage » : le pot, le sachet ou le flacon EST le produit.
 
 Cohérence : S11 ne contredit jamais S0 à S9. Si un fait client contredit une donnée externe, le fait client l'emporte et tu le signales en une ligne.
 
@@ -5535,6 +5541,9 @@ Dans ce cas, la Condition 2 de V4 (brief.marque vide) ne bloque pas : le texte d
 Faits à ne jamais contredire sur la créative : prix, offre, garantie, livraison tels qu'écrits en S11-A. Une créative n'affiche une garantie ou une offre que si le CT a une zone pour cela ET que S11-A la fournit.
 
 Les captures d'avis du client ne sont JAMAIS utilisées dans une créative image.
+
+RÈGLE V6 — CARTON D'EXPÉDITION NEUTRE (SCÈNES DE COLIS, DÉBALLAGE, LIVRAISON)
+Le client n'a pas de packaging spécial : son produit (pot, sachet, flacon, tube…) est déjà son produit, fidèle à la photo fournie. Quand le CT montre un colis, un déballage, une ouverture de boîte ou une livraison, la boîte est TOUJOURS un simple carton d'expédition brun uni, sans logo, sans texte, sans impression ni ruban de marque. Le produit du client sort de ce carton tel qu'il est sur la photo. Tu n'inventes jamais une boîte de marque, un coffret ou un emballage cadeau.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ADAPTATION — CONSERVER LA STRUCTURE, REMPLACER LE CONTENU
@@ -6852,8 +6861,9 @@ async function prodv2LoadBriefFromCommande(b) {
     // (emballage, autres angles) et nombre de captures d'avis. Seul l'Analyste reçoit tout cela ; les autres agents
     // en profitent via la section S11 de la synthèse.
     documents: Array.isArray(b.product.documents) ? b.product.documents.filter(d => d && d.url).slice(0, 5) : [],
-    galerie_images: Array.isArray(b.product.galerie_images) ? b.product.galerie_images.slice(0, 8) : [],
-    packaging_images: Array.isArray(b.product.packaging_images) ? b.product.packaging_images.slice(0, 4) : [],
+    galerie_images: Array.isArray(b.product.galerie_images) ? b.product.galerie_images.slice(0, 10) : [],
+    galerie_aspects: (b.product.galerie_aspects && typeof b.product.galerie_aspects === 'object') ? b.product.galerie_aspects : {},
+    packaging_images: Array.isArray(b.product.packaging_images) ? b.product.packaging_images.slice(0, 2) : [],
     avis_captures_nb: Array.isArray(b.product.avis_captures) ? b.product.avis_captures.length : 0,
     avis_captures: Array.isArray(b.product.avis_captures) ? b.product.avis_captures.slice(0, 8) : [],
     utilite: b.product.utilite || '',

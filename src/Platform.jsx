@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.3-offres
+// ADBOARD_VERSION v7.4-aspects
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -680,7 +680,7 @@ const EMPTY_PRODUCT = {
   nom:'', pricing:'', promo:'', lien:'', utilite:'', cible:'', pays:'', notes:'',
   couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, deliveries:[], marche:null,
   documents:[], documents_modifies:false,
-  galerie_images:[], packaging_images:[], avis_captures:[], avis_textes:[],
+  galerie_images:[], galerie_aspects:{}, avis_captures:[], avis_textes:[],
   garantie:'', livraison_paiement:'',
 };
 
@@ -832,8 +832,9 @@ const depuisLigneProduit = (p) => {
     photo: p.photo_url,
     logo: p.logo_url || null,
     notes: p.notes || '',
-    galerie_images: Array.isArray(p.galerie_images) ? p.galerie_images : [],
-    packaging_images: Array.isArray(perso.packaging_images) ? perso.packaging_images : [],
+    // v7.4 — plus de catégorie « emballage » : les anciennes photos d'emballage rejoignent la galerie (aspect « autre »).
+    galerie_images: [...new Set([...(Array.isArray(p.galerie_images) ? p.galerie_images : []), ...(Array.isArray(perso.packaging_images) ? perso.packaging_images : [])])].slice(0, 10),
+    galerie_aspects: (perso.galerie_aspects && typeof perso.galerie_aspects === 'object') ? perso.galerie_aspects : {},
     avis_captures: Array.isArray(perso.avis_captures) ? perso.avis_captures : [],
     avis_textes: Array.isArray(perso.avis_textes) ? perso.avis_textes : [],
     garantie: perso.garantie || '',
@@ -918,8 +919,8 @@ const sbProducts = {
     const liste = async (l) => { const out = []; for (const u of (l || [])) { const r = await up(u); if (r) out.push(r); } return out; };
     const photoUrl = await up(product.photo);
     const logoUrl = await up(product.logo);
-    const galerie = await liste(product.galerie_images);
-    const packaging = await liste(product.packaging_images);
+    const galerie = [], aspects = {};
+    for (const u of (product.galerie_images || [])) { const r = await up(u); if (r) { galerie.push(r); const a = (product.galerie_aspects || {})[u]; if (a) aspects[r] = a; } }
     const avis = await liste(product.avis_captures);
     return {
       photoUrl, logoUrl,
@@ -931,12 +932,12 @@ const sbProducts = {
         galerie_images: galerie,
         logo_url: logoUrl, notes: product.notes || '',
         perso: {
-          packaging_images: packaging, avis_captures: avis, avis_textes: product.avis_textes || [],
+          galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [],
           garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '',
           cible_auto: !!(product.cible && product.cible_auto),
         },
       },
-      locaux: { logo: logoUrl, notes: product.notes || '', galerie_images: galerie, packaging_images: packaging, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '' },
+      locaux: { logo: logoUrl, notes: product.notes || '', galerie_images: galerie, galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '' },
     };
   },
   // Écrit en base. Si une colonne récente n'existe pas encore (migration SQL non faite), retente sans elle plutôt que
@@ -2170,7 +2171,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
 // ═══════════════════════════════════════════════════════════════════════════
 const BROUILLON_PREFIX = 'adstack_brouillon_produit_';
 const cleBrouillon = (userId, produitId) => `${BROUILLON_PREFIX}${userId || 'anon'}_${produitId || 'new'}`;
-const CHAMPS_FICHE = ['nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','packaging_images','avis_captures','avis_textes','documents'];
+const CHAMPS_FICHE = ['nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','galerie_aspects','avis_captures','avis_textes','documents'];
 // Empreinte du contenu utile de la fiche : sert à savoir si le client a vraiment saisi / modifié quelque chose
 // (pas de brouillon enregistré pour une page ouverte puis refermée sans toucher à rien).
 const signatureFiche = (f) => {
@@ -2224,7 +2225,7 @@ const compresserImage = (file, { max = 1000, type = 'image/jpeg', qualite = 0.85
   img.src = objUrl;
 });
 
-const LIMITES_IMAGES = { galerie_images: 8, packaging_images: 4, avis_captures: 8 };
+const LIMITES_IMAGES = { galerie_images: 10, avis_captures: 8 };
 
 // Carte de section : numéro, titre, mini-description qui guide le client, contenu.
 const CartePage = ({ id, numero, titre, description, optionnel, children }) => (
@@ -2243,8 +2244,26 @@ const CartePage = ({ id, numero, titre, description, optionnel, children }) => (
   </section>
 );
 
+// v7.4 — Photos par « aspect » (angle / forme / état) au lieu d'une catégorie « emballage » : un pot reste un pot.
+const ASPECTS_PHOTO = [
+  ['face','Face'], ['cote','Côté'], ['dos','Dos'], ['forme','Le produit lui-même'],
+  ['prepare','Préparé / en usage'], ['en_main','En main'], ['detail','Détail'], ['autre','Autre'],
+];
+const guideAspects = (nom, utilite) => {
+  const t = `${nom || ''} ${utilite || ''}`.toLowerCase();
+  const types = [
+    [/caf[ée]|th[ée]|matcha|tisane|infusion|poudre|boisson|shake|prot[ée]ine|mushroom|coffee|tea\b|powder|drink|sachet/, 'une boisson ou une poudre en sachet', 'le sachet de face, de côté et de dos, la poudre, puis la tasse prête à boire'],
+    [/g[ée]lule|capsule|compl[ée]ment|vitamine|comprim[ée]|gummies|probiotique|supplement|vitamin|collag[èe]ne/, 'un complément alimentaire', 'le pot de face, une gélule ou capsule, puis le pot de dos avec l\'étiquette'],
+    [/s[ée]rum|cr[èe]me|huile|soin|shampo|lotion|masque|cosm[ée]tique|savon|parfum|skin|serum|cream|oil\b/, 'un produit de soin', 'le flacon de face, la texture sur la main ou la peau, puis le flacon de dos'],
+    [/robe|t-?shirt|chemise|pantalon|chaussure|sac\b|montre|bijou|collier|bague|veste|sneaker|dress|shirt|bag\b|watch/, 'un vêtement ou un accessoire', 'le produit de face, de dos, porté, puis un gros plan sur la matière ou un détail'],
+  ];
+  const trouve = types.find(([re]) => re.test(t));
+  if (trouve) return `Pour ${trouve[1]} : ${trouve[2]}.`;
+  return 'Photographiez chaque aspect de votre produit : de face, de côté, de dos, le produit lui-même (poudre, gélule, texture…) et en usage (tasse préparée, porté, en main).';
+};
+
 // Champ images (plusieurs fichiers) : miniatures toujours avec bouton retirer visible, envoi en cours affiché.
-const ImagesField = ({ titre, aide, liste, max, onAdd, onRemove, principale, onPick, enCours = 0, erreur, labelAjout = 'Ajouter', requis }) => {
+const ImagesField = ({ titre, aide, liste, max, onAdd, onRemove, principale, onPick, enCours = 0, erreur, labelAjout = 'Ajouter', requis, aspects, onAspect }) => {
   const ref = useRef(null);
   const plein = liste.length + enCours >= max;
   return (
@@ -2259,13 +2278,22 @@ const ImagesField = ({ titre, aide, liste, max, onAdd, onRemove, principale, onP
         {liste.map((url, i) => {
           const sel = principale && url === principale;
           return (
-            <div key={i} onClick={onPick ? () => onPick(url) : undefined}
+            <div key={i} style={{width:88,flexShrink:0}}>
+            <div onClick={onPick ? () => onPick(url) : undefined}
               style={{position:'relative',width:88,height:88,flexShrink:0,borderRadius:13,border:`2px solid ${sel?C.accent:'rgba(255,255,255,0.08)'}`,background:`#0a0c11 url(${url}) center/cover no-repeat`,cursor:onPick?'pointer':'default',boxShadow:sel?'0 0 0 3px rgba(91,141,239,0.2)':'none'}}>
               {sel && <div style={{position:'absolute',left:4,bottom:4,fontSize:9,fontWeight:800,color:'#fff',background:C.accent,borderRadius:5,padding:'2px 6px'}}>Principale</div>}
               <button type="button" onClick={(e) => { e.stopPropagation(); onRemove(i); }} title="Retirer cette image"
                 style={{position:'absolute',top:-8,right:-8,width:26,height:26,borderRadius:'50%',background:'#EF6B5B',border:'2px solid #0a0c11',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',padding:0,boxShadow:'0 1px 5px rgba(0,0,0,0.5)'}}>
                 <Icon name="x" size={12} color="#fff"/>
               </button>
+            </div>
+            {aspects && (
+              <select value={aspects[url] || ''} onChange={e => onAspect(url, e.target.value)} aria-label="Aspect de cette photo"
+                style={{width:88,marginTop:6,boxSizing:'border-box',padding:'5px 4px',fontSize:10.5,fontFamily:'inherit',color:aspects[url]?C.text:C.muted,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:7,outline:'none'}}>
+                <option value="">Quel aspect ?</option>
+                {ASPECTS_PHOTO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+              </select>
+            )}
             </div>
           );
         })}
@@ -2319,8 +2347,11 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
   const base = useMemo(() => {
     const b = { ...EMPTY_PRODUCT, ...(produit || {}) };
     const g = Array.isArray(b.galerie_images) ? b.galerie_images : [];
-    b.galerie_images = g.length ? g : (b.photo ? [b.photo] : []);
-    ['packaging_images','avis_captures','avis_textes'].forEach(k => { if (!Array.isArray(b[k])) b[k] = []; });
+    const anciens = Array.isArray(b.packaging_images) ? b.packaging_images : []; // ancien champ « emballage » (brouillons d'avant v7.4)
+    b.galerie_images = [...new Set([...(g.length ? g : (b.photo ? [b.photo] : [])), ...anciens])].slice(0, 10);
+    delete b.packaging_images;
+    if (!b.galerie_aspects || typeof b.galerie_aspects !== 'object') b.galerie_aspects = {};
+    ['avis_captures','avis_textes'].forEach(k => { if (!Array.isArray(b[k])) b[k] = []; });
     ['garantie','livraison_paiement','notes'].forEach(k => { if (typeof b[k] !== 'string') b[k] = b[k] || ''; });
     return b;
   }, []);
@@ -2409,6 +2440,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
   const retirerImage = (cible, i) => setForm(f => {
     const liste = (f[cible] || []).filter((_, j) => j !== i);
     const next = { ...f, [cible]: liste };
+    if (cible === 'galerie_images') { const url = (f[cible] || [])[i]; const ga = { ...(f.galerie_aspects || {}) }; delete ga[url]; next.galerie_aspects = ga; }
     if (cible === 'galerie_images' && f.photo === (f[cible] || [])[i]) next.photo = liste[0] || '';
     return next;
   });
@@ -2454,10 +2486,9 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
       if (Array.isArray(d.couleurs) && d.couleurs.length >= 2) d.couleurs.slice(0, 3).forEach((c, i) => { if (typeof c === 'string') auto['couleur' + (i + 1)] = c; });
       if (typeof d.logo === 'string' && /^https?:\/\//.test(d.logo)) auto.logo = d.logo;
       const imgsProduit = Array.isArray(j.images) ? j.images.filter(u => typeof u === 'string') : [];
-      const imgsEmb = Array.isArray(j.images_emballage) ? j.images_emballage.filter(u => typeof u === 'string') : [];
+      const aspectsAuto = (j && j.aspects && typeof j.aspects === 'object') ? j.aspects : {};
       const avis = Array.isArray(d.avis) ? d.avis.filter(a => typeof a === 'string' && a.trim()).slice(0, 6) : [];
       const dejaImgs = new Set(snap.__imgs || []);
-      const dejaEmb = new Set(snap.__emb || []);
       setForm(f => {
         const next = { ...f };
         Object.keys(auto).forEach(k => { if (!f[k] || f[k] === snap[k]) next[k] = auto[k]; });
@@ -2468,15 +2499,17 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
           const gardees = (f.galerie_images || []).filter(u => !dejaImgs.has(u));
           next.galerie_images = [...gardees, ...imgsProduit.filter(u => !gardees.includes(u))].slice(0, LIMITES_IMAGES.galerie_images);
           if (!f.photo || dejaImgs.has(f.photo) || !next.galerie_images.includes(f.photo)) next.photo = next.galerie_images.find(u => imgsProduit.includes(u)) || next.galerie_images[0] || '';
-          const gardeesEmb = (f.packaging_images || []).filter(u => !dejaEmb.has(u));
-          next.packaging_images = [...gardeesEmb, ...imgsEmb.filter(u => !gardeesEmb.includes(u))].slice(0, LIMITES_IMAGES.packaging_images);
+          // aspects : ceux que le client a choisis lui-même sont conservés ; les nôtres s'ajoutent pour les photos qui n'en ont pas.
+          const ga = {};
+          next.galerie_images.forEach(u => { const a = (f.galerie_aspects || {})[u] || aspectsAuto[u]; if (a && (!dejaImgs.has(u) || aspectsAuto[u] || (f.galerie_aspects || {})[u])) ga[u] = (f.galerie_aspects || {})[u] || aspectsAuto[u]; });
+          next.galerie_aspects = ga;
           const avisAvant = snap.__avis || [];
           const intacts = !(f.avis_textes || []).length || ((f.avis_textes || []).length === avisAvant.length && (f.avis_textes || []).every((a, i) => a === avisAvant[i]));
           if (intacts) next.avis_textes = avis; // vrais avis de la page du client, déjà vérifiés mot pour mot côté serveur
         }
         return next;
       });
-      const nouvelAuto = { ...snap, ...auto, __imgs: [...new Set([...(snap.__imgs || []), ...imgsProduit])], __emb: [...new Set([...(snap.__emb || []), ...imgsEmb])], __avis: avis };
+      const nouvelAuto = { ...snap, ...auto, __imgs: [...new Set([...(snap.__imgs || []), ...imgsProduit])], __avis: avis };
       autoRef.current = nouvelAuto; setAutoValeurs(nouvelAuto);
       setAvisProposes(avis);
       const rempli = Object.keys(auto).length + (imgsProduit.length ? 1 : 0) + (avis.length ? 1 : 0);
@@ -2545,8 +2578,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
     { k:'pricing', label:'Offre actuelle', ok:!!form.pricing, essentiel:true, cible:'pp-essentiel' },
     { k:'pays', label:'Marché cible', ok:!!form.pays, essentiel:true, cible:'pp-essentiel' },
     { k:'lien', label:'Lien de la page produit', ok:!!form.lien, cible:'pp-lien' },
-    { k:'angles', label:'Plusieurs angles du produit', ok:(form.galerie_images||[]).length > 1, cible:'pp-photos' },
-    { k:'pack', label:'Photo de l\'emballage', ok:(form.packaging_images||[]).length > 0, cible:'pp-photos' },
+    { k:'angles', label:'Au moins 3 aspects du produit (face, dos, forme, en usage…)', ok:(form.galerie_images||[]).length > 2, cible:'pp-photos' },
     { k:'garantie', label:'Garantie et livraison', ok:!!(form.garantie || form.livraison_paiement), cible:'pp-offre' },
     { k:'cible', label:'Votre client', ok:!!(form.cible && form.utilite), cible:'pp-client' },
     { k:'logo', label:'Logo', ok:!!form.logo, cible:'pp-marque' },
@@ -2640,7 +2672,6 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
                   const vus = [];
                   Object.keys(noms).forEach(k => { if (estAuto(k) && !vus.includes(noms[k])) vus.push(noms[k]); });
                   if ((form.galerie_images || []).some(u => (autoValeurs.__imgs || []).includes(u))) vus.push('photos');
-                  if ((form.packaging_images || []).some(u => (autoValeurs.__emb || []).includes(u))) vus.push('emballage');
                   if ((form.avis_textes || []).length && avisProposes.length) vus.push('avis');
                   const couleurTexte = fetchingLien ? C.muted : (lienMessage === 'manuel' || lienMessage === 'invalide') ? '#EAB308' : lienMessage === 'success' ? C.accent : C.muted;
                   return (
@@ -2671,18 +2702,17 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             {/* 3 — Photos */}
             <CartePage id="pp-photos" numero="3" titre="Photos de votre produit"
               description="Des photos nettes où le produit se voit bien.">
+              <div style={{fontSize:12,color:C.sec,lineHeight:1.6,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,borderRadius:10,padding:'10px 12px'}}>
+                <strong style={{color:C.text}}>Un aspect = une photo.</strong> {guideAspects(form.nom, form.utilite)}
+              </div>
               <ImagesField titre="Photos du produit" requis
-                aide="Cliquez sur une photo pour en faire la principale. Ajoutez d'autres angles : face, côté, en main."
+                aide="Cliquez sur une photo pour en faire la principale, puis indiquez l'aspect de chacune sous sa vignette. Pas besoin de photo d'emballage à part : un pot ou un sachet est déjà votre produit."
                 liste={form.galerie_images || []} max={LIMITES_IMAGES.galerie_images}
                 enCours={envois.galerie_images || 0}
                 principale={form.photo} onPick={(url) => setForm(f => ({ ...f, photo: url }))}
+                aspects={form.galerie_aspects || {}} onAspect={(url, a) => setForm(f => ({ ...f, galerie_aspects: { ...(f.galerie_aspects || {}), [url]: a } }))}
                 onAdd={(fs) => ajouterImages(fs, 'galerie_images')} onRemove={(i) => retirerImage('galerie_images', i)}
                 erreur={errors.photo && !(form.galerie_images || []).length ? 'Ajoutez au moins une photo du produit.' : ''}/>
-              <ImagesField titre="Emballage / packaging" labelAjout="Ajouter"
-                aide="Photo de la boîte ou de l'étiquette, devant et derrière si possible. Pour reproduire votre emballage sans erreur."
-                liste={form.packaging_images || []} max={LIMITES_IMAGES.packaging_images}
-                enCours={envois.packaging_images || 0}
-                onAdd={(fs) => ajouterImages(fs, 'packaging_images')} onRemove={(i) => retirerImage('packaging_images', i)}/>
               {msgImages && <div style={{fontSize:11,color:'#EAB308'}}>{msgImages}</div>}
             </CartePage>
 
@@ -2965,7 +2995,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         logo: p.logo ? '[fichier logo joint]' : null,
         garantie: p.garantie || null,
         livraison_et_paiement: p.livraison_paiement || null,
-        photos_emballage: (p.packaging_images || []).length || null,
+        aspects_photos: Object.values(p.galerie_aspects || {}).filter(Boolean).length || null,
         captures_avis_clients: (p.avis_captures || []).length || null,
         contexte_additionnel: p.notes || null,
       },
@@ -5873,7 +5903,7 @@ export default function Platform() {
         galerie_images: product.galerie_images || [],
         // Infos de personnalisation (page produit v7.0) — toutes facultatives ; l'absence d'une info = on ne l'invente jamais.
         logo_url: product.logo || product.logo_url || null,
-        packaging_images: product.packaging_images || [],
+        galerie_aspects: product.galerie_aspects || {},
         avis_captures: product.avis_captures || [],
         avis_textes: product.avis_textes || [],
         garantie: product.garantie || '',
