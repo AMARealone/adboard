@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.5-aspects-uniques
+// ADBOARD_VERSION v7.6-marche-redirection
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -2375,6 +2375,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
   const [confirmReset, setConfirmReset] = useState(false);
   const [fetchingLien, setFetchingLien] = useState(false);
   const [lienMessage, setLienMessage] = useState('');
+  const [alerteMarche, setAlerteMarche] = useState('');
   const [avisProposes, setAvisProposes] = useState([]);
   const lienFetchedRef = useRef(produit?.lien || '');
   // Valeurs remplies automatiquement depuis la page produit : tant qu'un champ vaut encore sa valeur automatique, il est
@@ -2486,6 +2487,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
       if (Array.isArray(d.couleurs) && d.couleurs.length >= 2) d.couleurs.slice(0, 3).forEach((c, i) => { if (typeof c === 'string') auto['couleur' + (i + 1)] = c; });
       if (typeof d.logo === 'string' && /^https?:\/\//.test(d.logo)) auto.logo = d.logo;
       const imgsProduit = Array.isArray(j.images) ? j.images.filter(u => typeof u === 'string') : [];
+      setAlerteMarche(j && typeof j.redirection_locale === 'string' ? j.redirection_locale : '');
       const aspectsAuto = (j && j.aspects && typeof j.aspects === 'object') ? j.aspects : {};
       const avis = Array.isArray(d.avis) ? d.avis.filter(a => typeof a === 'string' && a.trim()).slice(0, 6) : [];
       const dejaImgs = new Set(snap.__imgs || []);
@@ -2688,6 +2690,11 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
                     </div>
                   );
                 })()}
+                {alerteMarche && !fetchingLien && (
+                  <div style={{fontSize:11.5,marginTop:8,lineHeight:1.55,color:'#EAB308'}}>
+                    Votre boutique nous a redirigés automatiquement vers sa version « {alerteMarche} ». Vérifiez le marché et la langue ci-dessous : ils peuvent différer de ceux de vos clients.
+                  </div>
+                )}
               </div>
             </CartePage>
 
