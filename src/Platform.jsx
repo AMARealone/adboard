@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.4-aspects
+// ADBOARD_VERSION v7.5-aspects-uniques
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -2291,7 +2291,7 @@ const ImagesField = ({ titre, aide, liste, max, onAdd, onRemove, principale, onP
               <select value={aspects[url] || ''} onChange={e => onAspect(url, e.target.value)} aria-label="Aspect de cette photo"
                 style={{width:88,marginTop:6,boxSizing:'border-box',padding:'5px 4px',fontSize:10.5,fontFamily:'inherit',color:aspects[url]?C.text:C.muted,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:7,outline:'none'}}>
                 <option value="">Quel aspect ?</option>
-                {ASPECTS_PHOTO.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                {ASPECTS_PHOTO.map(([k, l]) => <option key={k} value={k} disabled={k !== 'autre' && liste.some(u2 => u2 !== url && aspects[u2] === k)}>{l}{k !== 'autre' && liste.some(u2 => u2 !== url && aspects[u2] === k) ? ' (déjà pris)' : ''}</option>)}
               </select>
             )}
             </div>
