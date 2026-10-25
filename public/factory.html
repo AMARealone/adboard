@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- FACTORY_VERSION v7.1-fiche-auto -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -4610,6 +4611,10 @@ Le champ "marque" du brief peut légitimement arriver vide. Ce n'est pas une err
 → Palette de marque (couleurs exactes observées sur le produit/packaging)
 → Typographie de marque (famille, poids, personnalité visuelle)
 → Offre & pricing : prix de vente affiché (devise locale, depuis lien_page_produit si fourni), prix barré, réduction, bundle/pack, BOGO/cadeau, livraison (fait neutre, jamais un argument différenciant — voir S4), garantie/retour, urgence affichée
+→ Le brief peut contenir "garantie" et "livraison_paiement" : vérité client, fiable et prioritaire pour la S0 (n'invente jamais de garantie ou de condition de livraison absente).
+→ Le brief peut contenir "avis_textes" : vrais avis clients, utilisables tels quels comme verbatims. N'en fabrique jamais d'autres.
+→ Le brief peut contenir "cible_suggeree" : indice automatique tiré de la page produit, PAS une cible imposée. Elle ne déclenche jamais le CAS C. Tu construis ta propre cible avec l'affinement habituel et peux t'en inspirer si elle est cohérente. Seul le champ "cible" non vide est une cible imposée.
+→ Si "couleurs" est renseigné dans le brief, ces couleurs de marque priment pour la palette.
 → Le brief peut contenir un champ "promo" (offre en cours renseignée directement par le client — ex : "2 achetés = 1 offert") : c'est une source FIABLE et prioritaire, à noter explicitement ici même si elle n'apparaît pas sur la page produit scrapée. Si ce champ est vide, ne rien inventer à sa place.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -6748,7 +6753,15 @@ async function prodv2LoadBriefFromCommande(b) {
     produit: b.product.nom,
     pays: b.product.pays || '',
     pricing: b.product.pricing || '',
-    cible: b.product.cible || '',
+    // v7.1 : une cible pré-remplie automatiquement n'est PAS une cible imposée par le client
+    // (sinon CAS C se déclencherait à tort) : elle passe en cible_suggeree, simple indice.
+    cible: b.product.cible_auto ? '' : (b.product.cible || ''),
+    cible_suggeree: b.product.cible_auto ? (b.product.cible || '') : '',
+    garantie: b.product.garantie || '',
+    livraison_paiement: b.product.livraison_paiement || '',
+    avis_textes: Array.isArray(b.product.avis_textes) ? b.product.avis_textes : [],
+    logo_url: b.product.logo_url || '',
+    notes: b.product.notes || '',
     utilite: b.product.utilite || '',
     couleurs: b.product.couleurs || [],
     quantite: b.quantity || 6,
@@ -6959,7 +6972,11 @@ function voirBrief(id, btn) {
           ${row('Quantité commandée', `<span style="color:var(--blue);font-weight:700;font-size:16px;">${b.quantity} visuels</span>`)}
           ${row('Prix · Pays', `${b.product?.pricing||'—'} · ${b.product?.pays||'—'}`)}
           ${row('Offre promo en cours', b.product?.promo)}
-          ${row('Cible', b.product?.cible)}
+          ${row(b.product?.cible_auto ? 'Cible (suggérée auto)' : 'Cible', b.product?.cible)}
+          ${row('Garantie', b.product?.garantie)}
+          ${row('Livraison · Paiement', b.product?.livraison_paiement)}
+          ${row('Avis clients (texte)', (b.product?.avis_textes||[]).map(x=>'« '+String(x).replace(/</g,'&lt;')+' »').join('<br>'))}
+          ${row('Notes du client', b.product?.notes ? String(b.product.notes).replace(/</g,'&lt;') : '')}
           ${row('Utilité', b.product?.utilite)}
           ${couleurs.length ? `<div style="padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;">Couleurs</div><div style="display:flex;gap:6px;">${couleurs.map(col=>`<div style="width:28px;height:28px;border-radius:6px;background:${col};border:2px solid rgba(255,255,255,0.15);" title="${col}"></div>`).join('')}</div></div>` : ''}
           ${row('Client', `${b.client?.email||b.client?.user_id} · <span style="color:var(--blue);">${(b.client?.plan||'').toUpperCase()}</span>`)}
