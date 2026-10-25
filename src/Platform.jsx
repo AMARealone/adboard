@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.0-page-produit
+// ADBOARD_VERSION v7.1-fiche-auto
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -685,7 +685,7 @@ const EMPTY_PRODUCT = {
 };
 
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
-const Field = ({label, k, required, textarea, placeholder, hint, type='text', form, setForm, errors, C}) => {
+const Field = ({label, k, required, textarea, placeholder, hint, type='text', form, setForm, errors, C, auto=false}) => {
   const err = errors?.[k];
   const [focused, setFocused] = useState(false);
   const common = {
@@ -710,6 +710,7 @@ const Field = ({label, k, required, textarea, placeholder, hint, type='text', fo
     <div>
       <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:hint?3:6,display:'block'}}>
         {label}{required && <span style={{color:C.accent}}> *</span>}
+        {auto && <span style={{marginLeft:8,fontSize:9.5,fontWeight:700,color:C.accent}}>rempli automatiquement</span>}
       </label>
       {hint && <div style={{fontSize:10.5,color:C.muted,marginBottom:6,lineHeight:1.4}}>{hint}</div>}
       {textarea ? <textarea rows={2} {...common}/> : <input type={type} {...common}/>}
@@ -737,7 +738,7 @@ const MarchesField = ({ form, setForm, errors, C }) => {
   return (
     <div>
       <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:3,display:'block'}}>Marché cible<span style={{color:C.accent}}> *</span></label>
-      <div style={{fontSize:10.5,color:C.muted,marginBottom:6,lineHeight:1.4}}>Le pays où vous vendez. Vous vendez ailleurs aussi ? Ajoutez-le avec le +.</div>
+      <div style={{fontSize:10.5,color:C.muted,marginBottom:6,lineHeight:1.4}}>Le pays où vous vendez. Plusieurs pays ? Ajoutez-les avec +.</div>
       <datalist id="liste-marches">{MARCHES_SUGGERES.map(m => <option key={m} value={m}/>)}</datalist>
       <div style={{display:'flex',flexDirection:'column',gap:6}}>
         {rows.map((r, i) => (
@@ -762,7 +763,7 @@ const MarchesField = ({ form, setForm, errors, C }) => {
   );
 };
 
-// ── Documents internes (facultatif) ────────────────────────────────────────
+// ── Document sur le produit (facultatif) ────────────────────────────────────────
 const DOC_MAX_OCTETS = 10 * 1024 * 1024;
 const DOC_EXTENSIONS = '.pdf,.md,.txt,.doc,.docx,.csv,.xlsx,.xls,.ppt,.pptx';
 const tailleLisible = (o) => o > 1048576 ? `${(o/1048576).toFixed(1)} Mo` : `${Math.max(1, Math.round(o/1024))} Ko`;
@@ -791,9 +792,9 @@ const DocumentsField = ({ form, setForm, C }) => {
   };
   return (
     <div>
-      <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:3,display:'block'}}>Documents internes (facultatif)</label>
+      <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:3,display:'block'}}>Document sur votre produit (facultatif)</label>
       <div style={{fontSize:10.5,color:C.muted,marginBottom:8,lineHeight:1.4}}>
-        Vous avez déjà des informations sur ce produit : études de marché, cibles, angles déjà testés, offres, garanties ? Envoyez-les, notre équipe s'en sert pour travailler plus juste.
+        Vous avez un document qui présente votre produit ou votre marque (fiche produit, présentation, catalogue) ? Envoyez-le tel quel : plus nous connaissons votre produit, plus nos créatives sont justes.
       </div>
       <input ref={ref} type="file" accept={DOC_EXTENSIONS} multiple style={{display:'none'}} onChange={choisir}/>
       {docs.length > 0 && (
@@ -815,7 +816,7 @@ const DocumentsField = ({ form, setForm, C }) => {
         style={{display:'inline-flex',alignItems:'center',gap:6,padding:'8px 12px',borderRadius:8,border:`1px dashed ${C.border}`,background:'transparent',cursor:envoi?'default':'pointer',color:C.sec,fontSize:11.5,fontFamily:'inherit'}}>
         <Icon name="upload" size={13} color={C.sec}/> {envoi ? 'Envoi en cours…' : 'Ajouter un fichier'}
       </button>
-      <div style={{fontSize:10,color:C.muted,marginTop:6}}>PDF, Word, Markdown, texte, Excel ou PowerPoint · 10 Mo max par fichier</div>
+      <div style={{fontSize:10,color:C.muted,marginTop:6}}>PDF, Word, texte, Excel ou PowerPoint · 10 Mo max par fichier</div>
       {msg && <div style={{fontSize:10.5,color:'#E55050',marginTop:6}}>{msg}</div>}
     </div>
   );
@@ -837,6 +838,7 @@ const depuisLigneProduit = (p) => {
     avis_textes: Array.isArray(perso.avis_textes) ? perso.avis_textes : [],
     garantie: perso.garantie || '',
     livraison_paiement: perso.livraison_paiement || '',
+    cible_auto: !!perso.cible_auto,
   };
 };
 
@@ -931,6 +933,7 @@ const sbProducts = {
         perso: {
           packaging_images: packaging, avis_captures: avis, avis_textes: product.avis_textes || [],
           garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '',
+          cible_auto: !!(product.cible && product.cible_auto),
         },
       },
       locaux: { logo: logoUrl, notes: product.notes || '', galerie_images: galerie, packaging_images: packaging, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '' },
@@ -2285,12 +2288,12 @@ const ImagesField = ({ titre, aide, liste, max, onAdd, onRemove, principale, onP
   );
 };
 
-const LogoField = ({ logo, onSet, onRemove, enCours }) => {
+const LogoField = ({ logo, onSet, onRemove, enCours, logoAuto }) => {
   const ref = useRef(null);
   return (
     <div>
-      <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Logo de la marque</div>
-      <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Idéalement un fichier PNG à fond transparent. Si votre page produit affiche votre logo, nous essayons de le récupérer — vous pouvez le remplacer ici.</div>
+      <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Logo de la marque{logoAuto && <span style={{marginLeft:8,fontSize:9.5,fontWeight:700,color:C.accent}}>rempli automatiquement</span>}</div>
+      <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Idéalement un PNG à fond transparent. Remplacez celui trouvé sur votre page si besoin.</div>
       <input ref={ref} type="file" accept="image/*" style={{display:'none'}} onChange={e => { onSet(e.target.files?.[0]); e.target.value = ''; }}/>
       <div style={{display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
         <div style={{width:88,height:88,borderRadius:13,border:`1px solid ${C.border}`,backgroundColor:'#e8eaef',backgroundImage:logo?`url(${logo})`:'none',backgroundSize:'contain',backgroundPosition:'center',backgroundRepeat:'no-repeat',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -2343,6 +2346,13 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
   const [lienMessage, setLienMessage] = useState('');
   const [avisProposes, setAvisProposes] = useState([]);
   const lienFetchedRef = useRef(produit?.lien || '');
+  // Valeurs remplies automatiquement depuis la page produit : tant qu'un champ vaut encore sa valeur automatique, il est
+  // marqué « rempli automatiquement » et peut être remplacé si le client change de lien ; dès qu'il le modifie, il lui appartient.
+  const autoDepart = (produit && produit.cible_auto && produit.cible) ? { cible: produit.cible } : {};
+  const autoRef = useRef(autoDepart);
+  const [autoValeurs, setAutoValeurs] = useState(autoDepart);
+  const ctrlRef = useRef(null);
+  const estAuto = (k) => !!form[k] && autoValeurs[k] === form[k];
   const dernierRef = useRef(form);
   dernierRef.current = form;
   const termineRef = useRef(false);
@@ -2415,50 +2425,74 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
     } finally { setLogoEnvoi(false); }
   };
 
-  // ── Pré-remplissage depuis le lien (jamais écrasant : ne remplit que ce qui est vide).
-  const analyserLien = async () => {
-    const url = (form.lien || '').trim();
-    if (!url || !/^https?:\/\//.test(url)) { setLienMessage('invalide'); return; }
-    if (lienFetchedRef.current === url) return;
+  // ── Remplissage automatique depuis le lien : lancé tout seul dès qu'un lien valide est collé (aucun bouton).
+  // Gemini (côté serveur) lit la page, trie les images et remplit la fiche ; le client n'a qu'à vérifier.
+  // Jamais écrasant : un champ déjà saisi par le client n'est jamais remplacé.
+  const lienOk = (u) => /^https?:\/\/[^\s/]+\.[^\s/]{2,}/i.test((u || '').trim());
+  const analyserLien = async (forcer) => {
+    const url = (dernierRef.current.lien || '').trim();
+    if (!lienOk(url)) { if (url) setLienMessage('invalide'); return; }
+    if (!forcer && lienFetchedRef.current === url) return;
     lienFetchedRef.current = url;
+    if (ctrlRef.current) { try { ctrlRef.current.abort(); } catch(e) {} }
     setFetchingLien(true); setLienMessage('');
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 70000); // le serveur peut légitimement dépasser 40 s (page + réessais IA)
+    ctrlRef.current = controller;
+    const timeoutId = setTimeout(() => controller.abort(), 90000); // le serveur peut légitimement dépasser 40 s (page + images + réessais IA)
     try {
       const r = await fetch('https://adstack-server.onrender.com/fetch-product-info', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }), signal: controller.signal,
       });
       const j = await r.json();
+      if ((dernierRef.current.lien || '').trim() !== url) return; // le client a changé de lien entre-temps : réponse périmée
       const d = (j && j.data) || {};
+      const snap = autoRef.current;
+      const auto = {};
+      const textes = { nom: d.nom, pricing: d.prix, pays: d.pays, utilite: d.utilite, promo: d.promo, cible: d.cible, garantie: d.garantie, livraison_paiement: d.livraison_paiement };
+      Object.keys(textes).forEach(k => { if (typeof textes[k] === 'string' && textes[k].trim()) auto[k] = textes[k].trim(); });
+      if (Array.isArray(d.couleurs) && d.couleurs.length >= 2) d.couleurs.slice(0, 3).forEach((c, i) => { if (typeof c === 'string') auto['couleur' + (i + 1)] = c; });
+      if (typeof d.logo === 'string' && /^https?:\/\//.test(d.logo)) auto.logo = d.logo;
+      const imgsProduit = Array.isArray(j.images) ? j.images.filter(u => typeof u === 'string') : [];
+      const imgsEmb = Array.isArray(j.images_emballage) ? j.images_emballage.filter(u => typeof u === 'string') : [];
+      const avis = Array.isArray(d.avis) ? d.avis.filter(a => typeof a === 'string' && a.trim()).slice(0, 6) : [];
+      const dejaImgs = new Set(snap.__imgs || []);
+      const dejaEmb = new Set(snap.__emb || []);
       setForm(f => {
         const next = { ...f };
-        if (Array.isArray(j.images) && j.images.length) {
-          const deja = new Set(f.galerie_images || []);
-          const nouvelles = j.images.filter(u => typeof u === 'string' && !deja.has(u));
-          next.galerie_images = [...(f.galerie_images || []), ...nouvelles].slice(0, LIMITES_IMAGES.galerie_images);
-          next.photo = f.photo || next.galerie_images[0] || '';
-        }
-        if (j.ok && j.data) {
-          next.nom = f.nom || d.nom || f.nom;
-          next.pricing = f.pricing || d.prix || f.pricing;
-          next.pays = f.pays || d.pays || f.pays;
-          next.utilite = f.utilite || d.utilite || f.utilite;
-          next.promo = f.promo || d.promo || f.promo;
-          // Éléments repérés sur la page (si le serveur les renvoie) — toujours modifiables par le client.
-          if (!f.logo && typeof d.logo === 'string' && /^https?:\/\//.test(d.logo)) next.logo = d.logo;
-          if (!f.garantie && typeof d.garantie === 'string') next.garantie = d.garantie;
-          if (!f.livraison_paiement && typeof d.livraison_paiement === 'string') next.livraison_paiement = d.livraison_paiement;
+        Object.keys(auto).forEach(k => { if (!f[k] || f[k] === snap[k]) next[k] = auto[k]; });
+        // Valeurs automatiques d'un lien précédent, jamais touchées par le client et non remplacées par cette analyse : retirées
+        // (elles décrivaient un autre produit).
+        Object.keys(snap).forEach(k => { if (k.startsWith('__') || k in auto) return; if (f[k] && f[k] === snap[k]) next[k] = (k === 'logo') ? null : ''; });
+        if (j.ok) {
+          const gardees = (f.galerie_images || []).filter(u => !dejaImgs.has(u));
+          next.galerie_images = [...gardees, ...imgsProduit.filter(u => !gardees.includes(u))].slice(0, LIMITES_IMAGES.galerie_images);
+          if (!f.photo || dejaImgs.has(f.photo) || !next.galerie_images.includes(f.photo)) next.photo = next.galerie_images.find(u => imgsProduit.includes(u)) || next.galerie_images[0] || '';
+          const gardeesEmb = (f.packaging_images || []).filter(u => !dejaEmb.has(u));
+          next.packaging_images = [...gardeesEmb, ...imgsEmb.filter(u => !gardeesEmb.includes(u))].slice(0, LIMITES_IMAGES.packaging_images);
+          const avisAvant = snap.__avis || [];
+          const intacts = !(f.avis_textes || []).length || ((f.avis_textes || []).length === avisAvant.length && (f.avis_textes || []).every((a, i) => a === avisAvant[i]));
+          if (intacts) next.avis_textes = avis; // vrais avis de la page du client, déjà vérifiés mot pour mot côté serveur
         }
         return next;
       });
-      if (Array.isArray(d.avis)) setAvisProposes(d.avis.filter(a => typeof a === 'string' && a.trim()).slice(0, 12));
-      setLienMessage(j.ok && j.data ? 'success' : 'manuel');
+      const nouvelAuto = { ...snap, ...auto, __imgs: [...new Set([...(snap.__imgs || []), ...imgsProduit])], __emb: [...new Set([...(snap.__emb || []), ...imgsEmb])], __avis: avis };
+      autoRef.current = nouvelAuto; setAutoValeurs(nouvelAuto);
+      setAvisProposes(avis);
+      const rempli = Object.keys(auto).length + (imgsProduit.length ? 1 : 0) + (avis.length ? 1 : 0);
+      setLienMessage(j.ok && rempli ? 'success' : 'manuel');
     } catch(e) {
-      console.warn('[analyserLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 70s dépassé' : e.message);
+      if (e && e.name === 'AbortError' && lienFetchedRef.current !== url) return; // remplacée par une analyse plus récente
+      console.warn('[analyserLien] échec silencieux:', e.name === 'AbortError' ? 'timeout 90s dépassé' : e.message);
       setLienMessage('manuel');
-    } finally { clearTimeout(timeoutId); setFetchingLien(false); }
+    } finally { clearTimeout(timeoutId); if (ctrlRef.current === controller) { ctrlRef.current = null; setFetchingLien(false); } }
   };
+  useEffect(() => {
+    const u = (form.lien || '').trim();
+    if (!lienOk(u) || lienFetchedRef.current === u) return;
+    const t = setTimeout(() => analyserLien(false), 700);
+    return () => clearTimeout(t);
+  }, [form.lien]);
 
   // ── Validation + enregistrement
   const manques = () => {
@@ -2483,7 +2517,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
     setErrors({});
     setSaving(true);
     let res;
-    try { res = await onSubmit({ ...form }); } catch(err) { res = { ok: false, raison: 'serveur' }; }
+    try { res = await onSubmit({ ...form, cible_auto: !!form.cible && autoValeurs.cible === form.cible }); } catch(err) { res = { ok: false, raison: 'serveur' }; }
     setSaving(false);
     if (res && res.ok) {
       termineRef.current = true;
@@ -2501,7 +2535,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
     effacerBrouillon(draftKey);
     termineRef.current = false;
     setForm(base); setRepris(false); setSavedAt(null); setErrors({}); setConfirmReset(false);
-    lienFetchedRef.current = produit?.lien || ''; setLienMessage(''); setAvisProposes([]);
+    lienFetchedRef.current = produit?.lien || ''; setLienMessage(''); setAvisProposes([]); autoRef.current = autoDepart; setAutoValeurs(autoDepart);
   };
 
   // ── Complétude
@@ -2514,7 +2548,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
     { k:'angles', label:'Plusieurs angles du produit', ok:(form.galerie_images||[]).length > 1, cible:'pp-photos' },
     { k:'pack', label:'Photo de l\'emballage', ok:(form.packaging_images||[]).length > 0, cible:'pp-photos' },
     { k:'garantie', label:'Garantie et livraison', ok:!!(form.garantie || form.livraison_paiement), cible:'pp-offre' },
-    { k:'cible', label:'Cible et usage', ok:!!(form.cible && form.utilite), cible:'pp-client' },
+    { k:'cible', label:'Votre client', ok:!!(form.cible && form.utilite), cible:'pp-client' },
     { k:'logo', label:'Logo', ok:!!form.logo, cible:'pp-marque' },
     { k:'couleurs', label:'Couleurs de la marque', ok:!!(form.couleur1 && form.couleur2), cible:'pp-marque' },
     { k:'avis', label:'Avis clients', ok:(form.avis_captures||[]).length > 0 || (form.avis_textes||[]).length > 0, cible:'pp-preuves' },
@@ -2586,60 +2620,66 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
                   <div style={{height:'100%',width:pct+'%',borderRadius:3,background:`linear-gradient(90deg, ${C.accent}, #8B5CF6)`,transition:'width 0.4s'}}/>
                 </div>
                 <div style={{fontSize:10.5,color:C.muted,marginTop:7}}>
-                  {essentielsOk ? `Fiche ${pct}% complète — chaque détail affine vos futures créatives` : 'Il vous faut seulement 4 informations pour créer le produit : photo, nom, offre, marché'}
+                  {essentielsOk ? `Fiche ${pct}% complète. Chaque détail affine vos créatives.` : 'Il suffit de 4 informations : photo, nom, offre, marché.'}
                 </div>
               </div>
             )}
 
             {/* 1 — Lien */}
             <CartePage id="pp-lien" numero="1" titre="Votre page produit" optionnel
-              description="Vous avez une page de vente ? Collez son lien : nous remplissons pour vous le nom, l'offre, le marché, les images, et nous repérons le logo et les garanties. Vous vérifiez ensuite tout ci-dessous.">
+              description="Collez le lien de votre page produit : nous remplissons la fiche pour vous. Vous n'aurez plus qu'à vérifier.">
               <div>
-                <div style={{display:'flex',gap:8,flexWrap:isMobile?'wrap':'nowrap'}}>
-                  <input value={form.lien || ''} onChange={e => setForm(f => ({ ...f, lien: e.target.value }))} onBlur={analyserLien}
+                <div style={{position:'relative'}}>
+                  <input value={form.lien || ''} onChange={e => setForm(f => ({ ...f, lien: e.target.value }))} onBlur={() => analyserLien(false)}
                     inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://votre-boutique.com/produit"
-                    style={{flex:1,minWidth:0,width:isMobile?'100%':'auto',boxSizing:'border-box',padding:'10px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,borderRadius:8,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
-                  <button type="button" onClick={analyserLien} disabled={fetchingLien || !(form.lien || '').trim()}
-                    style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px 16px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontSize:12.5,fontWeight:700,cursor:(fetchingLien||!(form.lien||'').trim())?'default':'pointer',opacity:(fetchingLien||!(form.lien||'').trim())?0.55:1,fontFamily:'inherit',whiteSpace:'nowrap',width:isMobile?'100%':'auto'}}>
-                    {fetchingLien
-                      ? <><div style={{width:13,height:13,borderRadius:'50%',border:'2px solid rgba(255,255,255,0.4)',borderTopColor:'#fff',animation:'spin 0.7s linear infinite'}}/> Analyse…</>
-                      : <><Icon name="sparkle" size={13} color="#fff"/> Remplir pour moi</>}
-                  </button>
+                    style={{width:'100%',boxSizing:'border-box',padding:'11px 40px 11px 12px',background:'rgba(255,255,255,0.05)',border:`1px solid ${fetchingLien?'rgba(91,141,239,0.5)':C.border}`,borderRadius:8,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none'}}/>
+                  {fetchingLien && <div style={{position:'absolute',right:13,top:'50%',marginTop:-8,width:16,height:16,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.accent,animation:'spin 0.7s linear infinite'}}/>}
                 </div>
-                <div style={{fontSize:11,marginTop:8,lineHeight:1.5,color:fetchingLien?C.muted:lienMessage==='manuel'||lienMessage==='invalide'?'#EAB308':lienMessage==='success'?C.accent:C.muted}}>
-                  {fetchingLien
-                    ? 'On regarde votre page produit — ça peut prendre jusqu\'à une minute sur certains sites. Vous pouvez continuer à remplir en attendant.'
-                    : lienMessage === 'success'
-                      ? 'On a trouvé des informations sur cette page — vérifiez que tout est correct ci-dessous.'
-                      : lienMessage === 'manuel'
-                        ? 'On n\'a pas réussi à tout récupérer sur cette page — pas de souci, complétez simplement les champs ci-dessous.'
-                        : lienMessage === 'invalide'
-                          ? 'Le lien doit commencer par https:// — copiez-le depuis la barre d\'adresse de votre navigateur.'
-                          : 'Facultatif, mais ça vous fait gagner du temps.'}
-                </div>
+                {(() => {
+                  const noms = { nom:'nom', pricing:'offre', pays:'marché', utilite:'usage', promo:'promotion', cible:'cible', garantie:'garantie', livraison_paiement:'livraison', couleur1:'couleurs', logo:'logo' };
+                  const vus = [];
+                  Object.keys(noms).forEach(k => { if (estAuto(k) && !vus.includes(noms[k])) vus.push(noms[k]); });
+                  if ((form.galerie_images || []).some(u => (autoValeurs.__imgs || []).includes(u))) vus.push('photos');
+                  if ((form.packaging_images || []).some(u => (autoValeurs.__emb || []).includes(u))) vus.push('emballage');
+                  if ((form.avis_textes || []).length && avisProposes.length) vus.push('avis');
+                  const couleurTexte = fetchingLien ? C.muted : (lienMessage === 'manuel' || lienMessage === 'invalide') ? '#EAB308' : lienMessage === 'success' ? C.accent : C.muted;
+                  return (
+                    <div style={{fontSize:11.5,marginTop:9,lineHeight:1.55,color:couleurTexte}}>
+                      {fetchingLien
+                        ? 'Lecture de votre page en cours, jusqu\'à 1 minute. Vous pouvez déjà continuer.'
+                        : lienMessage === 'success'
+                          ? <>C'est rempli : <b>{vus.join(', ') || 'plusieurs champs'}</b>. Vérifiez ci-dessous et corrigez si besoin.</>
+                          : lienMessage === 'manuel'
+                            ? <>Cette page n'a pas pu être lue en entier. Complétez les champs ci-dessous. <button type="button" onClick={() => analyserLien(true)} style={{border:'none',background:'none',color:C.accent,cursor:'pointer',fontFamily:'inherit',fontSize:11.5,padding:0,textDecoration:'underline'}}>Réessayer</button></>
+                            : lienMessage === 'invalide'
+                              ? 'Le lien doit commencer par https://'
+                              : 'Facultatif, mais ça vous fait gagner du temps.'}
+                    </div>
+                  );
+                })()}
               </div>
             </CartePage>
 
             {/* 2 — Essentiel */}
             <CartePage id="pp-essentiel" numero="2" titre="L'essentiel"
-              description="Ces trois informations, plus une photo, suffisent pour créer votre produit et demander vos premières créatives.">
-              <Field label="Nom du produit" k="nom" required placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Offre actuelle" k="pricing" required hint="Le prix auquel vous vendez, avec l'ancien prix barré si vous en avez un." placeholder="Ex : 20 000 FCFA au lieu de 35 000 FCFA" form={form} setForm={setForm} errors={errors} C={C}/>
+              description="Ces informations et une photo suffisent pour commencer.">
+              <Field label="Nom du produit" k="nom" required auto={estAuto('nom')} placeholder="Ex : Sérum Éclat Intense" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Offre actuelle" k="pricing" required auto={estAuto('pricing')} hint="Votre prix de vente, et l'ancien prix barré si vous en avez un." placeholder="Ex : 20 000 FCFA au lieu de 35 000 FCFA" form={form} setForm={setForm} errors={errors} C={C}/>
               <MarchesField form={form} setForm={setForm} errors={errors} C={C}/>
             </CartePage>
 
             {/* 3 — Photos */}
             <CartePage id="pp-photos" numero="3" titre="Photos de votre produit"
-              description="C'est à partir de ces images que nous reproduisons votre produit fidèlement. Photos nettes, produit bien visible, sans filtre.">
+              description="Des photos nettes où le produit se voit bien.">
               <ImagesField titre="Photos du produit" requis
-                aide="Une photo principale (cliquez sur une image pour la choisir), puis d'autres angles : de face, de côté, en main, en situation."
+                aide="Cliquez sur une photo pour en faire la principale. Ajoutez d'autres angles : face, côté, en main."
                 liste={form.galerie_images || []} max={LIMITES_IMAGES.galerie_images}
                 enCours={envois.galerie_images || 0}
                 principale={form.photo} onPick={(url) => setForm(f => ({ ...f, photo: url }))}
                 onAdd={(fs) => ajouterImages(fs, 'galerie_images')} onRemove={(i) => retirerImage('galerie_images', i)}
                 erreur={errors.photo && !(form.galerie_images || []).length ? 'Ajoutez au moins une photo du produit.' : ''}/>
               <ImagesField titre="Emballage / packaging" labelAjout="Ajouter"
-                aide="Photo de la boîte, du sachet ou de l'étiquette — face avant et face arrière si possible. Elle sert à reproduire votre emballage sans erreur, ni dans les textes ni dans les couleurs."
+                aide="Photo de la boîte ou de l'étiquette, devant et derrière si possible. Pour reproduire votre emballage sans erreur."
                 liste={form.packaging_images || []} max={LIMITES_IMAGES.packaging_images}
                 enCours={envois.packaging_images || 0}
                 onAdd={(fs) => ajouterImages(fs, 'packaging_images')} onRemove={(i) => retirerImage('packaging_images', i)}/>
@@ -2648,26 +2688,26 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
 
             {/* 4 — Offre et garanties */}
             <CartePage id="pp-offre" numero="4" titre="Votre offre et vos garanties" optionnel
-              description="Ce qui rassure votre client au moment d'acheter. Nous l'affichons tel que vous l'écrivez : n'indiquez que ce qui est vrai.">
-              <Field label="Promotion en cours" k="promo" placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Garantie" k="garantie" textarea placeholder="Ex : Satisfait ou remboursé pendant 30 jours" hint="Remboursement, échange, durée de garantie…" form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="Livraison et paiement" k="livraison_paiement" textarea placeholder="Ex : Paiement à la livraison. Livraison en 48 h à Dakar, 3 à 5 jours ailleurs." hint="Mode de paiement, délais, zones livrées." form={form} setForm={setForm} errors={errors} C={C}/>
+              description="Ce qui rassure avant d'acheter. Écrivez uniquement ce qui est vrai.">
+              <Field label="Promotion en cours" k="promo" auto={estAuto('promo')} placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Garantie" k="garantie" textarea auto={estAuto('garantie')} placeholder="Ex : Satisfait ou remboursé pendant 30 jours" hint="Remboursement, échange, durée." form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Livraison et paiement" k="livraison_paiement" textarea auto={estAuto('livraison_paiement')} placeholder="Ex : Paiement à la livraison. Livraison en 48 h à Dakar." hint="Paiement, délais, zones livrées." form={form} setForm={setForm} errors={errors} C={C}/>
             </CartePage>
 
             {/* 5 — Client */}
-            <CartePage id="pp-client" numero="5" titre="Votre client et l'usage du produit" optionnel
-              description="Pas de cible définie ? Aucun souci : sans cette information, nous réalisons une analyse de marché pour la trouver.">
-              <Field label="Votre cible actuelle" k="cible" textarea placeholder="Ex : Femmes de 25 à 40 ans, Dakar, soucieuses de leur peau" form={form} setForm={setForm} errors={errors} C={C}/>
-              <Field label="À quoi sert ce produit ?" k="utilite" textarea placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
+            <CartePage id="pp-client" numero="5" titre="Votre client" optionnel
+              description="Pas de client précis en tête ? Gardez la proposition ou laissez vide : nous trouvons le bon client pour vous.">
+              <Field label="À qui s'adresse ce produit ?" k="cible" textarea auto={estAuto('cible')} hint="Une phrase. Modifiez-la si elle ne vous ressemble pas." placeholder="Ex : Des personnes qui cachent leur peau sous du maquillage avant de sortir" form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="À quoi sert ce produit ?" k="utilite" textarea auto={estAuto('utilite')} placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
             </CartePage>
 
             {/* 6 — Marque */}
             <CartePage id="pp-marque" numero="6" titre="Votre marque" optionnel
-              description="Pour que vos créatives soient reconnaissables au premier coup d'œil.">
-              <LogoField logo={form.logo} enCours={logoEnvoi} onSet={changerLogo} onRemove={() => setForm(f => ({ ...f, logo: null }))}/>
+              description="Pour que vos créatives soient reconnaissables.">
+              <LogoField logo={form.logo} logoAuto={estAuto('logo')} enCours={logoEnvoi} onSet={changerLogo} onRemove={() => setForm(f => ({ ...f, logo: null }))}/>
               <div>
-                <label style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3,display:'block'}}>Couleurs de la marque</label>
-                <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Ajoutez 2 ou 3 couleurs : nous les utilisons dans vos créatives.</div>
+                <label style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3,display:'block'}}>Couleurs de la marque{estAuto('couleur1') && <span style={{marginLeft:8,fontSize:9.5,fontWeight:700,color:C.accent}}>rempli automatiquement</span>}</label>
+                <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>2 ou 3 couleurs de votre marque.</div>
                 <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                   {[1,2,3].map(n => {
                     const key = `couleur${n}`;
@@ -2688,16 +2728,16 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
 
             {/* 7 — Preuves clients */}
             <CartePage id="pp-preuves" numero="7" titre="Preuves de vos clients" optionnel
-              description="Les vrais avis de vos clients rendent une publicité bien plus crédible. Envoyez uniquement de vrais avis : nous ne rédigeons ni n'inventons jamais un témoignage.">
+              description="De vrais avis rendent la publicité plus crédible. Nous n'inventons jamais d'avis.">
               <ImagesField titre="Captures d'avis ou de messages clients"
-                aide="Captures d'écran de messages WhatsApp, commentaires Facebook / Instagram, avis Google ou de votre site. Assurez-vous que le texte est lisible."
+                aide="Captures d'écran WhatsApp, Facebook, Instagram ou Google. Le texte doit rester lisible."
                 liste={form.avis_captures || []} max={LIMITES_IMAGES.avis_captures}
                 enCours={envois.avis_captures || 0}
                 onAdd={(fs) => ajouterImages(fs, 'avis_captures')} onRemove={(i) => retirerImage('avis_captures', i)}/>
               {(avisProposes.length > 0 || (form.avis_textes || []).length > 0) && (
                 <div>
                   <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3}}>Avis trouvés sur votre page</div>
-                  <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Cochez ceux que nous pouvons utiliser. Les autres seront ignorés.</div>
+                  <div style={{fontSize:11,color:C.muted,marginBottom:10,lineHeight:1.5}}>Cochez ceux que nous pouvons utiliser.</div>
                   <div style={{display:'flex',flexDirection:'column',gap:8}}>
                     {[...new Set([...(form.avis_textes || []), ...avisProposes])].map((a, i) => {
                       const coche = (form.avis_textes || []).includes(a);
@@ -2714,10 +2754,10 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             </CartePage>
 
             {/* 8 — Aller plus loin */}
-            <CartePage id="pp-plus" numero="8" titre="Aller plus loin" optionnel
-              description="Tout ce qui peut aider notre équipe à travailler plus juste.">
+            <CartePage id="pp-plus" numero="8" titre="Pour aller plus loin" optionnel
+              description="Tout ce qui nous aide à mieux connaître votre produit.">
               <DocumentsField form={form} setForm={setForm} C={C}/>
-              <Field label="Autre chose à nous dire ?" k="notes" textarea hint="Une contrainte, une consigne de marque, un détail important sur le produit ou sur vos clients." placeholder="Ex : Ne jamais montrer le produit à côté d'un téléphone." form={form} setForm={setForm} errors={errors} C={C}/>
+              <Field label="Autre chose à nous dire ?" k="notes" textarea hint="Une consigne ou un détail important." placeholder="Ex : Ne jamais montrer le produit à côté d'un téléphone." form={form} setForm={setForm} errors={errors} C={C}/>
             </CartePage>
 
             {nomsManquants.length > 0 && (
@@ -2743,7 +2783,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
                   <div style={{height:'100%',width:pct+'%',borderRadius:3,background:`linear-gradient(90deg, ${C.accent}, #8B5CF6)`,transition:'width 0.4s'}}/>
                 </div>
                 <div style={{fontSize:11,color:C.sec,lineHeight:1.5,marginBottom:12}}>
-                  {essentielsOk ? 'Le minimum est là : vous pouvez créer le produit. Chaque détail en plus affine vos futures créatives.' : 'Il vous faut seulement 4 informations pour créer le produit.'}
+                  {essentielsOk ? 'Le minimum est là. Chaque détail en plus affine vos créatives.' : 'Il suffit de 4 informations pour créer le produit.'}
                 </div>
                 <div style={{display:'flex',flexDirection:'column',gap:2}}>
                   {items.map(it => (
@@ -2759,7 +2799,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
                 </div>
               </div>
               <div style={{fontSize:11,color:C.muted,lineHeight:1.55,padding:'0 4px'}}>
-                Vous pouvez quitter cette page, aller chercher un fichier sur votre téléphone ou fermer l'onglet : vos saisies sont conservées sur cet appareil et vous les retrouvez en revenant.
+                Vous pouvez quitter cette page ou fermer l'onglet : vos saisies sont gardées sur cet appareil.
               </div>
             </aside>
           )}
@@ -5850,6 +5890,8 @@ export default function Platform() {
         garantie: product.garantie || '',
         livraison_paiement: product.livraison_paiement || '',
         notes: product.notes || '',
+        // true = la cible a été proposée automatiquement et jamais modifiée par le client : ce n'est PAS une cible imposée.
+        cible_auto: !!(product.cible && product.cible_auto),
         lien_page_produit: product.lien || null,
         marque: product.marque || null,
       },
