@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.6-marche-redirection
+// ADBOARD_VERSION v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -2489,7 +2489,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
       const imgsProduit = Array.isArray(j.images) ? j.images.filter(u => typeof u === 'string') : [];
       setAlerteMarche(j && typeof j.redirection_locale === 'string' ? j.redirection_locale : '');
       const aspectsAuto = (j && j.aspects && typeof j.aspects === 'object') ? j.aspects : {};
-      const avis = Array.isArray(d.avis) ? d.avis.filter(a => typeof a === 'string' && a.trim()).slice(0, 6) : [];
+      const avis = Array.isArray(d.avis) ? d.avis.filter(a => typeof a === 'string' && a.trim()).slice(0, 15) : [];
       const dejaImgs = new Set(snap.__imgs || []);
       setForm(f => {
         const next = { ...f };
