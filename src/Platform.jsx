@@ -1283,6 +1283,10 @@ const sbBriefs = {
   },
   async cancel(session, briefId) {
     if (!session?.access_token) return false;
+    if (isMember()) { // un membre n'annule que SA demande, via le serveur qui le vérifie
+      const r = await teamFetch('/briefs/cancel', { method: 'POST', body: { briefId }, token: session.access_token });
+      return !!r.ok;
+    }
     const r = await fetch(`${SUPABASE_URL}/rest/v1/briefs?id=eq.${briefId}`, {
       method: 'PATCH',
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}`,
@@ -2154,6 +2158,9 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 };
 
 // ── Section Suivi Demande ──────────────────────────────────────────────────
+// Annuler : le propriétaire toujours ; un membre seulement une demande qu'il a lui-même faite.
+const peutAnnulerBrief = (b) => can('delete') || (isMember() && can('request_production') && !!b && !!b.requested_by && b.requested_by === sbAuth.getUser()?.id);
+
 const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefresh}) => {
   const isMobile = useIsMobile();
   const [tick, setTick] = useState(0);
@@ -2303,7 +2310,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
               )}
 
               {/* Annulation — lien discret, plus un bloc rouge alarmant */}
-              {canCancel && can('delete') && (
+              {canCancel && peutAnnulerBrief(b) && (
                 <div style={{marginTop:18,display:'flex',justifyContent:'flex-end'}}>
                   <button onClick={() => { if (prod) setCancelConfirm(prod); }}
                     style={{background:'none',border:'none',color:'#E88',fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:5,padding:'6px 2px',opacity:0.85}}>
@@ -6210,10 +6217,10 @@ export default function Platform() {
   };
 
   const cancelCreatives = async (p) => {
-    if (!can('delete')) return; // un membre ne peut jamais annuler une commande
     const session = await sbAuth.refreshSession();
     const brief = briefs[p.id];
     if (!brief) return;
+    if (!peutAnnulerBrief(brief)) return; // un membre n'annule que ses propres demandes
     const ok = await sbBriefs.cancel(session, brief.id);
     if (ok) {
       setAllBriefs(prev => prev.map(b => b.id===brief.id ? {...b,status:'cancelled'} : b));
