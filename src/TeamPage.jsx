@@ -221,7 +221,7 @@ function MemberModal({ C, btn, card, isMobile, mode, member, onClose, onSubmit }
             </label>
           ))}
         </div>
-        <div style={{ fontSize: 11, color: C.muted, marginBottom: 14, lineHeight: 1.5 }}>Un membre ne voit jamais la facturation ni les prix. Il ne peut pas inviter d'autres personnes.</div>
+        <div style={{ fontSize: 11, color: C.muted, marginBottom: 14, lineHeight: 1.5 }}>Un membre ne peut jamais rien supprimer ni annuler, ne voit ni la facturation ni les prix, et ne peut pas inviter d'autres personnes.</div>
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button style={btn(false)} onClick={onClose}>Annuler</button>

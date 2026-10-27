@@ -10,30 +10,30 @@ const LS_WS = 'adstack_ws';          // identifiant du propriétaire choisi ('ow
 const LS_CACHE = 'adstack_ws_cache'; // dernier résultat connu de /team/workspaces
 const LS_INVITE = 'adstack_invite';  // jeton d'invitation reçu par lien, à accepter après connexion
 
-export const PERM_KEYS = ['view', 'download', 'edit_products', 'request_production', 'delete'];
+export const PERM_KEYS = ['view', 'download', 'edit_products', 'request_production'];
 export const PERM_LABELS = {
   view: 'Voir produits, galerie et suivi',
   download: 'Télécharger les créatives',
   edit_products: 'Ajouter et modifier des produits',
   request_production: 'Demander une production',
-  delete: 'Supprimer produits et créatives',
 };
 export const PRESETS = {
-  media_buyer:  { label: 'Media buyer', desc: 'Voit tout, télécharge, demande des productions. Ne supprime rien.', perms: { view: true, download: true, edit_products: false, request_production: true, delete: false } },
-  assistant:    { label: 'Assistant', desc: 'Comme le media buyer, et peut aussi ajouter et modifier des produits.', perms: { view: true, download: true, edit_products: true, request_production: true, delete: false } },
-  lecture:      { label: 'Lecture seule', desc: 'Consulte et télécharge. Ne demande et ne modifie rien.', perms: { view: true, download: true, edit_products: false, request_production: false, delete: false } },
-  personnalise: { label: 'Personnalisé', desc: 'Vous cochez exactement les droits.', perms: { view: true, download: true, edit_products: false, request_production: false, delete: false } },
+  media_buyer:  { label: 'Media buyer', desc: 'Voit tout, télécharge, demande des productions. Ne supprime rien.', perms: { view: true, download: true, edit_products: false, request_production: true } },
+  assistant:    { label: 'Assistant', desc: 'Comme le media buyer, et peut aussi ajouter et modifier des produits.', perms: { view: true, download: true, edit_products: true, request_production: true } },
+  lecture:      { label: 'Lecture seule', desc: 'Consulte et télécharge. Ne demande et ne modifie rien.', perms: { view: true, download: true, edit_products: false, request_production: false } },
+  personnalise: { label: 'Personnalisé', desc: 'Vous cochez exactement les droits.', perms: { view: true, download: true, edit_products: false, request_production: false } },
 };
 export const SEATS = { starter: 2, pro: 5, scale: 15 };
 export const PLAN_LABEL = { starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
 
-const ALL = { view: true, download: true, edit_products: true, request_production: true, delete: true };
+const ALL = { view: true, download: true, edit_products: true, request_production: true };
 
 // État partagé (module) — lu par les fonctions sb* qui ne sont pas des composants React.
 export const WS = { ownerId: null, isOwner: true, perms: ALL, ownerLabel: '', info: null };
 
 export const wsOwner = (fallbackId) => WS.ownerId || fallbackId || null;
-export const can = (perm) => WS.isOwner || !!WS.perms?.[perm];
+// Supprimer / annuler : réservé au propriétaire, jamais délégable.
+export const can = (perm) => perm === 'delete' ? WS.isOwner : (WS.isOwner || !!WS.perms?.[perm]);
 export const isMember = () => !WS.isOwner;
 
 const safeGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -87,7 +87,7 @@ function applyInfo(userId, info) {
   if (!target && (!chosen) && !info?.own?.hasPlan && ms.length) target = ms[0];
   if (target) {
     WS.ownerId = target.ownerId; WS.isOwner = false;
-    WS.perms = { view: false, download: false, edit_products: false, request_production: false, delete: false, ...(target.permissions || {}) };
+    WS.perms = { view: false, download: false, edit_products: false, request_production: false, ...(target.permissions || {}), delete: false };
     WS.ownerLabel = target.ownerLabel || '';
   } else {
     WS.ownerId = userId; WS.isOwner = true; WS.perms = ALL; WS.ownerLabel = '';
@@ -97,8 +97,8 @@ function applyInfo(userId, info) {
 
 // Appelée une fois à la connexion (et après acceptation d'une invitation / changement d'espace).
 // Ne bloque jamais l'appli : au pire (serveur endormi, réseau), on reprend le dernier état connu.
-export async function resolveWorkspace(session, userId) {
-  resetWorkspace(userId);
+export async function resolveWorkspace(session, userId, { refresh = false } = {}) {
+  if (!refresh) resetWorkspace(userId);
   if (!session?.access_token) return WS;
   let info = null;
   // 1) accepter une invitation en attente (lien) avant de lister les espaces
@@ -110,8 +110,12 @@ export async function resolveWorkspace(session, userId) {
     else if (a.error && a.error !== 'reseau') { safeDel(LS_INVITE); accepted = { error: a.error, attendu: a.attendu }; }
   }
   // 2) mes espaces
-  const d = await teamFetch('/team/workspaces', { token: session.access_token, timeoutMs: 6000 });
+  let cached = null;
+  try { const c = JSON.parse(safeGet(LS_CACHE) || 'null'); if (c && c.userId === userId) cached = c.info; } catch (e) {}
+  // Sans mémoire locale, on attend plus longtemps (serveur Render qui se réveille) plutôt que d'afficher le mauvais espace.
+  const d = await teamFetch('/team/workspaces', { token: session.access_token, timeoutMs: refresh ? 15000 : (cached ? 6000 : 25000) });
   if (!d.error) { info = d; safeSet(LS_CACHE, JSON.stringify({ userId, info })); }
+  else if (refresh) { return WS; }
   else {
     try { const c = JSON.parse(safeGet(LS_CACHE) || 'null'); if (c && c.userId === userId) info = c.info; } catch (e) {}
   }

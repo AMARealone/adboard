@@ -336,8 +336,8 @@ const NAV = [
   {id:'suivi',icon:'clock',label:'Suivi Demande', group:'Suivi'},
   {id:'notifications',icon:'bell',label:'Notifications', group:'Suivi'},
   {id:'equipe',icon:'person',label:'Équipe', group:'Compte'},
-  {id:'tarifs',icon:'tag',label:'Nos Tarifs', group:'Compte'},
-  {id:'commentaires',icon:'document',label:'Commentaires', group:'Aide'},
+  {id:'tarifs',icon:'tag',label:'Forfait', group:'Compte'},
+  {id:'facturation',icon:'card',label:'Facturation', group:'Compte'},
   {id:'faq',icon:'help',label:'FAQ & Aide', group:'Aide'},
 ];
 
@@ -512,6 +512,60 @@ const WorkspaceBar = ({C, isMobile, user, getToken, notify}) => {
   );
 };
 
+// Page Facturation (propriétaire) : historique des paiements faits sur AdBoard. Les montants viennent du serveur
+// (jamais de commission interne) ; un membre d'équipe n'y a pas accès.
+const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState(false);
+  const load = async () => {
+    setErr(false); setD(null);
+    const t = await getToken();
+    const r = await teamFetch('/billing/history', { token: t, timeoutMs: 25000 });
+    if (r.error) setErr(true); else setD(r);
+  };
+  useEffect(() => { load(); }, []);
+  const card = {background:C.card,border:`1px solid ${C.border}`,borderRadius:14};
+  const PL = { starter:'PERF+', pro:'GROWTH', scale:'SCALE', discovery:'Découverte' };
+  const CY = { monthly:'Mensuel', quarterly:'Trimestriel' };
+  const fmtD = (x) => { try { return new Date(x).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch(e) { return ''; } };
+  const fcfa = (n) => Math.round(n||0).toLocaleString('fr-FR') + ' FCFA';
+  if (err) return <div style={{...card,padding:20,color:C.sec,fontSize:13,maxWidth:640}}>Impossible de charger la facturation. <button onClick={load} style={{marginLeft:8,padding:'6px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,cursor:'pointer',fontFamily:'inherit'}}>Réessayer</button></div>;
+  if (!d) return <div style={{color:C.sec,fontSize:13,padding:20}}>Chargement de votre facturation…</div>;
+  const sub = d.subscription;
+  return (
+    <div style={{maxWidth:760,paddingBottom:90}} data-testid="billing-page">
+      <h2 style={{fontSize:20,margin:'0 0 4px',color:C.text}}>Facturation</h2>
+      <div style={{fontSize:12.5,color:C.sec,marginBottom:16}}>Tous vos paiements sur AdBoard, du plus récent au plus ancien.</div>
+      <div style={{...card,padding:16,marginBottom:14}}>
+        {sub ? (
+          <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'center'}}>
+            <div>
+              <div style={{fontSize:11,color:C.sec,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>Forfait actuel</div>
+              <div style={{fontSize:18,fontWeight:800,color:C.text,marginTop:2}}>{PL[sub.plan]||sub.plan}</div>
+              <div style={{fontSize:12,color:sub.active?'#22C55E':'#E55050',marginTop:2}}>
+                {sub.active ? (sub.expires_at ? `Actif jusqu'au ${fmtD(sub.expires_at)}` : 'Actif') : (sub.expires_at ? `Expiré le ${fmtD(sub.expires_at)}` : 'Inactif')}
+              </div>
+            </div>
+            <button onClick={onOpenPlans} style={{padding:'9px 14px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',width:isMobile?'100%':undefined}}>{sub.active ? 'Changer de forfait' : 'Renouveler'}</button>
+          </div>
+        ) : <div style={{fontSize:13,color:C.sec}}>Aucun forfait pour le moment. <button onClick={onOpenPlans} style={{background:'none',border:'none',color:C.accent,cursor:'pointer',fontWeight:700,fontFamily:'inherit',padding:0}}>Voir les forfaits</button></div>}
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:8}}>
+        {d.transactions.length === 0 && <div style={{...card,padding:20,color:C.sec,fontSize:13,textAlign:'center'}}>Aucun paiement enregistré pour l'instant.</div>}
+        {d.transactions.map((t,i) => (
+          <div key={i} style={{...card,padding:'12px 14px',display:'flex',justifyContent:'space-between',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+            <div>
+              <div style={{fontSize:13.5,fontWeight:700,color:C.text}}>{PL[t.plan]||t.plan||'Paiement'} · {CY[t.cycle]||t.cycle||''}</div>
+              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>{fmtD(t.date)}</div>
+            </div>
+            <div style={{fontSize:14,fontWeight:800,color:C.text}}>{fcfa(t.montant_fcfa)}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null, onOpenLogin=null, sectionBadges={}}) => {
   const showCollapsed = collapsed && !isMobile;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -613,7 +667,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
     </div>
 
     <nav style={{flex:1,padding:'10px',overflow:'auto'}}>
-      {NAV.filter(n => !(isMember() && (n.id === 'tarifs' || n.id === 'equipe'))).map((n, i, arr) => {
+      {NAV.filter(n => !(isMember() && (n.id === 'tarifs' || n.id === 'equipe' || n.id === 'facturation'))).map((n, i, arr) => {
         const isTarifs = n.id === 'tarifs';
         const showGroupHeader = (i === 0 || arr[i-1].group !== n.group) && !(showCollapsed || (isMobile && !mobileOpen));
         const groupIsCollapsed = !!collapsedGroups[n.group];
@@ -2249,7 +2303,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
               )}
 
               {/* Annulation — lien discret, plus un bloc rouge alarmant */}
-              {canCancel && (
+              {canCancel && can('delete') && (
                 <div style={{marginTop:18,display:'flex',justifyContent:'flex-end'}}>
                   <button onClick={() => { if (prod) setCancelConfirm(prod); }}
                     style={{background:'none',border:'none',color:'#E88',fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:5,padding:'6px 2px',opacity:0.85}}>
@@ -5516,7 +5570,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Puis-je changer de formule à tout moment ?",
-    a: "Oui. Vous pouvez upgrader depuis l'onglet Nos Tarifs à tout moment ; le changement prend effet immédiatement."
+    a: "Oui. Vous pouvez upgrader depuis l'onglet Forfait à tout moment ; le changement prend effet immédiatement."
   },
   {
     q: "Comment se passe le paiement ?",
@@ -5635,7 +5689,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
       {/* ── Header ── */}
       <div style={{marginBottom:28}}>
         <div style={{fontSize:11,color:C.sec,fontWeight:700,letterSpacing:'2px',textTransform:'uppercase',marginBottom:10}}>
-          Nos Tarifs
+          Votre forfait
         </div>
         <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.15,letterSpacing:'-0.5px'}}>
           Choisissez Le <span className="headline-gradient">Système Créatif</span> Adapté À Votre <span className="headline-gradient">Croissance</span>
@@ -5820,7 +5874,7 @@ const DemoPreview = ({slug}) => {
 };
 
 export default function Platform() {
-  const SECTION_PATHS = { equipe:'team', tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback' };
+  const SECTION_PATHS = { equipe:'team', facturation:'billing', tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
 
   const [section, _setSection] = useState(() => {
@@ -5933,6 +5987,7 @@ export default function Platform() {
 
   const [collapsed, setCollapsed] = useState(false);
   const wsResolvedRef = useRef(false);
+  const wsAtRef = useRef(0);
   const [, setWsTick] = useState(0);
 
   // Événement AddToCart — dès que la section Tarifs devient active
@@ -6155,6 +6210,7 @@ export default function Platform() {
   };
 
   const cancelCreatives = async (p) => {
+    if (!can('delete')) return; // un membre ne peut jamais annuler une commande
     const session = await sbAuth.refreshSession();
     const brief = briefs[p.id];
     if (!brief) return;
@@ -6425,16 +6481,20 @@ export default function Platform() {
       }
 
       // Espace de travail (équipe) : une seule fois par chargement de page. Ne bloque jamais plus de ~6 s.
-      if (!wsResolvedRef.current) {
+      // Première fois : résolution complète. Ensuite (retour sur l'onglet, > 30 s) : mise à jour discrète des droits.
+      if (!wsResolvedRef.current || Date.now() - wsAtRef.current > 30000) {
+        const premiere = !wsResolvedRef.current;
+        const ancienProprio = WS.ownerId;
         try {
-          await resolveWorkspace(session, sbAuth.getUser()?.id);
+          await resolveWorkspace(session, sbAuth.getUser()?.id, { refresh: !premiere });
+          if (!premiere && WS.ownerId !== ancienProprio) { window.location.reload(); return; }
           const acc = WS.accepted;
           if (acc?.ok) notify(`Invitation acceptée : vous travaillez maintenant dans l'espace de ${WS.ownerLabel || 'votre équipe'}.`, 'success');
           else if (acc?.error === 'email_different') notify(`Cette invitation est réservée à ${acc.attendu || 'une autre adresse'}. Connectez-vous avec la bonne adresse Google.`, 'warning');
           else if (acc?.error === 'invitation_expiree') notify("Ce lien d'invitation a expiré. Demandez à la personne de vous le renvoyer.", 'warning');
           else if (acc?.error) notify("Cette invitation n'est plus valable.", 'warning');
         } catch(eWs) { console.warn('[Équipe] résolution impossible, espace personnel utilisé :', eWs.message); }
-        wsResolvedRef.current = true;
+        wsResolvedRef.current = true; wsAtRef.current = Date.now();
         setWsTick(t => t + 1);
       }
       Promise.all([
@@ -6764,7 +6824,7 @@ const views = {
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
     equipe: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <TeamPage C={C} isMobile={isMobile} notify={notify} onUpgrade={()=>setSection('tarifs')} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}}/>,
     faq: <Faq/>,
-    commentaires: <Commentaires user={user}/>,
+    facturation: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <BillingPage C={C} isMobile={isMobile} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}} onOpenPlans={()=>setSection('tarifs')}/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData}/>,
     notifications: <Notifications
         notifications={notifications}
@@ -6836,7 +6896,7 @@ const views = {
             </div>
           )}
           <WorkspaceBar C={C} isMobile={isMobile} user={user} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}} notify={notify}/>
-          {views[section]}
+          {views[section] || views.produits}
         </main>
       </div>
     </div>
