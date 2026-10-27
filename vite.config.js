@@ -9,6 +9,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         adboard: resolve(__dirname, 'adboard.html'),
+        factory: resolve(__dirname, 'factory-next.html'),
       }
     }
   }

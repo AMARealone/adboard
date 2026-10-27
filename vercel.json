@@ -5,6 +5,8 @@
     { "src": "/s/(.*)", "dest": "https://adstack-server.onrender.com/s/$1" },
     { "src": "/adboard/(.*)", "dest": "/adboard.html" },
     { "src": "/adboard", "dest": "/adboard.html" },
+    { "src": "/factory-next/(.*)", "dest": "/factory-next.html" },
+    { "src": "/factory-next", "dest": "/factory-next.html" },
     { "src": "/factory/(.*)", "dest": "/factory.html" },
     { "src": "/factory", "dest": "/factory.html" },
     { "src": "/adstats/(.*)", "dest": "/adstats.html" },
