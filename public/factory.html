@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
+<!-- FACTORY_VERSION v7.10-aspects-kit (aspect kit/cadeaux, sélecteur de CT informé des assets du client) | v7.9-aspects (l analyste décrit chaque aspect du produit en S11-F et reçoit toutes les photos préparées ; la créative image choisit les aspects par CT, ligne META 10) | v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -1587,7 +1587,27 @@ async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
         ctList: ctList,
         count: count,
         mode: mode || 'demo',
-        excludeIds: excludeIds || []
+        excludeIds: excludeIds || [],
+        assets: (function() {
+          try {
+            var b = (typeof prodv2State !== 'undefined' && prodv2State.brief) ? prodv2State.brief : null;
+            if (!b) return '';
+            var L = [];
+            var ph = (b.photos_produit || []).filter(function(p) { return !p.exclue; });
+            if (ph.length) L.push('Aspects photo disponibles : ' + ph.map(function(p) { return p.aspect; }).join(', '));
+            else if ((b.galerie_images || []).length > 1) L.push('Photos du produit : ' + b.galerie_images.length + ' (aspects non précisés)');
+            else L.push('Une seule photo produit (aspect unique)');
+            if (ph.some(function(p) { return p.aspect === 'kit'; })) L.push('KIT / CADEAUX fournis : le client vend ou offre des produits complémentaires avec le produit principal');
+            else L.push('Aucun kit ni cadeau fourni');
+            L.push('Avis fournis : ' + (((b.avis_textes || []).length) + (b.avis_captures_nb || 0)) + ' (textes + captures)');
+            L.push('Logo : ' + (b.logo_url ? 'fourni' : 'absent'));
+            L.push('Prix affichable : ' + (b.prix_affichable === false ? 'NON (prix différents selon les pays)' : 'oui'));
+            if (b.promo) L.push('Offre en cours : ' + b.promo);
+            if (b.garantie) L.push('Garantie : ' + b.garantie);
+            if (b.marches && b.marches.length > 1) L.push('Mode multi-marché : ' + b.marches.length + ' pays, aucun lieu précis');
+            return L.join('\n');
+          } catch (e) { return ''; }
+        })()
       })
     });
     const data = await resp.json();
@@ -2871,10 +2891,16 @@ async function prodv2Launch() {
       }
       const _sup = [];
       // v7.3 — plus d'« emballage » : chaque photo porte un ASPECT (face, côté, dos, forme, préparé, en main, détail).
-      const _ASP = { face:'FACE', cote:'CÔTÉ', dos:'DOS (étiquette arrière)', forme:'LE PRODUIT LUI-MÊME (poudre, gélule, texture…)', prepare:'PRÉPARÉ / EN USAGE', en_main:'EN MAIN', detail:'DÉTAIL' };
+      const _ASP = { face:'FACE', cote:'CÔTÉ', dos:'DOS (étiquette arrière)', forme:'LE PRODUIT LUI-MÊME (poudre, gélule, texture…)', prepare:'PRÉPARÉ / EN USAGE', en_main:'EN MAIN', detail:'DÉTAIL', kit:'KIT / CADEAUX OFFERTS AVEC LE PRODUIT' };
       const _asps = _b.galerie_aspects || {};
       (_b.packaging_images || []).slice(0, 2).forEach(u => _sup.push(['AUTRE VUE DU PRODUIT', u])); // anciens briefs
-      (_b.galerie_images || []).filter(u => u !== _b.photo_url).slice(0, 5).forEach(u => _sup.push([_asps[u] && _ASP[_asps[u]] ? 'ASPECT DU PRODUIT : ' + _ASP[_asps[u]] : 'AUTRE ANGLE DU PRODUIT', u]));
+      const _prep = Array.isArray(_b.photos_produit) ? _b.photos_produit : [];
+      if (_prep.length) {
+        // v7.9 : on envoie TOUS les aspects préparés (6 max), sauf la principale déjà jointe plus haut, avec leur code d'aspect.
+        _prep.filter(p => !p.exclue && !p.principale && p.url).forEach(p => _sup.push(['ASPECT ' + String(p.aspect).toUpperCase() + ' — ' + (_ASP[p.aspect] || 'AUTRE ANGLE'), p.url]));
+      } else {
+        (_b.galerie_images || []).filter(u => u !== _b.photo_url).slice(0, 5).forEach(u => _sup.push([_asps[u] && _ASP[_asps[u]] ? 'ASPECT DU PRODUIT : ' + _ASP[_asps[u]] : 'AUTRE ANGLE DU PRODUIT', u]));
+      }
       for (const [lib, u] of _sup) {
         const im = await _charger(u);
         if (im) { analysteParts.push({ type:'text', text:'IMAGE SUIVANTE = ' + lib + ' (même produit que la photo principale ; sert à comprendre le mécanisme, le format, l\'étiquette et la composition) :' }); analysteParts.push({ type:'image', source:{ type:'base64', media_type: im.mime, data: im.data } }); }
@@ -5132,8 +5158,14 @@ D. FICHE LOGO
 E. COULEURS DE MARQUE
 → Si le brief porte des couleurs, elles priment pour la palette de S0 : cite-les ici avec leurs codes. Sinon : "non fournies".
 
-F. ASPECTS DU PRODUIT FOURNIS
-→ Pour chaque photo supplémentaire reçue (face, côté, dos, forme, préparé, en main, détail) : une ligne qui dit ce qu'on y voit EXACTEMENT (étiquette arrière lisible ? couleur et texture de la poudre ? taille de la tasse ?), pour que les agents qui ne voient pas ces photos reproduisent chaque aspect sans erreur. S'il n'y a que la photo principale : "aspect unique fourni". Il n'existe plus de catégorie « emballage » : le pot, le sachet ou le flacon EST le produit.
+F. FICHE DES ASPECTS DU PRODUIT (UNE LIGNE PAR PHOTO REÇUE, PHOTO PRINCIPALE COMPRISE)
+→ Les agents qui suivent (Creative Image, Creative Vidéo) NE VOIENT PAS ces photos : ils choisissent quel aspect montrer d'après ta fiche seule. Tu la rédiges donc avec la même précision que celle d'une fiche logo.
+→ Format obligatoire, une ligne par photo, commençant par le code de l'aspect tel que reçu : "ASPECT face :", "ASPECT cote :", "ASPECT dos :", "ASPECT forme :" (le produit lui-même : poudre, gélule, liquide, texture), "ASPECT prepare :", "ASPECT en_main :", "ASPECT detail :", "ASPECT kit :" (le kit, le pack ou les cadeaux offerts avec le produit : liste de chaque élément, quantité, forme, couleurs, texte lisible). La photo principale est l'aspect "face" sauf indication contraire.
+→ Chaque ligne décrit EXACTEMENT : (1) ce qu'on voit (le contenant, ou le contenu) et sa position/cadrage ; (2) forme, proportions, matière (verre, plastique, carton, aluminium), finition (mat, brillant), bouchon/pompe/couvercle ; (3) couleurs avec code hexadécimal approché de chaque zone ; (4) TOUT texte lisible lettre par lettre (nom, mentions, dosage, composition, contenance, pictogrammes) ; (5) pour "forme" : couleur, grain, texture et quantité visible ; pour "prepare" : quoi, dans quoi (verre, tasse), quelle couleur, quelle quantité ; pour "en_main" : quelle main, comment le produit est tenu, l'échelle réelle du produit par rapport à la main ; pour "detail" : ce qui est mis en évidence ; (6) "USAGE CRÉATIF :" une phrase qui dit pour quel type de scène cet aspect sert (ex. : preuve de la composition, échelle réelle, résultat de la préparation).
+→ La personne éventuellement visible (en_main, prepare) a déjà été adaptée au marché cible : décris-la seulement comme "main/personne conforme à la cible", sans commentaire.
+→ Une photo écartée par le serveur (champ photos_produit avec exclue = true) est signalée par "ASPECT [code] : écartée, non utilisable". S'il n'y a que la photo principale : "ASPECT face :" suivi de sa description, puis "aspect unique fourni".
+→ Les produits composés (ex. un pot ET une capsule) : une ligne par élément, plus une ligne "ENSEMBLE :" qui précise quels aspects vont toujours ensemble.
+→ Il n'existe plus de catégorie « emballage » : le pot, le sachet ou le flacon EST le produit.
 
 Cohérence : S11 ne contredit jamais S0 à S9. Si un fait client contredit une donnée externe, le fait client l'emporte et tu le signales en une ligne.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -5296,6 +5328,7 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Section S2/S5/S7 où les 3 entrées sont en fait des reformulations d'une seule idée
 ❌ S8 absent ou réduit à une phrase vague sans avoir vraiment cherché dans DONNÉES BRUTES et dans le S4 pricing map
 ❌ Ligne "===DONNEES_MARCHE===" absente, mal orthographiée, ou du texte présent après le JSON qui la suit
+❌ S11-F : une photo d'aspect reçue n'a pas sa ligne "ASPECT [code] :" complète (forme, couleurs avec hexadécimal, texte lettre par lettre, usage créatif), ou un aspect écarté n'est pas signalé
 ❌ S11 absente, ou ses rubriques A à F incomplètes, ou un fait/avis/chiffre de S11 qui ne figure ni dans le brief, ni dans les documents du client, ni sur la page produit, ni sur les images jointes (S11 ne contient aucune donnée externe et rien d'inventé)
 ❌ Le JSON données marché contredit S0-S8 sur un point quelconque : nom de cible différent, angle absent ou renommé, chiffre de prix/marché/concurrence différent
 ❌ Le nombre d'angles dans le JSON données marché ne correspond pas exactement au nombre d'angles dans S2
@@ -5959,6 +5992,12 @@ Aucun de ces effets n'est une loi. Chacun dépend du contexte, de la culture du 
 
 
 
+CHOIX DES ASPECTS DU PRODUIT (quand le serveur fournit le bloc ASPECTS DU PRODUIT DISPONIBLES) :
+→ Gemini Image ne reçoit qu'UNE seule image. Toi, tu décides ce qu'elle contient. Pour chaque créative, demande-toi : que montre la scène du CT ? Le produit de face (aspect face) ? L'étiquette arrière ou la composition (dos) ? Le contenu : poudre, gélule, texture (forme) ? Le produit préparé (prepare) ? Tenu en main (en_main, pour l'échelle ou la preuve d'usage) ? Un détail ? Tu choisis le ou les aspects qui servent CETTE scène, et uniquement eux.
+→ Si la scène a besoin de plusieurs éléments en même temps (exemple : le pot ET la capsule, le produit de face ET son dos, le pot ET la poudre), tu les choisis tous, 4 au maximum : le code les assemble en une seule planche de référence, sans que tu aies à le faire. Ne choisis jamais un aspect que la scène ne montre pas.
+→ Tu ne décris dans le PROMPT_GEMINI que ce qui existe dans les aspects choisis. Tu n'inventes jamais une vue absente (pas de dos si dos n'est pas choisi, pas de contenu si forme n'est pas choisi). Dans chaque mention du produit, précise lequel des aspects choisis est montré à cet endroit de la scène.
+→ La fiche S11-F de la synthèse te donne la description précise de chaque aspect : utilise-la pour écrire exactement ce que montre chacun.
+
 Ton output complet contient EXACTEMENT deux blocs délimités. Aucun texte avant le premier balisage, aucun texte entre les blocs, aucun texte après le dernier balisage.
 
 ═══ BLOC 1 — META (interne, ne sera PAS envoyé à Gemini) ═══
@@ -5966,7 +6005,7 @@ Ton output complet contient EXACTEMENT deux blocs délimités. Aucun texte avant
 Démarre ton output par cette ligne EXACTE :
 ===META===
 
-Puis sur des lignes suivantes (aucune justification supplémentaire, aucune phrase explicative — uniquement ces 9 lignes pour V4) :
+Puis sur des lignes suivantes (aucune justification supplémentaire, aucune phrase explicative — uniquement ces 10 lignes ; la 10e n'est exigée que si le serveur te fournit un bloc ASPECTS DU PRODUIT DISPONIBLES, sinon tu écris "ASPECTS ENVOYÉS À GEMINI IMAGE : face") :
 ANGLE CHOISI : [Numéro 1/2/3 — IMPOSÉ par l'orchestrateur] · [Nom de l'angle depuis S2]
 NIVEAU DE CONSCIENCE CHOISI : [Solution Aware / Product Aware / Most Aware — IMPOSÉ par l'orchestrateur, voir S3]
 MOTEUR DOMINANT : [peur/désir/douleur de cet angle, l'entrée précise du pool S2/S5 dont il provient]
@@ -5976,6 +6015,7 @@ SIGNATURE CT : [Invariant 1] · [Invariant 2] · [Invariant 3] · [Invariant 4] 
 INTENTION CT ORIGINAL : [Mécanisme psychologique qu'IMAGE 2 cherche à produire chez son spectateur original — voir RÈGLE #0sexies]
 TRANSFERT INTENTION : [OUI, transfère intact parce que… / OUI, adapté en… parce que… / NON, abandonné et remplacé par… parce que…]
 VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX 8 AUTRES : Niveau [Solution/Product/Most Aware] · Angle [N] · Concept CT [type]
+ASPECTS ENVOYÉS À GEMINI IMAGE : [1 à 4 codes parmi ceux listés dans ASPECTS DU PRODUIT DISPONIBLES, séparés par des virgules — ceux dont CETTE scène a besoin]
 
 ═══ BLOC 2 — PROMPT GEMINI (ce qui sera réellement envoyé à Gemini) ═══
 
@@ -6095,7 +6135,7 @@ La même exception s'applique à la palette couleurs : les screenshots gardent l
 GATE FINAL (silencieux — si un point échoue, réécris tout)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 □ L'output démarre exactement par ===META=== et contient exactement un bloc ===PROMPT_GEMINI=== après ?
-□ Le bloc META contient les 9 lignes V4 attendues (ANGLE CHOISI, NIVEAU DE CONSCIENCE CHOISI, MOTEUR DOMINANT, LEVIER PSY DOMINANT, TYPE CT, SIGNATURE CT, INTENTION CT ORIGINAL, TRANSFERT INTENTION, VARIABLE UNIQUE) — aucune ligne en plus, aucun paragraphe explicatif ?
+□ Le bloc META contient les 10 lignes attendues (ANGLE CHOISI, NIVEAU DE CONSCIENCE CHOISI, MOTEUR DOMINANT, LEVIER PSY DOMINANT, TYPE CT, SIGNATURE CT, INTENTION CT ORIGINAL, TRANSFERT INTENTION, VARIABLE UNIQUE, ASPECTS ENVOYÉS À GEMINI IMAGE : 1 à 4 aspects qui existent, et le PROMPT ne décrit aucune vue absente des aspects choisis) — aucune ligne en plus, aucun paragraphe explicatif ?
 □ Le bloc PROMPT_GEMINI commence par le PRÉAMBULE D'EN-TÊTE V4 attendu (IMAGE 1 = PRODUIT, IMAGE 2 = CT, pas de IMAGE 3 logo, nom de marque en texte) ?
 □ Aucune justification interne, aucun « parce que », aucune référence S0/S1/S2/S5/S7, aucune mention « quadrant P/I/E/C » dans le bloc PROMPT_GEMINI ?
 □ Aucun commentaire entre parenthèses qui explique le raisonnement (tout est résolu en consignes directes) dans le bloc PROMPT_GEMINI ?
@@ -7098,6 +7138,8 @@ async function prodv2LoadBriefFromCommande(b) {
     documents: Array.isArray(b.product.documents) ? b.product.documents.filter(d => d && d.url).slice(0, 5) : [],
     galerie_images: Array.isArray(b.product.galerie_images) ? b.product.galerie_images.slice(0, 10) : [],
     galerie_aspects: (b.product.galerie_aspects && typeof b.product.galerie_aspects === 'object') ? b.product.galerie_aspects : {},
+    // v7.9 : photos préparées par le serveur (nettoyées, personne adaptée au marché). Seules celles-ci servent aux agents.
+    photos_produit: Array.isArray(b.product.photos_produit) ? b.product.photos_produit.filter(p => p && p.aspect).slice(0, 6) : [],
     packaging_images: Array.isArray(b.product.packaging_images) ? b.product.packaging_images.slice(0, 2) : [],
     avis_captures_nb: Array.isArray(b.product.avis_captures) ? b.product.avis_captures.length : 0,
     avis_captures: Array.isArray(b.product.avis_captures) ? b.product.avis_captures.slice(0, 8) : [],
@@ -7300,7 +7342,7 @@ function voirBrief(id, btn) {
       const photo = b.photo_nobg || b.product?.photo_base64 || b.product?.photo_url;
       const couleurs = (b.product?.couleurs||[]).filter(Boolean);
       // Galerie complète : chaque photo avec son aspect (face, côté, dos…), logo et captures d'avis du client.
-      const _ASP_LIB = { face:'Face', cote:'Côté', dos:'Dos', forme:'Produit lui-même', prepare:'Préparé / en usage', en_main:'En main', detail:'Détail', autre:'Autre' };
+      const _ASP_LIB = { face:'Face', cote:'Côté', dos:'Dos', forme:'Produit lui-même', prepare:'Préparé / en usage', en_main:'En main', kit:'Kit / cadeau', detail:'Détail', autre:'Autre' };
       const _esc = (u) => String(u||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       const _vignette = (u, lib) => `<a href="${_esc(u)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;"><div style="width:84px;height:84px;border-radius:9px;overflow:hidden;background:#0f1120;border:1px solid var(--border);"><img src="${_esc(u)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.opacity=0.2"></div><div style="font-size:10px;color:var(--t3);margin-top:4px;text-align:center;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lib}</div></a>`;
       const _asps = b.product?.galerie_aspects || {};

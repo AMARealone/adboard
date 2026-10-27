@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
+// ADBOARD_VERSION v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -2449,7 +2449,7 @@ const CartePage = ({ id, numero, titre, description, optionnel, children }) => (
 // v7.4 — Photos par « aspect » (angle / forme / état) au lieu d'une catégorie « emballage » : un pot reste un pot.
 const ASPECTS_PHOTO = [
   ['face','Face'], ['cote','Côté'], ['dos','Dos'], ['forme','Le produit lui-même'],
-  ['prepare','Préparé / en usage'], ['en_main','En main'], ['detail','Détail'], ['autre','Autre'],
+  ['prepare','Préparé / en usage'], ['en_main','En main'], ['detail','Détail'], ['kit','Kit / cadeau offert avec le produit'], ['autre','Autre'],
 ];
 const guideAspects = (nom, utilite) => {
   const t = `${nom || ''} ${utilite || ''}`.toLowerCase();
