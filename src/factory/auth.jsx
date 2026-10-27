@@ -59,18 +59,19 @@ export function Login({ onDone }) {
       save(d); onDone()
     } catch (x) { setErr(x.message) } finally { setBusy(false) }
   }
-  const google = () => { location.href = `${SB}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(location.origin + '/factory-next')}&prompt=select_account` }
+  const google = () => { location.href = `${SB}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(location.origin + (location.pathname.startsWith('/factory-next') ? '/factory-next' : '/factory'))}&prompt=select_account` }
   return (
     <div className="fx-login">
       <form className="fx-login-card" onSubmit={go}>
         <div className="fx-logo big">F</div>
         <h1>Factory</h1>
         <p>Espace administrateur AdStack</p>
+        <button type="button" className="fx-btn primary" onClick={google}>Se connecter avec Google</button>
+        <div className="fx-or"><span>ou avec email</span></div>
         <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
         <input type="password" placeholder="Mot de passe" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="current-password" />
         {err && <div className="fx-err">{err}</div>}
-        <button className="fx-btn primary" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter'}</button>
-        <button type="button" className="fx-btn" onClick={google}>Continuer avec Google</button>
+        <button className="fx-btn" disabled={busy}>{busy ? 'Connexion…' : 'Se connecter par email'}</button>
       </form>
     </div>
   )

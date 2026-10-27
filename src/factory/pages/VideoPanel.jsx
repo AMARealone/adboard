@@ -1,3 +1,4 @@
+import { COMP_FILES, loadSkills } from '../prod/state'
 import React, { useEffect, useRef, useState } from 'react'
 import { vctGetAll, vctGetTexte } from '../vctApi'
 import { labFetch, labQuery, labUrl, labKey, saveLabUrl, saveLabKey } from '../lab'
@@ -30,7 +31,7 @@ export default function VideoPanel({ competenceOnly }) {
   }
   useEffect(() => {
     doPing()
-    if (competenceOnly) { labFetch('/competence').then(async (r) => setComp(r.ok ? await r.text() : `Compétence non disponible (service vidéo : HTTP ${r.status}). Mets le service à jour.`)).catch(() => setComp("Compétence de l'agent vidéo : visible quand le service vidéo est lancé (lecture seule).")) }
+    if (competenceOnly) { const secours = async (why) => { await loadSkills(); setComp((COMP_FILES['COMPETENCE_CREATIVE_VIDEO.md'] || '') + '\n\n— ' + why) }; labFetch('/competence').then(async (r) => r.ok ? setComp(await r.text()) : secours('Version du dépôt (service vidéo : HTTP ' + r.status + ').')).catch(() => secours('Version du dépôt (service vidéo non lancé).')) }
     else vctGetAll().then((l) => { setCts(l); if (!m.ctId && l[0]) set({ ctId: l[0].id }) }).catch((e) => setCts({ error: e.message }))
     return () => clearInterval(timer.current)
   }, [])

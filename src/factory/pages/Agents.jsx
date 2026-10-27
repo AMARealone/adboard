@@ -1,4 +1,7 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
+import { COMP_FILES, loadSkills } from '../prod/state'
+import { labFetch } from '../lab'
+import { backupSupported, getBackupDir, pickBackupDir, writeSkills } from '../backup'
 import { useNavigate } from 'react-router-dom'
 export const AGENTS = [
   { slug: 'analyst', n: 1, name: 'Analyste de Marché', sub: 'Brief client (JSON) → Hypothèse S0→S11, cible + 2 facettes + stock de 10 angles', model: 'gemini-3.1-pro', file: 'COMPETENCE_ANALYSTE.md', color: '#5C7A99', kind: 'analyst', maxTokens: 64000,
@@ -8,6 +11,28 @@ export const AGENTS = [
     prompt: 'Produis les Ad Copy complets pour TOUS les angles présents dans la synthèse selon ta compétence — 5 hooks variés + 1 description AIDA paragraphée par angle, registre Most Aware.' },
   { slug: 'creative-video', n: 4, name: 'Créative Vidéo', sub: 'Synthèse + CT vidéo + photos → vidéo montée (service vidéo)', model: 'gemini-3.1-pro + veo-3.1', file: 'COMPETENCE_CREATIVE_VIDEO.md', color: '#E0A458', kind: 'video' },
 ]
+function Secours() {
+  const [dir, setDir] = useState(null), [msg, setMsg] = useState('')
+  useEffect(() => { getBackupDir().then((h) => setDir(h ? h.name : null)) }, [])
+  const choose = async () => { try { const h = await pickBackupDir(); setDir(h.name); setMsg('') } catch (e) { if (e.name !== 'AbortError') setMsg(e.message) } }
+  const saveAll = async () => {
+    setMsg('Enregistrement…')
+    await loadSkills()
+    const files = {}; AGENTS.filter((a) => a.file).forEach((a) => { files[a.file] = COMP_FILES[a.file] })
+    try { const r = await labFetch('/competence'); if (r.ok) files['COMPETENCE_CREATIVE_VIDEO.md'] = await r.text() } catch (_) {}
+    const r = await writeSkills(files)
+    setMsg(r.ok ? `✓ ${r.n} compétences écrites dans « ${r.dir} ».` : r.reason === 'no-dir' ? 'Choisis d’abord le dossier.' : 'Échec : ' + r.reason)
+  }
+  if (!backupSupported()) return <div className="fx-card"><div className="fx-t">Sauvegarde locale des compétences</div><div className="fx-s wrap">Disponible dans Chrome ou Edge sur ordinateur.</div></div>
+  return (
+    <div className="fx-card">
+      <div className="fx-t">Sauvegarde locale des compétences</div>
+      <div className="fx-s wrap">Dossier de secours sur cet ordinateur : {dir ? <b>{dir}</b> : 'aucun choisi'}. Chaque modification d’une compétence y est recopiée, et le bouton ci-dessous écrit les 4 compétences d’un coup.</div>
+      <div className="fx-btnrow" style={{ marginTop: 10 }}><button className="fx-btn" onClick={choose}>{dir ? 'Changer de dossier' : 'Choisir le dossier'}</button><button className="fx-btn primary" disabled={!dir} onClick={saveAll}>Sauvegarder les 4 compétences</button></div>
+      {msg && <div className="fx-s wrap" style={{ marginTop: 6 }}>{msg}</div>}
+    </div>
+  )
+}
 export default function Agents() {
   const nav = useNavigate()
   return (
@@ -18,6 +43,7 @@ export default function Agents() {
           <div className="fx-agc-h"><span className="fx-badge-n" style={{ background: a.color + '28', color: a.color }}>{a.n}</span><div className="fx-t" style={{ fontSize: 15 }}>{a.name}</div></div>
           <div className="fx-s wrap">{a.sub}</div><div className="fx-s mono">{a.model}</div>
         </div>))}</div>
+      <Secours />
     </div>
   )
 }

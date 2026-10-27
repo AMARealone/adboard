@@ -36,10 +36,10 @@ export default function Shell({ user, onLogout }) {
             </div>
           ))}
         </nav>
-        <div className="fx-foot">
-          <span className={'fx-dot ' + (srv.ok === null ? '' : srv.ok ? 'ok' : 'er')} title="Serveur" />
-          <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{srv.ok === null ? 'Serveur…' : srv.ok ? 'Serveur en ligne' : 'Serveur injoignable'}</span>
-          <button className="fx-btn" style={{ padding: '5px 8px' }} onClick={() => { signOut(); onLogout() }} title={user?.email}><Icon n="out" /></button>
+        <div className="fx-foot col">
+          <div className="fx-srv"><span className={'fx-dot ' + (srv.ok === null ? '' : srv.ok ? 'ok' : 'er')} title="Serveur" /><span>{srv.ok === null ? 'Serveur…' : srv.ok ? 'Serveur en ligne' : 'Serveur injoignable'}</span></div>
+          <div className="fx-acct"><div className="fx-av">{(user?.email || '?')[0].toUpperCase()}</div><div className="fx-em" title={user?.email}>{user?.email}</div></div>
+          <button className="fx-btn full" onClick={() => { signOut(); onLogout() }}><Icon n="out" /> Se déconnecter</button>
         </div>
       </aside>
       <div className="fx-main">

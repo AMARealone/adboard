@@ -12,13 +12,14 @@ import Production from './pages/Production'
 import { GalerieImage, GalerieVideo } from './pages/ManageGalleries'
 import { DialogHost } from './ui'
 
+export const BASE = location.pathname.startsWith('/factory-next') ? '/factory-next' : '/factory'
 export default function FactoryApp() {
   const { loading, user, recheck } = useAdmin()
   if (loading) return <div className="fx-login"><div className="fx-empty">Chargement…</div></div>
   if (!user) return <Login onDone={recheck} />
   return (
     <DataProvider>
-      <BrowserRouter basename="/factory-next">
+      <BrowserRouter basename={BASE}>
         <Routes>
           <Route element={<Shell user={user} onLogout={recheck} />}>
             <Route index element={<Dashboard />} />

@@ -83,7 +83,8 @@ export function replacePhoto(file) {
 export function removePhoto() { S.productB64 = null; S.productMime = null; emit() }
 
 // ── Brief depuis une commande AdBoard ──
-export async function loadBriefFromCommande(b) {
+// Brief de production construit depuis une commande (même construction pour la production et les tests d'agents)
+export function commandeToBrief(b) {
   const p = b.product || {}
   const brief = {
     marque: p.marque || '', produit: p.nom, pays: p.pays || '',
@@ -103,6 +104,32 @@ export async function loadBriefFromCommande(b) {
     utilite: p.utilite || '', couleurs: p.couleurs || [], quantite: b.quantity || 6, promo: p.promo || '',
     lien_page_produit: p.lien_page_produit || '',
   }
+  return brief
+}
+
+export async function commandePhoto(b) {
+  const p = b.product || {}
+  const photoData = b.photo_nobg || p.photo_base64 || ''
+  if (photoData) {
+    const m = photoData.match(/^data:(image\/[a-z]+);base64,(.+)$/)
+    return m ? { mime: m[1], b64: m[2] } : { mime: 'image/png', b64: photoData }
+  }
+  if (p.photo_url) {
+    try {
+      const imgResp = await V.fetchAvecTimeout(p.photo_url, {}, 15000)
+      if (!imgResp.ok) throw new Error('HTTP ' + imgResp.status)
+      const blob = await imgResp.blob()
+      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob) })
+      const m = String(dataUrl).match(/^data:(image\/[a-z]+);base64,(.+)$/)
+      if (m) return { mime: m[1], b64: m[2] }
+    } catch (e) { console.warn('[Commande] photo_url échouée :', e.message) }
+  }
+  return null
+}
+
+export async function loadBriefFromCommande(b) {
+  const p = b.product || {}
+  const brief = commandeToBrief(b)
   S.brief = brief; S.briefRaw = JSON.stringify(brief, null, 2); S.briefSource = 'commande'; S.commandeId = b.id; S.productId = p.id || null
   try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: b.id, ts: Date.now() })) } catch (_) {}
   const photoData = b.photo_nobg || p.photo_base64 || ''
