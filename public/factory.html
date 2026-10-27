@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.13-ct-video-fiches (la galerie lit la fiche de sélection de chaque CT vidéo : durée, blocs, niches, produits, angles, interdits, COD) | v7.12-sans-demo (le mode démo est supprimé : plus de bascule DÉMO/PRODUCTION, plus de générateur de démo ni de file « Démos à faire », plus d'agents Stratège / Creative démo / Mindmap) | v7.11-video (galerie CT vidéo séparée + 4e agent Créative Vidéo : entrées -> vidéo finale, historique complet téléchargeable) | v7.10-aspects-kit (aspect kit/cadeaux, sélecteur de CT informé des assets du client) | v7.9-aspects (l analyste décrit chaque aspect du produit en S11-F et reçoit toutes les photos préparées ; la créative image choisit les aspects par CT, ligne META 10) | v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
+<!-- FACTORY_VERSION v7.13b-ct-video-fiches (la galerie lit la fiche de sélection de chaque CT vidéo : durée, blocs, niches, produits, angles, interdits) | v7.12-sans-demo (le mode démo est supprimé : plus de bascule DÉMO/PRODUCTION, plus de générateur de démo ni de file « Démos à faire », plus d'agents Stratège / Creative démo / Mindmap) | v7.11-video (galerie CT vidéo séparée + 4e agent Créative Vidéo : entrées -> vidéo finale, historique complet téléchargeable) | v7.10-aspects-kit (aspect kit/cadeaux, sélecteur de CT informé des assets du client) | v7.9-aspects (l analyste décrit chaque aspect du produit en S11-F et reçoit toutes les photos préparées ; la créative image choisit les aspects par CT, ligne META 10) | v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -841,7 +841,6 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
           <div style="flex:1;min-width:110px;"><label style="font-size:11px;color:var(--t3);font-weight:600;">DURÉE FINALE (s)</label><input id="vctEdDuree" type="number" min="0" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;"></div>
           <div style="flex:1;min-width:110px;"><label style="font-size:11px;color:var(--t3);font-weight:600;">BLOCS / CLIPS</label><input id="vctEdBlocs" type="number" min="0" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;"></div>
           <div style="flex:1;min-width:110px;"><label style="font-size:11px;color:var(--t3);font-weight:600;">MOTS / SECONDE</label><input id="vctEdMps" type="number" step="0.1" min="0" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;"></div>
-          <div style="flex:1;min-width:130px;"><label style="font-size:11px;color:var(--t3);font-weight:600;">COMPATIBLE COD</label><select id="vctEdCod" style="width:100%;padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;"><option value="">Non précisé</option><option value="1">Oui</option><option value="0">Non</option></select></div>
         </div>
         <label style="font-size:11px;color:var(--t3);font-weight:600;">PRODUITS COMPATIBLES (à quoi ce CT convient, et à quoi il ne convient pas)</label><textarea id="vctEdProduit" rows="3" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;resize:vertical;"></textarea>
         <label style="font-size:11px;color:var(--t3);font-weight:600;">ANGLES ADAPTÉS (séparés par des virgules)</label><input id="vctEdAngles" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;">
@@ -5408,7 +5407,7 @@ function _vctNomDuTexte(texte, fichier){
   let n = ''; try { n = m ? JSON.parse('"' + m[1] + '"').trim() : ''; } catch(e){}
   return n || String(fichier || 'CT vidéo').replace(/\.(md|txt)$/i, '').replace(/^CT_VIDEO_\d*_?/i, '').replace(/_/g, ' ');
 }
-const _VCT_EXTRA_CLES = ['duree_s','blocs','mots_par_seconde','niches','produit_compatible','angles_fit','hook','chute','lieux_interdits','cod','epic','awareness2'];
+const _VCT_EXTRA_CLES = ['duree_s','blocs','mots_par_seconde','niches','produit_compatible','angles_fit','hook','chute','lieux_interdits','epic','awareness2'];
 function _vctExtra(o){
   const r = {};
   _VCT_EXTRA_CLES.forEach(function(k){ if(o && o[k] !== undefined && o[k] !== null && o[k] !== '' && !(Array.isArray(o[k]) && !o[k].length)) r[k] = o[k]; });
@@ -5434,7 +5433,6 @@ function _vctFicheDuTexte(texte){
     hook: j.hook_framework_impose ? String(j.hook_framework_impose) : '',
     chute: j.point_de_chute_prefere ? String(j.point_de_chute_prefere) : '',
     lieux_interdits: arr(j.lieux_interdits),
-    cod: (typeof j.cod_compatible === 'boolean') ? j.cod_compatible : undefined,
     epic: j.epic_quadrant ? String(j.epic_quadrant) : ''
   };
 }
@@ -5559,7 +5557,6 @@ async function renderVideoGallery(recharger){
     + '<div style="display:flex;gap:5px;flex-wrap:wrap;">'
     + (r.duree_s ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(224,164,88,.18);color:#E0A458;font-weight:600;">⏱ ' + _vctEsc(r.duree_s) + ' s</span>' : '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(229,83,75,.15);color:#e5534b;">durée ?</span>')
     + (r.blocs ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg3);color:var(--t2);">' + _vctEsc(r.blocs) + ' blocs</span>' : '')
-    + (r.cod === true ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(63,185,80,.15);color:#3fb950;">COD ✓</span>' : (r.cod === false ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(229,83,75,.15);color:#e5534b;">COD ✗</span>' : ''))
     + r.awareness.map(a => '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(45,127,249,.15);color:var(--blue);">' + _vctEsc(a) + '</span>').join('')
     + r.styleTags.map(a => '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg3);color:var(--t2);">#' + _vctEsc(a) + '</span>').join('')
     + ((r.niches && r.niches.length ? r.niches : (r.niche ? [r.niche] : [])).slice(0,3).map(n => '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg3);color:var(--t3);">' + _vctEsc(n) + '</span>').join(''))
@@ -5588,7 +5585,6 @@ async function vctOpenModal(id){
   document.getElementById('vctEdDuree').value = r.duree_s || '';
   document.getElementById('vctEdBlocs').value = r.blocs || '';
   document.getElementById('vctEdMps').value = r.mots_par_seconde || '';
-  document.getElementById('vctEdCod').value = r.cod === true ? '1' : (r.cod === false ? '0' : '');
   document.getElementById('vctEdProduit').value = r.produit_compatible || '';
   document.getElementById('vctEdAngles').value = (r.angles_fit || []).join(', ');
   document.getElementById('vctEdLieux').value = (r.lieux_interdits || []).join(', ');
@@ -5613,7 +5609,6 @@ async function vctSaveModal(){
   const _n = function(id){ const v = Number(document.getElementById(id).value); return isFinite(v) && v > 0 ? v : undefined; };
   r.niches = _l('vctEdNiche');
   r.duree_s = _n('vctEdDuree'); r.blocs = _n('vctEdBlocs'); r.mots_par_seconde = _n('vctEdMps');
-  const _c = document.getElementById('vctEdCod').value; r.cod = _c === '1' ? true : (_c === '0' ? false : undefined);
   r.produit_compatible = document.getElementById('vctEdProduit').value.trim();
   r.angles_fit = _l('vctEdAngles'); r.lieux_interdits = _l('vctEdLieux');
   r.hook = document.getElementById('vctEdHook').value.trim(); r.chute = document.getElementById('vctEdChute').value.trim(); r.epic = document.getElementById('vctEdEpic').value.trim();
