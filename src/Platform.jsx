@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.8-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
+// ADBOARD_VERSION v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -1729,11 +1729,8 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
               })}
             </div>
             {incompatibles.length > 0 && (
-              <div style={{marginTop:10,padding:'9px 11px',borderRadius:8,background:'rgba(229,80,80,0.08)',border:'1px solid rgba(229,80,80,0.35)',fontSize:11,color:'#F0A0A0',lineHeight:1.55}}>
-                {incompatibles.map(m => (
-                  <div key={m} style={{marginBottom:4}}><strong style={{color:'#F4B4B4'}}>{m}</strong> ne peut pas être produit avec {marchesCoches.join(', ')} : {raisonIncompatibilite(m, refSel)}.</div>
-                ))}
-                <div style={{color:'#E8A0A0'}}>Faites une demande séparée pour {incompatibles.length > 1 ? 'ces marchés' : 'ce marché'} — touchez-le ci-dessus pour passer dessus.</div>
+              <div title={incompatibles.map(m => m + ' : ' + raisonIncompatibilite(m, refSel)).join('\n')} style={{marginTop:10,padding:'7px 10px',borderRadius:8,background:'rgba(229,80,80,0.07)',border:'1px solid rgba(229,80,80,0.28)',fontSize:11,color:'#E8A0A0',lineHeight:1.5,textAlign:'center'}}>
+                <strong style={{color:'#F0A8A8'}}>{incompatibles.join(', ')}</strong> : langue ou apparence différente, à demander séparément. Touchez pour le choisir.
               </div>
             )}
             {marchesCoches.length === 0 && <div style={{fontSize:10.5,color:'#E55050',textAlign:'center',marginTop:6}}>Choisissez au moins un marché.</div>}

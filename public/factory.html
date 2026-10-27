@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
+<!-- FACTORY_VERSION v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -7299,6 +7299,16 @@ function voirBrief(id, btn) {
       if (!b) { panel.innerHTML = '<div style="padding:20px;color:#f87171;">Brief introuvable.</div>'; return; }
       const photo = b.photo_nobg || b.product?.photo_base64 || b.product?.photo_url;
       const couleurs = (b.product?.couleurs||[]).filter(Boolean);
+      // Galerie complète : chaque photo avec son aspect (face, côté, dos…), logo et captures d'avis du client.
+      const _ASP_LIB = { face:'Face', cote:'Côté', dos:'Dos', forme:'Produit lui-même', prepare:'Préparé / en usage', en_main:'En main', detail:'Détail', autre:'Autre' };
+      const _esc = (u) => String(u||'').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+      const _vignette = (u, lib) => `<a href="${_esc(u)}" target="_blank" rel="noopener" style="display:block;text-decoration:none;"><div style="width:84px;height:84px;border-radius:9px;overflow:hidden;background:#0f1120;border:1px solid var(--border);"><img src="${_esc(u)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.opacity=0.2"></div><div style="font-size:10px;color:var(--t3);margin-top:4px;text-align:center;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lib}</div></a>`;
+      const _asps = b.product?.galerie_aspects || {};
+      const _gal = (b.product?.galerie_images || []).filter(Boolean);
+      const _galHtml = _gal.length ? `<div style="padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Photos du produit (${_gal.length}) — touche pour agrandir</div><div style="display:flex;flex-wrap:wrap;gap:8px;">${_gal.map(u => _vignette(u, _ASP_LIB[_asps[u]] || 'Photo')).join('')}</div></div>` : '';
+      const _caps = (b.product?.avis_captures || []).filter(Boolean);
+      const _capsHtml = _caps.length ? `<div style="padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Captures d'avis (${_caps.length})</div><div style="display:flex;flex-wrap:wrap;gap:8px;">${_caps.map((u,i) => _vignette(u, 'Avis ' + (i+1))).join('')}</div></div>` : '';
+      const _logoHtml = b.product?.logo_url ? `<div style="padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">Logo</div>${_vignette(b.product.logo_url, 'Logo')}</div>` : '';
       const row = (label, val) => val ? `<div style="padding:10px 0;border-bottom:1px solid var(--border);"><div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;">${label}</div><div style="font-size:13px;color:var(--t1);">${val}</div></div>` : '';
       panel.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -7313,6 +7323,9 @@ function voirBrief(id, btn) {
           ${(b.product?.marches||[]).length > 1 ? row('Mode multi-marché', `${b.product.marches.join(', ')} — ${b.product.prix_affichable === false ? '<span style="color:#E8A94A;">prix NON affiché sur les visuels (il diffère selon les pays)</span>' : 'prix affichable (identique partout)'}`) : ''}
           ${Object.keys(b.product?.prix_par_pays||{}).length ? row('Prix par pays', Object.entries(b.product.prix_par_pays).map(([k,v])=>String(k).replace(/</g,'&lt;')+' : '+String(v).replace(/</g,'&lt;')).join('<br>')) : ''}
           ${(b.product?.marches_ecartes||[]).length ? row('Marchés écartés (à demander séparément)', b.product.marches_ecartes.map(e=>'<span style="color:#E88A8A;">'+String(e.nom).replace(/</g,'&lt;')+'</span> — '+String(e.raison).replace(/</g,'&lt;')).join('<br>')) : ''}
+          ${_galHtml}
+          ${_logoHtml}
+          ${_capsHtml}
           ${row('Offre promo en cours', b.product?.promo)}
           ${row(b.product?.cible_auto ? 'Cible (suggérée auto)' : 'Cible', b.product?.cible)}
           ${row('Garantie', b.product?.garantie)}
