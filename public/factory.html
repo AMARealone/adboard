@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
+<!-- FACTORY_VERSION v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -4708,6 +4708,25 @@ SEUIL DE SOURCING — à vérifier avant d'écrire S2 :
 Compte le nombre de discussions, fils, pages d'avis ou sources DISTINCTES qui alimentent tes pools peur/désir/douleur. En dessous de 10 sources distinctes, la matière est trop mince pour que les angles soient statistiquement autre chose que des impressions : construis quand même les angles avec ce que tu as, mais écris en tête de S2 la ligne [SOURCING FAIBLE — N sources distinctes exploitées, seuil de 10 non atteint] en nommant ce qui manque. C'est un signal utile pour la suite, pas une faute à cacher.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MODE MULTI-MARCHÉ — SI LE BRIEF CONTIENT PLUSIEURS PAYS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Le brief peut contenir "marches" avec plusieurs pays (exemple : Sénégal, Mali, Côte d'Ivoire). Le programme a DÉJÀ vérifié que ces pays partagent la même langue et la même apparence des personnages. Les pays incompatibles ont été retirés (champ "marches_ecartes") : ils seront produits dans une demande séparée, tu ne les analyses pas. Si "marches" ne contient qu'un seul pays, ignore tout ce bloc.
+
+RÈGLE CENTRALE : une seule hypothèse, valable pour TOUS les pays de la demande en même temps. Une créative ou un texte qui trahit un pays exclut aussitôt les autres : un client de Bamako qui voit "Abidjan" ne se reconnaît plus dans la publicité.
+
+→ LIEUX : n'écris jamais le nom d'un pays, d'une ville, d'un quartier, d'une région ou d'un monument dans S1, S1b, S1c, S2, S6, S7 ni dans le bloc données marché. Dis "en ville", "près de chez elle", "au bureau", "sur le trajet du marché". Le décor de S1c et de S7 se décrit par ce qu'on y voit, pas par son nom.
+→ PRÉNOMS : choisis des prénoms courants dans TOUS les pays de la demande, jamais typiques d'un seul.
+→ LANGUE : un français (ou l'anglais, ou l'arabe-français selon la langue commune) simple et neutre. Aucun dialecte, aucun argot local, aucun code-switching (wolof, bambara, nouchi, pidgin…) dans S6, les accroches et les angles. Si les verbatims diffèrent d'un pays à l'autre, ne garde dans S6 que les expressions comprises partout.
+→ ANALYSE : la recherche couvre chaque pays, mais tu ne retiens comme "le marché" que ce qui est COMMUN. Ce qui n'existe que dans un pays (concurrent local, habitude, chiffre) va en S9 (notes internes), avec le pays entre parenthèses, et ne nourrit jamais un angle. Dans S4, privilégie les concurrents présents dans la majorité des pays de la demande.
+→ TAILLE DU MARCHÉ (S8) : le total pour l'ensemble des pays, puis une ligne par pays. C'est un usage interne : ces noms de pays ne passent jamais dans une créative.
+→ LIVRAISON ET PAIEMENT : ne cite que ce qui est vrai dans tous les pays de la demande ; sinon, n'en parle pas.
+→ PRIX : le brief contient "prix_affichable" et, si le client en a donné, "prix_par_pays".
+   • prix_affichable = true : le prix est identique partout, il peut figurer sur les créatives quand le CT a une zone prix (niveau Most Aware).
+   • prix_affichable = false : le prix diffère selon les pays. Recopie en S0 et en S11-A chaque prix par pays tel que fourni, et écris exactement "PRIX NON AFFICHABLE SUR LES CRÉATIVES : le prix diffère selon les pays". Aucune créative ni aucun texte ne montre alors un prix, un prix barré, une remise chiffrée ou un seuil de livraison chiffré. Une zone prix du CT se remplace par un élément sans chiffre (garantie, bénéfice, appel à l'action).
+→ MARQUAGE : la première ligne de S0 et la rubrique A de S11 commencent par "MODE MULTI-MARCHÉ : [liste des pays]" suivi de "PRIX AFFICHABLE : oui" ou "PRIX AFFICHABLE : non". C'est ce qui prévient les agents suivants.
+→ STOCK : le stock de 10 angles est valable pour cet ensemble de pays. Il reste utilisable pour une demande portant sur un sous-ensemble de ces pays. Si une demande ajoute un pays, signale en S9 qu'il faut vérifier ce pays avant de piocher dans le stock.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 1 — S0 : PRODUIT, USAGE, PALETTE, TYPO, OFFRE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 → Nom du produit exact, mécanisme réel (comment il agit concrètement, pas son marketing)
@@ -5103,7 +5122,7 @@ B. DOCUMENT(S) DU CLIENT
 
 C. AVIS CLIENTS FOURNIS PAR LA MARQUE
 → Recopie mot pour mot chaque avis du champ avis_textes (tous, jusqu'à 15, du plus concret au moins concret), avec la mention "(avis fourni par la marque)". Ces avis sont choisis par la marque : ils servent de PREUVE, jamais de donnée de marché (S5 reste nourri par les verbatims externes). N'invente, ne reformule et ne combine jamais un avis.
-→ Indique le nombre de captures d'avis fournies (champ avis_captures_nb). Tu ne les vois pas : ne décris pas leur contenu.
+→ Indique le nombre de captures d'avis fournies (champ avis_captures_nb). Si un bloc "AVIS CLIENTS FOURNIS EN CAPTURES D'ÉCRAN PAR LA MARQUE" figure dans tes entrées, recopie ces avis mot pour mot juste après les avis_textes, avec la mention "(avis fourni par la marque, capture)" : c'est la transcription exacte des captures, même statut de PREUVE. Sans ce bloc, tu ne vois pas les captures : ne décris pas leur contenu.
 
 D. FICHE LOGO
 → Si une image LOGO DU CLIENT t'a été fournie : décris-la avec une précision maximale, pour qu'un agent qui NE VERRA PAS l'image puisse la reproduire fidèlement. Ordre obligatoire : (1) type : mot seul / icône + mot / emblème / monogramme ; (2) texte exact lettre par lettre, avec majuscules et accents ; (3) typographie : famille la plus proche (sans empattement géométrique, serif, script, manuscrite...), graisse, casse, espacement des lettres, particularités des lettres ; (4) icône ou symbole : forme précise, nombre d'éléments, orientation, position par rapport au texte ; (5) couleurs : code hexadécimal approché de CHAQUE couleur, et où elle s'applique ; (6) composition : horizontale ou verticale, proportion largeur/hauteur approximative, espaces ; (7) fond sur lequel il est prévu (transparent, clair, foncé) et version lisible sur fond sombre ; (8) ce qui ne doit JAMAIS être modifié (couleurs, proportions, texte).
@@ -5313,7 +5332,12 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Un angle promu depuis la réserve dont le nom a été modifié ou reformulé — son nom est son identifiant d'historique
 ❌ Les 3 lignes de suivi de fin de S10 (stock, liste des noms restants, répartition) absentes ou incomplètes
 ❌ Stock complété par des reformulations d'angles déjà présents au lieu d'être signalé [STOCK INCOMPLET]
-❌ Le mot "synthèse" employé pour désigner ton propre travail — tu produis une HYPOTHÈSE`;
+❌ Le mot "synthèse" employé pour désigner ton propre travail — tu produis une HYPOTHÈSE
+❌ Brief multi-marché : un nom de pays, de ville, de quartier ou de région dans S1, S1b, S1c, S2, S6, S7 ou le bloc données marché
+❌ Brief multi-marché : un dialecte, un argot ou une langue locale dans le lexique, les accroches ou les angles
+❌ Brief multi-marché : un concurrent, un argument ou un usage propre à un seul pays présenté comme valable pour tous
+❌ Brief multi-marché : la ligne "MODE MULTI-MARCHÉ" (avec PRIX AFFICHABLE oui/non) absente de la première ligne de S0 ou de la rubrique A de S11
+❌ prix_affichable = false mais un prix, un prix barré, une remise chiffrée ou un seuil chiffré apparaît dans S2, S7 ou un texte destiné aux créatives`;
 
 COMP_FILES['COMPETENCE_CREATIVE_PROD.md'] = `Tu génères la suite d'un prompt Gemini pour une static ad Meta Ads 4:5 — MODE PRODUCTION.
 Le bloc « IMAGE FOURNIE — PRODUIT » (et le bloc « IMAGE FOURNIE — LOGO » si présent) sont DÉJÀ fournis avant ton output.
@@ -7052,6 +7076,12 @@ async function prodv2LoadBriefFromCommande(b) {
     marque: b.product.marque || '',
     produit: b.product.nom,
     pays: b.product.pays || '',
+    // v7.6 : marchés réellement retenus pour cette demande (le serveur a déjà écarté les pays incompatibles), prix propres
+    // à certains pays et droit d'afficher le prix. Absents = un seul marché, comportement habituel.
+    marches: Array.isArray(b.product.marches) ? b.product.marches : [],
+    marches_ecartes: Array.isArray(b.product.marches_ecartes) ? b.product.marches_ecartes : [],
+    prix_par_pays: (b.product.prix_par_pays && typeof b.product.prix_par_pays === 'object') ? b.product.prix_par_pays : {},
+    prix_affichable: b.product.prix_affichable !== false,
     pricing: b.product.pricing || '',
     // v7.1 : une cible pré-remplie automatiquement n'est PAS une cible imposée par le client
     // (sinon CAS C se déclencherait à tort) : elle passe en cible_suggeree, simple indice.
@@ -7280,6 +7310,9 @@ function voirBrief(id, btn) {
           ${row('Produit', `<strong style="font-size:15px;">${b.product?.nom}</strong>`)}
           ${row('Quantité commandée', `<span style="color:var(--blue);font-weight:700;font-size:16px;">${b.quantity} visuels</span>`)}
           ${row('Prix · Pays', `${b.product?.pricing||'—'} · ${b.product?.pays||'—'}`)}
+          ${(b.product?.marches||[]).length > 1 ? row('Mode multi-marché', `${b.product.marches.join(', ')} — ${b.product.prix_affichable === false ? '<span style="color:#E8A94A;">prix NON affiché sur les visuels (il diffère selon les pays)</span>' : 'prix affichable (identique partout)'}`) : ''}
+          ${Object.keys(b.product?.prix_par_pays||{}).length ? row('Prix par pays', Object.entries(b.product.prix_par_pays).map(([k,v])=>String(k).replace(/</g,'&lt;')+' : '+String(v).replace(/</g,'&lt;')).join('<br>')) : ''}
+          ${(b.product?.marches_ecartes||[]).length ? row('Marchés écartés (à demander séparément)', b.product.marches_ecartes.map(e=>'<span style="color:#E88A8A;">'+String(e.nom).replace(/</g,'&lt;')+'</span> — '+String(e.raison).replace(/</g,'&lt;')).join('<br>')) : ''}
           ${row('Offre promo en cours', b.product?.promo)}
           ${row(b.product?.cible_auto ? 'Cible (suggérée auto)' : 'Cible', b.product?.cible)}
           ${row('Garantie', b.product?.garantie)}

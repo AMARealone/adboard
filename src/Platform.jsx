@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.7-avis-15
+// ADBOARD_VERSION v7.8-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -681,7 +681,7 @@ const EMPTY_PRODUCT = {
   couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, deliveries:[], marche:null,
   documents:[], documents_modifies:false,
   galerie_images:[], galerie_aspects:{}, avis_captures:[], avis_textes:[],
-  garantie:'', livraison_paiement:'',
+  garantie:'', livraison_paiement:'', prix_par_pays:{},
 };
 
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
@@ -725,6 +725,86 @@ const Field = ({label, k, required, textarea, placeholder, hint, type='text', fo
 const parseMarches = (pays) => [...new Set(String(pays || '').split(/[,;/|\n]+/).map(x => x.trim()).filter(Boolean))];
 const MARCHES_SUGGERES = ['Sénégal','Côte d\'Ivoire','Mali','Burkina Faso','Guinée','Bénin','Togo','Niger','Cameroun','Gabon','Congo','RDC','Maroc','Algérie','Tunisie','Mauritanie','Madagascar','France','Belgique','Ghana','Nigeria','Kenya'];
 
+// ── Marchés : langue, apparence des personnages, devise ─────────────────────────────────
+// Sert à décider si plusieurs pays peuvent être produits dans UNE seule demande. Deux pays sont compatibles
+// s'ils partagent la même langue ET la même apparence des personnages montrés dans les créatives. La devise ne
+// bloque rien : si le prix diffère d'un pays à l'autre, les créatives n'affichent simplement pas de prix.
+// Un pays absent de cette table n'est jamais bloqué (il suit le groupe principal). Cameroun (bilingue) et
+// Mauritanie (apparences très variées) sont volontairement « à part ».
+// NB : cette table existe aussi côté serveur (server) — toute modification se fait aux deux endroits.
+const MARCHES_LANGUES = { fr:'français', en:'anglais', ar_fr:'arabe / français', mg:'malgache / français', pt:'portugais' };
+const MARCHES_APPARENCES = { afrique_noire:'Afrique subsaharienne', maghreb:'Maghreb', europe:'Europe', ocean_indien:'océan Indien' };
+const MARCHES_INFOS = {
+  'senegal':{n:'Sénégal',l:'fr',a:'afrique_noire',d:'XOF'}, 'mali':{n:'Mali',l:'fr',a:'afrique_noire',d:'XOF'},
+  'cote d ivoire':{n:"Côte d'Ivoire",l:'fr',a:'afrique_noire',d:'XOF'}, 'burkina faso':{n:'Burkina Faso',l:'fr',a:'afrique_noire',d:'XOF'},
+  'benin':{n:'Bénin',l:'fr',a:'afrique_noire',d:'XOF'}, 'togo':{n:'Togo',l:'fr',a:'afrique_noire',d:'XOF'},
+  'niger':{n:'Niger',l:'fr',a:'afrique_noire',d:'XOF'}, 'guinee':{n:'Guinée',l:'fr',a:'afrique_noire',d:'GNF'},
+  'gabon':{n:'Gabon',l:'fr',a:'afrique_noire',d:'XAF'}, 'congo':{n:'Congo',l:'fr',a:'afrique_noire',d:'XAF'},
+  'tchad':{n:'Tchad',l:'fr',a:'afrique_noire',d:'XAF'}, 'rdc':{n:'RDC',l:'fr',a:'afrique_noire',d:'CDF'},
+  'burundi':{n:'Burundi',l:'fr',a:'afrique_noire',d:'BIF'}, 'rwanda':{n:'Rwanda',l:'fr',a:'afrique_noire',d:'RWF'},
+  'nigeria':{n:'Nigeria',l:'en',a:'afrique_noire',d:'NGN'}, 'ghana':{n:'Ghana',l:'en',a:'afrique_noire',d:'GHS'},
+  'kenya':{n:'Kenya',l:'en',a:'afrique_noire',d:'KES'}, 'tanzanie':{n:'Tanzanie',l:'en',a:'afrique_noire',d:'TZS'},
+  'ouganda':{n:'Ouganda',l:'en',a:'afrique_noire',d:'UGX'}, 'zambie':{n:'Zambie',l:'en',a:'afrique_noire',d:'ZMW'},
+  'afrique du sud':{n:'Afrique du Sud',l:'en',a:'afrique_noire',d:'ZAR'},
+  'maroc':{n:'Maroc',l:'ar_fr',a:'maghreb',d:'MAD'}, 'algerie':{n:'Algérie',l:'ar_fr',a:'maghreb',d:'DZD'}, 'tunisie':{n:'Tunisie',l:'ar_fr',a:'maghreb',d:'TND'},
+  'madagascar':{n:'Madagascar',l:'mg',a:'ocean_indien',d:'MGA'},
+  'france':{n:'France',l:'fr',a:'europe',d:'EUR'}, 'belgique':{n:'Belgique',l:'fr',a:'europe',d:'EUR'},
+  'cameroun':{n:'Cameroun',mixte:'marché bilingue (français et anglais)',d:'XAF'},
+  'mauritanie':{n:'Mauritanie',mixte:'apparence des personnes très variée',d:'MRU'},
+};
+const MARCHES_ALIAS = { 'senegal':'senegal','sn':'senegal','cote divoire':'cote d ivoire','ci':'cote d ivoire','ivory coast':'cote d ivoire','cotedivoire':'cote d ivoire','burkina':'burkina faso','bf':'burkina faso','guinee conakry':'guinee','guinea':'guinee','congo brazzaville':'congo','republique du congo':'congo','congo kinshasa':'rdc','republique democratique du congo':'rdc','drc':'rdc','cameroon':'cameroun','mauritania':'mauritanie','morocco':'maroc','algeria':'algerie','tunisia':'tunisie','tanzania':'tanzanie','uganda':'ouganda','zambia':'zambie','south africa':'afrique du sud','togo':'togo','benin':'benin','mali':'mali','niger':'niger','ml':'mali','tg':'togo','bj':'benin','ng':'nigeria','gh':'ghana','ke':'kenya','cm':'cameroun','ga':'gabon','ma':'maroc','dz':'algerie','tn':'tunisie','mg':'madagascar','fr':'france','be':'belgique' };
+const _cleMarche = (s) => { const k = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); return MARCHES_INFOS[k] ? k : (MARCHES_ALIAS[k] || k); };
+const infoMarche = (nom) => MARCHES_INFOS[_cleMarche(nom)] || null;
+// Classe de compatibilité : deux marchés de même classe peuvent partager une demande.
+const classeMarche = (nom) => { const i = infoMarche(nom); if (!i) return 'inconnu'; return i.mixte ? 'mixte:' + _cleMarche(nom) : i.l + '|' + i.a; };
+// Raison (en français, pour le client) pour laquelle `nom` ne peut pas être produit avec `ref`.
+const raisonIncompatibilite = (nom, ref) => {
+  const a = infoMarche(nom), b = infoMarche(ref);
+  if (!a || !b) return '';
+  if (a.mixte) return a.mixte + ' : il faut une demande à part pour choisir la langue et l’apparence des personnages';
+  if (b.mixte) return 'le marché ' + (b.n) + ' (' + b.mixte + ') doit être produit à part';
+  const dl = a.l !== b.l, da = a.a !== b.a;
+  if (dl && da) return 'langue et apparence des personnages différentes (' + MARCHES_LANGUES[a.l] + ', ' + MARCHES_APPARENCES[a.a] + ' — contre ' + MARCHES_LANGUES[b.l] + ', ' + MARCHES_APPARENCES[b.a] + ')';
+  if (dl) return 'langue différente (' + MARCHES_LANGUES[a.l] + ' au lieu de ' + MARCHES_LANGUES[b.l] + ')';
+  return 'apparence des personnages différente (' + MARCHES_APPARENCES[a.a] + ' au lieu de ' + MARCHES_APPARENCES[b.a] + ')';
+};
+// Sépare une liste de marchés en { retenus, ecartes:[{nom, raison}] }. Groupe principal = le plus nombreux
+// (à égalité, celui du premier de la liste), ou celui du marché `prefere` s'il est fourni. Les marchés absents
+// de la table suivent le groupe principal.
+const analyserMarches = (liste, prefere) => {
+  const noms = [...new Set((liste || []).map(x => String(x || '').trim()).filter(Boolean))];
+  const classes = new Map();
+  noms.forEach(n => { const c = classeMarche(n); if (c === 'inconnu') return; if (!classes.has(c)) classes.set(c, []); classes.get(c).push(n); });
+  let principale = null;
+  if (prefere && classeMarche(prefere) !== 'inconnu') principale = classeMarche(prefere);
+  else { let max = 0; classes.forEach((v, k) => { if (v.length > max) { max = v.length; principale = k; } }); }
+  const retenus = [], ecartes = [];
+  const ref = principale ? (classes.get(principale) || [])[0] : null;
+  noms.forEach(n => {
+    const c = classeMarche(n);
+    if (c === 'inconnu' || c === principale) retenus.push(n);
+    else ecartes.push({ nom: n, raison: raisonIncompatibilite(n, ref) });
+  });
+  return { retenus, ecartes, reference: ref };
+};
+// Le prix peut figurer sur une créative seulement s'il est identique sur tous les marchés retenus.
+// `prixParPays` : { pays: texte du prix } ; `prixGeneral` : prix de la fiche, utilisé pour les pays non précisés.
+const _normPrix = (s) => String(s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+// Prix par pays à enregistrer : uniquement les marchés encore présents dans la fiche et réellement remplis.
+const prixParPaysNettoye = (product) => {
+  const marches = parseMarches(product && product.pays);
+  const src = (product && product.prix_par_pays && typeof product.prix_par_pays === 'object') ? product.prix_par_pays : {};
+  const out = {};
+  marches.forEach(m => { const v = String(src[m] || '').trim(); if (v) out[m] = v.slice(0, 160); });
+  return out;
+};
+const prixAffichable = (retenus, prixParPays, prixGeneral) => {
+  if (!retenus || retenus.length < 2) return true;
+  const vus = new Set(retenus.map(m => _normPrix((prixParPays && prixParPays[m]) || prixGeneral)));
+  return vus.size === 1;
+};
+
+
 const MarchesField = ({ form, setForm, errors, C }) => {
   const [rows, setRows] = useState(() => { const m = parseMarches(form.pays); return m.length ? m : ['']; });
   // Resynchronise quand le champ change de l'extérieur (pré-remplissage depuis le lien, ouverture
@@ -735,6 +815,9 @@ const MarchesField = ({ form, setForm, errors, C }) => {
   }, [form.pays]);
   const maj = (next) => { setRows(next); setForm(f => ({ ...f, pays: next.map(r => r.trim()).filter(Boolean).join(', ') })); };
   const err = errors?.pays;
+  const marchesActifs = rows.map(r => r.trim()).filter(Boolean);
+  const [prixOuvert, setPrixOuvert] = useState(() => Object.keys(form.prix_par_pays || {}).length > 0);
+  const majPrix = (m, v) => setForm(f => ({ ...f, prix_par_pays: { ...(f.prix_par_pays || {}), [m]: v } }));
   return (
     <div>
       <label style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:3,display:'block'}}>Marché cible<span style={{color:C.accent}}> *</span></label>
@@ -759,6 +842,30 @@ const MarchesField = ({ form, setForm, errors, C }) => {
         style={{marginTop:7,display:'inline-flex',alignItems:'center',gap:5,padding:'5px 10px',borderRadius:7,border:`1px dashed ${C.border}`,background:'transparent',cursor:'pointer',color:C.sec,fontSize:11,fontFamily:'inherit'}}>
         <Icon name="plus" size={11} color={C.sec}/> Ajouter un marché
       </button>
+      {marchesActifs.length > 1 && (
+        <div style={{marginTop:10}}>
+          {!prixOuvert ? (
+            <button type="button" onClick={() => setPrixOuvert(true)}
+              style={{background:'none',border:'none',padding:0,color:C.sec,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',display:'inline-flex',alignItems:'center',gap:5}}>
+              <Icon name="plus" size={11} color={C.sec}/> Le prix change selon le pays ? <span style={{color:C.muted}}>(facultatif)</span>
+            </button>
+          ) : (
+            <div style={{padding:'10px 12px',borderRadius:9,background:'rgba(255,255,255,0.035)',border:`1px solid ${C.border}`}}>
+              <div style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:3}}>Prix par pays</div>
+              <div style={{fontSize:10.5,color:C.muted,marginBottom:8,lineHeight:1.4}}>Remplissez seulement les pays où le prix est différent de l'offre ci-dessus. Si le prix change, il n'apparaît pas sur les visuels qui couvrent plusieurs pays.</div>
+              <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                {marchesActifs.map(m => (
+                  <div key={m} style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span style={{width:92,flexShrink:0,fontSize:11.5,color:C.sec,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{m}</span>
+                    <input value={(form.prix_par_pays || {})[m] || ''} onChange={e => majPrix(m, e.target.value)} placeholder="Même prix"
+                      style={{flex:1,minWidth:0,padding:'8px 10px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -839,6 +946,7 @@ const depuisLigneProduit = (p) => {
     avis_textes: Array.isArray(perso.avis_textes) ? perso.avis_textes : [],
     garantie: perso.garantie || '',
     livraison_paiement: perso.livraison_paiement || '',
+    prix_par_pays: (perso.prix_par_pays && typeof perso.prix_par_pays === 'object') ? perso.prix_par_pays : {},
     cible_auto: !!perso.cible_auto,
   };
 };
@@ -934,10 +1042,11 @@ const sbProducts = {
         perso: {
           galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [],
           garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '',
+          prix_par_pays: prixParPaysNettoye(product),
           cible_auto: !!(product.cible && product.cible_auto),
         },
       },
-      locaux: { logo: logoUrl, notes: product.notes || '', galerie_images: galerie, galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '' },
+      locaux: { logo: logoUrl, notes: product.notes || '', galerie_images: galerie, galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '', prix_par_pays: prixParPaysNettoye(product) },
     };
   },
   // Écrit en base. Si une colonne récente n'existe pas encore (migration SQL non faite), retente sans elle plutôt que
@@ -1499,40 +1608,82 @@ const ImageGalerie = ({ src, alt, style }) => {
   return <img src={src} alt={alt} loading="lazy" decoding="async" draggable={false} onError={()=>setKo(true)} style={style}/>;
 };
 
-const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, C}) => {
+// Points de la fiche produit (mêmes critères que la page produit) — sert au résumé de complétude du pop-up de demande.
+const pointsFicheProduit = (p) => [
+  { k:'photo', label:'photo du produit', ok:!!(p.photo || p.photo_url), essentiel:true },
+  { k:'nom', label:'nom du produit', ok:!!p.nom, essentiel:true },
+  { k:'pricing', label:'offre actuelle', ok:!!p.pricing, essentiel:true },
+  { k:'pays', label:'marché cible', ok:!!p.pays, essentiel:true },
+  { k:'lien', label:'lien de la page produit', ok:!!p.lien },
+  { k:'angles', label:'3 aspects du produit en photo', ok:(p.galerie_images||[]).length > 2 },
+  { k:'garantie', label:'garantie ou livraison', ok:!!(p.garantie || p.livraison_paiement) },
+  { k:'cible', label:'votre client', ok:!!(p.cible && p.utilite) },
+  { k:'logo', label:'logo', ok:!!p.logo },
+  { k:'couleurs', label:'couleurs de la marque', ok:!!(p.couleur1 && p.couleur2) },
+  { k:'avis', label:'avis clients', ok:(p.avis_captures||[]).length > 0 || (p.avis_textes||[]).length > 0 },
+];
+
+const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, onEditProduct, verifierPlafond, C}) => {
   // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 6 / 12 / 24 par semaine.
   const [qty, setQty] = useState(6);
-  // Marchés du produit : le client choisit pour quels marchés cette demande est produite (tous par défaut).
+  // Marchés du produit : le client choisit pour quels marchés cette demande est produite. Par défaut, le plus gros
+  // groupe de marchés compatibles (même langue, même apparence des personnages) ; les autres sont proposés à part.
   const marchesProduit = parseMarches(product.pays);
-  const [marchesCoches, setMarchesCoches] = useState(marchesProduit);
+  const [marchesCoches, setMarchesCoches] = useState(() => analyserMarches(marchesProduit).retenus);
+  const [offreOuverte, setOffreOuverte] = useState(false);
+  const [offre, setOffre] = useState(product.promo || '');
   const plusieursMarches = marchesProduit.length > 1;
   const max = Math.min(credits.available, QTE_MAX_DEMANDE); // 24 visuels (8 angles) max par demande
   const canIncrease = qty + 6 <= max;
   const canDecrease = qty > 6;
   const isPack = subscription?.type === 'pack';
+  const angles = Math.round(qty / 3);
+
+  // Compatibilité : tout marché dont le groupe diffère de la sélection est signalé en rouge, avec la raison.
+  const refSel = marchesCoches.find(m => classeMarche(m) !== 'inconnu') || marchesCoches[0] || null;
+  const classeSel = refSel ? classeMarche(refSel) : null;
+  const incompatibles = marchesProduit.filter(m => !marchesCoches.includes(m) && classeMarche(m) !== 'inconnu' && classeSel && classeMarche(m) !== classeSel);
+  const estIncompat = (m) => incompatibles.includes(m);
+  const basculer = (m) => {
+    if (estIncompat(m)) { setMarchesCoches(analyserMarches(marchesProduit, m).retenus); return; }
+    setMarchesCoches(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
+  };
+  const prixParPays = product.prix_par_pays || {};
+  const prixOk = prixAffichable(marchesCoches, prixParPays, product.pricing);
+
+  const points = pointsFicheProduit(product);
+  const manquants = points.filter(x => !x.ok);
+  const nbOk = points.length - manquants.length;
+  const verif = verifierPlafond ? verifierPlafond(qty) : { autorise: true };
+  const peutConfirmer = max > 0 && (!plusieursMarches || marchesCoches.length > 0);
 
   return (
     <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.82)',zIndex:500,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-      <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflow:'hidden',background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',borderRadius:16,padding:'26px 24px',maxWidth:380,width:'100%',border:`1px solid ${C.borderM}`,boxShadow:'0 32px 80px rgba(0,0,0,0.7)'}}>
+      <div onClick={e=>e.stopPropagation()} style={{position:'relative',overflowX:'hidden',overflowY:'auto',maxHeight:'92vh',background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',borderRadius:16,padding:'24px 22px',maxWidth:400,width:'100%',border:`1px solid ${C.borderM}`,boxShadow:'0 24px 60px rgba(0,0,0,0.5)'}}>
         <div style={{position:'absolute',top:-50,right:-30,width:170,height:170,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.16), transparent 70%)',pointerEvents:'none'}}/>
 
         {/* Bouton fermer */}
-        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={14}/></button>
+        <button onClick={onClose} style={{position:'absolute',top:14,right:14,width:28,height:28,borderRadius:7,border:'none',background:'rgba(255,255,255,0.07)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={13} color={C.sec}/></button>
 
-        {/* Header */}
-        <div style={{position:'relative',marginBottom:22,paddingRight:32}}>
-          <h3 style={{fontSize:16,fontWeight:800,color:C.text,margin:'0 0 3px'}}>Demander des créatives</h3>
-          <p style={{fontSize:12,color:C.sec,margin:0}}>Pour <strong style={{color:C.text}}>{product.nom}</strong></p>
+        {/* En-tête : la miniature évite de se tromper de produit */}
+        <div style={{position:'relative',display:'flex',alignItems:'center',gap:12,marginBottom:18,paddingRight:32}}>
+          {(product.photo || product.photo_url) && <img src={product.photo || product.photo_url} alt="" style={{width:44,height:44,borderRadius:9,objectFit:'cover',flexShrink:0,border:`1px solid ${C.border}`,background:'#0f1120'}}/>}
+          <div style={{minWidth:0}}>
+            <h3 style={{fontSize:16,fontWeight:800,color:C.text,margin:'0 0 2px'}}>Demander des créatives</h3>
+            <p style={{fontSize:12,color:C.sec,margin:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Pour <strong style={{color:C.text}}>{product.nom}</strong></p>
+          </div>
         </div>
 
-        {/* Jauge semaine — hero, citation à bordure latérale au lieu d'un encart fermé */}
-        <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:14}}>
-          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:6}}>{isPack ? 'Créatives disponibles' : 'Disponibles cette semaine'}</div>
-          <div style={{fontFamily:"'DM Mono',monospace",fontSize:28,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{credits.available}</div>
-          <div style={{marginTop:10,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:220}}>
-            <div style={{height:'100%',borderRadius:2,transition:'width .3s',background:max>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.1)',width:max===0?'100%':`${Math.min(100,(qty/max)*100)}%`}}/>
+        {/* Crédits : une seule ligne claire, la barre montre ce qu'il restera après la demande */}
+        <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:isPack?12:20}}>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:5}}>{isPack ? 'Créatives disponibles' : 'Disponibles cette semaine'}</div>
+          <div style={{display:'flex',alignItems:'baseline',gap:8}}>
+            <span style={{fontFamily:"'DM Mono',monospace",fontSize:26,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{credits.available}</span>
+            <span style={{fontSize:11,color:C.muted}}>{Math.max(0,credits.available-qty)} restantes après cette demande</span>
           </div>
-          <div style={{fontSize:10,color:C.muted,marginTop:8}}>{qty} sélectionné{qty>1?'s':''} · {credits.available-qty} restant{credits.available-qty>1?'s':''} après</div>
+          <div style={{marginTop:9,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:220}}>
+            <div style={{height:'100%',borderRadius:2,transition:'width .3s',background:`linear-gradient(90deg,${C.accent},#5B8DEF)`,width:credits.available>0?`${Math.max(0,Math.min(100,((credits.available-qty)/credits.available)*100))}%`:'0%'}}/>
+          </div>
         </div>
 
         {/* Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement Starter. */}
@@ -1540,15 +1691,14 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
           <button onClick={() => {
             const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
             if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
-          }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:22}}>
+          }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:20}}>
             <Icon name="plus" size={12} color={C.accent}/> Continuez avec PERF+
           </button>
         )}
-        {!isPack && <div style={{marginBottom:26}}/>}
 
         {/* Compteur */}
-        <div style={{position:'relative',marginBottom:26}}>
-          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:16,textAlign:'center'}}>Nombre de créatives à recevoir</div>
+        <div style={{position:'relative',marginBottom:20}}>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:12,textAlign:'center'}}>Nombre de créatives à recevoir</div>
           <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:26}}>
             <button onClick={()=>canDecrease&&setQty(q=>q-6)} style={{width:42,height:42,borderRadius:'50%',border:`1px solid ${canDecrease?'rgba(255,255,255,0.14)':'rgba(255,255,255,0.05)'}`,background:canDecrease?'rgba(255,255,255,0.05)':'rgba(255,255,255,0.02)',color:canDecrease?C.text:C.muted,fontSize:20,cursor:canDecrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.15s'}}>−</button>
             <div style={{textAlign:'center',minWidth:76}}>
@@ -1558,30 +1708,85 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
             </div>
             <button onClick={()=>canIncrease&&setQty(q=>q+6)} style={{width:42,height:42,borderRadius:'50%',border:'none',background:canIncrease?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.02)',color:canIncrease?'#fff':C.muted,fontSize:20,cursor:canIncrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:canIncrease?'0 4px 14px rgba(45,127,249,0.3)':'none',transition:'all 0.15s'}}>+</button>
           </div>
+          <div style={{textAlign:'center',fontSize:11,color:C.muted,marginTop:10,lineHeight:1.5}}>
+            {angles} angles différents × 3 variantes · livraison sous 24h
+          </div>
         </div>
 
         {plusieursMarches && (
-          <div style={{position:'relative',marginBottom:22}}>
+          <div style={{position:'relative',marginBottom:18}}>
             <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:8,textAlign:'center'}}>Pour quel marché ?</div>
             <div style={{display:'flex',flexWrap:'wrap',gap:6,justifyContent:'center'}}>
               {marchesProduit.map(m => {
                 const on = marchesCoches.includes(m);
+                const rouge = estIncompat(m);
                 return (
-                  <button key={m} type="button" onClick={() => setMarchesCoches(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m])}
-                    style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:`1px solid ${on?C.accent:C.border}`,background:on?'rgba(91,141,239,0.14)':'transparent',color:on?C.text:C.sec,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+                  <button key={m} type="button" onClick={() => basculer(m)}
+                    style={{display:'inline-flex',alignItems:'center',gap:5,padding:'6px 12px',borderRadius:20,border:`1px ${rouge?'dashed':'solid'} ${rouge?'rgba(229,80,80,0.7)':on?C.accent:C.border}`,background:on?'rgba(91,141,239,0.14)':rouge?'rgba(229,80,80,0.07)':'transparent',color:on?C.text:rouge?'#E88A8A':C.sec,fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
                     {on && <Icon name="check" size={11} color={C.accent}/>} {m}
                   </button>
                 );
               })}
             </div>
+            {incompatibles.length > 0 && (
+              <div style={{marginTop:10,padding:'9px 11px',borderRadius:8,background:'rgba(229,80,80,0.08)',border:'1px solid rgba(229,80,80,0.35)',fontSize:11,color:'#F0A0A0',lineHeight:1.55}}>
+                {incompatibles.map(m => (
+                  <div key={m} style={{marginBottom:4}}><strong style={{color:'#F4B4B4'}}>{m}</strong> ne peut pas être produit avec {marchesCoches.join(', ')} : {raisonIncompatibilite(m, refSel)}.</div>
+                ))}
+                <div style={{color:'#E8A0A0'}}>Faites une demande séparée pour {incompatibles.length > 1 ? 'ces marchés' : 'ce marché'} — touchez-le ci-dessus pour passer dessus.</div>
+              </div>
+            )}
             {marchesCoches.length === 0 && <div style={{fontSize:10.5,color:'#E55050',textAlign:'center',marginTop:6}}>Choisissez au moins un marché.</div>}
+            {marchesCoches.length > 1 && !prixOk && (
+              <div style={{marginTop:8,fontSize:10.5,color:C.muted,lineHeight:1.5,textAlign:'center'}}>Le prix est différent selon les pays : il ne sera pas affiché sur les visuels de cette demande.</div>
+            )}
+            {marchesCoches.length > 1 && (
+              <div style={{marginTop:6,fontSize:10.5,color:C.muted,lineHeight:1.5,textAlign:'center'}}>Plusieurs pays : les visuels ne citeront aucun pays ni aucune ville, pour convenir à tous vos marchés.</div>
+            )}
+          </div>
+        )}
+
+        {/* Offre du moment — repliée par défaut, aucune saisie obligatoire */}
+        <div style={{position:'relative',marginBottom:16}}>
+          {!offreOuverte ? (
+            <button type="button" onClick={()=>setOffreOuverte(true)} style={{background:'none',border:'none',color:C.sec,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',padding:0,display:'inline-flex',alignItems:'center',gap:5}}>
+              <Icon name="plus" size={11} color={C.sec}/> Une offre spéciale cette fois ? <span style={{color:C.muted}}>(facultatif)</span>
+            </button>
+          ) : (
+            <div>
+              <label style={{fontSize:11,color:C.sec,fontWeight:600,display:'block',marginBottom:4}}>Offre à mettre en avant pour cette demande</label>
+              <input value={offre} onChange={e=>setOffre(e.target.value)} placeholder="Ex : 2 achetés = 1 offert jusqu'à dimanche"
+                style={{width:'100%',boxSizing:'border-box',padding:'9px 11px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,color:C.text,fontSize:12.5,fontFamily:'inherit',outline:'none'}}/>
+              <div style={{fontSize:10,color:C.muted,marginTop:4}}>Valable pour cette demande seulement, votre fiche produit ne change pas.</div>
+            </div>
+          )}
+        </div>
+
+        {/* Résumé de la fiche : informatif, jamais bloquant */}
+        {manquants.length > 0 && (
+          <div style={{position:'relative',marginBottom:16,padding:'10px 12px',borderRadius:9,background:'rgba(255,255,255,0.035)',border:`1px solid ${C.border}`}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
+              <div style={{fontSize:11,color:C.sec}}>Fiche produit : <strong style={{color:C.text}}>{nbOk}/{points.length}</strong> renseignés</div>
+              {onEditProduct && <button type="button" onClick={()=>onEditProduct(product)} style={{background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',padding:0}}>Compléter</button>}
+            </div>
+            <div style={{marginTop:7,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden'}}>
+              <div style={{height:'100%',borderRadius:2,background:C.accent,width:`${Math.round((nbOk/points.length)*100)}%`}}/>
+            </div>
+            <div style={{marginTop:7,fontSize:10.5,color:C.muted,lineHeight:1.5}}>Plus la fiche est complète, plus vos visuels sont précis. Il manque : {manquants.slice(0,3).map(x=>x.label).join(', ')}{manquants.length>3?` et ${manquants.length-3} autre${manquants.length-3>1?'s':''}`:''}.</div>
+          </div>
+        )}
+
+        {/* Plafond de production prévenu AVANT la confirmation */}
+        {!verif.autorise && (
+          <div style={{position:'relative',marginBottom:14,padding:'9px 11px',borderRadius:8,background:'rgba(240,170,60,0.08)',border:'1px solid rgba(240,170,60,0.35)',fontSize:11,color:'#E8C27A',lineHeight:1.55}}>
+            Beaucoup de créatives sont déjà en production (limite de {PLAFOND_PRODUCTION_24H} sur 24h). Vous pouvez confirmer : nous vous indiquerons à quelle heure la production de cette demande peut démarrer.
           </div>
         )}
 
         {/* Boutons */}
         <div style={{position:'relative',display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:'12px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
-          <button onClick={()=>max>0&&(!plusieursMarches||marchesCoches.length>0)&&onConfirm(qty, plusieursMarches ? marchesCoches : null)} disabled={max===0||(plusieursMarches&&marchesCoches.length===0)} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:max===0?'rgba(255,255,255,0.05)':`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:max===0?C.muted:'#fff',fontWeight:700,fontSize:13,cursor:max===0?'not-allowed':'pointer',fontFamily:'inherit',boxShadow:max===0?'none':'0 4px 16px rgba(45,127,249,0.3)'}}>
+          <button onClick={()=>peutConfirmer&&onConfirm(qty, plusieursMarches ? marchesCoches : null, (offreOuverte && offre.trim() && offre.trim() !== (product.promo||'').trim()) ? offre.trim() : null)} disabled={!peutConfirmer} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:peutConfirmer?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.06)',color:peutConfirmer?'#fff':C.muted,fontWeight:700,fontSize:13,cursor:peutConfirmer?'pointer':'not-allowed',fontFamily:'inherit',boxShadow:peutConfirmer?'0 4px 16px rgba(45,127,249,0.3)':'none'}}>
             {max===0 ? 'Aucune créative disponible' : `Confirmer · ${qty} créatives`}
           </button>
         </div>
@@ -2171,7 +2376,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
 // ═══════════════════════════════════════════════════════════════════════════
 const BROUILLON_PREFIX = 'adstack_brouillon_produit_';
 const cleBrouillon = (userId, produitId) => `${BROUILLON_PREFIX}${userId || 'anon'}_${produitId || 'new'}`;
-const CHAMPS_FICHE = ['nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','galerie_aspects','avis_captures','avis_textes','documents'];
+const CHAMPS_FICHE = ['nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','galerie_aspects','avis_captures','avis_textes','prix_par_pays','documents'];
 // Empreinte du contenu utile de la fiche : sert à savoir si le client a vraiment saisi / modifié quelque chose
 // (pas de brouillon enregistré pour une page ouverte puis refermée sans toucher à rien).
 const signatureFiche = (f) => {
@@ -2894,6 +3099,16 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   };
   const openNew = () => { if (!user) { onNeedLogin(); return; } ouvrirPage(null); };
   const openEdit = (p) => { ouvrirPage(p); };
+  // Ouverture de la fiche depuis le pop-up de demande (« Compléter ») : demande en attente au montage + évènement si déjà affiché.
+  const produitsRef = useRef(products);
+  produitsRef.current = products;
+  useEffect(() => {
+    const ouvrir = (id) => { const p = (produitsRef.current || []).find(x => x.id === id); if (p) { try { window.__adOuvrirFiche = null; } catch(e) {} ouvrirPage(p); } };
+    try { if (window.__adOuvrirFiche) ouvrir(window.__adOuvrirFiche); } catch(e) {}
+    const h = (e) => ouvrir(e.detail);
+    window.addEventListener('adboard:ouvrir-fiche', h);
+    return () => window.removeEventListener('adboard:ouvrir-fiche', h);
+  }, []);
 
   useEffect(() => {
     const h = () => { if (showFormRef.current) { setShowForm(false); setBrouillonTick(t => t + 1); } };
@@ -5879,7 +6094,7 @@ export default function Platform() {
   // le popup de plafond appelait sbBriefs.create() en direct, sans jamais reproduire l'envoi du
   // webhook vers Factory qui suit — Factory ne recevait donc jamais ces demandes-là, exactement
   // comme cancelCreatives() existe déjà pour éviter la même erreur côté annulation.
-  const creerDemandeEtNotifierFactory = async (product, qty, marchesChoisis = null) => {
+  const creerDemandeEtNotifierFactory = async (product, qty, marchesChoisis = null, offreDuMoment = null) => {
     const session = await sbAuth.refreshSession();
     const brief = await sbBriefs.create(session, product.id, qty, marchesChoisis);
     if (!brief) return null;
@@ -5899,8 +6114,11 @@ export default function Platform() {
         // Marchés choisis pour CETTE demande (sous-ensemble des marchés du produit) ; à défaut, tous les marchés du produit.
         pays: (marchesChoisis?.length ? marchesChoisis.join(', ') : product.pays),
         marches: marchesChoisis?.length ? marchesChoisis : parseMarches(product.pays),
+        // Prix propres à certains pays (facultatif) : vide = même prix partout.
+        prix_par_pays: prixParPaysNettoye(product),
         documents: (product.documents || []).map(d => ({ name: d.name, url: d.url })),
-        promo: product.promo || '', cible: product.cible || '', utilite: product.utilite || '',
+        // Offre saisie dans le pop-up pour CETTE demande seulement (la fiche produit n'est pas modifiée).
+        promo: offreDuMoment || product.promo || '', promo_ponctuelle: !!offreDuMoment, cible: product.cible || '', utilite: product.utilite || '',
         couleur1: product.couleur1 || '', couleur2: product.couleur2 || '', couleur3: product.couleur3 || '',
         photo_url: product.photo_url || null,
         photo_base64: product.photo?.startsWith('data:') ? product.photo : null,
@@ -6662,11 +6880,11 @@ const views = {
                             // Assez de place libérée — on crée directement la demande initialement
                             // bloquée, en notifiant Factory correctement cette fois (même chemin que
                             // le flux normal de création, voir creerDemandeEtNotifierFactory).
-                            await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty, plafondModal.marches);
+                            await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty, plafondModal.marches, plafondModal.offre);
                             setPlafondModal(null);
                           } else {
                             // Toujours au-dessus du plafond — on met juste la modale à jour
-                            setPlafondModal({product: plafondModal.product, qty: plafondModal.qty, ...reverif});
+                            setPlafondModal({product: plafondModal.product, qty: plafondModal.qty, marches: plafondModal.marches, offre: plafondModal.offre, ...reverif});
                           }
                         } finally {
                           plafondActionEnCoursRef.current = false;
@@ -6694,17 +6912,25 @@ const views = {
         onOpenPayment={(productId)=>setPaymentProductId(productId)}
         C={C}
         onClose={()=>setCreativesTarget(null)}
-        onConfirm={async (qty, marches) => {
+        verifierPlafond={(q) => verifierPlafondProduction(allBriefs, q)}
+        onEditProduct={(p) => {
+          // Ferme le pop-up, ouvre la section Produits puis la fiche du produit (même écran que le bouton Modifier).
+          setCreativesTarget(null);
+          try { window.__adOuvrirFiche = p.id; } catch(e) {}
+          setSection('produits');
+          setTimeout(() => { try { window.dispatchEvent(new CustomEvent('adboard:ouvrir-fiche', { detail: p.id })); } catch(e) {} }, 60);
+        }}
+        onConfirm={async (qty, marches, offre) => {
           // Plafond de charge — 36 images max en production simultanée, tous produits
           // confondus, sur une fenêtre glissante de 24h. Vérifié AVANT toute création,
           // indépendant des crédits d'abonnement (qui suivent une autre logique de rechargement).
           const verif = verifierPlafondProduction(allBriefs, qty);
           if (!verif.autorise) {
-            setPlafondModal({ product: creativesTarget, qty, marches, ...verif });
+            setPlafondModal({ product: creativesTarget, qty, marches, offre, ...verif });
             setCreativesTarget(null);
             return;
           }
-          await creerDemandeEtNotifierFactory(creativesTarget, qty, marches);
+          await creerDemandeEtNotifierFactory(creativesTarget, qty, marches, offre);
           setCreativesTarget(null);
         }}
       />
