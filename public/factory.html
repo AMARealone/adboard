@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.10-aspects-kit (aspect kit/cadeaux, sélecteur de CT informé des assets du client) | v7.9-aspects (l analyste décrit chaque aspect du produit en S11-F et reçoit toutes les photos préparées ; la créative image choisit les aspects par CT, ligne META 10) | v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
+<!-- FACTORY_VERSION v7.11-video (galerie CT vidéo séparée + 4e agent Créative Vidéo : entrées -> vidéo finale, historique complet téléchargeable) | v7.10-aspects-kit (aspect kit/cadeaux, sélecteur de CT informé des assets du client) | v7.9-aspects (l analyste décrit chaque aspect du produit en S11-F et reçoit toutes les photos préparées ; la créative image choisit les aspects par CT, ligne META 10) | v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -523,6 +523,7 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
   <div class="sidebar-section" style="cursor:pointer" onclick="showDashboard()">⬅ Dashboard</div>
   <div class="sidebar-section" style="cursor:pointer" onclick="showFiles()">Fichiers</div>
   <div class="sidebar-section" style="cursor:pointer" onclick="showGallery()">🖼 Galerie CT</div>
+  <div class="sidebar-section" style="cursor:pointer" onclick="showVideoGallery()">🎬 Galerie CT vidéo</div>
   <div class="sidebar-section" id="sidebarProdLink" style="cursor:pointer;display:none;" onclick="showProduction()">▶ Production</div>
 
   <div class="sidebar-bottom" id="sidebarBottom">
@@ -625,7 +626,45 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
       </div>
 
       <div class="av-panel" id="panelTest">
-        <div class="test-area">
+        <div id="videoLabPanel" class="test-area" style="display:none;">
+          <h4>Créative Vidéo — test</h4>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;font-size:11px;color:var(--t3);">
+            <span id="vlDot" style="width:8px;height:8px;border-radius:50%;background:#777;display:inline-block;"></span>
+            <span id="vlState">Labo vidéo : vérification…</span>
+            <input id="vlUrl" type="text" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:11px;width:200px;" onchange="vlSaveUrl()" title="Adresse du labo vidéo lancé sur ton ordinateur">
+            <button onclick="vlPing()" style="padding:4px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:11px;cursor:pointer;">Tester</button>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;letter-spacing:.05em;">CT VIDÉO</div>
+          <select id="vlCt" onchange="vlCtChanged()" style="width:100%;padding:9px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;"></select>
+          <div id="vlCtMeta" style="font-size:10.5px;color:var(--blue);font-style:italic;margin:5px 0 12px;line-height:1.4;"></div>
+          <div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;letter-spacing:.05em;">SYNTHÈSE DE L'ANALYSTE</div>
+          <textarea id="vlSyn" class="test-input" style="height:130px;" placeholder="Colle ici la synthèse complète produite par l'Analyste de Marché…"></textarea>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:12px;">
+            <div style="flex:1;min-width:220px;"><div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;letter-spacing:.05em;">PHOTO PRODUIT</div><input type="file" id="vlPhoto" accept="image/*" style="font-size:11px;color:var(--t2);max-width:100%;"></div>
+            <div style="flex:1;min-width:220px;"><div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;letter-spacing:.05em;">AUTRES ASPECTS (facultatif, 5 max)</div><input type="file" id="vlAspects" accept="image/*" multiple style="font-size:11px;color:var(--t2);max-width:100%;"></div>
+          </div>
+          <div style="margin-top:12px;"><div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;letter-spacing:.05em;">BRIEF CLIENT (JSON, facultatif : complète la photo, les aspects et le lien)</div>
+            <input type="file" id="vlBrief" accept="application/json" onchange="vlBriefLoaded(this)" style="font-size:11px;color:var(--t2);max-width:100%;"> <span id="vlBriefInfo" style="font-size:11px;color:var(--t3);"></span></div>
+          <details style="margin-top:12px;"><summary style="font-size:11px;color:var(--t3);cursor:pointer;">Réglages</summary>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px;font-size:12px;color:var(--t2);align-items:center;">
+              <label>Modèle vidéo <select id="vlModel" style="padding:5px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t1);font-size:11px;"><option value="auto">Automatique</option></select></label>
+              <label>Références <select id="vlRef" style="padding:5px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t1);font-size:11px;"><option value="complet">Complet (le plus fidèle)</option><option value="produit">Photo produit seule</option><option value="aucune">Aucune</option></select></label>
+              <label><input type="checkbox" id="vlPlanOnly"> Plan seulement (sans vidéo, presque gratuit)</label>
+            </div></details>
+          <div style="margin-top:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button class="test-run" id="vlRun" onclick="vlRun()">▶ Générer la vidéo</button>
+            <span id="vlTimer" style="font-size:11px;color:var(--t3);"></span>
+          </div>
+          <div id="vlProg" style="display:none;margin-top:14px;font-size:12px;color:var(--t2);"></div>
+          <div id="vlResult" style="margin-top:14px;"></div>
+          <div id="vlHist" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid var(--border1);">
+            <div style="font-size:11px;color:var(--t3);margin-bottom:8px;">Journaux, planches, images refaites, coûts : tout est enregistré. Télécharge l'historique et envoie-le moi pour corriger.</div>
+            <button onclick="vlDownload(true)" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t1);font-size:12px;font-weight:600;cursor:pointer;">⬇ Historique complet (avec images)</button>
+            <button onclick="vlDownload(false)" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t2);font-size:12px;cursor:pointer;margin-left:6px;">⬇ Texte seul (léger)</button>
+            <span id="vlHistMsg" style="font-size:11px;color:var(--t3);margin-left:8px;"></span>
+          </div>
+        </div>
+        <div class="test-area" id="stdTestArea">
           <h4>Input de test</h4>
 
           <!-- JSON Brief loader (visible only for agents with hasJsonBrief) -->
@@ -825,6 +864,47 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
     <div style="font-size:14px;color:var(--t1);font-weight:600;margin-bottom:8px;">Galerie vide</div>
     <div style="font-size:12px;color:var(--t3);margin-bottom:20px;">Ajoute tes Creative Templates de référence</div>
     <button onclick="triggerCTUpload()" style="padding:9px 22px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">+ Ajouter un CT</button>
+  </div>
+</div>
+
+<!-- ═════ GALERIE CT VIDÉO (section à part) ═════ -->
+<div class="agent-view" id="viewVideoGallery" style="padding:0;background:var(--bg1);min-height:100%;overflow-y:auto;">
+  <div style="padding:20px 24px 14px;border-bottom:1px solid var(--border1);background:var(--bg2);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:10;">
+    <div>
+      <div style="font-size:17px;font-weight:700;color:var(--t1);">🎬 Galerie de CT vidéo</div>
+      <div id="vctCount" style="font-size:11px;color:var(--t3);margin-top:2px;">Chargement…</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button onclick="vctImportLab()" title="Copie dans la galerie les CT vidéo du dossier de ton labo (ceux déjà présents sont ignorés)" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">⇣ Importer depuis le labo</button>
+      <button onclick="vctEnrichAll()" title="Gemini lit chaque CT et remplit nom, méta-description et balises (uniquement ceux sans méta-description)" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">✦ Enrichir les CT sans méta</button>
+      <button onclick="document.getElementById('vctFileInput').click()" style="padding:8px 16px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">+ Ajouter des CT vidéo</button>
+    </div>
+  </div>
+  <div style="padding:12px 24px 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <input id="vctSearch" type="text" placeholder="Rechercher (nom, méta, balise)…" oninput="renderVideoGallery()" style="padding:7px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;width:260px;max-width:100%;outline:none;">
+    <div id="vctStatus" style="font-size:11px;color:var(--t3);"></div>
+  </div>
+  <input type="file" id="vctFileInput" multiple accept=".md,.txt,text/markdown,text/plain" style="display:none;" onchange="vctFilesSelected(this.files); this.value='';">
+  <div id="vctGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;padding:16px 24px 32px;min-height:100px;"></div>
+  <div id="vctEmpty" style="display:none;text-align:center;padding:60px 24px;">
+    <div style="font-size:44px;margin-bottom:12px;opacity:.35;">🎬</div>
+    <div style="font-size:14px;color:var(--t1);font-weight:600;margin-bottom:8px;">Aucun CT vidéo</div>
+    <div style="font-size:12px;color:var(--t3);">Ajoute des fichiers .md ou importe ceux de ton labo.</div>
+  </div>
+  <div id="vctModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:120;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:12px;width:min(820px,100%);max-height:92vh;display:flex;flex-direction:column;">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border1);display:flex;justify-content:space-between;align-items:center;gap:10px;"><b style="color:var(--t1);font-size:14px;">Modifier le CT vidéo</b><button onclick="vctCloseModal()" style="background:none;border:none;color:var(--t2);font-size:22px;cursor:pointer;">×</button></div>
+      <div style="padding:14px 16px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+        <label style="font-size:11px;color:var(--t3);font-weight:600;">NOM</label><input id="vctEdName" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:13px;">
+        <label style="font-size:11px;color:var(--t3);font-weight:600;">MÉTA-DESCRIPTION (structure, mécanisme, produits adaptés, ton)</label><textarea id="vctEdMeta" rows="4" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;resize:vertical;"></textarea>
+        <label style="font-size:11px;color:var(--t3);font-weight:600;">NIVEAU DE CONSCIENCE</label>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--t2);"><label><input type="checkbox" class="vctAw" value="Solution Aware"> Solution Aware</label><label><input type="checkbox" class="vctAw" value="Product Aware"> Product Aware</label><label><input type="checkbox" class="vctAw" value="Most Aware"> Most Aware</label></div>
+        <label style="font-size:11px;color:var(--t3);font-weight:600;">BALISES DE STYLE (séparées par des virgules)</label><input id="vctEdTags" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;">
+        <label style="font-size:11px;color:var(--t3);font-weight:600;">NICHES / PRODUITS ADAPTÉS</label><input id="vctEdNiche" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:12px;">
+        <label style="font-size:11px;color:var(--t3);font-weight:600;">TEXTE DU CT</label><textarea id="vctEdTexte" rows="12" style="padding:8px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);font-size:11px;font-family:monospace;resize:vertical;"></textarea>
+      </div>
+      <div style="padding:12px 16px;border-top:1px solid var(--border1);display:flex;gap:8px;justify-content:flex-end;"><button onclick="vctCloseModal()" style="padding:8px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t2);font-size:12px;cursor:pointer;">Annuler</button><button onclick="vctSaveModal()" style="padding:8px 16px;background:var(--blue);border:none;border-radius:8px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Enregistrer</button></div>
+    </div>
   </div>
 </div>
 
@@ -6813,6 +6893,310 @@ function _initCTDrop() {
   });
 }
 
+/* ═══════════════ v7.11 — GALERIE CT VIDÉO + 4e AGENT « CRÉATIVE VIDÉO » ═══════════════ */
+const _VCT_PREFIX = 'video';
+function _vctBase(){ return SB_FACTORY.replace('/rest/v1','') + '/storage/v1/object/' + _CT_BUCKET + '/' + _VCT_PREFIX + '/'; }
+function _vctPublic(name){ return SB_FACTORY.replace('/rest/v1','') + '/storage/v1/object/public/' + _CT_BUCKET + '/' + _VCT_PREFIX + '/' + name; }
+let VCT_LIST = [];
+
+async function vctGetAll(){
+  const resp = await fetch(SB_FACTORY.replace('/rest/v1','') + '/storage/v1/object/list/' + _CT_BUCKET, {
+    method:'POST', headers:Object.assign({'Content-Type':'application/json'}, SB_H_F),
+    body: JSON.stringify({ prefix:_VCT_PREFIX, limit:2000, sortBy:{column:'name', order:'desc'} })
+  });
+  if(!resp.ok) throw new Error('Liste CT vidéo échouée : HTTP ' + resp.status);
+  const files = await resp.json();
+  const ids = files.map(f => (f.name.match(/^(vct_\d+_[a-z0-9]+)\.json$/i)||[])[1]).filter(Boolean);
+  const recs = await Promise.all(ids.map(async id => {
+    try {
+      const r = await fetch(_vctPublic(id + '.json') + '?t=' + Date.now());
+      if(!r.ok) return null;
+      const m = await r.json();
+      return { id, name:m.name||id, addedAt:m.addedAt||0, meta:m.meta||'', awareness:m.awareness||[], styleTags:m.styleTags||[], niche:m.niche||'', source:m.source||'', taille:m.taille||0 };
+    } catch(e){ return null; }
+  }));
+  return recs.filter(Boolean).sort((a,b) => b.addedAt - a.addedAt);
+}
+async function _vctUpload(name, objet){
+  const r = await fetch(_vctBase() + name, { method:'POST',
+    headers:{ 'apikey':SB_KEY_F, 'Authorization':'Bearer ' + SB_KEY_F, 'Content-Type':'application/json', 'x-upsert':'true' },
+    body: JSON.stringify(objet) });
+  if(!r.ok) throw new Error('Enregistrement CT vidéo échoué : HTTP ' + r.status);
+}
+async function vctPutMeta(rec){
+  await _vctUpload(rec.id + '.json', { name:rec.name, addedAt:rec.addedAt||Date.now(), meta:rec.meta||'', awareness:rec.awareness||[], styleTags:rec.styleTags||[], niche:rec.niche||'', source:rec.source||'', taille:rec.taille||0 });
+}
+async function vctPutTexte(id, texte){ await _vctUpload(id + '.texte.json', { texte }); }
+async function vctGetTexte(id){
+  const r = await fetch(_vctPublic(id + '.texte.json') + '?t=' + Date.now());
+  if(!r.ok) throw new Error('Texte du CT introuvable (HTTP ' + r.status + ')');
+  return (await r.json()).texte || '';
+}
+async function vctDel(id){
+  await fetch(SB_FACTORY.replace('/rest/v1','') + '/storage/v1/object/' + _CT_BUCKET, { method:'DELETE',
+    headers:Object.assign({'Content-Type':'application/json'}, SB_H_F),
+    body: JSON.stringify({ prefixes:[_VCT_PREFIX + '/' + id + '.json', _VCT_PREFIX + '/' + id + '.texte.json'] }) });
+}
+function _vctStatus(t, err){ const e = document.getElementById('vctStatus'); if(e){ e.textContent = t || ''; e.style.color = err ? '#e5534b' : 'var(--t3)'; } }
+function _vctEsc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+async function vctEnrichOne(id, texte){
+  const r = await fetch(SERVER + '/name-ct-video', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ texte }) });
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok || j.error) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+}
+function _vctNomDuTexte(texte, fichier){
+  const m = texte.match(/"name"\s*:\s*"((?:[^"\\]|\\.)*)"/);
+  let n = ''; try { n = m ? JSON.parse('"' + m[1] + '"').trim() : ''; } catch(e){}
+  return n || String(fichier || 'CT vidéo').replace(/\.(md|txt)$/i, '').replace(/^CT_VIDEO_\d*_?/i, '').replace(/_/g, ' ');
+}
+function _vctAwDuTexte(texte){
+  const m = texte.match(/"awareness"\s*:\s*\[([^\]]*)\]/); if(!m) return [];
+  const map = { solution:'Solution Aware', product:'Product Aware', most:'Most Aware' };
+  return m[1].split(',').map(x => x.replace(/["'\s]+/g,' ').trim().toLowerCase()).map(x => map[x.split(' ')[0]] || null).filter(Boolean);
+}
+async function _vctAjouter(fichier, texte, source){
+  const id = 'vct_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+  const rec = { id, name:_vctNomDuTexte(texte, fichier), addedAt:Date.now(), meta:'', awareness:_vctAwDuTexte(texte), styleTags:[], niche:'', source:source || fichier, taille:texte.length };
+  await vctPutTexte(id, texte);
+  await vctPutMeta(rec);
+  try {
+    const e = await vctEnrichOne(id, texte);
+    if(e.name) rec.name = e.name; rec.meta = e.meta || ''; if(e.awareness && e.awareness.length) rec.awareness = e.awareness.map(a => ({solution:'Solution Aware',product:'Product Aware',most:'Most Aware'}[a] || a)); rec.styleTags = e.styleTags || []; rec.niche = e.niche || '';
+    await vctPutMeta(rec);
+  } catch(err){ console.warn('[CT vidéo] enrichissement impossible pour', fichier, err.message); rec._enrichKo = err.message; }
+  return rec;
+}
+async function vctFilesSelected(files){
+  const liste = Array.from(files || []).filter(f => /\.(md|txt)$/i.test(f.name));
+  if(!liste.length){ _vctStatus('Aucun fichier .md ou .txt reconnu.', true); return; }
+  let ok = 0, ko = 0, sansMeta = 0;
+  for(let i = 0; i < liste.length; i++){
+    _vctStatus('Ajout ' + (i+1) + '/' + liste.length + ' : ' + liste[i].name + '…');
+    try {
+      const t = await liste[i].text();
+      if(t.length < 500) throw new Error('fichier trop court (' + t.length + ' caractères)');
+      const rec = await _vctAjouter(liste[i].name, t, liste[i].name);
+      ok++; if(rec._enrichKo) sansMeta++;
+    } catch(e){ ko++; console.error('[CT vidéo]', liste[i].name, e); }
+  }
+  _vctStatus(ok + ' ajouté(s)' + (sansMeta ? ' (dont ' + sansMeta + ' sans méta-description : le serveur n\'a pas répondu, utilise « Enrichir »)' : '') + (ko ? ' · ' + ko + ' refusé(s)' : '') + '.', ko > 0 || sansMeta > 0);
+  await renderVideoGallery(true);
+}
+async function vctImportLab(){
+  const base = vlLabUrl();
+  _vctStatus('Lecture du labo (' + base + ')…');
+  let cts;
+  try { const r = await fetch(base + '/cts'); cts = await r.json(); }
+  catch(e){ _vctStatus('Labo injoignable (' + base + ') : lance-le sur ton ordinateur puis réessaie.', true); return; }
+  const deja = new Set(VCT_LIST.map(x => x.source));
+  const nouveaux = (cts || []).filter(c => !deja.has(c.file));
+  if(!nouveaux.length){ _vctStatus('Rien de nouveau : les ' + (cts||[]).length + ' CT du labo sont déjà dans la galerie.'); return; }
+  let ok = 0, ko = 0;
+  for(let i = 0; i < nouveaux.length; i++){
+    _vctStatus('Import ' + (i+1) + '/' + nouveaux.length + ' : ' + nouveaux[i].file + '…');
+    try {
+      const t = await (await fetch(base + '/ct?f=' + encodeURIComponent(nouveaux[i].file))).text();
+      if(t.length < 500) throw new Error('trop court');
+      await _vctAjouter(nouveaux[i].file, t, nouveaux[i].file); ok++;
+    } catch(e){ ko++; console.error('[CT vidéo] import', nouveaux[i].file, e); }
+  }
+  _vctStatus(ok + ' CT importé(s) du labo' + (ko ? ' · ' + ko + ' en échec' : '') + '.', ko > 0);
+  await renderVideoGallery(true);
+}
+async function vctEnrichAll(){
+  const cibles = VCT_LIST.filter(x => !x.meta);
+  if(!cibles.length){ _vctStatus('Tous les CT ont déjà une méta-description.'); return; }
+  let ok = 0, ko = 0;
+  for(let i = 0; i < cibles.length; i++){
+    _vctStatus('Enrichissement ' + (i+1) + '/' + cibles.length + '…');
+    try {
+      const rec = cibles[i], t = await vctGetTexte(rec.id), e = await vctEnrichOne(rec.id, t);
+      if(e.name) rec.name = e.name; rec.meta = e.meta || ''; if(e.awareness && e.awareness.length) rec.awareness = e.awareness.map(a => ({solution:'Solution Aware',product:'Product Aware',most:'Most Aware'}[a] || a)); rec.styleTags = e.styleTags || []; rec.niche = e.niche || '';
+      await vctPutMeta(rec); ok++;
+    } catch(e){ ko++; console.error('[CT vidéo] enrich', e); }
+  }
+  _vctStatus(ok + ' enrichi(s)' + (ko ? ' · ' + ko + ' en échec (le serveur v5.67 est-il déployé ?)' : '') + '.', ko > 0);
+  await renderVideoGallery(true);
+}
+async function renderVideoGallery(recharger){
+  const grid = document.getElementById('vctGrid'); if(!grid) return;
+  if(recharger || !VCT_LIST.length){
+    try { VCT_LIST = await vctGetAll(); }
+    catch(e){ grid.innerHTML = '<div style="color:#e5534b;font-size:12px;padding:20px;">' + _vctEsc(e.message) + '</div>'; return; }
+  }
+  const q = ((document.getElementById('vctSearch') || {}).value || '').toLowerCase().trim();
+  const liste = VCT_LIST.filter(r => !q || (r.name + ' ' + r.meta + ' ' + r.styleTags.join(' ') + ' ' + r.niche).toLowerCase().includes(q));
+  const cnt = document.getElementById('vctCount'); if(cnt) cnt.textContent = VCT_LIST.length + ' CT vidéo' + (VCT_LIST.length > 1 ? 's' : '') + (VCT_LIST.filter(r => !r.meta).length ? ' · ' + VCT_LIST.filter(r => !r.meta).length + ' sans méta-description' : '');
+  document.getElementById('vctEmpty').style.display = VCT_LIST.length ? 'none' : 'block';
+  grid.innerHTML = liste.map(r =>
+    '<div style="background:var(--bg2);border:1px solid var(--border1);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;">'
+    + '<div style="font-size:13px;font-weight:700;color:var(--t1);line-height:1.35;">' + _vctEsc(r.name) + '</div>'
+    + '<div style="font-size:11px;color:' + (r.meta ? 'var(--t2)' : '#e0a458') + ';line-height:1.45;">' + (r.meta ? _vctEsc(r.meta.slice(0,260)) + (r.meta.length > 260 ? '…' : '') : 'Pas de méta-description : le sélecteur ne pourra pas bien choisir ce CT.') + '</div>'
+    + '<div style="display:flex;gap:5px;flex-wrap:wrap;">'
+    + r.awareness.map(a => '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(45,127,249,.15);color:var(--blue);">' + _vctEsc(a) + '</span>').join('')
+    + r.styleTags.map(a => '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg3);color:var(--t2);">#' + _vctEsc(a) + '</span>').join('')
+    + (r.niche ? '<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:var(--bg3);color:var(--t3);">' + _vctEsc(r.niche) + '</span>' : '')
+    + '</div>'
+    + '<div style="font-size:10px;color:var(--t3);">' + _vctEsc(r.source || '') + (r.taille ? ' · ' + Math.round(r.taille/1000) + ' Ko' : '') + '</div>'
+    + '<div style="display:flex;gap:6px;margin-top:auto;"><button onclick="vctOpenModal(\'' + r.id + '\')" style="flex:1;padding:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t1);font-size:11px;cursor:pointer;">Modifier</button>'
+    + '<button onclick="vctDelete(\'' + r.id + '\')" style="padding:6px 10px;background:none;border:1px solid var(--border2);border-radius:6px;color:#e5534b;font-size:11px;cursor:pointer;">Supprimer</button></div>'
+    + '</div>').join('');
+}
+function showVideoGallery(){
+  hideAll();
+  const v = document.getElementById('viewVideoGallery'); if(v) v.classList.add('show');
+  document.getElementById('topTitle').innerHTML = '<span>Galerie CT vidéo</span>';
+  renderVideoGallery(true);
+  _pushFactoryUrl('video-gallery');
+}
+let _vctEditId = null;
+async function vctOpenModal(id){
+  const r = VCT_LIST.find(x => x.id === id); if(!r) return;
+  _vctEditId = id;
+  document.getElementById('vctEdName').value = r.name;
+  document.getElementById('vctEdMeta').value = r.meta;
+  document.querySelectorAll('.vctAw').forEach(c => c.checked = r.awareness.includes(c.value));
+  document.getElementById('vctEdTags').value = r.styleTags.join(', ');
+  document.getElementById('vctEdNiche').value = r.niche;
+  document.getElementById('vctEdTexte').value = 'Chargement…';
+  document.getElementById('vctModal').style.display = 'flex';
+  try { document.getElementById('vctEdTexte').value = await vctGetTexte(id); } catch(e){ document.getElementById('vctEdTexte').value = ''; _vctStatus(e.message, true); }
+}
+function vctCloseModal(){ document.getElementById('vctModal').style.display = 'none'; _vctEditId = null; }
+async function vctSaveModal(){
+  const r = VCT_LIST.find(x => x.id === _vctEditId); if(!r) return;
+  const texte = document.getElementById('vctEdTexte').value;
+  if(texte === 'Chargement…' || texte.length < 500){ alert('Le texte du CT est vide ou trop court : rien n\'a été enregistré.'); return; }
+  r.name = document.getElementById('vctEdName').value.trim() || r.name;
+  r.meta = document.getElementById('vctEdMeta').value.trim();
+  r.awareness = Array.from(document.querySelectorAll('.vctAw')).filter(c => c.checked).map(c => c.value);
+  r.styleTags = document.getElementById('vctEdTags').value.split(',').map(s => s.trim().replace(/^#/,'')).filter(Boolean);
+  r.niche = document.getElementById('vctEdNiche').value.trim();
+  r.taille = texte.length;
+  try { await vctPutTexte(r.id, texte); await vctPutMeta(r); vctCloseModal(); _vctStatus('Enregistré.'); renderVideoGallery(false); }
+  catch(e){ alert('Échec : ' + e.message); }
+}
+async function vctDelete(id){
+  const r = VCT_LIST.find(x => x.id === id); if(!r) return;
+  if(!confirm('Supprimer le CT vidéo « ' + r.name + ' » ?')) return;
+  await vctDel(id); VCT_LIST = VCT_LIST.filter(x => x.id !== id); renderVideoGallery(false);
+}
+
+/* ── Panneau de test « Créative Vidéo » ── */
+function vlLabUrl(){ let u = 'http://localhost:8787'; try { u = localStorage.getItem('adstack_lab_url') || u; } catch(e){} return u.replace(/\/+$/,''); }
+function vlSaveUrl(){ const v = document.getElementById('vlUrl').value.trim(); try { localStorage.setItem('adstack_lab_url', v); } catch(e){} vlPing(); }
+async function vlPing(){
+  const dot = document.getElementById('vlDot'), st = document.getElementById('vlState'); if(!dot) return false;
+  try {
+    const r = await fetch(vlLabUrl() + '/models', { cache:'no-store' });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const m = await r.json();
+    dot.style.background = '#3fb950'; st.textContent = 'Labo vidéo connecté (' + vlLabUrl() + ')';
+    const sel = document.getElementById('vlModel');
+    if(sel && sel.options.length <= 1 && m && typeof m === 'object'){ Object.keys(m).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; sel.appendChild(o); }); }
+    return true;
+  } catch(e){
+    dot.style.background = '#e5534b';
+    st.textContent = 'Labo vidéo injoignable (' + vlLabUrl() + ') : lance-le sur ton ordinateur (node lab_server.js) puis clique Tester.';
+    return false;
+  }
+}
+async function vlInit(){
+  const u = document.getElementById('vlUrl'); if(u) u.value = vlLabUrl();
+  vlPing();
+  const sel = document.getElementById('vlCt'); if(!sel) return;
+  sel.innerHTML = '<option value="">Chargement de la galerie…</option>';
+  try { VCT_LIST = await vctGetAll(); } catch(e){ sel.innerHTML = '<option value="">Galerie illisible : ' + _vctEsc(e.message) + '</option>'; return; }
+  sel.innerHTML = VCT_LIST.length ? VCT_LIST.map(r => '<option value="' + r.id + '">' + _vctEsc(r.name) + (r.awareness.length ? '  ·  ' + _vctEsc(r.awareness.join(', ')) : '') + '</option>').join('') : '<option value="">Galerie CT vidéo vide : ajoutes-en dans « Galerie CT vidéo »</option>';
+  vlCtChanged();
+  vlLoadCompetence();
+}
+function vlCtChanged(){ const r = VCT_LIST.find(x => x.id === document.getElementById('vlCt').value); const m = document.getElementById('vlCtMeta'); if(m) m.textContent = r ? (r.meta || '(pas de méta-description)') : ''; }
+async function vlLoadCompetence(){
+  const ta = document.getElementById('compTextarea'); if(!ta) return;
+  try { const r = await fetch(vlLabUrl() + '/competence'); if(r.ok) ta.value = await r.text(); else ta.value = 'Compétence non disponible (labo : HTTP ' + r.status + '). Mets le labo à jour (v6.56).'; }
+  catch(e){ ta.value = 'Compétence de l\'agent vidéo : visible quand le labo est lancé sur ton ordinateur (lecture seule).'; }
+  ta.readOnly = true;
+}
+let _vlBrief = null;
+function vlBriefLoaded(inp){
+  const f = inp.files && inp.files[0]; if(!f) return;
+  f.text().then(t => { try { _vlBrief = JSON.parse(t); document.getElementById('vlBriefInfo').textContent = 'brief chargé (' + (_vlBrief.marque || _vlBrief.produit || (_vlBrief.product && _vlBrief.product.nom) || f.name) + ')'; } catch(e){ _vlBrief = null; document.getElementById('vlBriefInfo').textContent = 'JSON illisible'; } });
+}
+function _vlLire(f){ return new Promise(r => { const x = new FileReader(); x.onload = () => r({ data:String(x.result).split(',')[1], mime:f.type || 'image/jpeg' }); x.readAsDataURL(f); }); }
+async function _vlUrlVersB64(url){
+  const r = await fetch(url); if(!r.ok) throw new Error('HTTP ' + r.status);
+  const b = await r.blob();
+  return new Promise(res => { const x = new FileReader(); x.onload = () => res({ data:String(x.result).split(',')[1], mime:b.type || 'image/jpeg' }); x.readAsDataURL(b); });
+}
+let _vlPid = null, _vlTimer = null, _vlT0 = 0;
+async function vlRun(){
+  const msg = document.getElementById('vlProg'), res = document.getElementById('vlResult'), btn = document.getElementById('vlRun');
+  const erreur = t => { msg.style.display = 'block'; msg.innerHTML = '<span style="color:#e5534b;">' + _vctEsc(t) + '</span>'; };
+  const syn = document.getElementById('vlSyn').value.trim(), ctId = document.getElementById('vlCt').value, photo = document.getElementById('vlPhoto').files[0];
+  const photosBrief = (() => { const b = _vlBrief || {}; const l = (b.product && b.product.photos_produit) || b.photos_produit || []; return Array.isArray(l) ? l.filter(x => x && x.url && !x.exclue) : []; })();
+  const manque = [!syn && 'la synthèse', !ctId && 'le CT vidéo', (!photo && !photosBrief.length) && 'la photo produit (ou un brief qui en contient)'].filter(Boolean);
+  if(manque.length){ erreur('Il manque : ' + manque.join(', ') + '.'); return; }
+  if(!(await vlPing())){ erreur('Le labo vidéo n\'est pas joignable. Lance-le sur ton ordinateur, puis réessaie.'); return; }
+  btn.disabled = true; res.innerHTML = ''; document.getElementById('vlHist').style.display = 'none';
+  msg.style.display = 'block'; msg.textContent = 'Préparation des entrées…';
+  try {
+    const ct = await vctGetTexte(ctId);
+    let produit, aspects = [];
+    if(photo){ produit = await _vlLire(photo); aspects = await Promise.all(Array.from(document.getElementById('vlAspects').files).slice(0,5).map(_vlLire)); }
+    else {
+      const face = photosBrief.find(x => x.aspect === 'face') || photosBrief[0];
+      produit = await _vlUrlVersB64(face.url);
+      aspects = await Promise.all(photosBrief.filter(x => x !== face).slice(0,5).map(x => _vlUrlVersB64(x.url).catch(() => null)));
+      aspects = aspects.filter(Boolean);
+    }
+    const b = _vlBrief || {};
+    const body = { ct, synthese:syn, produit, aspects, brief:b, model:document.getElementById('vlModel').value, planOnly:document.getElementById('vlPlanOnly').checked,
+                   refMode:document.getElementById('vlRef').value, lien_page_produit:(b.lien_page_produit || (b.product && (b.product.lien_page_produit || b.product.url)) || '') };
+    const r = await fetch(vlLabUrl() + '/pipeline', { method:'POST', body:JSON.stringify(body) });
+    const j = await r.json();
+    if(!j.id) throw new Error(j.error || 'le labo n\'a pas démarré la production');
+    _vlPid = j.id; _vlT0 = Date.now();
+    clearInterval(_vlTimer);
+    _vlTimer = setInterval(vlPoll, 4000); vlPoll();
+  } catch(e){ erreur('Échec au démarrage : ' + e.message); btn.disabled = false; }
+}
+async function vlPoll(){
+  if(!_vlPid) return;
+  const msg = document.getElementById('vlProg'), res = document.getElementById('vlResult'), btn = document.getElementById('vlRun');
+  const tm = document.getElementById('vlTimer'); if(tm) tm.textContent = Math.round((Date.now() - _vlT0)/1000) + ' s';
+  try {
+    const s = await (await fetch(vlLabUrl() + '/pipe/' + _vlPid, { cache:'no-store' })).json();
+    const dernier = (s.log || []).slice(-1)[0] || '';
+    msg.style.display = 'block';
+    msg.innerHTML = '<b>Étape :</b> ' + _vctEsc(s.stage || '…') + (dernier ? '<div style="font-size:11px;color:var(--t3);margin-top:3px;">' + _vctEsc(String(dernier).slice(0,220)) + '</div>' : '') + (s.cost != null && typeof s.cost !== 'object' ? '<div style="font-size:11px;color:var(--t3);">Coût estimé : ' + _vctEsc(s.cost) + ' $</div>' : '');
+    if(s.montage){
+      const u = vlLabUrl() + '/video/' + s.montage;
+      res.innerHTML = '<video src="' + u + '" controls playsinline style="width:min(360px,100%);border-radius:10px;"></video><div style="margin-top:8px;"><a href="' + u + '?dl=1" download="' + _vctEsc(s.montage) + '" style="display:inline-block;padding:8px 16px;background:var(--blue);color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;">⬇ Télécharger la vidéo</a></div>';
+    }
+    if(s.state && s.state !== 'running'){
+      clearInterval(_vlTimer); btn.disabled = false;
+      document.getElementById('vlHist').style.display = 'block';
+      if(s.error) msg.innerHTML += '<div style="color:#e5534b;margin-top:6px;">Erreur : ' + _vctEsc(s.error) + '</div>';
+      else if(!s.montage) msg.innerHTML += '<div style="margin-top:6px;color:var(--t2);">Terminé sans vidéo montée' + (document.getElementById('vlPlanOnly').checked ? ' (mode « plan seulement »)' : '') + '. Télécharge l\'historique pour voir le détail.</div>';
+    }
+  } catch(e){ msg.innerHTML = '<span style="color:#e0a458;">Le labo ne répond plus (' + _vctEsc(e.message) + '). La production continue sur ton ordinateur ; nouvel essai dans 4 s.</span>'; }
+}
+async function vlDownload(avecImages){
+  if(!_vlPid){ return; }
+  const m = document.getElementById('vlHistMsg'); m.textContent = 'Préparation du fichier…';
+  try {
+    const r = await fetch(vlLabUrl() + '/pipe/' + _vlPid + '/historique' + (avecImages ? '' : '?images=0'));
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'historique_video_' + _vlPid + (avecImages ? '' : '_texte') + '.json';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+    m.textContent = 'Téléchargé (' + Math.round(blob.size/1024) + ' Ko). Envoie-moi ce fichier.';
+  } catch(e){ m.textContent = 'Échec : ' + e.message; }
+}
+
 function showGallery() {
   hideAll();
   var vg = document.getElementById('viewGallery');
@@ -6902,7 +7286,10 @@ const AGENTS_PROD = [
    maxTokens:8000,
    placeholder:'Colle ici la Synthèse complète S0→S7 produite par l\'Analyste de Marché...',
    prompt:'Produis les Ad Copy complets pour TOUS les angles présents dans la synthèse selon ta compétence — 5 hooks variés + 1 description AIDA paragraphée par angle, registre Most Aware.',
-   comp:'[Chargement COMPETENCE_COPYWRITER_PROD.md...]'}
+   comp:'[Chargement COMPETENCE_COPYWRITER_PROD.md...]'},
+  {name:'Créative Vidéo',sub:'Synthèse + CT vidéo + photos → vidéo montée (pilotée depuis le labo vidéo)',model:'gemini-3.1-pro + veo-3.1',file:'COMPETENCE_CREATIVE_VIDEO.md',status:'wip',color:'#E0A458',
+   isVideoLab:true,
+   comp:'[Compétence de l\'agent vidéo : lecture seule, chargée depuis le labo]'}
 ];
 
 let currentMode = 'demo';
@@ -6914,14 +7301,15 @@ const AGENT_FILE_SLUGS = {
   'COMPETENCE_MINDMAP.md': 'mindmap',
   'COMPETENCE_ANALYSTE.md': 'analyst',
   'COMPETENCE_CREATIVE_PROD.md': 'creative-prod',
-  'COMPETENCE_COPYWRITER_PROD.md': 'copywriter'
+  'COMPETENCE_COPYWRITER_PROD.md': 'copywriter',
+  'COMPETENCE_CREATIVE_VIDEO.md': 'creative-video'
 };
 const SLUG_TO_AGENT_FILE = Object.fromEntries(Object.entries(AGENT_FILE_SLUGS).map(([k, v]) => [v, k]));
 
 function _pushFactoryUrl(path) {
   const mobTitles = {
     dashboard: 'Dashboard', production: 'Production', demo: 'Générateur de Démo',
-    gallery: 'Galerie CT', files: 'Fichiers', orders: 'Commandes AdBoard', queue: 'Démos à faire'
+    gallery: 'Galerie CT', 'video-gallery': 'Galerie CT vidéo', files: 'Fichiers', orders: 'Commandes AdBoard', queue: 'Démos à faire'
   };
   const mobTitleEl = document.getElementById('mob-title-factory');
   if (mobTitleEl) {
@@ -6954,7 +7342,7 @@ function navigateFromUrl() {
     }
     showDashboard(); return;
   }
-  const routes = { dashboard: showDashboard, production: showProduction, demo: showDemoGen, gallery: showGallery, files: showFiles, orders: showCommandes, queue: showDemos };
+  const routes = { dashboard: showDashboard, production: showProduction, demo: showDemoGen, gallery: showGallery, 'video-gallery': showVideoGallery, files: showFiles, orders: showCommandes, queue: showDemos };
   (routes[section] || showDashboard)();
 }
 
@@ -6996,6 +7384,7 @@ function hideAll(){
   const vf = document.getElementById('viewFiles'); if(vf) vf.classList.remove('show');
   document.getElementById('viewProduction').classList.remove('show');
   const _vg=document.getElementById('viewGallery'); if(_vg) _vg.classList.remove('show');
+  const _vvg=document.getElementById('viewVideoGallery'); if(_vvg) _vvg.classList.remove('show');
   const _vd=document.getElementById('viewDemos'); if(_vd) _vd.classList.remove('show');
   const _vc=document.getElementById('viewCommandes'); if(_vc) _vc.classList.remove('show');
   document.querySelectorAll('.agent-item').forEach(a=>a.classList.remove('active'));
@@ -7597,6 +7986,13 @@ function showAgent(idx, skipSave){
     const t2 = document.getElementById('testInput2');
     if(t2) t2.style.height = '100px';
   }
+
+  // Agent « Créative Vidéo » : panneau de test dédié (entrées -> vidéo finale), le test générique est masqué
+  const _std = document.getElementById('stdTestArea'), _vlp = document.getElementById('videoLabPanel');
+  if(_std) _std.style.display = a.isVideoLab ? 'none' : '';
+  if(_vlp) _vlp.style.display = a.isVideoLab ? 'block' : 'none';
+  const _ct = document.getElementById('compTextarea'); if(_ct && !a.isVideoLab) _ct.readOnly = false;
+  if(a.isVideoLab) vlInit();
 
   showTab('comp');
   // Restore state for this agent

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
+// ADBOARD_VERSION v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -685,6 +685,36 @@ const EMPTY_PRODUCT = {
 };
 
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
+// v7.9 — Détecte l'écran de téléphone (≤ 768 px) et suit le redimensionnement / la rotation.
+const useEcranMobile = () => {
+  const lire = () => { try { return window.matchMedia('(max-width:768px)').matches; } catch (e) { return false; } };
+  const [m, setM] = useState(lire);
+  useEffect(() => {
+    let mq; try { mq = window.matchMedia('(max-width:768px)'); } catch (e) { return; }
+    const f = () => setM(mq.matches);
+    mq.addEventListener ? mq.addEventListener('change', f) : mq.addListener(f);
+    return () => { mq.removeEventListener ? mq.removeEventListener('change', f) : mq.removeListener(f); };
+  }, []);
+  return m;
+};
+// Champ multi-lignes qui GRANDIT avec le texte (2 lignes au minimum, 14 au maximum) : on voit toujours ce qu'on écrit.
+const AutoTextarea = ({ value, minRows = 2, maxRows = 14, style, ...rest }) => {
+  const ref = useRef(null);
+  const ajuster = () => {
+    const el = ref.current; if (!el) return;
+    el.style.height = 'auto';
+    const cs = window.getComputedStyle(el);
+    const lh = parseFloat(cs.lineHeight) || (parseFloat(cs.fontSize) || 14) * 1.35;
+    const pad = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
+    const min = lh * minRows + pad, max = lh * maxRows + pad;
+    el.style.height = Math.min(Math.max(el.scrollHeight + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.borderBottomWidth) || 0), min), max) + 'px';
+    el.style.overflowY = el.scrollHeight > max ? 'auto' : 'hidden';
+  };
+  useEffect(ajuster, [value]);
+  useEffect(() => { const f = () => ajuster(); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f); }, []);
+  return <textarea ref={ref} rows={minRows} value={value} style={{ ...style, resize: 'none', lineHeight: 1.4, overflow: 'hidden' }} {...rest}/>;
+};
+
 const Field = ({label, k, required, textarea, placeholder, hint, type='text', form, setForm, errors, C, auto=false}) => {
   const err = errors?.[k];
   const [focused, setFocused] = useState(false);
@@ -713,7 +743,7 @@ const Field = ({label, k, required, textarea, placeholder, hint, type='text', fo
         {auto && <span style={{marginLeft:8,fontSize:9.5,fontWeight:700,color:C.accent}}>rempli automatiquement</span>}
       </label>
       {hint && <div style={{fontSize:10.5,color:C.muted,marginBottom:6,lineHeight:1.4}}>{hint}</div>}
-      {textarea ? <textarea rows={2} {...common}/> : <input type={type} {...common}/>}
+      {textarea ? <AutoTextarea {...common}/> : <input type={type} {...common}/>}
     </div>
   );
 };
@@ -2430,21 +2460,31 @@ const compresserImage = (file, { max = 1000, type = 'image/jpeg', qualite = 0.85
 const LIMITES_IMAGES = { galerie_images: 10, avis_captures: 8 };
 
 // Carte de section : numéro, titre, mini-description qui guide le client, contenu.
-const CartePage = ({ id, numero, titre, description, optionnel, children }) => (
-  <section id={id} style={{scrollMarginTop:84,borderRadius:16,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',padding:'20px 20px 22px'}}>
-    <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:18}}>
-      <div style={{width:26,height:26,borderRadius:8,background:C.accentS,color:C.accent,fontSize:12,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>{numero}</div>
+const CartePage = ({ id, numero, titre, description, optionnel, rempli, repliable = true, children }) => {
+  const mob = useEcranMobile();
+  const peutReplier = mob && optionnel && repliable;
+  const [ouvert, setOuvert] = useState(() => !(peutReplier && !rempli));
+  const visible = !peutReplier || ouvert;
+  return (
+  <section id={id} style={{scrollMarginTop:84,borderRadius:16,border:`1px solid ${C.border}`,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',padding:mob?(visible?'14px 14px 16px':'12px 14px'):'20px 20px 22px'}}>
+    <div role={peutReplier?'button':undefined} tabIndex={peutReplier?0:undefined} onClick={peutReplier?() => setOuvert(o => !o):undefined}
+      onKeyDown={peutReplier?(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOuvert(o => !o); } }:undefined}
+      style={{display:'flex',alignItems:'flex-start',gap:mob?10:12,marginBottom:visible?(mob?12:18):0,cursor:peutReplier?'pointer':'default'}}>
+      <div style={{width:mob?22:26,height:mob?22:26,borderRadius:8,background:C.accentS,color:C.accent,fontSize:12,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,marginTop:1}}>{numero}</div>
       <div style={{flex:1,minWidth:0}}>
         <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-          <h2 style={{fontSize:15,fontWeight:800,color:C.text,margin:0}}>{titre}</h2>
+          <h2 style={{fontSize:mob?14.5:15,fontWeight:800,color:C.text,margin:0}}>{titre}</h2>
           {optionnel && <span style={{fontSize:9.5,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',color:C.muted,border:`1px solid ${C.border}`,borderRadius:20,padding:'2px 8px'}}>facultatif</span>}
+          {peutReplier && rempli && !visible && <span style={{fontSize:9.5,fontWeight:700,letterSpacing:'0.06em',textTransform:'uppercase',color:'#5BD6A0',border:'1px solid rgba(91,214,160,0.35)',borderRadius:20,padding:'2px 8px'}}>rempli</span>}
         </div>
-        {description && <p style={{fontSize:12,color:C.sec,lineHeight:1.55,margin:'5px 0 0'}}>{description}</p>}
+        {description && visible && <p style={{fontSize:mob?11.5:12,color:C.sec,lineHeight:mob?1.45:1.55,margin:'4px 0 0'}}>{description}</p>}
       </div>
+      {peutReplier && <span aria-hidden="true" style={{color:C.muted,fontSize:18,lineHeight:'22px',transform:visible?'rotate(180deg)':'none',transition:'transform 0.15s',flexShrink:0}}>⌄</span>}
     </div>
-    <div style={{display:'flex',flexDirection:'column',gap:20}}>{children}</div>
+    {visible && <div style={{display:'flex',flexDirection:'column',gap:mob?16:20}}>{children}</div>}
   </section>
-);
+  );
+};
 
 // v7.4 — Photos par « aspect » (angle / forme / état) au lieu d'une catégorie « emballage » : un pot reste un pot.
 const ASPECTS_PHOTO = [
@@ -2862,7 +2902,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             )}
 
             {/* 1 — Lien */}
-            <CartePage id="pp-lien" numero="1" titre="Votre page produit" optionnel
+            <CartePage id="pp-lien" numero="1" titre="Votre page produit" optionnel repliable={false}
               description="Collez le lien de votre page produit : nous remplissons la fiche pour vous. Vous n'aurez plus qu'à vérifier.">
               <div>
                 <div style={{position:'relative'}}>
@@ -2911,7 +2951,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             {/* 3 — Photos */}
             <CartePage id="pp-photos" numero="3" titre="Photos de votre produit"
               description="Des photos nettes où le produit se voit bien.">
-              <div style={{fontSize:12,color:C.sec,lineHeight:1.6,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,borderRadius:10,padding:'10px 12px'}}>
+              <div style={{fontSize:isMobile?11.5:12,color:C.sec,lineHeight:isMobile?1.5:1.6,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`,borderRadius:10,padding:isMobile?'8px 10px':'10px 12px'}}>
                 <strong style={{color:C.text}}>Un aspect = une photo.</strong> {guideAspects(form.nom, form.utilite)}
               </div>
               <ImagesField titre="Photos du produit" requis
@@ -2926,7 +2966,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             </CartePage>
 
             {/* 4 — Offre et garanties */}
-            <CartePage id="pp-offre" numero="4" titre="Votre offre et vos garanties" optionnel
+            <CartePage id="pp-offre" numero="4" titre="Votre offre et vos garanties" optionnel rempli={!!(form.promo || form.garantie || form.livraison_paiement)}
               description="Ce qui rassure avant d'acheter. Écrivez uniquement ce qui est vrai.">
               <Field label="Promotion en cours" k="promo" auto={estAuto('promo')} placeholder="Ex : -20% jusqu'au 30 juin" form={form} setForm={setForm} errors={errors} C={C}/>
               <Field label="Garantie" k="garantie" textarea auto={estAuto('garantie')} placeholder="Ex : Satisfait ou remboursé pendant 30 jours" hint="Remboursement, échange, durée." form={form} setForm={setForm} errors={errors} C={C}/>
@@ -2934,14 +2974,14 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             </CartePage>
 
             {/* 5 — Client */}
-            <CartePage id="pp-client" numero="5" titre="Votre client" optionnel
+            <CartePage id="pp-client" numero="5" titre="Votre client" optionnel rempli={!!(form.cible || form.utilite)}
               description="Pas de client précis en tête ? Gardez la proposition ou laissez vide : nous trouvons le bon client pour vous.">
               <Field label="À qui s'adresse ce produit ?" k="cible" textarea auto={estAuto('cible')} hint="Une phrase. Modifiez-la si elle ne vous ressemble pas." placeholder="Ex : Des personnes qui cachent leur peau sous du maquillage avant de sortir" form={form} setForm={setForm} errors={errors} C={C}/>
               <Field label="À quoi sert ce produit ?" k="utilite" textarea auto={estAuto('utilite')} placeholder="Le problème qu'il résout, en une phrase" form={form} setForm={setForm} errors={errors} C={C}/>
             </CartePage>
 
             {/* 6 — Marque */}
-            <CartePage id="pp-marque" numero="6" titre="Votre marque" optionnel
+            <CartePage id="pp-marque" numero="6" titre="Votre marque" optionnel rempli={!!(form.logo || [form.couleur1, form.couleur2, form.couleur3].some(Boolean))}
               description="Pour que vos créatives soient reconnaissables.">
               <LogoField logo={form.logo} logoAuto={estAuto('logo')} enCours={logoEnvoi} onSet={changerLogo} onRemove={() => setForm(f => ({ ...f, logo: null }))}/>
               <div>
@@ -2966,7 +3006,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             </CartePage>
 
             {/* 7 — Preuves clients */}
-            <CartePage id="pp-preuves" numero="7" titre="Preuves de vos clients" optionnel
+            <CartePage id="pp-preuves" numero="7" titre="Preuves de vos clients" optionnel rempli={!!((form.avis_captures || []).length || (form.avis_textes || []).length)}
               description="De vrais avis rendent la publicité plus crédible. Nous n'inventons jamais d'avis.">
               <ImagesField titre="Captures d'avis ou de messages clients"
                 aide="Captures d'écran WhatsApp, Facebook, Instagram ou Google. Le texte doit rester lisible."
@@ -2993,7 +3033,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             </CartePage>
 
             {/* 8 — Aller plus loin */}
-            <CartePage id="pp-plus" numero="8" titre="Pour aller plus loin" optionnel
+            <CartePage id="pp-plus" numero="8" titre="Pour aller plus loin" optionnel rempli={!!((form.documents || []).length || form.notes)}
               description="Tout ce qui nous aide à mieux connaître votre produit.">
               <DocumentsField form={form} setForm={setForm} C={C}/>
               <Field label="Autre chose à nous dire ?" k="notes" textarea hint="Une consigne ou un détail important." placeholder="Ex : Ne jamais montrer le produit à côté d'un téléphone." form={form} setForm={setForm} errors={errors} C={C}/>
