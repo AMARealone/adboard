@@ -217,3 +217,30 @@ select.fx-in{appearance:auto}
 .fx-or{display:flex;align-items:center;gap:10px;color:var(--sec);font-size:12px;margin:2px 0}
 .fx-or:before,.fx-or:after{content:"";flex:1;height:1px;background:var(--bd)}
 .fx-btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+
+/* ═════ Mobile : bouton menu visible, compact, sans zoom automatique ═════ */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.fx-burger{color:var(--tx);-webkit-appearance:none;appearance:none;background:var(--card);border:1px solid var(--bd2);width:42px;height:42px;border-radius:10px;padding:0;flex-shrink:0}
+.fx-burger svg{width:22px;height:22px;stroke:var(--tx);stroke-width:2.2;display:block}
+@media(max-width:900px){
+ body{font-size:13px}
+ input,textarea,select,.fx-in,.fx-ta,.fx-ta.mono,.fx-ta.comp{font-size:16px!important}
+ .fx-page{padding:12px 12px 32px}
+ .fx-h h1,.fx-wrap h1{font-size:20px}
+ .fx-h{margin-bottom:12px}
+ .fx-brief-grid,.fx-pipe,.fx-two{grid-template-columns:minmax(0,1fr)}
+ .fx-brief-grid>*,.fx-pipe>*,.fx-two>*,.fx-crea-grid>*,.fx-three>*{min-width:0}
+ .fx-card{padding:12px}
+ .fx-btn{padding:8px 11px;font-size:13px}.fx-btn.big{padding:10px 16px;font-size:14px}.fx-btn.sm{padding:5px 9px;font-size:12px}
+ .fx-agc{padding:12px}.fx-top{padding:8px 12px;gap:10px}
+ .fx-drop{padding:18px 12px;min-height:0}
+ .fx-pill{padding:5px 10px;font-size:12px}
+ .fx-fld{margin-bottom:12px}
+ .fx-out{padding:12px}.fx-out pre{font-size:12.5px;overflow-wrap:anywhere}
+ .fx-ta.comp{min-height:55vh}
+ .fx-ctpick{grid-template-columns:repeat(3,1fr)}
+ .fx-modal{padding:14px}
+ .fx-login-card{padding:22px}
+}
+@media(max-width:900px){.fx-s,.fx-t{overflow-wrap:anywhere}.fx-drop .fx-s{white-space:normal}.fx-drop{max-width:100%}}
+@media(max-width:900px){.fx-test .fx-s,.fx-fld .fx-s{white-space:normal}}

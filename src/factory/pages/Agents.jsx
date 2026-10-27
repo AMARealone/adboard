@@ -11,7 +11,7 @@ export const AGENTS = [
     prompt: 'Produis les Ad Copy complets pour TOUS les angles présents dans la synthèse selon ta compétence — 5 hooks variés + 1 description AIDA paragraphée par angle, registre Most Aware.' },
   { slug: 'creative-video', n: 4, name: 'Créative Vidéo', sub: 'Synthèse + CT vidéo + photos → vidéo montée (service vidéo)', model: 'gemini-3.1-pro + veo-3.1', file: 'COMPETENCE_CREATIVE_VIDEO.md', color: '#E0A458', kind: 'video' },
 ]
-function Secours() {
+function Secours({ onClose }) {
   const [dir, setDir] = useState(null), [msg, setMsg] = useState('')
   useEffect(() => { getBackupDir().then((h) => setDir(h ? h.name : null)) }, [])
   const choose = async () => { try { const h = await pickBackupDir(); setDir(h.name); setMsg('') } catch (e) { if (e.name !== 'AbortError') setMsg(e.message) } }
@@ -23,27 +23,31 @@ function Secours() {
     const r = await writeSkills(files)
     setMsg(r.ok ? `✓ ${r.n} compétences écrites dans « ${r.dir} ».` : r.reason === 'no-dir' ? 'Choisis d’abord le dossier.' : 'Échec : ' + r.reason)
   }
-  if (!backupSupported()) return <div className="fx-card"><div className="fx-t">Sauvegarde locale des compétences</div><div className="fx-s wrap">Disponible dans Chrome ou Edge sur ordinateur.</div></div>
   return (
-    <div className="fx-card">
-      <div className="fx-t">Sauvegarde locale des compétences</div>
-      <div className="fx-s wrap">Dossier de secours sur cet ordinateur : {dir ? <b>{dir}</b> : 'aucun choisi'}. Chaque modification d’une compétence y est recopiée, et le bouton ci-dessous écrit les 4 compétences d’un coup.</div>
-      <div className="fx-btnrow" style={{ marginTop: 10 }}><button className="fx-btn" onClick={choose}>{dir ? 'Changer de dossier' : 'Choisir le dossier'}</button><button className="fx-btn primary" disabled={!dir} onClick={saveAll}>Sauvegarder les 4 compétences</button></div>
-      {msg && <div className="fx-s wrap" style={{ marginTop: 6 }}>{msg}</div>}
+    <div className="fx-modal-back" onClick={onClose}>
+      <div className="fx-modal sm" onClick={(e) => e.stopPropagation()}>
+        <h3>Sauvegarde locale des compétences</h3>
+        {!backupSupported() ? <p className="fx-s wrap">Disponible dans Chrome ou Edge sur ordinateur.</p> : <>
+          <p className="fx-s wrap">Dossier de secours sur cet ordinateur : {dir ? <b>{dir}</b> : 'aucun choisi'}. Chaque modification d’une compétence y est recopiée ; le bouton écrit les 4 compétences d’un coup.</p>
+          <div className="fx-btnrow" style={{ marginTop: 10 }}><button className="fx-btn" onClick={choose}>{dir ? 'Changer de dossier' : 'Choisir le dossier'}</button><button className="fx-btn primary" disabled={!dir} onClick={saveAll}>Sauvegarder les 4 compétences</button></div>
+          {msg && <div className="fx-s wrap" style={{ marginTop: 6 }}>{msg}</div>}</>}
+        <div className="fx-modal-act"><button className="fx-btn" onClick={onClose}>Fermer</button></div>
+      </div>
     </div>
   )
 }
 export default function Agents() {
   const nav = useNavigate()
+  const [sec, setSec] = useState(false)
   return (
     <div className="fx-wrap">
-      <div className="fx-h"><div><h1>Agents</h1><p>Interfaces de test, une par agent.</p></div></div>
+      <div className="fx-h"><div><h1>Agents</h1><p>Interfaces de test, une par agent.</p></div><button className="fx-btn" onClick={() => setSec(true)}>Sauvegarde skills</button></div>
       <div className="fx-ag">{AGENTS.map((a) => (
         <div key={a.slug} className="fx-agc" onClick={() => nav('/agents/' + a.slug)}>
           <div className="fx-agc-h"><span className="fx-badge-n" style={{ background: a.color + '28', color: a.color }}>{a.n}</span><div className="fx-t" style={{ fontSize: 15 }}>{a.name}</div></div>
           <div className="fx-s wrap">{a.sub}</div><div className="fx-s mono">{a.model}</div>
         </div>))}</div>
-      <Secours />
+      {sec && <Secours onClose={() => setSec(false)} />}
     </div>
   )
 }
