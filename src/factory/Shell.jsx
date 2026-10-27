@@ -7,9 +7,9 @@ import { signOut } from './auth'
 const NAV = [
   { g: 'Pilotage', items: [{ to: '/', icon: 'home', label: 'Tableau de bord', end: true }, { to: '/commandes', icon: 'inbox', label: 'Commandes', badge: true }] },
   { g: 'Production', items: [{ to: '/production', icon: 'play', label: 'Production' }, { to: '/agents', icon: 'bot', label: 'Agents (test)' }] },
-  { g: 'Bibliothèques', items: [{ to: '/galerie', icon: 'image', label: 'Galerie CT image' }, { to: '/galerie-video', icon: 'film', label: 'Galerie CT vidéo' }, { to: '/fichiers', icon: 'folder', label: 'Fichiers' }] },
+  { g: 'Bibliothèques', items: [{ to: '/galerie', icon: 'image', label: 'Galerie CT image' }, { to: '/galerie-video', icon: 'film', label: 'Galerie CT vidéo' }] },
 ]
-const TITLES = [['/commandes', 'Commandes'], ['/production', 'Production'], ['/agents', 'Agents'], ['/galerie-video', 'Galerie CT vidéo'], ['/galerie', 'Galerie CT image'], ['/fichiers', 'Fichiers']]
+const TITLES = [['/commandes', 'Commandes'], ['/production', 'Production'], ['/agents', 'Agents'], ['/galerie-video', 'Galerie CT vidéo'], ['/galerie', 'Galerie CT image']]
 
 export default function Shell({ user, onLogout }) {
   const [open, setOpen] = useState(false)
@@ -18,7 +18,6 @@ export default function Shell({ user, onLogout }) {
   useEffect(() => setOpen(false), [loc.pathname])
   const todo = cmd.list.filter((b) => b.status === 'pending' || b.status === 'in_production').length
   const title = (TITLES.find(([p]) => loc.pathname.startsWith(p)) || [0, 'Tableau de bord'])[1]
-  const flush = /^\/(production|fichiers|agents\/.+|galerie(-video)?\/gestion)/.test(loc.pathname)
   return (
     <div className="fx-app">
       <div className={'fx-scrim' + (open ? ' show' : '')} onClick={() => setOpen(false)} />
@@ -48,7 +47,7 @@ export default function Shell({ user, onLogout }) {
           <button className="fx-burger" onClick={() => setOpen(true)} aria-label="Menu"><Icon n="menu" /></button>
           <b>{title}</b>
         </header>
-        <div className={'fx-page' + (flush ? ' flush' : '')}><Outlet /></div>
+        <div className="fx-page"><Outlet /></div>
       </div>
     </div>
   )

@@ -7,8 +7,10 @@ import Shell from './Shell'
 import Dashboard from './pages/Dashboard'
 import Commandes from './pages/Commandes'
 import Agents from './pages/Agents'
-import { GalerieImage, GalerieVideo } from './pages/Galeries'
-import { Production, Fichiers, AgentFrame, GestionImage, GestionVideo } from './pages/Legacy'
+import AgentTest from './pages/AgentTest'
+import Production from './pages/Production'
+import { GalerieImage, GalerieVideo } from './pages/ManageGalleries'
+import { DialogHost } from './ui'
 
 export default function FactoryApp() {
   const { loading, user, recheck } = useAdmin()
@@ -23,16 +25,14 @@ export default function FactoryApp() {
             <Route path="commandes" element={<Commandes />} />
             <Route path="production" element={<Production />} />
             <Route path="agents" element={<Agents />} />
-            <Route path="agents/:slug" element={<AgentFrame />} />
+            <Route path="agents/:slug" element={<AgentTest />} />
             <Route path="galerie" element={<GalerieImage />} />
-            <Route path="galerie/gestion" element={<GestionImage />} />
             <Route path="galerie-video" element={<GalerieVideo />} />
-            <Route path="galerie-video/gestion" element={<GestionVideo />} />
-            <Route path="fichiers" element={<Fichiers />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
       </BrowserRouter>
+      <DialogHost />
     </DataProvider>
   )
 }
