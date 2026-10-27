@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
-// ADBOARD_VERSION v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
+import { WS, wsOwner, can, isMember, resolveWorkspace, captureInviteFromUrl, switchWorkspace, clearWorkspaceMemory, teamFetch, SERVER as TEAM_SERVER } from "./team.js";
+import TeamPage from "./TeamPage.jsx";
+captureInviteFromUrl();
+// ADBOARD_VERSION v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -332,6 +335,7 @@ const NAV = [
   {id:'marche',icon:'chart',label:'Données Marché', group:'Ressources'},
   {id:'suivi',icon:'clock',label:'Suivi Demande', group:'Suivi'},
   {id:'notifications',icon:'bell',label:'Notifications', group:'Suivi'},
+  {id:'equipe',icon:'person',label:'Équipe', group:'Compte'},
   {id:'tarifs',icon:'tag',label:'Nos Tarifs', group:'Compte'},
   {id:'commentaires',icon:'document',label:'Commentaires', group:'Aide'},
   {id:'faq',icon:'help',label:'FAQ & Aide', group:'Aide'},
@@ -467,6 +471,47 @@ const LockOverlay = () => (
   </div>
 );
 
+// Bandeau d'espace : indique chez qui on travaille, permet de changer d'espace et d'accepter
+// une invitation reçue par email (sans avoir besoin du lien).
+const WorkspaceBar = ({C, isMobile, user, getToken, notify}) => {
+  const info = WS.info;
+  const ms = info?.memberships || [];
+  const pending = info?.pending || [];
+  if (!user || (!isMember() && !ms.length && !pending.length)) return null;
+  const hasOwn = !!info?.own?.hasPlan;
+  const accept = async (id) => {
+    const t = await getToken();
+    const r = await teamFetch('/team/accept', { method:'POST', body:{ id }, token:t });
+    if (r.ok) switchWorkspace(r.ownerId);
+    else notify && notify(r.error === 'email_different' ? "Cette invitation est réservée à une autre adresse." : "Cette invitation n'est plus valable.", 'warning');
+  };
+  const box = {display:'flex',alignItems:'center',gap:10,flexWrap:'wrap',padding:'10px 14px',borderRadius:10,marginBottom:14,fontSize:12.5,border:`1px solid ${C.border}`,background:C.card,color:C.text};
+  return (
+    <div data-testid="workspace-bar">
+      {(isMember() || ms.length > 0) && (
+        <div style={box}>
+          <Icon name="person" size={14} color={C.accent}/>
+          <span style={{flex:1,minWidth:150}}>
+            {isMember() ? <>Vous travaillez dans l'espace de <b>{WS.ownerLabel || 'votre équipe'}</b></> : <>Vous êtes dans <b>votre espace</b></>}
+          </span>
+          <select aria-label="Changer d'espace" value={isMember() ? WS.ownerId : 'own'} onChange={e=>switchWorkspace(e.target.value)}
+            style={{padding:'6px 8px',borderRadius:8,border:`1px solid ${C.border}`,background:C.bg,color:C.text,fontSize:12,maxWidth:'100%'}}>
+            {(hasOwn || !isMember()) && <option value="own">Mon espace</option>}
+            {ms.map(m => <option key={m.ownerId} value={m.ownerId}>{m.ownerLabel || 'Équipe'}</option>)}
+          </select>
+        </div>
+      )}
+      {pending.map(p => (
+        <div key={p.id} style={{...box,borderColor:'#F59E0B'}}>
+          <Icon name="bell" size={14} color="#F59E0B"/>
+          <span style={{flex:1,minWidth:150}}><b>{p.ownerLabel || 'Quelqu\'un'}</b> vous invite à rejoindre son espace.</span>
+          <button onClick={()=>accept(p.id)} style={{padding:'7px 14px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Accepter</button>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null, onOpenLogin=null, sectionBadges={}}) => {
   const showCollapsed = collapsed && !isMobile;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -562,15 +607,15 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
           message="Tu devras te reconnecter pour retrouver tes produits et tes créatives."
           confirmLabel="Se déconnecter" cancelLabel="Rester connecté" danger={true}
           onCancel={()=>setShowLogoutConfirm(false)}
-          onConfirm={()=>{ sbAuth.signOut(); setUser(null); setShowLogoutConfirm(false); }}
+          onConfirm={()=>{ clearWorkspaceMemory(); sbAuth.signOut(); setUser(null); setShowLogoutConfirm(false); }}
         />
       )}
     </div>
 
     <nav style={{flex:1,padding:'10px',overflow:'auto'}}>
-      {NAV.map((n, i) => {
+      {NAV.filter(n => !(isMember() && (n.id === 'tarifs' || n.id === 'equipe'))).map((n, i, arr) => {
         const isTarifs = n.id === 'tarifs';
-        const showGroupHeader = (i === 0 || NAV[i-1].group !== n.group) && !(showCollapsed || (isMobile && !mobileOpen));
+        const showGroupHeader = (i === 0 || arr[i-1].group !== n.group) && !(showCollapsed || (isMobile && !mobileOpen));
         const groupIsCollapsed = !!collapsedGroups[n.group];
         if (groupIsCollapsed && !showGroupHeader) return null; // items masqués si le groupe est replié
         return (
@@ -645,7 +690,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       <button onClick={() => set('demo')} title={showCollapsed||(isMobile&&!mobileOpen)?'Voir la démo':undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:active==='demo'?C.accentS:'rgba(255,255,255,0.07)',border:`1px solid ${active==='demo'?'rgba(45,127,249,0.28)':C.border}`,color:active==='demo'?C.accent:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
         <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
       </button>
-      {!showCollapsed && !(isMobile && !mobileOpen) && subscription?.plan !== 'scale' && (() => {
+      {!showCollapsed && !(isMobile && !mobileOpen) && !isMember() && subscription?.plan !== 'scale' && (() => {
         // Progression normale : Starter → Pro → Scale. Un visiteur sans abonnement actif — ou un
         // ancien compte Discovery (offre retirée de la vente) — est orienté vers Starter.
         const nextPlanId = (!subscription?.active || subscription.plan === 'discovery') ? 'starter'
@@ -986,7 +1031,7 @@ const sbProducts = {
   lastWarnings: [],
   async load(session) {
     if (!session?.access_token) return [];
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&order=created_at.asc`, {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/products?select=*&user_id=eq.${wsOwner(sbAuth.getUser()?.id)}&order=created_at.asc`, {
       headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` }
     });
     if (!r.ok) return [];
@@ -1102,7 +1147,7 @@ const sbProducts = {
     if (!userId) { console.warn('[Save] Pas de user_id'); return null; }
     const prep = await sbProducts.preparerCorps(session, product);
     const body = {
-      user_id: userId,
+      user_id: wsOwner(userId),
       ...prep.champs,
       ...(product.documents?.length ? { documents: product.documents } : {}),
     };
@@ -1174,8 +1219,8 @@ const sbBriefs = {
     // passer des demandes que le client n'avait plus les crédits pour couvrir.
     const r = await fetch('https://adstack-server.onrender.com/briefs/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: user.id, productId, quantity, ...(marchesChoisis?.length ? { marchesChoisis } : {}) })
+      headers: { 'Content-Type': 'application/json', ...(isMember() ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+      body: JSON.stringify({ userId: user.id, ...(isMember() ? { ownerId: WS.ownerId } : {}), productId, quantity, ...(marchesChoisis?.length ? { marchesChoisis } : {}) })
     });
     if (!r.ok) return { error: 'reseau' };
     const data = await r.json();
@@ -1201,7 +1246,7 @@ const sbSub = {
   async load(session) {
     if (!session?.access_token) return null;
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&active=eq.true&limit=1`,
+      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&user_id=eq.${wsOwner(sbAuth.getUser()?.id)}&active=eq.true&limit=1`,
       { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` } }
     );
     if (!r.ok) return null;
@@ -1294,7 +1339,7 @@ const sbSubs = {
   async load(session) {
     if (!session?.access_token) return null;
     const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&order=started_at.desc&limit=1`,
+      `${SUPABASE_URL}/rest/v1/subscriptions?select=*&user_id=eq.${wsOwner(sbAuth.getUser()?.id)}&order=started_at.desc&limit=1`,
       { headers: { apikey: SUPABASE_ANON, Authorization: `Bearer ${session.access_token}` } }
     );
     if (!r.ok) return null;
@@ -2235,6 +2280,9 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
 };
 
 const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user, onNeedLogin, onAskCreatives, cancelCreatives, onOpenPayment, C}) => {
+  if (!can('request_production')) {
+    return <div style={{textAlign:'center',padding:'10px',borderRadius:7,border:`1px solid ${C.border}`,color:C.muted,fontSize:11.5}}>Demande de production non autorisée pour votre rôle</div>;
+  }
   const brief = briefs[p.id];
   const hasActiveBrief = briefEstActif(brief);
   const credits = computeCredits(subscription, allBriefs);
@@ -2337,18 +2385,18 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
           </div>
         )}
         <div style={{position:'absolute',top:7,right:7,display:'flex',gap:5,opacity:hovered?1:0,transition:'opacity 0.15s',zIndex:3}}>
-          <button onClick={() => openEdit(p)} style={{width:22,height:22,borderRadius:6,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+          {can('edit_products') && (<button onClick={() => openEdit(p)} style={{width:22,height:22,borderRadius:6,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(91,141,239,0.85)'}
             onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
           >
             <Icon name="pencil" size={11} color="#E4E7EC"/>
-          </button>
-          <button onClick={() => setConfirmDelete(true)} style={{width:22,height:22,borderRadius:6,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
+          </button>)}
+          {can('delete') && (<button onClick={() => setConfirmDelete(true)} style={{width:22,height:22,borderRadius:6,border:'none',background:'rgba(10,12,17,0.7)',backdropFilter:'blur(4px)',color:'#E4E7EC',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'background 0.15s'}}
             onMouseEnter={e=>e.currentTarget.style.background='rgba(239,107,91,0.85)'}
             onMouseLeave={e=>e.currentTarget.style.background='rgba(10,12,17,0.7)'}
           >
             <Icon name="x" size={11} color="#E4E7EC"/>
-          </button>
+          </button>)}
         </div>
         {/* Cause du bug bloquant (produit ni supprimable ni modifiable) : ce badge n'avait aucune
             contrainte de largeur — une promo au texte un peu long grossissait librement et
@@ -3134,7 +3182,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
     try { if (window.history.state && window.history.state.adProduitPage) window.history.back(); } catch(e) {}
     setTimeout(() => { try { document.querySelector('main')?.scrollTo({ top: 0 }); } catch(e) {} }, 0);
   };
-  const openNew = () => { if (!user) { onNeedLogin(); return; } ouvrirPage(null); };
+  const openNew = () => { if (!user) { onNeedLogin(); return; } if (!can('edit_products')) return; ouvrirPage(null); };
   const openEdit = (p) => { ouvrirPage(p); };
   // Ouverture de la fiche depuis le pop-up de demande (« Compléter ») : demande en attente au montage + évènement si déjà affiché.
   const produitsRef = useRef(products);
@@ -3347,9 +3395,9 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
           <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos créatives — livrées en 24h.</p>
         </div>
-        <button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
+        {can('edit_products') && (<button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
           <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
-        </button>
+        </button>)}
       </div>
 
       {(() => {
@@ -3400,7 +3448,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           <ProductCard key={p.id} p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} creditsDataReady={creditsDataReady} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} notify={notify} setProducts={setProducts} openEdit={openEdit} onOpenPayment={onOpenPayment} C={C}/>
         ))}
 
-        <button onClick={openNew} style={{aspectRatio:'4/5',minHeight:260,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
+        {can('edit_products') && (<button onClick={openNew} style={{aspectRatio:'4/5',minHeight:260,borderRadius:14,border:`1.5px dashed ${C.border}`,background:'transparent',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:10,cursor:'pointer',color:C.muted,fontFamily:'inherit',transition:'border-color 0.15s, color 0.15s, background 0.15s'}}
           onMouseEnter={e=>{e.currentTarget.style.borderColor=C.accent; e.currentTarget.style.color=C.accent; e.currentTarget.style.background='rgba(91,141,239,0.05)';}}
           onMouseLeave={e=>{e.currentTarget.style.borderColor=C.border; e.currentTarget.style.color=C.muted; e.currentTarget.style.background='transparent';}}
         >
@@ -3408,7 +3456,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             <Icon name="plus" size={16}/>
           </div>
           <span style={{fontSize:13.5,fontWeight:600}}>Ajouter un produit</span>
-        </button>
+        </button>)}
       </div>
 
       {brief && (
@@ -3921,7 +3969,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
             </div>
             <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}>
               {!isMobile && <span style={{fontSize:11.5,color:C.sec,flexShrink:0}}>{selectedIds.length} sélectionnée{selectedIds.length>1?'s':''}</span>}
-              <button disabled={!selectedIds.length || bulkDownloading}
+              {can('download') && (<button disabled={!selectedIds.length || bulkDownloading}
                 onClick={async () => {
                   setBulkDownloading(true);
                   const items = filtered.filter(c => selectedIds.includes(c.id));
@@ -3937,12 +3985,12 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 }}
                 style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                 <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? '…' : `Télécharger (${selectedIds.length})`}
-              </button>
-              <button disabled={!selectedIds.length || deleting}
+              </button>)}
+              {can('delete') && (<button disabled={!selectedIds.length || deleting}
                 onClick={() => setDeleteConfirm(true)}
                 style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:`1px solid ${selectedIds.length?'rgba(229,80,80,0.3)':C.border}`,background:selectedIds.length?'rgba(229,80,80,0.08)':'rgba(255,255,255,0.04)',color:selectedIds.length?'#E55050':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                 <Icon name="x" size={13} color={selectedIds.length?'#E55050':C.muted}/> Supprimer
-              </button>
+              </button>)}
             </div>
           </div>
         )}
@@ -5772,7 +5820,7 @@ const DemoPreview = ({slug}) => {
 };
 
 export default function Platform() {
-  const SECTION_PATHS = { tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback' };
+  const SECTION_PATHS = { equipe:'team', tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
 
   const [section, _setSection] = useState(() => {
@@ -5884,6 +5932,8 @@ export default function Platform() {
   };
 
   const [collapsed, setCollapsed] = useState(false);
+  const wsResolvedRef = useRef(false);
+  const [, setWsTick] = useState(0);
 
   // Événement AddToCart — dès que la section Tarifs devient active
   useEffect(() => {
@@ -6374,6 +6424,19 @@ export default function Platform() {
         console.warn('[Réconciliation] échouée ou expirée (sans gravité si le compte n\'était pas concerné) :', eReconcile.message);
       }
 
+      // Espace de travail (équipe) : une seule fois par chargement de page. Ne bloque jamais plus de ~6 s.
+      if (!wsResolvedRef.current) {
+        try {
+          await resolveWorkspace(session, sbAuth.getUser()?.id);
+          const acc = WS.accepted;
+          if (acc?.ok) notify(`Invitation acceptée : vous travaillez maintenant dans l'espace de ${WS.ownerLabel || 'votre équipe'}.`, 'success');
+          else if (acc?.error === 'email_different') notify(`Cette invitation est réservée à ${acc.attendu || 'une autre adresse'}. Connectez-vous avec la bonne adresse Google.`, 'warning');
+          else if (acc?.error === 'invitation_expiree') notify("Ce lien d'invitation a expiré. Demandez à la personne de vous le renvoyer.", 'warning');
+          else if (acc?.error) notify("Cette invitation n'est plus valable.", 'warning');
+        } catch(eWs) { console.warn('[Équipe] résolution impossible, espace personnel utilisé :', eWs.message); }
+        wsResolvedRef.current = true;
+        setWsTick(t => t + 1);
+      }
       Promise.all([
         sbProducts.load(session),
         sbSubs.load(session),
@@ -6699,6 +6762,7 @@ const views = {
     copies: <Copies products={products} setSection={setSection}/>,
     marche: <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
+    equipe: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <TeamPage C={C} isMobile={isMobile} notify={notify} onUpgrade={()=>setSection('tarifs')} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}}/>,
     faq: <Faq/>,
     commentaires: <Commentaires user={user}/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData}/>,
@@ -6771,6 +6835,7 @@ const views = {
               Mode admin actif — déclenche "Aller sur son compte" depuis AdStats
             </div>
           )}
+          <WorkspaceBar C={C} isMobile={isMobile} user={user} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}} notify={notify}/>
           {views[section]}
         </main>
       </div>
