@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- FACTORY_VERSION v7.13b-ct-video-fiches (la galerie lit la fiche de sélection de chaque CT vidéo : durée, blocs, niches, produits, angles, interdits) | v7.12-sans-demo (le mode démo est supprimé : plus de bascule DÉMO/PRODUCTION, plus de générateur de démo ni de file « Démos à faire », plus d'agents Stratège / Creative démo / Mindmap) | v7.11-video (galerie CT vidéo séparée + 4e agent Créative Vidéo : entrées -> vidéo finale, historique complet téléchargeable) | v7.10-aspects-kit (aspect kit/cadeaux, sélecteur de CT informé des assets du client) | v7.9-aspects (l analyste décrit chaque aspect du produit en S11-F et reçoit toutes les photos préparées ; la créative image choisit les aspects par CT, ligne META 10) | v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
+<!-- FACTORY_VERSION v7.14-service-video (adresse + clé d'accès du service vidéo en ligne, copie durable de la vidéo, message de limite) | v7.13b-ct-video-fiches (la galerie lit la fiche de sélection de chaque CT vidéo : durée, blocs, niches, produits, angles, interdits) | v7.12-sans-demo (le mode démo est supprimé : plus de bascule DÉMO/PRODUCTION, plus de générateur de démo ni de file « Démos à faire », plus d'agents Stratège / Creative démo / Mindmap) | v7.11-video (galerie CT vidéo séparée + 4e agent Créative Vidéo : entrées -> vidéo finale, historique complet téléchargeable) | v7.10-aspects-kit (aspect kit/cadeaux, sélecteur de CT informé des assets du client) | v7.9-aspects (l analyste décrit chaque aspect du produit en S11-F et reçoit toutes les photos préparées ; la créative image choisit les aspects par CT, ligne META 10) | v7.6.1-galerie-brief (galerie complète, logo et captures d'avis visibles dans le brief) | v7.6-multi-marche (mode multi-marché de l'analyste : base commune, zéro lieu, prix par pays ; captures d'avis transcrites ; brief enrichi) | v7.5.1-analyste-modele (libellé analyste : gemini-3.1-pro) | v7.5-hypothese (analyste V6 : hypothèse, cible + 2 facettes, entourage, stock de 10 angles, cartes 16 champs, dosage en %, plafonds par format) | v7.4-avis-15 -->
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
@@ -566,8 +566,9 @@ body.sidebar-collapsed .sidebar-expand-btn{display:flex}
           <h4>Créative Vidéo — test</h4>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;font-size:11px;color:var(--t3);">
             <span id="vlDot" style="width:8px;height:8px;border-radius:50%;background:#777;display:inline-block;"></span>
-            <span id="vlState">Labo vidéo : vérification…</span>
-            <input id="vlUrl" type="text" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:11px;width:200px;" onchange="vlSaveUrl()" title="Adresse du labo vidéo lancé sur ton ordinateur">
+            <span id="vlState">Service vidéo : vérification…</span>
+            <input id="vlUrl" type="text" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:11px;width:200px;" onchange="vlSaveUrl()" title="Adresse du service vidéo : http://localhost:8787 en local, ou l'adresse du service en ligne">
+            <input id="vlKey" type="password" autocomplete="off" placeholder="Clé d'accès (service en ligne)" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:11px;width:170px;" onchange="vlSaveKey()" title="Nécessaire seulement pour le service vidéo en ligne">
             <button onclick="vlPing()" style="padding:4px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);font-size:11px;cursor:pointer;">Tester</button>
           </div>
           <div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;letter-spacing:.05em;">CT VIDÉO</div>
@@ -5499,8 +5500,8 @@ async function vctImportLab(){
   const base = vlLabUrl();
   _vctStatus('Lecture du labo (' + base + ')…');
   let cts;
-  try { const r = await fetch(base + '/cts'); cts = await r.json(); }
-  catch(e){ _vctStatus('Labo injoignable (' + base + ') : lance-le sur ton ordinateur puis réessaie.', true); return; }
+  try { const r = await _vlf('/cts'); if(r.status === 401) throw new Error('clé'); cts = await r.json(); }
+  catch(e){ _vctStatus(e.message === 'clé' ? 'Clé d\'accès refusée par le service vidéo : saisis-la dans l\'agent « Créative Vidéo ».' : 'Service vidéo injoignable (' + base + ') : lance-le ou vérifie l\'adresse, puis réessaie.', true); return; }
   const deja = new Set(VCT_LIST.map(x => x.source));
   const nouveaux = (cts || []).filter(c => !deja.has(c.file));
   if(!nouveaux.length){ _vctStatus('Rien de nouveau : les ' + (cts||[]).length + ' CT du labo sont déjà dans la galerie.'); return; }
@@ -5508,7 +5509,7 @@ async function vctImportLab(){
   for(let i = 0; i < nouveaux.length; i++){
     _vctStatus('Import ' + (i+1) + '/' + nouveaux.length + ' : ' + nouveaux[i].file + '…');
     try {
-      const t = await (await fetch(base + '/ct?f=' + encodeURIComponent(nouveaux[i].file))).text();
+      const t = await (await _vlf('/ct?f=' + encodeURIComponent(nouveaux[i].file))).text();
       if(t.length < 500) throw new Error('trop court');
       await _vctAjouter(nouveaux[i].file, t, nouveaux[i].file); ok++;
     } catch(e){ ko++; console.error('[CT vidéo] import', nouveaux[i].file, e); }
@@ -5623,26 +5624,34 @@ async function vctDelete(id){
 }
 
 /* ── Panneau de test « Créative Vidéo » ── */
+function vlKey(){ try { return localStorage.getItem('adstack_lab_key') || ''; } catch(e){ return ''; } }
+function vlSaveKey(){ const v = document.getElementById('vlKey').value.trim(); try { localStorage.setItem('adstack_lab_key', v); } catch(e){} vlPing(); }
+// Toutes les demandes au service vidéo passent par ici : la clé d'accès (si elle existe) est ajoutée en en-tête.
+function _vlf(chemin, opts){ opts = opts || {}; const k = vlKey(); if(k){ opts.headers = Object.assign({}, opts.headers || {}, { 'x-lab-key': k }); } return fetch(vlLabUrl() + chemin, opts); }
+// Adresse directe (lecteur vidéo, téléchargement) : la clé passe dans l'adresse.
+function _vlq(chemin, extra){ const k = vlKey(); const q = []; if(k) q.push('k=' + encodeURIComponent(k)); if(extra) q.push(extra); return vlLabUrl() + chemin + (q.length ? '?' + q.join('&') : ''); }
 function vlLabUrl(){ let u = 'http://localhost:8787'; try { u = localStorage.getItem('adstack_lab_url') || u; } catch(e){} return u.replace(/\/+$/,''); }
 function vlSaveUrl(){ const v = document.getElementById('vlUrl').value.trim(); try { localStorage.setItem('adstack_lab_url', v); } catch(e){} vlPing(); }
 async function vlPing(){
   const dot = document.getElementById('vlDot'), st = document.getElementById('vlState'); if(!dot) return false;
   try {
-    const r = await fetch(vlLabUrl() + '/models', { cache:'no-store' });
+    const r = await _vlf('/models', { cache:'no-store' });
+    if(r.status === 401){ dot.style.background = '#e0a458'; st.textContent = 'Service vidéo joignable, mais la clé d\'accès est absente ou fausse : saisis-la ci-contre.'; return false; }
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const m = await r.json();
-    dot.style.background = '#3fb950'; st.textContent = 'Labo vidéo connecté (' + vlLabUrl() + ')';
+    dot.style.background = '#3fb950'; st.textContent = 'Service vidéo connecté (' + vlLabUrl() + ')';
     const sel = document.getElementById('vlModel');
     if(sel && sel.options.length <= 1 && m && typeof m === 'object'){ Object.keys(m).forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; sel.appendChild(o); }); }
     return true;
   } catch(e){
     dot.style.background = '#e5534b';
-    st.textContent = 'Labo vidéo injoignable (' + vlLabUrl() + ') : lance-le sur ton ordinateur (node lab_server.js) puis clique Tester.';
+    st.textContent = 'Service vidéo injoignable (' + vlLabUrl() + ') : en local, lance « node lab_server.js » ; en ligne, vérifie l\'adresse. Puis clique Tester.';
     return false;
   }
 }
 async function vlInit(){
   const u = document.getElementById('vlUrl'); if(u) u.value = vlLabUrl();
+  const kk = document.getElementById('vlKey'); if(kk) kk.value = vlKey();
   vlPing();
   const sel = document.getElementById('vlCt'); if(!sel) return;
   sel.innerHTML = '<option value="">Chargement de la galerie…</option>';
@@ -5654,7 +5663,7 @@ async function vlInit(){
 function vlCtChanged(){ const r = VCT_LIST.find(x => x.id === document.getElementById('vlCt').value); const m = document.getElementById('vlCtMeta'); if(m) m.textContent = r ? (r.meta || '(pas de méta-description)') : ''; }
 async function vlLoadCompetence(){
   const ta = document.getElementById('compTextarea'); if(!ta) return;
-  try { const r = await fetch(vlLabUrl() + '/competence'); if(r.ok) ta.value = await r.text(); else ta.value = 'Compétence non disponible (labo : HTTP ' + r.status + '). Mets le labo à jour (v6.56).'; }
+  try { const r = await _vlf('/competence'); if(r.ok) ta.value = await r.text(); else ta.value = 'Compétence non disponible (labo : HTTP ' + r.status + '). Mets le labo à jour (v6.56).'; }
   catch(e){ ta.value = 'Compétence de l\'agent vidéo : visible quand le labo est lancé sur ton ordinateur (lecture seule).'; }
   ta.readOnly = true;
 }
@@ -5693,7 +5702,7 @@ async function vlRun(){
     const b = _vlBrief || {};
     const body = { ct, synthese:syn, produit, aspects, brief:b, model:document.getElementById('vlModel').value, planOnly:document.getElementById('vlPlanOnly').checked,
                    refMode:document.getElementById('vlRef').value, lien_page_produit:(b.lien_page_produit || (b.product && (b.product.lien_page_produit || b.product.url)) || '') };
-    const r = await fetch(vlLabUrl() + '/pipeline', { method:'POST', body:JSON.stringify(body) });
+    const r = await _vlf('/pipeline', { method:'POST', body:JSON.stringify(body) });
     const j = await r.json();
     if(!j.id) throw new Error(j.error || 'le labo n\'a pas démarré la production');
     _vlPid = j.id; _vlT0 = Date.now();
@@ -5706,13 +5715,14 @@ async function vlPoll(){
   const msg = document.getElementById('vlProg'), res = document.getElementById('vlResult'), btn = document.getElementById('vlRun');
   const tm = document.getElementById('vlTimer'); if(tm) tm.textContent = Math.round((Date.now() - _vlT0)/1000) + ' s';
   try {
-    const s = await (await fetch(vlLabUrl() + '/pipe/' + _vlPid, { cache:'no-store' })).json();
+    const s = await (await _vlf('/pipe/' + _vlPid, { cache:'no-store' })).json();
     const dernier = (s.log || []).slice(-1)[0] || '';
     msg.style.display = 'block';
     msg.innerHTML = '<b>Étape :</b> ' + _vctEsc(s.stage || '…') + (dernier ? '<div style="font-size:11px;color:var(--t3);margin-top:3px;">' + _vctEsc(String(dernier).slice(0,220)) + '</div>' : '') + (s.cost != null && typeof s.cost !== 'object' ? '<div style="font-size:11px;color:var(--t3);">Coût estimé : ' + _vctEsc(s.cost) + ' $</div>' : '');
     if(s.montage){
-      const u = vlLabUrl() + '/video/' + s.montage;
-      res.innerHTML = '<video src="' + u + '" controls playsinline style="width:min(360px,100%);border-radius:10px;"></video><div style="margin-top:8px;"><a href="' + u + '?dl=1" download="' + _vctEsc(s.montage) + '" style="display:inline-block;padding:8px 16px;background:var(--blue);color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;">⬇ Télécharger la vidéo</a></div>';
+      const u = s.video_url ? s.video_url : _vlq('/video/' + s.montage);
+      const ud = s.video_url ? (s.video_url + '?download=' + encodeURIComponent(s.montage)) : _vlq('/video/' + s.montage, 'dl=1');
+      res.innerHTML = '<video src="' + u + '" controls playsinline style="width:min(360px,100%);border-radius:10px;"></video><div style="margin-top:8px;"><a href="' + ud + '" download="' + _vctEsc(s.montage) + '" style="display:inline-block;padding:8px 16px;background:var(--blue);color:#fff;border-radius:8px;font-size:12px;font-weight:600;text-decoration:none;">⬇ Télécharger la vidéo</a>' + (s.video_url ? '<span style="font-size:11px;color:var(--t3);margin-left:8px;">copie durable enregistrée</span>' : '') + '</div>';
     }
     if(s.state && s.state !== 'running'){
       clearInterval(_vlTimer); btn.disabled = false;
@@ -5726,7 +5736,7 @@ async function vlDownload(avecImages){
   if(!_vlPid){ return; }
   const m = document.getElementById('vlHistMsg'); m.textContent = 'Préparation du fichier…';
   try {
-    const r = await fetch(vlLabUrl() + '/pipe/' + _vlPid + '/historique' + (avecImages ? '' : '?images=0'));
+    const r = await _vlf('/pipe/' + _vlPid + '/historique' + (avecImages ? '' : '?images=0'));
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const blob = await r.blob();
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'historique_video_' + _vlPid + (avecImages ? '' : '_texte') + '.json';
