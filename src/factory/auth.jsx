@@ -59,7 +59,7 @@ export function Login({ onDone }) {
       save(d); onDone()
     } catch (x) { setErr(x.message) } finally { setBusy(false) }
   }
-  const google = () => { location.href = `${SB}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(location.origin + (location.pathname.startsWith('/factory-next') ? '/factory-next' : '/factory'))}&prompt=select_account` }
+  const google = () => { location.href = `${SB}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(/localhost|127\.0\.0\.1/.test(location.hostname) ? location.origin + '/factory' : 'https://adstackofficial.com/factory')}&prompt=select_account` }
   return (
     <div className="fx-login">
       <form className="fx-login-card" onSubmit={go}>
