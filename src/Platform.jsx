@@ -573,9 +573,71 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
 };
 
 // Fonction réservée à GROWTH et SCALE (Ad Copies, Données Marché) : écran propre plutôt qu'une page vide ou cassée.
-const LockedFeature = ({C, icon, titre, texte, points, owner, onUpgrade}) => (
-  <div style={{maxWidth:560,margin:'40px auto',textAlign:'center'}} data-testid="locked-feature">
-    <div style={{width:56,height:56,borderRadius:16,background:C.accentS,border:`1px solid rgba(91,141,239,0.25)`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
+const BoutonRetour = ({ onClick, libelle = 'Retour' }) => (
+  <button type="button" onClick={onClick} data-testid="bouton-retour"
+    style={{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 14px 8px 11px',marginBottom:14,borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:12.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
+    <span style={{fontSize:16,lineHeight:1,marginTop:-1}}>‹</span> {libelle}
+  </button>
+);
+
+// Aperçu flouté (exemple fictif) montré aux clients PERF+ derrière le verrou : il donne envie de passer à GROWTH.
+const ApercuVerrouille = ({ type }) => {
+  const bar = (w, c='rgba(255,255,255,0.14)', h=8) => <div style={{height:h,width:w,borderRadius:4,background:c}}/>;
+  const carte = {borderRadius:14,border:`1px solid ${C.border}`,background:'linear-gradient(160deg,#12151f,#0d0f16)',padding:18};
+  const corps = type === 'copies' ? (
+    <div style={{...carte,display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1.3fr)',gap:20}}>
+      <div style={{borderRadius:12,background:'#1C1D21',overflow:'hidden'}}>
+        <div style={{display:'flex',gap:8,alignItems:'center',padding:'10px 12px'}}><div style={{width:30,height:30,borderRadius:'50%',background:'linear-gradient(135deg,#5B8DEF,#1FB6FF)'}}/>{bar(90,'rgba(255,255,255,0.3)',9)}</div>
+        <div style={{padding:'0 12px 10px',display:'flex',flexDirection:'column',gap:6}}>{bar('95%')}{bar('80%')}{bar('60%')}</div>
+        <div style={{aspectRatio:'4/5',background:'linear-gradient(160deg,#2a3358,#101114)'}}/>
+      </div>
+      <div>
+        <div style={{fontSize:10,fontWeight:800,color:C.accent,letterSpacing:1.2}}>ANGLE 1</div>
+        <div style={{fontSize:17,fontWeight:800,color:C.text,margin:'4px 0 14px'}}>Peur de rater l'occasion</div>
+        {['Votre cible hésite encore ? Elle a tort.','Ils l\'ont déjà adopté. Et vous ?','Le détail qui change tout dès le premier jour','Pourquoi tout le monde en parle cette semaine','Dernière chance avant la rupture de stock'].map((t,k)=>(
+          <div key={k} style={{display:'flex',justifyContent:'space-between',gap:10,padding:'10px 0',borderBottom:`1px solid ${C.border}`,fontSize:12.5,color:C.text}}><span>{k+1}. {t}</span>{bar(46,'rgba(91,141,239,0.35)',22)}</div>
+        ))}
+        <div style={{marginTop:14,display:'flex',flexDirection:'column',gap:7}}>{bar('100%')}{bar('92%')}{bar('70%')}</div>
+      </div>
+    </div>
+  ) : (
+    <div style={{display:'flex',flexDirection:'column',gap:14}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12}}>
+        {[['Taille du marché','2,4 M'],['Concurrents actifs','37'],['Opportunité','Élevée']].map(([l,v],k)=>(
+          <div key={k} style={{...carte,padding:14}}><div style={{fontSize:10,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6}}>{l}</div><div style={{fontSize:24,fontWeight:800,color:C.text,marginTop:6}}>{v}</div></div>
+        ))}
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.2fr) minmax(0,1fr)',gap:12}}>
+        <div style={carte}>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:12}}>Ce que fait la concurrence</div>
+          {[88,64,47,31].map((w,k)=>(<div key={k} style={{display:'flex',alignItems:'center',gap:10,marginBottom:10}}>{bar(60,'rgba(255,255,255,0.22)',8)}<div style={{flex:1,height:10,borderRadius:5,background:'rgba(255,255,255,0.06)'}}><div style={{width:`${w}%`,height:'100%',borderRadius:5,background:'linear-gradient(90deg,#5B8DEF,#1FB6FF)'}}/></div></div>))}
+        </div>
+        <div style={carte}>
+          <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:12}}>Votre client type</div>
+          <div style={{display:'flex',gap:10,alignItems:'center',marginBottom:12}}><div style={{width:42,height:42,borderRadius:'50%',background:'linear-gradient(135deg,#A66BFF,#5B8DEF)'}}/><div style={{flex:1,display:'flex',flexDirection:'column',gap:6}}>{bar('70%','rgba(255,255,255,0.3)',9)}{bar('50%')}</div></div>
+          <div style={{display:'flex',flexDirection:'column',gap:7}}>{bar('100%')}{bar('85%')}{bar('65%')}</div>
+        </div>
+      </div>
+      <div style={carte}>
+        <div style={{fontSize:12,fontWeight:700,color:C.text,marginBottom:10}}>Opportunités à saisir</div>
+        {['Un angle que personne n\'exploite encore sur ce marché','Une offre plus forte que celle de vos concurrents directs','Le bon moment pour lancer votre prochaine campagne'].map((t,k)=>(<div key={k} style={{display:'flex',gap:9,fontSize:12.5,color:C.text,padding:'7px 0'}}><span style={{color:'#22C55E'}}>●</span>{t}</div>))}
+      </div>
+    </div>
+  );
+  return (
+    <div aria-hidden="true" data-testid="apercu-verrouille" style={{position:'relative',height:360,overflow:'hidden',borderRadius:16,pointerEvents:'none',userSelect:'none'}}>
+      <div style={{filter:'blur(3.5px)',opacity:.85,transform:'scale(.99)',transformOrigin:'top center'}}>{corps}</div>
+      <div style={{position:'absolute',inset:0,background:`linear-gradient(180deg, rgba(10,12,17,0) 0%, rgba(10,12,17,0.55) 55%, ${C.bg} 100%)`}}/>
+      <div style={{position:'absolute',top:12,right:12,fontSize:9.5,fontWeight:800,letterSpacing:1,color:'#fff',background:'rgba(0,0,0,0.55)',border:'1px solid rgba(255,255,255,0.18)',borderRadius:20,padding:'4px 10px'}}>EXEMPLE</div>
+    </div>
+  );
+};
+
+const LockedFeature = ({C, icon, titre, texte, points, owner, onUpgrade, apercu}) => (
+  <div style={{maxWidth:760,margin:'8px auto 40px'}} data-testid="locked-feature">
+    {apercu && <ApercuVerrouille type={apercu}/>}
+    <div style={{maxWidth:560,margin:apercu?'-150px auto 0':'32px auto 0',textAlign:'center',position:'relative'}}>
+    <div style={{width:56,height:56,borderRadius:16,background:C.accentS,border:`1px solid rgba(91,141,239,0.25)`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',backdropFilter:'blur(6px)'}}>
       <Icon name={icon} size={24} color={C.accent}/>
     </div>
     <div style={{fontSize:11,color:C.accent,fontWeight:800,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Inclus avec GROWTH et SCALE</div>
@@ -588,6 +650,7 @@ const LockedFeature = ({C, icon, titre, texte, points, owner, onUpgrade}) => (
       {owner
         ? <button onClick={onUpgrade} style={{padding:'11px 22px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Passer à GROWTH</button>
         : <div style={{fontSize:12,color:C.muted}}>Demandez au propriétaire de l'espace de passer à GROWTH.</div>}
+    </div>
     </div>
   </div>
 );
@@ -768,9 +831,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
     </nav>
 
     <div style={{padding:showCollapsed?'12px 0 calc(12px + env(safe-area-inset-bottom, 0px))':'12px 14px calc(12px + env(safe-area-inset-bottom, 0px))',borderTop:`1px solid ${C.border}`}}>
-      <button onClick={() => set('demo')} title={showCollapsed||(isMobile&&!mobileOpen)?'Voir la démo':undefined} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:(showCollapsed||(isMobile&&!mobileOpen))?0:7,padding:'8px',borderRadius:7,background:active==='demo'?C.accentS:'rgba(255,255,255,0.07)',border:`1px solid ${active==='demo'?'rgba(45,127,249,0.28)':C.border}`,color:active==='demo'?C.accent:C.sec,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',marginBottom:(showCollapsed||(isMobile&&!mobileOpen))?0:10,whiteSpace:'nowrap'}}>
-        <Icon name="image" size={12} color={active==='demo'?C.accent:C.sec}/> {!(showCollapsed||(isMobile&&!mobileOpen)) && 'VOIR DEMO'}
-      </button>
+
       {!showCollapsed && !(isMobile && !mobileOpen) && !isMember() && subscription?.plan !== 'scale' && (() => {
         // Progression normale : Starter → Pro → Scale. Un visiteur sans abonnement actif — ou un
         // ancien compte Discovery (offre retirée de la vente) — est orienté vers Starter.
@@ -806,7 +867,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
 
 const EMPTY_PRODUCT = {
   nom:'', pricing:'', promo:'', lien:'', utilite:'', cible:'', pays:'', notes:'',
-  couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, deliveries:[], marche:null,
+  couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, marque:'', deliveries:[], marche:null,
   documents:[], documents_modifies:false,
   galerie_images:[], galerie_aspects:{}, avis_captures:[], avis_textes:[],
   garantie:'', livraison_paiement:'', prix_par_pays:{},
@@ -1106,6 +1167,7 @@ const depuisLigneProduit = (p) => {
     livraison_paiement: perso.livraison_paiement || '',
     prix_par_pays: (perso.prix_par_pays && typeof perso.prix_par_pays === 'object') ? perso.prix_par_pays : {},
     cible_auto: !!perso.cible_auto,
+    marque: perso.marque || '',
   };
 };
 
@@ -1202,9 +1264,10 @@ const sbProducts = {
           garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '',
           prix_par_pays: prixParPaysNettoye(product),
           cible_auto: !!(product.cible && product.cible_auto),
+          marque: (product.marque || '').trim(),
         },
       },
-      locaux: { logo: logoUrl, notes: product.notes || '', galerie_images: galerie, galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '', prix_par_pays: prixParPaysNettoye(product) },
+      locaux: { marque: (product.marque || '').trim(), logo: logoUrl, notes: product.notes || '', galerie_images: galerie, galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '', prix_par_pays: prixParPaysNettoye(product) },
     };
   },
   // Écrit en base. Si une colonne récente n'existe pas encore (migration SQL non faite), retente sans elle plutôt que
@@ -1841,6 +1904,7 @@ const pointsFicheProduit = (p) => [
   { k:'angles', label:'3 aspects du produit en photo', ok:(p.galerie_images||[]).length > 2 },
   { k:'garantie', label:'garantie ou livraison', ok:!!(p.garantie || p.livraison_paiement) },
   { k:'cible', label:'votre client', ok:!!(p.cible && p.utilite) },
+  { k:'marque', label:'nom de la marque', ok:!!(p.marque||'').trim() },
   { k:'logo', label:'logo', ok:!!p.logo },
   { k:'couleurs', label:'couleurs de la marque', ok:!!(p.couleur1 && p.couleur2) },
   { k:'avis', label:'avis clients', ok:(p.avis_captures||[]).length > 0 || (p.avis_textes||[]).length > 0 },
@@ -2676,7 +2740,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
 // ═══════════════════════════════════════════════════════════════════════════
 const BROUILLON_PREFIX = 'adstack_brouillon_produit_';
 const cleBrouillon = (userId, produitId) => `${BROUILLON_PREFIX}${userId || 'anon'}_${produitId || 'new'}`;
-const CHAMPS_FICHE = ['nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','galerie_aspects','avis_captures','avis_textes','prix_par_pays','documents'];
+const CHAMPS_FICHE = ['marque','nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','galerie_aspects','avis_captures','avis_textes','prix_par_pays','documents'];
 // Empreinte du contenu utile de la fiche : sert à savoir si le client a vraiment saisi / modifié quelque chose
 // (pas de brouillon enregistré pour une page ouverte puis refermée sans toucher à rien).
 const signatureFiche = (f) => {
@@ -3098,6 +3162,7 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
     { k:'angles', label:'Au moins 3 aspects du produit (face, dos, forme, en usage…)', ok:(form.galerie_images||[]).length > 2, cible:'pp-photos' },
     { k:'garantie', label:'Garantie et livraison', ok:!!(form.garantie || form.livraison_paiement), cible:'pp-offre' },
     { k:'cible', label:'Votre client', ok:!!(form.cible && form.utilite), cible:'pp-client' },
+    { k:'marque', label:'Nom de la marque ou de la boutique', ok:!!(form.marque||'').trim(), cible:'pp-marque' },
     { k:'logo', label:'Logo', ok:!!form.logo, cible:'pp-marque' },
     { k:'couleurs', label:'Couleurs de la marque', ok:!!(form.couleur1 && form.couleur2), cible:'pp-marque' },
     { k:'avis', label:'Avis clients', ok:(form.avis_captures||[]).length > 0 || (form.avis_textes||[]).length > 0, cible:'pp-preuves' },
@@ -3254,8 +3319,14 @@ const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
             </CartePage>
 
             {/* 6 — Marque */}
-            <CartePage id="pp-marque" numero="6" titre="Votre marque" optionnel rempli={!!(form.logo || [form.couleur1, form.couleur2, form.couleur3].some(Boolean))}
-              description="Pour que vos créatives soient reconnaissables.">
+            <CartePage id="pp-marque" numero="6" titre="Votre marque" optionnel repliable={false} rempli={!!((form.marque||'').trim() || form.logo || [form.couleur1, form.couleur2, form.couleur3].some(Boolean))}
+              description="Pour que vos créatives et vos publicités portent le nom de votre marque.">
+              <div>
+                <label htmlFor="champ-marque" style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3,display:'block'}}>Nom de votre marque ou de votre boutique en ligne</label>
+                <div style={{fontSize:11,color:C.muted,marginBottom:8,lineHeight:1.5}}>Le nom sous lequel vos clients vous connaissent. Il apparaîtra dans l'aperçu de vos publicités.</div>
+                <input id="champ-marque" data-testid="champ-marque" value={form.marque || ''} maxLength={60} onChange={e => setForm(f => ({ ...f, marque: e.target.value }))} placeholder="Ex. : Maison Aïssa, Dakar Beauty Shop…"
+                  style={{width:'100%',padding:'11px 13px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
+              </div>
               <LogoField logo={form.logo} logoAuto={estAuto('logo')} enCours={logoEnvoi} onSet={changerLogo} onRemove={() => setForm(f => ({ ...f, logo: null }))}/>
               <div>
                 <label style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:3,display:'block'}}>Couleurs de la marque{estAuto('couleur1') && <span style={{marginLeft:8,fontSize:9.5,fontWeight:700,color:C.accent}}>rempli automatiquement</span>}</label>
@@ -3390,6 +3461,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
   const [brief, setBrief] = useState(null);
   const [briefCopied, setBriefCopied] = useState(false);
   const [brouillonTick, setBrouillonTick] = useState(0);
+  const [rechercheProduit, setRechercheProduit] = useState('');
+  const produitsFiltres = (() => { const q = rechercheProduit.trim().toLowerCase(); return q ? products.filter(p => `${p.nom||''} ${p.marque||''}`.toLowerCase().includes(q)) : products; })();
   const showFormRef = useRef(false);
   showFormRef.current = showForm;
 
@@ -3668,8 +3741,19 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         </div>
       )}
 
+      {products.length >= 4 && (
+        <div style={{position:'relative',maxWidth:460,marginBottom:18}}>
+          <div style={{position:'absolute',left:13,top:0,bottom:0,display:'flex',alignItems:'center',pointerEvents:'none'}}><Icon name="search" size={15} color={C.sec}/></div>
+          <input data-testid="recherche-produit" value={rechercheProduit} onChange={e => setRechercheProduit(e.target.value)} placeholder="Rechercher un produit ou une marque…"
+            style={{width:'100%',padding:'11px 36px 11px 38px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box'}}/>
+          {rechercheProduit && <button onClick={() => setRechercheProduit('')} aria-label="Effacer la recherche" style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',width:24,height:24,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="x" size={10} color={C.sec}/></button>}
+        </div>
+      )}
+      {products.length >= 4 && rechercheProduit.trim() && produitsFiltres.length === 0 && (
+        <div data-testid="aucun-produit-trouve" style={{padding:'28px 16px',textAlign:'center',color:C.sec,fontSize:13,border:`1px dashed ${C.border}`,borderRadius:12,marginBottom:18}}>Aucun produit ne correspond à « {rechercheProduit.trim()} ».</div>
+      )}
       <div style={{display:'grid',gridTemplateColumns:isMobile?'1fr':'repeat(auto-fill,minmax(290px,1fr))',gap:isMobile?14:20}}>
-        {products.map(p => (
+        {produitsFiltres.map(p => (
           <ProductCard key={p.id} p={p} briefs={briefs} subscription={subscription} allBriefs={allBriefs} creditsDataReady={creditsDataReady} user={user} onNeedLogin={onNeedLogin} onAskCreatives={onAskCreatives} cancelCreatives={cancelCreatives} notify={notify} setProducts={setProducts} openEdit={openEdit} onOpenPayment={onOpenPayment} C={C}/>
         ))}
 
@@ -3937,7 +4021,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   // maintenant qualifiée par produit ; seul le LIBELLÉ affiché reste "Batch 1", accompagné du
   // nom du produit pour lever toute ambiguïté visuelle.
   const nomProduitParId = {};
-  products.forEach(p => { nomProduitParId[p.id] = p.nom; });
+  products.forEach(p => { nomProduitParId[p.id] = nomAffiche(p); });
   const batchKey = (c) => `${c.productId}::${c.week}`;
   // Nouveau filtre Cible — chaque créative porte maintenant sa cible d'origine (voir serveur).
   // Les créatives livrées avant ce fix n'ont pas ce champ — regroupées sous un intitulé honnête
@@ -4535,7 +4619,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         <div data-testid="visionneuse" onClick={() => setSelected(null)}
           onTouchStart={e => { x0 = e.touches[0].clientX; }}
           onTouchEnd={e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) aller(dx < 0 ? 1 : -1); }}
-          style={{position:'fixed',inset:0,zIndex:100000,background:'radial-gradient(ellipse at 50% 30%, rgba(30,38,60,0.97), rgba(4,5,8,0.99) 70%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:isMobile?'64px 12px 16px':'28px 90px',overflow:'hidden'}}>
+          style={{position:'fixed',inset:0,zIndex:100000,background:'radial-gradient(ellipse at 50% 30%, rgba(30,38,60,0.97), rgba(4,5,8,0.99) 70%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'safe center',overflowY:'auto',padding:isMobile?'64px 12px 16px':'28px 90px',overflow:'hidden'}}>
           <div style={{position:'absolute',top:isMobile?14:22,left:isMobile?14:28,display:'flex',alignItems:'center',gap:10}} onClick={e=>e.stopPropagation()}>
             <span style={{fontSize:12,fontWeight:700,color:'#fff',padding:'6px 12px',borderRadius:20,background:'rgba(255,255,255,0.09)',border:'1px solid rgba(255,255,255,0.12)',fontFamily:"'DM Mono',monospace"}}>{idx >= 0 ? idx + 1 : '–'} / {total}</span>
           </div>
@@ -4545,7 +4629,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
           <button onClick={e => { e.stopPropagation(); aller(-1); }} aria-label="Précédente" disabled={idx <= 0} style={flecheStyle(idx > 0, 'left')}><span style={{fontSize:22,lineHeight:1,transform:'translateX(-1px)'}}>‹</span></button>
           <button onClick={e => { e.stopPropagation(); aller(1); }} aria-label="Suivante" disabled={idx < 0 || idx >= total - 1} style={flecheStyle(idx >= 0 && idx < total - 1, 'right')}><span style={{fontSize:22,lineHeight:1,transform:'translateX(1px)'}}>›</span></button>
 
-          <div onClick={e => e.stopPropagation()} style={{width:`min(100%, calc((100vh - ${isMobile?250:210}px) * ${ratio}))`,borderRadius:18,overflow:'hidden',background:'#0B0D12',boxShadow:'0 30px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08)'}}>
+          <div onClick={e => e.stopPropagation()} style={{flexShrink:0,width:`min(100%, calc((100vh - ${isMobile?250:300}px) * ${ratio}))`,borderRadius:18,overflow:'hidden',background:'#0B0D12',boxShadow:'0 30px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08)'}}>
             {video
               ? <LecteurVideo c={selected}/>
               : <div key={selected.id} style={{aspectRatio:'4/5',position:'relative',background:`linear-gradient(160deg,${selected.g1||'#222'},${selected.g2||'#0B0D12'})`}}>
@@ -4553,23 +4637,23 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 </div>}
           </div>
 
-          <div onClick={e => e.stopPropagation()} style={{width:`min(100%, max(320px, calc((100vh - ${isMobile?250:210}px) * ${ratio})))`,marginTop:14,display:'flex',flexDirection:'column',gap:10}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:12}}>
+          <div onClick={e => e.stopPropagation()} style={{flexShrink:0,width:`min(100%, max(320px, calc((100vh - ${isMobile?250:300}px) * ${ratio})))`,marginTop:14,display:'flex',flexDirection:'column',gap:10}}>
+            <div style={{display:'flex',flexDirection:'column',gap:10}}>
               <div style={{minWidth:0}}>
                 <div style={{fontSize:16,fontWeight:800,color:'#fff',letterSpacing:-0.2}}>{selected.angle}</div>
                 <div style={{fontSize:11.5,color:'rgba(255,255,255,0.6)',marginTop:2}}>{video ? 'Vidéo' : 'Image'} · Lot {selected.week.replace(/^[SB]/,'')}{nomProduitParId[selected.productId] ? ` · ${nomProduitParId[selected.productId]}` : ''}</div>
                 {selected.cible && <div style={{fontSize:11,color:'rgba(255,255,255,0.42)',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selected.cible}</div>}
               </div>
-              <div style={{display:'flex',gap:8,flexShrink:0}}>
+              <div style={{display:'flex',gap:8}}>
                 {can('download') && (
-                  <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected), isMobile)} style={btnAction} aria-label="Télécharger">
-                    <Icon name="download" size={15} color="#fff"/>{!isMobile && 'Télécharger'}
+                  <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected), isMobile)} style={{...btnAction,flex:1,justifyContent:'center'}} aria-label="Télécharger">
+                    <Icon name="download" size={15} color="#fff"/>Télécharger
                   </button>
                 )}
                 <button onClick={() => eligible && toggleTopPerformer(selected)} disabled={!eligible || togglingTopPerformer}
-                  style={{...btnAction,borderColor:selected.topPerformer?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:selected.topPerformer?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:selected.topPerformer?'#FFC107':'#fff',opacity:eligible?1:0.55,cursor:eligible?'pointer':'default'}}
+                  style={{...btnAction,flex:1,justifyContent:'center',borderColor:selected.topPerformer?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:selected.topPerformer?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:selected.topPerformer?'#FFC107':'#fff',opacity:eligible?1:0.55,cursor:eligible?'pointer':'default'}}
                   aria-label="Top Performer">
-                  <Icon name="star" size={15} color={selected.topPerformer?'#FFC107':'#fff'}/>{!isMobile && (selected.topPerformer ? 'Top Performer' : 'Top Performer')}
+                  <Icon name="star" size={15} color={selected.topPerformer?'#FFC107':'#fff'}/>Top Performer
                 </button>
               </div>
             </div>
@@ -4655,6 +4739,9 @@ function getAngleGagnantActuel(product, cible) {
 // ── Carte d'un angle dans Ad Copies : aperçu de la pub + les 5 titres + le texte principal.
 // Meta n'a que deux champs à remplir côté texte : « Titre » et « Texte principal ». Chaque angle a 5 titres
 // et 1 texte, et 3 visuels (statique · vidéo · statique) qui s'affichent dans l'aperçu.
+// Nom montré au client final dans les aperçus : la marque / boutique si elle est renseignée, sinon le nom du produit.
+const nomAffiche = (p) => ((p && p.marque) || '').trim() || (p && p.nom) || '';
+
 const CarteAngleCopies = ({ angle, delivery, produit, estGagnant, repriseDe, copied, copy, dejaCopie, isMobile, refEl, numero }) => {
   const [iTitre, setITitre] = useState(0);
   const [iVisuel, setIVisuel] = useState(0);
@@ -4687,9 +4774,9 @@ const CarteAngleCopies = ({ angle, delivery, produit, estGagnant, repriseDe, cop
             <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:8}}>Aperçu de votre pub</div>
             <div style={{borderRadius:14,overflow:'hidden',background:'#1C1D21',border:'1px solid rgba(255,255,255,0.08)',boxShadow:'0 14px 40px rgba(0,0,0,0.35)'}} data-testid="apercu-pub">
               <div style={{display:'flex',alignItems:'center',gap:9,padding:'11px 12px 8px'}}>
-                <div style={{width:34,height:34,borderRadius:'50%',background:produit.photo?`url(${produit.photo}) center/cover`:'linear-gradient(135deg,#5B8DEF,#1FB6FF)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>{!produit.photo && (produit.nom||'?').slice(0,1).toUpperCase()}</div>
+                <div style={{width:34,height:34,borderRadius:'50%',background:(produit.logo||produit.photo)?`#fff url("${produit.logo||produit.photo}") center/${produit.logo?'contain':'cover'} no-repeat`:'linear-gradient(135deg,#5B8DEF,#1FB6FF)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>{!(produit.logo||produit.photo) && (nomAffiche(produit)||'?').slice(0,1).toUpperCase()}</div>
                 <div style={{minWidth:0}}>
-                  <div style={{fontSize:12.5,fontWeight:700,color:'#E4E6EB',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{produit.nom}</div>
+                  <div style={{fontSize:12.5,fontWeight:700,color:'#E4E6EB',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}} data-testid="apercu-nom">{nomAffiche(produit)}</div>
                   <div style={{fontSize:10.5,color:'#9A9DA3'}}>Sponsorisé</div>
                 </div>
               </div>
@@ -4888,6 +4975,7 @@ const Copies = ({products, setSection}) => {
         </>
       ) : (
         <div>
+          <BoutonRetour onClick={() => setSelected(null)} libelle="Retour aux produits"/>
           {/* Product banner */}
           <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,background:'rgba(45,127,249,0.10)',border:'1px solid rgba(45,127,249,0.28)',marginBottom:20}}>
             <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:selected.photo?`url(${selected.photo}) center/cover`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
@@ -5119,6 +5207,7 @@ const Marche = ({products, isDemo, setSection, subscription, onOpenPayment}) => 
       </>
     ) : (
       <div>
+        <BoutonRetour onClick={() => setSelected(null)} libelle="Retour aux produits"/>
         {/* Product banner — same pattern as Ad Copies */}
         <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,background:'rgba(45,127,249,0.10)',border:'1px solid rgba(45,127,249,0.28)',marginBottom:20}}>
           <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:selected.photo?`url(${selected.photo}) center/cover`:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
@@ -7223,8 +7312,8 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
             }
             setCreativesTarget(p); }}/>,
     galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
-    copies: !accesGrowth() ? <LockedFeature C={C} icon="document" titre="Ad Copies" texte="Pour chaque angle, des titres et des textes publicitaires prêts à coller dans votre gestionnaire de publicités, optimisés pour convertir." points={['Titres et textes classés par angle','Prêts à copier-coller dans Meta Ads','Livrés avec chaque lot de créatives']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Copies products={products} setSection={setSection}/>,
-    marche: !accesGrowth() ? <LockedFeature C={C} icon="chart" titre="Données Marché" texte="La vue détaillée de votre marché, de vos concurrents et de votre cible, avec nos recommandations et les opportunités à saisir." points={['Analyse du marché, des concurrents et de la cible','Recommandations claires pour vos prochaines campagnes','Opportunités repérées pour chaque produit']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
+    copies: !accesGrowth() ? <LockedFeature apercu="copies" C={C} icon="document" titre="Ad Copies" texte="Pour chaque angle, des titres et des textes publicitaires prêts à coller dans votre gestionnaire de publicités, optimisés pour convertir." points={['Titres et textes classés par angle','Prêts à copier-coller dans Meta Ads','Livrés avec chaque lot de créatives']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Copies products={products} setSection={setSection}/>,
+    marche: !accesGrowth() ? <LockedFeature apercu="marche" C={C} icon="chart" titre="Données Marché" texte="La vue détaillée de votre marché, de vos concurrents et de votre cible, avec nos recommandations et les opportunités à saisir." points={['Analyse du marché, des concurrents et de la cible','Recommandations claires pour vos prochaines campagnes','Opportunités repérées pour chaque produit']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
     equipe: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <TeamPage C={C} isMobile={isMobile} notify={notify} onUpgrade={()=>setSection('tarifs')} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}}/>,
     faq: <Faq/>,
