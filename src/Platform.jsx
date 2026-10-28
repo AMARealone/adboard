@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { WS, wsOwner, can, isMember, resolveWorkspace, captureInviteFromUrl, switchWorkspace, clearWorkspaceMemory, teamFetch, SERVER as TEAM_SERVER } from "./team.js";
 import TeamPage from "./TeamPage.jsx";
 captureInviteFromUrl();
-// ADBOARD_VERSION v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
+// ADBOARD_VERSION v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -319,6 +319,12 @@ const C = {
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
 
+// Offres (27 oct. 2026) : PERF+ livré en 48h, GROWTH et SCALE en 24h ; Ad Copies et Données Marché à partir de GROWTH.
+// Même principe que WS (équipe) : état module, mis à jour par Platform à chaque rendu.
+const PLAN_CTX = { plan: null, active: false };
+const delaiH = () => (PLAN_CTX.plan === 'starter' ? 48 : 24);
+const accesGrowth = () => !PLAN_CTX.active || PLAN_CTX.plan === 'pro' || PLAN_CTX.plan === 'scale'; // sans abonnement : on laisse l'écran habituel
+
 const PLAN_QUANTITY = { 'PERF+':6, 'GROWTH':12, 'SCALE':24 };
 
 const ANGLES = [];
@@ -566,6 +572,26 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
   );
 };
 
+// Fonction réservée à GROWTH et SCALE (Ad Copies, Données Marché) : écran propre plutôt qu'une page vide ou cassée.
+const LockedFeature = ({C, icon, titre, texte, points, owner, onUpgrade}) => (
+  <div style={{maxWidth:560,margin:'40px auto',textAlign:'center'}} data-testid="locked-feature">
+    <div style={{width:56,height:56,borderRadius:16,background:C.accentS,border:`1px solid rgba(91,141,239,0.25)`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
+      <Icon name={icon} size={24} color={C.accent}/>
+    </div>
+    <div style={{fontSize:11,color:C.accent,fontWeight:800,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Inclus avec GROWTH et SCALE</div>
+    <h1 style={{fontSize:22,fontWeight:800,color:C.text,margin:'0 0 10px'}}>{titre}</h1>
+    <p style={{fontSize:13.5,color:C.sec,lineHeight:1.6,margin:'0 0 18px'}}>{texte}</p>
+    <div style={{display:'inline-flex',flexDirection:'column',gap:8,textAlign:'left',marginBottom:22}}>
+      {points.map((x,i)=>(<div key={i} style={{display:'flex',gap:9,alignItems:'flex-start',fontSize:12.5,color:C.text}}><Icon name="check" size={14} color={C.accent}/><span>{x}</span></div>))}
+    </div>
+    <div>
+      {owner
+        ? <button onClick={onUpgrade} style={{padding:'11px 22px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Passer à GROWTH</button>
+        : <div style={{fontSize:12,color:C.muted}}>Demandez au propriétaire de l'espace de passer à GROWTH.</div>}
+    </div>
+  </div>
+);
+
 const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobile, mobileOpen, setMobileOpen, user, setUser, convertPrice=((f)=>f.toLocaleString('fr-FR')+' FCFA'), unreadCount=0, subscription=null, activeBriefsCount=0, onOpenPayment=null, onOpenLogin=null, sectionBadges={}}) => {
   const showCollapsed = collapsed && !isMobile;
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -709,7 +735,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
                 {unreadCount>9?'9+':unreadCount}
               </span>
             )}
-            {['galerie','copies','marche'].includes(n.id) && sectionBadges[n.id]>0 && (showCollapsed || (isMobile && !mobileOpen)) && (
+            {['galerie','copies','marche'].includes(n.id) && sectionBadges[n.id]>0 && !((n.id==='copies'||n.id==='marche') && !accesGrowth()) && (showCollapsed || (isMobile && !mobileOpen)) && (
               <span style={{position:'absolute',top:-5,right:-5,background:'#E55050',color:'#fff',borderRadius:'50%',minWidth:14,height:14,fontSize:8,fontWeight:900,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 2px',lineHeight:1}}>
                 {sectionBadges[n.id]>9?'9+':sectionBadges[n.id]}
               </span>
@@ -719,12 +745,13 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             )}
           </div>
           {!(showCollapsed || (isMobile && !mobileOpen)) && <span style={{flex:1}}>{n.label}</span>}
+          {!(showCollapsed || (isMobile && !mobileOpen)) && (n.id==='copies'||n.id==='marche') && !accesGrowth() && <Icon name="lock" size={11} color={C.muted}/>}
           {!(showCollapsed || (isMobile && !mobileOpen)) && n.id==='notifications' && unreadCount>0 && (
             <span style={{background:'#E55050',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:9,fontWeight:900,minWidth:16,textAlign:'center',marginLeft:'auto'}}>
               {unreadCount>9?'9+':unreadCount}
             </span>
           )}
-          {!(showCollapsed || (isMobile && !mobileOpen)) && ['galerie','copies','marche'].includes(n.id) && sectionBadges[n.id]>0 && (
+          {!(showCollapsed || (isMobile && !mobileOpen)) && ['galerie','copies','marche'].includes(n.id) && sectionBadges[n.id]>0 && !((n.id==='copies'||n.id==='marche') && !accesGrowth()) && (
             <span style={{background:'#E55050',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:9,fontWeight:900,minWidth:16,textAlign:'center',marginLeft:'auto'}}>
               {sectionBadges[n.id]>9?'9+':sectionBadges[n.id]}
             </span>
@@ -753,13 +780,15 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         if (!nextPlan) return null;
         const nextCycle = 'monthly';
         const cycleData = nextPlan[nextCycle];
+        const promoSb = packPromo(subscription, nextPlan.id);
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
             <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} créatives / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
-            <div style={{fontSize:taillePrix(convertPrice(cycleData.price),15),color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
+            {promoSb && <div style={{fontSize:10,color:'#22C55E',fontWeight:700,marginBottom:3}}>−{convertPrice(PACK_PROMO_OFF)} · encore {promoSb.jours} jour{promoSb.jours>1?'s':''}</div>}
+            <div style={{fontSize:taillePrix(convertPrice(promoSb?promoSb.prix:cycleData.price),15),color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(promoSb?promoSb.prix:cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => {
-              const productId = PLAN_CHECKOUT_IDS[`${nextPlan.id}-${nextCycle}`];
+              const productId = checkoutIdFor(nextPlan.id, nextCycle, subscription);
               if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
               const popup = window.open('', '_blank') || window;
               popup.location.href = cycleData.checkout;
@@ -1702,24 +1731,85 @@ const nomFichierCreative = (c) => `${c.angle}-${c.week}.${estVideo(c) ? 'mp4' : 
 const LecteurVideo = ({ c }) => {
   const ref = useRef(null);
   const [ko, setKo] = useState(false);
+  const [enLecture, setEnLecture] = useState(false);
+  const [charge, setCharge] = useState(0);       // part déjà chargée, de 0 à 1
+  const [prog, setProg] = useState(0);           // position de lecture, de 0 à 1
+  const [attente, setAttente] = useState(true);  // la vidéo n'a pas encore de quoi démarrer
+  const [duree, setDuree] = useState(0);
+  const [muet, setMuet] = useState(false);
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
+    setEnLecture(false); setCharge(0); setProg(0); setAttente(true);
     const p = v.play();
     if (p && p.catch) p.catch(() => {});
   }, [c.id]);
   const affiche = c.thumbUrl || c.imageUrl || undefined;
+  const majCharge = () => {
+    const v = ref.current;
+    if (!v || !v.duration || !v.buffered || !v.buffered.length) return;
+    setCharge(Math.min(1, v.buffered.end(v.buffered.length - 1) / v.duration));
+  };
+  const basculer = () => { const v = ref.current; if (!v) return; if (v.paused) { const p = v.play(); if (p && p.catch) p.catch(() => {}); } else v.pause(); };
+  const aller = (e) => {
+    const v = ref.current; if (!v || !v.duration) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    v.currentTime = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * v.duration;
+  };
+  const temps = (t) => { const n = Math.max(0, Math.floor(t || 0)); return `${Math.floor(n/60)}:${String(n%60).padStart(2,'0')}`; };
   return (
-    <div style={{aspectRatio:'9/16',width:'100%',background:'#000',position:'relative'}}>
+    <div style={{aspectRatio:'9/16',width:'100%',background:'#000',position:'relative'}} data-testid="lecteur-video">
+      <style>{`@keyframes lvShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}`}</style>
       {ko ? (
-        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,color:'#8A8D95',fontSize:11,textAlign:'center',padding:16}}>
+        <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:6,color:'#8A8D95',fontSize:11,textAlign:'center',padding:20}}>
           <Icon name="play" size={22} color="#8A8D95"/>
           <span>Vidéo indisponible pour le moment</span>
         </div>
       ) : (
-        <video ref={ref} key={c.id} src={c.videoUrl} poster={affiche} controls playsInline preload="auto"
-          controlsList="nodownload" onError={()=>setKo(true)}
-          style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'contain',background:'#000'}}/>
+        <>
+          <video ref={ref} key={c.id} src={c.videoUrl} poster={affiche} playsInline preload="auto" loop
+            onClick={basculer}
+            onLoadedMetadata={e=>setDuree(e.currentTarget.duration||0)}
+            onProgress={majCharge}
+            onTimeUpdate={e=>{ const v=e.currentTarget; setProg(v.duration ? v.currentTime / v.duration : 0); majCharge(); }}
+            onWaiting={()=>setAttente(true)}
+            onCanPlay={()=>setAttente(false)}
+            onPlaying={()=>{ setAttente(false); setEnLecture(true); }}
+            onPlay={()=>setEnLecture(true)}
+            onPause={()=>setEnLecture(false)}
+            onError={()=>setKo(true)}
+            style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover',background:'#000',cursor:'pointer'}}/>
+          {!enLecture && !attente && (
+            <button onClick={basculer} aria-label="Lire la vidéo"
+              style={{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',width:64,height:64,borderRadius:'50%',border:'1px solid rgba(255,255,255,0.35)',background:'rgba(0,0,0,0.45)',backdropFilter:'blur(6px)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+              <Icon name="play" size={24} color="#fff"/>
+            </button>
+          )}
+          {attente && (
+            <div style={{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',display:'flex',flexDirection:'column',alignItems:'center',gap:10,pointerEvents:'none'}}>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.85)',fontWeight:600,letterSpacing:.3,textShadow:'0 1px 6px rgba(0,0,0,0.6)'}}>Chargement de la vidéo…</div>
+              <div style={{width:140,height:4,borderRadius:4,background:'rgba(255,255,255,0.18)',overflow:'hidden',position:'relative'}}>
+                <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${Math.max(6, Math.round(charge*100))}%`,borderRadius:4,background:'linear-gradient(90deg,#5B8DEF,#1FB6FF)',transition:'width .3s'}}/>
+                <div style={{position:'absolute',top:0,bottom:0,width:'40%',background:'linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent)',animation:'lvShimmer 1.2s linear infinite'}}/>
+              </div>
+            </div>
+          )}
+          <div style={{position:'absolute',left:0,right:0,bottom:0,padding:'26px 14px 10px',background:'linear-gradient(transparent,rgba(0,0,0,0.65))'}}>
+            <div onClick={aller} style={{height:18,display:'flex',alignItems:'center',cursor:'pointer'}} aria-label="Position dans la vidéo" role="slider">
+              <div style={{position:'relative',width:'100%',height:4,borderRadius:4,background:'rgba(255,255,255,0.18)',overflow:'hidden'}}>
+                <div style={{position:'absolute',left:0,top:0,bottom:0,width:`${charge*100}%`,background:'rgba(255,255,255,0.28)',transition:'width .3s'}}/>
+                <div data-testid="jauge-video" style={{position:'absolute',left:0,top:0,bottom:0,width:`${prog*100}%`,borderRadius:4,background:'linear-gradient(90deg,#5B8DEF,#1FB6FF)'}}/>
+              </div>
+            </div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:2}}>
+              <span style={{fontSize:10.5,color:'rgba(255,255,255,0.8)',fontFamily:"'DM Mono',monospace"}}>{temps(prog*duree)} / {temps(duree)}</span>
+              <button onClick={()=>{ const v=ref.current; if(!v) return; v.muted=!v.muted; setMuet(v.muted); }} aria-label={muet?'Activer le son':'Couper le son'}
+                style={{background:'none',border:'none',color:'rgba(255,255,255,0.85)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:'2px 4px'}}>
+                {muet ? 'Son coupé' : 'Son activé'}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
@@ -1822,7 +1912,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
         {/* Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement Starter. */}
         {isPack && (
           <button onClick={() => {
-            const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
+            const productId = checkoutIdFor('starter','monthly',subscription);
             if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
           }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:20}}>
             <Icon name="plus" size={12} color={C.accent}/> Continuez avec PERF+
@@ -1842,7 +1932,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
             <button onClick={()=>canIncrease&&setQty(q=>q+6)} style={{width:42,height:42,borderRadius:'50%',border:'none',background:canIncrease?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.02)',color:canIncrease?'#fff':C.muted,fontSize:20,cursor:canIncrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:canIncrease?'0 4px 14px rgba(45,127,249,0.3)':'none',transition:'all 0.15s'}}>+</button>
           </div>
           <div style={{textAlign:'center',fontSize:11,color:C.muted,marginTop:10,lineHeight:1.5}}>
-            {angles} angles différents × 3 variantes · livraison sous 24h
+            {angles} angles différents × 3 variantes · livraison sous {delaiH()}h
           </div>
         </div>
 
@@ -2161,9 +2251,23 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
 // Annuler : le propriétaire toujours ; un membre seulement une demande qu'il a lui-même faite.
 const peutAnnulerBrief = (b) => can('delete') || (isMember() && can('request_production') && !!b && !!b.requested_by && b.requested_by === sbAuth.getUser()?.id);
 
-const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefresh}) => {
+// Étapes affichées au client : illustratives, réparties à égale distance sur le délai de livraison
+// (24h ou 48h selon l'offre), une seule visible à la fois, selon l'heure écoulée. « Livré » n'est affiché
+// que lorsque la demande est réellement livrée : si la durée est dépassée sans livraison, la dernière
+// étape en cours reste affichée.
+const ETAPES_SUIVI = [
+  { titre:'Nous démarrons votre demande', detail:'Votre équipe prend en charge votre produit.' },
+  { titre:'Recherche marketing', detail:'Analyse du marché, des concurrents et de votre cible.' },
+  { titre:'Production créative', detail:'Vos images et vidéos sont en cours de création.' },
+  { titre:'Contrôle qualité', detail:'Dernières vérifications avant la livraison.' },
+  { titre:'Livré', detail:'Vos créatives sont dans votre galerie.' },
+];
+const etapeSuivi = (ecouleMs, delaiMs) => Math.max(0, Math.min(3, Math.floor(ecouleMs / (delaiMs / ETAPES_SUIVI.length))));
+
+const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefresh, setSection}) => {
   const isMobile = useIsMobile();
   const [tick, setTick] = useState(0);
+  const [onglet, setOnglet] = useState('cours'); // 'cours' | 'historique'
   const [cancelConfirm, setCancelConfirm] = useState(null); // {id, nom} du produit à annuler
   useEffect(() => {
     const t = setInterval(() => setTick(n => n+1), 1000);
@@ -2194,7 +2298,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   }, []); // tableau vide intentionnel — l'intervalle est créé UNE FOIS, lit toujours l'état le plus récent via les refs
 
   const CANCEL_WIN = 12*60*60*1000;
-  const DELIVERY_WIN = 24*60*60*1000; // délai de livraison client : 24h (avant : 48h)
+  const DELIVERY_WIN = delaiH()*60*60*1000; // délai de livraison client : 24h, ou 48h pour PERF+
 
   const formatCountdown = (ms) => {
     if (ms <= 0) return null;
@@ -2214,41 +2318,87 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
   const sorted = [...allBriefs]
     .filter(briefEstActif)
     .sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+  // Historique : demandes livrées ou annulées, de la plus récente à la plus ancienne.
+  const historique = [...allBriefs]
+    .filter(b => b && (b.status === 'done' || b.status === 'cancelled'))
+    .sort((a,b) => new Date(b.created_at)-new Date(a.created_at));
+
+  const enTete = (
+    <div style={{marginBottom:20}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:14}}>
+        <div style={{width:40,height:40,borderRadius:10,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <Icon name="clock" size={18} color={C.accent}/>
+        </div>
+        <div>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
+          <p style={{fontSize:12,color:C.sec,margin:0}}>{onglet==='cours' ? (sorted.length ? `${sorted.length} demande${sorted.length>1?'s':''} en cours` : 'Suivez vos demandes de production') : `${historique.length} demande${historique.length>1?'s':''} passée${historique.length>1?'s':''}`}</p>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:6}} role="tablist">
+        {[['cours','En cours',sorted.length],['historique','Historique',historique.length]].map(([k,l,n]) => (
+          <button key={k} role="tab" aria-selected={onglet===k} onClick={()=>setOnglet(k)} data-testid={`onglet-${k}`}
+            style={{padding:'7px 15px',borderRadius:20,border:`1px solid ${onglet===k?C.accent:C.border}`,background:onglet===k?'rgba(91,141,239,0.12)':'transparent',color:onglet===k?C.text:C.sec,fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
+            {l}{n>0 && <span style={{fontSize:10,fontWeight:800,color:onglet===k?C.accent:C.muted}}>{n}</span>}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  if (onglet === 'historique') return (
+    <div>
+      {enTete}
+      {historique.length === 0 ? (
+        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:10,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.text}}>Aucune demande passée</div>
+          <div style={{fontSize:12,color:C.sec,maxWidth:300}}>Vos demandes livrées apparaîtront ici, avec un accès direct à leurs créatives.</div>
+        </div>
+      ) : (
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          {historique.map(b => {
+            const prod = products.find(p=>p.id===b.product_id);
+            const livre = b.status === 'done';
+            return (
+              <div key={b.id} data-testid="ligne-historique" style={{display:'flex',alignItems:'center',gap:13,padding:'14px 16px',borderRadius:14,border:`1px solid ${C.border}`,background:'linear-gradient(160deg,#12151f,#0d0f16)',flexWrap:isMobile?'wrap':'nowrap'}}>
+                <div style={{width:44,height:44,borderRadius:10,overflow:'hidden',flexShrink:0,background:'rgba(255,255,255,0.06)'}}>
+                  {prod?.photo && <img src={prod.photo} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13.5,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{prod?.nom||'Produit supprimé'}</div>
+                  <div style={{fontSize:11,color:C.muted,marginTop:2}}>
+                    <span style={{color:livre?C.accent:C.muted,fontWeight:700}}>{b.quantity||9} créatives</span>
+                    {' · '}{new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})}
+                  </div>
+                </div>
+                <span style={{padding:'3px 10px',borderRadius:20,fontSize:10,fontWeight:700,flexShrink:0,background:livre?'rgba(34,197,94,0.12)':'rgba(255,255,255,0.06)',color:livre?'#22C55E':C.sec,border:`1px solid ${livre?'rgba(34,197,94,0.3)':C.border}`}}>{livre?'Livrée':'Annulée'}</span>
+                {livre && prod && setSection && (
+                  <button onClick={()=>{ window.__galerieFocus = { productId: prod.id }; setSection('galerie'); }}
+                    style={{flexShrink:0,padding:'8px 13px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Voir les créatives</button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 
   if (!sorted.length) return (
     <div>
-      <div style={{marginBottom:20}}>
-        <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:4}}>
-          <div style={{width:40,height:40,borderRadius:10,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name="clock" size={18} color={C.accent}/>
-          </div>
-          <div>
-            <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
-            <p style={{fontSize:12,color:C.sec,margin:0}}>Suivez vos demandes de production en temps réel</p>
-          </div>
-        </div>
-      </div>
+      {enTete}
       <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',gap:14,textAlign:'center',border:`1px dashed ${C.border}`,borderRadius:12}}>
         <div style={{width:56,height:56,borderRadius:14,background:C.accentS,border:`1px solid rgba(45,127,249,0.2)`,display:'flex',alignItems:'center',justifyContent:'center'}}>
           <Icon name="clock" size={24} color={C.accent}/>
         </div>
         <div style={{fontSize:16,fontWeight:700,color:C.text}}>Aucune demande en cours</div>
-        <div style={{fontSize:12,color:C.sec,maxWidth:300}}>Vos demandes de créatives apparaîtront ici avec leur statut et le temps restant avant livraison.</div>
+        <div style={{fontSize:12,color:C.sec,maxWidth:300}}>Vos demandes de créatives apparaîtront ici avec leur étape et le temps restant avant livraison.</div>
       </div>
     </div>
   );
 
   return (
     <div>
-      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:20}}>
-        <div style={{width:40,height:40,borderRadius:10,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <Icon name="clock" size={18} color={C.accent}/>
-        </div>
-        <div>
-          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Suivi Demande</h1>
-          <p style={{fontSize:12,color:C.sec,margin:0}}>{sorted.length} demande(s) active(s)</p>
-        </div>
-      </div>
+      {enTete}
 
       <div style={{display:'flex',flexDirection:'column',gap:12}}>
         {sorted.map(b => {
@@ -2285,10 +2435,24 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
                     {' · '}{new Date(b.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
                   </div>
                 </div>
-                <span style={{padding:'3px 9px',borderRadius:20,fontSize:9.5,fontWeight:700,background:'rgba(255,255,255,0.06)',color:C.sec,flexShrink:0}}>
-                  {STATUS_LABELS[b.status]}
-                </span>
               </div>
+
+              {/* Étape en cours — une seule à la fois, illustrative (voir ETAPES_SUIVI) */}
+              {(() => {
+                const e = etapeSuivi(now - deliveryStart, DELIVERY_WIN);
+                const et = ETAPES_SUIVI[e];
+                return (
+                  <div key={e} data-testid="etape-suivi" style={{display:'flex',alignItems:'center',gap:11,marginBottom:20,position:'relative',animation:'etapeIn .5s ease'}}>
+                    <style>{`@keyframes etapeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}} @keyframes etapePulse{0%,100%{box-shadow:0 0 0 0 rgba(91,141,239,0.5)}50%{box-shadow:0 0 0 7px rgba(91,141,239,0)}}`}</style>
+                    <span style={{width:9,height:9,borderRadius:'50%',background:'#5B8DEF',flexShrink:0,animation:'etapePulse 1.8s ease-in-out infinite'}}/>
+                    <div style={{minWidth:0}}>
+                      <div style={{fontSize:13.5,fontWeight:700,color:C.text}}>{et.titre}</div>
+                      <div style={{fontSize:11.5,color:C.sec,marginTop:1}}>{et.detail}</div>
+                    </div>
+                    <span style={{marginLeft:'auto',fontSize:10,color:C.muted,fontFamily:"'DM Mono',monospace",flexShrink:0}}>{e+1}/{ETAPES_SUIVI.length}</span>
+                  </div>
+                );
+              })()}
 
               {/* Décompte — élément hero, aucune boîte autour, la typographie porte tout */}
               {(b.status==='pending' || b.status==='in_production') && deliveryRemaining > 0 && (
@@ -2367,7 +2531,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     if (subscription?.type === 'pack') {
       return (
         <button onClick={() => {
-          const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
+          const productId = checkoutIdFor('starter','monthly',subscription);
           if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
         }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
           <Icon name="plus" size={13} color="#fff"/> Continuez avec PERF+
@@ -2468,7 +2632,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
           {p.promo && <span style={{padding:'2px 8px',borderRadius:4,fontSize:10,fontWeight:700,letterSpacing:'0.4px',background:C.accentS,color:C.accent,border:'1px solid rgba(45,127,249,0.2)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:'100%'}} title={p.promo}>{p.promo}</span>}
         </div>
         <div style={{position:'absolute',bottom:7,left:7}}>
-          <span style={{fontSize:9,fontWeight:700,letterSpacing:'0.02em',padding:'3px 8px',borderRadius:99,background: hasActiveBrief ? 'rgba(91,141,239,0.16)' : 'rgba(255,255,255,0.09)', color: hasActiveBrief ? C.accent : C.muted, border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
+          <span style={{fontSize:11,fontWeight:700,letterSpacing:'0.02em',padding:'5px 11px',borderRadius:99,backdropFilter:'blur(6px)',background: hasActiveBrief ? 'rgba(20,34,66,0.82)' : 'rgba(10,12,17,0.72)', color: hasActiveBrief ? '#9DBBFF' : '#C9CDD6', border:`1px solid ${hasActiveBrief ? 'rgba(91,141,239,0.3)' : C.border}`}}>
             {hasActiveBrief ? 'En production' : 'Prêt à commander'}
           </span>
         </div>
@@ -3395,14 +3559,14 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       {/* ── Jauge créatives ── */}
       {subscription?.active ? (
-        <div style={{position:'relative',overflow:'hidden',marginBottom:18,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:16,padding:'22px 24px'}}>
+        <div style={{position:'relative',overflow:'hidden',marginBottom:18,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${C.border}`,borderRadius:14,padding:'14px 20px'}}>
           <div style={{position:'absolute',top:-50,right:-30,width:170,height:170,borderRadius:'50%',background:'radial-gradient(circle, rgba(45,127,249,0.16), transparent 70%)',pointerEvents:'none'}}/>
           <div style={{position:'relative',display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:16,flexWrap:'wrap'}}>
             <div style={{flex:1,minWidth:180}}>
-              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Créatives disponibles</div>
+              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:5}}>Créatives disponibles</div>
               <div style={{display:'flex',alignItems:'baseline',gap:8}}>
                 <span style={{
-                  fontFamily:"'DM Mono',monospace",fontSize:38,fontWeight:800,letterSpacing:'-0.5px',lineHeight:1,
+                  fontFamily:"'DM Mono',monospace",fontSize:26,fontWeight:800,letterSpacing:'-0.5px',lineHeight:1,
                   background: credits.available>0 ? 'linear-gradient(90deg, #ffffff 0%, #9fbcff 100%)' : 'none',
                   WebkitBackgroundClip: credits.available>0 ? 'text' : undefined,
                   WebkitTextFillColor: credits.available>0 ? 'transparent' : undefined,
@@ -3411,15 +3575,15 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 }}>{credits.available}</span>
                 <span style={{fontSize:12,color:C.muted}}>/ {credits.total} accumulées</span>
               </div>
-              <div style={{marginTop:14,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:280}}>
+              <div style={{marginTop:9,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:280}}>
                 <div style={{height:'100%',borderRadius:2,background:credits.available>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.12)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
               </div>
-              <div style={{fontSize:10.5,color:C.muted,marginTop:8}}>{credits.used} déjà utilisées</div>
+              <div style={{fontSize:10.5,color:C.muted,marginTop:6}}>{credits.used} déjà utilisées</div>
             </div>
             {credits.available === 0 && (
               subscription?.type === 'pack' ? (
                 <button onClick={() => {
-                  const productId = PLAN_CHECKOUT_IDS['starter-monthly'];
+                  const productId = checkoutIdFor('starter','monthly',subscription);
                   if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
                 }} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,color:'#fff',padding:'8px 14px',borderRadius:8,background:C.accent,border:'none',cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
                   <Icon name="plus" size={12} color="#fff"/> Continuez avec PERF+
@@ -3454,7 +3618,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
         <div>
           <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
-          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos créatives — livrées en 24h.</p>
+          <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos créatives — livrées en {delaiH()}h.</p>
         </div>
         {can('edit_products') && (<button onClick={openNew} style={{display:'flex',alignItems:'center',gap:7,padding:'10px 18px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
           <Icon name="plus" size={14} color="#fff"/> Ajouter un produit
@@ -3495,8 +3659,8 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
           </div>
           <div style={{position:'relative',fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>
             {subscription?.active
-              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes créatives juste après. Livraison sous 24h max.'
-              : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos créatives publicitaires, livrées sous 24h.'}
+              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes créatives juste après. Livraison sous ' + delaiH() + 'h max.'
+              : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos créatives publicitaires, livrées sous ' + delaiH() + 'h.'}
           </div>
           <button onClick={openNew} style={{position:'relative',marginTop:6,padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7,boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
             <Icon name="plus" size={14} color="#fff"/> {subscription?.active ? 'Ajouter mon produit' : 'Ajouter mon premier produit'}
@@ -3530,7 +3694,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 </div>
                 <div>
                   <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:0}}>Demande envoyée</h2>
-                  <p style={{fontSize:11,color:C.sec,marginTop:2}}>Livraison sous 24h</p>
+                  <p style={{fontSize:11,color:C.sec,marginTop:2}}>Livraison sous {delaiH()}h</p>
                 </div>
               </div>
               <button onClick={() => setBrief(null)} style={{width:30,height:30,borderRadius:8,border:'none',background:'rgba(255,255,255,0.10)',color:C.sec,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
@@ -3611,7 +3775,7 @@ async function shareOrDownloadImage(url, filename, isMobile) {
 // Version groupée — sur mobile, tente UN SEUL partage natif avec toutes les images sélectionnées
 // (le menu natif "Enregistrer dans Photos" les prend alors toutes en une fois), au lieu de
 // forcer des téléchargements de fichiers isolés dans le navigateur.
-async function shareOrDownloadMultiple(items, isMobile) {
+async function shareOrDownloadMultiple(items, isMobile, onProgress) {
   if (isMobile && navigator.share && navigator.canShare) {
     try {
       const files = await Promise.all(items.map(async (item) => {
@@ -3627,10 +3791,39 @@ async function shareOrDownloadMultiple(items, isMobile) {
   }
   // Retombe sur un partage/téléchargement image par image (natif si possible sur mobile,
   // téléchargement direct sur desktop)
+  let fait = 0;
   for (const item of items) {
     await shareOrDownloadImage(urlFichierCreative(item), nomFichierCreative(item), isMobile);
+    fait += 1; if (onProgress) onProgress(fait, items.length);
     await new Promise(r => setTimeout(r, 350));
   }
+}
+
+// ── Ordre de la galerie : chaque angle marketing donne 3 créatives (2 statiques + 1 vidéo). Elles
+// s'affichent côte à côte dans l'ordre statique · vidéo · statique, la vidéo au milieu. Les
+// vignettes restent toutes en 4:5.
+const ticketDeCreative = (c) => c.id
+  ? (c.id.match(/_g\d+_\d+$/) ? c.id.replace(/_g\d+_\d+$/, '') : c.id.replace(/_\d+$/, ''))
+  : '';
+// Retourne la liste à plat dans l'ordre voulu ; `completer[id]` = nombre de cases vides à ajouter
+// après la dernière créative d'un angle pour que l'angle suivant démarre sur une nouvelle ligne de 3.
+function ordonnerParAngle(liste) {
+  const groupes = new Map();
+  liste.forEach(c => {
+    const k = `${c.productId}|${ticketDeCreative(c)}|${c.angle}`;
+    if (!groupes.has(k)) groupes.set(k, []);
+    groupes.get(k).push(c);
+  });
+  const plat = []; const completer = {};
+  groupes.forEach(g => {
+    const vids = g.filter(estVideo), imgs = g.filter(c => !estVideo(c));
+    const milieu = Math.floor(imgs.length / 2);
+    const ordre = vids.length ? [...imgs.slice(0, milieu), ...vids, ...imgs.slice(milieu)] : g;
+    plat.push(...ordre);
+    const reste = ordre.length % 3;
+    if (reste) completer[ordre[ordre.length - 1].id] = 3 - reste;
+  });
+  return { plat, completer };
 }
 
 const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user}) => {
@@ -3674,6 +3867,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const [selected, setSelected] = useState(null);
   const [filtreFormat, setFiltreFormat] = useState('tous'); // 'tous' | 'video' | 'image'
   const [selectedProduct, setSelectedProduct] = useState(null);
+  // Arrivée depuis Suivi Demande (« Voir les créatives ») : on filtre directement sur le produit.
+  useEffect(() => { const f = window.__galerieFocus; if (f) { window.__galerieFocus = null; setSelectedProduct(f.productId); } }, []);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [bulkDownloading, setBulkDownloading] = useState(false);
@@ -3768,7 +3963,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const angleSet = [...new Set(creativesFiltreesSauf('angle').map(c => c.angle))];
   const batchLabelParKey = {};
   creativesFiltreesSauf('batch').forEach(c => {
-    if (c.week) batchLabelParKey[batchKey(c)] = `Batch ${c.week.replace(/^[SB]/,'')} · ${nomProduitParId[c.productId] || '?'}`;
+    if (c.week) batchLabelParKey[batchKey(c)] = `Lot ${c.week.replace(/^[SB]/,'')} · ${nomProduitParId[c.productId] || '?'}`;
   });
   const batchSet = Object.keys(batchLabelParKey)
     .sort((a,b) => batchLabelParKey[a].localeCompare(batchLabelParKey[b], undefined, {numeric:true}));
@@ -3791,7 +3986,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   // exactement comme avant (aucun contrôle en plus, aucun changement de mise en page).
   const aDesVideos = realCreatives.some(estVideo);
   const formatActif = aDesVideos ? filtreFormat : 'tous';
-  const filtered = realCreatives.filter(c => {
+  const filteredBrut = realCreatives.filter(c => {
     if (selectedProduct && c.productId !== selectedProduct) return false;
     if (formatActif==='video' && !estVideo(c)) return false;
     if (formatActif==='image' && estVideo(c)) return false;
@@ -3826,6 +4021,28 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     const rb = b.topPerformerRank ?? Infinity;
     return ra - rb;
   });
+
+  // Chaque angle reste groupé en 3 (statique · vidéo · statique) sauf en mode Top Performer (classement
+  // manuel) et quand on ne montre que les vidéos ou que les images (les groupes seraient incomplets).
+  const regroupe = filterMode !== 'topPerformer' && formatActif === 'tous';
+  const ordreAngles = regroupe ? ordonnerParAngle(filteredBrut) : { plat: filteredBrut, completer: {} };
+  const filtered = ordreAngles.plat;
+  const filteredRef = useRef(filtered); filteredRef.current = filtered;
+  // Visionneuse : flèches du clavier, Échap, et préchargement des deux voisines.
+  useEffect(() => {
+    if (!selected) return;
+    const aller = (d) => { const l = filteredRef.current; const i = l.findIndex(x => x.id === selected.id); if (i >= 0 && l[i + d]) setSelected(l[i + d]); };
+    const h = (e) => {
+      if (e.key === 'Escape') setSelected(null);
+      else if (e.key === 'ArrowRight') aller(1);
+      else if (e.key === 'ArrowLeft') aller(-1);
+    };
+    window.addEventListener('keydown', h);
+    const l = filteredRef.current; const i = l.findIndex(x => x.id === selected.id);
+    [l[i-1], l[i+1]].forEach(n => { if (n && !estVideo(n) && (n.imageUrl || n.thumbUrl)) { const im = new Image(); im.src = n.imageUrl || n.thumbUrl; } });
+    return () => window.removeEventListener('keydown', h);
+  }, [selected && selected.id]);
+  const [progressionDl, setProgressionDl] = useState(null);
 
   const chips = filterMode==='topPerformer' ? cibleSet : []; // mode normal : les 3 groupes (cibleSet/batchSet/angleSet) s'affichent directement, plus besoin de ce sélecteur unique
 
@@ -4035,7 +4252,9 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                   setBulkDownloading(true);
                   const items = filtered.filter(c => selectedIds.includes(c.id));
                   const nb = items.length;
-                  await shareOrDownloadMultiple(items, isMobile);
+                  setProgressionDl({ fait: 0, total: nb });
+                  await shareOrDownloadMultiple(items, isMobile, (fait, total) => setProgressionDl({ fait, total }));
+                  setProgressionDl(null);
                   setBulkDownloading(false);
                   // Retour visible demandé : sans ça, aucun moyen de savoir si le téléchargement
                   // a réellement fonctionné. Désélection automatique aussi — l'action est faite,
@@ -4045,7 +4264,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                   setSelectMode(false);
                 }}
                 style={{flex:isMobile?1:'none',display:'flex',alignItems:'center',justifyContent:'center',gap:6,padding:'8px 14px',borderRadius:7,border:'none',background:selectedIds.length?C.accent:'rgba(255,255,255,0.08)',color:selectedIds.length?'#fff':C.muted,fontSize:11.5,fontWeight:700,cursor:selectedIds.length?'pointer':'default',fontFamily:'inherit',whiteSpace:'nowrap'}}>
-                <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? '…' : `Télécharger (${selectedIds.length})`}
+                <Icon name="download" size={13} color={selectedIds.length?'#fff':C.muted}/> {bulkDownloading ? (progressionDl ? `${progressionDl.fait} / ${progressionDl.total} téléchargées` : '…') : `Télécharger (${selectedIds.length})`}
               </button>)}
               {can('delete') && (<button disabled={!selectedIds.length || deleting}
                 onClick={() => setDeleteConfirm(true)}
@@ -4063,7 +4282,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         </div>
         <input
           value={query} onChange={e=>setQuery(e.target.value)}
-          placeholder="Rechercher par produit, angle, batch..."
+          placeholder="Rechercher par produit, angle, lot..."
           style={{width:'100%',padding:'11px 14px 11px 38px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:12,fontFamily:'inherit',outline:'none',transition:'border-color 0.15s'}}
           onFocus={e=>e.target.style.borderColor=C.borderM}
           onBlur={e=>e.target.style.borderColor=C.border}
@@ -4081,7 +4300,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         ))}
         {filterMode==='tous' && [
           ['Cible', 'cible', cibleSet.length, filtreCibles.size],
-          ['Batch', 'batch', batchSet.length, filtreBatches.size],
+          ['Lot', 'batch', batchSet.length, filtreBatches.size],
           ['Angle', 'angle', angleSet.length, filtreAngles.size],
           ['Date', 'date', 1, (dateDebut||dateFin) ? 1 : 0],
         ].filter(([,,nbOptions]) => nbOptions > 0).map(([label, id, , nbActifs]) => (
@@ -4200,14 +4419,15 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         </div>
       )}
 
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(110px,1fr))',gap:4}}>
+      <div style={{display:'grid',gridTemplateColumns:`repeat(${isMobile?3:6},1fr)`,gap:isMobile?4:6}} data-testid="grille-galerie">
         {filtered.map((c, i) => {
           const isTpMode = filterMode==='topPerformer';
           const isSelectedForSwap = selectedForSwap === c.id;
           const isJustRanked = justRanked.includes(c.id);
 
           return (
-          <div key={c.id} className="gallery-item"
+          <Fragment key={c.id}>
+          <div className="gallery-item"
             onClick={() => {
               if (isTpMode) { handleTapSwap(c.id); return; }
               if (selectMode) setSelectedIds(ids => ids.includes(c.id) ? ids.filter(i=>i!==c.id) : [...ids, c.id]);
@@ -4267,9 +4487,11 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
             )}
             <div className="gallery-overlay" style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))',zIndex:2}}>
               <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingLeft:estVideo(c)?26:0}}>{c.angle}</div>
-              <div style={{fontSize:8,color:'rgba(255,255,255,0.6)',paddingLeft:estVideo(c)?26:0}}>{estVideo(c)?'Vidéo · ':''}Batch {c.week.replace(/^[SB]/,'')}</div>
+              <div style={{fontSize:8,color:'rgba(255,255,255,0.6)',paddingLeft:estVideo(c)?26:0}}>{estVideo(c)?'Vidéo · ':''}Lot {c.week.replace(/^[SB]/,'')}</div>
             </div>
           </div>
+          {Array.from({length: ordreAngles.completer[c.id] || 0}).map((_, k) => <div key={'vide'+k} aria-hidden="true" style={{aspectRatio:'4/5'}}/>)}
+          </Fragment>
           );
         })}
       </div>
@@ -4297,50 +4519,71 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
 
 
 
-      {selected && (
-        <div onClick={() => setSelected(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.85)',zIndex:600,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
-          <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:estVideo(selected)?'min(340px, calc((100vh - 230px) * 9 / 16))':320,borderRadius:14,overflow:'hidden',background:C.card,border:`1px solid ${C.borderM}`}}>
-            {estVideo(selected)
-              ? <LecteurVideo c={selected}/>
-              : <div style={{aspectRatio:'4/5',background:selected.imageUrl?`url(${selected.imageUrl}) center/cover no-repeat`:`linear-gradient(160deg,${selected.g1||'#333'},${selected.g2||'#111'})`}}/>}
-            <div style={{padding:'14px 16px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-              <div>
-                <div style={{fontSize:13,fontWeight:700,color:C.text}}>{selected.angle}</div>
-                <div style={{fontSize:11,color:C.sec}}>Batch {selected.week.replace(/^[SB]/,'')}</div>
-                {selected.cible && <div style={{fontSize:10.5,color:C.muted,marginTop:2}}>{selected.cible}</div>}
-              </div>
-              <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected), isMobile)}
-                style={{width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.07)',color:C.text,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <Icon name="download" size={15}/>
-              </button>
-            </div>
-            {(() => {
-              const ageMs = Date.now() - dateCreative(selected);
-              const eligible = dateCreative(selected) === 0 || ageMs >= 7*24*60*60*1000;
-              const joursRestants = eligible ? 0 : Math.ceil((7*24*60*60*1000 - ageMs) / (24*60*60*1000));
-              return (
-                <div style={{padding:'0 16px 14px'}}>
-                  <button onClick={() => eligible && toggleTopPerformer(selected)} disabled={!eligible || togglingTopPerformer}
-                    style={{width:'100%',padding:'10px',borderRadius:8,border:`1px solid ${selected.topPerformer?'rgba(255,193,7,0.4)':C.border}`,background:selected.topPerformer?'rgba(255,193,7,0.12)':'rgba(255,255,255,0.05)',color:!eligible?C.muted:(selected.topPerformer?'#FFC107':C.sec),cursor:!eligible?'default':(togglingTopPerformer?'default':'pointer'),fontSize:12,fontWeight:700,fontFamily:'inherit',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:3,opacity:!eligible?0.55:(togglingTopPerformer?0.6:1),transition:'all 0.15s'}}>
-                    <span style={{display:'flex',alignItems:'center',gap:7}}>
-                      <Icon name="star" size={13} color={!eligible?C.muted:(selected.topPerformer?'#FFC107':C.sec)}/>
-                      {selected.topPerformer ? 'Marquée Top Performer' : 'Marquer comme Top Performer'}
-                    </span>
-                    {!eligible && (
-                      <span style={{fontSize:9.5,fontWeight:500,color:C.muted}}>
-                        Revenez dans {joursRestants} jour{joursRestants>1?'s':''} si elle a bien performé
-                      </span>
-                    )}
-                  </button>
-                </div>
-              );
-            })()}
+      {selected && (() => {
+        const idx = filtered.findIndex(x => x.id === selected.id);
+        const total = filtered.length;
+        const aller = (d) => { if (idx >= 0 && filtered[idx + d]) setSelected(filtered[idx + d]); };
+        const video = estVideo(selected);
+        const ratio = video ? 9 / 16 : 4 / 5;
+        const ageMs = Date.now() - dateCreative(selected);
+        const eligible = dateCreative(selected) === 0 || ageMs >= 7*24*60*60*1000;
+        const joursRestants = eligible ? 0 : Math.ceil((7*24*60*60*1000 - ageMs) / (24*60*60*1000));
+        const flecheStyle = (actif, cote) => ({position:'absolute',[cote]:24,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:'50%',border:`1px solid rgba(255,255,255,${actif?0.22:0.08})`,background:'rgba(255,255,255,0.07)',backdropFilter:'blur(8px)',color:'#fff',cursor:actif?'pointer':'default',opacity:actif?1:0.3,display:isMobile?'none':'flex',alignItems:'center',justifyContent:'center'});
+        const btnAction = {height:42,padding:'0 14px',borderRadius:11,border:'1px solid rgba(255,255,255,0.16)',background:'rgba(255,255,255,0.07)',color:'#fff',fontSize:12.5,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:7,fontFamily:'inherit'};
+        let x0 = null;
+        return (
+        <div data-testid="visionneuse" onClick={() => setSelected(null)}
+          onTouchStart={e => { x0 = e.touches[0].clientX; }}
+          onTouchEnd={e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) aller(dx < 0 ? 1 : -1); }}
+          style={{position:'fixed',inset:0,zIndex:100000,background:'radial-gradient(ellipse at 50% 30%, rgba(30,38,60,0.97), rgba(4,5,8,0.99) 70%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:isMobile?'64px 12px 16px':'28px 90px',overflow:'hidden'}}>
+          <div style={{position:'absolute',top:isMobile?14:22,left:isMobile?14:28,display:'flex',alignItems:'center',gap:10}} onClick={e=>e.stopPropagation()}>
+            <span style={{fontSize:12,fontWeight:700,color:'#fff',padding:'6px 12px',borderRadius:20,background:'rgba(255,255,255,0.09)',border:'1px solid rgba(255,255,255,0.12)',fontFamily:"'DM Mono',monospace"}}>{idx >= 0 ? idx + 1 : '–'} / {total}</span>
           </div>
-          <button onClick={() => setSelected(null)} style={{position:'absolute',top:24,right:24,width:38,height:38,borderRadius:'50%',border:'none',background:'rgba(255,255,255,0.1)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <button onClick={() => setSelected(null)} aria-label="Fermer" style={{position:'absolute',top:isMobile?10:18,right:isMobile?12:24,width:42,height:42,borderRadius:'50%',border:'1px solid rgba(255,255,255,0.14)',background:'rgba(255,255,255,0.08)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
             <Icon name="x" size={16} color="#fff"/>
           </button>
+          <button onClick={e => { e.stopPropagation(); aller(-1); }} aria-label="Précédente" disabled={idx <= 0} style={flecheStyle(idx > 0, 'left')}><span style={{fontSize:22,lineHeight:1,transform:'translateX(-1px)'}}>‹</span></button>
+          <button onClick={e => { e.stopPropagation(); aller(1); }} aria-label="Suivante" disabled={idx < 0 || idx >= total - 1} style={flecheStyle(idx >= 0 && idx < total - 1, 'right')}><span style={{fontSize:22,lineHeight:1,transform:'translateX(1px)'}}>›</span></button>
+
+          <div onClick={e => e.stopPropagation()} style={{width:`min(100%, calc((100vh - ${isMobile?250:210}px) * ${ratio}))`,borderRadius:18,overflow:'hidden',background:'#0B0D12',boxShadow:'0 30px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08)'}}>
+            {video
+              ? <LecteurVideo c={selected}/>
+              : <div key={selected.id} style={{aspectRatio:'4/5',position:'relative',background:`linear-gradient(160deg,${selected.g1||'#222'},${selected.g2||'#0B0D12'})`}}>
+                  {(selected.imageUrl || selected.thumbUrl) && <ImageGalerie src={selected.imageUrl || selected.thumbUrl} alt={selected.angle} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
+                </div>}
+          </div>
+
+          <div onClick={e => e.stopPropagation()} style={{width:`min(100%, max(320px, calc((100vh - ${isMobile?250:210}px) * ${ratio})))`,marginTop:14,display:'flex',flexDirection:'column',gap:10}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:12}}>
+              <div style={{minWidth:0}}>
+                <div style={{fontSize:16,fontWeight:800,color:'#fff',letterSpacing:-0.2}}>{selected.angle}</div>
+                <div style={{fontSize:11.5,color:'rgba(255,255,255,0.6)',marginTop:2}}>{video ? 'Vidéo' : 'Image'} · Lot {selected.week.replace(/^[SB]/,'')}{nomProduitParId[selected.productId] ? ` · ${nomProduitParId[selected.productId]}` : ''}</div>
+                {selected.cible && <div style={{fontSize:11,color:'rgba(255,255,255,0.42)',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selected.cible}</div>}
+              </div>
+              <div style={{display:'flex',gap:8,flexShrink:0}}>
+                {can('download') && (
+                  <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected), isMobile)} style={btnAction} aria-label="Télécharger">
+                    <Icon name="download" size={15} color="#fff"/>{!isMobile && 'Télécharger'}
+                  </button>
+                )}
+                <button onClick={() => eligible && toggleTopPerformer(selected)} disabled={!eligible || togglingTopPerformer}
+                  style={{...btnAction,borderColor:selected.topPerformer?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:selected.topPerformer?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:selected.topPerformer?'#FFC107':'#fff',opacity:eligible?1:0.55,cursor:eligible?'pointer':'default'}}
+                  aria-label="Top Performer">
+                  <Icon name="star" size={15} color={selected.topPerformer?'#FFC107':'#fff'}/>{!isMobile && (selected.topPerformer ? 'Top Performer' : 'Top Performer')}
+                </button>
+              </div>
+            </div>
+            {!eligible && <div style={{fontSize:10.5,color:'rgba(255,255,255,0.45)'}}>Top Performer : revenez dans {joursRestants} jour{joursRestants>1?'s':''} si elle a bien performé.</div>}
+            {accesGrowth() && (
+              <button onClick={() => { window.__copiesFocus = { productId: selected.productId, angle: selected.angle, week: selected.week, ticket: ticketDeCreative(selected) }; setSelected(null); setSection && setSection('copies'); }}
+                style={{...btnAction,width:'100%',justifyContent:'center',height:40,background:'rgba(91,141,239,0.14)',borderColor:'rgba(91,141,239,0.4)'}}>
+                <Icon name="file" size={14} color="#9DBBFF"/> Voir le texte de cet angle
+              </button>
+            )}
+          </div>
         </div>
-      )}
+        );
+      })()}
       {deleteConfirm && (
         <ConfirmModal
           title="Supprimer ces créatives ?"
@@ -4409,6 +4652,104 @@ function getAngleGagnantActuel(product, cible) {
   return entries[0][0];
 }
 
+// ── Carte d'un angle dans Ad Copies : aperçu de la pub + les 5 titres + le texte principal.
+// Meta n'a que deux champs à remplir côté texte : « Titre » et « Texte principal ». Chaque angle a 5 titres
+// et 1 texte, et 3 visuels (statique · vidéo · statique) qui s'affichent dans l'aperçu.
+const CarteAngleCopies = ({ angle, delivery, produit, estGagnant, repriseDe, copied, copy, dejaCopie, isMobile, refEl, numero }) => {
+  const [iTitre, setITitre] = useState(0);
+  const [iVisuel, setIVisuel] = useState(0);
+  const [texteOuvert, setTexteOuvert] = useState(false);
+  const visuels = useMemo(() => {
+    const doAngle = (produit.creatives || []).filter(c => c.angle === angle.nom && ticketDeCreative(c) === (delivery.ticketId || ticketDeCreative(c)));
+    return ordonnerParAngle(doAngle).plat.slice(0, 3);
+  }, [produit.creatives, angle.nom, delivery.ticketId]);
+  const titres = angle.hooks || [];
+  const titre = titres[iTitre] || titres[0] || '';
+  const visuel = visuels[iVisuel] || visuels[0] || null;
+  const affiche = visuel ? (visuel.thumbUrl || visuel.imageUrl) : (produit.photo || null);
+  const cleTitre = (i) => `h-${delivery.semaine}-${angle.numero}-${i}`;
+  const cleTexte = `body-${delivery.semaine}-${angle.numero}`;
+  const bouton = (actif) => ({flexShrink:0,height:30,padding:'0 10px',borderRadius:8,border:`1px solid ${actif?'rgba(91,141,239,0.5)':C.border}`,background:actif?C.accentS:'rgba(255,255,255,0.05)',color:actif?C.accent:C.sec,display:'flex',alignItems:'center',gap:5,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'});
+  return (
+    <div ref={refEl} data-testid="carte-angle" style={{position:'relative',overflow:'hidden',scrollMarginTop:70,background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',border:`1px solid ${estGagnant?'rgba(234,179,8,0.35)':C.border}`,borderRadius:18,padding:isMobile?'18px 16px':'24px'}}>
+      <div style={{position:'absolute',top:-18,right:10,fontSize:96,fontWeight:900,color:'rgba(255,255,255,0.025)',lineHeight:1,fontFamily:"'DM Mono',monospace",pointerEvents:'none'}}>{String(angle.numero).padStart(2,'0')}</div>
+      <div style={{position:'relative'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
+          <div style={{fontSize:9.5,color:C.accent,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase'}}>Angle {angle.numero}</div>
+          {estGagnant && <span className="tp-badge">⚡ Angle Top Performer actuel</span>}
+          {repriseDe && <span style={{fontSize:9.5,color:C.muted,fontWeight:600}}>🏆 Repris depuis le lot {repriseDe}</span>}
+        </div>
+        <div style={{fontSize:17,fontWeight:800,color:C.text,marginBottom:20}}>{angle.nom}</div>
+
+        <div style={{display:'grid',gridTemplateColumns:isMobile?'minmax(0,1fr)':'minmax(0,330px) minmax(0,1fr)',gap:isMobile?22:30,alignItems:'start'}}>
+          {/* Aperçu de la pub */}
+          <div>
+            <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:8}}>Aperçu de votre pub</div>
+            <div style={{borderRadius:14,overflow:'hidden',background:'#1C1D21',border:'1px solid rgba(255,255,255,0.08)',boxShadow:'0 14px 40px rgba(0,0,0,0.35)'}} data-testid="apercu-pub">
+              <div style={{display:'flex',alignItems:'center',gap:9,padding:'11px 12px 8px'}}>
+                <div style={{width:34,height:34,borderRadius:'50%',background:produit.photo?`url(${produit.photo}) center/cover`:'linear-gradient(135deg,#5B8DEF,#1FB6FF)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>{!produit.photo && (produit.nom||'?').slice(0,1).toUpperCase()}</div>
+                <div style={{minWidth:0}}>
+                  <div style={{fontSize:12.5,fontWeight:700,color:'#E4E6EB',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{produit.nom}</div>
+                  <div style={{fontSize:10.5,color:'#9A9DA3'}}>Sponsorisé</div>
+                </div>
+              </div>
+              <div style={{padding:'0 12px 9px',fontSize:12,color:'#E4E6EB',lineHeight:1.45,whiteSpace:'pre-wrap',...(texteOuvert?{}:{display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'})}}>{angle.description}</div>
+              {!texteOuvert && <button onClick={()=>setTexteOuvert(true)} style={{background:'none',border:'none',color:'#8FB4FF',fontSize:11.5,fontWeight:600,padding:'0 12px 9px',cursor:'pointer',fontFamily:'inherit'}}>… Voir plus</button>}
+              <div style={{position:'relative',aspectRatio:'4/5',background:affiche?`#101114 url(${affiche}) center/cover no-repeat`:'linear-gradient(160deg,#1c2030,#101114)'}}>
+                {visuel && estVideo(visuel) && (
+                  <div style={{position:'absolute',left:'50%',top:'50%',transform:'translate(-50%,-50%)',width:48,height:48,borderRadius:'50%',background:'rgba(0,0,0,0.5)',border:'1px solid rgba(255,255,255,0.4)',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="play" size={18} color="#fff"/></div>
+                )}
+              </div>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px',background:'#25272C'}}>
+                <div style={{minWidth:0,fontSize:12.5,fontWeight:700,color:'#E4E6EB',lineHeight:1.3,display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden'}} data-testid="apercu-titre">{titre}</div>
+                <div style={{flexShrink:0,padding:'7px 12px',borderRadius:7,background:'#3A3B40',color:'#E4E6EB',fontSize:11.5,fontWeight:700}}>En savoir plus</div>
+              </div>
+            </div>
+            {visuels.length > 0 && (
+              <div style={{display:'flex',gap:8,marginTop:10}} data-testid="visuels-angle">
+                {visuels.map((v, i) => (
+                  <button key={v.id} onClick={()=>setIVisuel(i)} aria-label={estVideo(v)?'Voir la vidéo dans l’aperçu':'Voir l’image dans l’aperçu'}
+                    style={{position:'relative',flex:1,aspectRatio:'4/5',borderRadius:9,overflow:'hidden',padding:0,cursor:'pointer',border:`2px solid ${i===iVisuel?C.accent:'transparent'}`,background:'#14161D',opacity:i===iVisuel?1:0.7}}>
+                    {(v.thumbUrl || v.imageUrl) && <img src={v.thumbUrl || v.imageUrl} alt="" draggable={false} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
+                    {estVideo(v) && <div style={{position:'absolute',left:5,bottom:5,width:18,height:18,borderRadius:'50%',background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="play" size={8} color="#fff"/></div>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Les deux champs Meta */}
+          <div style={{minWidth:0}}>
+            <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:4}}>Titre · {titres.length} propositions</div>
+            <div style={{fontSize:11,color:C.muted,marginBottom:6}}>Touchez un titre pour le voir dans l'aperçu.</div>
+            {titres.map((t, i) => (
+              <div key={i} onClick={()=>setITitre(i)} data-testid="titre-option"
+                style={{display:'flex',alignItems:'center',gap:10,padding:'10px 10px',margin:'0 -10px',borderRadius:10,cursor:'pointer',background:i===iTitre?'rgba(91,141,239,0.10)':'transparent',borderBottom:i<titres.length-1?'1px solid rgba(255,255,255,0.05)':'none'}}>
+                <span style={{fontSize:10,color:i===iTitre?C.accent:C.muted,fontFamily:"'DM Mono',monospace",flexShrink:0,width:14}}>{i+1}</span>
+                <span style={{flex:1,fontSize:12.5,color:C.text,lineHeight:1.5}}>{t}</span>
+                {dejaCopie.has(cleTitre(i)) && copied!==cleTitre(i) && <span title="Déjà copié" style={{fontSize:9.5,color:C.muted,flexShrink:0}}>déjà copié</span>}
+                <button onClick={e=>{e.stopPropagation(); copy(t, cleTitre(i));}} style={bouton(copied===cleTitre(i))} aria-label="Copier ce titre">
+                  <Icon name={copied===cleTitre(i)?'check':'document'} size={12}/>{copied===cleTitre(i)?'Copié':'Copier'}
+                </button>
+              </div>
+            ))}
+
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',margin:'22px 0 10px'}}>
+              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>Texte principal</div>
+              <button onClick={()=>copy(angle.description, cleTexte)} style={bouton(copied===cleTexte)} aria-label="Copier le texte principal">
+                {copied===cleTexte ? <><Icon name="check" size={12}/> Copié</> : <><Icon name="document" size={12}/> Copier le texte</>}
+              </button>
+            </div>
+            <div style={{borderLeft:`2px solid ${C.accent}`,paddingLeft:14}}>
+              <pre style={{fontSize:12.5,color:C.sec,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.description}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const Copies = ({products, setSection}) => {
   const isMobile = useIsMobile();
   const [query, setQuery] = useState('');
@@ -4422,9 +4763,24 @@ const Copies = ({products, setSection}) => {
   const [batchFilterCopies, setBatchFilterCopies] = useState(null);
   const [angleQuery, setAngleQuery] = useState('');
 
+  // Mémoire locale (cet appareil) de ce qui a déjà été copié, pour s'y retrouver quand on monte plusieurs pubs.
+  const [dejaCopie, setDejaCopie] = useState(() => { try { return new Set(JSON.parse(localStorage.getItem('adstack_copies_faites') || '[]')); } catch(e) { return new Set(); } });
   const copy = (text, id) => {
-    navigator.clipboard?.writeText(text).then(() => { setCopied(id); setTimeout(() => setCopied(null), 2200); });
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(id); setTimeout(() => setCopied(null), 2200);
+      setDejaCopie(prev => { const n = new Set(prev); n.add(id); try { localStorage.setItem('adstack_copies_faites', JSON.stringify([...n].slice(-400))); } catch(e) {} return n; });
+    });
   };
+  // Arrivée depuis la visionneuse de la galerie (« Voir le texte de cet angle ») : on ouvre le bon produit, le bon lot, et on descend à l'angle.
+  useEffect(() => {
+    const f = window.__copiesFocus; if (!f) return;
+    window.__copiesFocus = null;
+    const prod = products.find(p => p.id === f.productId); if (!prod) return;
+    const liv = (prod.deliveries || []).find(d => (f.ticket && d.ticketId === f.ticket) || d.semaine === f.week);
+    const ang = liv && liv.angles.find(a => a.nom === f.angle);
+    setSelected(prod); if (liv) setBatchFilterCopies(liv.semaine);
+    if (liv && ang) setTimeout(() => angleRefs.current[`${liv.semaine}-${ang.numero}`]?.scrollIntoView({behavior:'smooth', block:'start'}), 450);
+  }, []);
 
   const allAngles = selected
     ? (selected.deliveries || []).flatMap(d => d.angles.map(a => ({...a, semaine:d.semaine, date:d.date, cible:d.cible, idUnique:`${d.semaine}-${a.numero}`})))
@@ -4460,7 +4816,7 @@ const Copies = ({products, setSection}) => {
       `}</style>
       <div style={{marginBottom:18}}>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Ad Copies</h1>
-        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Hooks et textes classés par angle · Copiez directement dans Meta Ads Manager</p>
+        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Titres et textes classés par angle · Copiez directement dans Meta Ads Manager</p>
       </div>
 
       {!selected ? (
@@ -4572,7 +4928,7 @@ const Copies = ({products, setSection}) => {
                   <div style={{position:'absolute',left:11,top:0,bottom:0,display:'flex',alignItems:'center',color:C.sec,pointerEvents:'none'}}>
                     <Icon name="search" size={13}/>
                   </div>
-                  <input value={angleQuery} onChange={e=>setAngleQuery(e.target.value)} placeholder="Rechercher un angle, un hook..."
+                  <input value={angleQuery} onChange={e=>setAngleQuery(e.target.value)} placeholder="Rechercher un angle, un titre..."
                     style={{width:'100%',padding:'8px 12px 8px 32px',borderRadius:8,background:C.card,border:`1px solid ${C.border}`,color:C.text,fontSize:11.5,fontFamily:'inherit',outline:'none'}}/>
                 </div>
               </div>
@@ -4593,13 +4949,13 @@ const Copies = ({products, setSection}) => {
                 )}
                 {batchSetCopies.length > 1 && (
                   <div style={{marginBottom:8}}>
-                    <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Batch</div>
+                    <div style={{fontSize:9,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:.6,marginBottom:6}}>Lot</div>
                     <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                       <button onClick={()=>setBatchFilterCopies(null)} style={{padding:'6px 13px',borderRadius:20,border:`1px solid ${!batchFilterCopies?C.accent:C.border}`,background:!batchFilterCopies?'rgba(91,141,239,0.1)':'transparent',color:!batchFilterCopies?C.text:C.sec,fontSize:11.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Tous</button>
                       {batchSetCopies.map(s => (
                         <button key={s} onClick={()=>setBatchFilterCopies(batchFilterCopies===s?null:s)}
                           style={{padding:'6px 13px',borderRadius:20,border:`1px solid ${batchFilterCopies===s?C.accent:C.border}`,background:batchFilterCopies===s?'rgba(91,141,239,0.1)':'transparent',color:batchFilterCopies===s?C.text:C.sec,fontSize:11.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-                          Batch {s.replace(/^[SB]/,'')}
+                          Lot {s.replace(/^[SB]/,'')}
                         </button>
                       ))}
                     </div>
@@ -4623,7 +4979,7 @@ const Copies = ({products, setSection}) => {
                     </div>
                   </div>
                 ) : (
-                  <div style={{fontSize:11,color:C.muted,fontStyle:'italic'}}>Choisis un batch ci-dessus pour voir ses angles</div>
+                  <div style={{fontSize:11,color:C.muted,fontStyle:'italic'}}>Choisis un lot ci-dessus pour voir ses angles</div>
                 )}
               </div>
 
@@ -4648,7 +5004,7 @@ const Copies = ({products, setSection}) => {
                     <div style={{height:1,flex:1,background:C.border}}/>
                     <div style={{display:'flex',alignItems:'center',gap:7,padding:'4px 12px',borderRadius:20,background:'rgba(255,255,255,0.07)',border:`1px solid ${C.border}`,flexShrink:0,maxWidth:'80%'}}>
                       <Icon name="clock" size={11} color={C.sec}/>
-                      <span style={{fontSize:11,color:C.sec,fontWeight:600,whiteSpace:'nowrap'}}>Batch {delivery.semaine.replace(/^[SB]/,'')} · {delivery.date}</span>
+                      <span style={{fontSize:11,color:C.sec,fontWeight:600,whiteSpace:'nowrap'}}>Lot {delivery.semaine.replace(/^[SB]/,'')} · {delivery.date}</span>
                       {delivery.cible && (
                         <>
                           <span style={{color:C.border}}>·</span>
@@ -4661,68 +5017,16 @@ const Copies = ({products, setSection}) => {
                   </div>
 
                   <div style={{display:'flex',flexDirection:'column',gap:16}}>
-                    {anglesVisibles.map(angle => (
-                      <div key={`${delivery.semaine}-${angle.numero}`} ref={el=>{angleRefs.current[`${delivery.semaine}-${angle.numero}`]=el;}} style={{
-                        position:'relative', overflow:'hidden', scrollMarginTop:16,
-                        background:'linear-gradient(160deg, #12151f 0%, #0d0f16 100%)',
-                        border:`1px solid ${C.border}`, borderRadius:16, padding:'24px 24px 22px',
-                      }}>
-                        {/* Numéro d'angle géant en filigrane — remplace le badge carré */}
-                        <div style={{position:'absolute',top:-18,right:10,fontSize:96,fontWeight:900,color:'rgba(255,255,255,0.025)',lineHeight:1,fontFamily:"'DM Mono',monospace",pointerEvents:'none'}}>
-                          {String(angle.numero).padStart(2,'0')}
-                        </div>
-
-                        <div style={{position:'relative'}}>
-                          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6,flexWrap:'wrap'}}>
-                            <div style={{fontSize:9.5,color:C.accent,fontWeight:700,letterSpacing:'1.5px',textTransform:'uppercase'}}>Angle {angle.numero}</div>
-                            {angle.nom===angleGagnantParCible[cibleSig(delivery)] && (
-                              <span className="tp-badge">⚡ Angle Top Performer actuel</span>
-                            )}
-                            {(() => {
-                              // Filet visuel — rend la filiation explicite même si, pour une
-                              // raison quelconque, la reconnaissance automatique par nom échouait
-                              // un jour (dérive de formulation par exemple, comme déjà vu pour le
-                              // persona). Affiché seulement sur une VRAIE reprise, jamais sur le
-                              // batch d'origine lui-même.
-                              if (angle.nom !== angleGagnantParCible[cibleSig(delivery)]) return null;
-                              const batchOrigine = getBatchOrigineAngle(selected, cibleSig(delivery), angle.nom);
-                              if (!batchOrigine || batchOrigine === delivery.semaine) return null;
-                              return <span style={{fontSize:9.5,color:C.muted,fontWeight:600}}>🏆 Repris depuis {batchOrigine.replace(/^[SB]/,'B')}</span>;
-                            })()}
-                          </div>
-                          <div style={{fontSize:16.5,fontWeight:800,color:C.text,marginBottom:22}}>{angle.nom}</div>
-
-                          {/* Hooks — liste divisée par de fines lignes, plus une boîte par hook */}
-                          <div style={{marginBottom:24}}>
-                            <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:4}}>5 Hooks</div>
-                            {angle.hooks.map((hook,i) => (
-                              <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 0',borderBottom:i<angle.hooks.length-1?'1px solid rgba(255,255,255,0.05)':'none'}}>
-                                <span style={{fontSize:10,color:C.muted,fontFamily:"'DM Mono',monospace",flexShrink:0,width:14}}>{i+1}</span>
-                                <span style={{flex:1,fontSize:12.5,color:C.text,lineHeight:1.5}}>{hook}</span>
-                                <button onClick={()=>copy(hook,`h-${angle.numero}-${i}`)} title="Copier"
-                                  style={{flexShrink:0,width:26,height:26,borderRadius:6,border:'none',background:copied===`h-${angle.numero}-${i}`?C.accentS:'transparent',color:copied===`h-${angle.numero}-${i}`?C.accent:C.muted,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',transition:'all 0.15s'}}>
-                                  <Icon name={copied===`h-${angle.numero}-${i}`?'check':'document'} size={12}/>
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Texte — citation à bordure latérale, plus un encart fermé */}
-                          <div>
-                            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-                              <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase'}}>Texte</div>
-                              <button onClick={()=>copy(angle.description,`body-${angle.numero}`)}
-                                style={{padding:'4px 11px',borderRadius:6,display:'flex',alignItems:'center',gap:5,background:copied===`body-${angle.numero}`?C.accentS:'rgba(255,255,255,0.05)',border:`1px solid ${copied===`body-${angle.numero}`?'rgba(45,127,249,0.3)':C.border}`,color:copied===`body-${angle.numero}`?C.accent:C.sec,fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'inherit',transition:'all 0.2s'}}>
-                                {copied===`body-${angle.numero}` ? <><Icon name="check" size={11}/> Copié</> : 'Copier tout'}
-                              </button>
-                            </div>
-                            <div style={{borderLeft:`2px solid ${C.accent}`,paddingLeft:14}}>
-                              <pre style={{fontSize:12.5,color:C.sec,lineHeight:1.7,whiteSpace:'pre-wrap',fontFamily:'inherit',margin:0}}>{angle.description}</pre>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                    {[...anglesVisibles].sort((a, b) => (b.nom===angleGagnantParCible[cibleSig(delivery)]) - (a.nom===angleGagnantParCible[cibleSig(delivery)])).map(angle => {
+                      const estGagnant = angle.nom===angleGagnantParCible[cibleSig(delivery)];
+                      const origine = estGagnant ? getBatchOrigineAngle(selected, cibleSig(delivery), angle.nom) : null;
+                      return (
+                        <CarteAngleCopies key={`${delivery.semaine}-${angle.numero}`} angle={angle} delivery={delivery} produit={selected}
+                          estGagnant={estGagnant} repriseDe={origine && origine !== delivery.semaine ? origine.replace(/^[SB]/,'') : null}
+                          copied={copied} copy={copy} dejaCopie={dejaCopie} isMobile={isMobile}
+                          refEl={el=>{angleRefs.current[`${delivery.semaine}-${angle.numero}`]=el;}}/>
+                      );
+                    })}
                   </div>
                 </div>
                 );
@@ -5138,12 +5442,12 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
           </div>
           {cible && (
             <>
-              <div style={{fontSize:12,color:C.muted,marginBottom:14}}>{cible.nom} · {cible.batches.length} batch{cible.batches.length>1?'s':''}{cible.statut==='precedente' ? ' — remplacée depuis' : ''}</div>
+              <div style={{fontSize:12,color:C.muted,marginBottom:14}}>{cible.nom} · {cible.batches.length} lot{cible.batches.length>1?'s':''}{cible.statut==='precedente' ? ' — remplacée depuis' : ''}</div>
               {cible.batches.length > 1 && (
                 <div style={{display:'flex',gap:6,marginBottom:12,flexWrap:'wrap'}}>
-                  <button onClick={()=>setBatchFiltre(null)} style={{padding:'5px 11px',borderRadius:20,border:`1px solid ${batchFiltre===null?'rgba(91,141,239,0.4)':C.border}`,background:batchFiltre===null?'rgba(91,141,239,0.12)':'transparent',color:batchFiltre===null?C.text:C.muted,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Tous les batchs</button>
+                  <button onClick={()=>setBatchFiltre(null)} style={{padding:'5px 11px',borderRadius:20,border:`1px solid ${batchFiltre===null?'rgba(91,141,239,0.4)':C.border}`,background:batchFiltre===null?'rgba(91,141,239,0.12)':'transparent',color:batchFiltre===null?C.text:C.muted,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Tous les lots</button>
                   {cible.batches.map(b => (
-                    <button key={b.numero} onClick={()=>setBatchFiltre(b.numero)} style={{padding:'5px 11px',borderRadius:20,border:`1px solid ${batchFiltre===b.numero?'rgba(91,141,239,0.4)':C.border}`,background:batchFiltre===b.numero?'rgba(91,141,239,0.12)':'transparent',color:batchFiltre===b.numero?C.text:C.muted,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Batch {b.numero}</button>
+                    <button key={b.numero} onClick={()=>setBatchFiltre(b.numero)} style={{padding:'5px 11px',borderRadius:20,border:`1px solid ${batchFiltre===b.numero?'rgba(91,141,239,0.4)':C.border}`,background:batchFiltre===b.numero?'rgba(91,141,239,0.12)':'transparent',color:batchFiltre===b.numero?C.text:C.muted,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Lot {b.numero}</button>
                   ))}
                 </div>
               )}
@@ -5154,7 +5458,7 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
                   return (
                   <div key={`${b.numero}-${ai}`} style={{scrollSnapAlign:'start',flexShrink:0,width:250,background:C.card,border:`1px solid ${a.nom===angleGagnantActuel ? 'rgba(234,179,8,0.5)' : C.border}`,borderTop:`3px solid ${a.nom===angleGagnantActuel ? '#EAB308' : accent}`,borderRadius:14,padding:16}}>
                     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,marginBottom:8}}>
-                      <div style={{fontSize:9,color:accent,fontFamily:"'DM Mono',monospace",fontWeight:700}}>BATCH {b.numero} · ANGLE {a.numero || ai+1}</div>
+                      <div style={{fontSize:9,color:accent,fontFamily:"'DM Mono',monospace",fontWeight:700}}>LOT {b.numero} · ANGLE {a.numero || ai+1}</div>
                       {a.nom===angleGagnantActuel && <span className="tp-badge">⚡ Top Performer</span>}
                     </div>
                     {a.nom===angleGagnantActuel && (() => {
@@ -5162,7 +5466,7 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
                       // explicite indépendamment de la reconnaissance automatique par nom.
                       const batchOrigineNum = cible.batches.find(bb => bb.angles.some(aa => aa.nom === a.nom))?.numero;
                       if (!batchOrigineNum || batchOrigineNum === b.numero) return null;
-                      return <div style={{fontSize:9.5,color:C.muted,fontWeight:600,marginBottom:6}}>🏆 Repris depuis Batch {batchOrigineNum}</div>;
+                      return <div style={{fontSize:9.5,color:C.muted,fontWeight:600,marginBottom:6}}>🏆 Repris depuis le lot {batchOrigineNum}</div>;
                     })()}
                     <div style={{fontSize:14,fontWeight:800,marginBottom:8,lineHeight:1.3}}>{a.nom}</div>
                     {a.justification && <div style={{fontSize:11,color:C.sec,lineHeight:1.55,paddingTop:10,borderTop:`1px dashed ${C.border}`}}><b style={{color:C.muted,fontWeight:700,textTransform:'uppercase',fontSize:9,display:'block',marginBottom:4}}>Pourquoi cet angle</b>{a.justification}</div>}
@@ -5316,7 +5620,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     if (type === 'login') { sbAuth.signInWithGoogle(); }
     if (type === 'checkout' || type === 'checkout-quarterly') {
       const cycle = type === 'checkout-quarterly' ? 'quarterly' : 'monthly';
-      const productId = PLAN_CHECKOUT_IDS[`${parts[1]}-${cycle}`];
+      const productId = checkoutIdFor(parts[1], cycle, subscription);
       if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
     if (type === 'whatsapp') {
@@ -5481,7 +5785,7 @@ const taillePrix = (texte, base, limite = 9) => {
 };
 
 // MAJ pricing (oct. 2026 — grille 180 000 / 330 000 / 600 000 FCFA par mois, 24 / 48 / 96 créatives par mois : vidéos + images,
-// abonnement mensuel uniquement, garantie 45 jours). Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
+// abonnement mensuel uniquement, garantie 60 jours). Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
 // Les identifiants internes (starter / pro / scale) restent ceux de la base et des webhooks ; seuls les noms affichés changent.
 // convertPrice() (plus bas) n'est qu'un affichage indicatif : Chariow gère la devise réelle au moment du checkout.
 const PLANS = [
@@ -5489,24 +5793,52 @@ const PLANS = [
     id:'starter', name:'PERF+', color:C.gray, best:false,
     tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16,
-    badge:'24 Créatives / Mois', garantie:'Performance en 45 jours',
-    monthly: { price:180000, prixImg:7500, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16, equipe: '2',
+    badge:'24 Créatives / Mois', garantie:'Performance en 60 jours',
+    features: [
+      { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
+      { icon:'image', bold:'1 lot / Semaine', rest:': 2 vidéos et 4 images optimisés conversion' },
+      { icon:'box', bold:'Capacité', rest:': 1 produit couvert / semaine' },
+      { icon:'sparkle', bold:'Apprentissage', rest:': itération et amélioration des prochains lots' },
+      { icon:'grid', bold:'AdBoard', rest:': gestion des créatives, données et produits' },
+      { icon:'person', bold:'Compte Employé', rest:': Ajoutez 2 Membres à AdBoard' },
+      { icon:'bolt', bold:'Production', rest:': 48h après demande' },
+      { icon:'check', bold:'Garantie', rest:': Performance en 60 jours' },
+    ],
+    monthly: { price:180000, prixImg:7500, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
   },
   {
     id:'pro', name:'GROWTH', color:C.accent, best:true,
     tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32,
-    badge:'48 Créatives / Mois', garantie:'Croissance en 45 jours',
+    imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32, equipe: '5',
+    badge:'48 Créatives / Mois', garantie:'Croissance en 60 jours',
+    lead:'Tout dans PERF+ et :',
+    features: [
+      { icon:'image', bold:'2 lots / Semaine', rest:': 4 vidéos et 8 images optimisés conversion' },
+      { icon:'document', bold:'Ad Copies', rest:': titres et textes optimisés conversion' },
+      { icon:'chart', bold:'Données Marché', rest:': vue détaillées, recommandation et opportunités' },
+      { icon:'box', bold:'Couverture', rest:": jusqu'à 2 produits / semaine" },
+      { icon:'person', bold:'Compte Employé', rest:': Ajoutez 5 Membres à AdBoard' },
+      { icon:'bolt', bold:'Production', rest:': 24h après demande' },
+      { icon:'check', bold:'Garantie', rest:': Croissance en 60 jours' },
+    ],
     monthly: { price:330000, prixImg:6875, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
   },
   {
     id:'scale', name:'SCALE', color:C.white, best:false,
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64,
-    badge:'96 Créatives / Mois', garantie:'Scaling en 45 jours',
+    imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64, equipe: '+10',
+    badge:'96 Créatives / Mois', garantie:'Scaling en 60 jours',
+    lead:'Tout dans GROWTH et :',
+    features: [
+      { icon:'image', bold:'4 lots / Semaine', rest:': 8 vidéos et 16 images optimisés conversion' },
+      { icon:'box', bold:'Couverture', rest:": jusqu'à 4 produits / semaine" },
+      { icon:'person', bold:'Compte Employé', rest:': Ajoutez +10 Membres à AdBoard' },
+      { icon:'bolt', bold:'Production', rest:': 24h après demande + file prioritaire' },
+      { icon:'check', bold:'Garantie', rest:': Scaling en 60 jours' },
+    ],
     monthly: { price:600000, prixImg:6250, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
   },
 ];
@@ -5514,8 +5846,36 @@ const PLANS = [
 // Les ids trimestriels restent pour les abonnés existants ; l'offre trimestrielle n'est plus vendue.
 const PLAN_CHECKOUT_IDS = {
   'starter-monthly': 'prd_ljowq8',   'starter-quarterly': 'prd_wdya3v9h',
-  'pro-monthly':     'prd_34w031',   'pro-quarterly':     'prd_lnp4ax0b',
-  'scale-monthly':   'prd_9fi79y',   'scale-quarterly':   'prd_dn4fb72l',
+  'pro-monthly':     'prd_34w031',
+  'scale-monthly':   'prd_9fi79y',
+};
+
+// ── Offre liée au pack One Shot ─────────────────────────────────────────────────────────────
+// Un client qui a acheté le pack (visible sur la page de vente uniquement) a 30 jours, à partir de
+// l'achat, pour s'abonner à n'importe quelle offre avec 50 000 FCFA de moins sur le 1er mois.
+// Mécanisme : trois produits Chariow dédiés (même offre, prix −50 000), pas de code de réduction.
+// Les identifiants sont à renseigner ici ; tant qu'un identifiant est vide, la réduction n'est
+// pas affichée pour cette offre (on n'affiche jamais un prix que le paiement n'appliquerait pas).
+const PACK_PROMO_OFF = 50000;
+const PACK_PROMO_JOURS = 30;
+const PACK_PROMO_IDS = { starter: 'prd_yslvdsuz', pro: 'prd_lnp4ax0b', scale: 'prd_dn4fb72l' };
+const packPromoJours = (sub) => {
+  // promo_pack_used : posé par le serveur si le client a déjà payé un abonnement avant ce pack — la réduction n'est valable qu'une fois dans sa vie.
+  if (!sub || sub.type !== 'pack' || !sub.started_at || sub.promo_pack_used === true) return 0;
+  const fin = new Date(sub.started_at).getTime() + PACK_PROMO_JOURS * 86400000;
+  return Math.max(0, Math.ceil((fin - Date.now()) / 86400000));
+};
+// Retourne { jours, id, prix, normal } si la réduction s'applique à cette offre, sinon null.
+const packPromo = (sub, planId) => {
+  const jours = packPromoJours(sub);
+  const id = PACK_PROMO_IDS[planId];
+  const plan = PLANS.find(pl => pl.id === planId);
+  if (!jours || !id || !plan) return null;
+  return { jours, id, normal: plan.monthly.price, prix: Math.max(0, plan.monthly.price - PACK_PROMO_OFF) };
+};
+const checkoutIdFor = (planId, cycle, sub) => {
+  const pr = cycle === 'monthly' ? packPromo(sub, planId) : null;
+  return pr ? pr.id : PLAN_CHECKOUT_IDS[`${planId}-${cycle}`];
 };
 
 // Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
@@ -5561,31 +5921,47 @@ const triggerChariowCheckout = async (plan, cycle, user, popup) => {
 const FAQ_ITEMS = [
   {
     q: "Qu'est-ce qu'AdBoard exactement ?",
-    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit chaque semaine vos créatives publicitaires (vidéos et images Meta Ads), une analyse de votre marché cible, et des textes publicitaires prêts à l'emploi — livrés directement sur votre tableau de bord."
+    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit pour vous des créatives publicitaires (vidéos et images Meta Ads), livrées directement dans votre galerie. Avec GROWTH et SCALE, vous recevez aussi les textes publicitaires (Ad Copies) et les données de votre marché."
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "PERF+ (24 créatives par mois : 1 lot par semaine de 2 vidéos et 4 images, 1 produit par semaine, garantie Performance en 45 jours), GROWTH (48 créatives par mois : 2 lots par semaine, jusqu'à 2 produits par semaine, garantie Croissance en 45 jours), et SCALE (96 créatives par mois : 4 lots par semaine, jusqu'à 4 produits par semaine, garantie Scaling en 45 jours). Plus la formule est élevée, plus vous recevez de créatives par semaine et plus vous pouvez gérer de produits en simultané."
+    a: "PERF+ : 24 créatives par mois (1 lot par semaine de 2 vidéos et 4 images), 1 produit couvert par semaine, 2 membres d'équipe, production en 48h. GROWTH : 48 créatives par mois (2 lots par semaine), jusqu'à 2 produits par semaine, Ad Copies et Données Marché, 5 membres, production en 24h. SCALE : 96 créatives par mois (4 lots par semaine), jusqu'à 4 produits par semaine, plus de 10 membres, production en 24h avec file prioritaire. Chaque formule est accompagnée d'une garantie de 60 jours."
   },
   {
     q: "En combien de temps mes créatives sont-elles livrées ?",
-    a: "Comptez généralement jusqu'à 24h après votre demande. Vous êtes notifié dès que vos créatives sont prêtes, directement dans l'onglet Notifications."
+    a: "Jusqu'à 48h après votre demande avec PERF+, jusqu'à 24h avec GROWTH et SCALE (SCALE passe en file prioritaire). Vous suivez l'avancement dans l'onglet Suivi Demande et vous êtes notifié dès que vos créatives sont prêtes."
   },
   {
-    q: "Comment fonctionne l'analyse de marché ?",
-    a: "Pour chaque produit, notre équipe analyse votre marché cible (pays, concurrence, persona) et vous fournit une synthèse claire pour orienter vos campagnes — visible dans l'onglet Données Marché."
+    q: "Comment télécharger mes créatives ?",
+    a: "Dans la Galerie, ouvrez une créative et touchez Télécharger. Pour en récupérer plusieurs, touchez Sélectionner, cochez vos créatives (ou Tout sélectionner après avoir filtré), puis Télécharger : chaque créative arrive comme un fichier séparé, prêt à être envoyé dans votre gestionnaire de publicités, sans archive à extraire."
+  },
+  {
+    q: "Que contient la section Ad Copies ? (GROWTH et SCALE)",
+    a: "Pour chaque angle, vous trouvez 5 titres et 1 texte principal, correspondant aux deux champs de texte de Meta Ads, avec un aperçu de la pub et les 3 créatives de l'angle. Touchez un titre pour le voir dans l'aperçu, puis copiez-le et collez-le dans votre gestionnaire de publicités."
+  },
+  {
+    q: "Que contient la section Données Marché ? (GROWTH et SCALE)",
+    a: "Pour chaque produit, notre équipe analyse votre marché cible (pays, concurrence, persona) et vous fournit une vue détaillée, des recommandations et des opportunités pour orienter vos campagnes."
+  },
+  {
+    q: "Puis-je donner accès à mon équipe ?",
+    a: "Oui, avec le Compte Employé : 2 membres avec PERF+, 5 avec GROWTH, plus de 10 avec SCALE. Depuis l'onglet Équipe, vous invitez une personne par e-mail et choisissez son rôle : media buyer, assistant, lecture seule ou personnalisé. Un membre ne peut jamais rien supprimer ; il peut annuler une demande qu'il a lui-même faite."
+  },
+  {
+    q: "J'ai pris le pack de 6 publicités : et ensuite ?",
+    a: "Vos 6 créatives arrivent dans AdBoard. Si vous vous abonnez à une formule dans les 30 jours qui suivent l'achat du pack, vous bénéficiez de 50 000 FCFA de réduction sur votre premier mois : les prix réduits s'affichent dans l'onglet Forfait, avec le nombre de jours restants. Cette réduction ne s'applique qu'une seule fois."
   },
   {
     q: "Puis-je changer de formule à tout moment ?",
-    a: "Oui. Vous pouvez upgrader depuis l'onglet Forfait à tout moment ; le changement prend effet immédiatement."
+    a: "Oui. Vous pouvez changer de formule depuis l'onglet Forfait à tout moment ; le changement prend effet immédiatement."
   },
   {
     q: "Comment se passe le paiement ?",
-    a: "Le paiement est traité de façon sécurisée par notre partenaire Chariow. Nous ne stockons jamais vos informations bancaires directement."
+    a: "Le paiement est traité de façon sécurisée par notre partenaire Chariow. Nous ne stockons jamais vos informations bancaires directement. Votre historique de paiements est dans l'onglet Facturation."
   },
   {
-    q: "Comment fonctionne la garantie « Résultats en 45 jours ou remboursé » ?",
-    a: "Vous publiez les créatives livrées et investissez en publicité avec elles pendant 45 jours. Si vous ne constatez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire (vos dépenses du mois et vos résultats : ROAS, coût par achat…). Nous vérifions, puis nous vous remboursons l'intégralité de votre paiement."
+    q: "Comment fonctionne la garantie de 60 jours ?",
+    a: "Vous publiez les créatives livrées et investissez en publicité avec elles pendant 60 jours. Si vous ne constatez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire (vos dépenses du mois et vos résultats : ROAS, coût par achat…). Nous vérifions, puis nous vous remboursons l'intégralité de votre paiement."
   },
   {
     q: "Que faire si une créative ne me convient pas ?",
@@ -5601,7 +5977,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Puis-je annuler une demande en cours ?",
-    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les créatives correspondantes redeviennent immédiatement disponibles."
+    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les créatives correspondantes redeviennent disponibles. Vos demandes terminées restent consultables dans l'onglet Historique du Suivi Demande."
   },
   {
     q: "Qui est Ava, l'assistante dans le coin de l'écran ?",
@@ -5649,9 +6025,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
   const onCta = async (plan) => {
     const cycle = quarterly ? 'quarterly' : 'monthly';
     const cycleData = plan[cycle];
-    try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
+    try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: (packPromo(subscription, plan.id)?.prix ?? cycleData.price), currency: 'XOF' }); } catch(e) {}
     try { window.twq && window.twq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
-    const productId = PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`];
+    const productId = checkoutIdFor(plan.id, cycle, subscription);
     if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
     // Filet de sécurité si jamais le produit n'est pas reconnu : ouvrir le checkout classique
     const user = sbAuth.getUser();
@@ -5706,12 +6082,40 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         </p>
       </div>
 
+      {/* ── Consommation du mois : la valeur reçue, avant le prix ── */}
+      {subscription?.active && subscription?.type !== 'pack' && credits && (credits.total || 0) > 0 && (() => {
+        const total = credits.total, utilisees = Math.min(credits.used || 0, total);
+        const pct = Math.min(100, Math.round(utilisees / total * 100));
+        return (
+          <div data-testid="conso-forfait" style={{padding:'14px 16px',borderRadius:11,background:C.card,border:`1px solid ${C.border}`,marginBottom:18}}>
+            <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:10,marginBottom:9,flexWrap:'wrap'}}>
+              <div style={{fontSize:12.5,color:C.text,fontWeight:700}}>Votre forfait en ce moment</div>
+              <div style={{fontSize:12,color:C.sec}}><b style={{color:C.text,fontFamily:"'DM Mono',monospace"}}>{utilisees}</b> créatives utilisées sur <b style={{color:C.text,fontFamily:"'DM Mono',monospace"}}>{total}</b> accumulées</div>
+            </div>
+            <div style={{height:4,borderRadius:3,background:'rgba(255,255,255,0.07)',overflow:'hidden'}}><div style={{height:'100%',width:`${pct}%`,borderRadius:3,background:'linear-gradient(90deg,#5B8DEF,#1FB6FF)'}}/></div>
+          </div>
+        );
+      })()}
+
+      {/* ── Offre pack One Shot : −50 000 FCFA sur le 1er mois, 30 jours à compter de l'achat du pack ── */}
+      {PLANS.some(pl => packPromo(subscription, pl.id)) && (() => {
+        const jours = packPromoJours(subscription);
+        return (
+        <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderRadius:11,background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.28)',marginBottom:18,flexWrap:'wrap'}} data-testid="pack-bonus">
+          <Icon name="sparkle" size={18} color="#22C55E"/>
+          <div style={{flex:1,minWidth:200,fontSize:13,color:C.text,lineHeight:1.5}}>
+            <strong>{convertPrice(PACK_PROMO_OFF)} de réduction sur votre 1er mois, quelle que soit l'offre.</strong> <span style={{color:C.sec}}>Plus que {jours} jour{jours>1?'s':''} : les prix ci-dessous sont déjà réduits.</span>
+          </div>
+        </div>
+        );
+      })()}
+
       {/* ── Garantie — visible sur PC ; sur mobile, trop encombrante ici, déplacée sous chaque CTA ── */}
       {!isMobile && (
         <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.22)`,marginBottom:20,flexWrap:'wrap'}}>
           <span style={{width:30,height:30,borderRadius:9,background:'rgba(45,127,249,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="lock" size={15} color={C.accent}/></span>
           <div style={{fontSize:12.5,color:C.text,lineHeight:1.4}}>
-            <strong style={{color:C.accent}}>Garantie résultats en 45 jours.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
+            <strong style={{color:C.accent}}>Garantie résultats en 60 jours.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
           </div>
         </div>
       )}
@@ -5733,20 +6137,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           const cycleData = quarterly ? p.quarterly : p.monthly;
-          // Fonctionnalités (oct. 2026) — texte fourni par Amar, identique pour les 3 offres : seuls le nombre
-          // de lots par semaine, la capacité en produits et le nom de la garantie changent.
-          const featureGroups = [
-            { titre:'', items:[
-              { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
-              { icon:'image', bold:`${p.batchesPerWeek} ${p.batchesPerWeek>1?'lots':'lot'} / Semaine`, rest:`: ${p.batchesPerWeek*2} vidéos et ${p.batchesPerWeek*4} images optimisés conversion` },
-              { icon:'document', bold:'Ad Copies', rest:': titres et textes optimisés conversion' },
-              { icon:'box', bold:'Capacité', rest:p.batchesPerWeek>1 ? `: jusqu'à ${p.batchesPerWeek} produits couverts / semaine` : ': 1 produit couvert / semaine' },
-              { icon:'sparkle', bold:'Apprentissage', rest:': itération et amélioration des prochains lots' },
-              { icon:'grid', bold:'Accès Plateforme AdBoard', rest:': gestion des créatives, données et produits' },
-              { icon:'bolt', bold:'Production', rest:': maximum 24h après demande' },
-              { icon:'check', bold:'Garantie', rest:`: ${p.garantie}` },
-            ]},
-          ];
+          const promoCard = quarterly ? null : packPromo(subscription, p.id);
+          // Fonctionnalités : texte fourni par Amar (27 oct. 2026), propre à chaque offre — voir PLANS.
+          const featureGroups = [ { titre:'', lead:p.lead, items:p.features } ];
           return (
             <div key={p.id}
               style={{
@@ -5786,9 +6179,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                   (geo-détection + taux de change) — Chariow reste la source de vérité au
                   moment du checkout, cet affichage n'est qu'indicatif. */}
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-                <span style={{fontSize:taillePrix(convertPrice(cycleData.price),30),fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
+                {promoCard && <span style={{fontSize:13,color:C.muted,textDecoration:'line-through',marginRight:4}}>{convertPrice(promoCard.normal)}</span>}
+                <span style={{fontSize:taillePrix(convertPrice(promoCard?promoCard.prix:cycleData.price),30),fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(promoCard?promoCard.prix:cycleData.price)}</span>
                 <span style={{fontSize:11,color:C.sec}}>/ mois</span>
               </div>
+              {promoCard && <div style={{fontSize:11,fontWeight:700,color:'#22C55E',marginBottom:8}} data-testid="promo-tag">−{convertPrice(PACK_PROMO_OFF)} · encore {promoCard.jours} jour{promoCard.jours>1?'s':''}</div>}
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
 
@@ -5800,6 +6195,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                       {groupe.titre}
                     </div>
                     )}
+                    {groupe.lead && <div style={{fontSize:12.5,fontWeight:700,color:C.text,marginBottom:11}}>{groupe.lead}</div>}
                     <div style={{display:'flex',flexDirection:'column',gap:11}}>
                       {groupe.items.map((f,j) => (
                         <div key={j} style={{display:'flex',alignItems:'flex-start',gap:10}}>
@@ -5846,7 +6242,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {!isCurrent && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
-                  {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Garantie résultats en 45 jours</span></>}
+                  {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Garantie résultats en 60 jours</span></>}
                 </div>
               )}
             </div>
@@ -6250,7 +6646,7 @@ export default function Platform() {
     if (!brief) return null;
     setAllBriefs(prev => [...prev, brief]);
     setBriefs(prev => ({...prev, [product.id]: brief}));
-    notify(`Demande de ${qty} créatives envoyée — livraison sous 24h`, 'brief');
+    notify(`Demande de ${qty} créatives envoyée — livraison sous ${delaiH()}h`, 'brief');
 
     const pastBriefs = allBriefs.filter(b => b.product_id === product.id && briefCompteCredits(b));
     const webhookPayload = {
@@ -6787,7 +7183,8 @@ export default function Platform() {
   );
 };
 
-const views = {
+PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.active;
+  const views = {
     demo: <DemoPreview slug={demoSlug}/>,
     produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} creditsDataReady={creditsDataReady} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={async (p)=>{ 
             if(!user){setShowLogin(true);return;} 
@@ -6826,13 +7223,13 @@ const views = {
             }
             setCreativesTarget(p); }}/>,
     galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
-    copies: <Copies products={products} setSection={setSection}/>,
-    marche: <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
+    copies: !accesGrowth() ? <LockedFeature C={C} icon="document" titre="Ad Copies" texte="Pour chaque angle, des titres et des textes publicitaires prêts à coller dans votre gestionnaire de publicités, optimisés pour convertir." points={['Titres et textes classés par angle','Prêts à copier-coller dans Meta Ads','Livrés avec chaque lot de créatives']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Copies products={products} setSection={setSection}/>,
+    marche: !accesGrowth() ? <LockedFeature C={C} icon="chart" titre="Données Marché" texte="La vue détaillée de votre marché, de vos concurrents et de votre cible, avec nos recommandations et les opportunités à saisir." points={['Analyse du marché, des concurrents et de la cible','Recommandations claires pour vos prochaines campagnes','Opportunités repérées pour chaque produit']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
     equipe: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <TeamPage C={C} isMobile={isMobile} notify={notify} onUpgrade={()=>setSection('tarifs')} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}}/>,
     faq: <Faq/>,
     facturation: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <BillingPage C={C} isMobile={isMobile} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}} onOpenPlans={()=>setSection('tarifs')}/>,
-    suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData}/>,
+    suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData} setSection={setSection}/>,
     notifications: <Notifications
         notifications={notifications}
         C={C}
@@ -6989,7 +7386,7 @@ const views = {
           <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:0}}>
             {reAskConfirm.canCancel
               ? 'Vous avez déjà une commande en cours pour ce produit. Voulez-vous en ajouter une supplémentaire ?'
-              : 'Vos créatives pour ce produit sont déjà en production. Voulez-vous commander un batch supplémentaire ?'}
+              : 'Vos créatives pour ce produit sont déjà en production. Voulez-vous commander un lot supplémentaire ?'}
           </p>
           <div style={{display:'flex',gap:8,marginTop:18}}>
             <button onClick={()=>setReAskConfirm(null)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>

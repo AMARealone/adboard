@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useData } from '../data'
-import { etat, getCtImages, getCtVideos } from '../api'
+import { etat, getCtImages, getCtVideos, prio } from '../api'
 import { OrderRow } from './Commandes'
 
 export default function Dashboard() {
@@ -13,7 +13,7 @@ export default function Dashboard() {
     getCtVideos().then((l) => setCt((p) => ({ ...p, vid: l.length }))).catch(() => setCt((p) => ({ ...p, vid: '–' })))
   }, [])
   const n = (k) => cmd.list.filter((b) => etat(b).key === k).length
-  const top = [...cmd.list].sort((a, b) => etat(a).rang - etat(b).rang || new Date(b.created_at) - new Date(a.created_at)).filter((b) => etat(b).rang < 3).slice(0, 6)
+  const top = [...cmd.list].sort((a, b) => etat(a).rang - etat(b).rang || prio(a) - prio(b) || new Date(b.created_at) - new Date(a.created_at)).filter((b) => etat(b).rang < 3).slice(0, 6)
   const S = ({ label, v, to, c }) => <button className="fx-stat" onClick={() => nav(to)}><span><i className="fx-dot" style={{ background: c }} />{label}</span><b>{cmd.loading ? '…' : v}</b></button>
   return (
     <div className="fx-wrap">

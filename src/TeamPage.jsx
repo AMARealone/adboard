@@ -56,7 +56,7 @@ export default function TeamPage({ C, getToken, notify, onUpgrade, isMobile }) {
         <div style={{ ...card, padding: 20, marginTop: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>Travaillez à plusieurs sur le même espace</div>
           <div style={{ fontSize: 12.5, color: C.sec, lineHeight: 1.6, marginBottom: 14 }}>
-            Invitez votre media buyer ou votre assistant, avec les droits que vous choisissez. PERF+ : {SEATS.starter} membres · GROWTH : {SEATS.pro} · SCALE : {SEATS.scale}.
+            Invitez votre media buyer ou votre assistant, avec les droits que vous choisissez. PERF+ : {SEATS.starter} membres · GROWTH : {SEATS.pro} · SCALE : plus de 10.
           </div>
           <button style={btn(true)} onClick={onUpgrade}>Voir les offres</button>
         </div>
@@ -101,7 +101,7 @@ export default function TeamPage({ C, getToken, notify, onUpgrade, isMobile }) {
         </div>
         {full && (
           <div style={{ fontSize: 12, color: C.sec, marginTop: 10, lineHeight: 1.5 }}>
-            Toutes vos places sont utilisées.{nextPlan ? <> Passez à <b style={{ color: C.text }}>{nextPlan}</b> pour {nextPlan === 'GROWTH' ? SEATS.pro : SEATS.scale} places. <button onClick={onUpgrade} style={{ background: 'none', border: 'none', color: C.accent, cursor: 'pointer', fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>Voir les offres</button></> : ''}
+            Toutes vos places sont utilisées.{nextPlan ? <> Passez à <b style={{ color: C.text }}>{nextPlan}</b> pour {nextPlan === 'GROWTH' ? SEATS.pro + ' places' : 'plus de 10 places'}. <button onClick={onUpgrade} style={{ background: 'none', border: 'none', color: C.accent, cursor: 'pointer', fontWeight: 700, fontFamily: 'inherit', padding: 0 }}>Voir les offres</button></> : ''}
           </div>
         )}
       </div>

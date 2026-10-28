@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useData } from '../data'
-import { etat, SERVER } from '../api'
+import { etat, SERVER, prio, estPrioritaire, delaiClientH } from '../api'
 import { openCommande, marquerLivre, supprimerTicket } from '../prod/engine'
 import { alertDlg } from '../ui'
 
 function useNow(ms = 1000) { const [n, setN] = useState(Date.now()); useEffect(() => { const t = setInterval(() => setN(Date.now()), ms); return () => clearInterval(t) }, [ms]); return n }
 const pad = (n) => String(n).padStart(2, '0')
 
-// Compte à rebours : 12 h pour lancer une commande en attente, 18 h d'échéance interne en production
+// Compte à rebours : 12 h pour lancer une commande en attente ; échéance interne en production = délai client moins 6 h (18 h, ou 42 h pour PERF+)
 function Timer({ b, now }) {
   if (b.status === 'pending') {
     const r = 12 * 3600e3 - (now - new Date(b.created_at).getTime())
@@ -16,7 +16,7 @@ function Timer({ b, now }) {
     return <span className="fx-time">{Math.floor(r / 3600e3)}h{pad(Math.floor((r % 3600e3) / 60e3))}m{pad(Math.floor((r % 60e3) / 1e3))}s restantes</span>
   }
   if (b.status === 'in_production' && b.started_at) {
-    const r = 18 * 3600e3 - (now - new Date(b.started_at).getTime())
+    const r = (delaiClientH(b) - 6) * 3600e3 - (now - new Date(b.started_at).getTime())
     if (r <= 0) return <span className="fx-time urgent">Urgent — envoie les livrables</span>
     return <span className="fx-time">{Math.floor(r / 3600e3)}h{pad(Math.floor((r % 3600e3) / 60e3))}m avant l’échéance interne</span>
   }
@@ -38,7 +38,7 @@ export function OrderRow({ b, compact, now, onBrief }) {
     <div className={'fx-row' + (e.key === 'ready' ? ' ready' : '')}>
       {photo ? <img className="fx-thumb" src={photo} alt="" onError={(x) => (x.currentTarget.style.visibility = 'hidden')} /> : <div className="fx-thumb">—</div>}
       <div className="fx-grow">
-        <div className="fx-t">{b.product?.nom || 'Produit'} <span className={'fx-tag ' + e.key}>{e.label}</span></div>
+        <div className="fx-t">{b.product?.nom || 'Produit'} <span className={'fx-tag ' + e.key}>{e.label}</span>{estPrioritaire(b) && <span className="fx-tag ready" title="Offre SCALE : file prioritaire"> ★ Prioritaire</span>}</div>
         <div className="fx-s">{b.client?.email || (b.client?.user_id || '').slice(0, 8)} · {(b.client?.plan || '').toUpperCase()} · {b.quantity} images {now && <> · <Timer b={b} now={now} /></>}</div>
       </div>
       {e.key !== 'off' && <button className={'fx-btn' + (e.key === 'wait' || e.key === 'ready' ? ' primary' : '')} disabled={busy} onClick={open}>{busy ? '…' : '▶ ' + label}</button>}
@@ -104,7 +104,7 @@ export default function Commandes() {
   const list = useMemo(() => cmd.list
     .filter((b) => f === 'all' || etat(b).key === f)
     .filter((b) => !q || JSON.stringify([b.product?.nom, b.client?.email]).toLowerCase().includes(q.toLowerCase()))
-    .sort((a, b) => etat(a).rang - etat(b).rang || new Date(b.created_at) - new Date(a.created_at)), [cmd.list, f, q])
+    .sort((a, b) => etat(a).rang - etat(b).rang || prio(a) - prio(b) || new Date(b.created_at) - new Date(a.created_at)), [cmd.list, f, q])
   return (
     <div className="fx-wrap">
       <div className="fx-h"><div><h1>Commandes</h1><p>{cmd.list.length} au total · les plus urgentes en premier</p></div><button className="fx-btn" onClick={reload}>Actualiser</button></div>
