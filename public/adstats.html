@@ -2435,7 +2435,7 @@ let DB = [];
 // diffèrent souvent entre le lead et le vrai paiement). Chaque achat compte, y compris les
 // achats répétés d'un même client — cross-sell exclus (voir CORE_PLANS).
 let TX = [];
-const CORE_PLANS = ['discovery', 'starter', 'pro', 'scale'];
+const CORE_PLANS = ['discovery', 'test', 'starter', 'pro', 'scale'];
 
 // Toutes les données monétaires sont stockées en FCFA (la vraie devise de facturation
 // Chariow) — jamais changé côté base ni côté appels API, uniquement l'AFFICHAGE partout dans
@@ -4478,8 +4478,8 @@ function renderLeads(data) {
 }
 
 
-const PLAN_LABELS_CLIENTS = { discovery: 'Discovery', starter: 'Starter', pro: 'Pro', scale: 'Scale' };
-const PLAN_COLORS_CLIENTS = { discovery: 'var(--muted)', starter: 'var(--yellow)', pro: 'var(--blue)', scale: 'var(--purple)' };
+const PLAN_LABELS_CLIENTS = { discovery: 'Pack (ancien)', test: 'TEST', starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
+const PLAN_COLORS_CLIENTS = { discovery: 'var(--muted)', test: 'var(--muted)', starter: 'var(--yellow)', pro: 'var(--blue)', scale: 'var(--purple)' };
 
 function renderClients(data) {
   const el = document.getElementById('acheteurs-list');
@@ -6366,7 +6366,7 @@ async function renderComptabilite() {
       parPlan[p].count++;
       parPlan[p].total += (t.montant_net_fcfa || 0);
     });
-    const couleursPlan = { discovery: '#6B7280', starter: '#F59E0B', pro: '#3B82F6', scale: '#8B5CF6' };
+    const couleursPlan = { discovery: '#6B7280', test: '#6B7280', starter: '#F59E0B', pro: '#3B82F6', scale: '#8B5CF6' };
     const blocRevenus = `
       <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:18px">
         <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px">Revenu net par plan</div>

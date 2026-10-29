@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { WS, wsOwner, can, isMember, resolveWorkspace, captureInviteFromUrl, switchWorkspace, clearWorkspaceMemory, teamFetch, SERVER as TEAM_SERVER } from "./team.js";
 import TeamPage from "./TeamPage.jsx";
 captureInviteFromUrl();
-// ADBOARD_VERSION v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
+// ADBOARD_VERSION v8.2-4offres (4 offres TEST / PERF+ / GROWTH / SCALE, créatives accordées au mois sans logique hebdomadaire, fin du One Shot) | v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -319,13 +319,14 @@ const C = {
 
 const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
 
-// Offres (27 oct. 2026) : PERF+ livré en 48h, GROWTH et SCALE en 24h ; Ad Copies et Données Marché à partir de GROWTH.
+// Offres (29 oct. 2026) : TEST et PERF+ livrés en 48h, GROWTH et SCALE en 24h ; Ad Copies et Données Marché à partir de PERF+ (pas dans TEST).
 // Même principe que WS (équipe) : état module, mis à jour par Platform à chaque rendu.
 const PLAN_CTX = { plan: null, active: false };
-const delaiH = () => (PLAN_CTX.plan === 'starter' ? 48 : 24);
-const accesGrowth = () => !PLAN_CTX.active || PLAN_CTX.plan === 'pro' || PLAN_CTX.plan === 'scale'; // sans abonnement : on laisse l'écran habituel
+// 48h par défaut (TEST, PERF+, sans abonnement, plan inconnu) ; 24h seulement pour GROWTH et SCALE.
+const delaiH = () => ((PLAN_CTX.plan === 'pro' || PLAN_CTX.plan === 'scale') ? 24 : 48);
+const accesGrowth = () => !PLAN_CTX.active || PLAN_CTX.plan === 'starter' || PLAN_CTX.plan === 'pro' || PLAN_CTX.plan === 'scale'; // Ad Copies et Données Marché : PERF+ et au-dessus (pas TEST) ; sans abonnement : on laisse l'écran habituel
 
-const PLAN_QUANTITY = { 'PERF+':6, 'GROWTH':12, 'SCALE':24 };
+const PLAN_QUANTITY = { 'TEST':6, 'PERF+':6, 'GROWTH':12, 'SCALE':24 };
 
 const ANGLES = [];
 
@@ -531,7 +532,7 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
   };
   useEffect(() => { load(); }, []);
   const card = {background:C.card,border:`1px solid ${C.border}`,borderRadius:14};
-  const PL = { starter:'PERF+', pro:'GROWTH', scale:'SCALE', discovery:'Découverte' };
+  const PL = { test:'TEST', starter:'PERF+', pro:'GROWTH', scale:'SCALE', discovery:'Découverte' };
   const CY = { monthly:'Mensuel', quarterly:'Trimestriel' };
   const fmtD = (x) => { try { return new Date(x).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch(e) { return ''; } };
   const fcfa = (n) => Math.round(n||0).toLocaleString('fr-FR') + ' FCFA';
@@ -572,7 +573,7 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
   );
 };
 
-// Fonction réservée à GROWTH et SCALE (Ad Copies, Données Marché) : écran propre plutôt qu'une page vide ou cassée.
+// Fonction réservée à PERF+, GROWTH et SCALE (Ad Copies, Données Marché) : écran propre plutôt qu'une page vide ou cassée.
 const BoutonRetour = ({ onClick, libelle = 'Retour' }) => (
   <button type="button" onClick={onClick} data-testid="bouton-retour"
     style={{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 14px 8px 11px',marginBottom:14,borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:12.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
@@ -580,7 +581,7 @@ const BoutonRetour = ({ onClick, libelle = 'Retour' }) => (
   </button>
 );
 
-// Aperçu flouté (exemple fictif) montré aux clients PERF+ derrière le verrou : il donne envie de passer à GROWTH.
+// Aperçu flouté (exemple fictif) montré aux clients TEST derrière le verrou : il donne envie de passer à PERF+.
 const ApercuVerrouille = ({ type }) => {
   const bar = (w, c='rgba(255,255,255,0.14)', h=8) => <div style={{height:h,width:w,borderRadius:4,background:c}}/>;
   const carte = {borderRadius:14,border:`1px solid ${C.border}`,background:'linear-gradient(160deg,#12151f,#0d0f16)',padding:18};
@@ -640,7 +641,7 @@ const LockedFeature = ({C, icon, titre, texte, points, owner, onUpgrade, apercu}
     <div style={{width:56,height:56,borderRadius:16,background:C.accentS,border:`1px solid rgba(91,141,239,0.25)`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px',backdropFilter:'blur(6px)'}}>
       <Icon name={icon} size={24} color={C.accent}/>
     </div>
-    <div style={{fontSize:11,color:C.accent,fontWeight:800,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Inclus avec GROWTH et SCALE</div>
+    <div style={{fontSize:11,color:C.accent,fontWeight:800,letterSpacing:'1.5px',textTransform:'uppercase',marginBottom:8}}>Inclus à partir de PERF+</div>
     <h1 style={{fontSize:22,fontWeight:800,color:C.text,margin:'0 0 10px'}}>{titre}</h1>
     <p style={{fontSize:13.5,color:C.sec,lineHeight:1.6,margin:'0 0 18px'}}>{texte}</p>
     <div style={{display:'inline-flex',flexDirection:'column',gap:8,textAlign:'left',marginBottom:22}}>
@@ -648,8 +649,8 @@ const LockedFeature = ({C, icon, titre, texte, points, owner, onUpgrade, apercu}
     </div>
     <div>
       {owner
-        ? <button onClick={onUpgrade} style={{padding:'11px 22px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Passer à GROWTH</button>
-        : <div style={{fontSize:12,color:C.muted}}>Demandez au propriétaire de l'espace de passer à GROWTH.</div>}
+        ? <button onClick={onUpgrade} style={{padding:'11px 22px',borderRadius:9,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Passer à PERF+</button>
+        : <div style={{fontSize:12,color:C.muted}}>Demandez au propriétaire de l'espace de passer à PERF+.</div>}
     </div>
     </div>
   </div>
@@ -835,21 +836,19 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       {!showCollapsed && !(isMobile && !mobileOpen) && !isMember() && subscription?.plan !== 'scale' && (() => {
         // Progression normale : Starter → Pro → Scale. Un visiteur sans abonnement actif — ou un
         // ancien compte Discovery (offre retirée de la vente) — est orienté vers Starter.
-        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery') ? 'starter'
-                          : subscription.plan === 'starter' ? 'pro' : 'scale';
+        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery') ? 'test'
+                          : subscription.plan === 'test' ? 'starter' : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
         const nextCycle = 'monthly';
         const cycleData = nextPlan[nextCycle];
-        const promoSb = packPromo(subscription, nextPlan.id);
         return (
           <div style={{padding:'13px',borderRadius:8,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.18)',marginTop:10}}>
             <div style={{fontSize:11,color:C.accent,fontWeight:700,marginBottom:2}}>{nextPlan.name}</div>
-            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.imagesPerWeek} créatives / semaine · {nextPlan.produitsPerWeek} produit{nextPlan.produitsPerWeek!=='1'?'s':''}</div>
-            {promoSb && <div style={{fontSize:10,color:'#22C55E',fontWeight:700,marginBottom:3}}>−{convertPrice(PACK_PROMO_OFF)} · encore {promoSb.jours} jour{promoSb.jours>1?'s':''}</div>}
-            <div style={{fontSize:taillePrix(convertPrice(promoSb?promoSb.prix:cycleData.price),15),color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(promoSb?promoSb.prix:cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
+            <div style={{fontSize:10,color:C.sec,lineHeight:1.4,marginBottom:7}}>{nextPlan.creativesPerMonth} créatives / mois · {nextPlan.produitsLabel}</div>
+            <div style={{fontSize:taillePrix(convertPrice(cycleData.price),15),color:C.text,fontWeight:700,marginBottom:8}}>{convertPrice(cycleData.price)}<span style={{fontSize:10,color:C.sec,fontWeight:400}}>/mois</span></div>
             <button onClick={() => {
-              const productId = checkoutIdFor(nextPlan.id, nextCycle, subscription);
+              const productId = checkoutIdFor(nextPlan.id, nextCycle);
               if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
               const popup = window.open('', '_blank') || window;
               popup.location.href = cycleData.checkout;
@@ -1390,7 +1389,13 @@ const sbBriefs = {
 };
 
 // ── Supabase Subscription API ──────────────────────────────────────────────
-const PLAN_CREDITS = { starter: 6, pro: 12, scale: 24 };
+// Créatives accordées par période d'abonnement (30 jours) : TEST 12 · PERF+ 24 · GROWTH 48 · SCALE 96.
+// Elles sont toutes disponibles dès le paiement : plus aucun rechargement hebdomadaire. Un lot = 6 créatives.
+const PLAN_CREDITS_MOIS = { test: 12, starter: 24, pro: 48, scale: 96 };
+const creditsDuForfait = (sub) => {
+  const base = PLAN_CREDITS_MOIS[sub?.plan] ?? ((sub?.credits_per_week || 0) * 4);
+  return sub?.cycle === 'quarterly' ? base * 3 : base;
+};
 
 const sbSub = {
   async load(session) {
@@ -1424,31 +1429,27 @@ function briefEstActif(b) { return !!b && (b.status === 'pending' || b.status ==
 // Calcule les créatives disponibles dynamiquement
 function computeCredits(sub, allBriefs) {
   if (!sub || !sub.active) return { total: 0, used: 0, available: 0, nextCreditDate: null };
-  const used = allBriefs
-    .filter(briefCompteCredits)
-    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
-  // Pack (Discovery) : total fixe, jamais de rechargement — contrairement à un abonnement
-  // classique qui accumule credits_per_week × semaines écoulées.
+  const consommes = allBriefs.filter(briefCompteCredits);
+  // Pack (Discovery, ancienne offre retirée de la vente) : total fixe, jamais de rechargement.
   if (sub.type === 'pack') {
+    const used = consommes.reduce((sum, b) => sum + (b.credits_used || 9), 0);
     const total = sub.total_credits || 0;
     return { total, used, available: Math.max(0, total - used), nextCreditDate: null };
   }
-  const started = new Date(sub.started_at);
-  const now = new Date();
-  // Rechargement à minuit (jour civil), pas à l'heure exacte de l'abonnement — plus prévisible pour l'utilisateur
-  const startedMidnight = new Date(started.getFullYear(), started.getMonth(), started.getDate());
-  const nowMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const msPerDay = 24 * 60 * 60 * 1000;
-  const daysElapsed = Math.floor((nowMidnight - startedMidnight) / msPerDay);
-  const weeksActive = Math.floor(daysElapsed / 7) + 1;
-  const total = weeksActive * sub.credits_per_week;
-  const nextCreditDate = new Date(startedMidnight.getTime() + weeksActive * 7 * msPerDay);
+  // Abonnement : le volume du mois est disponible immédiatement. Seules les demandes faites depuis le dernier
+  // paiement (début de la période) comptent ; chaque renouvellement remet la jauge à plein.
+  const debut = sub.started_at ? new Date(sub.started_at).getTime() : 0;
+  const used = consommes
+    .filter(b => !debut || new Date(b.created_at).getTime() >= debut - 60000)
+    .reduce((sum, b) => sum + (b.credits_used || 9), 0);
+  const total = creditsDuForfait(sub);
+  const nextCreditDate = sub.expires_at ? new Date(sub.expires_at) : null;
   return { total, used, available: Math.max(0, total - used), nextCreditDate };
 }
 
 // ── Plafond de charge : 36 images max en production simultanée (tous produits confondus)
 // sur une fenêtre glissante de 24h depuis la création de chaque demande — protège la capacité
-// de production réelle, indépendant des crédits d'abonnement (qui, eux, se rechargent par semaine).
+// de production réelle, indépendant des crédits d'abonnement (accordés au mois). 36 images = 6 lots par jour.
 const PLAFOND_PRODUCTION_24H = 36;
 // Volumes de production : 6 / 12 / 18 / 24 visuels (2 / 4 / 6 / 8 angles), par paliers de 6.
 const QTE_PALIER = 6;
@@ -1504,8 +1505,8 @@ const sbSubs = {
   }
 };
 
-const PLAN_LABELS = { starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
-const PLAN_COLORS = { starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
+const PLAN_LABELS = { test: 'TEST', starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
+const PLAN_COLORS = { test: '#6B7280', starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
 
 // ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
 const PREPURCHASE_QUESTIONS = [
@@ -1911,7 +1912,7 @@ const pointsFicheProduit = (p) => [
 ];
 
 const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, onEditProduct, verifierPlafond, C}) => {
-  // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 6 / 12 / 24 par semaine.
+  // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 12 / 24 / 48 / 96 créatives par mois, disponibles dès le paiement.
   const [qty, setQty] = useState(6);
   // Marchés du produit : le client choisit pour quels marchés cette demande est produite. Par défaut, le plus gros
   // groupe de marchés compatibles (même langue, même apparence des personnages) ; les autres sont proposés à part.
@@ -1963,7 +1964,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
 
         {/* Crédits : une seule ligne claire, la barre montre ce qu'il restera après la demande */}
         <div style={{position:'relative',borderLeft:`2px solid ${C.accent}`,paddingLeft:14,marginBottom:isPack?12:20}}>
-          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:5}}>{isPack ? 'Créatives disponibles' : 'Disponibles cette semaine'}</div>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1.2px',textTransform:'uppercase',marginBottom:5}}>{isPack ? 'Créatives disponibles' : 'Disponibles ce mois-ci'}</div>
           <div style={{display:'flex',alignItems:'baseline',gap:8}}>
             <span style={{fontFamily:"'DM Mono',monospace",fontSize:26,fontWeight:800,color:max>0?C.text:C.muted,lineHeight:1}}>{credits.available}</span>
             <span style={{fontSize:11,color:C.muted}}>{Math.max(0,credits.available-qty)} restantes après cette demande</span>
@@ -1973,13 +1974,13 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
           </div>
         </div>
 
-        {/* Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement Starter. */}
+        {/* Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement TEST. */}
         {isPack && (
           <button onClick={() => {
-            const productId = checkoutIdFor('starter','monthly',subscription);
+            const productId = checkoutIdFor('test','monthly');
             if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
           }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:20}}>
-            <Icon name="plus" size={12} color={C.accent}/> Continuez avec PERF+
+            <Icon name="plus" size={12} color={C.accent}/> Continuez avec TEST
           </button>
         )}
 
@@ -2591,20 +2592,25 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     );
   }
   if (subscription?.active && credits.available < 6) {
-    // Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement Starter.
+    // Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement TEST.
     if (subscription?.type === 'pack') {
       return (
         <button onClick={() => {
-          const productId = checkoutIdFor('starter','monthly',subscription);
+          const productId = checkoutIdFor('test','monthly');
           if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
         }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-          <Icon name="plus" size={13} color="#fff"/> Continuez avec PERF+
+          <Icon name="plus" size={13} color="#fff"/> Continuez avec TEST
         </button>
       );
     }
     return (
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
-        <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Prochaine livraison le ${nextCreditDate}` : 'Plus de créatives disponibles cette semaine'}
+        <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Renouvellement le ${nextCreditDate}` : 'Plus de créatives disponibles ce mois-ci'}
+        {subscription?.plan && subscription.plan !== 'scale' && onOpenPayment && (() => {
+          const suivant = PLANS[Math.max(0, PLANS.findIndex(pl => pl.id === subscription.plan)) + 1];
+          const idSuivant = suivant && checkoutIdFor(suivant.id, 'monthly');
+          return idSuivant ? <button onClick={() => startCheckout(idSuivant, onOpenPayment)} style={{marginLeft:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',padding:0,textDecoration:'underline'}}>Passer à {suivant.name}</button> : null;
+        })()}
       </div>
     );
   }
@@ -3646,7 +3652,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                   backgroundClip: credits.available>0 ? 'text' : undefined,
                   color: credits.available>0 ? undefined : C.muted,
                 }}>{credits.available}</span>
-                <span style={{fontSize:12,color:C.muted}}>/ {credits.total} accumulées</span>
+                <span style={{fontSize:12,color:C.muted}}>/ {credits.total} {subscription?.type==='pack'?'au total':'ce mois-ci'}</span>
               </div>
               <div style={{marginTop:9,height:3,borderRadius:2,background:'rgba(255,255,255,0.06)',overflow:'hidden',maxWidth:280}}>
                 <div style={{height:'100%',borderRadius:2,background:credits.available>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.12)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
@@ -3656,14 +3662,14 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             {credits.available === 0 && (
               subscription?.type === 'pack' ? (
                 <button onClick={() => {
-                  const productId = checkoutIdFor('starter','monthly',subscription);
+                  const productId = checkoutIdFor('test','monthly');
                   if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
                 }} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,color:'#fff',padding:'8px 14px',borderRadius:8,background:C.accent,border:'none',cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
-                  <Icon name="plus" size={12} color="#fff"/> Continuez avec PERF+
+                  <Icon name="plus" size={12} color="#fff"/> Continuez avec TEST
                 </button>
               ) : (
                 <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
-                  {nextCreditDate ? `Prochaines créatives le ${nextCreditDate}` : 'Prochaines créatives la semaine prochaine'}
+                  {nextCreditDate ? `Renouvellement le ${nextCreditDate}` : 'Prochaines créatives au renouvellement'}
                 </div>
               )
             )}
@@ -3678,7 +3684,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             </div>
             <div>
               <div style={{fontSize:14,fontWeight:800,color:C.text}}>Créatives publicitaires</div>
-              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonne-toi pour recevoir tes créatives chaque semaine</div>
+              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonne-toi pour recevoir tes créatives chaque mois</div>
             </div>
           </div>
           <button onClick={()=>setSection && setSection('tarifs')} style={{position:'relative',padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(45,127,249,0.35)'}}>
@@ -5168,7 +5174,7 @@ const Marche = ({products, isDemo, setSection, subscription, onOpenPayment}) => 
               <div>
                 <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos données marché apparaîtront ici</div>
                 <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
-                  Analyse de la concurrence, tendances actuelles, persona cible et ciblage Meta Ads optimisé pour chacun de vos produits — mis à jour chaque semaine.
+                  Analyse de la concurrence, tendances actuelles, persona cible et ciblage Meta Ads optimisé pour chacun de vos produits — mis à jour régulièrement.
                 </div>
               </div>
               <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
@@ -5709,7 +5715,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     if (type === 'login') { sbAuth.signInWithGoogle(); }
     if (type === 'checkout' || type === 'checkout-quarterly') {
       const cycle = type === 'checkout-quarterly' ? 'quarterly' : 'monthly';
-      const productId = checkoutIdFor(parts[1], cycle, subscription);
+      const productId = checkoutIdFor(parts[1], cycle);
       if (productId && onOpenPayment) { setOpen(false); startCheckout(productId, onOpenPayment); }
     }
     if (type === 'whatsapp') {
@@ -5726,7 +5732,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'navigate:galerie': '→ Galerie créatives',
     'openProductForm': '+ Créer mon produit maintenant',
     'login': '→ Connecter mon compte Google',
-    'checkout:starter': 'Commencer avec PERF+ →',
+    'checkout:test': 'Commencer avec TEST →',
+    'checkout:starter': 'Passer en PERF+ →',
     'checkout:pro': 'Passer en GROWTH →',
     'checkout:scale': 'Passer en SCALE →',
     'whatsapp': '→ Parler à un humain sur WhatsApp',
@@ -5873,99 +5880,88 @@ const taillePrix = (texte, base, limite = 9) => {
   return n <= limite ? base : Math.max(Math.round(base * 0.5), Math.round(base * limite / n * 10) / 10);
 };
 
-// MAJ pricing (oct. 2026 — grille 180 000 / 330 000 / 600 000 FCFA par mois, 24 / 48 / 96 créatives par mois : vidéos + images,
-// abonnement mensuel uniquement, garantie 60 jours). Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
-// Les identifiants internes (starter / pro / scale) restent ceux de la base et des webhooks ; seuls les noms affichés changent.
+// MAJ pricing (29 oct. 2026 — 4 offres mensuelles : TEST 75 000 / PERF+ 140 000 / GROWTH 260 000 / SCALE 480 000 FCFA par mois,
+// 12 / 24 / 48 / 96 créatives par mois, un lot = 2 vidéos + 4 images). Les créatives du mois sont toutes disponibles dès le paiement,
+// le client demande lot après lot, dans la limite de 6 lots (36 créatives) par 24 h. Plus de One Shot.
+// Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
+// Les identifiants internes (test / starter / pro / scale) restent ceux de la base et des webhooks ; seuls les noms affichés changent.
 // convertPrice() (plus bas) n'est qu'un affichage indicatif : Chariow gère la devise réelle au moment du checkout.
 const PLANS = [
+  {
+    id:'test', name:'TEST', color:C.gray, best:false,
+    tagline:'Tester et trouver vos premières créatives gagnantes sur votre produit.',
+    ctaText:"S'abonner à Cette Offre",
+    lotsPerMonth: 2, produitsLabel:"jusqu'à 2 produits", creativesPerMonth: 12, videosPerMonth: 4, imagesPerMonth: 8, equipe: '0',
+    badge:'12 Créatives / Mois', garantie:null,
+    features: [
+      { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
+      { icon:'image', bold:"Jusqu'à 2 lots / mois", rest:': 2 vidéos et 4 images par lot' },
+      { icon:'box', bold:'Couverture', rest:": jusqu'à 2 produits" },
+      { icon:'sparkle', bold:'Apprentissage', rest:': itération + amélioration des prochains lots' },
+      { icon:'grid', bold:'AdBoard', rest:': gestion des créatives, données et produits' },
+      { icon:'bolt', bold:'Délai Production', rest:': 48h' },
+    ],
+    monthly: { price:75000, prixImg:6250, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_yslvdsuz/checkout' },
+  },
   {
     id:'starter', name:'PERF+', color:C.gray, best:false,
     tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 6, produitsPerWeek: '1', batchesPerWeek: 1, creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16, equipe: '2',
+    lotsPerMonth: 4, produitsLabel:"jusqu'à 4 produits", creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16, equipe: '2',
     badge:'24 Créatives / Mois', garantie:'Performance en 60 jours',
+    lead:'Tout dans TEST et :',
     features: [
-      { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
-      { icon:'image', bold:'1 lot / Semaine', rest:': 2 vidéos et 4 images optimisés conversion' },
-      { icon:'box', bold:'Capacité', rest:': 1 produit couvert / semaine' },
-      { icon:'sparkle', bold:'Apprentissage', rest:': itération et amélioration des prochains lots' },
-      { icon:'grid', bold:'AdBoard', rest:': gestion des créatives, données et produits' },
+      { icon:'image', bold:"Jusqu'à 4 lots de créatives / mois", rest:'' },
+      { icon:'document', bold:'Ad Copies', rest:': titres et textes optimisés conversion' },
+      { icon:'chart', bold:'Données Marché', rest:': vue détaillées, recommandation et opportunités' },
+      { icon:'box', bold:'Couverture', rest:": jusqu'à 4 produits" },
       { icon:'person', bold:'Compte Employé', rest:': Ajoutez 2 Membres à AdBoard' },
-      { icon:'bolt', bold:'Production', rest:': 48h après demande' },
       { icon:'check', bold:'Garantie', rest:': Performance en 60 jours' },
     ],
-    monthly: { price:180000, prixImg:7500, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    monthly: { price:140000, prixImg:5833, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
   },
   {
     id:'pro', name:'GROWTH', color:C.accent, best:true,
-    tagline:'Accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
+    tagline:'Accélérer la production créative et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 12, produitsPerWeek: "jusqu'à 2", batchesPerWeek: 2, creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32, equipe: '5',
+    lotsPerMonth: 8, produitsLabel:"jusqu'à 8 produits", creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32, equipe: '5',
     badge:'48 Créatives / Mois', garantie:'Croissance en 60 jours',
     lead:'Tout dans PERF+ et :',
     features: [
-      { icon:'image', bold:'2 lots / Semaine', rest:': 4 vidéos et 8 images optimisés conversion' },
-      { icon:'document', bold:'Ad Copies', rest:': titres et textes optimisés conversion' },
-      { icon:'chart', bold:'Données Marché', rest:': vue détaillées, recommandation et opportunités' },
-      { icon:'box', bold:'Couverture', rest:": jusqu'à 2 produits / semaine" },
+      { icon:'image', bold:"Jusqu'à 8 lots de créatives / mois", rest:'' },
+      { icon:'box', bold:'Couverture', rest:": jusqu'à 8 produits" },
       { icon:'person', bold:'Compte Employé', rest:': Ajoutez 5 Membres à AdBoard' },
-      { icon:'bolt', bold:'Production', rest:': 24h après demande' },
+      { icon:'bolt', bold:'Délai Production', rest:': 24h' },
       { icon:'check', bold:'Garantie', rest:': Croissance en 60 jours' },
     ],
-    monthly: { price:330000, prixImg:6875, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    monthly: { price:260000, prixImg:5417, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
   },
   {
     id:'scale', name:'SCALE', color:C.white, best:false,
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
-    imagesPerWeek: 24, produitsPerWeek: "jusqu'à 4", batchesPerWeek: 4, creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64, equipe: '+10',
+    lotsPerMonth: 16, produitsLabel:"jusqu'à 16 produits", creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64, equipe: '+10',
     badge:'96 Créatives / Mois', garantie:'Scaling en 60 jours',
     lead:'Tout dans GROWTH et :',
     features: [
-      { icon:'image', bold:'4 lots / Semaine', rest:': 8 vidéos et 16 images optimisés conversion' },
-      { icon:'box', bold:'Couverture', rest:": jusqu'à 4 produits / semaine" },
+      { icon:'image', bold:"Jusqu'à 16 lots de créatives / mois", rest:'' },
+      { icon:'box', bold:'Couverture', rest:": jusqu'à 16 produits" },
       { icon:'person', bold:'Compte Employé', rest:': Ajoutez +10 Membres à AdBoard' },
-      { icon:'bolt', bold:'Production', rest:': 24h après demande + file prioritaire' },
+      { icon:'bolt', bold:'Délai Production', rest:': 24h + file prioritaire' },
       { icon:'check', bold:'Garantie', rest:': Scaling en 60 jours' },
     ],
-    monthly: { price:600000, prixImg:6250, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    monthly: { price:480000, prixImg:5000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
   },
 ];
 
 // Les ids trimestriels restent pour les abonnés existants ; l'offre trimestrielle n'est plus vendue.
 const PLAN_CHECKOUT_IDS = {
+  'test-monthly':    'prd_yslvdsuz',
   'starter-monthly': 'prd_ljowq8',   'starter-quarterly': 'prd_wdya3v9h',
   'pro-monthly':     'prd_34w031',
   'scale-monthly':   'prd_9fi79y',
 };
-
-// ── Offre liée au pack One Shot ─────────────────────────────────────────────────────────────
-// Un client qui a acheté le pack (visible sur la page de vente uniquement) a 30 jours, à partir de
-// l'achat, pour s'abonner à n'importe quelle offre avec 50 000 FCFA de moins sur le 1er mois.
-// Mécanisme : trois produits Chariow dédiés (même offre, prix −50 000), pas de code de réduction.
-// Les identifiants sont à renseigner ici ; tant qu'un identifiant est vide, la réduction n'est
-// pas affichée pour cette offre (on n'affiche jamais un prix que le paiement n'appliquerait pas).
-const PACK_PROMO_OFF = 50000;
-const PACK_PROMO_JOURS = 30;
-const PACK_PROMO_IDS = { starter: 'prd_yslvdsuz', pro: 'prd_lnp4ax0b', scale: 'prd_dn4fb72l' };
-const packPromoJours = (sub) => {
-  // promo_pack_used : posé par le serveur si le client a déjà payé un abonnement avant ce pack — la réduction n'est valable qu'une fois dans sa vie.
-  if (!sub || sub.type !== 'pack' || !sub.started_at || sub.promo_pack_used === true) return 0;
-  const fin = new Date(sub.started_at).getTime() + PACK_PROMO_JOURS * 86400000;
-  return Math.max(0, Math.ceil((fin - Date.now()) / 86400000));
-};
-// Retourne { jours, id, prix, normal } si la réduction s'applique à cette offre, sinon null.
-const packPromo = (sub, planId) => {
-  const jours = packPromoJours(sub);
-  const id = PACK_PROMO_IDS[planId];
-  const plan = PLANS.find(pl => pl.id === planId);
-  if (!jours || !id || !plan) return null;
-  return { jours, id, normal: plan.monthly.price, prix: Math.max(0, plan.monthly.price - PACK_PROMO_OFF) };
-};
-const checkoutIdFor = (planId, cycle, sub) => {
-  const pr = cycle === 'monthly' ? packPromo(sub, planId) : null;
-  return pr ? pr.id : PLAN_CHECKOUT_IDS[`${planId}-${cycle}`];
-};
+const checkoutIdFor = (planId, cycle) => PLAN_CHECKOUT_IDS[`${planId}-${cycle}`];
 
 // Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
 // Vérifie la connexion Google, mémorise l'intention si pas connecté, reprend automatiquement après connexion.
@@ -6010,35 +6006,31 @@ const triggerChariowCheckout = async (plan, cycle, user, popup) => {
 const FAQ_ITEMS = [
   {
     q: "Qu'est-ce qu'AdBoard exactement ?",
-    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit pour vous des créatives publicitaires (vidéos et images Meta Ads), livrées directement dans votre galerie. Avec GROWTH et SCALE, vous recevez aussi les textes publicitaires (Ad Copies) et les données de votre marché."
+    a: "AdBoard est la plateforme d'AdStack : vous ajoutez vos produits, et notre équipe produit pour vous des créatives publicitaires (vidéos et images Meta Ads), livrées directement dans votre galerie. À partir de PERF+, vous recevez aussi les textes publicitaires (Ad Copies) et les données de votre marché."
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "PERF+ : 24 créatives par mois (1 lot par semaine de 2 vidéos et 4 images), 1 produit couvert par semaine, 2 membres d'équipe, production en 48h. GROWTH : 48 créatives par mois (2 lots par semaine), jusqu'à 2 produits par semaine, Ad Copies et Données Marché, 5 membres, production en 24h. SCALE : 96 créatives par mois (4 lots par semaine), jusqu'à 4 produits par semaine, plus de 10 membres, production en 24h avec file prioritaire. Chaque formule est accompagnée d'une garantie de 60 jours."
+    a: "Chaque lot = 2 vidéos et 4 images. TEST : 12 créatives par mois (jusqu'à 2 lots), 2 produits, production en 48h. PERF+ : 24 créatives par mois (jusqu'à 4 lots), 4 produits, Ad Copies et Données Marché, 2 membres d'équipe, production en 48h. GROWTH : 48 créatives par mois (jusqu'à 8 lots), 8 produits, 5 membres, production en 24h. SCALE : 96 créatives par mois (jusqu'à 16 lots), 16 produits, plus de 10 membres, production en 24h avec file prioritaire. Vos créatives du mois sont disponibles dès le paiement : vous les demandez lot après lot, quand vous voulez (jusqu'à 6 lots par jour). Une garantie de 60 jours accompagne PERF+, GROWTH et SCALE."
   },
   {
     q: "En combien de temps mes créatives sont-elles livrées ?",
-    a: "Jusqu'à 48h après votre demande avec PERF+, jusqu'à 24h avec GROWTH et SCALE (SCALE passe en file prioritaire). Vous suivez l'avancement dans l'onglet Suivi Demande et vous êtes notifié dès que vos créatives sont prêtes."
+    a: "Jusqu'à 48h après votre demande. Vous suivez l'avancement dans l'onglet Suivi Demande et vous êtes notifié dès que vos créatives sont prêtes."
   },
   {
     q: "Comment télécharger mes créatives ?",
     a: "Dans la Galerie, ouvrez une créative et touchez Télécharger. Pour en récupérer plusieurs, touchez Sélectionner, cochez vos créatives (ou Tout sélectionner après avoir filtré), puis Télécharger : chaque créative arrive comme un fichier séparé, prêt à être envoyé dans votre gestionnaire de publicités, sans archive à extraire."
   },
   {
-    q: "Que contient la section Ad Copies ? (GROWTH et SCALE)",
+    q: "Que contient la section Ad Copies ? (à partir de PERF+)",
     a: "Pour chaque angle, vous trouvez 5 titres et 1 texte principal, correspondant aux deux champs de texte de Meta Ads, avec un aperçu de la pub et les 3 créatives de l'angle. Touchez un titre pour le voir dans l'aperçu, puis copiez-le et collez-le dans votre gestionnaire de publicités."
   },
   {
-    q: "Que contient la section Données Marché ? (GROWTH et SCALE)",
+    q: "Que contient la section Données Marché ? (à partir de PERF+)",
     a: "Pour chaque produit, notre équipe analyse votre marché cible (pays, concurrence, persona) et vous fournit une vue détaillée, des recommandations et des opportunités pour orienter vos campagnes."
   },
   {
     q: "Puis-je donner accès à mon équipe ?",
-    a: "Oui, avec le Compte Employé : 2 membres avec PERF+, 5 avec GROWTH, plus de 10 avec SCALE. Depuis l'onglet Équipe, vous invitez une personne par e-mail et choisissez son rôle : media buyer, assistant, lecture seule ou personnalisé. Un membre ne peut jamais rien supprimer ; il peut annuler une demande qu'il a lui-même faite."
-  },
-  {
-    q: "J'ai pris le pack de 6 publicités : et ensuite ?",
-    a: "Vos 6 créatives arrivent dans AdBoard. Si vous vous abonnez à une formule dans les 30 jours qui suivent l'achat du pack, vous bénéficiez de 50 000 FCFA de réduction sur votre premier mois : les prix réduits s'affichent dans l'onglet Forfait, avec le nombre de jours restants. Cette réduction ne s'applique qu'une seule fois."
+    a: "Oui, avec le Compte Employé, à partir de PERF+ : 2 membres avec PERF+, 5 avec GROWTH, plus de 10 avec SCALE. Depuis l'onglet Équipe, vous invitez une personne par e-mail et choisissez son rôle : media buyer, assistant, lecture seule ou personnalisé. Un membre ne peut jamais rien supprimer ; il peut annuler une demande qu'il a lui-même faite."
   },
   {
     q: "Puis-je changer de formule à tout moment ?",
@@ -6114,9 +6106,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
   const onCta = async (plan) => {
     const cycle = quarterly ? 'quarterly' : 'monthly';
     const cycleData = plan[cycle];
-    try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: (packPromo(subscription, plan.id)?.prix ?? cycleData.price), currency: 'XOF' }); } catch(e) {}
+    try { window.fbq && window.fbq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
     try { window.twq && window.twq('track', 'InitiateCheckout', { content_name: plan.name, value: cycleData.price, currency: 'XOF' }); } catch(e) {}
-    const productId = checkoutIdFor(plan.id, cycle, subscription);
+    const productId = checkoutIdFor(plan.id, cycle);
     if (onOpenPayment && productId) { startCheckout(productId, onOpenPayment); return; }
     // Filet de sécurité si jamais le produit n'est pas reconnu : ouvrir le checkout classique
     const user = sbAuth.getUser();
@@ -6179,23 +6171,10 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           <div data-testid="conso-forfait" style={{padding:'14px 16px',borderRadius:11,background:C.card,border:`1px solid ${C.border}`,marginBottom:18}}>
             <div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:10,marginBottom:9,flexWrap:'wrap'}}>
               <div style={{fontSize:12.5,color:C.text,fontWeight:700}}>Votre forfait en ce moment</div>
-              <div style={{fontSize:12,color:C.sec}}><b style={{color:C.text,fontFamily:"'DM Mono',monospace"}}>{utilisees}</b> créatives utilisées sur <b style={{color:C.text,fontFamily:"'DM Mono',monospace"}}>{total}</b> accumulées</div>
+              <div style={{fontSize:12,color:C.sec}}><b style={{color:C.text,fontFamily:"'DM Mono',monospace"}}>{utilisees}</b> créatives utilisées sur <b style={{color:C.text,fontFamily:"'DM Mono',monospace"}}>{total}</b> ce mois-ci</div>
             </div>
             <div style={{height:4,borderRadius:3,background:'rgba(255,255,255,0.07)',overflow:'hidden'}}><div style={{height:'100%',width:`${pct}%`,borderRadius:3,background:'linear-gradient(90deg,#5B8DEF,#1FB6FF)'}}/></div>
           </div>
-        );
-      })()}
-
-      {/* ── Offre pack One Shot : −50 000 FCFA sur le 1er mois, 30 jours à compter de l'achat du pack ── */}
-      {PLANS.some(pl => packPromo(subscription, pl.id)) && (() => {
-        const jours = packPromoJours(subscription);
-        return (
-        <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderRadius:11,background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.28)',marginBottom:18,flexWrap:'wrap'}} data-testid="pack-bonus">
-          <Icon name="sparkle" size={18} color="#22C55E"/>
-          <div style={{flex:1,minWidth:200,fontSize:13,color:C.text,lineHeight:1.5}}>
-            <strong>{convertPrice(PACK_PROMO_OFF)} de réduction sur votre 1er mois, quelle que soit l'offre.</strong> <span style={{color:C.sec}}>Plus que {jours} jour{jours>1?'s':''} : les prix ci-dessous sont déjà réduits.</span>
-          </div>
-        </div>
         );
       })()}
 
@@ -6204,7 +6183,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
         <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.22)`,marginBottom:20,flexWrap:'wrap'}}>
           <span style={{width:30,height:30,borderRadius:9,background:'rgba(45,127,249,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="lock" size={15} color={C.accent}/></span>
           <div style={{fontSize:12.5,color:C.text,lineHeight:1.4}}>
-            <strong style={{color:C.accent}}>Garantie résultats en 60 jours.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
+            <strong style={{color:C.accent}}>Garantie résultats en 60 jours à partir de PERF+.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
           </div>
         </div>
       )}
@@ -6222,11 +6201,10 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const isCurrent = subscription?.active && sameTier && (currentCycle === selectedCycle);
           const isCycleUpsell = sameTier && currentCycle !== selectedCycle && selectedCycle === 'quarterly';   // même palier, passer au trimestriel
           const isCycleDowngradeCycle = sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
-          const PLAN_ORDER = { discovery:0, starter:1, pro:2, scale:3 };
+          const PLAN_ORDER = { discovery:0, test:1, starter:2, pro:3, scale:4 };
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           const cycleData = quarterly ? p.quarterly : p.monthly;
-          const promoCard = quarterly ? null : packPromo(subscription, p.id);
           // Fonctionnalités : texte fourni par Amar (27 oct. 2026), propre à chaque offre — voir PLANS.
           const featureGroups = [ { titre:'', lead:p.lead, items:p.features } ];
           return (
@@ -6238,7 +6216,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                 border:`1px solid ${isCurrent?'rgba(255,255,255,0.28)':p.best?'rgba(45,127,249,0.38)':C.border}`,
                 borderRadius:14, padding:'22px', display:'flex', flexDirection:'column',
                 position:'relative', transition:'transform 0.2s, box-shadow 0.2s',
-                ...(isMobile ? {} : {flex:'0 0 300px', width:300}),
+                ...(isMobile ? {} : {flex:'1 1 0', minWidth:230}),
               }}
               onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-3px)';e.currentTarget.style.boxShadow='0 14px 32px rgba(0,0,0,0.35)';}}
               onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none';}}
@@ -6268,11 +6246,9 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                   (geo-détection + taux de change) — Chariow reste la source de vérité au
                   moment du checkout, cet affichage n'est qu'indicatif. */}
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-                {promoCard && <span style={{fontSize:13,color:C.muted,textDecoration:'line-through',marginRight:4}}>{convertPrice(promoCard.normal)}</span>}
-                <span style={{fontSize:taillePrix(convertPrice(promoCard?promoCard.prix:cycleData.price),30),fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(promoCard?promoCard.prix:cycleData.price)}</span>
+                <span style={{fontSize:taillePrix(convertPrice(cycleData.price),30),fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
                 <span style={{fontSize:11,color:C.sec}}>/ mois</span>
               </div>
-              {promoCard && <div style={{fontSize:11,fontWeight:700,color:'#22C55E',marginBottom:8}} data-testid="promo-tag">−{convertPrice(PACK_PROMO_OFF)} · encore {promoCard.jours} jour{promoCard.jours>1?'s':''}</div>}
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>
 
@@ -6331,7 +6307,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {!isCurrent && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
-                  {isMobile && <><br/><span style={{color:C.accent,fontWeight:700}}>Garantie résultats en 60 jours</span></>}
+                  {isMobile && p.garantie && <><br/><span style={{color:C.accent,fontWeight:700}}>Garantie résultats en 60 jours</span></>}
                 </div>
               )}
             </div>
@@ -7023,7 +6999,7 @@ export default function Platform() {
           let dejaNotifie = false;
           try { dejaNotifie = !!sessionStorage.getItem('adstack_expired_notified_session'); } catch(e) {}
           if (!dejaNotifie) {
-            notify(`Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos créatives chaque semaine.`, 'warning');
+            notify(`Votre abonnement ${sub.plan?.charAt(0).toUpperCase()+sub.plan?.slice(1)} a expiré. Renouvelez pour continuer à recevoir vos créatives chaque mois.`, 'warning');
             try { sessionStorage.setItem('adstack_expired_notified_session', '1'); } catch(e) {}
           }
         }

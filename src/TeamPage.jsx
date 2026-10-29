@@ -56,7 +56,7 @@ export default function TeamPage({ C, getToken, notify, onUpgrade, isMobile }) {
         <div style={{ ...card, padding: 20, marginTop: 14 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>Travaillez à plusieurs sur le même espace</div>
           <div style={{ fontSize: 12.5, color: C.sec, lineHeight: 1.6, marginBottom: 14 }}>
-            Invitez votre media buyer ou votre assistant, avec les droits que vous choisissez. PERF+ : {SEATS.starter} membres · GROWTH : {SEATS.pro} · SCALE : plus de 10.
+            Invitez votre media buyer ou votre assistant, avec les droits que vous choisissez. Disponible à partir de PERF+ : {SEATS.starter} membres · GROWTH : {SEATS.pro} · SCALE : plus de 10.
           </div>
           <button style={btn(true)} onClick={onUpgrade}>Voir les offres</button>
         </div>

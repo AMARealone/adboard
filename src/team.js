@@ -24,7 +24,7 @@ export const PRESETS = {
   personnalise: { label: 'Personnalisé', desc: 'Vous cochez exactement les droits.', perms: { view: true, download: true, edit_products: false, request_production: false } },
 };
 export const SEATS = { starter: 2, pro: 5, scale: 15 };
-export const PLAN_LABEL = { starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
+export const PLAN_LABEL = { test: 'TEST', starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
 
 const ALL = { view: true, download: true, edit_products: true, request_production: true };
 

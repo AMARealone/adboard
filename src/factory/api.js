@@ -83,4 +83,4 @@ export async function getCtVideos() {
 // Offres : SCALE passe en file prioritaire ; PERF+ a 48 h de délai de production, les autres 24 h.
 export const estPrioritaire = (b) => (b.client?.plan || '') === 'scale'
 export const prio = (b) => (estPrioritaire(b) ? 0 : 1)
-export const delaiClientH = (b) => ((b.client?.plan || '') === 'starter' ? 48 : 24)
+export const delaiClientH = (b) => (['starter', 'test'].includes(b.client?.plan || '') ? 48 : 24)
