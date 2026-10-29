@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Étude de cas — AdStack</title>
+<meta name="description" content="Comment une marque e-commerce a trouvé ses créatives gagnantes avec AdStack.">
+<link rel="icon" href="/favicon.ico">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','1425042735803143');fbq('track','PageView');
+</script>
+<style>
+:root{--bg:#0A0A0E;--card:#11131a;--line:rgba(255,255,255,.08);--tx:#fff;--mut:#9a9da6;--a:#1FB6FF;--b:#0B5CFF;--sticker:#FFC53D}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,-apple-system,'Segoe UI',Arial,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1040px;margin:0 auto;padding:0 20px}
+.nav{position:sticky;top:0;z-index:20;background:rgba(10,10,14,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.back{font-size:13px;font-weight:600;color:var(--mut);text-decoration:none;display:inline-flex;gap:6px;align-items:center;min-height:44px}
+.back:hover{color:#fff}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 26px;border-radius:999px;background:linear-gradient(135deg,var(--a),var(--b));color:#fff;font-weight:800;font-size:15px;text-decoration:none;box-shadow:0 6px 22px rgba(31,182,255,.3);min-height:48px}
+.btn.sm{padding:10px 18px;font-size:13px;min-height:40px}
+.btn.ghost{background:transparent;border:1.5px solid var(--line);box-shadow:none}
+.eyebrow{font:600 11px/1 ui-monospace,Menlo,Consolas,monospace;letter-spacing:1.6px;text-transform:uppercase;color:var(--a)}
+section.s{padding:56px 0;border-top:1px solid var(--line)}
+section.s:first-of-type{border-top:0}
+h1{font-size:clamp(30px,5.2vw,52px);line-height:1.12;letter-spacing:-1px;margin:14px 0 14px;font-weight:800}
+h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:10px 0 26px;font-weight:800}
+.meta{color:var(--mut);font-size:14px}
+.hero{padding:48px 0 40px}
+.figs{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px}
+.fig{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px 18px}
+.fig b{display:block;font-size:clamp(26px,4vw,40px);line-height:1.1;letter-spacing:-1px;background:linear-gradient(135deg,var(--a),#7fe3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fig span{display:block;margin-top:8px;font-size:13px;color:var(--mut)}
+.quote{display:grid;grid-template-columns:1fr;gap:22px}
+.quote blockquote{margin:0;font-size:clamp(19px,2.6vw,26px);line-height:1.4;font-weight:600}
+.who{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:14px;color:var(--mut)}
+.who img{width:52px;height:52px;border-radius:50%;object-fit:cover}
+.who b{color:#fff;display:block}
+.video{position:relative;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:#000;border:1px solid var(--line)}
+.video iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.two{display:grid;grid-template-columns:1.3fr 1fr;gap:30px;align-items:start}
+.ctx-fig{display:grid;gap:12px}
+.pb{counter-reset:p;display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.pb li{counter-increment:p;display:flex;gap:16px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;font-size:16px}
+.pb li:before{content:counter(p);flex:none;width:30px;height:30px;border-radius:50%;background:rgba(255,90,90,.15);color:#ff7a7a;font-weight:800;display:grid;place-items:center;font-size:14px}
+.tl{display:grid;gap:0;margin:0;padding:0;list-style:none;position:relative}
+.tl li{position:relative;padding:0 0 28px 44px}
+.tl li:before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--line)}
+.tl li:last-child:before{display:none}
+.tl li:after{content:"";position:absolute;left:6px;top:4px;width:16px;height:16px;border-radius:50%;background:linear-gradient(135deg,var(--a),var(--b));box-shadow:0 0 0 5px rgba(31,182,255,.14)}
+.tl .q{font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:1.4px;text-transform:uppercase;color:var(--a)}
+.tl h3{margin:6px 0 6px;font-size:19px}
+.tl p{margin:0;color:var(--mut);font-size:15px}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px}
+.win{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.win figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.win img{display:block;width:100%;height:auto;cursor:zoom-in}
+.win figcaption{padding:12px 14px;font-size:13px;color:var(--mut)}
+.win figcaption b{display:block;color:var(--sticker);font-size:16px}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.gal img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.cta{text-align:center;padding:64px 0 90px}
+.cta h2{margin-bottom:12px}
+.cta p{color:var(--mut);margin:0 0 26px}
+.cta .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.lb{position:fixed;inset:0;background:rgba(0,0,0,.9);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.lb.on{display:flex}.lb img{max-width:100%;max-height:100%;border-radius:10px}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:30;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:rgba(10,10,14,.94);border-top:1px solid var(--line);display:none;gap:10px;align-items:center;justify-content:space-between}
+.sticky span{font-size:13px;color:var(--mut);line-height:1.3}
+.rv{opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s}.rv.in{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
+@media(max-width:760px){.figs{grid-template-columns:1fr}.two{grid-template-columns:1fr}section.s{padding:40px 0}.sticky{display:flex}body{padding-bottom:70px}.hero{padding-top:32px}}
+.vide{padding:80px 0;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="back" href="/vente#etudes-de-cas" id="retour">← Retour</a>
+  <a class="btn sm" href="/vente#nos-offres" data-cta="nav">Voir les offres</a>
+</div></header>
+<main id="page"></main>
+<div class="sticky" id="sticky"><span>Des résultats comme ceux-ci ?</span><a class="btn sm" href="/vente#nos-offres" data-cta="sticky">Voir les offres</a></div>
+<div class="lb" id="lb"><img alt=""></div>
+<script src="/etude-de-cas-data.js"></script>
+<script>
+(function(){
+var D=window.ETUDE_DE_CAS||{};
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function has(a){return Array.isArray(a)&&a.length>0}
+function figs(a,cls){return has(a)?'<div class="'+(cls||'figs')+'">'+a.filter(function(f){return f&&f.valeur}).map(function(f){return '<div class="fig"><b>'+esc(f.valeur)+'</b><span>'+esc(f.label)+'</span></div>'}).join('')+'</div>':''}
+var h='';
+if(!D.actif && !/apercu=1/.test(location.search)){document.getElementById('page').innerHTML='<div class="vide wrap"><h1 style="font-size:28px">Bientôt disponible</h1><p>Cette étude de cas arrive.</p><a class="btn" href="/vente">Retour à la page principale</a></div>';document.getElementById('sticky').style.display='none';return}
+// 1. Hero
+h+='<section class="s hero"><div class="wrap rv"><div class="eyebrow">Étude de cas · '+esc(D.marque)+'</div>';
+if(D.titre)h+='<h1>'+esc(D.titre)+'</h1>';else h+='<h1>'+esc(D.marque)+'</h1>';
+var meta=[D.meta,D.secteur,D.pays,D.lecture].filter(Boolean).join(' · ');if(meta)h+='<div class="meta">'+esc(meta)+'</div>';
+h+=figs((D.chiffres||[]).slice(0,3))+'</div></section>';
+// 2. Témoignage
+var t=D.temoignage||{};
+if(t.texte||t.youtube){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Ce que dit le fondateur</div><h2>Entendu directement de la marque</h2><div class="quote">';
+ if(t.youtube)h+='<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/'+esc(t.youtube)+'" title="Témoignage" loading="lazy" allowfullscreen></iframe></div>';
+ if(t.texte){h+='<div><blockquote>« '+esc(t.texte)+' »</blockquote>';
+  if(t.nom)h+='<div class="who">'+(t.photo?'<img src="'+esc(t.photo)+'" alt="'+esc(t.nom)+'">':'')+'<div><b>'+esc(t.nom)+'</b>'+esc(t.role)+'</div></div>';
+  h+='</div>'}
+ h+='</div></div></section>'}
+// 3. La marque
+if(D.contexte){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">La marque</div><h2>'+esc(D.marque)+'</h2><div class="two"><p style="font-size:17px;margin:0">'+esc(D.contexte)+'</p>'+figs(D.contexteChiffres,'ctx-fig')+'</div></div></section>'}
+// 4. Problème
+if(has(D.problemes)){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Le problème</div><h2>Ce qui freinait la croissance</h2><ol class="pb">'+D.problemes.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+'</ol></div></section>'}
+// 5. Solution
+var et=(D.etapes||[]).filter(function(e){return e&&e.texte});
+if(et.length){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">La solution</div><h2>Comment nous avons travaillé</h2><ol class="tl">'+et.map(function(e){return '<li><div class="q">'+esc(e.quand)+'</div><h3>'+esc(e.titre)+'</h3><p>'+esc(e.texte)+'</p></li>'}).join('')+'</ol></div></section>'}
+// 6. Résultats
+if(has(D.resultats)||has(D.gagnantes)){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Les résultats</div><h2>'+esc(D.resultatsIntro||'Ce que ça a donné')+'</h2>'+figs(D.resultats,'res');
+ if(has(D.gagnantes))h+='<div class="win">'+D.gagnantes.map(function(g){return '<figure><img src="'+esc(g.img)+'" alt="'+esc(g.legende)+'" loading="lazy"><figcaption>'+(g.metrique?'<b>'+esc(g.metrique)+'</b>':'')+esc(g.legende)+'</figcaption></figure>'}).join('')+'</div>';
+ h+='</div></section>'}
+// 7. Galerie
+if(has(D.galerie)){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Les créatives</div><h2>Réalisées pour '+esc(D.marque)+'</h2><div class="gal">'+D.galerie.map(function(g){return '<img src="'+esc(g)+'" alt="Créative '+esc(D.marque)+'" loading="lazy">'}).join('')+'</div></div></section>'}
+// 8. CTA
+h+='<section class="cta"><div class="wrap rv"><h2>Vous voulez des résultats comme ceux-ci ?</h2><p>Choisissez votre offre et recevez vos premières créatives dans AdBoard.</p><div class="row"><a class="btn" href="/vente#nos-offres" data-cta="fin">Voir les offres</a><a class="btn ghost" href="/vente#etudes-de-cas">Retour</a></div></div></section>';
+document.getElementById('page').innerHTML=h;
+// comportements
+var io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.08}):null;
+document.querySelectorAll('.rv').forEach(function(el){io?io.observe(el):el.classList.add('in')});
+setTimeout(function(){document.querySelectorAll('.rv:not(.in)').forEach(function(el){el.classList.add('in')})},2500);
+var lb=document.getElementById('lb'),li=lb.querySelector('img');
+document.addEventListener('click',function(e){var im=e.target.closest('.win img,.gal img');if(im){li.src=im.src;lb.classList.add('on')}else if(e.target.closest('#lb')){lb.classList.remove('on')}});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')lb.classList.remove('on')});
+document.querySelectorAll('[data-cta]').forEach(function(a){a.addEventListener('click',function(){try{if(window.fbq)fbq('trackCustom','EtudeDeCasCTA',{emplacement:a.getAttribute('data-cta')})}catch(x){}})});
+try{if(window.fbq)fbq('track','ViewContent',{content_name:'Etude de cas '+D.marque})}catch(x){}
+})();
+</script>
+</body>
+</html>
