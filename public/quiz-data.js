@@ -40,16 +40,20 @@ window.QUIZ = {
     pro:     { titre:"GROWTH est l’offre qui va faire décoller votre marque.", sous:"Vous avez déjà ce qui marche. Il vous manque le volume et la vitesse pour augmenter votre budget sans crainte, et sans gérer une équipe." },
     scale:   { titre:"SCALE est faite pour votre ambition.", sous:"Plusieurs produits, plusieurs marchés : chacun a ses propres angles. SCALE les produit en 24h, sans exploser vos coûts." }
   },
-  offres: {
+  offres: (function(){
+    var STRAT=['Stratégie Marketing',': recherche sur marché, concurrents, cible'], LEARN=['Apprentissage',': itération + amélioration des prochains lots'], BOARD=['AdBoard',': gestion des créatives, données et produits'],
+        COPY=['Ad Copies',': titres et textes optimisés conversion'], DATA=['Données Marché',': vues détaillées, recommandations et opportunités'];
+    return {
     test:   { name:'TEST',   price:75000,  productId:'prd_yslvdsuz', tagline:'Tester et trouver vos premières créatives gagnantes sur votre produit.', creas:12, lead:'', items:[
-      ['Stratégie Marketing',': recherche sur marché, concurrents, cible'],['Jusqu’à 2 lots / mois',': 2 vidéos et 4 images par lot'],['Couverture',': jusqu’à 2 produits'],['Apprentissage',': itération + amélioration des prochains lots'],['AdBoard',': gestion des créatives, données et produits'],['Délai Production',': 48h']] },
-    starter:{ name:'PERF+',  price:140000, productId:'prd_ljowq8',   tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.', creas:24, lead:'Tout dans TEST et :', items:[
-      ['Jusqu’à 4 lots de créatives / mois',''],['Ad Copies',': titres et textes optimisés conversion'],['Données Marché',': vues détaillées, recommandations et opportunités'],['Couverture',': jusqu’à 4 produits'],['Compte Employé',': ajoutez 2 membres à AdBoard'],['Garantie',': Performance en 60 jours']] },
-    pro:    { name:'GROWTH', price:260000, productId:'prd_34w031',   tagline:'Accélérer la production créative et la croissance de votre marque, sans la prise de tête de gérer une équipe.', creas:48, lead:'Tout dans PERF+ et :', items:[
-      ['Jusqu’à 8 lots de créatives / mois',''],['Couverture',': jusqu’à 8 produits'],['Compte Employé',': ajoutez 5 membres à AdBoard'],['Délai Production',': 24h'],['Garantie',': Croissance en 60 jours']] },
-    scale:  { name:'SCALE',  price:480000, productId:'prd_9fi79y',   tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.', creas:96, lead:'Tout dans GROWTH et :', items:[
-      ['Jusqu’à 16 lots de créatives / mois',''],['Couverture',': jusqu’à 16 produits'],['Compte Employé',': ajoutez +10 membres à AdBoard'],['Délai Production',': 24h + file prioritaire'],['Garantie',': Scaling en 60 jours']] }
-  },
+      STRAT,['Jusqu’à 2 lots / mois',': 2 vidéos et 4 images par lot'],['Couverture',': jusqu’à 2 produits'],LEARN,BOARD,['Délai Production',': 48h']] },
+    starter:{ name:'PERF+',  price:140000, productId:'prd_ljowq8',   tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.', creas:24, lead:'', items:[
+      STRAT,['Jusqu’à 4 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 4 produits'],LEARN,BOARD,['Compte Employé',': ajoutez 2 membres à AdBoard'],['Délai Production',': 48h'],['Garantie',': Performance en 60 jours']] },
+    pro:    { name:'GROWTH', price:260000, productId:'prd_34w031',   tagline:'Accélérer la production créative et la croissance de votre marque, sans la prise de tête de gérer une équipe.', creas:48, lead:'', items:[
+      STRAT,['Jusqu’à 8 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 8 produits'],LEARN,BOARD,['Compte Employé',': ajoutez 5 membres à AdBoard'],['Délai Production',': 24h'],['Garantie',': Croissance en 60 jours']] },
+    scale:  { name:'SCALE',  price:480000, productId:'prd_9fi79y',   tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.', creas:96, lead:'', items:[
+      STRAT,['Jusqu’à 16 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 16 produits'],LEARN,BOARD,['Compte Employé',': ajoutez +10 membres à AdBoard'],['Délai Production',': 24h + file prioritaire'],['Garantie',': Scaling en 60 jours']] }
+    };
+  })(),
   /* Calcule le plan : somme des scores ; en cas d’égalité, le plan favorisé par la question budget l’emporte. */
   calcul: function(idx){
     var tot=[0,0,0,0], i, j;

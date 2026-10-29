@@ -1528,26 +1528,18 @@ img.exv-lb-media{max-width:94vw}
 @keyframes qzPulse{0%,100%{box-shadow:0 0 0 0 rgba(31,182,255,0)}50%{box-shadow:0 0 0 6px rgba(31,182,255,.12)}}
 @media(max-width:800px){.pt-section{padding:56px 0 8px}.qz-card{grid-template-columns:1fr;gap:0}.qz-txt{padding:32px 22px 18px}.qz-vis{padding:6px 22px 30px}.qz-btn{width:100%;justify-content:center}}
 @media(prefers-reduced-motion:reduce){.qz-opt.on{animation:none}}
+.qz-compact{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;max-width:620px;padding:34px 28px;background:linear-gradient(135deg,#0F1830 0%,#121722 70%)}
+.qz-compact .qz-p{margin:0;max-width:none;font-size:17px;color:#C9CBD1}
+.qz-compact:before{display:none}
+#profils .pt-title{margin-bottom:28px}
+@media(max-width:800px){.qz-compact{padding:28px 20px}.qz-compact .qz-btn{width:100%}}
 </style>
 <section class="pt-section" id="profils">
   <div class="pt-inner">
-    <h2 class="pt-title">Vous vous <em>reconnaissez ?</em></h2>
-    <p class="pt-sub">Quelques questions, et l’offre qui vous correspond.</p>
-    <div class="qz-card">
-      <div class="qz-txt">
-        <span class="qz-badge">⏱ 30 secondes · 5 questions</span>
-        <h3 class="qz-h">Répondez à un quiz de 30 secondes et découvrez <em>quelle offre est faite pour vous.</em></h3>
-        <p class="qz-p">Celle qui va tout changer pour votre marque. Cochez les phrases qui vous ressemblent, on s’occupe du reste.</p>
-        <a class="qz-btn" href="/quiz" id="qzTeaserBtn">Faire le quiz <span aria-hidden="true">→</span></a>
-        <span class="qz-note">Gratuit, sans inscription.</span>
-      </div>
-      <div class="qz-vis" aria-hidden="true">
-        <div class="qz-mq">Question 3 sur 5</div>
-        <div class="qz-opt"><i></i><span>Une ou deux, et j’ai peur qu’elles s’arrêtent de marcher.</span></div>
-        <div class="qz-opt on"><i></i><span>Quelques-unes, mais je n’arrive pas à en trouver de nouvelles au même niveau.</span></div>
-        <div class="qz-opt"><i></i><span>Plusieurs, et je teste en continu.</span></div>
-        <div class="qz-chips"><span>TEST</span><span class="hit">PERF+</span><span>GROWTH</span><span>SCALE</span></div>
-      </div>
+    <h2 class="pt-title">Quelle offre est <em>faite pour vous ?</em></h2>
+    <div class="qz-card qz-compact">
+      <p class="qz-p">Répondez à 5 questions, on vous dit laquelle.</p>
+      <a class="qz-btn" href="/quiz" id="qzTeaserBtn">Faire le quiz de 30 secondes <span aria-hidden="true">→</span></a>
     </div>
   </div>
 </section>
@@ -2683,5 +2675,6 @@ window.lpApplyCurrency = function(){};
 .fc-sec:hover{background:rgba(255,255,255,.1)}
 @media(max-width:600px){.fc-card{padding:44px 20px;border-radius:26px}.fc-btns a{width:100%;justify-content:center;box-sizing:border-box}}
 </style>
+<style id="overscroll-fix">html{background:#0A0A0E;overscroll-behavior:none}body{overscroll-behavior:none}.ads-footer{background:#0A0A0E!important}</style>
 </body>
 </html>

@@ -161,8 +161,46 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
 @media(min-width:1180px){.an-links{display:flex}.an-burger,.an-drop{display:none!important}}
 @media(max-width:430px){.an-nav{gap:8px;padding:0 14px}.an-cta{padding:0 14px;font-size:13px}.an-logo img{height:26px}.an-logo{gap:6px}.an-logo span{font-size:16px}.an-mob{gap:8px}.an-right{gap:0}}
 </style>
+<style id="overscroll-fix">html{background:#0A0A0E;overscroll-behavior:none}body{overscroll-behavior:none}.ads-footer{background:#0A0A0E!important}</style>
+<style id="edc-style-aligne">
+:root{--card:#121722}
+html{background:#0A0A0E}
+body{background:transparent!important}
+.bg-flow{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:#0A0A0E}
+.bg-flow i{position:absolute;border-radius:50%;will-change:transform}
+.bg-flow i:nth-child(1){width:80vmax;height:80vmax;left:-25vmax;top:-20vmax;background:radial-gradient(closest-side,rgba(11,92,255,.34),rgba(11,92,255,0));animation:bgf1 26s ease-in-out infinite alternate}
+.bg-flow i:nth-child(2){width:70vmax;height:70vmax;right:-28vmax;top:25vh;background:radial-gradient(closest-side,rgba(31,182,255,.20),rgba(31,182,255,0));animation:bgf2 32s ease-in-out infinite alternate}
+.bg-flow i:nth-child(3){width:75vmax;height:75vmax;left:10vmax;bottom:-40vmax;background:radial-gradient(closest-side,rgba(46,242,232,.12),rgba(46,242,232,0));animation:bgf3 38s ease-in-out infinite alternate}
+@keyframes bgf1{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(18vmax,14vmax,0) scale(1.15)}}
+@keyframes bgf2{from{transform:translate3d(0,0,0) scale(1.1)}to{transform:translate3d(-16vmax,-12vmax,0) scale(.95)}}
+@keyframes bgf3{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(-14vmax,-10vmax,0) scale(1.2)}}
+@media(prefers-reduced-motion:reduce){.bg-flow i{animation:none}}
+.faq-section{background:transparent!important}
+section.s{border-top:0!important;padding:64px 0;text-align:center}
+section.s .wrap{max-width:1080px}
+.eyebrow{display:inline-block;font:800 11.5px/1 Inter,sans-serif!important;letter-spacing:1.4px;color:#1FB6FF;background:rgba(31,182,255,.12);border:1px solid rgba(31,182,255,.28);padding:7px 13px;border-radius:999px}
+h1{font-weight:900;letter-spacing:-1.4px;line-height:1.08;max-width:900px;margin:18px auto 14px;color:#fff}
+h2{font-weight:900;letter-spacing:-1.1px;line-height:1.12;font-size:clamp(28px,4.4vw,44px);margin:16px 0 30px}
+.meta{font-size:14.5px}
+.fig,.pb li,.win figure,.quote{border-radius:24px;border-color:rgba(255,255,255,.08)}
+.fig{padding:26px 22px;text-align:center}
+.fig b{background:linear-gradient(120deg,#1FB6FF,#2EF2E8);-webkit-background-clip:text;background-clip:text}
+.pb li,.tl li,.two>p,blockquote{text-align:left}
+.quote{background:#121722;border:1px solid rgba(255,255,255,.08);padding:30px 28px;text-align:left}
+.tl{max-width:760px;margin:0 auto;text-align:left}
+.pb{max-width:760px;margin:0 auto}
+.two{text-align:left}
+.btn{box-shadow:0 10px 30px rgba(31,182,255,.35)}
+.cta{padding:72px 0 90px}
+.cta h2{max-width:760px;margin-left:auto;margin-right:auto}
+.cta .wrap{max-width:760px;background:linear-gradient(135deg,#0B5CFF 0%,#16337A 100%);border-radius:28px;padding:48px 28px}
+.cta p{color:#D5E4FF}
+.cta .btn{background:#fff;color:#0A0A0E;box-shadow:none}
+@media(max-width:760px){section.s{padding:44px 0}.cta .wrap{margin:0 16px;padding:36px 20px;max-width:none}}
+</style>
 </head>
 <body>
+<div class="bg-flow" aria-hidden="true"><i></i><i></i><i></i></div>
 <nav class="an-nav" id="anNav" aria-label="Navigation principale">
   <a class="an-logo" href="/vente"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="" width="80" height="28"><span>AdStack</span></a>
   <div class="an-right">
