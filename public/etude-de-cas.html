@@ -137,12 +137,76 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
 }
 .figs{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.who img{width:64px;height:64px}
 </style>
+<style id="an-style">
+.an-nav{position:sticky;top:0;z-index:999;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 max(20px,4.5vw);background:rgba(10,10,14,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);box-sizing:border-box;font-family:inherit}
+.an-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.an-logo img{height:30px;width:auto;display:block}
+.an-logo span{font-size:18px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.an-right{display:flex;align-items:center;gap:30px}
+.an-links{display:none;align-items:center;gap:28px}
+.an-links a{font-size:14.5px;font-weight:500;color:#C8CAD0;text-decoration:none;white-space:nowrap;transition:color .15s}
+.an-links a:hover,.an-links a[aria-current="page"]{color:#fff}
+.an-cta{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 20px;border-radius:999px;background:#fff;color:#0A0A0E!important;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;transition:transform .15s,box-shadow .15s}
+.an-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(31,182,255,.28)}
+.an-burger{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0}
+.an-burger span{display:block;width:16px;height:1.6px;background:#C8CAD0;border-radius:2px;transition:transform .2s,opacity .2s}
+.an-burger.open span:nth-child(1){transform:translateY(5.6px) rotate(45deg)}
+.an-burger.open span:nth-child(2){opacity:0}
+.an-burger.open span:nth-child(3){transform:translateY(-5.6px) rotate(-45deg)}
+.an-drop{display:none;position:absolute;top:68px;left:0;right:0;background:rgba(10,10,14,.98);border-bottom:1px solid rgba(255,255,255,.08);padding:10px 20px 18px}
+.an-drop.open{display:block}
+.an-drop a{display:block;padding:14px 4px;font-size:16px;font-weight:600;color:#E6E7EA;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.06)}
+.an-drop a:last-child{border-bottom:0}
+.an-mob{display:flex;align-items:center;gap:10px}
+@media(min-width:960px){.an-links{display:flex}.an-burger,.an-drop{display:none!important}}
+@media(max-width:430px){.an-nav{gap:8px;padding:0 14px}.an-cta{padding:0 14px;font-size:13px}.an-logo img{height:26px}.an-logo{gap:6px}.an-logo span{font-size:16px}.an-mob{gap:8px}.an-right{gap:0}}
+</style>
 </head>
 <body>
-<header class="nav"><div class="wrap">
-  <a class="back" href="/vente#etudes-de-cas" id="retour">← Retour</a>
-  <a class="btn sm" href="/vente#nos-offres" data-cta="nav">Voir les offres</a>
-</div></header>
+<nav class="an-nav" id="anNav" aria-label="Navigation principale">
+  <a class="an-logo" href="/vente"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="" width="80" height="28"><span>AdStack</span></a>
+  <div class="an-right">
+    <div class="an-links">
+      <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
+      <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+      <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
+      <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
+      <a href="/vente#faq" data-sec="faq">FAQ</a>
+      <a href="/adboard">Espace client</a>
+    </div>
+    <div class="an-mob">
+      <a class="an-cta" href="/vente#nos-offres" data-sec="nos-offres" data-track="1">Voir les offres</a>
+      <button class="an-burger" id="anBurger" aria-label="Menu" aria-expanded="false" aria-controls="anDrop"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+  <div class="an-drop" id="anDrop">
+    <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
+    <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+    <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
+    <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
+    <a href="/vente#faq" data-sec="faq">FAQ</a>
+    <a href="/adboard">Espace client</a>
+  </div>
+</nav>
+<script>
+(function(){
+  var nav=document.getElementById('anNav'); if(!nav) return;
+  var b=document.getElementById('anBurger'), d=document.getElementById('anDrop');
+  function close(){d.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');}
+  b.addEventListener('click',function(e){e.stopPropagation();var o=d.classList.toggle('open');b.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false');});
+  document.addEventListener('click',function(e){if(!nav.contains(e.target))close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  var path=location.pathname.replace(/\.html$/,'');
+  [].forEach.call(nav.querySelectorAll('a[data-page]'),function(a){if(path.indexOf('/'+a.getAttribute('data-page'))===0)a.setAttribute('aria-current','page');});
+  [].forEach.call(nav.querySelectorAll('a[data-sec]'),function(a){
+    a.addEventListener('click',function(e){
+      if(a.getAttribute('data-track')==='1'){try{if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});}catch(_){}}
+      var el=document.getElementById(a.getAttribute('data-sec'));
+      if(el&&/^\/vente(\.html)?\/?$/.test(location.pathname)){e.preventDefault();close();el.scrollIntoView({behavior:'smooth'});history.replaceState(null,'','#'+a.getAttribute('data-sec'));}
+    });
+  });
+})();
+</script>
 <main id="page"></main>
 <section class="faq-section" id="faq">
   <div class="faq-container">
@@ -185,12 +249,14 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
           <a href="/vente#comparatif-honnete">Pourquoi nous</a>
           <a href="/vente#ce-que-vous-recevez">Ce que vous recevez</a>
           <a href="/vente#comment">Comment ça marche</a>
+          <a href="/etude-de-cas">Études de cas</a>
           <a href="/vente#faq">FAQ</a>
         </div>
       </div>
       <div class="ads-footer-col">
         <div class="ads-footer-col-title">Nos Offres</div>
         <div class="ads-footer-col-links">
+          <a href="/vente#nos-offres">TEST</a>
           <a href="/vente#nos-offres">PERF+</a>
           <a href="/vente#nos-offres">GROWTH</a>
           <a href="/vente#nos-offres">SCALE</a>

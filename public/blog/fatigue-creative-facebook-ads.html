@@ -221,27 +221,77 @@
       .ads-footer-bottom{grid-column:1/-1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;margin-top:32px}
     }
   </style>
+<style id="an-style">
+.an-nav{position:sticky;top:0;z-index:999;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 max(20px,4.5vw);background:rgba(10,10,14,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);box-sizing:border-box;font-family:inherit}
+.an-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.an-logo img{height:30px;width:auto;display:block}
+.an-logo span{font-size:18px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.an-right{display:flex;align-items:center;gap:30px}
+.an-links{display:none;align-items:center;gap:28px}
+.an-links a{font-size:14.5px;font-weight:500;color:#C8CAD0;text-decoration:none;white-space:nowrap;transition:color .15s}
+.an-links a:hover,.an-links a[aria-current="page"]{color:#fff}
+.an-cta{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 20px;border-radius:999px;background:#fff;color:#0A0A0E!important;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;transition:transform .15s,box-shadow .15s}
+.an-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(31,182,255,.28)}
+.an-burger{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0}
+.an-burger span{display:block;width:16px;height:1.6px;background:#C8CAD0;border-radius:2px;transition:transform .2s,opacity .2s}
+.an-burger.open span:nth-child(1){transform:translateY(5.6px) rotate(45deg)}
+.an-burger.open span:nth-child(2){opacity:0}
+.an-burger.open span:nth-child(3){transform:translateY(-5.6px) rotate(-45deg)}
+.an-drop{display:none;position:absolute;top:68px;left:0;right:0;background:rgba(10,10,14,.98);border-bottom:1px solid rgba(255,255,255,.08);padding:10px 20px 18px}
+.an-drop.open{display:block}
+.an-drop a{display:block;padding:14px 4px;font-size:16px;font-weight:600;color:#E6E7EA;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.06)}
+.an-drop a:last-child{border-bottom:0}
+.an-mob{display:flex;align-items:center;gap:10px}
+@media(min-width:960px){.an-links{display:flex}.an-burger,.an-drop{display:none!important}}
+@media(max-width:430px){.an-nav{gap:8px;padding:0 14px}.an-cta{padding:0 14px;font-size:13px}.an-logo img{height:26px}.an-logo{gap:6px}.an-logo span{font-size:16px}.an-mob{gap:8px}.an-right{gap:0}}
+</style>
 </head>
 <body>
 
-  <nav class="adstack-nav">
-    <a class="nav-logo" href="/"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" width="80" height="28"><span class="nav-logo-name">AdStack</span></a>
-    <div class="nav-right">
-      <a class="nav-cart" href="/#nos-offres">
-        <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.43H6"/></svg>
-        <span class="nav-cart-label">Voir Offres</span>
-      </a>
-      <div class="nav-menu-wrap">
-        <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
-        <div class="nav-dropdown" id="navDrop">
-          <a class="nav-drop-item" href="/#comparatif-honnete"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
-          <a class="nav-drop-item" href="/#nos-offres"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
-          <a class="nav-drop-item" href="/#faq"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
-          <a class="nav-drop-item" href="/blog/" style="color:#1FB6FF!important"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Nos Blogs</a>
-        </div>
-      </div>
+<nav class="an-nav" id="anNav" aria-label="Navigation principale">
+  <a class="an-logo" href="/vente"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="" width="80" height="28"><span>AdStack</span></a>
+  <div class="an-right">
+    <div class="an-links">
+      <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
+      <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+      <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
+      <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
+      <a href="/vente#faq" data-sec="faq">FAQ</a>
+      <a href="/adboard">Espace client</a>
     </div>
-  </nav>
+    <div class="an-mob">
+      <a class="an-cta" href="/vente#nos-offres" data-sec="nos-offres" data-track="1">Voir les offres</a>
+      <button class="an-burger" id="anBurger" aria-label="Menu" aria-expanded="false" aria-controls="anDrop"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+  <div class="an-drop" id="anDrop">
+    <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
+    <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+    <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
+    <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
+    <a href="/vente#faq" data-sec="faq">FAQ</a>
+    <a href="/adboard">Espace client</a>
+  </div>
+</nav>
+<script>
+(function(){
+  var nav=document.getElementById('anNav'); if(!nav) return;
+  var b=document.getElementById('anBurger'), d=document.getElementById('anDrop');
+  function close(){d.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');}
+  b.addEventListener('click',function(e){e.stopPropagation();var o=d.classList.toggle('open');b.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false');});
+  document.addEventListener('click',function(e){if(!nav.contains(e.target))close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  var path=location.pathname.replace(/\.html$/,'');
+  [].forEach.call(nav.querySelectorAll('a[data-page]'),function(a){if(path.indexOf('/'+a.getAttribute('data-page'))===0)a.setAttribute('aria-current','page');});
+  [].forEach.call(nav.querySelectorAll('a[data-sec]'),function(a){
+    a.addEventListener('click',function(e){
+      if(a.getAttribute('data-track')==='1'){try{if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});}catch(_){}}
+      var el=document.getElementById(a.getAttribute('data-sec'));
+      if(el&&/^\/vente(\.html)?\/?$/.test(location.pathname)){e.preventDefault();close();el.scrollIntoView({behavior:'smooth'});history.replaceState(null,'','#'+a.getAttribute('data-sec'));}
+    });
+  });
+})();
+</script>
 
   <div class="page">
     <p class="breadcrumb"><a href="/">Accueil</a> / <a href="/blog/">Blog</a> / Fatigue créative</p>
@@ -421,15 +471,17 @@
             <a href="/#comparatif-honnete">Pourquoi nous</a>
             <a href="/#ce-que-vous-recevez">Ce que vous recevez</a>
             <a href="/#comment">Comment ça marche</a>
+            <a href="/etude-de-cas">Études de cas</a>
             <a href="/#faq">FAQ</a>
           </div>
         </div>
         <div class="ads-footer-col">
           <div class="ads-footer-col-title">Nos Offres</div>
           <div class="ads-footer-col-links">
-            <a href="/#nos-offres">Conversion Starter</a>
-            <a href="/#nos-offres">Conversion Pro</a>
-            <a href="/#nos-offres">Conversion Scale</a>
+            <a href="/#nos-offres">TEST</a>
+            <a href="/#nos-offres">PERF+</a>
+            <a href="/#nos-offres">GROWTH</a>
+            <a href="/#nos-offres">SCALE</a>
           </div>
         </div>
         <div class="ads-footer-col">

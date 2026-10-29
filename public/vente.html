@@ -352,25 +352,74 @@ body,.adstack-hero-v2,.wu-section,.wi-section,.fd-section,.transform-section,.cv
 a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:none!important;position:absolute!important;bottom:-9999px!important}
 #made-with-systeme-io,.s-io-badge{display:none!important;opacity:0!important;visibility:hidden!important;height:0!important;width:0!important;pointer-events:none!important}
 </style>
-<nav class="adstack-nav">
-  <a class="nav-logo" href="#"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" width="80" height="28"><span class="nav-logo-name">AdStack</span></a>
-  <div class="nav-right">
-    <a class="nav-cart" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});setTimeout(function(){var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});},150);">
-      <svg viewBox="0 0 24 24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 001.95-1.57l1.65-8.43H6"/></svg>
-      <span class="nav-cart-label">Voir Offres</span>
-    </a>
-    <div class="nav-menu-wrap">
-      <button class="nav-menu-btn" aria-label="Menu" onclick="var d=document.getElementById('navDrop');d.classList.toggle('open');this.classList.toggle('open');event.stopPropagation();"><span></span><span></span><span></span></button>
-      <div class="nav-dropdown" id="navDrop">
-        <a class="nav-drop-item" href="#comparatif-honnete" onclick="event.preventDefault();document.getElementById('comparatif-honnete').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg> Pourquoi nous</a>
-        <a class="nav-drop-item" href="#nos-offres" onclick="event.preventDefault();if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});setTimeout(function(){document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');},150);"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Nos Offres</a>
-        <a class="nav-drop-item" href="#faq" onclick="event.preventDefault();var el=document.getElementById('faq');if(el)el.scrollIntoView({behavior:'smooth'});document.getElementById('navDrop').classList.remove('open');"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3M12 17h.01"/></svg> FAQ</a>
-        <a class="nav-drop-item" href="/blog/fatigue-creative-facebook-ads.html" style="color:#1FB6FF!important"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> Nos Blogs</a>
-        <a class="nav-drop-item" href="https://www.adstackofficial.com/adboard"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"/></svg> Retour à AdBoard</a>
-      </div>
+<style id="an-style">
+.an-nav{position:sticky;top:0;z-index:999;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 max(20px,4.5vw);background:rgba(10,10,14,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);box-sizing:border-box;font-family:inherit}
+.an-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
+.an-logo img{height:30px;width:auto;display:block}
+.an-logo span{font-size:18px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.an-right{display:flex;align-items:center;gap:30px}
+.an-links{display:none;align-items:center;gap:28px}
+.an-links a{font-size:14.5px;font-weight:500;color:#C8CAD0;text-decoration:none;white-space:nowrap;transition:color .15s}
+.an-links a:hover,.an-links a[aria-current="page"]{color:#fff}
+.an-cta{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 20px;border-radius:999px;background:#fff;color:#0A0A0E!important;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;transition:transform .15s,box-shadow .15s}
+.an-cta:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(31,182,255,.28)}
+.an-burger{width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;padding:0}
+.an-burger span{display:block;width:16px;height:1.6px;background:#C8CAD0;border-radius:2px;transition:transform .2s,opacity .2s}
+.an-burger.open span:nth-child(1){transform:translateY(5.6px) rotate(45deg)}
+.an-burger.open span:nth-child(2){opacity:0}
+.an-burger.open span:nth-child(3){transform:translateY(-5.6px) rotate(-45deg)}
+.an-drop{display:none;position:absolute;top:68px;left:0;right:0;background:rgba(10,10,14,.98);border-bottom:1px solid rgba(255,255,255,.08);padding:10px 20px 18px}
+.an-drop.open{display:block}
+.an-drop a{display:block;padding:14px 4px;font-size:16px;font-weight:600;color:#E6E7EA;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.06)}
+.an-drop a:last-child{border-bottom:0}
+.an-mob{display:flex;align-items:center;gap:10px}
+@media(min-width:960px){.an-links{display:flex}.an-burger,.an-drop{display:none!important}}
+@media(max-width:430px){.an-nav{gap:8px;padding:0 14px}.an-cta{padding:0 14px;font-size:13px}.an-logo img{height:26px}.an-logo{gap:6px}.an-logo span{font-size:16px}.an-mob{gap:8px}.an-right{gap:0}}
+</style>
+<nav class="an-nav" id="anNav" aria-label="Navigation principale">
+  <a class="an-logo" href="/vente"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="" width="80" height="28"><span>AdStack</span></a>
+  <div class="an-right">
+    <div class="an-links">
+      <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
+      <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+      <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
+      <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
+      <a href="/vente#faq" data-sec="faq">FAQ</a>
+      <a href="/adboard">Espace client</a>
+    </div>
+    <div class="an-mob">
+      <a class="an-cta" href="/vente#nos-offres" data-sec="nos-offres" data-track="1">Voir les offres</a>
+      <button class="an-burger" id="anBurger" aria-label="Menu" aria-expanded="false" aria-controls="anDrop"><span></span><span></span><span></span></button>
     </div>
   </div>
+  <div class="an-drop" id="anDrop">
+    <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
+    <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+    <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
+    <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
+    <a href="/vente#faq" data-sec="faq">FAQ</a>
+    <a href="/adboard">Espace client</a>
+  </div>
 </nav>
+<script>
+(function(){
+  var nav=document.getElementById('anNav'); if(!nav) return;
+  var b=document.getElementById('anBurger'), d=document.getElementById('anDrop');
+  function close(){d.classList.remove('open');b.classList.remove('open');b.setAttribute('aria-expanded','false');}
+  b.addEventListener('click',function(e){e.stopPropagation();var o=d.classList.toggle('open');b.classList.toggle('open',o);b.setAttribute('aria-expanded',o?'true':'false');});
+  document.addEventListener('click',function(e){if(!nav.contains(e.target))close();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+  var path=location.pathname.replace(/\.html$/,'');
+  [].forEach.call(nav.querySelectorAll('a[data-page]'),function(a){if(path.indexOf('/'+a.getAttribute('data-page'))===0)a.setAttribute('aria-current','page');});
+  [].forEach.call(nav.querySelectorAll('a[data-sec]'),function(a){
+    a.addEventListener('click',function(e){
+      if(a.getAttribute('data-track')==='1'){try{if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'AdStack',currency:'XOF',value:150000});}catch(_){}}
+      var el=document.getElementById(a.getAttribute('data-sec'));
+      if(el&&/^\/vente(\.html)?\/?$/.test(location.pathname)){e.preventDefault();close();el.scrollIntoView({behavior:'smooth'});history.replaceState(null,'','#'+a.getAttribute('data-sec'));}
+    });
+  });
+})();
+</script>
 <div style="display:none"><script>document.addEventListener('click',function(e){var drop=document.getElementById('navDrop');var btn=document.querySelector('.nav-menu-btn');if(drop&&!drop.contains(e.target)&&btn&&!btn.contains(e.target)){drop.classList.remove('open');if(btn)btn.classList.remove('open');}});</script></div>
 <style>
 .adstack-hero-v2{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;color:#fff;overflow:hidden;padding:0 0 40px;contain:layout style}
@@ -649,22 +698,99 @@ img.exv-lb-media{max-width:94vw}
 .wu-attr-label-off{color:#3A3D45}
 </style>
 <style>@media(min-width:1024px){.sol-v2-body-row{grid-template-columns:1fr;max-width:760px;margin-left:auto;margin-right:auto}}</style>
-<section class="sol-v2-section" id="solution">
-  <div class="sol-v2-inner">
-    <h2 class="sol-v2-headline">Nous croyons que <em>générer plus de ventes</em> grâce à vos publicités est possible, <em>sans y sacrifier vos soirées</em>. Alors nous transformons vos produits en pubs conçues pour <em>une croissance ambitieuse</em>, chaque semaine.</h2>
-    <div class="sol-v2-body-row">
-    <div class="sol-v2-grid">
-      <div class="sol-v2-item"><div class="sol-v2-item-title">Générez Plus De Ventes</div></div>
-      <div class="sol-v2-item"><div class="sol-v2-item-title">Publicités Basées Sur La Psychologie Client</div></div>
-      <div class="sol-v2-item"><div class="sol-v2-item-title">Gagnez En Temps Et En Efficacité</div></div>
-      <div class="sol-v2-item"><div class="sol-v2-item-title">Nouvelles Pubs Toujours à Disposition</div></div>
-      <div class="sol-v2-item"><div class="sol-v2-item-title">Nouveaux Angles Testés Chaque Semaine</div></div>
-      <div class="sol-v2-item"><div class="sol-v2-item-title">Exploitation, Amélioration Des Pubs Performantes</div></div>
+<!-- ═══ SECTION PERFORMANCE (remplace « Nous croyons que générer plus de ventes… ») — 3 chiffres + 3 cartes en accordéon : Problème / Urgence / Solution ═══ -->
+<style>
+.pf-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;color:#fff;padding:80px 0 88px!important;overflow:hidden}
+.pf-section:before{content:"";position:absolute;left:50%;top:-120px;width:900px;height:900px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(11,92,255,.16),rgba(11,92,255,0));pointer-events:none}
+.pf-inner{position:relative;width:calc(100% - 40px);max-width:1160px;margin:0 auto}
+.pf-title{font-size:clamp(32px,6.4vw,60px)!important;font-weight:900!important;letter-spacing:-1.5px!important;line-height:1.08!important;text-align:center;margin:0 0 16px;color:#fff}
+.pf-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.pf-sub{font-size:clamp(15px,2.2vw,18px);color:#8A8D95;text-align:center;max-width:620px;margin:0 auto 56px;line-height:1.55}
+.pf-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:0 0 56px}
+.pf-stat-label{font-size:13px;font-weight:600;color:#C8CAD0;line-height:1.35;min-height:35px}
+.pf-stat-bar{width:28px;height:2px;background:#1FB6FF;margin:12px 0 14px;border-radius:2px}
+.pf-stat-num{font-size:clamp(38px,8vw,84px);font-weight:900;letter-spacing:-2px;line-height:1;color:#F4F5F7}
+.pf-cards{display:flex;gap:20px;height:430px}
+.pf-card{position:relative;flex:0 0 150px;border-radius:26px;overflow:hidden;padding:0;border:0;text-align:left;color:#fff;font-family:inherit;cursor:pointer;transition:flex-basis .55s cubic-bezier(.2,.8,.2,1);min-width:0}
+.pf-card.is-active{flex:1 1 0;cursor:default}
+.pf-card:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.pf-c1{background:#16337A}.pf-c2{background:#0B5CFF}.pf-c3{background:linear-gradient(135deg,#1FB6FF 0%,#2EF2E8 100%);color:#04131F}
+.pf-num{position:absolute;top:18px;left:30px;font-size:84px;font-weight:900;line-height:1;letter-spacing:-3px;opacity:.28}
+.pf-card:not(.is-active) .pf-num{left:auto;right:26px;opacity:.38}
+.pf-vtitle{position:absolute;left:26px;bottom:28px;font-size:20px;font-weight:800;letter-spacing:-.3px;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;transition:opacity .25s}
+.pf-card.is-active .pf-vtitle{opacity:0;pointer-events:none}
+.pf-body{position:absolute;left:0;right:0;bottom:0;padding:0 34px 32px 34px;opacity:0;transform:translateY(14px);transition:opacity .35s ease,transform .45s ease;pointer-events:none}
+.pf-card.is-active .pf-body{opacity:1;transform:none;transition-delay:.18s;pointer-events:auto}
+.pf-h{font-size:clamp(28px,3.4vw,40px);font-weight:900;letter-spacing:-1px;line-height:1.1;margin:0 0 14px}
+.pf-p{font-size:17px;font-weight:500;line-height:1.55;margin:0;max-width:560px}
+.pf-art{position:absolute;right:34px;top:30px;width:190px;height:190px;opacity:0;transition:opacity .4s ease .2s}
+.pf-card.is-active .pf-art{opacity:1}
+.pf-art svg{width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:860px){
+ .pf-section{padding:60px 0 64px!important}
+ .pf-sub{margin-bottom:36px}
+ .pf-stats{gap:10px;margin-bottom:36px}
+ .pf-stat-label{font-size:11.5px;min-height:46px}
+ .pf-stat-num{letter-spacing:-1px}
+ .pf-cards{flex-direction:column;height:auto;gap:14px}
+ .pf-card,.pf-card.is-active{flex:none;cursor:default}
+ .pf-card{padding:26px 22px 28px}
+ .pf-num{position:static;display:block;font-size:56px;margin:0 0 6px;opacity:.3}
+ .pf-card:not(.is-active) .pf-num{position:static}
+ .pf-vtitle{display:none}
+ .pf-body{position:static;opacity:1;transform:none;padding:0;pointer-events:auto}
+ .pf-art{position:absolute;right:16px;top:14px;width:84px;height:84px;opacity:1}
+ .pf-p{font-size:15.5px}
+}
+@media(prefers-reduced-motion:reduce){.pf-card,.pf-body,.pf-art{transition:none!important}}
+</style>
+<section class="pf-section" id="solution">
+  <div class="pf-inner">
+    <h2 class="pf-title">Nous sommes <em>orientés performance</em></h2>
+    <p class="pf-sub">Nous ne faisons pas que de belles publicités : nous créons des publicités qui vendent.</p>
+    <!-- Chiffres : repris de l'étude de cas Vitalina et de la présence en Afrique. À remplacer par vos chiffres globaux quand vous les avez. -->
+    <div class="pf-stats">
+      <div><div class="pf-stat-label">Pays couverts en Afrique</div><div class="pf-stat-bar"></div><div class="pf-stat-num">17</div></div>
+      <div><div class="pf-stat-label">ROAS moyen sur notre étude de cas</div><div class="pf-stat-bar"></div><div class="pf-stat-num">4,3</div></div>
+      <div><div class="pf-stat-label">Chiffre d’affaires mensuel, en 6 semaines</div><div class="pf-stat-bar"></div><div class="pf-stat-num">×2,3</div></div>
     </div>
-    
+    <div class="pf-cards" id="pfCards">
+      <article class="pf-card pf-c1 is-active" tabindex="0" role="button" aria-expanded="true" data-i="0">
+        <span class="pf-num">1</span>
+        <span class="pf-vtitle">Le Problème</span>
+        <div class="pf-art" aria-hidden="true"><svg viewBox="0 0 200 200"><path d="M30 170h140"/><rect x="45" y="120" width="26" height="50" rx="4"/><rect x="87" y="112" width="26" height="58" rx="4"/><rect x="129" y="118" width="26" height="52" rx="4"/><path d="M40 90c28-8 52-8 78-2s40 4 48-4"/><path d="M152 70l14 12-18 6"/></svg></div>
+        <div class="pf-body"><h3 class="pf-h">Le Problème</h3><p class="pf-p">Vous avez un bon produit et un budget publicitaire, mais une ou deux créatives portent à elles seules toutes vos ventes. Freelances, graphistes, outils d’IA : vous avez tout essayé, sans jamais obtenir assez de créatives solides pour passer devant la concurrence.</p></div>
+      </article>
+      <article class="pf-card pf-c2" tabindex="0" role="button" aria-expanded="false" data-i="1">
+        <span class="pf-num">2</span>
+        <span class="pf-vtitle">L’Urgence</span>
+        <div class="pf-art" aria-hidden="true"><svg viewBox="0 0 200 200"><circle cx="100" cy="106" r="66"/><path d="M100 64v44l28 18"/><path d="M82 24h36M100 24v16"/><path d="M158 52l12-12"/></svg></div>
+        <div class="pf-body"><h3 class="pf-h">L’Urgence</h3><p class="pf-p">Une créative gagnante finit toujours par s’user : le coût par achat monte et les ventes ralentissent. Il faut trouver le prochain angle avant vos concurrents, pas après eux.</p></div>
+      </article>
+      <article class="pf-card pf-c3" tabindex="0" role="button" aria-expanded="false" data-i="2">
+        <span class="pf-num">3</span>
+        <span class="pf-vtitle">La Solution</span>
+        <div class="pf-art" aria-hidden="true"><svg viewBox="0 0 200 200"><path d="M100 30c-30 0-52 22-52 50 0 20 10 32 20 44 6 8 8 14 8 24h48c0-10 2-16 8-24 10-12 20-24 20-44 0-28-22-50-52-50z"/><path d="M78 160h44M86 178h28"/><path d="M100 8v8M30 36l6 6M170 36l-6 6M14 90h8M178 90h8"/></svg></div>
+        <div class="pf-body"><h3 class="pf-h">La Solution</h3><p class="pf-p">AdStack vous apporte des angles auxquels vous n’auriez pas pensé, transformés en créatives prêtes à tester et livrées en 24 à 48h. Vous testez plus vite, et vous gardez ce qui vend.</p></div>
+      </article>
     </div>
   </div>
 </section>
+<script>
+(function(){
+  var wrap=document.getElementById('pfCards'); if(!wrap) return;
+  var cards=[].slice.call(wrap.querySelectorAll('.pf-card')), cur=0, timer=null, touched=false;
+  function show(i){cur=i;cards.forEach(function(c,k){var on=k===i;c.classList.toggle('is-active',on);c.setAttribute('aria-expanded',on?'true':'false');});}
+  cards.forEach(function(c,k){
+    c.addEventListener('click',function(){touched=true;stop();show(k);});
+    c.addEventListener('mouseenter',function(){if(window.matchMedia('(min-width:861px)').matches){touched=true;stop();show(k);}});
+    c.addEventListener('focus',function(){touched=true;stop();show(k);});
+  });
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  function start(){if(timer||touched||window.matchMedia('(prefers-reduced-motion:reduce)').matches||!window.matchMedia('(min-width:861px)').matches)return;timer=setInterval(function(){show((cur+1)%cards.length);},6000);}
+  if('IntersectionObserver' in window){new IntersectionObserver(function(es){es[0].isIntersecting?start():stop();},{threshold:.5}).observe(wrap);}
+})();
+</script>
 
 <!-- ═══ NOUVELLE SECTION — 1 seul angle gagnant (fusion "c'est facile" + "ça va marcher") ═══ -->
 <style>
@@ -1220,6 +1346,53 @@ img.exv-lb-media{max-width:94vw}
 @media(min-width:700px){.proc-scroll-outer{overflow-x:visible;margin:0;padding:0}.proc-steps{display:flex;flex-direction:row;gap:16px;width:auto;padding-right:0}.proc-step{width:auto;flex:1}.proc-headline{font-size:40px}}
 @media(min-width:1024px){.proc-wrap{max-width:1080px}.proc-step{padding:28px 24px}}
 </style>
+<!-- ÉTUDE DE CAS (teaser) — affichée seulement si etude-de-cas-data.js a "actif: true" et une accroche -->
+<style>
+.edc-section{background:#0A0A0E;padding:56px 4%;box-sizing:border-box}
+.edc-head{max-width:960px;margin:0 auto 26px;text-align:center}
+.edc-eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#1FB6FF}
+.edc-h{font-size:clamp(28px,4.4vw,44px);font-weight:800;letter-spacing:-1px;line-height:1.12;color:#fff;margin:10px 0 0}
+.edc-card{position:relative;max-width:960px;margin:0 auto;border-radius:24px;background:#121722;border:1px solid rgba(255,255,255,.07);display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:20px;overflow:hidden;min-height:300px}
+.edc-txt{padding:36px 8px 36px 36px}
+.edc-brand{font-size:clamp(30px,4.6vw,46px);font-weight:800;letter-spacing:-1px;color:#fff;line-height:1.1;margin:0 0 10px}
+.edc-p{color:#8A8D95;font-size:15px;line-height:1.6;margin:0 0 20px;max-width:420px}
+.edc-btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:13px 26px;border-radius:999px;background:#fff;color:#0A0A0E;font-weight:800;font-size:14.5px;text-decoration:none}
+.edc-badge{position:absolute;top:22px;left:46%;transform:rotate(7deg);background:#FFC53D;color:#111;font-weight:800;font-size:15px;line-height:1.2;padding:10px 14px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:2;max-width:200px;text-align:center}
+.edc-vis{position:relative;height:100%;min-height:300px;display:flex;align-items:flex-end;justify-content:center}
+.edc-vis img{position:absolute;bottom:-12px;width:46%;max-width:210px;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
+.edc-vis img:nth-child(1){left:6%;transform:rotate(-6deg)}
+.edc-vis img:nth-child(2){right:6%;bottom:-30px;transform:rotate(5deg)}
+@media(max-width:760px){.edc-card{grid-template-columns:1fr;gap:0}.edc-txt{padding:30px 22px 8px}.edc-badge{position:static;transform:rotate(-3deg);display:inline-block;margin:0 0 14px}.edc-vis{min-height:250px}.edc-vis img{width:44%}}
+</style>
+<section class="edc-section" id="etudes-de-cas" hidden>
+  <div class="edc-head"><div class="edc-eyebrow">Un aperçu de nos résultats</div><h2 class="edc-h">Étude de cas</h2></div>
+  <div class="edc-card">
+    <div class="edc-txt">
+      <div class="edc-badge" id="edc-badge" hidden></div>
+      <h3 class="edc-brand" id="edc-brand"></h3>
+      <p class="edc-p" id="edc-p"></p>
+      <a class="edc-btn" id="edc-btn" href="/etude-de-cas">Voir l'étude de cas <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    </div>
+    <div class="edc-vis" id="edc-vis" aria-hidden="true"></div>
+  </div>
+</section>
+<script src="/etude-de-cas-data.js"></script>
+<script>
+(function(){try{
+  var D=window.ETUDE_DE_CAS; var apercu=/[?&]apercu=1/.test(location.search);
+  if(!D||(!D.actif&&!apercu)||!D.accroche) return;
+  var sec=document.getElementById('etudes-de-cas'); if(!sec) return;
+  document.getElementById('edc-brand').textContent=D.marque||'';
+  (function(){var p=document.getElementById('edc-p');p.textContent='';var a=document.createElement('strong');a.textContent=D.accroche;a.style.cssText='display:block;color:#fff;font-size:1.12em;line-height:1.35;margin-bottom:8px;font-weight:700';p.appendChild(a);if(D.teaserTexte){var t=document.createElement('span');t.textContent=D.teaserTexte;p.appendChild(t)}})();
+  if(D.teaserTexte){ document.getElementById('edc-brand').textContent=(D.marque||''); }
+  if(D.badge){var b=document.getElementById('edc-badge');b.textContent=D.badge;b.hidden=false;}
+  var imgs=(D.galerie||[]).slice(0,2); if(!imgs.length&&D.image) imgs=[D.image];
+  document.getElementById('edc-vis').innerHTML=imgs.map(function(u){return '<img src="'+u.replace(/"/g,'&quot;')+'" alt="" decoding="async">'}).join('');
+  if(apercu) document.getElementById('edc-btn').href='/etude-de-cas?apercu=1';
+  sec.hidden=false;
+}catch(e){}})();
+</script>
+
 <section class="process-section" id="comment">
   <div class="proc-wrap">
     <h2 class="proc-headline">Seulement 3 étapes simples et <em>notre équipe se met au boulot.</em></h2>
@@ -1305,53 +1478,6 @@ img.exv-lb-media{max-width:94vw}
 .lp-downsell-btn:hover{opacity:.9;transform:translateY(-1px)}
 @keyframes pr-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 </style>
-
-<!-- ÉTUDE DE CAS (teaser) — affichée seulement si etude-de-cas-data.js a "actif: true" et une accroche -->
-<style>
-.edc-section{background:#0A0A0E;padding:56px 4%;box-sizing:border-box}
-.edc-head{max-width:960px;margin:0 auto 26px;text-align:center}
-.edc-eyebrow{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#1FB6FF}
-.edc-h{font-size:clamp(28px,4.4vw,44px);font-weight:800;letter-spacing:-1px;line-height:1.12;color:#fff;margin:10px 0 0}
-.edc-card{position:relative;max-width:960px;margin:0 auto;border-radius:24px;background:#121722;border:1px solid rgba(255,255,255,.07);display:grid;grid-template-columns:1.1fr 1fr;align-items:center;gap:20px;overflow:hidden;min-height:300px}
-.edc-txt{padding:36px 8px 36px 36px}
-.edc-brand{font-size:clamp(30px,4.6vw,46px);font-weight:800;letter-spacing:-1px;color:#fff;line-height:1.1;margin:0 0 10px}
-.edc-p{color:#8A8D95;font-size:15px;line-height:1.6;margin:0 0 20px;max-width:420px}
-.edc-btn{display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:13px 26px;border-radius:999px;background:#fff;color:#0A0A0E;font-weight:800;font-size:14.5px;text-decoration:none}
-.edc-badge{position:absolute;top:22px;left:46%;transform:rotate(7deg);background:#FFC53D;color:#111;font-weight:800;font-size:15px;line-height:1.2;padding:10px 14px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:2;max-width:200px;text-align:center}
-.edc-vis{position:relative;height:100%;min-height:300px;display:flex;align-items:flex-end;justify-content:center}
-.edc-vis img{position:absolute;bottom:-12px;width:46%;max-width:210px;border-radius:14px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
-.edc-vis img:nth-child(1){left:6%;transform:rotate(-6deg)}
-.edc-vis img:nth-child(2){right:6%;bottom:-30px;transform:rotate(5deg)}
-@media(max-width:760px){.edc-card{grid-template-columns:1fr;gap:0}.edc-txt{padding:30px 22px 8px}.edc-badge{position:static;transform:rotate(-3deg);display:inline-block;margin:0 0 14px}.edc-vis{min-height:250px}.edc-vis img{width:44%}}
-</style>
-<section class="edc-section" id="etudes-de-cas" hidden>
-  <div class="edc-head"><div class="edc-eyebrow">Un aperçu de nos résultats</div><h2 class="edc-h">Étude de cas</h2></div>
-  <div class="edc-card">
-    <div class="edc-txt">
-      <div class="edc-badge" id="edc-badge" hidden></div>
-      <h3 class="edc-brand" id="edc-brand"></h3>
-      <p class="edc-p" id="edc-p"></p>
-      <a class="edc-btn" id="edc-btn" href="/etude-de-cas">Voir l'étude de cas <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </div>
-    <div class="edc-vis" id="edc-vis" aria-hidden="true"></div>
-  </div>
-</section>
-<script src="/etude-de-cas-data.js"></script>
-<script>
-(function(){try{
-  var D=window.ETUDE_DE_CAS; var apercu=/[?&]apercu=1/.test(location.search);
-  if(!D||(!D.actif&&!apercu)||!D.accroche) return;
-  var sec=document.getElementById('etudes-de-cas'); if(!sec) return;
-  document.getElementById('edc-brand').textContent=D.marque||'';
-  (function(){var p=document.getElementById('edc-p');p.textContent='';var a=document.createElement('strong');a.textContent=D.accroche;a.style.cssText='display:block;color:#fff;font-size:1.12em;line-height:1.35;margin-bottom:8px;font-weight:700';p.appendChild(a);if(D.teaserTexte){var t=document.createElement('span');t.textContent=D.teaserTexte;p.appendChild(t)}})();
-  if(D.teaserTexte){ document.getElementById('edc-brand').textContent=(D.marque||''); }
-  if(D.badge){var b=document.getElementById('edc-badge');b.textContent=D.badge;b.hidden=false;}
-  var imgs=(D.galerie||[]).slice(0,2); if(!imgs.length&&D.image) imgs=[D.image];
-  document.getElementById('edc-vis').innerHTML=imgs.map(function(u){return '<img src="'+u.replace(/"/g,'&quot;')+'" alt="" decoding="async">'}).join('');
-  if(apercu) document.getElementById('edc-btn').href='/etude-de-cas?apercu=1';
-  sec.hidden=false;
-}catch(e){}})();
-</script>
 
 <!-- SECTION AVIS DÉSACTIVÉE ("Quelques personnes à qui on accompagne sur leur croissance") — pour la réactiver, retirer ce commentaire autour de la section.
 <section class="avis-section" id="avis">
@@ -2184,12 +2310,14 @@ window.lpApplyCurrency = function(){};
           <a href="#comparatif-honnete" onclick="event.preventDefault();document.getElementById('comparatif-honnete').scrollIntoView({behavior:'smooth'})">Pourquoi nous</a>
           <a href="#ce-que-vous-recevez" onclick="event.preventDefault();document.getElementById('ce-que-vous-recevez').scrollIntoView({behavior:'smooth'})">Ce que vous recevez</a>
           <a href="#comment" onclick="event.preventDefault();document.getElementById('comment').scrollIntoView({behavior:'smooth'})">Comment ça marche</a>
+          <a href="/etude-de-cas">Études de cas</a>
           <a href="#faq" onclick="event.preventDefault();document.getElementById('faq').scrollIntoView({behavior:'smooth'})">FAQ</a>
         </div>
       </div>
       <div class="ads-footer-col">
         <div class="ads-footer-col-title">Nos Offres</div>
         <div class="ads-footer-col-links">
+          <a href="#nos-offres" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">TEST</a>
           <a href="#nos-offres" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">PERF+</a>
           <a href="#nos-offres" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">GROWTH</a>
           <a href="#nos-offres" onclick="event.preventDefault();document.getElementById('nos-offres').scrollIntoView({behavior:'smooth'})">SCALE</a>
