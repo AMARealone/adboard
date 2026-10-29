@@ -75,6 +75,67 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}html{scroll-behavior:auto}}
 @media(max-width:760px){.figs{grid-template-columns:1fr}.two{grid-template-columns:1fr}section.s{padding:40px 0}.sticky{display:flex}body{padding-bottom:70px}.hero{padding-top:32px}}
 .vide{padding:80px 0;text-align:center;color:var(--mut)}
+.faq-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden;contain:layout style}
+.faq-container{width:88%;max-width:520px;margin:0 auto}
+.faq-title{font-size:32px;font-weight:900;line-height:1.1;letter-spacing:-1px;color:#fff!important;margin:0 0 10px}
+.faq-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:faq-grad 3s ease infinite}
+@keyframes faq-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.faq-sub{font-size:14px;color:#5A5D65!important;margin:0 0 36px;line-height:1.5}
+.faq-list{display:flex;flex-direction:column;gap:8px}
+.faq-item{background:#0F1118;border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;opacity:0;transform:translateY(12px);transition:border-color .25s,opacity .4s ease-out,transform .4s ease-out}
+.faq-item.is-visible{opacity:1;transform:translateY(0)}
+.faq-item.open{border-color:rgba(31,182,255,0.22)}
+.faq-question{width:100%;background:none;border:none;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;text-align:left;touch-action:manipulation}
+.faq-q-text{font-size:14px;font-weight:700;color:#fff!important;line-height:1.35;flex:1}
+.faq-icon{width:24px;height:24px;min-width:24px;border-radius:50%;background:rgba(31,182,255,0.08);border:1px solid rgba(31,182,255,0.2);display:flex;align-items:center;justify-content:center;color:#1FB6FF!important;font-size:16px;font-weight:300;line-height:1;transition:transform .25s;flex-shrink:0}
+.faq-item.open .faq-icon{transform:rotate(45deg);background:rgba(31,182,255,0.15)}
+.faq-answer{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(0.4,0,0.2,1)}
+.faq-item.open .faq-answer{max-height:1200px}
+.faq-answer-inner{padding:12px 18px 18px;border-top:1px solid rgba(255,255,255,0.05)}
+.faq-a-text{font-size:13px;color:#5A5D65!important;line-height:1.7;margin:0}
+.faq-a-text strong{color:#C8CAD0!important;font-weight:700}
+.faq-a-text .hl{color:#1FB6FF!important;font-weight:600}
+.faq-a-text .hl-g{color:#32FF7E!important;font-weight:600}
+.faq-a-text .hl-r{color:#FF4757!important;font-weight:600}
+.faq-cta{display:inline-flex;align-items:center;gap:5px;background:rgba(31,182,255,0.1);border:1px solid rgba(31,182,255,0.3);color:#5A9EFF!important;font-weight:700!important;font-size:12.5px;padding:5px 12px;border-radius:20px;text-decoration:none;cursor:pointer;margin-top:10px}
+.faq-cta svg{flex-shrink:0}
+.faq-a-list{margin:10px 0 0;padding-left:18px;font-size:13px;color:#5A5D65!important;line-height:1.65}
+.faq-a-list li{margin-bottom:6px}
+.faq-a-list li:last-child{margin-bottom:0}
+@media(min-width:1024px){.faq-container{max-width:760px}.faq-title{font-size:36px}}
+.ads-footer{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;border-top:1px solid rgba(255,255,255,0.06);color:#fff;overflow:hidden}
+.ads-footer-inner{width:88%;max-width:520px;margin:0 auto;position:relative;z-index:2;padding:48px 0 28px}
+.ads-footer-brand{margin-bottom:36px;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.ads-footer-logo{display:flex;align-items:center;gap:9px;text-decoration:none;margin-bottom:12px}
+.ads-footer-logo-name{font-size:18px;font-weight:900;color:#fff;letter-spacing:-.5px;line-height:1}
+.ads-footer-logo-name span{background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);background-size:200% 200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:footer-grad 3s ease infinite}
+@keyframes footer-grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.ads-footer-tagline{font-size:12px;color:#4E525C;line-height:1.55;max-width:280px;margin-bottom:18px}
+.ads-footer-socials{display:flex;gap:8px}
+.ads-footer-social{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;text-decoration:none;color:#4E525C;transition:background .2s,border-color .2s,color .2s}
+.ads-footer-social:hover{background:rgba(31,182,255,0.1);border-color:rgba(31,182,255,0.3);color:#1FB6FF}
+.ads-footer-cols{display:grid;grid-template-columns:1fr 1fr;gap:28px 16px;margin-bottom:36px}
+.ads-footer-col-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:2px;color:#3A3D45;margin-bottom:12px}
+.ads-footer-col-links{display:flex;flex-direction:column;gap:10px}
+.ads-footer-col-links a{font-size:13px;color:#5A5D65;text-decoration:none;line-height:1.3;transition:color .18s}
+.ads-footer-col-links a:hover{color:#fff}
+.ads-footer-bottom{padding-top:20px;border-top:1px solid rgba(255,255,255,0.05);display:flex;flex-direction:column;gap:8px}
+.ads-footer-copy{font-size:11px;color:#3A3D45;line-height:1.5}
+.ads-footer-address{display:flex;align-items:center;gap:5px;font-size:11px;color:#3A3D45}
+@media(min-width:1024px){
+.ads-footer-inner{max-width:1160px;display:grid;grid-template-columns:340px auto;column-gap:40px;align-items:start;justify-content:center}
+.ads-footer-brand{grid-column:1;grid-row:1;margin-bottom:0;padding-bottom:0;border-bottom:none}
+.ads-footer-cols{grid-column:2;grid-row:1;grid-template-columns:1fr 1fr;max-width:420px;gap:24px;margin-bottom:0;padding-bottom:32px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.ads-footer-bottom{grid-column:1/-1;grid-row:2;flex-direction:row;align-items:center;justify-content:space-between;margin-top:32px}
+}
+
+.faq-section,.ads-footer{width:100%!important;left:0!important;margin-left:0!important}
+@media(min-width:1024px){
+.ads-footer-inner{max-width:1160px!important;width:calc(100% - 40px)!important;grid-template-columns:minmax(280px,1fr) auto!important;column-gap:60px!important}
+.ads-footer-cols{max-width:none!important;grid-template-columns:repeat(4,auto)!important;column-gap:48px!important;justify-self:end;border-bottom:0!important;padding-bottom:0!important}
+.ads-footer-bottom{border-top:1px solid rgba(255,255,255,.06)!important;padding-top:22px!important;margin-top:36px!important}
+}
+.figs{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}.who img{width:64px;height:64px}
 </style>
 </head>
 <body>
@@ -83,6 +144,77 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
   <a class="btn sm" href="/vente#nos-offres" data-cta="nav">Voir les offres</a>
 </div></header>
 <main id="page"></main>
+<section class="faq-section" id="faq">
+  <div class="faq-container">
+    <h2 class="faq-title">Ce que vous vous demandez <em>sûrement.</em></h2>
+    <p class="faq-sub">Réponses directes. Sans blabla.</p>
+    <div class="faq-list" id="faqList">
+      <div class="faq-item open"><button class="faq-question"><span class="faq-q-text">Comment ça va vraiment faire grandir mon business ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">On ne vous livre pas un lot de créatives — <span class="hl">on met en place un accompagnement complet</span>, chaque semaine.<br><br><span class="hl">① On étudie</span> votre marché et vos concurrents avant de produire quoi que ce soit.<br><span class="hl">② On produit</span> plusieurs angles en simultané, pour trouver rapidement ce qui marche.<br><span class="hl">③ On capitalise</span> sur les angles gagnants — ils sont déclinés et affinés la semaine suivante.<br><br>C'est cette méthode, portée par notre équipe, qui fait grandir votre business — pas une créative isolée.</p><a href="/vente#systeme-creatif" class="faq-cta">Voir comment on travaille <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est quoi AdBoard, concrètement ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">La plateforme où notre équipe organise votre production, votre espace client.</span><br><br>Vous ajoutez vos produits, et chaque semaine on y dépose : l'analyse de marché, les vidéos et images, les textes publicitaires prêts à l'emploi — <span class="hl">tout centralisé dans votre tableau de bord.</span></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">PERF+ est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous voulez automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.</strong></p><ul class="faq-a-list"><li>24 créatives par mois : 1 lot par semaine de 2 vidéos et 4 images, livré en 48h max.</li><li>1 produit couvert par semaine, avec stratégie, textes de campagne et AdBoard inclus.</li><li><span class="hl">Chaque semaine, le lot suivant s'améliore</span> grâce à ce qui a marché.</li><li>Garantie : <span class="hl-g">Performance en 60 jours</span>.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_ljowq8','PERF+',180000)">Voir PERF+ <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">GROWTH est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous voulez accélérer la production et la croissance de votre marque, sans la prise de tête de gérer une équipe.</strong></p><ul class="faq-a-list"><li>48 créatives par mois : 2 lots par semaine, soit 4 vidéos et 8 images, livrés en 24h max.</li><li>Jusqu'à 2 produits couverts par semaine, sans freelance à relancer ni brief à répéter.</li><li><span class="hl">Plus de créatives testées, plus de chances de trouver un gagnant</span>.</li><li>Garantie : <span class="hl-g">Croissance en 60 jours</span>.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_34w031','GROWTH',330000)">Voir GROWTH <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">SCALE est fait pour vous si…</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><strong>Vous voulez exploiter plusieurs marchés avec des langues et des cultures différentes, sans exploser vos coûts ni augmenter la complexité.</strong></p><ul class="faq-a-list"><li>96 créatives par mois : 4 lots par semaine, soit 8 vidéos et 16 images, livrés en 24h max.</li><li>Jusqu'à 4 produits couverts par semaine, pour plusieurs marchés, chacun avec ses angles et ses références culturelles.</li><li><span class="hl">Votre production ne freine jamais votre croissance</span> : même cadre, même qualité, partout.</li><li>Garantie : <span class="hl-g">Scaling en 60 jours</span>.</li></ul><a href="javascript:void(0)" class="faq-cta" onclick="lpOpenCheckout('prd_9fi79y','SCALE',600000)">Voir SCALE <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Le prix, ça vaut vraiment le coup ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Comparez au vrai coût d'une alternative : un freelance ou une agence facture pour <strong>une prestation ponctuelle</strong>. Avec nous, vous payez pour <span class="hl">un accompagnement continu — étude de marché, production, ajustements</span> — sans recruter, sans gérer, sans réunion.<br><br>Le calcul est simple : le potentiel de croissance dépasse largement le coût de l'abonnement le plus bas.</p><a href="/vente#nos-offres" class="faq-cta">Voir les tarifs <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+            <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je dois faire quoi de mon côté ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Vous connecter à AdBoard et importer votre produit.</span> C'est tout.<br><br>Vous vous abonnez, vous vous connectez avec Google, vous ajoutez votre produit — <strong>on s'occupe du reste chaque semaine.</strong> Zéro réunion. Zéro aller-retour. Zéro friction.</p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Comment vous vous améliorez avec le temps ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text">Chaque semaine, vous marquez dans AdBoard les créatives qui performent. <span class="hl">Notre équipe s'appuie sur ces angles gagnants</span> pour composer le lot suivant, au lieu de repartir de zéro.<br><br>Résultat : votre catalogue d'angles gagnants grandit chaque mois, avec une analyse de marché mise à jour en continu.</p><a href="https://www.adstackofficial.com/adboard" class="faq-cta" target="_blank" rel="noopener">Voir AdBoard <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">C'est un abonnement ? Je peux arrêter ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Oui, un abonnement mensuel — résiliable à tout moment.</span><br><br>Sans contrat ni engagement longue durée. Vous pouvez aussi changer de formule quand vous voulez depuis AdBoard, <strong>le changement prend effet immédiatement.</strong></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Et si les résultats ne sont pas au rendez-vous ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Résultats en 60 jours ou remboursé.</span><br><br>Vous publiez les créatives qu'on vous livre, et vous investissez en publicité avec elles pendant 60 jours.<br><br>Si vous ne voyez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire : vos dépenses du mois et vos résultats (ROAS, coût par achat…).<br><br>On vérifie, puis on vous rembourse l'intégralité de votre paiement. <strong>Zéro risque.</strong></p></div></div></div>
+      <div class="faq-item"><button class="faq-question"><span class="faq-q-text">Je peux pas juste utiliser ChatGPT ou Gemini moi-même ?</span><span class="faq-icon">+</span></button><div class="faq-answer"><div class="faq-answer-inner"><p class="faq-a-text"><span class="hl-g">Vous pouvez essayer — beaucoup l'ont déjà fait avant de venir chez nous.</span><br><br>Le souci, c'est que ces outils <strong>génèrent une créative à la demande, mais n'ont ni votre stratégie, ni la mémoire de ce qui a fonctionné la semaine d'avant</strong>. Vous repartez de zéro à chaque prompt. <span class="hl">Nous, on capitalise sur chaque semaine passée avec vous.</span></p></div></div></div>
+    </div>
+  </div>
+</section>
+<footer class="ads-footer">
+  <div class="ads-footer-inner">
+    <div class="ads-footer-brand">
+      <a href="/vente" class="ads-footer-logo">
+        <img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69ace14803a77_Logo_ADSTACK-removebg-preview.png" alt="AdStack" height="32" style="height:32px;width:auto;display:block">
+        <div class="ads-footer-logo-name">Ad<span>Stack</span></div>
+      </a>
+      <p class="ads-footer-tagline">Des créatives Meta Ads (vidéos et images) livrées en 48h dans votre espace client. Volume, vitesse, performance — pour l'e-commerçant africain.</p>
+      <div class="ads-footer-socials">
+        <a href="https://www.instagram.com/adstack_" class="ads-footer-social" aria-label="Instagram" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="ads-footer-cols">
+      <div class="ads-footer-col">
+        <div class="ads-footer-col-title">Explorer</div>
+        <div class="ads-footer-col-links">
+          <a href="/vente#comparatif-honnete">Pourquoi nous</a>
+          <a href="/vente#ce-que-vous-recevez">Ce que vous recevez</a>
+          <a href="/vente#comment">Comment ça marche</a>
+          <a href="/vente#faq">FAQ</a>
+        </div>
+      </div>
+      <div class="ads-footer-col">
+        <div class="ads-footer-col-title">Nos Offres</div>
+        <div class="ads-footer-col-links">
+          <a href="/vente#nos-offres">PERF+</a>
+          <a href="/vente#nos-offres">GROWTH</a>
+          <a href="/vente#nos-offres">SCALE</a>
+        </div>
+      </div>
+      <div class="ads-footer-col">
+        <div class="ads-footer-col-title">Légal</div>
+        <div class="ads-footer-col-links">
+          <a href="/privacy.html">Politique de confidentialité</a>
+        </div>
+      </div>
+      <div class="ads-footer-col">
+        <div class="ads-footer-col-title">Blog</div>
+        <div class="ads-footer-col-links">
+          <a href="/blog/fatigue-creative-facebook-ads.html">Fatigue créative Facebook Ads</a>
+        </div>
+      </div>
+    </div>
+    <div class="ads-footer-bottom">
+      <p class="ads-footer-copy">© AdStack 2026. Tous droits réservés. — Résultats en 60 jours ou remboursé.</p>
+      <div class="ads-footer-address"><svg width="10" height="12" viewBox="0 0 12 14" fill="none"><path d="M6 1C3.79 1 2 2.79 2 5C2 8.5 6 13 6 13C6 13 10 8.5 10 5C10 2.79 8.21 1 6 1ZM6 6.5C5.17 6.5 4.5 5.83 4.5 5C4.5 4.17 5.17 3.5 6 3.5C6.83 3.5 7.5 4.17 7.5 5C7.5 5.83 6.83 6.5 6 6.5Z" fill="#3A3D45"/></svg>Quality First — Sénégal, Dakar, Rufisque</div>
+    </div>
+  </div>
+</footer>
+<script>(function(){var list=document.getElementById('faqList');function faqSync(){if(!list)return;list.querySelectorAll('.faq-item').forEach(function(el){var a=el.querySelector('.faq-answer');if(!a)return;a.style.maxHeight=el.classList.contains('open')?a.scrollHeight+'px':'';});}window.addEventListener('resize',faqSync);window.addEventListener('load',faqSync);setTimeout(faqSync,50);if(list){list.addEventListener('click',function(e){var btn=e.target.closest('.faq-question');if(!btn)return;var item=btn.closest('.faq-item');var isOpen=item.classList.contains('open');list.querySelectorAll('.faq-item.open').forEach(function(el){el.classList.remove('open');});if(!isOpen)item.classList.add('open');faqSync();});}var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('is-visible');obs.unobserve(entry.target);}});},{threshold:0.08});document.querySelectorAll('.faq-item').forEach(function(el,i){el.style.transitionDelay=(i*0.06)+'s';obs.observe(el);});})();</script>
 <div class="sticky" id="sticky"><span>Des résultats comme ceux-ci ?</span><a class="btn sm" href="/vente#nos-offres" data-cta="sticky">Voir les offres</a></div>
 <div class="lb" id="lb"><img alt=""></div>
 <script src="/etude-de-cas-data.js"></script>
@@ -98,7 +230,7 @@ if(!D.actif && !/apercu=1/.test(location.search)){document.getElementById('page'
 h+='<section class="s hero"><div class="wrap rv"><div class="eyebrow">Étude de cas · '+esc(D.marque)+'</div>';
 if(D.titre)h+='<h1>'+esc(D.titre)+'</h1>';else h+='<h1>'+esc(D.marque)+'</h1>';
 var meta=[D.meta,D.secteur,D.pays,D.lecture].filter(Boolean).join(' · ');if(meta)h+='<div class="meta">'+esc(meta)+'</div>';
-h+=figs((D.chiffres||[]).slice(0,3))+'</div></section>';
+h+=figs((D.chiffres||[]).slice(0,4))+'</div></section>';
 // 2. Témoignage
 var t=D.temoignage||{};
 if(t.texte||t.youtube){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Ce que dit le fondateur</div><h2>Entendu directement de la marque</h2><div class="quote">';

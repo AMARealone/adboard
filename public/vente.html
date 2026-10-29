@@ -1334,7 +1334,7 @@ img.exv-lb-media{max-width:94vw}
   if(!D||(!D.actif&&!apercu)||!D.accroche) return;
   var sec=document.getElementById('etudes-de-cas'); if(!sec) return;
   document.getElementById('edc-brand').textContent=D.marque||'';
-  document.getElementById('edc-p').textContent=D.teaserTexte||D.accroche;
+  (function(){var p=document.getElementById('edc-p');p.textContent='';var a=document.createElement('strong');a.textContent=D.accroche;a.style.cssText='display:block;color:#fff;font-size:1.12em;line-height:1.35;margin-bottom:8px;font-weight:700';p.appendChild(a);if(D.teaserTexte){var t=document.createElement('span');t.textContent=D.teaserTexte;p.appendChild(t)}})();
   if(D.teaserTexte){ document.getElementById('edc-brand').textContent=(D.marque||''); }
   if(D.badge){var b=document.getElementById('edc-badge');b.textContent=D.badge;b.hidden=false;}
   var imgs=(D.galerie||[]).slice(0,2); if(!imgs.length&&D.image) imgs=[D.image];
@@ -2373,5 +2373,15 @@ window.lpApplyCurrency = function(){};
   var t=0,iv=setInterval(function(){chips();if(document.querySelector('.lp-chips')||++t>40)clearInterval(iv)},250);
 }catch(e){}})();
 </script>
+<style id="ux-oct29b">
+@media(min-width:1024px){
+.sol-v2-section .sol-v2-inner{max-width:1160px!important;width:calc(100% - 40px)!important;display:grid!important;grid-template-columns:1.1fr 1fr;column-gap:64px;align-items:center}
+.sol-v2-section .sol-v2-headline{max-width:none!important;margin:0!important;font-size:38px!important;line-height:1.14!important}
+.sol-v2-section .sol-v2-body-row{grid-template-columns:1fr!important;max-width:none!important;margin:0!important;display:block!important}
+.ads-footer-inner{max-width:1160px!important;width:calc(100% - 40px)!important;grid-template-columns:minmax(280px,1fr) auto!important;column-gap:60px!important}
+.ads-footer-cols{max-width:none!important;grid-template-columns:repeat(4,auto)!important;column-gap:48px!important;justify-self:end;border-bottom:0!important;padding-bottom:0!important}
+.ads-footer-bottom{border-top:1px solid rgba(255,255,255,.06)!important;padding-top:22px!important;margin-top:36px!important}
+}
+</style>
 </body>
 </html>
