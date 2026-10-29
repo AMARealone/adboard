@@ -374,7 +374,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .an-logo img{height:30px;width:auto;display:block}
 .an-logo span{font-size:18px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .an-right{display:flex;align-items:center;gap:30px}
-.an-links{display:none;align-items:center;gap:28px}
+.an-links{display:none;align-items:center;gap:24px}
 .an-links a{font-size:14.5px;font-weight:500;color:#C8CAD0;text-decoration:none;white-space:nowrap;transition:color .15s}
 .an-links a:hover,.an-links a[aria-current="page"]{color:#fff}
 .an-cta{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 20px;border-radius:999px;background:#fff;color:#0A0A0E!important;font-size:14px;font-weight:700;text-decoration:none;white-space:nowrap;transition:transform .15s,box-shadow .15s}
@@ -389,7 +389,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 .an-drop a{display:block;padding:14px 4px;font-size:16px;font-weight:600;color:#E6E7EA;text-decoration:none;border-bottom:1px solid rgba(255,255,255,.06)}
 .an-drop a:last-child{border-bottom:0}
 .an-mob{display:flex;align-items:center;gap:10px}
-@media(min-width:960px){.an-links{display:flex}.an-burger,.an-drop{display:none!important}}
+@media(min-width:1180px){.an-links{display:flex}.an-burger,.an-drop{display:none!important}}
 @media(max-width:430px){.an-nav{gap:8px;padding:0 14px}.an-cta{padding:0 14px;font-size:13px}.an-logo img{height:26px}.an-logo{gap:6px}.an-logo span{font-size:16px}.an-mob{gap:8px}.an-right{gap:0}}
 </style>
 <nav class="an-nav" id="anNav" aria-label="Navigation principale">
@@ -398,6 +398,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <div class="an-links">
       <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
       <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+      <a href="/quiz" data-page="quiz">Quiz</a>
       <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
       <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
       <a href="/vente#faq" data-sec="faq">FAQ</a>
@@ -411,6 +412,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
   <div class="an-drop" id="anDrop">
     <a href="/vente#comparatif-honnete" data-sec="comparatif-honnete">Pourquoi nous</a>
     <a href="/etude-de-cas" data-page="etude-de-cas">Études de cas</a>
+      <a href="/quiz" data-page="quiz">Quiz</a>
     <a href="/vente#nos-offres" data-sec="nos-offres">Offres</a>
     <a href="/blog/fatigue-creative-facebook-ads.html" data-page="blog">Blog</a>
     <a href="/vente#faq" data-sec="faq">FAQ</a>
@@ -1496,52 +1498,60 @@ img.exv-lb-media{max-width:94vw}
 -->
 
 
-<!-- ═══ SECTION PROFILS TYPES (29 oct. 2026) — « Vous vous reconnaissez ? » : situations types, PAS des avis clients ═══ -->
+<!-- ═══ SECTION QUIZ (29 oct. 2026) — « Vous vous reconnaissez ? » : carte d'accroche vers /quiz ═══ -->
 <style>
 .pt-section{width:100vw;position:relative;left:50%;margin-left:-50vw;color:#fff;padding:80px 0 24px;box-sizing:border-box}
 .pt-inner{width:calc(100% - 40px);max-width:1160px;margin:0 auto}
 .pt-title{font-size:clamp(30px,5vw,48px);font-weight:900;letter-spacing:-1.2px;line-height:1.1;text-align:center;margin:0 0 12px}
 .pt-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .pt-sub{font-size:16px;color:#A3A6AE;text-align:center;max-width:560px;margin:0 auto 40px;line-height:1.55}
-.pt-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
-.pt-card{display:flex;flex-direction:column;gap:14px;padding:30px 28px 26px;border-radius:24px;background:#121722;border:1px solid rgba(255,255,255,.08);box-sizing:border-box}
-.pt-tag{display:inline-block;width:fit-content;font-size:11px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#1FB6FF;background:rgba(31,182,255,.12);border:1px solid rgba(31,182,255,.28);padding:5px 11px;border-radius:999px}
-.pt-h{font-size:clamp(22px,2.4vw,28px);font-weight:900;letter-spacing:-.6px;line-height:1.15;margin:0}
-.pt-card dl{margin:0;display:grid;gap:12px}
-.pt-card dt{font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#6F95C8;margin:0 0 3px}
-.pt-card dd{margin:0;font-size:15.5px;line-height:1.55;color:#D5D7DC}
-.pt-foot{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08);font-size:13.5px;color:#A3A6AE}
-.pt-foot a{color:#fff;font-weight:700;text-decoration:none;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);padding:9px 16px;border-radius:999px;white-space:nowrap}
-@media(max-width:800px){.pt-section{padding:56px 0 8px}.pt-grid{grid-template-columns:1fr}.pt-card{padding:24px 20px 20px}}
+.qz-card{position:relative;max-width:960px;margin:0 auto;border-radius:28px;background:linear-gradient(135deg,#0F1830 0%,#121722 55%,#0E2A3A 100%);border:1px solid rgba(31,182,255,.22);display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:24px;overflow:hidden;box-shadow:0 30px 80px rgba(11,92,255,.18)}
+.qz-card:before{content:"";position:absolute;width:380px;height:380px;right:-120px;top:-140px;background:radial-gradient(circle,rgba(46,242,232,.22),transparent 68%);pointer-events:none}
+.qz-txt{position:relative;padding:44px 0 44px 44px}
+.qz-badge{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#2EF2E8;background:rgba(46,242,232,.1);border:1px solid rgba(46,242,232,.3);padding:6px 12px;border-radius:999px;margin-bottom:18px}
+.qz-h{font-size:clamp(24px,3vw,34px);font-weight:900;letter-spacing:-.9px;line-height:1.15;margin:0 0 14px}
+.qz-h em{font-style:normal;background:linear-gradient(120deg,#1FB6FF,#2EF2E8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.qz-p{font-size:15.5px;line-height:1.6;color:#B4B7BF;margin:0 0 24px;max-width:430px}
+.qz-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 28px;border-radius:999px;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff!important;font-weight:800;font-size:15.5px;text-decoration:none;box-shadow:0 10px 30px rgba(31,182,255,.35);transition:transform .15s,box-shadow .15s;min-height:50px;box-sizing:border-box}
+.qz-btn:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(31,182,255,.5)}
+.qz-note{display:block;margin-top:14px;font-size:12.5px;color:#7E828B}
+.qz-vis{position:relative;padding:36px 40px 36px 8px;display:flex;flex-direction:column;gap:10px}
+.qz-mq{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6F95C8;margin-bottom:2px}
+.qz-opt{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);font-size:13.5px;color:#C9CBD1;line-height:1.35}
+.qz-opt i{flex:0 0 20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);display:block}
+.qz-opt.on{background:rgba(31,182,255,.12);border-color:rgba(31,182,255,.55);color:#fff;animation:qzPulse 3.2s ease-in-out infinite}
+.qz-opt.on i{background:linear-gradient(135deg,#1FB6FF,#0B5CFF);border-color:transparent;position:relative}
+.qz-opt.on i:after{content:"";position:absolute;left:6px;top:3px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.qz-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.qz-chips span{font-size:11.5px;font-weight:800;letter-spacing:.6px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#D5D7DC}
+.qz-chips span.hit{background:linear-gradient(135deg,#1FB6FF,#0B5CFF);border-color:transparent;color:#fff}
+@keyframes qzPulse{0%,100%{box-shadow:0 0 0 0 rgba(31,182,255,0)}50%{box-shadow:0 0 0 6px rgba(31,182,255,.12)}}
+@media(max-width:800px){.pt-section{padding:56px 0 8px}.qz-card{grid-template-columns:1fr;gap:0}.qz-txt{padding:32px 22px 18px}.qz-vis{padding:6px 22px 30px}.qz-btn{width:100%;justify-content:center}}
+@media(prefers-reduced-motion:reduce){.qz-opt.on{animation:none}}
 </style>
 <section class="pt-section" id="profils">
   <div class="pt-inner">
     <h2 class="pt-title">Vous vous <em>reconnaissez ?</em></h2>
-    <p class="pt-sub">Quatre situations types, et l’offre qui leur correspond.</p>
-    <div class="pt-grid">
-      <article class="pt-card"><span class="pt-tag">Profil type</span><h3 class="pt-h">Le vendeur qui dépend de deux ou trois publicités</h3>
-        <dl><div><dt>Situation</dt><dd>Votre produit se vend déjà, mais presque toutes vos ventes viennent de deux ou trois publicités. Quand elles baissent, vous cherchez du nouveau dans l’urgence.</dd></div>
-        <div><dt>Ce qui vous bloque</dt><dd>Vous n’osez pas augmenter votre budget, faute de nouvelles créatives à tester.</dd></div>
-        <div><dt>Ce qu’AdStack change</dt><dd>De nouveaux angles, vidéos et images à tester chaque mois, en repartant de ce qui performe déjà chez vous.</dd></div></dl>
-        <div class="pt-foot"><span>Offre conseillée : <strong style="color:#fff">PERF+</strong></span><a href="#nos-offres">Voir l’offre</a></div></article>
-      <article class="pt-card"><span class="pt-tag">Profil type</span><h3 class="pt-h">Le fondateur qui gère tout seul</h3>
-        <dl><div><dt>Situation</dt><dd>Vous jonglez entre freelances, graphistes et outils d’IA. La création vous prend vos soirées et les résultats restent irréguliers.</dd></div>
-        <div><dt>Ce qui vous bloque</dt><dd>Vous n’avez ni le temps ni une méthode pour tester plusieurs angles en parallèle.</dd></div>
-        <div><dt>Ce qu’AdStack change</dt><dd>Un système complet : stratégie, production et amélioration, avec un suivi clair dans AdBoard.</dd></div></dl>
-        <div class="pt-foot"><span>Offre conseillée : <strong style="color:#fff">GROWTH</strong></span><a href="#nos-offres">Voir l’offre</a></div></article>
-      <article class="pt-card"><span class="pt-tag">Profil type</span><h3 class="pt-h">La marque qui vise un nouveau pays</h3>
-        <dl><div><dt>Situation</dt><dd>Vous vendez bien sur un marché et vous voulez ouvrir une autre langue ou une autre culture, sans doubler vos coûts.</dd></div>
-        <div><dt>Ce qui vous bloque</dt><dd>Chaque marché demande ses propres angles, et vous ne pouvez pas tout produire vous-même.</dd></div>
-        <div><dt>Ce qu’AdStack change</dt><dd>Des angles adaptés à chaque marché, produits en 24h avec une file prioritaire.</dd></div></dl>
-        <div class="pt-foot"><span>Offre conseillée : <strong style="color:#fff">SCALE</strong></span><a href="#nos-offres">Voir l’offre</a></div></article>
-      <article class="pt-card"><span class="pt-tag">Profil type</span><h3 class="pt-h">Le vendeur qui teste son produit</h3>
-        <dl><div><dt>Situation</dt><dd>Vous voulez savoir vite si votre produit tient en publicité avant d’investir davantage.</dd></div>
-        <div><dt>Ce qui vous bloque</dt><dd>Vous n’avez pas encore de créatives solides pour tester sérieusement.</dd></div>
-        <div><dt>Ce qu’AdStack change</dt><dd>Une stratégie claire et deux lots de créatives par mois pour trouver vos premières gagnantes.</dd></div></dl>
-        <div class="pt-foot"><span>Offre conseillée : <strong style="color:#fff">TEST</strong></span><a href="#nos-offres">Voir l’offre</a></div></article>
+    <p class="pt-sub">Quelques questions, et l’offre qui vous correspond.</p>
+    <div class="qz-card">
+      <div class="qz-txt">
+        <span class="qz-badge">⏱ 30 secondes · 5 questions</span>
+        <h3 class="qz-h">Répondez à un quiz de 30 secondes et découvrez <em>quelle offre est faite pour vous.</em></h3>
+        <p class="qz-p">Celle qui va tout changer pour votre marque. Cochez les phrases qui vous ressemblent, on s’occupe du reste.</p>
+        <a class="qz-btn" href="/quiz" id="qzTeaserBtn">Faire le quiz <span aria-hidden="true">→</span></a>
+        <span class="qz-note">Gratuit, sans inscription.</span>
+      </div>
+      <div class="qz-vis" aria-hidden="true">
+        <div class="qz-mq">Question 3 sur 5</div>
+        <div class="qz-opt"><i></i><span>Une ou deux, et j’ai peur qu’elles s’arrêtent de marcher.</span></div>
+        <div class="qz-opt on"><i></i><span>Quelques-unes, mais je n’arrive pas à en trouver de nouvelles au même niveau.</span></div>
+        <div class="qz-opt"><i></i><span>Plusieurs, et je teste en continu.</span></div>
+        <div class="qz-chips"><span>TEST</span><span class="hit">PERF+</span><span>GROWTH</span><span>SCALE</span></div>
+      </div>
     </div>
   </div>
 </section>
+<script>document.getElementById('qzTeaserBtn')&&document.getElementById('qzTeaserBtn').addEventListener('click',function(){try{if(window.fbq)fbq('trackCustom','QuizTeaserClick')}catch(e){}});</script>
 
 <!-- ═══ SECTION AVIS (29 oct. 2026) — « Ce qu'ils en disent. » : vrais avis uniquement, alimentés par temoignages-data.js ═══ -->
 <style>
@@ -2410,6 +2420,7 @@ window.lpApplyCurrency = function(){};
           <a href="#ce-que-vous-recevez" onclick="event.preventDefault();document.getElementById('ce-que-vous-recevez').scrollIntoView({behavior:'smooth'})">Ce que vous recevez</a>
           <a href="#comment" onclick="event.preventDefault();document.getElementById('comment').scrollIntoView({behavior:'smooth'})">Comment ça marche</a>
           <a href="/etude-de-cas">Études de cas</a>
+          <a href="/quiz">Quiz : trouver mon offre</a>
           <a href="#faq" onclick="event.preventDefault();document.getElementById('faq').scrollIntoView({behavior:'smooth'})">FAQ</a>
         </div>
       </div>

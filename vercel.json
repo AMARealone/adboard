@@ -14,6 +14,8 @@
     { "src": "/adstats", "dest": "/adstats.html" },
     { "src": "/vente", "dest": "/vente.html" },
     { "src": "/etude-de-cas", "dest": "/etude-de-cas.html" },
+    { "src": "/quiz", "dest": "/quiz.html" },
+    { "src": "/quiz-resultat", "dest": "/quiz-resultat.html" },
     { "src": "/", "dest": "/vente.html" }
   ]
 }
