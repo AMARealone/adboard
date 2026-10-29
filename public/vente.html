@@ -2241,5 +2241,137 @@ window.lpApplyCurrency = function(){};
 </style>
 <!-- ═══ Widget trust screens (WhatsApp) — désactivé ═══ -->
 
-  </body>
+  
+<!-- ═══ AMÉLIORATIONS UI/UX (29 oct. 2026) — contrastes, espacements, offres épurées, navigation mobile ═══ -->
+<style id="ux-oct29">
+/* Contrastes : les textes secondaires passent de #5A5D65 (≈3:1) à ≈7:1 sur fond noir */
+.cvr-sub,.proc-sub,.cvr-item-desc,.proc-step-desc{color:#A3A6AE!important}
+.hero-subhead{color:#A8ABB3}
+.hero-proof-text,.hero-urgency{color:#8F929A}
+.cst-foot,.cst-cap{color:#8F929A}
+.cst-foot{font-size:12px}
+.lp-card-proof{font-size:11.5px;color:#9A9DA6}
+.lp-feat-text{color:#A8ABB3;font-size:13px}
+.lp-pack-type{color:#B8BAC0;font-size:12.5px}
+
+/* Respiration : plus d'air entre les sections */
+.sol-v2-section,.grw-section,.cvr,.process-section,.cst-section,.faq-section{padding-top:72px!important;padding-bottom:72px!important}
+.exemple-section{padding-top:40px;padding-bottom:48px}
+@media(max-width:767px){.sol-v2-section,.grw-section,.cvr,.process-section,.cst-section,.faq-section{padding-top:56px!important;padding-bottom:56px!important}}
+
+/* Haut de page : pastilles dégagées du menu, première rangée de créatives visible plus tôt */
+.hero-tags-row{margin-top:22px}
+@media(min-width:1024px){.hero-headline{font-size:56px}.hero-subhead{margin-bottom:20px}.adstack-hero-v2{padding-bottom:24px}}
+
+/* Bandeau de chiffres : fixe et centré sur ordinateur, défilant sur mobile */
+@media(min-width:1024px){
+.sp-track{animation:none;width:auto;justify-content:center;gap:0}
+.sp-track>:nth-child(n+9){display:none}
+.sp-track>:nth-child(8){display:none}
+.sp-track-wrap::before,.sp-track-wrap::after{display:none}
+.sp-item{padding:0 16px}.sp-track{flex-wrap:nowrap;max-width:100%;margin:0 auto}.sp-track-wrap{overflow:visible}
+}
+
+/* « Nous croyons que… » : grille alignée sur le titre, une pastille par ligne */
+@media(min-width:1024px){.sol-v2-body-row{display:block}.sol-v2-grid{max-width:900px}}
+.sol-v2-item-title{display:flex;align-items:center;gap:10px}
+.sol-v2-item-title:before{content:"";flex:none;width:18px;height:18px;border-radius:50%;background:rgba(31,182,255,.14) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231FB6FF' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/11px no-repeat}
+
+/* « Un angle gagnant » : sur mobile, les 4 chiffres restent en 2 colonnes, le graphique en pleine largeur */
+.grw-card-text{font-size:12.5px}
+
+/* AdBoard : sur mobile, un carrousel qu'on fait glisser ; sur ordinateur, des captures plus grandes (3 + 2) */
+@media(max-width:1023px){
+.cvr-items{flex-direction:row;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:0 -6%;padding:0 6% 6px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cvr-items::-webkit-scrollbar{display:none}
+.cvr-item{flex:0 0 84%;scroll-snap-align:center}
+.cvr-dots{display:flex;justify-content:center;gap:8px;margin-top:20px}
+.cvr-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.2);transition:all .2s}
+.cvr-dots i.on{background:#1FB6FF;width:22px;border-radius:99px}
+}
+@media(min-width:1024px){
+.cvr-items{grid-template-columns:repeat(6,1fr);gap:40px 28px}
+.cvr-item:nth-child(-n+3){grid-column:span 2}
+.cvr-item:nth-child(n+4){grid-column:span 3}
+.cvr-item-desc{font-size:14px}
+.cvr-item-title{font-size:22px}
+}
+.cvr-item-img-zoom{width:36px;height:36px}
+
+/* « 3 étapes » : cartes alignées, visuels en bas */
+.proc-img2-frame,.proc-img-stack{margin-top:auto}
+.proc-step{gap:16px}
+
+/* Offres : cartes épurées, un seul bouton plein (l'offre recommandée) */
+.offers-grid-lp{gap:20px}
+.offer-card-lp{padding:30px 26px 26px;border-radius:20px;background:#0E1016;border-color:rgba(255,255,255,.07)}
+.offer-card-lp:hover{transform:none;box-shadow:none;border-color:rgba(255,255,255,.14)}
+.offer-card-lp.lp-best{background:linear-gradient(180deg,rgba(31,182,255,.09),#0E1016 38%);border-color:rgba(31,182,255,.5);box-shadow:0 22px 56px rgba(11,92,255,.14)}
+.offer-card-lp.lp-best:hover{border-color:rgba(31,182,255,.7)}
+.lp-pack-name{background:none;-webkit-text-fill-color:#fff;color:#fff;animation:none;font-size:22px;letter-spacing:.5px}
+.offer-card-lp.lp-best .lp-pack-name{-webkit-text-fill-color:#1FB6FF;color:#1FB6FF}
+.lp-price-amount{font-size:38px;letter-spacing:-1px}
+.lp-card-divider{margin:4px 0 18px}
+.lp-features{gap:12px;margin-bottom:24px}
+.lp-feat-icon{background:none!important;width:16px;height:16px;margin-top:3px}
+.lp-feat-icon svg{width:14px;height:14px}
+.offer-card-lp:not(.lp-best) .lp-cta-btn{background:transparent;border:1.5px solid rgba(31,182,255,.55);box-shadow:none;color:#1FB6FF!important}
+.offer-card-lp:not(.lp-best) .lp-cta-btn:hover{background:rgba(31,182,255,.1);transform:none;box-shadow:none}
+.lp-cta-btn{padding:14px;font-size:14px;border-radius:12px}
+.lp-card-proof{gap:6px;margin-top:14px}
+.lp-downsell-card,.lp-start-card{margin-top:40px}
+@media(max-width:767px){
+.offer-card-lp.lp-best{order:-1}
+.lp-chips{display:flex}
+}
+.lp-chips{display:none;position:sticky;top:56px;z-index:30;gap:8px;justify-content:center;padding:10px 0;margin:0 -4% 14px;background:rgba(10,10,14,.94);backdrop-filter:blur(8px);border-bottom:1px solid rgba(255,255,255,.06)}
+.lp-chips button{font:700 13px/1 inherit;font-family:inherit;color:#A8ABB3;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:11px 16px;min-height:44px;cursor:pointer}
+.lp-chips button.on{color:#fff;border-color:rgba(31,182,255,.7);background:rgba(31,182,255,.14)}
+
+/* Comparatif : curseur facile à attraper au doigt */
+.cst-range{-webkit-appearance:none;appearance:none;background:transparent;height:44px;margin:0 0 6px}
+.cst-range::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:rgba(255,255,255,.14)}
+.cst-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;background:#1FB6FF;border:4px solid #0A0A0E;box-shadow:0 0 0 2px #1FB6FF;margin-top:-10px}
+.cst-range::-moz-range-track{height:8px;border-radius:99px;background:rgba(255,255,255,.14)}
+.cst-range::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#1FB6FF;border:4px solid #0A0A0E;box-shadow:0 0 0 2px #1FB6FF}
+
+/* Bouton flottant et bulle de chat : plus discrets */
+.upsell-close{width:32px;height:32px;top:-12px;right:-10px;font-size:15px}
+.upsell-nudge.hide{transform:translateX(-50%) translateY(120px)!important;opacity:0!important;pointer-events:none!important}
+@media(max-width:767px){#as-chat-btn{width:52px;height:52px;bottom:84px;right:14px}#as-notif-badge{bottom:124px;right:12px}#as-question-bubble{bottom:146px;right:14px}}
+</style>
+<script>
+(function(){try{
+  /* 1. Le bouton flottant « Consultez Nos Offres » se cache quand les offres, l'appel final ou le pied de page sont à l'écran */
+  var nudge=document.getElementById('upsellNudge');
+  var cibles=['.offers-section-lp','#final-cta','footer.ads-footer','#etudes-de-cas'].map(function(q){return document.querySelector(q)}).filter(Boolean);
+  if(nudge&&'IntersectionObserver' in window&&cibles.length){
+    var vus=new Set();
+    var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)vus.add(e.target);else vus.delete(e.target)});nudge.classList.toggle('hide',vus.size>0)},{threshold:0.05});
+    cibles.forEach(function(c){io.observe(c)});
+  }
+  /* 2. Carrousel AdBoard : points de position (mobile) */
+  var items=document.querySelector('.cvr-items');
+  if(items){
+    var n=items.children.length,d=document.createElement('div');d.className='cvr-dots';
+    for(var i=0;i<n;i++)d.appendChild(document.createElement('i'));
+    items.parentNode.appendChild(d);
+    function maj(){var w=items.children[0].getBoundingClientRect().width+14;var k=Math.min(n-1,Math.round(items.scrollLeft/w));[].forEach.call(d.children,function(x,j){x.classList.toggle('on',j===k)})}
+    items.addEventListener('scroll',maj,{passive:true});maj();
+  }
+  /* 3. Offres sur mobile : sélecteur collant GROWTH / PERF+ / SCALE */
+  function chips(){
+    var grid=document.getElementById('lp-offers-grid');if(!grid||document.querySelector('.lp-chips'))return;
+    var cards=[].slice.call(grid.querySelectorAll('.offer-card-lp'));if(cards.length<2)return;
+    var ordre=cards.slice().sort(function(a,b){return (b.classList.contains('lp-best')?1:0)-(a.classList.contains('lp-best')?1:0)});
+    var bar=document.createElement('div');bar.className='lp-chips';
+    ordre.forEach(function(c,i){var b=document.createElement('button');b.type='button';b.textContent=c.querySelector('.lp-pack-name').textContent;if(i===0)b.className='on';
+      b.addEventListener('click',function(){var y=c.getBoundingClientRect().top+window.pageYOffset-130;window.scrollTo({top:y,behavior:'smooth'})});bar.appendChild(b);});
+    grid.parentNode.insertBefore(bar,grid);
+    if('IntersectionObserver' in window){var io2=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var k=ordre.indexOf(e.target);[].forEach.call(bar.children,function(x,j){x.classList.toggle('on',j===k)})}})},{rootMargin:'-35% 0px -55% 0px'});cards.forEach(function(c){io2.observe(c)})}
+  }
+  var t=0,iv=setInterval(function(){chips();if(document.querySelector('.lp-chips')||++t>40)clearInterval(iv)},250);
+}catch(e){}})();
+</script>
+</body>
 </html>
