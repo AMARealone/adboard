@@ -11,7 +11,7 @@ window.TEMOIGNAGES = [
     photo: "/assets/vente/aliou-cisse.jpg",
     mesure: "2,7 M → 6,15 M FCFA de CA par mois",
     audio: "/assets/vente/aliou-cisse-vocal.mp3",
-    lien: "/etude-de-cas",
+    lien: "/etude-de-cas/vitalina",
     grand: true
   }
   // MODÈLE à copier, coller après le dernier avis (avec une virgule avant) et remplir :

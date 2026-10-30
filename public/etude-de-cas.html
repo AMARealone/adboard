@@ -198,6 +198,22 @@ h2{font-weight:900;letter-spacing:-1.1px;line-height:1.12;font-size:clamp(28px,4
 .cta .btn{background:#fff;color:#0A0A0E;box-shadow:none}
 @media(max-width:760px){section.s{padding:44px 0}.cta .wrap{margin:0 16px;padding:36px 20px;max-width:none}}
 </style>
+<style id="edc-multi">
+.who img{object-position:50% 12%}
+.prods{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:34px}
+.prods figure{margin:0;width:150px;text-align:center}
+.prods img{width:100%;height:150px;object-fit:contain;background:#fff;border-radius:18px;padding:10px;display:block}
+.prods figcaption{margin-top:8px;font-size:12.5px;color:var(--mut);line-height:1.35}
+.idx{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:38px;text-align:left}
+.idx-c{position:relative;display:flex;flex-direction:column;gap:10px;padding:30px 28px 26px;border-radius:24px;background:#121722;border:1px solid rgba(255,255,255,.08);text-decoration:none;color:#fff;overflow:hidden;transition:transform .15s,border-color .15s}
+.idx-c:hover{transform:translateY(-3px);border-color:rgba(31,182,255,.5)}
+.idx-c img{height:120px;width:auto;max-width:60%;object-fit:contain;background:#fff;border-radius:14px;padding:6px;align-self:flex-start}
+.idx-b{align-self:flex-start;background:#FFC53D;color:#111;font-weight:800;font-size:13.5px;padding:7px 12px;border-radius:9px}
+.idx-c h2{margin:4px 0 0;font-size:28px;text-align:left}
+.idx-c p{margin:0;color:var(--mut);font-size:15.5px}
+.idx-l{margin-top:auto;padding-top:10px;font-weight:700;color:#1FB6FF;font-size:14.5px}
+@media(max-width:760px){.idx{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
 <div class="bg-flow" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -326,9 +342,21 @@ h2{font-weight:900;letter-spacing:-1.1px;line-height:1.12;font-size:clamp(28px,4
 <div class="sticky" id="sticky"><span>Des résultats comme ceux-ci ?</span><a class="btn sm" href="/vente#nos-offres" data-cta="sticky">Voir les offres</a></div>
 <div class="lb" id="lb"><img alt=""></div>
 <script src="/etude-de-cas-data.js"></script>
+<script src="/etude-de-cas-saelia-data.js"></script>
 <script>
 (function(){
-var D=window.ETUDE_DE_CAS||{};
+var REG=window.ETUDES_DE_CAS||{};
+var m=location.pathname.match(/etude-de-cas\/([^\/?#]+)/), q=location.search.match(/[?&]cas=([^&]+)/);
+var slug=(m&&m[1].replace(/\.html$/,''))||(q&&q[1])||'';
+var apercu=/apercu=1/.test(location.search);
+if(!slug){ // page index : toutes les études de cas actives
+  var list=Object.keys(REG).map(function(k){return REG[k]}).filter(function(c){return c&&c.marque&&(c.actif||apercu)});
+  var ix='<section class="s hero"><div class="wrap rv"><div class="eyebrow">Nos résultats</div><h1>Études de cas</h1><div class="meta">Des marques réelles, des résultats que nous pouvons montrer.</div><div class="idx">'+list.map(function(c){return '<a class="idx-c" href="/etude-de-cas/'+esc(c.slug)+(apercu?'?apercu=1':'')+'">'+((c.teaserImages&&c.teaserImages[0])?'<img src="'+esc(c.teaserImages[0])+'" alt="" loading="lazy">':'')+(c.badge?'<span class="idx-b">'+esc(c.badge)+'</span>':'')+'<h2>'+esc(c.marque)+'</h2><p>'+esc(c.accroche||'')+'</p><span class="idx-l">Voir l’étude de cas →</span></a>'}).join('')+'</div></div></section>';
+  document.getElementById('page').innerHTML=ix;document.getElementById('sticky').style.display='none';
+  document.querySelectorAll('.rv').forEach(function(el){el.classList.add('in')});document.title='Études de cas — AdStack';return;
+}
+var D=REG[slug]||{};
+if(D.marque)document.title='Étude de cas '+D.marque+' — AdStack';
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
 function has(a){return Array.isArray(a)&&a.length>0}
 function figs(a,cls){return has(a)?'<div class="'+(cls||'figs')+'">'+a.filter(function(f){return f&&f.valeur}).map(function(f){return '<div class="fig"><b>'+esc(f.valeur)+'</b><span>'+esc(f.label)+'</span></div>'}).join('')+'</div>':''}
@@ -348,7 +376,7 @@ if(t.texte||t.youtube){h+='<section class="s"><div class="wrap rv"><div class="e
   h+='</div>'}
  h+='</div></div></section>'}
 // 3. La marque
-if(D.contexte){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">La marque</div><h2>'+esc(D.marque)+'</h2><div class="two"><p style="font-size:17px;margin:0">'+esc(D.contexte)+'</p>'+figs(D.contexteChiffres,'ctx-fig')+'</div></div></section>'}
+if(D.contexte){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">La marque</div><h2>'+esc(D.marque)+'</h2><div class="two"><p style="font-size:17px;margin:0">'+esc(D.contexte)+'</p>'+figs(D.contexteChiffres,'ctx-fig')+'</div>'+(has(D.produitsImgs)?'<div class="prods">'+D.produitsImgs.map(function(p){return '<figure><img src="'+esc(p.img)+'" alt="'+esc(p.legende)+'" loading="lazy"><figcaption>'+esc(p.legende)+'</figcaption></figure>'}).join('')+'</div>':'')+'</div></section>'}
 // 4. Problème
 if(has(D.problemes)){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Le problème</div><h2>Ce qui freinait la croissance</h2><ol class="pb">'+D.problemes.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+'</ol></div></section>'}
 // 5. Solution

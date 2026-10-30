@@ -3,6 +3,7 @@
    "actif" à true : la section apparaît sur la page de vente. */
 window.ETUDE_DE_CAS = {
   actif: true,
+  slug: "vitalina",
 
   marque: "Vitalina Energy",
   secteur: "Complément alimentaire",
@@ -76,3 +77,5 @@ window.ETUDE_DE_CAS = {
   ],
   image: "/assets/vente/proc-step3-vitalina1.jpg"
 };
+
+(window.ETUDES_DE_CAS = window.ETUDES_DE_CAS || {}).vitalina = window.ETUDE_DE_CAS;

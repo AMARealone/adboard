@@ -1360,33 +1360,39 @@ img.exv-lb-media{max-width:94vw}
 @media(max-width:760px){.edc-card{grid-template-columns:1fr;gap:0}.edc-txt{padding:30px 22px 8px}.edc-badge{position:static;transform:rotate(-3deg);display:inline-block;margin:0 0 14px}.edc-vis{min-height:250px}.edc-vis img{width:44%}}
 </style>
 <section class="edc-section" id="etudes-de-cas" hidden>
-  <div class="edc-head"><div class="edc-eyebrow">Un aperçu de nos résultats</div><h2 class="edc-h">Étude de cas</h2></div>
-  <div class="edc-card">
-    <div class="edc-txt">
-      <div class="edc-badge" id="edc-badge" hidden></div>
-      <h3 class="edc-brand" id="edc-brand"></h3>
-      <p class="edc-p" id="edc-p"></p>
-      <a class="edc-btn" id="edc-btn" href="/etude-de-cas">Voir l'étude de cas <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-    </div>
-    <div class="edc-vis" id="edc-vis" aria-hidden="true"></div>
-  </div>
+  <div class="edc-head"><div class="edc-eyebrow">Un aperçu de nos résultats</div><h2 class="edc-h">Études de cas</h2></div>
+  <div class="edc-grid" id="edc-grid"></div>
 </section>
 <script src="/etude-de-cas-data.js"></script>
+<script src="/etude-de-cas-saelia-data.js"></script>
 <script>
 (function(){try{
-  var D=window.ETUDE_DE_CAS; var apercu=/[?&]apercu=1/.test(location.search);
-  if(!D||(!D.actif&&!apercu)||!D.accroche) return;
-  var sec=document.getElementById('etudes-de-cas'); if(!sec) return;
-  document.getElementById('edc-brand').textContent=D.marque||'';
-  (function(){var p=document.getElementById('edc-p');p.textContent='';var a=document.createElement('strong');a.textContent=D.accroche;a.style.cssText='display:block;color:#fff;font-size:1.12em;line-height:1.35;margin-bottom:8px;font-weight:700';p.appendChild(a);if(D.teaserTexte){var t=document.createElement('span');t.textContent=D.teaserTexte;p.appendChild(t)}})();
-  if(D.teaserTexte){ document.getElementById('edc-brand').textContent=(D.marque||''); }
-  if(D.badge){var b=document.getElementById('edc-badge');b.textContent=D.badge;b.hidden=false;}
-  var imgs=(D.galerie||[]).slice(0,2); if(!imgs.length&&D.image) imgs=[D.image];
-  document.getElementById('edc-vis').innerHTML=imgs.map(function(u){return '<img src="'+u.replace(/"/g,'&quot;')+'" alt="" decoding="async">'}).join('');
-  if(apercu) document.getElementById('edc-btn').href='/etude-de-cas?apercu=1';
+  var REG=window.ETUDES_DE_CAS||{}; var apercu=/[?&]apercu=1/.test(location.search);
+  var list=Object.keys(REG).map(function(k){return REG[k]}).filter(function(D){return D&&D.accroche&&(D.actif||apercu)});
+  var sec=document.getElementById('etudes-de-cas'), g=document.getElementById('edc-grid'); if(!sec||!g||!list.length) return;
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+  g.className='edc-grid'+(list.length===1?' edc-one':'');
+  g.innerHTML=list.map(function(D){
+    var imgs=(D.teaserImages&&D.teaserImages.length?D.teaserImages:(D.galerie||[])).slice(0,2); if(!imgs.length&&D.image) imgs=[D.image];
+    return '<article class="edc-card"><div class="edc-txt">'+(D.badge?'<div class="edc-badge">'+esc(D.badge)+'</div>':'')+
+      '<h3 class="edc-brand">'+esc(D.marque)+'</h3><p class="edc-p"><strong style="display:block;color:#fff;font-size:1.12em;line-height:1.35;margin-bottom:8px;font-weight:700">'+esc(D.accroche)+'</strong>'+esc(D.teaserTexte||'')+'</p>'+
+      '<a class="edc-btn" href="/etude-de-cas/'+esc(D.slug)+(apercu?'?apercu=1':'')+'">Voir l\'étude de cas <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>'+
+      '<div class="edc-vis" aria-hidden="true">'+imgs.map(function(u){return '<img src="'+esc(u)+'" alt="" decoding="async">'}).join('')+'</div></article>';
+  }).join('');
   sec.hidden=false;
 }catch(e){}})();
 </script>
+<style>
+.edc-grid{max-width:1060px;margin:0 auto;display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+.edc-grid .edc-card{max-width:none;margin:0;grid-template-columns:1fr;gap:0;min-height:0;align-items:stretch}
+.edc-grid .edc-txt{padding:32px 28px 8px}
+.edc-grid .edc-badge{position:static;transform:rotate(-3deg);display:inline-block;margin:0 0 14px}
+.edc-grid .edc-vis{min-height:230px}
+.edc-grid .edc-vis img{width:44%;max-width:170px;background:#fff}
+.edc-grid.edc-one{grid-template-columns:1fr;max-width:960px}
+.edc-grid.edc-one .edc-card{grid-template-columns:1.1fr 1fr;min-height:300px}
+@media(max-width:860px){.edc-grid{grid-template-columns:1fr}.edc-grid.edc-one .edc-card{grid-template-columns:1fr}}
+</style>
 
 <section class="process-section" id="comment">
   <div class="proc-wrap">
@@ -1498,53 +1504,6 @@ img.exv-lb-media{max-width:94vw}
 -->
 
 
-<!-- ═══ SECTION QUIZ (29 oct. 2026) — « Vous vous reconnaissez ? » : carte d'accroche vers /quiz ═══ -->
-<style>
-.pt-section{width:100vw;position:relative;left:50%;margin-left:-50vw;color:#fff;padding:80px 0 24px;box-sizing:border-box}
-.pt-inner{width:calc(100% - 40px);max-width:1160px;margin:0 auto}
-.pt-title{font-size:clamp(30px,5vw,48px);font-weight:900;letter-spacing:-1.2px;line-height:1.1;text-align:center;margin:0 0 12px}
-.pt-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.pt-sub{font-size:16px;color:#A3A6AE;text-align:center;max-width:560px;margin:0 auto 40px;line-height:1.55}
-.qz-card{position:relative;max-width:960px;margin:0 auto;border-radius:28px;background:linear-gradient(135deg,#0F1830 0%,#121722 55%,#0E2A3A 100%);border:1px solid rgba(31,182,255,.22);display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:24px;overflow:hidden;box-shadow:0 30px 80px rgba(11,92,255,.18)}
-.qz-card:before{content:"";position:absolute;width:380px;height:380px;right:-120px;top:-140px;background:radial-gradient(circle,rgba(46,242,232,.22),transparent 68%);pointer-events:none}
-.qz-txt{position:relative;padding:44px 0 44px 44px}
-.qz-badge{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#2EF2E8;background:rgba(46,242,232,.1);border:1px solid rgba(46,242,232,.3);padding:6px 12px;border-radius:999px;margin-bottom:18px}
-.qz-h{font-size:clamp(24px,3vw,34px);font-weight:900;letter-spacing:-.9px;line-height:1.15;margin:0 0 14px}
-.qz-h em{font-style:normal;background:linear-gradient(120deg,#1FB6FF,#2EF2E8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.qz-p{font-size:15.5px;line-height:1.6;color:#B4B7BF;margin:0 0 24px;max-width:430px}
-.qz-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 28px;border-radius:999px;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff!important;font-weight:800;font-size:15.5px;text-decoration:none;box-shadow:0 10px 30px rgba(31,182,255,.35);transition:transform .15s,box-shadow .15s;min-height:50px;box-sizing:border-box}
-.qz-btn:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(31,182,255,.5)}
-.qz-note{display:block;margin-top:14px;font-size:12.5px;color:#7E828B}
-.qz-vis{position:relative;padding:36px 40px 36px 8px;display:flex;flex-direction:column;gap:10px}
-.qz-mq{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6F95C8;margin-bottom:2px}
-.qz-opt{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);font-size:13.5px;color:#C9CBD1;line-height:1.35}
-.qz-opt i{flex:0 0 20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);display:block}
-.qz-opt.on{background:rgba(31,182,255,.12);border-color:rgba(31,182,255,.55);color:#fff;animation:qzPulse 3.2s ease-in-out infinite}
-.qz-opt.on i{background:linear-gradient(135deg,#1FB6FF,#0B5CFF);border-color:transparent;position:relative}
-.qz-opt.on i:after{content:"";position:absolute;left:6px;top:3px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
-.qz-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-.qz-chips span{font-size:11.5px;font-weight:800;letter-spacing:.6px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#D5D7DC}
-.qz-chips span.hit{background:linear-gradient(135deg,#1FB6FF,#0B5CFF);border-color:transparent;color:#fff}
-@keyframes qzPulse{0%,100%{box-shadow:0 0 0 0 rgba(31,182,255,0)}50%{box-shadow:0 0 0 6px rgba(31,182,255,.12)}}
-@media(max-width:800px){.pt-section{padding:56px 0 8px}.qz-card{grid-template-columns:1fr;gap:0}.qz-txt{padding:32px 22px 18px}.qz-vis{padding:6px 22px 30px}.qz-btn{width:100%;justify-content:center}}
-@media(prefers-reduced-motion:reduce){.qz-opt.on{animation:none}}
-.qz-compact{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;max-width:620px;padding:34px 28px;background:linear-gradient(135deg,#0F1830 0%,#121722 70%)}
-.qz-compact .qz-p{margin:0;max-width:none;font-size:17px;color:#C9CBD1}
-.qz-compact:before{display:none}
-#profils .pt-title{margin-bottom:28px}
-@media(max-width:800px){.qz-compact{padding:28px 20px}.qz-compact .qz-btn{width:100%}}
-</style>
-<section class="pt-section" id="profils">
-  <div class="pt-inner">
-    <h2 class="pt-title">Quelle offre est <em>faite pour vous ?</em></h2>
-    <div class="qz-card qz-compact">
-      <p class="qz-p">Répondez à 5 questions, on vous dit laquelle.</p>
-      <a class="qz-btn" href="/quiz" id="qzTeaserBtn">Faire le quiz de 30 secondes <span aria-hidden="true">→</span></a>
-    </div>
-  </div>
-</section>
-<script>document.getElementById('qzTeaserBtn')&&document.getElementById('qzTeaserBtn').addEventListener('click',function(){try{if(window.fbq)fbq('trackCustom','QuizTeaserClick')}catch(e){}});</script>
-
 <!-- ═══ SECTION AVIS (29 oct. 2026) — « Ce qu'ils en disent. » : vrais avis uniquement, alimentés par temoignages-data.js ═══ -->
 <style>
 .tm-section{width:100vw;position:relative;left:50%;margin-left:-50vw;color:#fff;padding:72px 0 80px;box-sizing:border-box}
@@ -1639,6 +1598,54 @@ img.exv-lb-media{max-width:94vw}
 
   </section>
 </div>
+
+<!-- ═══ SECTION QUIZ (29 oct. 2026) — « Vous vous reconnaissez ? » : carte d'accroche vers /quiz ═══ -->
+<style>
+.pt-section{width:100vw;position:relative;left:50%;margin-left:-50vw;color:#fff;padding:80px 0 24px;box-sizing:border-box}
+.pt-inner{width:calc(100% - 40px);max-width:1160px;margin:0 auto}
+.pt-title{font-size:clamp(30px,5vw,48px);font-weight:900;letter-spacing:-1.2px;line-height:1.1;text-align:center;margin:0 0 12px}
+.pt-title em{font-style:normal;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.pt-sub{font-size:16px;color:#A3A6AE;text-align:center;max-width:560px;margin:0 auto 40px;line-height:1.55}
+.qz-card{position:relative;max-width:960px;margin:0 auto;border-radius:28px;background:linear-gradient(135deg,#0F1830 0%,#121722 55%,#0E2A3A 100%);border:1px solid rgba(31,182,255,.22);display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:24px;overflow:hidden;box-shadow:0 30px 80px rgba(11,92,255,.18)}
+.qz-card:before{content:"";position:absolute;width:380px;height:380px;right:-120px;top:-140px;background:radial-gradient(circle,rgba(46,242,232,.22),transparent 68%);pointer-events:none}
+.qz-txt{position:relative;padding:44px 0 44px 44px}
+.qz-badge{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:#2EF2E8;background:rgba(46,242,232,.1);border:1px solid rgba(46,242,232,.3);padding:6px 12px;border-radius:999px;margin-bottom:18px}
+.qz-h{font-size:clamp(24px,3vw,34px);font-weight:900;letter-spacing:-.9px;line-height:1.15;margin:0 0 14px}
+.qz-h em{font-style:normal;background:linear-gradient(120deg,#1FB6FF,#2EF2E8);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.qz-p{font-size:15.5px;line-height:1.6;color:#B4B7BF;margin:0 0 24px;max-width:430px}
+.qz-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 28px;border-radius:999px;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff!important;font-weight:800;font-size:15.5px;text-decoration:none;box-shadow:0 10px 30px rgba(31,182,255,.35);transition:transform .15s,box-shadow .15s;min-height:50px;box-sizing:border-box}
+.qz-btn:hover{transform:translateY(-2px);box-shadow:0 14px 38px rgba(31,182,255,.5)}
+.qz-note{display:block;margin-top:14px;font-size:12.5px;color:#7E828B}
+.qz-vis{position:relative;padding:36px 40px 36px 8px;display:flex;flex-direction:column;gap:10px}
+.qz-mq{font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#6F95C8;margin-bottom:2px}
+.qz-opt{display:flex;align-items:center;gap:12px;padding:13px 15px;border-radius:14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);font-size:13.5px;color:#C9CBD1;line-height:1.35}
+.qz-opt i{flex:0 0 20px;height:20px;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);display:block}
+.qz-opt.on{background:rgba(31,182,255,.12);border-color:rgba(31,182,255,.55);color:#fff;animation:qzPulse 3.2s ease-in-out infinite}
+.qz-opt.on i{background:linear-gradient(135deg,#1FB6FF,#0B5CFF);border-color:transparent;position:relative}
+.qz-opt.on i:after{content:"";position:absolute;left:6px;top:3px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.qz-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.qz-chips span{font-size:11.5px;font-weight:800;letter-spacing:.6px;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#D5D7DC}
+.qz-chips span.hit{background:linear-gradient(135deg,#1FB6FF,#0B5CFF);border-color:transparent;color:#fff}
+@keyframes qzPulse{0%,100%{box-shadow:0 0 0 0 rgba(31,182,255,0)}50%{box-shadow:0 0 0 6px rgba(31,182,255,.12)}}
+@media(max-width:800px){.pt-section{padding:56px 0 8px}.qz-card{grid-template-columns:1fr;gap:0}.qz-txt{padding:32px 22px 18px}.qz-vis{padding:6px 22px 30px}.qz-btn{width:100%;justify-content:center}}
+@media(prefers-reduced-motion:reduce){.qz-opt.on{animation:none}}
+.qz-compact{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;max-width:620px;padding:34px 28px;background:linear-gradient(135deg,#0F1830 0%,#121722 70%)}
+.qz-compact .qz-p{margin:0;max-width:none;font-size:17px;color:#C9CBD1}
+.qz-compact:before{display:none}
+#profils .pt-title{margin-bottom:28px}
+@media(max-width:800px){.qz-compact{padding:28px 20px}.qz-compact .qz-btn{width:100%}}
+</style>
+<section class="pt-section" id="profils">
+  <div class="pt-inner">
+    <h2 class="pt-title">Quelle offre est <em>faite pour vous ?</em></h2>
+    <div class="qz-card qz-compact">
+      <p class="qz-p">Répondez à 5 questions, on vous dit laquelle.</p>
+      <a class="qz-btn" href="/quiz" id="qzTeaserBtn">Faire le quiz de 30 secondes <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
+<script>document.getElementById('qzTeaserBtn')&&document.getElementById('qzTeaserBtn').addEventListener('click',function(){try{if(window.fbq)fbq('trackCustom','QuizTeaserClick')}catch(e){}});</script>
+
 
 <!-- Pop-up de paiement — même principe que dans AdBoard : le widget Chariow s'ouvre en pop-up
      par-dessus la page, le visiteur ne quitte jamais adstackofficial.com pour payer. -->
@@ -2693,5 +2700,12 @@ window.lpApplyCurrency = function(){};
 @media(max-width:600px){.fc-card{padding:44px 20px;border-radius:26px}.fc-btns a{width:100%;justify-content:center;box-sizing:border-box}}
 </style>
 <style id="overscroll-fix">html{background:#0A0A0E;overscroll-behavior:none}body{overscroll-behavior:none}.ads-footer{background:#0A0A0E!important}</style>
+<style id="pf-stats-fix">
+.pf-stats{align-items:start}
+.pf-stats>div{text-align:center;display:flex;flex-direction:column;align-items:center}
+.pf-stat-label{min-height:0}
+.pf-stat-bar{margin:12px auto 14px}
+.pf-stat-num{white-space:nowrap}
+</style>
 </body>
 </html>
