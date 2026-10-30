@@ -3318,6 +3318,7 @@ function remplirPitchDonnees(msg, v) {
 function garnirRelance(p, relanceIndex, tpl) {
   // Garde-fou : un texte encore à variables (ancien pitch resté en J+10) ne doit jamais partir avec ses crochets.
   if (relanceIndex !== PITCH_RELANCE_I && J10_VARS.test(tpl || '')) tpl = DEFAULT_RELANCES[relanceIndex] || '';
+  if (relanceIndex === 2 && tpl === OLD_J21_DEFAUT) tpl = DEFAULT_RELANCES[2];   // J+21 jamais personnalisé → nouveau texte Andromeda
   if (relanceIndex === PITCH_RELANCE_I && J10_VARS.test(tpl || '')) {
     const v = pitchVariante(p);
     if (v.cas) return { msg: remplirPitchDonnees(tpl, v), v, trace: 'cas' + v.cas, avertir: false };
@@ -4299,7 +4300,7 @@ function renderLeads(data) {
   }
 
   const JOURS  = [3, 10, 21];
-  const LABELS = ['Pitch personnalisé', 'Preuve et autorité', 'Dernier message'];
+  const LABELS = ['Pitch personnalisé', 'Preuve et autorité', 'Alerte Andromeda'];
 
   function getJStatus(id) {
     const p = DB.find(x => x.id === id);
@@ -5456,7 +5457,7 @@ async function genMessages(html) {
     }
 
     const JOURS  = [3, 10, 21];
-    const LABELS = ['Pitch personnalisé', 'Preuve et autorité', 'Dernier message'];
+    const LABELS = ['Pitch personnalisé', 'Preuve et autorité', 'Alerte Andromeda'];
     const _waNumero = (prospect?.lien_wa || '').replace('https://wa.me/', '').replace(/\D/g, '');
 
     const messages = vars.messages.map((texte, i) => {
@@ -7319,14 +7320,15 @@ const _origGoTo = typeof goTo === 'function' ? goTo : null;
 // ═══════════════════════════════════════
 
 const RELANCE_JOURS  = [3, 10, 21];
-const RELANCE_LABELS = ['Pitch personnalisé (ads du jour)', 'Preuve et autorité (étude de cas)', 'Dernier message'];
+const RELANCE_LABELS = ['Pitch personnalisé (ads du jour)', 'Preuve et autorité (étude de cas)', 'Alerte d\'ami : nouveau Meta Andromeda (lien vers l\'article)'];
 
 const DEFAULT_INTROS = ["Bonjour *[Marque]*,\nje viens de voir votre pub pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nvotre pub sur *[Produit]*\nJe me demandais, est-ce vous qui l'avez créée ?", "Bonjour *[Marque]*,\nje suis tombé sur votre pub *[Produit]* en scrollant\nEst-ce vous qui êtes derrière ?", "Bonjour *[Marque]*, petite question\nLa pub *[Produit]* que je viens de voir,\nest-ce vous qui l'avez faite ?", "Bonjour *[Marque]*\nJe viens de voir votre pub avec *[Produit]*\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje regardais votre pub sur *[Produit]*. J'avais une question !\nEst-ce vous qui l'avez faites ?", "Bonjour *[Marque]*,\nj'ai vu votre pub pour *[Produit]* passer aujourd'hui\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje viens de consulter votre publicité pour *[Produit]*\nEst-ce vous qui l'avez réalisée ?", "Bonjour *[Marque]*,\nje suis tombé sur vos pubs, notamment celle pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nje viens de tomber sur votre pub avec *[Produit]* à l'instant\nEst-ce vous qui êtes derrière ?"];
 
+const OLD_J21_DEFAUT = "Salut *[Marque]*,\n\nRécemment une étude a montré que *80%* des profits d'une marque e-commerce sur Facebook Ads venaient de l'exploitation des créatives performantes, recyclées correctement sur d'autres concepts créatifs.\n\nMais cela n'est possible que si l'on a un bon suivi et une organisation qui permet d'agir vite.\n\nC'est pour ça qu'on a *AdBoard* (adstackofficial.com/adboard) : notre plateforme où toutes vos créatives sont organisées et classées, afin de repartir de ce qui marche et d'améliorer les prochaines.\n\nLe tout pour que vous ne ratiez pas ces *80%* de revenus potentiels.\n\nEn tout cas voici mon dernier message ! J'espère que vous passerez une excellente semaine.";   // ancien texte J+21 par défaut (remplacé le 30 oct. 2026 par le message Andromeda)
 const DEFAULT_RELANCES = [
   "Bonjour *[Marque]*, j'espère ne pas vous avoir trop dérangé la dernière fois 😊 car on a vu que :\n\nVous aviez *[ads]* ads actives, en moyenne depuis *[jours]* jours, ce qui montre que vous *[bonne_nouvelle]* mais aussi que *[mauvaise_nouvelle]*.\n\nEt une partie de notre service consiste à éviter *[mauvaise_nouvelle_en_2_mots]* via *[solution]* pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.",
   "Re-bonjour *[Marque]* 👋\n\nQuand *Saelia* nous a contactés, elle pensait avoir saturé son marché : ses résultats baissaient, faute de nouvelles idées créatives.\n\nOn a d'abord repéré ce qui bloquait, puis remis en place la production. Résultat : *+10K$ dépensés en pub avec nos créatives, ROAS de 3,6*.\n\nOn ferait la même chose pour *[Marque]* : trouver la faille avant de scaler.\n\nLe cas complet : adstackofficial.com/etude-de-cas/saelia\n\nUn petit *Google Meet* pour voir ce que ça donnerait chez vous ?",
-  "Salut *[Marque]*,\n\nRécemment une étude a montré que *80%* des profits d'une marque e-commerce sur Facebook Ads venaient de l'exploitation des créatives performantes, recyclées correctement sur d'autres concepts créatifs.\n\nMais cela n'est possible que si l'on a un bon suivi et une organisation qui permet d'agir vite.\n\nC'est pour ça qu'on a *AdBoard* (adstackofficial.com/adboard) : notre plateforme où toutes vos créatives sont organisées et classées, afin de repartir de ce qui marche et d'améliorer les prochaines.\n\nLe tout pour que vous ne ratiez pas ces *80%* de revenus potentiels.\n\nEn tout cas voici mon dernier message ! J'espère que vous passerez une excellente semaine."
+  "Salut *[Marque]*, un petit message d'ami avant de vous laisser tranquille 🙂\n\nLe 28 octobre, Meta a dévoilé la nouvelle génération d'*Andromeda*, le système qui choisit quelles publicités entrent en compétition pour chaque personne.\n\nIl évalue maintenant beaucoup plus de publicités, avec plus de contexte sur chaque personne. Une créative qui ne dit pas clairement à qui elle parle, dans quelle situation et pourquoi acheter a donc moins de chances de passer.\n\nSi vous continuez à publier comme avant, il y a un trou sur la route dans lequel beaucoup de marques risquent de tomber.\n\nDe notre côté, on s'est déjà adaptés. J'ai tout expliqué ici : adstackofficial.com/blog/meta-andromeda-2-0\n\nLisez-le, et si vous voulez qu'on regarde ensemble ce que ça change pour *[Marque]*, je suis là.\n\nC'est mon dernier message, belle semaine !"
 ];
 
 async function loadTemplates() {
@@ -7375,6 +7377,7 @@ async function loadTemplates() {
     relances[1] = DEFAULT_RELANCES[1];
     _migreJ3 = true;
   }
+  if (relances[2] === OLD_J21_DEFAUT) { relances[2] = DEFAULT_RELANCES[2]; _migreJ3 = true; }
   if (_migreJ3) { localStorage.setItem('tpl_relances', JSON.stringify(relances)); if (DB._config) DB._config.tpl_relances = relances; setTimeout(() => { try { markDirty(); } catch (e) {} }, 400); }
 
   // ── Charger les templates emails + notifications (nouvelle table) ──
