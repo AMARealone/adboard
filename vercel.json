@@ -15,6 +15,7 @@
     { "src": "/adstats", "dest": "/adstats.html" },
     { "src": "/vente", "status": 307, "headers": { "Location": "/pdv" } },
     { "src": "/pdv", "dest": "/vente.html" },
+    { "src": "/presentation", "dest": "/presentation.html" },
     { "src": "/blog", "dest": "/blog/index.html" },
     { "src": "/blog/", "dest": "/blog/index.html" },
     { "src": "/blog/([^/.]+)", "dest": "/blog/$1.html" },
