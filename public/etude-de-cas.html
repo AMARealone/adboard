@@ -6,7 +6,7 @@
 <title>Étude de cas — AdStack</title>
 <meta name="description" content="Comment une marque e-commerce a trouvé ses créatives gagnantes avec AdStack.">
 <link rel="icon" href="/favicon.ico">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@700&display=swap" rel="stylesheet">
 <script>
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
 fbq('init','1425042735803143');fbq('track','PageView');
@@ -196,6 +196,7 @@ h2{font-weight:900;letter-spacing:-1.1px;line-height:1.12;font-size:clamp(28px,4
 .cta .wrap{max-width:760px;background:linear-gradient(135deg,#0B5CFF 0%,#16337A 100%);border-radius:28px;padding:48px 28px}
 .cta p{color:#D5E4FF}
 .cta .btn{background:#fff;color:#0A0A0E;box-shadow:none}
+.cta .btn.ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55)}
 @media(max-width:760px){section.s{padding:44px 0}.cta .wrap{margin:0 16px;padding:36px 20px;max-width:none}}
 </style>
 <style id="edc-multi">
@@ -204,15 +205,27 @@ h2{font-weight:900;letter-spacing:-1.1px;line-height:1.12;font-size:clamp(28px,4
 .prods figure{margin:0;width:150px;text-align:center}
 .prods img{width:100%;height:150px;object-fit:contain;background:#fff;border-radius:18px;padding:10px;display:block}
 .prods figcaption{margin-top:8px;font-size:12.5px;color:var(--mut);line-height:1.35}
-.idx{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:38px;text-align:left}
-.idx-c{position:relative;display:flex;flex-direction:column;gap:10px;padding:30px 28px 26px;border-radius:24px;background:#121722;border:1px solid rgba(255,255,255,.08);text-decoration:none;color:#fff;overflow:hidden;transition:transform .15s,border-color .15s}
-.idx-c:hover{transform:translateY(-3px);border-color:rgba(31,182,255,.5)}
-.idx-c img{height:120px;width:auto;max-width:60%;object-fit:contain;background:#fff;border-radius:14px;padding:6px;align-self:flex-start}
-.idx-b{align-self:flex-start;background:#FFC53D;color:#111;font-weight:800;font-size:13.5px;padding:7px 12px;border-radius:9px}
-.idx-c h2{margin:4px 0 0;font-size:28px;text-align:left}
-.idx-c p{margin:0;color:var(--mut);font-size:15.5px}
-.idx-l{margin-top:auto;padding-top:10px;font-weight:700;color:#1FB6FF;font-size:14.5px}
-@media(max-width:760px){.idx{grid-template-columns:1fr}}
+.idx{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,360px));justify-content:center;gap:18px;margin:46px auto 0;max-width:1120px;text-align:left}
+.idx-c{display:flex;flex-direction:column;gap:10px;padding:8px 8px 24px;border-radius:24px;background:#121722;border:1px solid rgba(255,255,255,.07);text-decoration:none;color:#fff;transition:transform .15s,border-color .15s}
+.idx-c:hover{transform:translateY(-4px);border-color:rgba(31,182,255,.5)}
+.idx-v{position:relative;height:300px;border-radius:18px;overflow:hidden;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.idx-v img{position:absolute;height:78%;width:auto;max-width:46%;object-fit:cover;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.28);background:#fff}
+.idx-v img:nth-child(1){left:12%;transform:rotate(-5deg)}
+.idx-v img:nth-child(2){right:12%;transform:rotate(4deg);top:16%}
+.idx-v img:only-child{left:50%;transform:translateX(-50%) rotate(-2deg)}
+.idx-c h2{margin:0;padding:0 18px;font-size:clamp(21px,2vw,25px);line-height:1.18;letter-spacing:-.5px;text-align:left}
+.idx-c p{margin:0;padding:0 18px;color:#8E929B;font-size:15px;line-height:1.45}
+.idx-l{margin-top:auto;padding:12px 18px 0;font-weight:800;font-size:14.5px;display:inline-flex;gap:8px;align-items:center}
+.idx-hero{position:relative;display:block;max-width:900px;margin:0 auto}.idx-hero h1{font-size:clamp(44px,8.5vw,96px);letter-spacing:-3px;line-height:1}
+.idx-hand{font-family:'Caveat',cursive;font-size:clamp(22px,3vw,30px);color:#FFC53D;font-weight:700;margin-bottom:6px}
+.stk{position:absolute;font-weight:800;font-size:clamp(13px,1.6vw,18px);line-height:1.1;padding:9px 13px;border-radius:9px;text-align:center;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.stk.a{left:-5%;top:0;background:#1FB6FF;color:#fff;transform:rotate(-14deg)}
+.stk.b{right:-4%;bottom:-26%;background:#A78BFA;color:#0A0A0E;transform:rotate(-9deg)}
+.idx-cta{max-width:1120px;margin:90px auto 0;border-radius:28px;padding:56px 40px;background:linear-gradient(135deg,#0B5CFF 0%,#16337A 100%);text-align:center;position:relative;overflow:hidden}
+.idx-cta h2{margin:0 0 12px;font-size:clamp(28px,4.4vw,46px)}
+.idx-cta p{margin:0 0 26px;color:#D5E4FF}
+@media(max-width:1000px){.idx{grid-template-columns:repeat(2,1fr)}.stk{display:none}}
+@media(max-width:640px){.idx{grid-template-columns:1fr}.idx-v{height:280px}.idx-cta{padding:40px 20px;margin:60px 16px 0}}
 </style>
 </head>
 <body>
@@ -351,7 +364,7 @@ var slug=(m&&m[1].replace(/\.html$/,''))||(q&&q[1])||'';
 var apercu=/apercu=1/.test(location.search);
 if(!slug){ // page index : toutes les études de cas actives
   var list=Object.keys(REG).map(function(k){return REG[k]}).filter(function(c){return c&&c.marque&&(c.actif||apercu)});
-  var ix='<section class="s hero"><div class="wrap rv"><div class="eyebrow">Nos résultats</div><h1>Études de cas</h1><div class="meta">Des marques réelles, des résultats que nous pouvons montrer.</div><div class="idx">'+list.map(function(c){return '<a class="idx-c" href="/etude-de-cas/'+esc(c.slug)+(apercu?'?apercu=1':'')+'">'+((c.teaserImages&&c.teaserImages[0])?'<img src="'+esc(c.teaserImages[0])+'" alt="" loading="lazy">':'')+(c.badge?'<span class="idx-b">'+esc(c.badge)+'</span>':'')+'<h2>'+esc(c.marque)+'</h2><p>'+esc(c.accroche||'')+'</p><span class="idx-l">Voir l’étude de cas →</span></a>'}).join('')+'</div></div></section>';
+  var ix='<section class="s hero"><div class="wrap rv"><div class="idx-hand">Un aperçu de notre travail</div><div class="idx-hero"><span class="stk a">Orientées performance</span><h1>Études de cas</h1><span class="stk b">Ce qu’on fait pour nos marques</span></div><div class="meta" style="max-width:620px;margin:40px auto 0;font-size:16px">Des marques réelles qui jugent leurs créatives sur la performance, pas sur le portfolio.</div><div class="idx">'+list.map(function(c){var im=(c.teaserImages&&c.teaserImages.length?c.teaserImages:(c.galerie||[])).slice(0,2);return '<a class="idx-c" href="/etude-de-cas/'+esc(c.slug)+(apercu?'?apercu=1':'')+'"><div class="idx-v" style="background:'+esc(c.carteBg||'#1c2333')+'" aria-hidden="true">'+im.map(function(u){return '<img src="'+esc(u)+'" alt="" loading="lazy">'}).join('')+'</div><h2>'+esc(c.carteTitre||c.marque)+'</h2><p>'+esc(c.carteLigne||c.accroche||'')+'</p><span class="idx-l">Lire l’étude de cas <span aria-hidden="true">→</span></span></a>'}).join('')+'</div></div></section><section class="s" style="padding-top:0"><div class="idx-cta rv"><h2>Vous voulez des résultats comme ceux-ci ?</h2><p>Choisissez votre offre, ou faites le quiz pour trouver celle qui vous correspond.</p><div class="row" style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap"><a class="btn" style="background:#fff;color:#0A0A0E;box-shadow:none" href="/vente#nos-offres">Voir les offres</a><a class="btn ghost" style="color:#fff;border:1.5px solid rgba(255,255,255,.55)" href="/quiz">Faire le quiz</a></div></div></section>';
   document.getElementById('page').innerHTML=ix;document.getElementById('sticky').style.display='none';
   document.querySelectorAll('.rv').forEach(function(el){el.classList.add('in')});document.title='Études de cas — AdStack';return;
 }
@@ -389,7 +402,7 @@ if(has(D.resultats)||has(D.gagnantes)){h+='<section class="s"><div class="wrap r
 // 7. Galerie
 if(has(D.galerie)){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Les créatives</div><h2>Réalisées pour '+esc(D.marque)+'</h2><div class="gal">'+D.galerie.map(function(g){return '<img src="'+esc(g)+'" alt="Créative '+esc(D.marque)+'" loading="lazy">'}).join('')+'</div></div></section>'}
 // 8. CTA
-h+='<section class="cta"><div class="wrap rv"><h2>Vous voulez des résultats comme ceux-ci ?</h2><p>Choisissez votre offre et recevez vos premières créatives dans AdBoard.</p><div class="row"><a class="btn" href="/vente#nos-offres" data-cta="fin">Voir les offres</a><a class="btn ghost" href="/vente#etudes-de-cas">Retour</a></div></div></section>';
+h+='<section class="cta"><div class="wrap rv"><h2>Vous voulez des résultats comme ceux-ci ?</h2><p>Choisissez votre offre et recevez vos premières créatives dans AdBoard.</p><div class="row"><a class="btn" href="/vente#nos-offres" data-cta="fin">Voir les offres</a><a class="btn ghost" href="/etude-de-cas">Voir les études de cas</a></div></div></section>';
 document.getElementById('page').innerHTML=h;
 // comportements
 var io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.08}):null;

@@ -10,9 +10,17 @@ window.TEMOIGNAGES = [
     role: "Fondateur de Vitalina",
     photo: "/assets/vente/aliou-cisse.jpg",
     mesure: "2,7 M → 6,15 M FCFA de CA par mois",
-    audio: "/assets/vente/aliou-cisse-vocal.mp3",
     lien: "/etude-de-cas/vitalina",
     grand: true
+  },
+  {
+    texte: "Je pensais avoir saturé mon marché. Je n’arrivais plus à trouver de nouvelles idées créatives, et mes résultats baissaient de plus en plus : c’était inquiétant. En quelques semaines, AdStack a tout remis en place, avec une excellente diversité créative. Ça a redonné vie à ma marque.",
+    nom: "Anissa Coli",
+    role: "Owner de Saelia",
+    photo: "/assets/vente/anissa-coli.jpg",
+    mesure: "+10K$ d’adspend · ROAS 3,6",
+    lien: "/etude-de-cas/saelia",
+    grand: false
   }
   // MODÈLE à copier, coller après le dernier avis (avec une virgule avant) et remplir :
   /* ,{

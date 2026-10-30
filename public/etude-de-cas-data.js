@@ -15,6 +15,9 @@ window.ETUDE_DE_CAS = {
 
   // Teaser sur la page de vente
   accroche: "Plusieurs angles et créatives gagnantes en l’espace de quelques semaines.",
+  carteTitre: "Comment Vitalina a presque doublé son chiffre d’affaires mensuel",
+  carteLigne: "ROAS moyen de 4,3 sur nos créatives.",
+  carteBg: "#DDEBD3",
   badge: "x2 sur le chiffre d’affaires mensuel",
   teaserTexte: "Un aperçu des résultats obtenus avec une marque ambitieuse.",
 

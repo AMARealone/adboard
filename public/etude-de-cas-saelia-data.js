@@ -14,6 +14,9 @@
 
   // Teaser sur la page de vente
   accroche: "Trop de créatives top performer.",
+  carteTitre: "Comment Saelia a dépensé +10K$ sur Meta Ads, en restant rentable",
+  carteLigne: "+8 créatives top performer, ROAS de 3,6.",
+  carteBg: "#F8D6DF",
   badge: "+10K$ d’adspend",
   teaserTexte: "Une boutique cosmétique qui croyait avoir saturé son marché.",
   teaserImages: ["/assets/vente/saelia-anua.jpg", "/assets/vente/saelia-numbuzin.jpg"],
