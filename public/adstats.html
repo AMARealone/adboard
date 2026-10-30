@@ -2122,7 +2122,7 @@ textarea::placeholder { color: var(--muted); }
         <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
         <input type="text" placeholder="Rechercher un lead..." id="leads-search" oninput="filterLeads()" style="font-size:13px">
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="ouvrirMajJ10()" title="Relire les ads des leads à J+10">🔄 Ads J+10 <span id="btn-maj-j10-n" style="background:var(--blue-dim);color:var(--blue);padding:1px 6px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
+      <button class="btn btn-ghost btn-sm" onclick="ouvrirMajJ10()" title="Relire les ads des leads à J+3">🔄 Ads J+3 <span id="btn-maj-j10-n" style="background:var(--blue-dim);color:var(--blue);padding:1px 6px;border-radius:8px;font-size:10px;margin-left:3px">0</span></button>
       <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
     </div>
   </div>
@@ -3255,7 +3255,7 @@ async function remettreArchiveEnSuivi(id) {
 }
 
 // ── J+10 PERSONNALISÉ PAR LES ADS DU JOUR ───────────────────────────────────────
-// Le message J+10 (relance n°2) ne s'appuie que sur des chiffres relevés par le script PC (maj_ads_j10.py)
+// Le message J+3 (relance n°1) ne s'appuie que sur des chiffres relevés par le script PC (maj_ads_j10.py)
 // juste avant l'envoi (colonne ads_j10 : nb d'ads actives + durée moyenne/médiane de toutes ces ads).
 // Relevé absent, ancien, ou sans ad active → texte de repli (sans chiffres, avec [Marque] et [Produit]).
 const J10_REPLI_DEFAUT = "Re-bonjour *[Marque]*, j'espère que vous allez bien 😊\n\nQuand on a vu votre publicité pour *[Produit]*, une question nous est venue : comment garder des publicités qui vendent dans la durée, sans que les mêmes visuels s'essoufflent ?\n\nUne partie de notre service consiste justement à éviter *l'essoufflement publicitaire* via *la diversité créative*, et à repartir de ce qui marche pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.";
@@ -3273,6 +3273,8 @@ const PITCH_CAS_LABELS = {
   1: 'Cas 1 — peu d\'ads · durée longue', 2: 'Cas 2 — peu d\'ads · durée courte',
   3: 'Cas 3 — beaucoup d\'ads · durée longue', 4: 'Cas 4 — beaucoup d\'ads · durée courte'
 };
+const PITCH_RELANCE_I = 0;   // index de la relance qui porte les variables des ads (0 = J+3, depuis le 30 oct. 2026 ; avant : 1 = J+10)
+const PITCH_JOUR = 3;        // jour de cette relance
 const J10_VARS = /\[(?:ads|jours|bonne_nouvelle|mauvaise_nouvelle(?:_en_2_mots|_2_mots)?|solution)\]/i;
 function pitchDataParams() {
   const c = (DB._config || {}).pitch_data || {}, d = PITCH_DATA_DEFAUT;
@@ -3288,7 +3290,7 @@ function pitchDataParams() {
 // Cas du prospect d'après le dernier relevé du script PC. maj = true si le relevé est récent (même s'il n'y a aucune ad).
 function pitchVariante(p) {
   const prm = pitchDataParams(), a = p && p.ads_j10;
-  if (!a || !a.maj_at) return { cas: null, maj: false, raison: 'ads pas encore mises à jour (lance la mise à jour J+10 sur ton PC)' };
+  if (!a || !a.maj_at) return { cas: null, maj: false, raison: 'ads pas encore mises à jour (lance la mise à jour des ads sur ton PC)' };
   const t = Date.parse(a.maj_at);
   if (!Number.isFinite(t)) return { cas: null, maj: false, raison: 'date du relevé illisible' };
   const age = Math.max(0, Math.floor((Date.now() - t) / 86400000));
@@ -3314,7 +3316,9 @@ function remplirPitchDonnees(msg, v) {
 }
 // Texte du J+10 pour un prospect : { msg, v, trace, avertir }
 function garnirRelance(p, relanceIndex, tpl) {
-  if (relanceIndex === 1 && J10_VARS.test(tpl || '')) {
+  // Garde-fou : un texte encore à variables (ancien pitch resté en J+10) ne doit jamais partir avec ses crochets.
+  if (relanceIndex !== PITCH_RELANCE_I && J10_VARS.test(tpl || '')) tpl = DEFAULT_RELANCES[relanceIndex] || '';
+  if (relanceIndex === PITCH_RELANCE_I && J10_VARS.test(tpl || '')) {
     const v = pitchVariante(p);
     if (v.cas) return { msg: remplirPitchDonnees(tpl, v), v, trace: 'cas' + v.cas, avertir: false };
     return { msg: pitchDataParams().repli, v, trace: 'repli', avertir: !v.maj };
@@ -3345,9 +3349,9 @@ function leadsJ10() {
   return (DB || []).filter(p => {
     if (p.statut !== 'lead' || appelDansListe(p)) return false;
     let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch (e) {}
-    if (n.sent_j10 || n.j10_envoye) return false;
+    if (n.sent_j3 || n.j3_envoye) return false;
     const j = Math.floor((Date.now() - new Date(p.date_lead || p.date_contact || Date.now())) / 86400000);
-    return j >= 10;
+    return j >= PITCH_JOUR;
   });
 }
 function majJ10Badge() {
@@ -3363,14 +3367,14 @@ function ouvrirMajJ10() {
     const etat = v.cas ? '<span style="color:var(--green)">✅ ' + v.ads + ' ads · ' + v.jours + ' j · cas ' + v.cas + '</span>'
       : (v.maj ? '<span style="color:var(--muted)">○ ' + esc(v.raison) + '</span>' : '<span style="color:#FFB547">⏳ à mettre à jour</span>');
     return '<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px"><span><b>' + esc(p.nom_marque || '—') + '</b> <span style="color:var(--muted)">· lead depuis ' + j + ' j</span></span>' + etat + '</div>';
-  }).join('') || '<div style="color:var(--muted);font-size:12px;padding:8px 0">Aucun lead à J+10 pour le moment.</div>';
+  }).join('') || '<div style="color:var(--muted);font-size:12px;padding:8px 0">Aucun lead à J+3 pour le moment.</div>';
   let ov = document.getElementById('ov-maj-j10');
   if (ov) ov.remove();
   ov = document.createElement('div'); ov.id = 'ov-maj-j10';
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   ov.innerHTML = '<div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;max-width:560px;width:100%;max-height:85vh;overflow:auto;padding:20px">'
-    + '<div style="font-size:16px;font-weight:800;color:var(--white);margin-bottom:4px">Mettre à jour les ads des leads J+10</div>'
-    + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Le script de ton PC relit la bibliothèque publicitaire de chaque lead ci-dessous (nombre d\'ads + durée moyenne) pour que le message J+10 soit vrai au moment de l\'envoi.</div>'
+    + '<div style="font-size:16px;font-weight:800;color:var(--white);margin-bottom:4px">Mettre à jour les ads des leads J+3</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Le script de ton PC relit la bibliothèque publicitaire de chaque lead ci-dessous (nombre d\'ads + durée moyenne) pour que le message J+3 soit vrai au moment de l\'envoi.</div>'
     + lignes
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">'
     + '<button class="btn btn-sm" style="background:var(--blue);color:#fff" onclick="lancerMajJ10()">▶ Lancer sur mon PC</button>'
@@ -4295,7 +4299,7 @@ function renderLeads(data) {
   }
 
   const JOURS  = [3, 10, 21];
-  const LABELS = ['Relance douce', 'Pitch personnalisé', 'Dernier message'];
+  const LABELS = ['Pitch personnalisé', 'Preuve et autorité', 'Dernier message'];
 
   function getJStatus(id) {
     const p = DB.find(x => x.id === id);
@@ -4437,7 +4441,7 @@ function renderLeads(data) {
       const checkHtml = (jours_ecoules || est_auj) ? (
         '<div style="display:flex;gap:14px;margin-top:4px;padding:0 2px">'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" ' + (sent ? 'checked' : '') + ' data-id="' + p.id + '" data-key="sent_j' + j + '" style="accent-color:var(--blue);cursor:pointer;width:12px;height:12px" onchange="saveJStatus(this.dataset.id,this.dataset.key,this.checked)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:' + (sent ? 'var(--blue)' : 'var(--muted)') + ';font-weight:' + (sent ? '600' : '400') + '">Envoyé</span>'        + '</label>'        + '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;user-select:none">'        + '<input type="checkbox" data-id="' + p.id + '" data-via="J+' + j + '" style="accent-color:#FFB547;cursor:pointer;width:12px;height:12px" onchange="if(this.checked) toggleAppelReserve(this.dataset.id,true,this.dataset.via)" onclick="event.stopPropagation()">'        + '<span style="font-size:11px;color:var(--muted);font-weight:400">A réservé un call</span>'        + '</label>'        + '</div>'      ) : '';
 
-      return '<div style="flex-shrink:0">' + btnHtml + ((i === 1 && !sent && jours_ecoules) ? chipJ10(p) : '') + checkHtml + '</div>';
+      return '<div style="flex-shrink:0">' + btnHtml + ((i === PITCH_RELANCE_I && !sent && jours_ecoules) ? chipJ10(p) : '') + checkHtml + '</div>';
     }).join('');
 
     const cardBorder = isRetard ? '1px solid rgba(255,76,106,.2)' : isToday ? '1px solid rgba(31,182,255,.2)' : '1px solid var(--border)';
@@ -5446,13 +5450,13 @@ async function genMessages(html) {
     // Garde-fou conservé : si un template contient encore une autre variable que [Marque]
     // (ex: quelqu'un modifie le template et y remet [Produit] ou autre), on le signale au lieu
     // de l'envoyer tel quel avec un crochet vide — mais sans jamais rappeler Gemini pour ça.
-    const _placeholdersOublies = vars.messages.map(m => (m.match(/\[[^\]]{2,40}\]/g) || [])).flat();
+    const _placeholdersOublies = vars.messages.map(m => (m.match(/\[[^\]]{2,40}\]/g) || [])).flat().filter(x => !J10_VARS.test(x));
     if (_placeholdersOublies.length) {
       toast(`⚠️ Variable(s) non gérée(s) par la substitution directe : ${[...new Set(_placeholdersOublies)].join(', ')} — seul [Marque] est automatiquement rempli sur les relances`);
     }
 
     const JOURS  = [3, 10, 21];
-    const LABELS = ['Relance douce', 'Pitch personnalisé', 'Dernier message'];
+    const LABELS = ['Pitch personnalisé', 'Preuve et autorité', 'Dernier message'];
     const _waNumero = (prospect?.lien_wa || '').replace('https://wa.me/', '').replace(/\D/g, '');
 
     const messages = vars.messages.map((texte, i) => {
@@ -7315,13 +7319,13 @@ const _origGoTo = typeof goTo === 'function' ? goTo : null;
 // ═══════════════════════════════════════
 
 const RELANCE_JOURS  = [3, 10, 21];
-const RELANCE_LABELS = ['Relance douce', 'Pitch personnalisé (ads du jour)', 'Dernier message'];
+const RELANCE_LABELS = ['Pitch personnalisé (ads du jour)', 'Preuve et autorité (étude de cas)', 'Dernier message'];
 
 const DEFAULT_INTROS = ["Bonjour *[Marque]*,\nje viens de voir votre pub pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nvotre pub sur *[Produit]*\nJe me demandais, est-ce vous qui l'avez créée ?", "Bonjour *[Marque]*,\nje suis tombé sur votre pub *[Produit]* en scrollant\nEst-ce vous qui êtes derrière ?", "Bonjour *[Marque]*, petite question\nLa pub *[Produit]* que je viens de voir,\nest-ce vous qui l'avez faite ?", "Bonjour *[Marque]*\nJe viens de voir votre pub avec *[Produit]*\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje regardais votre pub sur *[Produit]*. J'avais une question !\nEst-ce vous qui l'avez faites ?", "Bonjour *[Marque]*,\nj'ai vu votre pub pour *[Produit]* passer aujourd'hui\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje viens de consulter votre publicité pour *[Produit]*\nEst-ce vous qui l'avez réalisée ?", "Bonjour *[Marque]*,\nje suis tombé sur vos pubs, notamment celle pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nje viens de tomber sur votre pub avec *[Produit]* à l'instant\nEst-ce vous qui êtes derrière ?"];
 
 const DEFAULT_RELANCES = [
-  "Bonjour *[Marque]*, j'espère que je ne vous ai pas trop dérangé il y a 3 jours 😊\n\ncar je sais qu'en tant qu'e-commerçant, vous avez déjà beaucoup de choses à gérer au quotidien.\n\nAlors, devoir aussi gérer la recherche marketing, suivie de la production de publicités performantes, peut vite devenir épuisant.\n\nC'est justement pour ça qu'on s'occupe de tout ce *processus publicitaire* destiné à faire grandir votre business, avec un minimum d'intervention de votre part.\n\nEt si cette idée vous intéresse, on peut faire un *Google Meet* ?\n\nAfin que vous voyiez ce qu'on va mettre en place sur *[Marque]* pour optimiser votre temps et vos résultats.",
-  "Re-bonjour *[Marque]*, il y a quelques jours nous avions vu que :\n\nVous aviez *[ads]* ads actives, en moyenne depuis *[jours]* jours, ce qui montre que vous *[bonne_nouvelle]* mais aussi que *[mauvaise_nouvelle]*.\n\nEt une partie de notre service consiste à éviter *[mauvaise_nouvelle_en_2_mots]* via *[solution]* pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.",
+  "Bonjour *[Marque]*, j'espère ne pas vous avoir trop dérangé la dernière fois 😊 car on a vu que :\n\nVous aviez *[ads]* ads actives, en moyenne depuis *[jours]* jours, ce qui montre que vous *[bonne_nouvelle]* mais aussi que *[mauvaise_nouvelle]*.\n\nEt une partie de notre service consiste à éviter *[mauvaise_nouvelle_en_2_mots]* via *[solution]* pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.",
+  "Re-bonjour *[Marque]* 👋\n\nQuand *Saelia* nous a contactés, elle pensait avoir saturé son marché : ses résultats baissaient, faute de nouvelles idées créatives.\n\nOn a d'abord repéré ce qui bloquait, puis remis en place la production. Résultat : *+10K$ dépensés en pub avec nos créatives, ROAS de 3,6*.\n\nOn ferait la même chose pour *[Marque]* : trouver la faille avant de scaler.\n\nLe cas complet : adstackofficial.com/etude-de-cas/saelia\n\nUn petit *Google Meet* pour voir ce que ça donnerait chez vous ?",
   "Salut *[Marque]*,\n\nRécemment une étude a montré que *80%* des profits d'une marque e-commerce sur Facebook Ads venaient de l'exploitation des créatives performantes, recyclées correctement sur d'autres concepts créatifs.\n\nMais cela n'est possible que si l'on a un bon suivi et une organisation qui permet d'agir vite.\n\nC'est pour ça qu'on a *AdBoard* (adstackofficial.com/adboard) : notre plateforme où toutes vos créatives sont organisées et classées, afin de repartir de ce qui marche et d'améliorer les prochaines.\n\nLe tout pour que vous ne ratiez pas ces *80%* de revenus potentiels.\n\nEn tout cas voici mon dernier message ! J'espère que vous passerez une excellente semaine."
 ];
 
@@ -7362,6 +7366,16 @@ async function loadTemplates() {
     relances = DEFAULT_RELANCES;
     localStorage.setItem('tpl_relances', JSON.stringify(relances));
   }
+
+  // Migration (30 oct. 2026) : le pitch à variables passe de J+10 à J+3, J+10 devient la relance « preuve et autorité ».
+  // Rien n'est écrit en base ici : le nouveau contenu s'affiche, et « Sauvegarder tout » l'enregistre.
+  let _migreJ3 = false;
+  if (J10_VARS.test(relances[1] || '')) {
+    if (!J10_VARS.test(relances[0] || '')) relances[0] = relances[1];
+    relances[1] = DEFAULT_RELANCES[1];
+    _migreJ3 = true;
+  }
+  if (_migreJ3) { localStorage.setItem('tpl_relances', JSON.stringify(relances)); if (DB._config) DB._config.tpl_relances = relances; setTimeout(() => { try { markDirty(); } catch (e) {} }, 400); }
 
   // ── Charger les templates emails + notifications (nouvelle table) ──
   let dbTemplates = [];
@@ -7474,8 +7488,8 @@ async function loadTemplates() {
           <textarea id="tpl-pitch" style="width:100%;min-height:110px;font-size:12px" oninput="markDirty()"></textarea>
         </div>
         <div class="tpl-groupe">
-          <div class="tpl-groupe-titre">🎯 J+10 personnalisé (ads relues le jour de l'envoi)</div>
-          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Le texte du J+10 est dans « Relances leads » ci-dessous. Variables : <span style="color:var(--green)">[Marque] [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [mauvaise_nouvelle_en_2_mots] [solution]</span>. Les ads sont relues par le script PC (bouton « Ads J+10 » dans Leads).</div>
+          <div class="tpl-groupe-titre">🎯 J+3 personnalisé (ads relues le jour de l'envoi)</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Le texte du J+3 est dans « Relances leads » ci-dessous. Variables : <span style="color:var(--green)">[Marque] [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [mauvaise_nouvelle_en_2_mots] [solution]</span>. Les ads sont relues par le script PC (bouton « Ads J+3 » dans Leads).</div>
           <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:4px;font-size:11px;color:var(--text2)">
             <span>« Peu d'ads » jusqu'à <input id="pd-seuil-ads" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> ads</span>
             <span>« Durée courte » sous <input id="pd-seuil-jours" type="number" min="0" style="width:56px;font-size:12px" oninput="markDirty()"> jours</span>
@@ -7504,11 +7518,6 @@ async function loadTemplates() {
             <input id="pd-s-4" type="text" placeholder="[solution] (après « via »)" style="width:100%;font-size:12px" oninput="markDirty()"></div>
           <div style="margin-top:10px"><div style="font-size:11px;font-weight:700;color:var(--text2);margin-bottom:3px">Texte de repli — aucune ad trouvée ou relevé non fait (variables : [Marque] [Produit])</div>
             <textarea id="pd-repli" style="width:100%;min-height:130px;font-size:12px" oninput="markDirty()"></textarea></div>
-        </div>
-        <div class="tpl-groupe">
-          <div class="tpl-groupe-titre">💬 Message "Envoyer la démo"</div>
-          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Variables : <span style="color:var(--green)">[Produit] [lien_demo]</span> — envoyé une fois "Intéressé" coché</div>
-          <textarea id="tpl-demo-msg" style="width:100%;min-height:110px;font-size:12px" oninput="markDirty()"></textarea>
         </div>
         <div class="tpl-groupe">
           <div class="tpl-groupe-titre">💬 Relances leads (J+3, J+10, J+21)</div>
@@ -7697,7 +7706,7 @@ async function saveAllTemplates() {
   const pitchEl  = document.getElementById('tpl-pitch');
   const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
-  const demo_msg  = demoMsgEl ? demoMsgEl.value : '';
+  const demo_msg  = demoMsgEl ? demoMsgEl.value : ((DB._config || {}).tpl_demo_msg || '');
   const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
 
   // Upsert dans la ligne config
