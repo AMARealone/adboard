@@ -1,6 +1,7 @@
 {
   "routes": [
     { "handle": "filesystem" },
+    { "src": "/blog/fatigue-creative-facebook-ads(\\.html)?", "status": 301, "headers": { "Location": "/blog" } },
     { "src": "/demo/(.*)", "dest": "https://adstack-server.onrender.com/demo/$1" },
     { "src": "/s/(.*)", "dest": "https://adstack-server.onrender.com/s/$1" },
     { "src": "/adboard/(.*)", "dest": "/adboard.html" },
