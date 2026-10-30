@@ -21,6 +21,15 @@ window.TEMOIGNAGES = [
     mesure: "+10K$ d’adspend · ROAS 3,6",
     lien: "/etude-de-cas/saelia",
     grand: false
+  },
+  {
+    texte: "Ça faisait plusieurs semaines que j’hésitais à lancer ma boutique dans la niche sportive : je ne savais pas par où commencer côté créatives. Dès les premières créatives reçues, elles étaient si bien pensées que j’ai su que j’avais fait le bon choix. Ma campagne a été rentable dès le départ, puis j’ai pu scaler et stabiliser en injectant régulièrement de nouvelles créatives stratégiques.",
+    nom: "Ibrahim Gomis",
+    role: "Owner de Veloce",
+    photo: "/assets/vente/ibrahim-gomis.jpg",
+    mesure: "0 → 5K$ de profit par mois en 90 jours",
+    lien: "/etude-de-cas/veloce",
+    grand: false
   }
   // MODÈLE à copier, coller après le dernier avis (avec une virgule avant) et remplir :
   /* ,{
