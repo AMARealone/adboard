@@ -15,8 +15,9 @@ export function LeadCard({ p }) {
     setBusy(true)
     const tab = (!p.canal_contact || p.canal_contact !== 'instagram') && numeroWa(p) ? window.open('', '_blank') : null
     try {
-      const lien = await A.shorten(lienRelance(i, p.id, g.chemin), ['j3', 'j10', 'j21'][i])
-      const msg = insererLien(g.msg, lien)
+      // Pas de lien dans le message (ex. J+3) : rien à suivre, rien à raccourcir.
+      const aLien = /adstackofficial\.com/i.test(g.msg) || /\[lien(_demo)?\]/i.test(g.msg)
+      const msg = aLien ? insererLien(g.msg, await A.shorten(lienRelance(i, p.id, g.chemin), ['j3', 'j10', 'j21'][i])) : g.msg
       const rest = msg.match(/\[[^\]]{2,40}\]/)
       if (rest) { toast('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); if (tab) tab.close(); return }
       const num = numeroWa(p)

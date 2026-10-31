@@ -3,7 +3,7 @@ import { useCrm } from '../store'
 import { N, quand } from '../domain/notes'
 import { closingDansListe, closingEnRetard, closingInfosIncompletes, closingJours, closingProchainJ } from '../domain/rules'
 import { CLOSING_JOURS, CLOSING_LABELS } from '../domain/defaults'
-import { closingMessage } from '../domain/messages'
+import { closingMessage, lienOffreSuivi } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { Chip, Empty, toast } from '../ui'
 import { Marque, Meta, InfosAppel } from './common'
@@ -15,7 +15,9 @@ export function ClosingCard({ p }) {
     const { msg, manque } = closingMessage(p, i, cfg)
     if (manque.length) { toast('Il manque : ' + manque.join(', ')); setInfos(true); return }
     const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { toast('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
-    if (await A.ouvrirCanal(p, msg)) A.marquer(p.id, 'closing_sent_j' + CLOSING_JOURS[i], true)
+    const lien = await A.shorten(lienOffreSuivi(n.closing_offre, 'closing_j' + CLOSING_JOURS[i], 'closing', p.id), 'closing_j' + CLOSING_JOURS[i])
+    const final = closingMessage(p, i, cfg, lien).msg
+    if (await A.ouvrirCanal(p, final)) A.marquer(p.id, 'closing_sent_j' + CLOSING_JOURS[i], true)
   }
   const o = OFFRES[n.closing_offre]
   return (

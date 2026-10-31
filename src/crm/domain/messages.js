@@ -50,9 +50,9 @@ export function closingTemplates(cfg) {
   return D.CLOSING_SLOTS.map((x, i) => t[i] || D.DEFAULT_CLOSING[i])
 }
 export const closingSlot = (n, i) => (i === 0 ? (n.closing_ab1 === 'B' ? 1 : 0) : i === 1 ? (n.closing_ab3 === 'B' ? 3 : 2) : 4)
-export function closingMessage(p, i, cfg) {
+export function closingMessage(p, i, cfg, lienPerso) {
   const n = N(p), tpl = (closingTemplates(cfg)[closingSlot(n, i)] || '').trim(), offre = OFFRES[n.closing_offre]
-  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Objectif: (n.closing_objectif || '').trim(), Lien: offre ? offre.url : '', Facture: offre ? offre.facture : '' }
+  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Objectif: (n.closing_objectif || '').trim(), Lien: offre ? (lienPerso || offre.url) : '', Facture: offre ? offre.facture : '' }
   const manque = []
   const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Mots|Objection|Objectif|Lien|Facture)\]/gi, (m, k) => {
     const key = Object.keys(vals).find((x) => x.toLowerCase() === k.toLowerCase()), v = vals[key]
@@ -68,7 +68,7 @@ export function ecritTemplates(cfg) {
   Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() ? saved[k] : D.DEFAULT_ECRIT[k] })
   return out
 }
-export function ecritMessage(p, etape, cfg) {
+export function ecritMessage(p, etape, cfg, lienPerso) {
   const n = N(p), T = ecritTemplates(cfg), offre = n.ecrit_offre || ''
   let cle = etape
   const v = pitchVariante(p, cfg)
@@ -83,7 +83,7 @@ export function ecritMessage(p, etape, cfg) {
   const manque = []
   if (!tpl) { manque.push(etape === 'b2' ? 'faille' : 'offre'); return { msg: '', manque, cle } }
   const o = OFFRES[offre] || {}
-  const vals = { marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '', remarque: (n.ecrit_remarque || '').trim(), lien: o.url || '', facture: o.facture || '', delai: D.ECRIT_DELAI[offre] || '48 h', n: D.ECRIT_N[offre] || '' }
+  const vals = { marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '', remarque: (n.ecrit_remarque || '').trim(), lien: o.url ? (lienPerso || o.url) : '', facture: o.facture || '', delai: D.ECRIT_DELAI[offre] || '48 h', n: D.ECRIT_N[offre] || '' }
   tpl = tpl.split('\n').filter((l) => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n')
   let msg = tpl.replace(/\[(marque|produit|pays|remarque|lien|facture|delai|n)\]/gi, (m, k) => {
     const x = vals[k.toLowerCase()]
@@ -120,4 +120,15 @@ export const lienRelance = (idx, id, chemin) => {
 }
 export function insererLien(msg, lien) {
   return msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*]*)?\*?/gi, lien).replace(/\*?\[lien_demo\]\*?/gi, lien).replace(/\*?\[lien\]\*?/gi, lien)
+}
+
+// ── Liens suivis (UTM) vers la page d'une offre : une campagne par type de message, l'identifiant du prospect en utm_content.
+export const CAMPAGNES_LIENS = {
+  pitch: 'Pitch (1er message)', j10: 'Relance J+10', j21: 'Relance J+21',
+  closing_j1: 'Closing J+1', closing_j3: 'Closing J+3', closing_j7: 'Closing J+7',
+  ecrit_b3: 'Écrit · offre', ecrit_suite: 'Écrit · suite',
+}
+export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
+  const o = OFFRES[offreKey]; if (!o) return ''
+  return `https://adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}`
 }

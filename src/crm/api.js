@@ -62,3 +62,21 @@ export async function shorten(url, campagne) {
     return d.short_url || url
   } catch (_) { return url }
 }
+
+// Lectures du Dashboard : liens courts (clics), événements du tunnel, transactions.
+async function lirePages(chemin) {
+  const rows = []
+  for (let from = 0; ; from += 1000) {
+    const r = await fetch(REST + chemin, { headers: hdr({ Range: `${from}-${from + 999}`, 'Range-Unit': 'items' }) })
+    if (!r.ok && r.status !== 206) throw new Error('HTTP ' + r.status)
+    const part = await r.json()
+    if (!Array.isArray(part)) throw new Error((part && part.message) || 'réponse inattendue')
+    rows.push(...part)
+    if (part.length < 1000) break
+  }
+  return rows
+}
+const depuis = (iso) => (iso ? '&created_at=gte.' + encodeURIComponent(iso) : '')
+export const fetchLiensCourts = (iso) => lirePages('/short_links?campagne=not.is.null&select=campagne,clicks,created_at' + depuis(iso) + '&order=created_at.asc')
+export const fetchFunnel = (iso) => lirePages('/funnel_events?select=type,campagne,source,prospect_id,created_at' + depuis(iso) + '&order=created_at.asc')
+export const fetchTransactions = () => lirePages('/transactions?select=user_id,plan,created_at&order=created_at.asc')

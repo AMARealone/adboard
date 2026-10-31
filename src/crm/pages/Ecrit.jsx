@@ -3,7 +3,7 @@ import { useCrm } from '../store'
 import { N, quand } from '../domain/notes'
 import { ecritActif, ecritB1Saute, ecritProchaine } from '../domain/rules'
 import { ECRIT_ETAPES, ECRIT_FAILLES } from '../domain/defaults'
-import { ecritMessage, pitchVariante } from '../domain/messages'
+import { ecritMessage, lienOffreSuivi, pitchVariante } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { Chip, Empty, toast } from '../ui'
 import { Marque, Meta, EcritInfos } from './common'
@@ -15,7 +15,13 @@ export function EcritCard({ p }) {
     const { msg, manque } = ecritMessage(p, etape, cfg)
     if (manque.length) { toast('Il manque : ' + manque.join(', ')); if (manque.some((x) => x === 'faille' || x === 'offre')) setInfos(true); return }
     const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { toast('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
-    if (await A.ouvrirCanal(p, msg)) A.marquer(p.id, 'ecrit_sent_' + etape, true)
+    let final = msg
+    if ((etape === 'b3' || etape === 'suite') && n.ecrit_offre) {
+      const camp = 'ecrit_' + etape
+      const lien = await A.shorten(lienOffreSuivi(n.ecrit_offre, camp, 'ecrit', p.id), camp)
+      final = ecritMessage(p, etape, cfg, lien).msg
+    }
+    if (await A.ouvrirCanal(p, final)) A.marquer(p.id, 'ecrit_sent_' + etape, true)
   }
   const v = pitchVariante(p, cfg)
   return (

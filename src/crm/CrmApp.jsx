@@ -12,10 +12,12 @@ import Ecrit from './pages/Ecrit'
 import Leads from './pages/Leads'
 import Prospects from './pages/Prospects'
 import Legacy from './pages/Legacy'
+import Dashboard from './pages/Dashboard'
+import Templates from './pages/Templates'
 import Fiche from './Fiche'
 
 const BASE = '/crm-next'
-const OLD = ['Dashboard', 'Comportement', 'Transactions', 'Comptabilité', 'Utilisateurs', 'Suivi', 'Clients', 'Emails & Séquences', 'Templates', 'Prospection auto', 'Contacts', 'Données']
+const OLD = ['Comportement', 'Transactions', 'Comptabilité', 'Utilisateurs', 'Suivi', 'Clients', 'Emails & Séquences', 'Prospection auto', 'Contacts', 'Données']
 const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')
 
 function Shell({ user, onLogout }) {
@@ -29,6 +31,9 @@ function Shell({ user, onLogout }) {
     { to: '/appels', label: 'Appels', n: prospects.filter(appelAffiche).length },
     { to: '/closing', label: 'Closing', n: prospects.filter(closingDansListe).length },
     { to: '/ecrit', label: 'Écrit', n: prospects.filter(ecritActif).length },
+    { g: 'Pilotage' },
+    { to: '/dashboard', label: 'Dashboard' },
+    { to: '/templates', label: 'Templates' },
     { g: 'Bientôt (ancien CRM)' },
     ...OLD.map((o) => ({ to: '/ancien/' + slug(o), label: o, old: true })),
   ]
@@ -64,6 +69,8 @@ export default function CrmApp() {
             <Route path="appels" element={<Titre t="Appels"><Appels /></Titre>} />
             <Route path="closing" element={<Titre t="Closing"><Closing /></Titre>} />
             <Route path="ecrit" element={<Titre t="Écrit"><Ecrit /></Titre>} />
+            <Route path="dashboard" element={<Titre t="Dashboard"><Dashboard /></Titre>} />
+            <Route path="templates" element={<Titre t="Templates"><Templates /></Titre>} />
             {OLD.map((o) => <Route key={o} path={'ancien/' + slug(o)} element={<Titre t={o}><Legacy titre={o} /></Titre>} />)}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
