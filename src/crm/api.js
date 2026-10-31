@@ -89,3 +89,16 @@ export const fetchCoutsApi = () => lirePages('/api_usage_log?select=source,cout_
 export const fetchEmailsEnvoyes = () => lirePages('/email_sequence_log?select=user_id,email_key,sent_at&order=sent_at.desc')
 export const fetchEmailEvents = () => lirePages('/email_events?select=email_key,event_type')
 export const fetchFunnelCampagnes = () => lirePages('/funnel_events?select=type,campagne&campagne=not.is.null')
+
+export const fetchClarity = () => lirePages('/clarity_snapshots?select=*&order=captured_at.desc')
+export const fetchChatMessages = () => lirePages('/chat_messages?select=session_id,role,content,created_at&order=session_id.asc,created_at.asc')
+export const fetchInsights = (source) => lirePages('/data_insights?source=eq.' + source + '&select=email,question,answer,created_at&order=email.asc,created_at.asc')
+// Appels réservés à l'administrateur : toujours avec la session (jamais de clé dans le navigateur)
+export async function serveurAdmin(path, method = 'GET', ms = 15000) {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms)
+  try {
+    const r = await fetch(SERVER + path, { method, headers: { Authorization: 'Bearer ' + accessToken() }, cache: 'no-store', signal: c.signal })
+    if (r.status === 401) throw new Error('Session expirée ou non autorisée — reconnectez-vous.')
+    return await r.json()
+  } finally { clearTimeout(t) }
+}

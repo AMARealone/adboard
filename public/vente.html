@@ -2810,9 +2810,7 @@ select.bk-i{background-image:linear-gradient(45deg,transparent 50%,#8A8D96 50%),
 </div>
 <script>
 (function(){
-var SB='https://mifljhsusidgzelnswma.supabase.co/rest/v1';
-var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
-var SAVE='https://adstack-server.onrender.com/prospector/save-lead';
+var BOOK='https://adstack-server.onrender.com/reserver-appel';
 var MAX_JOURS=5, PREP_MIN=60, DEBUTS=[[10,15],[19,22]];
 var $=function(id){return document.getElementById(id)};
 var selDay=null, selSlot=null;
@@ -2871,16 +2869,10 @@ $('bk-x').onclick=close;
 $('bk-ov').addEventListener('click',function(e){if(e.target===$('bk-ov'))close()});
 $('bk-days').addEventListener('click',function(e){var b=e.target.closest('.bk-d');if(!b)return;selDay=+b.getAttribute('data-o');selSlot=null;renderDays();renderSlots()});
 $('bk-slots').addEventListener('click',function(e){var b=e.target.closest('.bk-sl');if(!b)return;selSlot=+b.getAttribute('data-ts');renderSlots()});
-function hdr(extra){var h={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'};for(var k in (extra||{}))h[k]=extra[k];return h}
 function fetchT(url,opt,ms){
   var c=new AbortController(), t=setTimeout(function(){c.abort()},ms||25000);
   opt=opt||{};opt.signal=c.signal;
   return fetch(url,opt).finally(function(){clearTimeout(t)});
-}
-async function trouver(digits){
-  var r=await fetchT(SB+'/prospects?lien_wa=ilike.*'+digits+'*&select=id,statut,notes&limit=1',{headers:hdr()});
-  if(!r.ok) throw new Error('lecture '+r.status);
-  var rows=await r.json(); return rows[0]||null;
 }
 async function envoyer(){
   err('');
@@ -2901,25 +2893,10 @@ async function envoyer(){
   if(!marque){ try{ marque=new URL(lien).hostname.replace(/^www\./,'').split('.')[0]; marque=marque.charAt(0).toUpperCase()+marque.slice(1) }catch(e){ marque=nom } }
   var btn=$('bk-go'); btn.disabled=true; btn.textContent='Réservation…';
   try{
-    var now=new Date().toISOString();
-    var infos={appel_reserve:true,appel_reserve_at:now,appel_programme_at:new Date(selSlot).toISOString(),source:'formulaire_site',form_nom:nom,form_marche:marche,form_ca_objectif:ca,form_budget_pub:bud,appel_meet_ok:true,form_boutique:lien};
-    var ex=await trouver(digits);
-    if(ex){
-      var n={}; try{n=JSON.parse(ex.notes||'{}')||{}}catch(e){ n={texte_ancien:ex.notes||''} }
-      ['appel_fait','appel_fait_at','appel_via','pas_interesse','pas_interesse_at','closing_etat','closing_at'].forEach(function(k){delete n[k]});
-      for(var k in infos) n[k]=infos[k];
-      var body={notes:JSON.stringify(n)};
-      if(ex.statut==='a_contacter'||ex.statut==='archive') body.statut='en_suivi';
-      var pr=await fetchT(SB+'/prospects?id=eq.'+ex.id,{method:'PATCH',headers:hdr({'Prefer':'return=minimal'}),body:JSON.stringify(body)});
-      if(!pr.ok) throw new Error('maj '+pr.status);
-    } else {
-      var payload={nom_marque:marque,produit:'',pays:marche,lien_wa:'https://wa.me/'+digits,page_produit:lien,statut:'en_suivi',score:0,date_collecte:now.slice(0,10),notes:JSON.stringify(infos)};
-      var r=await fetchT(SAVE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},40000);
-      var j=await r.json().catch(function(){return {}});
-      if(!r.ok||j.ok===false) throw new Error('insertion '+(j.status||r.status));
-    }
-    var chk=await trouver(digits);
-    if(!chk) throw new Error('vérification');
+    // Tout passe par le serveur (qui vérifie les champs et écrit dans la base) : cette page n'a plus aucun accès direct aux prospects.
+    var r=await fetchT(BOOK,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom:nom,marque:marque,marche:marche,ca:ca,bud:bud,lien:lien,digits:digits,slot:selSlot})},40000);
+    var j=await r.json().catch(function(){return {}});
+    if(!r.ok||!j.ok) throw new Error('reservation '+(j.error||r.status));
     try{if(typeof fbq!=='undefined')fbq('track','Schedule')}catch(e){}
     try{if(typeof twq!=='undefined')twq('track','Lead')}catch(e){}
     var d=new Date(selSlot);

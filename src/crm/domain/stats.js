@@ -18,6 +18,8 @@ export const CAMPAGNES = [
   { cle: 'statut_whatsapp', label: 'Statut WhatsApp', groupe: 'Autres', sansEnvoi: true },
 ]
 
+// Réservation faite par le formulaire du site : le formulaire écrit source='formulaire_site' (+ form_nom) ; anciennes fiches : appel_via='site'.
+export const depuisSite = (n) => n.source === 'formulaire_site' || !!n.form_nom || n.appel_via === 'site'
 const JOUR = 86400000
 export function fenetre(choix, now = Date.now()) {
   if (choix.de || choix.a) {
@@ -51,8 +53,8 @@ export function calculer({ prospects, liens, funnel, tx, w }) {
   const reserves = P.filter(({ n }) => dans(n.appel_reserve_at, w))
   const appels = {
     reserves: reserves.length,
-    site: reserves.filter(({ n }) => n.appel_via === 'site').length,
-    manuel: reserves.filter(({ n }) => n.appel_via !== 'site').length,
+    site: reserves.filter(({ n }) => depuisSite(n)).length,
+    manuel: reserves.filter(({ n }) => !depuisSite(n)).length,
     faits: P.filter(({ n }) => n.appel_fait && dans(n.appel_fait_at, w)).length,
     noShows: P.filter(({ n }) => dans(n.no_show_at, w)).length,
   }

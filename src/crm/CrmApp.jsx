@@ -11,7 +11,6 @@ import Closing from './pages/Closing'
 import Ecrit from './pages/Ecrit'
 import Leads from './pages/Leads'
 import Prospects from './pages/Prospects'
-import Legacy from './pages/Legacy'
 import Dashboard from './pages/Dashboard'
 import Templates from './pages/Templates'
 import Transactions from './pages/Transactions'
@@ -20,10 +19,13 @@ import Emails from './pages/Emails'
 import Suivi from './pages/Suivi'
 import AContacter from './pages/AContacter'
 import Fiche from './Fiche'
+import Comportement from './pages/Comportement'
+import Donnees from './pages/Donnees'
+import Utilisateurs from './pages/Utilisateurs'
+import Clients from './pages/Clients'
+import ProspectionAuto from './pages/ProspectionAuto'
 
 const BASE = '/crm-next'
-const OLD = ['Comportement', 'Utilisateurs', 'Prospection auto', 'Données']
-const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')
 
 function Shell({ user, onLogout }) {
   const { prospects, cfg, state, reload } = useCrm(), loc = useLocation()
@@ -47,8 +49,13 @@ function Shell({ user, onLogout }) {
     { to: '/comptabilite', label: 'Comptabilité' },
     { to: '/emails', label: 'Emails & Séquences' },
     { to: '/templates', label: 'Templates' },
-    { g: 'Bientôt (ancien CRM)' },
-    ...OLD.map((o) => ({ to: '/ancien/' + slug(o), label: o, old: true })),
+    { to: '/comportement', label: 'Comportement' },
+    { to: '/donnees', label: 'Données' },
+    { g: 'Utilisateurs' },
+    { to: '/clients', label: 'Clients abonnés' },
+    { to: '/utilisateurs', label: 'Inscrits' },
+    { g: 'Outils' },
+    { to: '/prospection-auto', label: 'Prospection auto' },
   ]
   let grp = ''
   const visibles = NAV.filter((i) => { if (i.g) { grp = i.g; return true } const actif = i.end ? loc.pathname === '/' : loc.pathname.startsWith(i.to); i.grp = grp; return !grp || !ferme.includes(grp) || actif })
@@ -105,7 +112,11 @@ export default function CrmApp() {
             <Route path="comptabilite" element={<Titre t="Comptabilité"><Comptabilite /></Titre>} />
             <Route path="emails" element={<Titre t="Emails & Séquences"><Emails /></Titre>} />
             <Route path="templates" element={<Titre t="Templates"><Templates /></Titre>} />
-            {OLD.map((o) => <Route key={o} path={'ancien/' + slug(o)} element={<Titre t={o}><Legacy titre={o} /></Titre>} />)}
+            <Route path="comportement" element={<Titre t="Comportement"><Comportement /></Titre>} />
+            <Route path="donnees" element={<Titre t="Données"><Donnees /></Titre>} />
+            <Route path="clients" element={<Titre t="Clients abonnés"><Clients /></Titre>} />
+            <Route path="utilisateurs" element={<Titre t="Inscrits"><Utilisateurs /></Titre>} />
+            <Route path="prospection-auto" element={<Titre t="Prospection auto"><ProspectionAuto /></Titre>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

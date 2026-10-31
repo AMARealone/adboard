@@ -16,7 +16,7 @@ function parcours(p, cfg) {
   add(p.date_lead, 'Devenu lead', 'ok')
   add(n.form_at || n.form_date, 'A rempli le formulaire du site' + (n.form_objectif ? ' · ' + n.form_objectif : ''), 'bl')
   ;[3, 10, 21].forEach((j) => add(n['j' + j + '_envoye_at'] || n['sent_j' + j + '_at'], 'Relance J+' + j + ' envoyée'))
-  add(n.appel_reserve_at, 'Appel réservé' + (n.appel_via === 'site' ? ' (site)' : ''), 'bl')
+  add(n.appel_reserve_at, 'Appel réservé' + (n.source === 'formulaire_site' || n.appel_via === 'site' ? ' (site)' : ''), 'bl')
   add(n.appel_programme_at, 'Appel programmé', 'bl')
   add(n.no_show_at, 'No-show', 'wa')
   add(n.appel_fait_at, 'Appel fait', 'ok')
