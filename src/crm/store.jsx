@@ -85,6 +85,19 @@ export function CrmProvider({ children }) {
     // — Écrit
     passerEcrit: (id) => mutate(id, { notes: { ecrit_etat: 'actif', ecrit_at: now() } }),
     ecritInfos: (id, v) => mutate(id, { notes: { ecrit_faille: v.faille || undefined, ecrit_offre: v.offre || undefined, ecrit_remarque: v.remarque.trim() || undefined } }),
+    // — Suivi
+    setCheck: (id, champ, val) => mutate(id, { body: { [champ]: val }, notes: champ === 'interesse' && val ? { pas_interesse: undefined, pas_interesse_at: undefined } : {} }),
+    pitchEnvoye: (id, val) => { const p = ref.current.find((x) => x.id === id), n = N(p); return mutate(id, { notes: val ? { pitch_envoye: true, pitch_envoye_at: n.pitch_envoye_at || now() } : { pitch_envoye: false } }) },
+    pasInteresse: async (id, val) => {
+      const ok = await mutate(id, { notes: val ? { pas_interesse: true, pas_interesse_at: now(), appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined } : { pas_interesse: undefined, pas_interesse_at: undefined } })
+      if (ok) toast(val ? 'Pas intéressé : reste dans le Suivi' : 'Marqueur « pas intéressé » retiré'); return ok
+    },
+    versLead: async (id) => { const ok = await mutate(id, { body: { statut: 'lead', date_lead: now() } }); if (ok) toast('Passé en Lead'); return ok },
+    remettreAContacter: async (id) => {
+      if (!(await confirmDlg('Remettre ce prospect dans « À contacter » ?\nLe suivi (réponse, intérêt) est effacé.', 'Remettre à contacter'))) return false
+      const ok = await mutate(id, { body: { statut: 'a_contacter', date_contact: null, a_repondu: false, interesse: false, lead_qualifie: false }, notes: { appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined } })
+      if (ok) toast('Remis dans « À contacter »'); return ok
+    },
     // — Ouverture du canal : WhatsApp (nouvel onglet) ou Instagram (texte copié)
     ouvrirCanal: async (p, msg) => {
       if (estInstagram(p)) {

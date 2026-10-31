@@ -132,3 +132,15 @@ export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
   const o = OFFRES[offreKey]; if (!o) return ''
   return `https://adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}`
 }
+
+// ── Pitch (envoyé quand le prospect a répondu) : lien suivi, campagne « pitch »
+export const lienPitch = (id) => `https://adstackofficial.com/?utm_source=crm&utm_medium=pitch&utm_campaign=pitch&utm_content=${id}`
+export function pitchMessage(p, cfg, lien) {
+  const tpl = (cfg && cfg.tpl_pitch) || D.DEFAULT_PITCH
+  let msg = tpl.replace(/\[Produit\]/gi, (p.produit || '').trim() || 'votre produit').replace(/\[Marque\]/gi, p.nom_marque || '')
+  const mention = /\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*)]*)?\*?/i
+  const avait = mention.test(msg)
+  msg = msg.replace(new RegExp(mention.source, 'gi'), lien).replace(/\[lien\]/gi, lien)
+  if (!avait && !/\[lien\]/i.test(tpl)) msg += '\n\n' + lien
+  return msg
+}

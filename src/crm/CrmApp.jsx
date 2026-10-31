@@ -17,10 +17,11 @@ import Templates from './pages/Templates'
 import Transactions from './pages/Transactions'
 import Comptabilite from './pages/Comptabilite'
 import Emails from './pages/Emails'
+import Suivi from './pages/Suivi'
 import Fiche from './Fiche'
 
 const BASE = '/crm-next'
-const OLD = ['Comportement', 'Utilisateurs', 'Suivi', 'Prospection auto', 'Contacts', 'Données']
+const OLD = ['Comportement', 'Utilisateurs', 'Prospection auto', 'Contacts', 'Données']
 const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')
 
 function Shell({ user, onLogout }) {
@@ -31,6 +32,7 @@ function Shell({ user, onLogout }) {
     { to: '/', label: 'Aujourd\'hui', n: t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length, end: true },
     { to: '/prospects', label: 'Prospects', n: prospects.length },
     { g: 'Pipeline' },
+    { to: '/suivi', label: 'Suivi', n: prospects.filter((p) => p.statut === 'en_suivi').length },
     { to: '/leads', label: 'Leads', n: leadsARelancer(prospects).length },
     { to: '/appels', label: 'Appels', n: prospects.filter(appelAffiche).length },
     { to: '/closing', label: 'Closing', n: prospects.filter(closingDansListe).length },
@@ -83,6 +85,7 @@ export default function CrmApp() {
           <Route element={<Shell user={user} onLogout={recheck} />}>
             <Route index element={<Titre t="Aujourd'hui"><Aujourdhui /></Titre>} />
             <Route path="prospects" element={<Titre t="Prospects"><Prospects /></Titre>} />
+            <Route path="suivi" element={<Titre t="Suivi prospection"><Suivi /></Titre>} />
             <Route path="leads" element={<Titre t="Leads"><Leads /></Titre>} />
             <Route path="appels" element={<Titre t="Appels"><Appels /></Titre>} />
             <Route path="closing" element={<Titre t="Closing"><Closing /></Titre>} />
