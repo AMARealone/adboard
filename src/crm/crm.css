@@ -43,3 +43,4 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .cx-range{margin-left:auto;display:flex;align-items:center;gap:6px}.cx-range input{background:#0d1016;border:1px solid var(--bd2);border-radius:8px;padding:6px 8px}.cx-range i{color:var(--sec);font-style:normal}
 .cx-tpl{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:12px}.cx-tplh{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}.cx-help{font-size:12.5px;color:var(--sec);margin:0 0 8px}
 .cx-tpl textarea{width:100%;background:#0d1016;border:1px solid var(--bd2);border-radius:9px;padding:10px 12px;line-height:1.5;resize:vertical}.cx-tpla{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}.cx-pd{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.cx-btn:disabled{opacity:.45;cursor:default}
+.cx-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
