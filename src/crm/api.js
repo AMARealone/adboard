@@ -80,3 +80,8 @@ const depuis = (iso) => (iso ? '&created_at=gte.' + encodeURIComponent(iso) : ''
 export const fetchLiensCourts = (iso) => lirePages('/short_links?campagne=not.is.null&select=campagne,clicks,created_at' + depuis(iso) + '&order=created_at.asc')
 export const fetchFunnel = (iso) => lirePages('/funnel_events?select=type,campagne,source,prospect_id,created_at' + depuis(iso) + '&order=created_at.asc')
 export const fetchTransactions = () => lirePages('/transactions?select=user_id,plan,created_at&order=created_at.asc')
+export const fetchTransactionsCompletes = () => lirePages('/transactions?select=*&order=created_at.desc')
+// Taux XOF → USD (repli 1 $ ≈ 600 FCFA si la source ne répond pas).
+export async function tauxUsd() {
+  try { const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json'); const d = await r.json(); return (d && d.xof && d.xof.usd) || 1 / 600 } catch (_) { return 1 / 600 }
+}
