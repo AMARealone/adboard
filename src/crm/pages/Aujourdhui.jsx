@@ -4,6 +4,7 @@ import { aFaire, closingEnRetard } from '../domain/rules'
 import { ECRIT_ETAPES } from '../domain/defaults'
 import { N, duree } from '../domain/notes'
 import { pitchVariante } from '../domain/messages'
+import { BoutonMajAds } from './MajAds'
 import { Chip, Empty } from '../ui'
 import { useNavigate } from 'react-router-dom'
 
@@ -23,7 +24,7 @@ export default function Aujourdhui() {
       <div><b>{t.ecrit.length}</b><span>écrit</span></div>
       <div><b>{t.relances.length}</b><span>relances</span></div>
     </div>
-    {adsAMajour > 0 && <div className="cx-banner wa">{adsAMajour} prospect{adsAMajour > 1 ? 's' : ''} en Écrit {adsAMajour > 1 ? 'ont' : 'a'} besoin des ads à jour avant l'audit : lance « Ads J+3 » sur ton PC.</div>}
+    {adsAMajour > 0 && <div className="cx-banner wa">{adsAMajour} prospect{adsAMajour > 1 ? 's' : ''} en Écrit {adsAMajour > 1 ? 'ont' : 'a'} besoin des ads à jour avant l'audit : lance « Ads J+3 » sur ton PC. <BoutonMajAds compact /></div>}
     {total === 0 && <Empty t="Rien d'urgent 🎉" s="Tout ce qui est dû aujourd'hui est traité." />}
     <Bloc titre="No-show à appliquer" to="/appels" items={t.noshow}>{t.noshow.map(({ p, depuis }) => <Ligne key={p.id} p={p} chips={<Chip c="wa">programmé il y a {duree(depuis)}</Chip>} action={<button className="cx-btn sm" onClick={() => A.noShow(p.id, true)}>Marquer no-show</button>} />)}</Bloc>
     <Bloc titre="Appels du jour" to="/appels" items={t.appels}>{t.appels.map(({ p, retard, at }) => <Ligne key={p.id} p={p} chips={retard ? <Chip c="red">en retard de {duree(Date.now() - at)}</Chip> : <Chip c="bl">{new Date(at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</Chip>} />)}</Bloc>

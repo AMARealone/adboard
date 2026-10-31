@@ -3,6 +3,7 @@ import { useCrm } from '../store'
 import { N, quand } from '../domain/notes'
 import { ecritActif, ecritB1Saute, ecritProchaine } from '../domain/rules'
 import { ECRIT_ETAPES, ECRIT_FAILLES } from '../domain/defaults'
+import { BoutonMajAds } from './MajAds'
 import { ecritMessage, lienOffreSuivi, pitchVariante } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { Chip, Empty, toast } from '../ui'
@@ -51,6 +52,7 @@ export default function Ecrit() {
   const { prospects } = useCrm(); const l = prospects.filter(ecritActif)
   return (<>
     <p className="cx-sub">Prospects qui préfèrent discuter par écrit sur WhatsApp : audit (bloc 1), plan (bloc 2), offre (bloc 3), puis lien et suite. Le bloc 1 a besoin des ads à jour.</p>
+    <div style={{ marginBottom: 10 }}><BoutonMajAds /></div>
     {l.length ? l.map((p) => <EcritCard key={p.id} p={p} />) : <Empty t="Personne en closing par écrit" s="Depuis Leads, « Reste sur WhatsApp » envoie un prospect ici." />}
   </>)
 }
