@@ -36,17 +36,11 @@
     },
     {
       "src": "/adstats/(.*)",
-      "status": 307,
-      "headers": {
-        "Location": "/crm-next"
-      }
+      "dest": "/crm-next.html"
     },
     {
       "src": "/adstats",
-      "status": 307,
-      "headers": {
-        "Location": "/crm-next"
-      }
+      "dest": "/crm-next.html"
     },
     {
       "src": "/factory-next/(.*)",

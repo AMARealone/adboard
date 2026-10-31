@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { fetchProspects, fetchConfig, mergeNotes, mergeConfig, shorten } from './api'
+import { fetchProspects, fetchConfig, mergeNotes, mergeConfig, shorten, supprimerProspect } from './api'
 import { N } from './domain/notes'
 import { toast, confirmDlg } from './ui'
 import { estInstagram, numeroWa } from './domain/rules'
@@ -109,6 +109,23 @@ export function CrmProvider({ children }) {
     },
     whatsappInvalide: async (id) => { const p = ref.current.find((x) => x.id === id); if (!(await confirmDlg('Marquer le WhatsApp de ' + (p.nom_marque || 'ce prospect') + ' comme invalide ?\nLe numéro reste conservé pour le SMS.', 'Marquer invalide'))) return false; return mutate(id, { body: { whatsapp_invalide: true } }) },
     instagramInvalide: async (id) => { const p = ref.current.find((x) => x.id === id); if (!(await confirmDlg("Marquer l'Instagram de " + (p.nom_marque || 'ce prospect') + ' comme invalide ?\nIl ne sera plus proposé via ce canal.', 'Marquer invalide'))) return false; return mutate(id, { body: { lien_instagram: null } }) },
+    // — Retirer / supprimer / notes (boutons « Supprimer » et « Notes » de l'ancien CRM)
+    // « Supprimer » dans le pipeline retire le prospect du pipeline : il reste dans Contacts (statut archivé).
+    retirer: async (id) => { const p = ref.current.find((x) => x.id === id); if (!p) return false; if (!(await confirmDlg('Retirer ' + (p.nom_marque || 'ce prospect') + ' du pipeline ?\nIl restera dans Contacts.', 'Supprimer'))) return false; const ok = await mutate(id, { body: { statut: 'archive' } }); if (ok) toast((p.nom_marque || 'Prospect') + ' retiré du pipeline'); return ok },
+    retirerPlus: async (ids) => { if (!ids.length || !(await confirmDlg('Retirer ' + ids.length + ' prospect(s) du pipeline ?\nIls resteront dans Contacts.', 'Supprimer'))) return false; for (const id of ids) await mutate(id, { body: { statut: 'archive' } }); toast(ids.length + ' prospect(s) retiré(s) du pipeline'); return true },
+    supprimerDefinitif: async (id) => {
+      const p = ref.current.find((x) => x.id === id); if (!p) return false
+      if (!(await confirmDlg('Supprimer définitivement ' + (p.nom_marque || 'ce prospect') + ' de tous les contacts ?\nCette action est irréversible.', 'Supprimer définitivement'))) return false
+      try { await supprimerProspect(id); setProspects((l) => l.filter((x) => x.id !== id)); toast('Contact supprimé définitivement'); return true } catch (e) { toast('Échec, rien n\'a été supprimé : ' + e.message); return false }
+    },
+    contactePlus: async (ids) => { if (!ids.length || !(await confirmDlg('Déplacer ' + ids.length + ' prospect(s) vers Suivi ?', 'Déplacer vers Suivi'))) return false; for (const id of ids) { const p = ref.current.find((x) => x.id === id); if (!p) continue; await mutate(id, { body: { statut: 'en_suivi', date_contact: now(), canal_contact: p.dernier_canal_clique || (p.lien_instagram ? 'instagram' : 'whatsapp') } }) } toast(ids.length + ' prospect(s) déplacé(s) vers Suivi'); return true },
+    waInvalidePlus: async (ids) => { if (!ids.length || !(await confirmDlg('Marquer le WhatsApp de ' + ids.length + ' prospect(s) comme invalide ?\nLes numéros restent disponibles pour le SMS.', 'Marquer invalide'))) return false; for (const id of ids) await mutate(id, { body: { whatsapp_invalide: true } }); toast('WhatsApp retiré pour ' + ids.length + ' prospect(s)'); return true },
+    note: (id, texte) => mutate(id, { notes: { note_texte: texte } }),
+    reprogrammer: async (id) => {
+      const p = ref.current.find((x) => x.id === id); if (!p) return false
+      if (!(await confirmDlg('Reprogrammer un nouvel appel avec ' + (p.nom_marque || 'ce prospect') + ' ?\nIl retourne dans Appels et sort du Closing.', 'Nouvel appel'))) return false
+      return mutate(id, { notes: { appel_fait: undefined, appel_fait_at: undefined, appel_programme_at: undefined, closing_etat: undefined, closing_at: undefined, appel_reserve: true, appel_reserve_at: now() } })
+    },
     // — Ouverture du canal : WhatsApp (nouvel onglet) ou Instagram (texte copié)
     ouvrirCanal: async (p, msg) => {
       if (estInstagram(p)) {

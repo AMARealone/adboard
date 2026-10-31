@@ -102,3 +102,9 @@ export async function serveurAdmin(path, method = 'GET', ms = 15000) {
     return await r.json()
   } finally { clearTimeout(t) }
 }
+
+// Suppression définitive d'un prospect (réservée à l'administrateur : règle Supabase « admin »)
+export async function supprimerProspect(id) {
+  const r = await fetch(SB + '/rest/v1/prospects?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + accessToken(), Prefer: 'return=minimal' } })
+  if (!r.ok) throw new Error('HTTP ' + r.status)
+}

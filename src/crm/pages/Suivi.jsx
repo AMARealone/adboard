@@ -4,6 +4,7 @@ import { N } from '../domain/notes'
 import { appelProgrammeTs, estInstagram, numeroWa } from '../domain/rules'
 import { lienPitch, pitchMessage } from '../domain/messages'
 import { Chip, Empty, confirmDlg, toast } from '../ui'
+import { BtnNotes, BtnSupprimer, BtnCopierInfos } from './common'
 
 const CHECKS = [{ k: 'a_repondu', l: 'A répondu' }, { k: 'interesse', l: 'Intéressé' }, { k: 'lead_qualifie', l: 'Lead qualifié' }]
 const jour = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR') : '—')
@@ -42,7 +43,8 @@ function SuiviCard({ p }) {
       </div>
       <div className="cx-acts">
         {tout && <button className="cx-btn ok sm" onClick={() => A.versLead(p.id)}>Passer en Lead</button>}
-        <button className="cx-btn ghost sm" onClick={() => A.remettreAContacter(p.id)}>Annuler le suivi</button>
+        <BtnNotes p={p} /><BtnCopierInfos p={p} />
+        <button className="cx-btn ghost sm" onClick={() => A.remettreAContacter(p.id)}>Annuler le suivi</button><BtnSupprimer p={p} />
       </div>
     </div>
   )

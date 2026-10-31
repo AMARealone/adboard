@@ -6,7 +6,7 @@ import { RELANCE_LABELS } from '../domain/defaults'
 import { insererLien, lienRelance, relanceMessage } from '../domain/messages'
 import { BoutonMajAds } from './MajAds'
 import { Chip, Empty, toast, confirmDlg } from '../ui'
-import { Marque, Meta } from './common'
+import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos } from './common'
 
 export function LeadCard({ p }) {
   const { A, cfg, mutate } = useCrm(); const n = N(p), j = jDepuisLead(p), pj = prochaineRelance(n), [busy, setBusy] = useState(false)
@@ -45,6 +45,7 @@ export function LeadCard({ p }) {
         <button className="cx-btn sm" onClick={() => A.reserver(p.id, null, '')}>A réservé un appel</button>
         <button className="cx-btn sm" onClick={async () => { if (await A.passerEcrit(p.id)) toast('Passé en Écrit') }}>💬 Reste sur WhatsApp</button>
         <button className="cx-btn ghost sm" onClick={async () => { if (await confirmDlg('Remettre ce lead en suivi ?')) mutate(p.id, { body: { statut: 'en_suivi', date_lead: null } }) }}>Remettre en suivi</button>
+        <BtnLienDemo p={p} /><BtnNotes p={p} /><BtnCopierInfos p={p} /><BtnSupprimer p={p} />
       </div>
     </div>
   )

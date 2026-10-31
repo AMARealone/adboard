@@ -60,3 +60,31 @@ export function Decision({ p, onClose, ecrit }) {
     </Modal>
   )
 }
+
+// ── Boutons repris de l'ancien CRM ──
+export function BtnNotes({ p }) {
+  const { A } = useCrm(), [ouvert, setOuvert] = useState(false), n = N(p), [t, setT] = useState(''), [busy, setBusy] = useState(false)
+  return (<>
+    <button className="cx-btn ghost sm" onClick={() => { setT(n.note_texte || ''); setOuvert(true) }}>{n.note_texte ? '📝 Notes' : 'Notes'}</button>
+    {ouvert && <Modal title={'Notes · ' + (p.nom_marque || '')} onClose={() => setOuvert(false)}>
+      <textarea style={{ width: '100%', minHeight: 140 }} value={t} onChange={(e) => setT(e.target.value)} placeholder="Notes libres sur ce prospect…" autoFocus />
+      <div className="cx-act"><button className="cx-btn" onClick={() => setOuvert(false)}>Annuler</button><button className="cx-btn primary" disabled={busy} onClick={async () => { setBusy(true); const ok = await A.note(p.id, t); setBusy(false); if (ok) { toast('Note sauvegardée'); setOuvert(false) } }}>{busy ? '…' : 'Sauvegarder'}</button></div>
+    </Modal>}
+  </>)
+}
+export function BtnSupprimer({ p, label = 'Supprimer' }) {
+  const { A } = useCrm()
+  return <button className="cx-btn ghost sm red" onClick={() => A.retirer(p.id)}>{label}</button>
+}
+export function BtnCopierInfos({ p }) {
+  return <button className="cx-btn ghost sm" title="Copier les infos (marque, pays, page produit)" onClick={async () => { const t = ['Marque : ' + (p.nom_marque || '—'), 'Pays : ' + (p.pays || '—'), 'Page produit : ' + (p.lien_ads || p.page_facebook || 'Non renseignée')].join('\n'); try { await navigator.clipboard.writeText(t); toast('Infos copiées') } catch (_) { toast('Copie automatique impossible') } }}>Copier infos</button>
+}
+export function BtnLienDemo({ p }) {
+  const l = N(p).lien_demo; if (!l) return null
+  return <button className="cx-btn ghost sm" onClick={async () => { try { await navigator.clipboard.writeText(l); toast('Lien démo copié') } catch (_) { toast('Copie automatique impossible') } }}>Copier lien démo</button>
+}
+export function BtnsContact({ p }) {
+  const num = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '')
+  if (!num && !p.lien_instagram) return <span className="cx-note">Aucun contact enregistré</span>
+  return <>{num && <a className="cx-btn sm wa" href={'https://wa.me/' + num} target="_blank" rel="noreferrer">📱 WhatsApp</a>}{p.lien_instagram && <a className="cx-btn sm ig" href={p.lien_instagram} target="_blank" rel="noreferrer">📷 Instagram</a>}</>
+}

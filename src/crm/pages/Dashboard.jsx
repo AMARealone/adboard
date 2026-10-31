@@ -32,10 +32,21 @@ export default function Dashboard() {
   const w = useMemo(() => fenetre(de || a ? { de, a } : { jours: per }), [per, de, a])
   const s = useMemo(() => calculer({ prospects, liens: d.liens, funnel: d.funnel, tx: d.tx, w }), [prospects, d, w])
   const groupes = [...new Set(s.lignes.map((x) => x.groupe))]
+  const exporter = () => {
+    const v = (x, suf) => (x === null || x === undefined ? '—' : typeof x === 'number' ? x.toFixed(1) + (suf || '%') : x)
+    const lib = de || a ? (de || '…') + ' → ' + (a || '…') : (PERIODES.find((x) => x.j === per) || {}).l || per + ' j'
+    let md = '# Dashboard AdStack — export\n\n**Période :** ' + lib + '\n**Généré le :** ' + new Date().toLocaleString('fr-FR') + '\n\n## Vue d\'ensemble\n\n| Étape | Valeur |\n|---|---|\n'
+    s.hero.forEach((e) => { md += '| ' + e.l + ' | ' + e.v + ' |\n' })
+    md += '\n## Performance par message\n\n| Message | Envoyés | Clics | CTR | Panier | Paiement | Achats |\n|---|---|---|---|---|---|---|\n'
+    s.lignes.forEach((x) => { md += '| ' + x.label + ' | ' + (x.sansEnvoi ? '—' : x.envoyes) + ' | ' + v(x.clics, '') + ' | ' + v(x.ctr) + ' | ' + x.panier + ' | ' + x.paiement + ' | ' + x.achats + ' |\n' })
+    const u = URL.createObjectURL(new Blob([md], { type: 'text/markdown;charset=utf-8' })), l = document.createElement('a')
+    l.href = u; l.download = 'dashboard_adstack_' + new Date().toISOString().slice(0, 10) + '.md'; document.body.appendChild(l); l.click(); document.body.removeChild(l); URL.revokeObjectURL(u)
+  }
   return (<>
     <div className="cx-tools"><div className="cx-tabs">
       {PERIODES.map((p) => <button key={p.j} className={'cx-tab' + (!de && !a && per === p.j ? ' on' : '')} onClick={() => { setDe(''); setA(''); setPer(p.j) }}>{p.l}</button>)}
       <span className="cx-range"><input type="date" value={de} onChange={(e) => setDe(e.target.value)} aria-label="Du" /><i>→</i><input type="date" value={a} onChange={(e) => setA(e.target.value)} aria-label="Au" /></span>
+      <button className="cx-tab" onClick={exporter}>⬇ Télécharger (.md)</button>
     </div></div>
     {d.err.map((e) => <div key={e} className="cx-banner">⚠ Non chargé — {e}. Les chiffres concernés restent à 0 tant que ce n'est pas réglé.</div>)}
     {d.charge && <p className="cx-sub">Chargement des clics et des événements…</p>}

@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
 import { Chip, Empty, toast } from '../ui'
+import { BtnNotes } from './common'
 
 const STATUTS = { '': 'Tous', a_contacter: 'À contacter', en_suivi: 'En suivi', lead: 'Leads', acheteur: 'Clients', archive: 'Archivés' }
 const TRI = { recents: 'Plus récents', anciens: 'Plus anciens', az: 'Nom A→Z', za: 'Nom Z→A' }
@@ -28,7 +29,8 @@ export default function Prospects() {
     {liste.length ? <>
       {liste.slice(0, max).map((p) => { const pasInt = !!N(p).pas_interesse && (p.statut === 'archive' || p.statut === 'en_suivi'); return <div className="cx-li" key={p.id}><button className="cx-name" onClick={() => ouvrirFiche(p.id)}>{p.nom_marque || '—'}</button><span className="cx-meta">{[p.produit, p.pays, p.date_contact && new Date(p.date_contact).toLocaleDateString('fr-FR')].filter(Boolean).join(' · ')}</span><Chip c={pasInt ? 'red' : 'mu'}>{pasInt ? 'Pas intéressé' : STATUTS[p.statut] || p.statut}</Chip>
         {pasInt && <button className="cx-btn ghost sm" onClick={() => A.pasInteresse(p.id, false)}>↩ Suivi</button>}
-        <button className="cx-btn ghost sm" title="Copier les infos" onClick={async () => { try { await navigator.clipboard.writeText(info(p)); toast('Infos copiées') } catch (_) { toast('Copie automatique impossible') } }}>Copier</button></div> })}
+        <button className="cx-btn ghost sm" title="Copier les infos" onClick={async () => { try { await navigator.clipboard.writeText(info(p)); toast('Infos copiées') } catch (_) { toast('Copie automatique impossible') } }}>Copier</button>
+        <BtnNotes p={p} /><button className="cx-btn ghost sm red" title="Suppression définitive" onClick={() => A.supprimerDefinitif(p.id)}>Supprimer</button></div> })}
       {liste.length > max && <button className="cx-btn" onClick={() => setMax(max + 200)}>Afficher plus ({liste.length - max} restants)</button>}
     </> : <Empty t="Aucun résultat" s="Modifiez les filtres pour voir plus de résultats." />}
   </>)

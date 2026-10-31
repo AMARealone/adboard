@@ -3,7 +3,7 @@ import { useCrm } from '../store'
 import { N, quand, duree } from '../domain/notes'
 import { appelAffiche, appelEcheance, appelEnRetard, appelProgrammeTs, closingInfosIncompletes } from '../domain/rules'
 import { Chip, Empty, toast } from '../ui'
-import { Marque, Meta, Decision } from './common'
+import { Marque, Meta, Decision, BtnNotes, BtnSupprimer, BtnLienDemo, BtnsContact } from './common'
 
 const toLocal = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16) }
 export function AppelCard({ p }) {
@@ -21,7 +21,8 @@ export function AppelCard({ p }) {
       <div className="cx-acts">
         {!n.appel_fait ? <button className="cx-btn primary sm" onClick={async () => { await A.appelFait(p.id); setDec(true) }}>Appel fait</button> : <button className="cx-btn primary sm" onClick={() => setDec(true)}>Décider</button>}
         <button className="cx-btn sm" onClick={() => A.noShow(p.id)}>No-show</button>
-        <button className="cx-btn ghost sm" onClick={() => A.annulerAppel(p.id)}>Annuler</button>
+        <button className="cx-btn ghost sm" onClick={() => A.annulerAppel(p.id)}>Annuler la réservation</button>
+        <BtnsContact p={p} /><BtnLienDemo p={p} /><BtnNotes p={p} /><BtnSupprimer p={p} />
       </div>
       {dec && <Decision p={p} onClose={() => setDec(false)} />}
     </div>

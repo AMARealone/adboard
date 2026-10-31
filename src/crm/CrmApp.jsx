@@ -26,7 +26,7 @@ import Utilisateurs from './pages/Utilisateurs'
 import Clients from './pages/Clients'
 import ProspectionAuto from './pages/ProspectionAuto'
 
-const BASE = '/crm-next'
+const BASE = /^\/crm-next(\/|$)/.test(location.pathname) ? '/crm-next' : '/adstats'
 
 function Shell({ user, onLogout }) {
   const { prospects, cfg, state, reload } = useCrm(), loc = useLocation()
@@ -38,7 +38,7 @@ function Shell({ user, onLogout }) {
     { to: '/', label: 'Aujourd\'hui', n: t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length, end: true },
     { to: '/prospects', label: 'Contacts', n: prospects.length },
     { g: 'Pipeline' },
-    { to: '/a-contacter', label: 'À contacter', n: prospects.filter((p) => p.statut === 'a_contacter').length },
+    { to: '/a-contacter', label: 'Prospects', n: prospects.filter((p) => p.statut === 'a_contacter').length },
     { to: '/suivi', label: 'Suivi', n: prospects.filter((p) => p.statut === 'en_suivi').length },
     { to: '/leads', label: 'Leads', n: leadsARelancer(prospects).length },
     { to: '/appels', label: 'Appels', n: prospects.filter(appelAffiche).length },
@@ -102,7 +102,7 @@ export default function CrmApp() {
           <Route element={<Shell user={user} onLogout={recheck} />}>
             <Route index element={<Titre t="Aujourd'hui"><Aujourdhui /></Titre>} />
             <Route path="prospects" element={<Titre t="Contacts"><Prospects /></Titre>} />
-            <Route path="a-contacter" element={<Titre t="À contacter"><AContacter /></Titre>} />
+            <Route path="a-contacter" element={<Titre t="Prospects"><AContacter /></Titre>} />
             <Route path="suivi" element={<Titre t="Suivi prospection"><Suivi /></Titre>} />
             <Route path="leads" element={<Titre t="Leads"><Leads /></Titre>} />
             <Route path="appels" element={<Titre t="Appels"><Appels /></Titre>} />

@@ -6,7 +6,7 @@ import { CLOSING_JOURS, CLOSING_LABELS } from '../domain/defaults'
 import { closingMessage, lienOffreSuivi } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { Chip, Empty, toast } from '../ui'
-import { Marque, Meta, InfosAppel } from './common'
+import { Marque, Meta, InfosAppel, BtnNotes, BtnSupprimer } from './common'
 
 export function ClosingCard({ p }) {
   const { A, cfg } = useCrm(); const n = N(p), now = Date.now(), age = closingJours(n, now), pj = closingProchainJ(n)
@@ -40,6 +40,8 @@ export function ClosingCard({ p }) {
         <button className="cx-btn sm" onClick={() => setInfos(true)}>Infos de l'appel</button>
         <button className="cx-btn ok sm" onClick={() => A.decision(p.id, 'paye')}>A payé</button>
         <button className="cx-btn ghost sm" onClick={() => A.decision(p.id, 'perdu')}>Pas intéressé</button>
+        <button className="cx-btn sm" onClick={async () => { if (await A.reprogrammer(p.id)) toast('Retour dans Appels : programmez la date') }}>📞 Nouvel appel</button>
+        <BtnNotes p={p} /><BtnSupprimer p={p} />
       </div>
       {infos && <InfosAppel p={p} onClose={() => setInfos(false)} />}
     </div>
