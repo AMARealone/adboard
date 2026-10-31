@@ -1690,6 +1690,11 @@ textarea::placeholder { color: var(--muted); }
           <span>Closing</span>
           <span class="nav-count" id="nc-closing">0</span>
         </button>
+        <button class="nav-item" id="nav-item-ecrit" onclick="goTo('ecrit',this)">
+          <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          <span>Écrit</span>
+          <span class="nav-count" id="nc-ecrit">0</span>
+        </button>
         <button class="nav-item green" id="nav-item-leads" onclick="goTo('leads',this)">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
           <span>Leads</span>
@@ -2111,6 +2116,23 @@ textarea::placeholder { color: var(--muted); }
   <div id="closing-list"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
 </div>
 
+<div class="page" id="page-ecrit">
+  <div class="page-header">
+    <div>
+      <div class="page-title">Écrit</div>
+      <div class="page-sub">Prospects qui préfèrent rester sur WhatsApp — 3 blocs (audit, plan, offre), pas de relance automatique</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="search-wrap" style="width:220px">
+        <svg class="search-icon" viewBox="0 0 16 16"><circle cx="6.5" cy="6.5" r="4.5"/><path d="M10.5 10.5l3 3" stroke-linecap="round"/></svg>
+        <input type="text" placeholder="Rechercher..." id="ecrit-search" oninput="renderEcrit()" style="font-size:13px">
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="load()">Actualiser</button>
+    </div>
+  </div>
+  <div id="ecrit-list"><div class="loading"><div class="spinner"></div>Chargement...</div></div>
+</div>
+
 <div class="page" id="page-leads">
   <div class="page-header">
     <div>
@@ -2476,7 +2498,7 @@ let noteId = null, leadId = null, achatId = null, achatSel = null;
 // NAV
 // ═══════════════════════════════════════
 const MOB_TITLES = {
-  prospects:'À contacter', suivi:'Suivi', appels:'Appels', closing:'Closing', demo:'Démo',
+  prospects:'À contacter', suivi:'Suivi', appels:'Appels', closing:'Closing', ecrit:'Écrit', demo:'Démo',
   leads:'Leads', dashboard:'Dashboard', templates:'Templates',
   contacts:'Contacts', acheteurs:'Acheteurs', upsell:'Upsell'
 };
@@ -2555,6 +2577,7 @@ function majEffetNouveaute(items, idField, seenKey, navId) {
 // Appelée à l'ouverture de l'onglet leads/clients — marque tout ce qui est actuellement
 // affiché comme "vu", éteint le glow.
 function marquerVuLeads() {
+  const LD = DB.filter(p => p.statut === 'lead');   // (LD n'existe qu'à l'intérieur de render() : sans cette ligne, ouvrir Leads levait une erreur)
   const idsActuels = LD.map(p => String(p.id)).filter(Boolean);
   _seenSave('crm_seen_leads', new Set(idsActuels));
   const navBtn = document.getElementById('nav-item-leads');
@@ -2589,6 +2612,7 @@ function goTo(name, btn) {
   if (name === 'utilisateurs') renderUtilisateurs();
   if (name === 'appels') renderAppels();
   if (name === 'closing') renderClosing();
+  if (name === 'ecrit') renderEcrit();
   if (name === 'leads') marquerVuLeads();
   if (name === 'acheteurs') marquerVuClients();
 }
@@ -2675,7 +2699,7 @@ function render() {
   // Nav counts
   set('nc-prospects', AC.length);
   set('nc-suivi', SV.length);
-  set('nc-leads', LD.filter(p => !appelDansListe(p)).length);
+  set('nc-leads', LD.filter(p => !horsLeads(p)).length);
   majNavAppels();
   majNavClosing();
   majEffetNouveaute(LD, 'id', 'crm_seen_leads', 'nav-item-leads');
@@ -3082,6 +3106,7 @@ function renderSuivi(data) {
           <div class="card-prod">${p.produit || '—'} · Contacté le ${dateStr}${pasInt ? ' · <span style="color:#FF5C5C;font-weight:700">Pas intéressé</span>' : ''}</div>
         </div>
         <div class="card-actions">
+          <button class="btn btn-ghost btn-sm" style="color:#25D366;border-color:rgba(37,211,102,.35)" title="Il refuse l'appel Google Meet : closing par écrit" onclick="ouvrirEcrit('${p.id}')">💬 Reste sur WhatsApp</button>
           <button class="btn btn-ghost btn-sm" data-notes-id="${p.id}" onclick="openNotes(this.dataset.notesId)">Notes</button>
           ${allOk ? `<button class="btn btn-green btn-sm" onclick="toLead('${p.id}')">Passer en Lead</button>` : ''}
         
@@ -3348,7 +3373,7 @@ function remplirPitchDataUI() {
 // ── Mise à jour des ads J+10 : liste des leads concernés + lancement du script sur le PC ──
 function leadsJ10() {
   return (DB || []).filter(p => {
-    if (p.statut !== 'lead' || appelDansListe(p)) return false;
+    if (p.statut !== 'lead' || horsLeads(p)) return false;
     let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch (e) {}
     if (n.sent_j3 || n.j3_envoye) return false;
     const j = Math.floor((Date.now() - new Date(p.date_lead || p.date_contact || Date.now())) / 86400000);
@@ -3620,7 +3645,9 @@ function rafraichirApresAppel() {
   majNavAppels();
   renderClosing();
   majNavClosing();
-  set('nc-leads', DB.filter(p => p.statut === 'lead' && !appelDansListe(p)).length);
+  renderEcrit();
+  majNavEcrit();
+  set('nc-leads', DB.filter(p => p.statut === 'lead' && !horsLeads(p)).length);
 }
 
 // via (optionnel) : relance à l'origine de la réservation ("J+3" / "J+10" / "J+21"), posée quand
@@ -4420,6 +4447,271 @@ function renderClosing() {
 // ═══════════════════════════════════════
 // LEADS
 // ═══════════════════════════════════════
+// ═══════════════════════════════════════
+// ÉCRIT — closing par WhatsApp quand le prospect refuse l'appel Google Meet
+// Notes (JSON dans prospects.notes) :
+//   ecrit_etat    'actif' | 'paye' | 'perdu'      ecrit_at (ISO)  départ
+//   ecrit_faille  clé de ECRIT_FAILLES            ecrit_remarque  observation perso (facultatif)
+//   ecrit_offre   test|perf|growth|scale
+//   ecrit_sent_b1 / _b2 / _b3 / _suite  (+ _at)   bloc envoyé
+// Un prospect « actif » sort de Leads : plus aucune relance automatique tant qu'on discute avec lui.
+// Bloc 1 (audit) est sauté si J+3 (ou plus) a déjà été envoyé : on ne répète pas.
+// ═══════════════════════════════════════
+const ECRIT_FAILLES = {
+  rythme:    'Peu de nouvelles pubs / rythme lent',
+  angles:    'Mêmes angles, mêmes visuels',
+  gagnantes: 'Une ou deux pubs portent tout',
+  production:'Production lente ou dépendante (freelance, lui-même)',
+  recherche: 'Il devine sa cible et ses angles',
+  temps:     'Pas le temps de gérer ça',
+  risque:    'Déjà déçu / peur de payer pour rien'
+};
+const ECRIT_ETAPES = [
+  { key: 'b1',    label: 'Bloc 1 · Audit' },
+  { key: 'b2',    label: 'Bloc 2 · Plan' },
+  { key: 'b3',    label: 'Bloc 3 · Offre' },
+  { key: 'suite', label: 'Lien + suite' }
+];
+const ECRIT_DELAI = { test: '48 h', perf: '48 h', growth: '24 h', scale: '24 h' };
+const ECRIT_PLAN_FIN = "\n\nVous recevez tout dans AdBoard, sans courir après un freelance ni refaire le travail vous-même.\n\nEst-ce que vous voulez voir l'offre qui correspond à *[Marque]* ?";
+const DEFAULT_ECRIT = {
+  b1_chiffres: "Bonjour *[Marque]* 👋🏾\n\nJ'ai regardé vos pubs pour *[Produit]* aujourd'hui : *[ads] ads actives*, qui tournent en moyenne depuis *[jours] jours*.\n\nJ'ai vu que vous [bonne_nouvelle].\n\nMais peut-être que [mauvaise_nouvelle]. C'est exactement ce que règle [solution].\n\nJe peux vous montrer ce qu'on mettrait en place pour vous ?",
+  b1_sans: "Bonjour *[Marque]* 👋🏾\n\nJe vous résume ici, en quelques lignes et sans appel, comment on pourrait vous faire gagner du temps et des ventes sur *[Produit]*.\n\nJe peux vous montrer ce qu'on mettrait en place pour vous ?",
+  b2_rythme: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. Un flux continu* : chaque mois, un lot de créatives neuves pour *[Produit]*, pour que vos pubs ne s'essoufflent pas avant qu'une autre prenne le relais.\n*2. De vrais tests* : des angles différents, pas la même pub déclinée, pour voir ce que votre audience préfère.\n*3. Une amélioration continue* : on garde ce qui gagne, on remplace ce qui s'éteint." + ECRIT_PLAN_FIN,
+  b2_angles: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. Une analyse de votre marché* : ce que vos clients ressentent, ce qui les fait acheter *[Produit]*, ce que vos concurrents disent déjà.\n*2. Plusieurs angles, pas un seul* : chacun avec sa promesse et son visuel, pour que votre audience ne voie jamais la même pub.\n*3. Une amélioration continue* : on garde les angles qui gagnent, on en teste de nouveaux." + ECRIT_PLAN_FIN,
+  b2_gagnantes: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nQuand une ou deux pubs portent toutes les ventes, tout repose sur elles. Le jour où elles s'essoufflent, il ne reste rien.\n\n*1. Plus de candidates* : un volume régulier de nouvelles créatives pour *[Produit]*, pour trouver la suivante avant que l'actuelle s'éteigne.\n*2. Des angles variés* : pour que le résultat ne dépende pas d'une seule idée.\n*3. Un suivi de ce qui gagne* : on garde, on déploie, on remplace." + ECRIT_PLAN_FIN,
+  b2_production: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. Une équipe qui produit à votre place* : stratégie, créatives, ajustements. Vous ne courez plus après personne.\n*2. Un rythme régulier* : de nouvelles créatives pour *[Produit]* livrées en [delai] à chaque demande, au lieu d'attendre des semaines.\n*3. Une amélioration continue* : chaque lot s'appuie sur ce qui a marché avant." + ECRIT_PLAN_FIN,
+  b2_recherche: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. On fait la recherche à votre place* : ce que vos clients cherchent vraiment avec *[Produit]*, leurs freins, leurs envies, ce que fait la concurrence.\n*2. On en tire des angles précis* : pas des idées au hasard, des pistes basées sur votre marché.\n*3. On les transforme en créatives* prêtes à diffuser, puis on améliore selon les résultats." + ECRIT_PLAN_FIN,
+  b2_temps: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nQuand on gère une boutique, le temps manque vite. Les pubs ne doivent pas devenir un deuxième travail.\n\n*1. On s'occupe de tout* : analyse, angles, créatives pour *[Produit]*.\n*2. Vous demandez, on livre* en [delai], depuis AdBoard.\n*3. On améliore en continu* : vous gardez votre énergie pour le reste." + ECRIT_PLAN_FIN,
+  b2_risque: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nOn comprend la prudence : payer pour des créatives qui ne servent à rien, ça arrive.\n\n*1. Du concret avant tout* : une analyse de votre marché, pas des visuels génériques.\n*2. Des angles pensés pour* *[Produit]*, avec une vraie raison d'être testés.\n*3. Une amélioration continue*, pour ne pas rester sur un coup de dé.\n\nEt selon l'offre, une garantie de 60 jours." + ECRIT_PLAN_FIN,
+  b3_test: "Je vous propose de commencer simplement, pour *[Marque]* 🙂\n\nL'offre *TEST* : *75.000 FCFA*.\n\n12 créatives sur 2 produits, livrées en 48 h.\n\nL'idée : voir par vous-même, sur un vrai lot, ce que donne un travail pensé pour *[Produit]*, sans vous engager sur le long terme.\n\nQuand les premières créatives arrivent, vous ne devinez plus : vous voyez.\n\nOn démarre maintenant ?",
+  b3_perf: "Voici ce que je recommande pour *[Marque]* 🙂\n\nL'offre *PERF+* : *140.000 FCFA / mois*.\n\nVous avez déjà des pubs qui tournent. Ce qu'il manque, c'est un système : 24 créatives par mois sur 4 produits, des angles testés, un lot livré en 48 h, et ce qui marche qui est gardé.\n\nLe jour où vous ouvrez votre gestionnaire de pubs et que vous voyez du neuf, du solide, pensé pour vos clients : c'est ce moment qu'on construit avec vous.\n\nEt une garantie de 60 jours.\n\nOn démarre maintenant ?",
+  b3_growth: "Voici ce que je recommande pour *[Marque]* 🙂\n\nL'offre *GROWTH* : *260.000 FCFA / mois*.\n\nQuand ça marche, le vrai risque, c'est la saturation. Ici, on change d'échelle : 48 créatives par mois sur 8 produits, livrées en 24 h, pour que votre audience ne se lasse jamais et que vous gardiez toujours une longueur d'avance.\n\nVous n'attendez plus que vos pubs s'éteignent pour réagir : le relais est déjà prêt.\n\nEt une garantie de 60 jours.\n\nOn démarre maintenant ?",
+  b3_scale: "Voici ce que je recommande pour *[Marque]* 🙂\n\nL'offre *SCALE* : *480.000 FCFA / mois*.\n\nPour une marque qui veut changer d\'échelle : 96 créatives par mois sur 16 produits, une production prioritaire livrée en 24 h, et une équipe qui travaille votre croissance comme si c'était la sienne.\n\nVous gardez la vision. On s'occupe du volume, de la variété, de la cadence.\n\nEt une garantie de 60 jours.\n\nOn démarre maintenant ?",
+  suite: "Parfait 🙌\n\nVoici votre lien de paiement : [Lien]\n\nDès que c'est fait, [Facture]. Ensuite on connecte AdBoard ensemble, on importe *[Produit]* et on lance votre première production : premier lot en [delai] maximum.\n\nJe reste avec vous à chaque étape."
+};
+const ECRIT_TPL_LABELS = {
+  b1_chiffres: 'Bloc 1 · Audit — avec chiffres des ads (variables [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [solution])',
+  b1_sans: 'Bloc 1 · Audit — sans chiffres (ads non mises à jour)',
+  b2_rythme: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.rythme, b2_angles: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.angles,
+  b2_gagnantes: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.gagnantes, b2_production: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.production,
+  b2_recherche: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.recherche, b2_temps: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.temps, b2_risque: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.risque,
+  b3_test: 'Bloc 3 · Offre TEST', b3_perf: 'Bloc 3 · Offre PERF+', b3_growth: 'Bloc 3 · Offre GROWTH', b3_scale: 'Bloc 3 · Offre SCALE',
+  suite: 'Après son « oui » · lien de paiement + suite (variables [Lien] [Facture] [delai])'
+};
+function ecritTemplates() {
+  const saved = (DB._config && DB._config.tpl_ecrit) || {};
+  const out = {};
+  Object.keys(DEFAULT_ECRIT).forEach(k => { out[k] = (typeof saved[k] === 'string' && saved[k].trim()) ? saved[k] : DEFAULT_ECRIT[k]; });
+  return out;
+}
+function ecritEtat(p) {
+  if (!p || typeof p.notes !== 'string' || p.notes.indexOf('ecrit_etat') === -1) return '';
+  return appelNotes(p).ecrit_etat || '';
+}
+function ecritActif(p) { return ecritEtat(p) === 'actif'; }
+// Hors liste Leads : a réservé un call OU discute déjà par écrit (plus aucune relance automatique)
+function horsLeads(p) { return appelDansListe(p) || ecritActif(p); }
+function ecritB1Saute(n) { return !!(n.sent_j3 || n.sent_j10 || n.sent_j21 || n.j3_envoye); }
+
+// Message d'un bloc, rempli avec les infos du prospect. Retourne { msg, manque[], cle }
+function ecritMessage(p, etape) {
+  const n = appelNotes(p), T = ecritTemplates();
+  const offre = n.ecrit_offre || '';
+  let cle = etape;
+  const v = pitchVariante(p);
+  if (etape === 'b1') cle = v.cas ? 'b1_chiffres' : 'b1_sans';
+  if (etape === 'b2') cle = 'b2_' + (n.ecrit_faille || '');
+  if (etape === 'b3') cle = 'b3_' + offre;
+  let tpl = T[cle];
+  const manque = [];
+  if (!tpl) { manque.push(etape === 'b2' ? 'faille' : 'offre'); return { msg: '', manque, cle }; }
+  const lien = offre ? (closingLiens()[offre] || '').trim() : '';
+  const vals = {
+    marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '',
+    remarque: (n.ecrit_remarque || '').trim(), lien, facture: (CLOSING_OFFRES[offre] || {}).facture || '', delai: ECRIT_DELAI[offre] || '48 h'
+  };
+  // lignes avec une variable facultative vide : supprimées (jamais de trou dans le message)
+  tpl = tpl.split('\n').filter(l => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n');
+  let msg = tpl.replace(/\[(marque|produit|pays|remarque|lien|facture|delai)\]/gi, (m, k) => {
+    const x = vals[k.toLowerCase()];
+    if (!x) { const nom = k.toLowerCase() === 'lien' ? 'lien de paiement ' + (offre ? offre.toUpperCase() : '(offre ?)') + ' (Templates)' : k.toLowerCase() === 'facture' ? 'offre' : k; if (!manque.includes(nom)) manque.push(nom); }
+    return x;
+  });
+  if (cle === 'b1_chiffres') msg = remplirPitchDonnees(msg, v);
+  return { msg, manque, cle };
+}
+
+function majNavEcrit() {
+  const liste = DB.filter(ecritActif);
+  set('nc-ecrit', liste.length);
+}
+
+function ouvrirEcrit(id) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const n = appelNotes(p);
+  const ancien = document.getElementById('modal-ecrit'); if (ancien) ancien.remove();
+  const ov = document.createElement('div');
+  ov.id = 'modal-ecrit';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto';
+  const lab = 'font-size:11px;font-weight:700;color:var(--text2);margin:12px 0 4px;display:block';
+  const hint = 'font-size:10.5px;color:var(--muted);margin-bottom:4px';
+  const inp = 'width:100%;font-size:13px;font-family:var(--font)';
+  const optsF = '<option value="">— choisir —</option>' + Object.keys(ECRIT_FAILLES).map(k => '<option value="' + k + '"' + (n.ecrit_faille === k ? ' selected' : '') + '>' + ECRIT_FAILLES[k] + '</option>').join('');
+  const offreDef = n.ecrit_offre || 'perf';
+  const optsO = Object.keys(CLOSING_OFFRES).map(k => '<option value="' + k + '"' + (offreDef === k ? ' selected' : '') + '>' + CLOSING_OFFRES[k].label + '</option>').join('');
+  const v = pitchVariante(p);
+  const b1 = ecritB1Saute(n) ? 'Bloc 1 sauté : il a déjà reçu ton J+3 (pas de répétition).'
+    : (v.cas ? 'Bloc 1 : audit avec les chiffres de ses ads (relevé récent).' : 'Bloc 1 : audit sans chiffres. Pour la version chiffrée, mets à jour ses ads (bouton « Ads J+3 » dans Leads).');
+  const actif = ecritActif(p);
+  ov.innerHTML =
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:460px;width:100%;font-family:var(--font)">'
+    + '<div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:2px">' + (actif ? 'Infos du closing par écrit' : 'Il préfère rester sur WhatsApp') + '</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">' + esc2(p.nom_marque || 'Ce prospect') + '</div>'
+    + (actif ? '' : '<div style="font-size:11.5px;color:#FFB547;margin:6px 0">Il sort de Leads : plus aucune relance automatique.</div>')
+    + '<div style="font-size:11.5px;color:var(--muted);margin-bottom:2px">' + esc2(b1) + '</div>'
+    + '<label style="' + lab + '">Sa faille principale (celle que tu as vue)</label><div style="' + hint + '">Elle choisit le texte du Bloc 2 (le plan pour lui).</div>'
+    + '<select id="ec-faille" style="' + inp + '">' + optsF + '</select>'
+    + '<label style="' + lab + '">Ce que tu as remarqué sur lui (facultatif)</label><div style="' + hint + '">Une observation vraie, vue par toi : sa page, son produit, ses pubs. Écris une phrase complète, elle s\'ajoute telle quelle au Bloc 2. Laisse vide sinon.</div>'
+    + '<textarea id="ec-remarque" style="' + inp + ';min-height:64px">' + esc2(n.ecrit_remarque || '') + '</textarea>'
+    + '<label style="' + lab + '">Offre à lui proposer (Bloc 3)</label><div style="' + hint + '">Choisie selon son problème, pas son budget. PERF+ par défaut.</div>'
+    + '<select id="ec-offre" style="' + inp + '">' + optsO + '</select>'
+    + '<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">'
+      + '<button id="ec-annuler" class="btn btn-ghost btn-sm">Annuler</button>'
+      + '<button id="ec-ok" class="btn btn-primary btn-sm">' + (actif ? 'Enregistrer' : 'Démarrer') + '</button>'
+    + '</div></div>';
+  document.body.appendChild(ov);
+  const fermer = () => ov.remove();
+  ov.addEventListener('click', e => { if (e.target === ov) fermer(); });
+  document.getElementById('ec-annuler').onclick = fermer;
+  document.getElementById('ec-ok').onclick = async () => {
+    const faille = document.getElementById('ec-faille').value;
+    if (!faille) { toast('Choisis sa faille principale'); return; }
+    const infos = { ecrit_faille: faille, ecrit_remarque: document.getElementById('ec-remarque').value.trim(), ecrit_offre: document.getElementById('ec-offre').value };
+    fermer();
+    await enregistrerEcrit(id, infos, !actif);
+  };
+}
+async function enregistrerEcrit(id, infos, demarrer) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  Object.keys(infos).forEach(k => { if (infos[k]) s[k] = infos[k]; else delete s[k]; });
+  if (demarrer) {
+    s.ecrit_etat = 'actif'; s.ecrit_at = new Date().toISOString();
+    ['ecrit_sent_b1','ecrit_sent_b1_at','ecrit_sent_b2','ecrit_sent_b2_at','ecrit_sent_b3','ecrit_sent_b3_at','ecrit_sent_suite','ecrit_sent_suite_at'].forEach(k => delete s[k]);
+  }
+  p.notes = JSON.stringify(s);
+  rafraichirApresAppel();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) { p.notes = ancien; rafraichirApresAppel(); toast('Échec — non enregistré, réessaie'); return; }
+  if (demarrer) { toast('Dans Écrit — première étape prête'); const b = document.getElementById('nav-item-ecrit'); goTo('ecrit', b); }
+  else toast('Infos enregistrées ✓');
+}
+async function ecritMarquer(id, etape, val) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  const k = 'ecrit_sent_' + etape;
+  if (val) { s[k] = true; s[k + '_at'] = new Date().toISOString(); } else { delete s[k]; delete s[k + '_at']; }
+  p.notes = JSON.stringify(s);
+  renderEcrit();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) { p.notes = ancien; renderEcrit(); }
+}
+async function ecritEnvoyer(id, etape) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const { msg, manque } = ecritMessage(p, etape);
+  if (manque.length) {
+    toast('Il manque : ' + manque.join(', '));
+    if (manque.some(x => x === 'faille' || x === 'offre')) ouvrirEcrit(id);
+    return;
+  }
+  const restant = msg.match(/\[[^\]]{2,40}\]/);
+  if (restant) { toast('Variable non remplie : ' + restant[0] + ' — vérifie le template'); return; }
+  if (estCanalInstagram(p)) {
+    if (!p.lien_instagram) { toast('Pas de lien Instagram pour ce prospect'); return; }
+    const copie = await copierTexteAvecRepli(msg);
+    toast(copie ? 'Texte copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Copie automatique impossible — copie le texte manuellement');
+    window.open(p.lien_instagram, '_blank');
+  } else {
+    const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '');
+    if (!numero) { toast('Pas de numéro WhatsApp pour ce prospect'); return; }
+    window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(msg), '_blank');
+  }
+  await ecritMarquer(id, etape, true);
+}
+async function ecritIssue(id, issue) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const nom = p.nom_marque || 'ce prospect';
+  if (issue === 'paye' && !confirm('Confirmer : ' + nom + ' a payé ?\nIl passe en "Acheteur" et quitte Écrit.')) return;
+  if (issue === 'perdu' && !confirm('Marquer ' + nom + ' "pas intéressé" ?\nIl retourne dans Suivi avec la pastille "Pas intéressé" (réversible).')) return;
+  const sauve = { notes: p.notes, statut: p.statut, date_lead: p.date_lead, date_achat: p.date_achat };
+  const s = appelNotes(p), now = new Date().toISOString(), body = {};
+  if (issue === 'paye') { s.ecrit_etat = 'paye'; s.ecrit_paye_at = now; body.statut = 'acheteur'; body.date_achat = now; p.statut = 'acheteur'; p.date_achat = now; }
+  else if (issue === 'perdu') { s.ecrit_etat = 'perdu'; s.pas_interesse = true; s.pas_interesse_at = now; if (p.statut === 'lead') { body.statut = 'en_suivi'; body.date_lead = null; p.statut = 'en_suivi'; p.date_lead = null; } }
+  else if (issue === 'relances') { delete s.ecrit_etat; delete s.ecrit_at; }
+  else return;
+  p.notes = JSON.stringify(s); body.notes = p.notes;
+  rafraichirApresAppel();
+  const ok = await patch(id, body);
+  if (!ok) { p.notes = sauve.notes; p.statut = sauve.statut; p.date_lead = sauve.date_lead; p.date_achat = sauve.date_achat; rafraichirApresAppel(); toast('Échec — non enregistré, réessaie'); return; }
+  toast(issue === 'paye' ? 'Marqué payé ✓ — passé en Acheteur' : issue === 'perdu' ? 'Pas intéressé — retourné dans Suivi' : 'Remis dans les relances');
+}
+function renderEcrit() {
+  const el = document.getElementById('ecrit-list');
+  if (!el) return;
+  const q = (document.getElementById('ecrit-search')?.value || '').toLowerCase().trim();
+  let data = DB.filter(ecritActif).map(p => ({ p, n: appelNotes(p) }));
+  if (q) data = data.filter(({ p }) => (p.nom_marque || '').toLowerCase().includes(q) || (p.produit || '').toLowerCase().includes(q));
+  if (!data.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-title">' + (q ? 'Aucun résultat' : 'Personne en closing par écrit') + '</div>'
+      + (q ? '' : 'Sur une fiche Leads, clique « 💬 Reste sur WhatsApp » quand le prospect refuse l\'appel') + '</div>';
+    return;
+  }
+  data.sort((a, b) => Date.parse(a.n.ecrit_at || 0) - Date.parse(b.n.ecrit_at || 0));
+  el.innerHTML = data.map(({ p, n }) => {
+    const saute1 = ecritB1Saute(n);
+    let prochain = null;
+    for (const e of ECRIT_ETAPES) { if (e.key === 'b1' && saute1) continue; if (!n['ecrit_sent_' + e.key]) { prochain = e.key; break; } }
+    const btns = ECRIT_ETAPES.map(e => {
+      const sent = !!n['ecrit_sent_' + e.key];
+      const sauteB1 = e.key === 'b1' && saute1;
+      let st = 'display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid;white-space:nowrap;cursor:pointer;font-family:var(--font);';
+      if (sauteB1) return '<div style="flex-shrink:0"><div style="' + st + 'border-color:var(--border);color:var(--muted);opacity:.5;cursor:default">' + e.label + ' · déjà fait (J+3)</div></div>';
+      if (sent) st += 'background:rgba(255,255,255,.04);border-color:var(--border);color:var(--muted);text-decoration:line-through;opacity:.6;';
+      else if (prochain === e.key) st += 'background:rgba(37,211,102,.12);border-color:rgba(37,211,102,.45);color:#25D366;';
+      else st += 'background:transparent;border-color:var(--border);color:var(--muted);';
+      const check = '<label style="display:flex;align-items:center;gap:5px;cursor:pointer;margin-top:4px"><input type="checkbox" ' + (sent ? 'checked' : '') + ' style="accent-color:var(--blue);width:12px;height:12px" onchange="ecritMarquer(\'' + p.id + '\',\'' + e.key + '\',this.checked)"><span style="font-size:11px;color:' + (sent ? 'var(--blue)' : 'var(--muted)') + '">Envoyé</span></label>';
+      return '<div style="flex-shrink:0"><button onclick="ecritEnvoyer(\'' + p.id + '\',\'' + e.key + '\')" style="' + st + '">' + (estCanalInstagram(p) ? '📷 ' : '💬 ') + e.label + '</button>' + check + '</div>';
+    }).join('');
+    const recap = ECRIT_FAILLES[n.ecrit_faille] ? esc2(ECRIT_FAILLES[n.ecrit_faille]) : 'faille à choisir';
+    const offre = (CLOSING_OFFRES[n.ecrit_offre] || {}).label || '';
+    return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;margin-bottom:12px">'
+      + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap">'
+        + '<div style="min-width:0"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px">'
+          + '<div style="font-size:15px;font-weight:800;color:var(--white)">' + esc2(p.nom_marque || '—') + '</div>'
+          + '<span style="font-size:12px;color:var(--muted)">·</span><span style="font-size:12px;color:var(--muted)">' + esc2(p.pays || '—') + '</span>'
+          + '<span style="font-size:10px;font-weight:800;background:rgba(37,211,102,.1);color:#25D366;padding:2px 8px;border-radius:4px;border:1px solid rgba(37,211,102,.3)">PAR ÉCRIT</span></div>'
+          + '<div style="font-size:12px;color:var(--muted)">' + esc2(p.produit || '—') + ' · ' + recap + (offre ? ' · ' + esc2(offre) : '') + '</div></div>'
+        + '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
+          + '<button class="btn btn-ghost btn-sm" onclick="ouvrirEcrit(\'' + p.id + '\')">✏️ Infos</button>'
+          + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
+          + '<button class="btn btn-ghost btn-sm" onclick="ecritIssue(\'' + p.id + '\',\'relances\')" title="Il redevient un lead relancé J+3/J+10/J+21">↩ Relances</button>'
+          + '<button class="btn btn-sm" style="background:rgba(50,255,126,.1);color:#32FF7E;border:1px solid rgba(50,255,126,.25)" onclick="ecritIssue(\'' + p.id + '\',\'paye\')">✅ A payé</button>'
+          + '<button class="btn btn-ghost btn-sm" style="color:#FF5C5C" onclick="ecritIssue(\'' + p.id + '\',\'perdu\')">❌ Pas intéressé</button>'
+          + '<button class="btn btn-red btn-sm" onclick="deleteProspect(\'' + p.id + '\')">×</button>'
+        + '</div></div>'
+      + '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">' + btns + '</div>'
+      + '</div>';
+  }).join('');
+}
+
 function getProchainJ(jDep, notesObj) {
   const JOURS = [3,10,21];
   const st = notesObj || {};
@@ -4446,10 +4738,10 @@ function renderLeads(data) {
   // But des relances = faire réserver un call. Un lead qui a réservé est dans Appels : on ne
   // le relance plus ici (il revient si la réservation est annulée).
   const _avantFiltre = data.length;
-  data = data.filter(p => !appelDansListe(p));
+  data = data.filter(p => !horsLeads(p));
   if (!data.length) {
     el.innerHTML = _avantFiltre
-      ? '<div class="empty"><div class="empty-title">Aucun lead à relancer</div>Les leads qui ont réservé un call sont dans la section Appels</div>'
+      ? '<div class="empty"><div class="empty-title">Aucun lead à relancer</div>Les leads qui ont réservé un call sont dans Appels, ceux qui préfèrent l\'écrit dans Écrit</div>'
       : '<div class="empty"><div class="empty-title">Aucun lead qualifié</div>Les leads apparaissent ici après avoir coché les 4 étapes dans le suivi</div>';
     return;
   }
@@ -4618,6 +4910,7 @@ function renderLeads(data) {
           + '<div style="font-size:12px;color:var(--muted)">' + esc(p.produit || '—') + ' · Lead depuis ' + jDep + 'j</div>'
         + '</div>'
         + '<div style="display:flex;gap:6px;flex-shrink:0">'
+          + '<button class="btn btn-ghost btn-sm" style="color:#25D366;border-color:rgba(37,211,102,.35)" title="Il refuse l\'appel Google Meet : closing par écrit, plus de relances auto" onclick="ouvrirEcrit(\'' + p.id + '\')">💬 Reste sur WhatsApp</button>'
           + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
           + ((() => { try { const _nd=JSON.parse(p.notes||'{}'); const _ld=_nd.lien_demo||''; if(!_ld) return ''; return '<button class="btn btn-ghost btn-sm" data-demo-lien="'+encodeURIComponent(_ld)+'" onclick="copyDemoLien(this)" style="color:var(--blue);border-color:rgba(31,182,255,.25);">Lien démo</button>'; } catch(e){return '';} })())
           + '<button class="btn btn-ghost btn-sm" onclick="remettreEnSuivi(\'' + p.id + '\')">Annuler</button>'
@@ -7688,6 +7981,11 @@ async function loadTemplates() {
           <div id="closing-templates-list"></div>
         </div>
         <div class="tpl-groupe">
+          <div class="tpl-groupe-titre">💬 Closing par écrit (prospect qui refuse l'appel)</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Section Écrit. Bloc 1 audit (sauté si J+3 déjà envoyé), Bloc 2 plan (selon la faille choisie), Bloc 3 offre (selon l'offre choisie), puis lien + suite. Variables : <span style="color:var(--green)">[Marque] [Produit] [Remarque] [Lien] [Facture] [delai]</span>. Une ligne contenant [Remarque] disparaît si tu n'as rien noté.</div>
+          <div id="ecrit-templates-list"></div>
+        </div>
+        <div class="tpl-groupe">
           <div class="tpl-groupe-titre">✉️ Emails</div>
           ${carteDb('email_j5_vision', 'J+5 — vision avant/après')}
           ${carteDb('email_j12_offer', 'J+12 — objection prix')}
@@ -7787,6 +8085,17 @@ async function loadTemplates() {
     `).join('');
   }
 
+  // Closing par écrit
+  const ecritBox = document.getElementById('ecrit-templates-list');
+  if (ecritBox) {
+    const T = ecritTemplates();
+    ecritBox.innerHTML = Object.keys(DEFAULT_ECRIT).map(k => `
+      <div style="margin-bottom:12px">
+        <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px">${escHtml(ECRIT_TPL_LABELS[k] || k)}</div>
+        <textarea id="ecrit-${k}" style="min-height:120px;font-size:12px;line-height:1.5" oninput="markDirty()">${escHtml(T[k])}</textarea>
+      </div>`).join('');
+  }
+
   // Scripts suivi
   const tplInt = document.getElementById('tpl-interesse');
   if (tplInt) tplInt.value = interesse || '';
@@ -7857,6 +8166,11 @@ function getClosing() {
     return el ? el.value : (ok ? saved[i] : DEFAULT_CLOSING[i]);
   });
 }
+function getEcrit() {
+  const out = {}, saved = (DB._config && DB._config.tpl_ecrit) || {};
+  Object.keys(DEFAULT_ECRIT).forEach(k => { const el = document.getElementById('ecrit-' + k); out[k] = el ? el.value : (saved[k] || ''); });
+  return out;
+}
 function getClosingLiens() {
   const out = Object.assign({}, closingLiens());
   Object.keys(CLOSING_OFFRES).forEach(k => { const el = document.getElementById('closing-lien-' + k); if (el) out[k] = el.value.trim(); });
@@ -7880,7 +8194,7 @@ async function saveAllTemplates() {
   const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
   const demo_msg  = demoMsgEl ? demoMsgEl.value : ((DB._config || {}).tpl_demo_msg || '');
-  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, closing_liens: getClosingLiens(), tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
+  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, closing_liens: getClosingLiens(), tpl_ecrit: getEcrit(), tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
 
   // Upsert dans la ligne config
   try {
