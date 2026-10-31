@@ -19,11 +19,12 @@
     { "src": "/blog", "dest": "/blog/index.html" },
     { "src": "/blog/", "dest": "/blog/index.html" },
     { "src": "/blog/([^/.]+)", "dest": "/blog/$1.html" },
+    { "src": "/etude-de-cas/(vitalina|saelia|veloce)", "dest": "/etude-de-cas-$1.html" },
     { "src": "/etude-de-cas/(.*)", "dest": "/etude-de-cas.html" },
     { "src": "/etude-de-cas", "dest": "/etude-de-cas.html" },
     { "src": "/quiz", "dest": "/quiz.html" },
     { "src": "/quiz-resultat", "dest": "/quiz-resultat.html" },
-    { "src": "/(test|perf|growth|scale)", "dest": "/quiz-resultat.html" },
+    { "src": "/(test|perf|growth|scale)", "dest": "/offre-$1.html" },
     { "src": "/", "dest": "/vente.html" }
   ]
 }
