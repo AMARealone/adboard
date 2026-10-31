@@ -86,3 +86,6 @@ export async function tauxUsd() {
   try { const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json'); const d = await r.json(); return (d && d.xof && d.xof.usd) || 1 / 600 } catch (_) { return 1 / 600 }
 }
 export const fetchCoutsApi = () => lirePages('/api_usage_log?select=source,cout_usd,type_appel,created_at&order=created_at.desc')
+export const fetchEmailsEnvoyes = () => lirePages('/email_sequence_log?select=user_id,email_key,sent_at&order=sent_at.desc')
+export const fetchEmailEvents = () => lirePages('/email_events?select=email_key,event_type')
+export const fetchFunnelCampagnes = () => lirePages('/funnel_events?select=type,campagne&campagne=not.is.null')

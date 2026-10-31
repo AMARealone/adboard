@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import './crm.css'
 import { useAdmin, Login, signOut } from './auth'
@@ -16,15 +16,17 @@ import Dashboard from './pages/Dashboard'
 import Templates from './pages/Templates'
 import Transactions from './pages/Transactions'
 import Comptabilite from './pages/Comptabilite'
+import Emails from './pages/Emails'
 import Fiche from './Fiche'
 
 const BASE = '/crm-next'
-const OLD = ['Comportement', 'Utilisateurs', 'Suivi', 'Emails & Séquences', 'Prospection auto', 'Contacts', 'Données']
+const OLD = ['Comportement', 'Utilisateurs', 'Suivi', 'Prospection auto', 'Contacts', 'Données']
 const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')
 
 function Shell({ user, onLogout }) {
   const { prospects, cfg, state, reload } = useCrm(), loc = useLocation()
-  const t = aFaire(prospects, cfg)
+  const t = aFaire(prospects, cfg), [menu, setMenu] = useState(false)
+  useEffect(() => setMenu(false), [loc.pathname])
   const NAV = [
     { to: '/', label: 'Aujourd\'hui', n: t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length, end: true },
     { to: '/prospects', label: 'Prospects', n: prospects.length },
@@ -37,6 +39,7 @@ function Shell({ user, onLogout }) {
     { to: '/dashboard', label: 'Dashboard' },
     { to: '/transactions', label: 'Transactions & clients' },
     { to: '/comptabilite', label: 'Comptabilité' },
+    { to: '/emails', label: 'Emails & Séquences' },
     { to: '/templates', label: 'Templates' },
     { g: 'Bientôt (ancien CRM)' },
     ...OLD.map((o) => ({ to: '/ancien/' + slug(o), label: o, old: true })),
@@ -53,6 +56,17 @@ function Shell({ user, onLogout }) {
           : state.error ? <div className="cx-empty"><b>Erreur</b><div>{state.error}</div><button className="cx-btn primary" onClick={reload}>Réessayer</button></div>
           : <Outlet />}
       </main>
+      <div className="cx-top"><b>{(NAV.find((i) => i.to && (i.end ? loc.pathname === '/' : loc.pathname.startsWith(i.to))) || {}).label || 'CRM'}</b><button className="cx-ico" onClick={reload} aria-label="Actualiser">{state.loading ? '…' : '↻'}</button></div>
+      <nav className="cx-tabbar" aria-label="Navigation principale">
+        {[NAV[0], NAV.find((i) => i.to === '/leads'), NAV.find((i) => i.to === '/appels'), NAV.find((i) => i.to === '/closing')].map((i) => <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => 'cx-tab2' + (isActive ? ' on' : '')}><span>{i.label}</span>{i.n > 0 && <em>{i.n}</em>}</NavLink>)}
+        <button className={'cx-tab2' + (menu ? ' on' : '')} onClick={() => setMenu(!menu)}><span>Plus</span></button>
+      </nav>
+      {menu && <div className="cx-back cx-sheetback" onClick={() => setMenu(false)}><div className="cx-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="cx-grip" />
+        {NAV.map((i, k) => i.g ? <div key={k} className="cx-grp">{i.g}</div> : <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => 'cx-link' + (isActive ? ' on' : '') + (i.old ? ' old' : '')}><span>{i.label}</span>{i.n > 0 && <em>{i.n}</em>}</NavLink>)}
+        <div className="cx-em" style={{ padding: '10px 4px 0' }}>{user.email}</div>
+        <button className="cx-btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={() => { signOut(); onLogout() }}>Se déconnecter</button>
+      </div></div>}
       <Fiche />
     </div>
   )
@@ -76,6 +90,7 @@ export default function CrmApp() {
             <Route path="dashboard" element={<Titre t="Dashboard"><Dashboard /></Titre>} />
             <Route path="transactions" element={<Titre t="Transactions & clients"><Transactions /></Titre>} />
             <Route path="comptabilite" element={<Titre t="Comptabilité"><Comptabilite /></Titre>} />
+            <Route path="emails" element={<Titre t="Emails & Séquences"><Emails /></Titre>} />
             <Route path="templates" element={<Titre t="Templates"><Templates /></Titre>} />
             {OLD.map((o) => <Route key={o} path={'ancien/' + slug(o)} element={<Titre t={o}><Legacy titre={o} /></Titre>} />)}
             <Route path="*" element={<Navigate to="/" replace />} />
