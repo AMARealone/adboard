@@ -8,145 +8,165 @@
 <link rel="icon" href="/favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0A0A0E;--card:#121722;--line:rgba(255,255,255,.09);--txt:#fff;--mut:#9EA1A8;--b1:#1FB6FF;--b2:#0B5CFF;--b3:#2EF2E8;--y:#FFC53D}
+:root{--bg:#0A0A0E;--card:#121722;--line:rgba(255,255,255,.09);--mut:#9EA1A8;--b1:#1FB6FF;--b2:#0B5CFF;--b3:#2EF2E8;--y:#FFC53D;--r:#FF6B85}
 *,*::before,*::after{box-sizing:border-box}
-html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:var(--txt);-webkit-font-smoothing:antialiased}
+html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#fff;-webkit-font-smoothing:antialiased}
 .bg{position:fixed;inset:0;overflow:hidden;pointer-events:none}
 .bg i{position:absolute;border-radius:50%;filter:blur(110px);opacity:.5;will-change:transform}
 .bg i:nth-child(1){width:60vw;height:60vw;left:-15vw;top:-20vw;background:radial-gradient(circle,#0B5CFF,transparent 70%);animation:fl1 22s ease-in-out infinite alternate}
-.bg i:nth-child(2){width:50vw;height:50vw;right:-12vw;top:10vh;background:radial-gradient(circle,#1FB6FF,transparent 70%);opacity:.32;animation:fl2 26s ease-in-out infinite alternate}
-.bg i:nth-child(3){width:45vw;height:45vw;left:25vw;bottom:-25vw;background:radial-gradient(circle,#2EF2E8,transparent 70%);opacity:.18;animation:fl1 30s ease-in-out infinite alternate-reverse}
+.bg i:nth-child(2){width:50vw;height:50vw;right:-12vw;top:10vh;background:radial-gradient(circle,#1FB6FF,transparent 70%);opacity:.3;animation:fl2 26s ease-in-out infinite alternate}
+.bg i:nth-child(3){width:45vw;height:45vw;left:25vw;bottom:-25vw;background:radial-gradient(circle,#2EF2E8,transparent 70%);opacity:.16;animation:fl1 30s ease-in-out infinite alternate-reverse}
 @keyframes fl1{to{transform:translate(8vw,6vh) scale(1.15)}}@keyframes fl2{to{transform:translate(-9vw,8vh) scale(.9)}}
 #stage{position:fixed;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;transform:translate(-50%,-50%) scale(1)}
-.s{position:absolute;inset:0;padding:150px 120px 110px;display:flex;flex-direction:column;opacity:0;visibility:hidden;transition:opacity .5s ease,visibility .5s}
-.s.on{opacity:1;visibility:visible}
+.s{position:absolute;inset:0;padding:140px 110px 120px;display:flex;flex-direction:column;opacity:0;visibility:hidden;transform:translateX(60px);transition:opacity .45s ease,transform .55s cubic-bezier(.2,.8,.2,1),visibility .5s}
+.s.on{opacity:1;visibility:visible;transform:none}
+.s.past{transform:translateX(-60px)}
 .a{opacity:0}
-.on .a{animation:up .75s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0)*.13s + .12s)}
-@keyframes up{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
-@keyframes pop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.on .a{animation:up .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--d,0)*.12s + .1s)}
+@keyframes up{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@keyframes fl{0%,100%{translate:0 0}50%{translate:0 -14px}}
 .on .a.pop{animation-name:pop}
-.kick{display:inline-flex;align-self:flex-start;align-items:center;gap:12px;font-weight:800;font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--b1);background:rgba(31,182,255,.12);border:1.5px solid rgba(31,182,255,.3);padding:12px 24px;border-radius:999px}
+.kick{display:inline-flex;align-self:flex-start;align-items:center;gap:12px;font-weight:800;font-size:22px;letter-spacing:3px;text-transform:uppercase;color:var(--b1);background:rgba(31,182,255,.12);border:1.5px solid rgba(31,182,255,.3);padding:11px 24px;border-radius:999px}
 .kick:before{content:"";width:10px;height:10px;border-radius:50%;background:var(--b1);box-shadow:0 0 14px var(--b1)}
-h1,h2{margin:0;font-weight:900;letter-spacing:-3px;line-height:1.04}
-h2{font-size:88px;margin-top:34px;max-width:1500px}
+h1,h2{margin:0;font-weight:900;letter-spacing:-2.5px;line-height:1.06}
+h2{font-size:70px;margin-top:26px}
 .grad{background:linear-gradient(120deg,var(--b1) 0%,var(--b2) 50%,var(--b3) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.sub{font-size:36px;line-height:1.45;color:#C4C6CA;max-width:1300px;margin:26px 0 0}
-.logo{position:absolute;left:120px;top:50px;font-size:40px;font-weight:900;letter-spacing:-1.5px;color:#fff}.logo b{color:var(--b1)}
-.num{position:absolute;right:120px;top:60px;font-weight:700;font-size:22px;color:#5A5D65;letter-spacing:2px}
-.body{flex:1;display:flex;flex-direction:column;justify-content:center}
-/* cover */
-.cover{justify-content:center;text-align:left;padding-top:90px}
-.cover h1{font-size:150px;letter-spacing:-6px;margin-top:36px}
-.cover .sub{font-size:44px}
-.cover .who{margin-top:64px;display:flex;align-items:center;gap:20px;font-size:28px;color:var(--mut)}
-.cover .who b{color:#fff}.cover .who i{width:56px;height:2px;background:linear-gradient(90deg,var(--b1),transparent)}
-/* cards */
-.row{display:grid;gap:32px;margin-top:56px}
-.c3{grid-template-columns:repeat(3,1fr)}.c2{grid-template-columns:repeat(2,1fr)}.c4{grid-template-columns:repeat(4,1fr)}
-.card{background:var(--card);border:1.5px solid var(--line);border-radius:36px;padding:46px 44px}
-.card .lab{font-size:24px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:20px}
-.card .big{font-size:78px;font-weight:900;letter-spacing:-3px;line-height:1.05}
-.card .big.sm{font-size:56px}
-.card.glow{border-color:rgba(31,182,255,.55);background:linear-gradient(160deg,rgba(11,92,255,.28),var(--card))}
-.quote{margin-top:48px;font-size:38px;line-height:1.45;color:#E6E8EC;border-left:5px solid var(--b1);padding:4px 0 4px 36px;max-width:1500px;font-weight:500}
-.quote small{display:block;margin-top:12px;font-size:22px;color:var(--mut);font-weight:700;letter-spacing:2px;text-transform:uppercase}
-/* failles */
-.fl{display:flex;flex-direction:column;gap:26px;margin-top:52px}
-.fi{display:flex;align-items:center;gap:36px;background:var(--card);border:1.5px solid var(--line);border-radius:32px;padding:34px 42px}
-.fi .n{flex:0 0 84px;height:84px;border-radius:50%;background:linear-gradient(135deg,var(--b1),var(--b2));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:40px}
-.fi h3{margin:0;font-size:44px;letter-spacing:-1px;line-height:1.15}
-.fi p{margin:8px 0 0;font-size:28px;color:var(--mut);line-height:1.4}
-/* cout */
-.cost{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;margin-top:52px;align-items:stretch}
-.cost .l{font-size:58px;font-weight:800;letter-spacing:-2px;line-height:1.18;display:flex;align-items:center;padding:20px 0}
-.meta{background:linear-gradient(160deg,rgba(255,197,61,.1),var(--card));border:1.5px solid rgba(255,197,61,.4);border-radius:36px;padding:44px}
-.meta .t{font-size:22px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--y);margin-bottom:18px}
-.meta h3{margin:0 0 16px;font-size:42px;letter-spacing:-1px;line-height:1.2}
-.meta p{margin:0 0 14px;font-size:28px;line-height:1.5;color:#D8D9DC}
-.meta p:last-child{margin:0;color:#fff;font-weight:700}
-/* goal */
-.goal{font-size:150px;font-weight:900;letter-spacing:-6px;line-height:1;margin-top:46px}
-.goal small{display:block;font-size:40px;letter-spacing:-.5px;color:var(--mut);font-weight:600;margin-top:20px}
-/* system */
-.step{position:relative;background:var(--card);border:1.5px solid var(--line);border-radius:38px;padding:52px 46px 48px}
-.step .no{font-size:100px;font-weight:900;letter-spacing:-4px;line-height:1;background:linear-gradient(120deg,var(--b1),var(--b3));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-.step h3{margin:18px 0 14px;font-size:56px;letter-spacing:-2px}
-.step p{margin:0;font-size:30px;line-height:1.45;color:#C4C6CA}
-.pillrow{margin-top:44px;display:flex;align-self:flex-start;align-items:center;gap:16px;background:rgba(46,242,232,.08);border:1.5px solid rgba(46,242,232,.35);color:#CFFBF8;border-radius:999px;padding:18px 36px;font-size:30px;font-weight:600}
-.pillrow b{color:var(--b3)}
-/* images */
-.shot{border-radius:30px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 40px 100px rgba(11,92,255,.28);background:#0D1017}
+.logo{position:absolute;left:110px;top:48px;font-size:40px;font-weight:900;letter-spacing:-1.5px}.logo b{color:var(--b1)}
+.num{position:absolute;right:110px;top:58px;font-weight:700;font-size:22px;color:#5A5D65;letter-spacing:2px}
+.bridge{position:absolute;left:110px;bottom:46px;font-size:26px;font-weight:600;color:#7C8087;display:flex;align-items:center;gap:14px}
+.bridge:after{content:"→";color:var(--b1);font-weight:900}
+.split{flex:1;display:grid;grid-template-columns:.95fr 1.05fr;gap:70px;align-items:center;margin-top:10px;min-height:0}
+.L{display:flex;flex-direction:column;min-width:0}
+.R{display:flex;justify-content:center;align-items:center;min-width:0;position:relative}
+.lead{font-size:34px;line-height:1.45;color:#D5D8DE;margin:26px 0 0}
+.lead b{color:#fff}
+.pts{display:flex;flex-direction:column;gap:22px;margin-top:34px}
+.pt{display:block;position:relative;padding-left:46px;font-size:33px;line-height:1.38;color:#E3E5E9}
+.pt:before{content:"";position:absolute;left:0;top:11px;width:22px;height:22px;border-radius:50%;background:var(--b1);box-shadow:0 0 16px var(--b1)}
+.pt b{color:#fff}
+.shot{border-radius:28px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 40px 100px rgba(11,92,255,.3);background:#0D1017}
 .shot img{display:block;width:100%;height:100%;object-fit:cover;object-position:left top}
-.two{display:grid;grid-template-columns:1.35fr 1fr;gap:56px;align-items:center;margin-top:48px}
-.callouts{display:flex;flex-direction:column;gap:22px}
-.co{display:flex;gap:22px;align-items:flex-start;font-size:30px;line-height:1.4;color:#D5D8DE}
-.co:before{content:"";flex:0 0 18px;height:18px;margin-top:12px;border-radius:50%;background:var(--b1);box-shadow:0 0 16px var(--b1)}
-.co b{color:#fff}
-.cap{margin-top:22px;font-size:24px;color:#6B6F78}
-.gal{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-top:44px}
-.gal div{aspect-ratio:480/596;border-radius:26px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.45)}
-.gal img{width:100%;height:100%;object-fit:cover;display:block}
-/* case */
-.cs{display:grid;grid-template-columns:1.2fr 1fr;gap:56px;margin-top:40px;align-items:center}
-.cs .nums{display:grid;gap:22px}
-.ns{background:var(--card);border:1.5px solid var(--line);border-radius:30px;padding:28px 38px;display:flex;align-items:baseline;gap:26px}
-.ns b{font-size:60px;font-weight:900;letter-spacing:-3px;line-height:1;background:linear-gradient(120deg,var(--b1),var(--b3));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
-.ns span{font-size:28px;color:#C4C6CA;line-height:1.3}
-.who2{display:flex;align-items:center;gap:26px;margin-top:40px}
-.who2 img{width:104px;height:104px;border-radius:50%;object-fit:cover;border:3px solid rgba(31,182,255,.6)}
+.cap{margin-top:20px;font-size:24px;color:#6B6F78}
+/* cover */
+.cover{justify-content:center;padding-top:110px}
+.cover .split{grid-template-columns:1.1fr .9fr}
+.cover h1{font-size:92px;margin-top:30px}
+.who{margin-top:44px;display:flex;align-items:center;gap:20px;font-size:28px;color:var(--mut)}.who b{color:#fff}.who i{width:56px;height:2px;background:linear-gradient(90deg,var(--b1),transparent)}
+.mos{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;width:100%;transform:rotate(-4deg)}
+.mos div{aspect-ratio:480/596;border-radius:22px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 24px 60px rgba(0,0,0,.5);animation:fl 7s ease-in-out infinite}
+.mos div:nth-child(2n){animation-delay:-2.5s;margin-top:50px}.mos div:nth-child(3n){animation-delay:-4.5s}
+.mos img{width:100%;height:100%;object-fit:cover;display:block}
+/* chart */
+.chart{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:36px;padding:40px 46px 34px}
+.ct{font-size:26px;font-weight:700;color:var(--mut);letter-spacing:.5px;margin-bottom:26px}
+.bars{display:flex;gap:34px;align-items:flex-end}
+.bc{flex:1;display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.bv{font-size:46px;font-weight:900;letter-spacing:-1.5px;white-space:nowrap;opacity:0}
+.on .bv{animation:up .6s both;animation-delay:calc(1s + var(--i)*.2s)}
+.bt{height:330px;width:100%;display:flex;align-items:flex-end;border-bottom:2px solid rgba(255,255,255,.12)}
+.bf{display:block;width:100%;height:0;border-radius:18px 18px 0 0;background:#4A5163;transition:height 1.1s cubic-bezier(.2,.8,.2,1);transition-delay:calc(.5s + var(--i)*.2s)}
+.on .bf{height:var(--h)}
+.bf.hl{background:linear-gradient(180deg,var(--b3),var(--b1) 45%,var(--b2));box-shadow:0 0 50px rgba(31,182,255,.45)}
+.bl{font-size:24px;font-weight:600;color:#C4C6CA;text-align:center;line-height:1.25}
+.cp{margin-top:22px;font-size:24px;color:var(--mut)}
+.tiles{display:grid;gap:22px;width:100%}
+.tile{background:var(--card);border:1.5px solid var(--line);border-radius:30px;padding:30px 38px}
+.tile .lab{font-size:22px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
+.tile .big{font-size:60px;font-weight:900;letter-spacing:-2px;line-height:1.05}
+.tile.glow{border-color:rgba(31,182,255,.55);background:linear-gradient(160deg,rgba(11,92,255,.28),var(--card))}
+.quote{margin-top:34px;font-size:32px;line-height:1.45;color:#E6E8EC;border-left:5px solid var(--b1);padding:4px 0 4px 30px;font-weight:500}
+.quote small{display:block;margin-top:10px;font-size:20px;color:var(--mut);font-weight:700;letter-spacing:2px;text-transform:uppercase}
+/* agenda */
+.ag{display:flex;flex-direction:column;gap:24px;width:100%}
+.agi{display:flex;align-items:center;gap:34px;background:var(--card);border:1.5px solid var(--line);border-radius:34px;padding:34px 42px}
+.agi .n{flex:0 0 92px;height:92px;border-radius:50%;background:linear-gradient(135deg,var(--b1),var(--b2));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:44px}
+.agi h3{margin:0;font-size:42px;letter-spacing:-1px;line-height:1.15}.agi p{margin:6px 0 0;font-size:27px;color:var(--mut)}
+/* frein */
+.tri{display:flex;flex-direction:column;gap:22px;margin-top:34px}
+.tr{border-radius:26px;padding:24px 30px;background:var(--card);border:1.5px solid var(--line)}
+.tr .t{font-size:20px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:8px}
+.tr p{margin:0;font-size:29px;line-height:1.4;color:#E3E5E9}
+.tr.p .t{color:var(--r)}.tr.s .t{color:var(--b3)}.tr.w .t{color:var(--y)}
+.tr.s{border-color:rgba(46,242,232,.35);background:linear-gradient(160deg,rgba(46,242,232,.07),var(--card))}
+/* funnel */
+.fn{display:flex;flex-direction:column;align-items:center;gap:0;width:100%}
+.fn .f1{width:100%;text-align:center;font-size:34px;font-weight:800;padding:30px;border-radius:30px;background:var(--card);border:1.5px solid var(--line)}
+.fn .f1 small{display:block;font-size:24px;color:var(--mut);font-weight:500;margin-top:6px}
+.fn .ar{width:4px;height:60px;background:linear-gradient(var(--b1),var(--b3));position:relative;opacity:.6}
+.fn .ar:after{content:"";position:absolute;left:-6px;width:16px;height:16px;border-radius:50%;background:var(--b3);box-shadow:0 0 18px var(--b3);animation:dr 1.6s linear infinite}
+@keyframes dr{0%{top:-8px;opacity:0}20%{opacity:1}100%{top:52px;opacity:0}}
+.fn .f2{width:100%;text-align:center;font-size:36px;font-weight:900;padding:34px;border-radius:30px;background:linear-gradient(160deg,rgba(11,92,255,.4),rgba(31,182,255,.14));border:2px solid rgba(31,182,255,.8);animation:pls 2.6s infinite}
+@keyframes pls{0%{box-shadow:0 0 0 0 rgba(31,182,255,.5)}70%{box-shadow:0 0 0 26px rgba(31,182,255,0)}100%{box-shadow:0 0 0 0 rgba(31,182,255,0)}}
+.fn .f3{display:flex;gap:16px;width:100%}
+.fn .f3 div{flex:1;text-align:center;font-size:26px;font-weight:700;padding:24px 10px;border-radius:24px;background:rgba(46,242,232,.08);border:1.5px solid rgba(46,242,232,.4);color:#CFFBF8}
+/* system overview */
+.flow{display:flex;align-items:stretch;gap:0;width:100%}
+.fs{flex:1;background:var(--card);border:1.5px solid var(--line);border-radius:34px;padding:34px 30px;text-align:center}
+.fs .ic{height:200px;border-radius:20px;overflow:hidden;margin-bottom:22px;border:1.5px solid var(--line)}
+.fs .ic img{width:100%;height:100%;object-fit:cover;object-position:left top;display:block}
+.fs h3{margin:0 0 8px;font-size:36px;letter-spacing:-1px}.fs p{margin:0;font-size:25px;color:#C4C6CA;line-height:1.35}
+.fa{flex:0 0 70px;display:flex;align-items:center;justify-content:center;color:var(--b1);font-size:44px;font-weight:900}
+.pillrow{margin-top:40px;display:flex;align-self:flex-start;align-items:center;background:rgba(46,242,232,.08);border:1.5px solid rgba(46,242,232,.35);color:#CFFBF8;border-radius:999px;padding:18px 36px;font-size:30px;font-weight:600}
+.pillrow b{color:var(--b3);margin:0 8px}
+/* stack of shots */
+.stk{position:relative;width:100%;height:640px}
+.stk .shot{position:absolute;width:76%}
+.stk .shot .tag{position:absolute;left:18px;top:16px;z-index:2;font-size:22px;font-weight:800;background:rgba(10,10,14,.85);border:1.5px solid rgba(31,182,255,.5);padding:8px 18px;border-radius:999px;color:#fff}
+.tri3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;width:100%}
+.cx{position:relative}
+.cx div.im{aspect-ratio:500/621;border-radius:24px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.cx img{width:100%;height:100%;object-fit:cover;display:block}
+.cx .ch{margin-top:16px;text-align:center;font-size:24px;font-weight:700;color:var(--b1);letter-spacing:1px}
+/* cycle */
+.cyc{width:100%;max-width:760px}
+.cyc svg{width:100%;height:auto;display:block;overflow:visible}
+.cyc text{font-family:Inter,sans-serif;font-weight:800;fill:#fff}
+@keyframes spin{to{stroke-dashoffset:-60}}
+/* proof */
+.nm{font-size:30px;color:var(--mut);margin-top:10px}
+.qt{font-size:44px;font-weight:700;letter-spacing:-1.2px;line-height:1.28;margin-top:26px}
+.who2{display:flex;align-items:center;gap:24px;margin-top:34px}
+.who2 img{width:100px;height:100px;border-radius:50%;object-fit:cover;border:3px solid rgba(31,182,255,.6)}
 .who2 b{display:block;font-size:30px}.who2 span{font-size:24px;color:var(--mut)}
-.qt{font-size:46px;font-weight:700;letter-spacing:-1.2px;line-height:1.28;color:#fff}
-.tag{display:inline-block;margin-top:14px;font-size:26px;color:var(--mut);font-weight:600}
-/* testimonials */
-.tm{background:var(--card);border:1.5px solid var(--line);border-radius:36px;padding:42px 40px;display:flex;flex-direction:column;gap:26px}
-.tm p{margin:0;font-size:27px;line-height:1.5;color:#E6E8EC;flex:1}
-.tm .p{display:flex;align-items:center;gap:20px}
-.tm .p img{width:88px;height:88px;border-radius:50%;object-fit:cover;border:3px solid rgba(31,182,255,.6)}
-.tm .p b{display:block;font-size:28px}.tm .p span{font-size:22px;color:var(--mut)}
-.tm .ms{font-size:22px;font-weight:800;letter-spacing:.5px;color:var(--b3);background:rgba(46,242,232,.08);border:1.5px solid rgba(46,242,232,.3);border-radius:999px;padding:10px 20px;align-self:flex-start}
-/* plan */
-.tl{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:36px;margin-top:80px}
-.tl:before{content:"";position:absolute;left:44px;right:44px;top:44px;height:4px;background:linear-gradient(90deg,var(--b1),var(--b3));opacity:.5;border-radius:2px}
-.tl .st{position:relative}
-.tl .dot{width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,var(--b1),var(--b2));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:38px;box-shadow:0 0 0 12px rgba(11,92,255,.18);position:relative}
-.tl h3{margin:34px 0 12px;font-size:40px;letter-spacing:-1px;line-height:1.15}
-.tl p{margin:0;font-size:27px;line-height:1.45;color:#C4C6CA}
-.tl .q{font-size:22px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--b1);margin-top:30px}
+.mini{display:flex;gap:20px;margin-top:26px;flex-wrap:wrap}
+.mini div{background:var(--card);border:1.5px solid var(--line);border-radius:22px;padding:16px 26px;font-size:24px;color:#C4C6CA}
+.mini b{display:block;font-size:40px;color:#fff;letter-spacing:-1px}
+.tm{background:var(--card);border:1.5px solid var(--line);border-radius:28px;padding:26px 30px;display:flex;gap:24px;align-items:center}
+.tm img{flex:0 0 84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid rgba(31,182,255,.6)}
+.tm p{margin:0 0 8px;font-size:25px;line-height:1.42;color:#E6E8EC}.tm b{font-size:23px}.tm span{font-size:21px;color:var(--mut);margin-left:8px}
+.tmw{display:flex;flex-direction:column;gap:20px;margin-top:30px}
 /* offer */
-.of{display:grid;grid-template-columns:1fr 1.05fr;gap:64px;margin-top:44px;align-items:center}
-.of .why{font-size:40px;line-height:1.4;color:#E6E8EC;font-weight:500}
-.of .why b{color:#fff}
-.oc{background:linear-gradient(160deg,rgba(11,92,255,.38),#0F1522 60%);border:2px solid rgba(31,182,255,.7);border-radius:44px;padding:44px 52px;box-shadow:0 50px 120px rgba(11,92,255,.35)}
-.oc .nm{font-size:30px;font-weight:800;letter-spacing:4px;color:var(--b1)}
-.oc .pr{font-size:96px;font-weight:900;letter-spacing:-5px;line-height:1.05;margin:10px 0 0}
-.oc .pr small{font-size:34px;letter-spacing:0;color:var(--mut);font-weight:600;margin-left:12px}
+.oc{width:100%;background:linear-gradient(160deg,rgba(11,92,255,.38),#0F1522 60%);border:2px solid rgba(31,182,255,.7);border-radius:44px;padding:44px 50px;box-shadow:0 50px 120px rgba(11,92,255,.35)}
+.oc .on2{font-size:30px;font-weight:800;letter-spacing:4px;color:var(--b1)}
+.oc .pr{font-size:96px;font-weight:900;letter-spacing:-4px;line-height:1.05;margin:8px 0 0}
+.oc .pr small{font-size:32px;letter-spacing:0;color:var(--mut);font-weight:600;margin-left:12px}
 .oc ul{list-style:none;padding:0;margin:24px 0 0;display:flex;flex-direction:column;gap:14px}
-.oc li{display:flex;gap:20px;font-size:27px;line-height:1.3;color:#E6E8EC}
-.oc li:before{content:"";flex:0 0 36px;height:36px;border-radius:50%;background:rgba(46,242,232,.14) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232EF2E8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/22px no-repeat}
+.oc li{display:flex;gap:18px;font-size:27px;line-height:1.3;color:#E6E8EC}
+.oc li:before{content:"";flex:0 0 34px;height:34px;border-radius:50%;background:rgba(46,242,232,.14) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232EF2E8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/20px no-repeat}
 .oc li.g{color:#fff;font-weight:700}
-.more{position:absolute;right:120px;bottom:30px;font-size:24px;color:#6B6F78;background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:6px}
+.more{position:absolute;right:110px;bottom:40px;font-size:22px;color:#6B6F78;background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:6px}
 .more:hover{color:#fff}
 /* next */
-.final{justify-content:center;align-items:flex-start}
-.final h2{font-size:112px;letter-spacing:-4px;max-width:1700px}.nw{white-space:nowrap}
-.btns{display:flex;gap:28px;margin-top:60px;align-items:center;flex-wrap:wrap}
-.btn{display:inline-flex;align-items:center;gap:16px;min-height:104px;padding:0 64px;border-radius:999px;background:linear-gradient(135deg,var(--b1),var(--b2));color:#fff;font-size:38px;font-weight:800;text-decoration:none;box-shadow:0 24px 70px rgba(11,92,255,.5)}
-.btn svg{width:34px;height:34px}
-.tiny{margin-top:34px;font-size:28px;color:var(--mut);display:flex;gap:34px;flex-wrap:wrap}
-.tiny span:before{content:"✓";color:var(--b3);font-weight:900;margin-right:12px}
+.nx{display:flex;flex-direction:column;gap:0;width:100%;position:relative;padding-left:20px}
+.nx:before{content:"";position:absolute;left:62px;top:50px;bottom:50px;width:4px;background:linear-gradient(var(--b1),var(--b3));opacity:.5}
+.nxi{display:flex;gap:34px;align-items:center;padding:24px 0;position:relative}
+.nxi .d{flex:0 0 86px;height:86px;border-radius:50%;background:linear-gradient(135deg,var(--b1),var(--b2));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:38px;box-shadow:0 0 0 12px rgba(11,92,255,.18)}
+.nxi h3{margin:0;font-size:38px;letter-spacing:-1px;line-height:1.2}.nxi p{margin:6px 0 0;font-size:26px;color:var(--mut)}
+.recap{display:flex;gap:16px;flex-wrap:wrap;margin-top:34px}
+.recap span{background:rgba(46,242,232,.08);border:1.5px solid rgba(46,242,232,.35);color:#CFFBF8;border-radius:999px;padding:14px 28px;font-size:26px;font-weight:600}
 /* annex */
-.cmp{display:grid;grid-template-columns:repeat(4,1fr);gap:26px;margin-top:44px}
-.cc{background:var(--card);border:1.5px solid var(--line);border-radius:34px;padding:34px 30px}
+.cmp{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:30px}
+.cc{background:var(--card);border:1.5px solid var(--line);border-radius:32px;padding:32px 28px}
 .cc.me{border-color:rgba(31,182,255,.7);background:linear-gradient(160deg,rgba(11,92,255,.3),var(--card))}
-.cc .nm{font-size:28px;font-weight:800;letter-spacing:3px;color:var(--b1)}
-.cc .pr{font-size:60px;font-weight:900;letter-spacing:-3px;margin:8px 0 20px}.cc .pr small{display:block;font-size:24px;color:var(--mut);letter-spacing:0;font-weight:600;margin-top:4px}
+.cc .nm2{font-size:28px;font-weight:800;letter-spacing:3px;color:var(--b1)}
+.cc .pr{font-size:56px;font-weight:900;letter-spacing:-3px;margin:6px 0 16px}.cc .pr small{display:block;font-size:22px;color:var(--mut);letter-spacing:0;font-weight:600}
 .cc ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;font-size:23px;line-height:1.28;color:#D5D8DE}
-.back{position:absolute;left:120px;bottom:30px;font-size:24px;color:#8E929B;background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:6px}
-/* chrome */
+.back{position:absolute;left:110px;bottom:40px;font-size:22px;color:#8E929B;background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:6px}
 #bar{position:fixed;left:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--b1),var(--b3));width:0;transition:width .4s ease;z-index:5}
-#hint{position:fixed;right:22px;bottom:18px;font-size:13px;color:#555962;z-index:5;transition:opacity .6s}
-.nv{position:fixed;top:0;bottom:0;width:18vw;z-index:4;cursor:pointer;-webkit-tap-highlight-color:transparent}.nv.l{left:0;cursor:w-resize}.nv.r{right:0;cursor:e-resize}
-@media(prefers-reduced-motion:reduce){.a{opacity:1!important;animation:none!important}.bg i{animation:none}.s{transition:none}}
+#hint{position:fixed;right:22px;bottom:14px;font-size:13px;color:#555962;z-index:5;transition:opacity .6s}
+.nv{position:fixed;top:0;bottom:0;width:14vw;z-index:4;cursor:pointer;-webkit-tap-highlight-color:transparent}.nv.l{left:0;cursor:w-resize}.nv.r{right:0;cursor:e-resize}
+@media(prefers-reduced-motion:reduce){.a{opacity:1!important;animation:none!important}.bg i,.mos div{animation:none}.s{transition:none}.bf{transition:none}}
 </style>
 </head>
 <body>
@@ -166,176 +186,220 @@ h2{font-size:88px;margin-top:34px;max-width:1500px}
 "use strict";
 /* ───────── Données du prospect (remplies par presentation-data.js) ───────── */
 var D=Object.assign({
-  marque:"", prenom:"", produit:"", offre:"PERF+",
-  ca:"", depenses:"", objectif:"", delai:"", element:"", citations:[],
-  failles:[], cout:"", pourquoi:"", etudeCas:"", plan:null
+  marque:"",prenom:"",produit:"",offre:"PERF+",
+  ca:"",caValeur:null,objectifValeur:null,depenses:"",objectif:"",delai:"",element:"",citations:[],
+  failles:[],cout:"",raisons:[],etudeCas:""
 },window.PRESENTATION||{});
 try{ if(/[?&]demo=1/.test(location.search)) D=Object.assign(D,{
   marque:"Maison Kora",prenom:"Fatou",produit:"sérum visage",offre:"PERF+",
-  ca:"4 millions FCFA / mois",depenses:"800 000 FCFA / mois",objectif:"10 millions FCFA / mois",delai:"d’ici 6 mois",
+  ca:"4 millions FCFA par mois",caValeur:4,objectifValeur:10,depenses:"800 000 FCFA par mois",objectif:"10 millions FCFA par mois",delai:"d’ici 6 mois",
   element:"des créatives différentes à lancer chaque semaine",
   citations:["Mes créatives marchent une semaine, puis tout retombe."],
   failles:[
-    {titre:"Les créatives s’essoufflent vite",detail:"Elles tiennent une semaine, puis les résultats retombent."},
-    {titre:"Les angles viennent du feeling",detail:"Pas d’analyse du marché derrière les messages."},
-    {titre:"Tout repose sur vous",detail:"Briefs, retouches, relances : le temps manque pour le reste."}],
-  cout:"Six mois de plus à stagner à 4 millions, pendant que vos concurrents lancent de nouveaux angles chaque semaine."
+    {type:"angles",titre:"Toutes vos créatives disent la même chose",detail:"Elles marchent une semaine, puis les résultats retombent."},
+    {type:"recherche",titre:"Vos angles viennent du feeling",detail:"Il n’y a pas d’analyse de votre marché derrière vos messages."},
+    {type:"temps",titre:"Tout repose sur vous",detail:"Briefs, retouches, relances : le temps manque pour le reste."}],
+  cout:"Six mois de plus à stagner à 4 millions, pendant que vos concurrents testent de nouveaux angles chaque semaine."
 });}catch(e){}
 var OFFRES={
- "TEST":{nom:"TEST",prix:"75.000",tag:"Tester et trouver vos premières créatives gagnantes.",url:"https://shop.adstackofficial.com/prd_yslvdsuz/checkout",
-   pts:["12 créatives par mois, vidéos et images","Jusqu’à 2 produits","Chaque lot livré en 48h maximum","Stratégie marketing et espace AdBoard inclus","Vos créatives disponibles dès le paiement"],garantie:""},
- "PERF+":{nom:"PERF+",prix:"140.000",tag:"Automatiser vos créatives et améliorer vos performances.",url:"https://shop.adstackofficial.com/prd_ljowq8/checkout",
-   pts:["24 créatives par mois, vidéos et images","Jusqu’à 4 produits","Chaque lot livré en 48h maximum","Stratégie, Ad Copies, Données Marché et AdBoard","Chaque lot s’améliore grâce à ce qui a marché"],garantie:"Garantie Performance en 60 jours"},
- "GROWTH":{nom:"GROWTH",prix:"260.000",tag:"Accélérer votre croissance, sans gérer une équipe.",url:"https://shop.adstackofficial.com/prd_34w031/checkout",
-   pts:["48 créatives par mois, vidéos et images","Jusqu’à 8 produits","Chaque lot livré en 24h maximum","Sans freelance à relancer, sans brief à répéter","Plus de créatives testées, plus de gagnantes"],garantie:"Garantie Croissance en 60 jours"},
- "SCALE":{nom:"SCALE",prix:"480.000",tag:"Exploiter plusieurs marchés, sans exploser vos coûts.",url:"https://shop.adstackofficial.com/prd_9fi79y/checkout",
-   pts:["96 créatives par mois, vidéos et images","Jusqu’à 16 produits, plusieurs marchés","Chaque lot livré en 24h maximum, file prioritaire","Angles et références culturelles propres à chaque marché","Production qui ne freine jamais votre croissance"],garantie:"Garantie Scaling en 60 jours"}
+ "TEST":{nom:"TEST",prix:"75.000",n:12,pts:["12 créatives par mois, vidéos et images","Jusqu’à 2 produits","Chaque lot livré en 48h maximum","Stratégie marketing et espace AdBoard inclus","Vos créatives disponibles dès le paiement"],garantie:"",liv:"48h",
+   rais:["Vous testez votre produit sans vous engager sur un gros volume.","Vous trouvez vos premières créatives gagnantes.","Quand elles sont là, vous passez à l’étape suivante."]},
+ "PERF+":{nom:"PERF+",prix:"140.000",n:24,pts:["24 créatives par mois, vidéos et images","Jusqu’à 4 produits","Chaque lot livré en 48h maximum","Stratégie, Ad Copies, Données Marché et AdBoard","Chaque lot s’améliore grâce à ce qui a marché"],garantie:"Garantie Performance en 60 jours",liv:"48h",
+   rais:["Vous vendez déjà : il vous faut un rythme régulier de nouvelles créatives.","Chaque lot s’appuie sur ce qui a marché dans le précédent.","Et vous êtes couvert par la garantie Performance de 60 jours."]},
+ "GROWTH":{nom:"GROWTH",prix:"260.000",n:48,pts:["48 créatives par mois, vidéos et images","Jusqu’à 8 produits","Chaque lot livré en 24h maximum","Sans freelance à relancer, sans brief à répéter","Plus de créatives testées, plus de gagnantes"],garantie:"Garantie Croissance en 60 jours",liv:"24h",
+   rais:["Vos résultats sont bons : il faut plus de volume pour continuer à grandir.","Vous testez beaucoup plus d’angles en même temps.","Et vous n’avez aucune équipe à gérer."]},
+ "SCALE":{nom:"SCALE",prix:"480.000",n:96,pts:["96 créatives par mois, vidéos et images","Jusqu’à 16 produits, plusieurs marchés","Chaque lot livré en 24h maximum, file prioritaire","Angles et références propres à chaque marché","Une production qui ne freine jamais votre croissance"],garantie:"Garantie Scaling en 60 jours",liv:"24h",
+   rais:["Vous êtes déjà solide : l’enjeu, c’est d’aller sur plusieurs marchés.","Chaque marché a ses propres angles et ses références.","Et votre production suit votre rythme, sans exploser vos coûts."]}
 };
 var CAS_PAR_OFFRE={"TEST":"veloce","PERF+":"vitalina","GROWTH":"saelia","SCALE":"saelia"};
 var offKey=OFFRES[D.offre]?D.offre:"PERF+", O=OFFRES[offKey];
 
 /* ───────── Utilitaires ───────── */
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]});}
-var M=esc(D.marque)||"votre marque", P=esc(D.produit)||"votre produit", F=esc(D.prenom);
 function has(v){return v!=null&&String(v).trim()!==""}
-function getCase(k){var E=window.ETUDES_DE_CAS||{};return E[k]||null}
-function img(src,alt){return '<img src="'+src+'" alt="'+esc(alt||"")+'" loading="eager" decoding="async">'}
-var ARROW='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+var M=esc(D.marque)||"votre marque", F=esc(D.prenom);
+function getCase(k){return (window.ETUDES_DE_CAS||{})[k]||null}
+function img(src,alt){return '<img src="'+src+'" alt="'+esc(alt||"")+'" decoding="async">'}
+function V(n){return '/assets/vente/'+n}
 var LOGO='<div class="logo">Ad<b>Stack</b></div>';
 var slides=[],annexIdx=-1;
-function add(cls,html,opt){slides.push({cls:cls||"",html:html,annex:opt&&opt.annex})}
-function head(kick,title){return '<div class="kick a" style="--d:0">'+kick+'</div><h2 class="a" style="--d:1">'+title+'</h2>'}
-
-/* 1 · Couverture */
-add("cover",
- '<div class="kick a" style="--d:0">Plan de croissance</div>'+
- '<h1 class="a" style="--d:1">'+(has(D.marque)?'Le plan de <span class="grad">'+M+'</span>':'Votre plan de <span class="grad">croissance</span>')+'</h1>'+
- '<p class="sub a" style="--d:2">Des créatives pensées pour atteindre vos objectifs, avec le minimum d’intervention de votre part.</p>'+
- '<div class="who a" style="--d:3"><i></i><span>Préparé par <b>AdStack</b>'+(F?' pour <b>'+F+'</b>':'')+'</span></div>');
-
-/* 2 · Situation */
-var sit=[];
-if(has(D.ca))sit.push(['Chiffre d’affaires',D.ca,false]);
-if(has(D.depenses))sit.push(['Dépenses publicitaires',D.depenses,false]);
-if(has(D.objectif))sit.push(['Votre objectif',D.objectif+(has(D.delai)?' '+D.delai:''),true]);
-if(sit.length){
- var c=sit.map(function(x,i){return '<div class="card'+(x[2]?' glow':'')+' a pop" style="--d:'+(i+2)+'"><div class="lab">'+x[0]+'</div><div class="big sm">'+esc(x[1])+'</div></div>'}).join('');
- var q=(D.citations&&D.citations[0])?'<div class="quote a" style="--d:6">« '+esc(D.citations[0])+' »<small>Vos mots</small></div>':'';
- add("",head('Votre situation','Voici où vous en <span class="grad">êtes</span> aujourd’hui.')+'<div class="body"><div class="row c'+Math.min(3,sit.length)+'">'+c+'</div>'+q+'</div>');
+function add(cls,html,o){slides.push({cls:cls||"",html:html,annex:o&&o.annex})}
+function head(k,t){return '<div class="kick a" style="--d:0">'+k+'</div><h2 class="a" style="--d:1">'+t+'</h2>'}
+function split(l,r,cls){return '<div class="split '+(cls||'')+'"><div class="L">'+l+'</div><div class="R">'+r+'</div></div>'}
+function bridge(t){return '<div class="bridge a" style="--d:9">'+t+'</div>'}
+function bars(items,title,cap){
+ var mx=Math.max.apply(null,items.map(function(i){return i.v}))||1;
+ return '<div class="chart a pop" style="--d:3"><div class="ct">'+title+'</div><div class="bars">'+items.map(function(it,i){return '<div class="bc" style="--i:'+i+'"><div class="bv">'+it.d+'</div><div class="bt"><span class="bf'+(it.hl?' hl':'')+'" style="--h:'+Math.max(2,it.v/mx*100)+'%;--i:'+i+'"></span></div><div class="bl">'+it.l+'</div></div>'}).join('')+'</div>'+(cap?'<div class="cp">'+cap+'</div>':'')+'</div>';
 }
+function shot(src,alt,h,extra){return '<div class="shot" style="'+(h?'height:'+h+'px;':'')+(extra||'')+'">'+img(src,alt)+'</div>'}
 
-/* 3 · Failles */
-if(D.failles&&D.failles.length){
- var f=D.failles.slice(0,3).map(function(x,i){return '<div class="fi a" style="--d:'+(i+2)+'"><div class="n">'+(i+1)+'</div><div><h3>'+esc(x.titre)+'</h3>'+(has(x.detail)?'<p>'+esc(x.detail)+'</p>':'')+'</div></div>'}).join('');
- add("",head('Ce qui vous freine','Ce qui ralentit <span class="grad">votre croissance.</span>')+'<div class="body"><div class="fl">'+f+'</div></div>');
-}
+/* ═════ 1 · Couverture ═════ */
+(function(){
+ var titre=(has(D.ca)&&has(D.objectif))?'Comment on vous aide à passer de <span class="grad">'+esc(D.ca)+'</span> à <span class="grad">'+esc(D.objectif)+'</span>':'Comment on vous aide à <span class="grad">vendre plus</span>, sans y passer vos journées';
+ var mos=['exemple-vitalina','exemple-wellvita','exemple-sunscreen','exemple-tartre','exemple-skintint','exemple-glorysmile'].map(function(n){return '<div>'+img(V(n+'.jpg'),'')+'</div>'}).join('');
+ add("cover",'<div class="split"><div class="L"><div class="kick a" style="--d:0">'+(has(D.marque)?'Plan pour '+M:'Votre plan de croissance')+'</div>'+
+  '<h1 class="a" style="--d:1">'+titre+'</h1><div class="who a" style="--d:3"><i></i><span>Préparé par <b>AdStack</b>'+(F?' pour <b>'+F+'</b>':'')+'</span></div></div>'+
+  '<div class="R a pop" style="--d:2"><div class="mos">'+mos+'</div></div></div>'+bridge(has(D.ca)||has(D.objectif)?'Commençons par là où vous en êtes':'Voici le plan'));
+})();
 
-/* 4 · Coût d'attendre + Meta */
-add("",
- head('Pourquoi maintenant','Ne rien changer a <span class="grad">un coût.</span>')+
- '<div class="body"><div class="cost">'+
- (has(D.cout)?'<div class="l a" style="--d:2">'+esc(D.cout)+'</div>':'<div class="l a" style="--d:2">Chaque mois sans nouvelles créatives, c’est un mois de ventes qui vous échappe.</div>')+
- '<div class="meta a" style="--d:3"><div class="t">Meta Andromeda 2.0 · octobre 2026</div>'+
- '<h3>Meta vient d’annoncer la nouvelle génération de son système de sélection des publicités.</h3>'+
- '<p>Il examine beaucoup plus de publicités, avec plus de contexte sur chaque personne. Notre lecture : les marques qui répètent le même message auront plus de mal à sortir du lot.</p>'+
- '<p>Chez AdStack, chaque lot est déjà construit autour de plusieurs angles distincts.</p></div>'+
- '</div></div>');
+/* ═════ 2 · Miroir ═════ */
+(function(){
+ if(!has(D.ca)&&!has(D.objectif)&&!has(D.depenses)&&!has(D.element))return;
+ var l=head('Votre situation',has(D.ca)?'Si je résume : vous êtes à <span class="grad">'+esc(D.ca)+'</span>':'Voici ce que j’ai compris de <span class="grad">votre situation</span>')+
+  '<div class="pts">'+
+  (has(D.objectif)?'<div class="pt a" style="--d:2">Et vous voulez aller à <b>'+esc(D.objectif)+'</b>'+(has(D.delai)?', <b>'+esc(D.delai)+'</b>':'')+'.</div>':'')+
+  (has(D.depenses)?'<div class="pt a" style="--d:3">Aujourd’hui, vous investissez <b>'+esc(D.depenses)+'</b> en publicité.</div>':'')+
+  (has(D.element)?'<div class="pt a" style="--d:4">Ce qui vous aiderait le plus : <b>'+esc(D.element)+'</b>.</div>':'')+'</div>'+
+  ((D.citations&&D.citations[0])?'<div class="quote a" style="--d:5">« '+esc(D.citations[0])+' »<small>Vos mots</small></div>':'');
+ var r;
+ if(D.caValeur!=null&&D.objectifValeur!=null){
+  r=bars([{l:'Aujourd’hui',v:D.caValeur,d:esc(D.ca.replace(/ par mois| \/ mois/,'')),hl:false},{l:'Votre objectif',v:D.objectifValeur,d:esc(D.objectif.replace(/ par mois| \/ mois/,'')),hl:true}],'Votre chiffre d’affaires par mois',has(D.delai)?'Objectif '+esc(D.delai):'');
+ }else{
+  var tl=[];if(has(D.ca))tl.push(['Chiffre d’affaires',D.ca,false]);if(has(D.depenses))tl.push(['Dépenses publicitaires',D.depenses,false]);if(has(D.objectif))tl.push(['Votre objectif',D.objectif,true]);
+  r='<div class="tiles">'+tl.map(function(x,i){return '<div class="tile'+(x[2]?' glow':'')+' a pop" style="--d:'+(i+2)+'"><div class="lab">'+x[0]+'</div><div class="big">'+esc(x[1])+'</div></div>'}).join('')+'</div>';
+ }
+ add("",split(l,r)+bridge('Entre les deux, il y a des freins'));
+})();
 
-/* 5 · Objectif */
-if(has(D.objectif)){
- add("",head('Votre destination','Là où vous voulez <span class="grad">aller.</span>')+
-  '<div class="body"><div class="goal a pop grad" style="--d:2">'+esc(D.objectif)+(has(D.delai)?'<small>'+esc(D.delai)+'</small>':'')+'</div>'+
-  (has(D.element)?'<div class="quote a" style="--d:4">Ce qui changerait la donne pour vous : '+esc(D.element)+'.<small>Vos mots</small></div>':'')+'</div>');
-}
+/* ═════ 3 · Plan en trois temps ═════ */
+add("",split(head('Au programme','On fait simple : <span class="grad">trois temps.</span>')+'<p class="lead a" style="--d:2">Et à la fin, on regarde ensemble l’offre qui vous convient le mieux.</p>',
+ '<div class="ag"><div class="agi a" style="--d:2"><div class="n">1</div><div><h3>Ce qui vous freine</h3><p>Pourquoi ça bloque aujourd’hui</p></div></div>'+
+ '<div class="agi a" style="--d:3"><div class="n">2</div><div><h3>Comment on règle ça</h3><p>Étape par étape, après votre inscription</p></div></div>'+
+ '<div class="agi a" style="--d:4"><div class="n">3</div><div><h3>Ce que ça donne ailleurs</h3><p>Des marques comme la vôtre</p></div></div></div>')+bridge('D’abord, ce qui vous freine'));
 
-/* 6 · Système */
-add("",head('Notre méthode','Un système, pas <span class="grad">juste des créatives.</span>')+
- '<div class="body"><div class="row c3" style="margin-top:50px">'+
- '<div class="step a" style="--d:2"><div class="no">01</div><h3>On étudie</h3><p>Votre marché, vos concurrents et vos clients, avant de produire quoi que ce soit.</p></div>'+
- '<div class="step a" style="--d:3"><div class="no">02</div><h3>On produit</h3><p>Plusieurs angles en même temps, pour trouver vite ce qui fonctionne.</p></div>'+
- '<div class="step a" style="--d:4"><div class="no">03</div><h3>On capitalise</h3><p>Les angles gagnants sont repérés, puis déclinés dans les lots suivants.</p></div>'+
- '</div><div class="pillrow a" style="--d:5">Votre rôle : <b>vous connecter à AdBoard et importer votre produit.</b> On s’occupe du reste.</div></div>');
+/* ═════ 4-6 · Un frein = une slide ═════ */
+var TYPES={
+ recherche:{t:"Vos angles viennent du feeling",d:"Il n’y a pas d’analyse de votre marché derrière vos messages.",s:"Avant de créer quoi que ce soit, on étudie votre marché : vos concurrents, leurs prix et ce que votre client veut vraiment.",w:"Un bon angle vaut plus que dix créatives lancées au hasard.",
+   v:function(){return '<div class="stk" style="height:560px"><div class="shot a pop" style="--d:2;top:0;left:0;width:92%">'+img(V('adboard-marche-item03.jpg'),'Analyse de marché')+'</div><div class="shot a pop" style="--d:3;bottom:0;right:0;width:48%;height:300px">'+img(V('adboard-marche-item04.png'),'Profil client')+'</div></div>'}},
+ production:{t:"Produire vos créatives prend trop de temps",d:"Entre les délais et la qualité, le résultat n’est pas toujours à la hauteur.",s:"Vous recevez des lots prêts à publier, livrés en {liv} maximum, par une équipe qui fait ça tous les jours.",w:"Chaque semaine sans nouvelle créative, des ventes vous échappent.",
+   v:function(){return shot(V('adboard-galerie-creatives-v2.jpg'),'Galerie de créatives',null,'width:100%')}},
+ rythme:{t:"Vous testez trop peu de créatives",d:"Difficile de savoir ce qui marche vraiment avec quelques essais.",s:"Chaque mois, vous recevez de quoi tester en continu : {n} créatives, en vidéos et en images.",w:"Plus vous testez vite, plus vite vous trouvez vos gagnantes.",
+   v:function(){return bars([{l:'TEST',v:12,d:'12'},{l:'PERF+',v:24,d:'24'},{l:'GROWTH',v:48,d:'48'},{l:'SCALE',v:96,d:'96'}].map(function(x){x.hl=(x.l===offKey);return x}),'Créatives livrées chaque mois, selon l’offre','Votre offre recommandée est en couleur.')}},
+ angles:{t:"Toutes vos créatives disent la même chose",d:"Elles marchent un temps, puis les résultats retombent.",s:"Chaque lot défend plusieurs angles différents, pour parler à des clients différents.",w:"Les marques qui répètent le même message s’essoufflent plus vite.",
+   v:function(){return '<div class="tri3">'+[1,2,3].map(function(i){return '<div class="cx a pop" style="--d:'+(i+1)+'"><div class="im">'+img(V('proc-step3-vitalina'+i+'.jpg'),'Angle '+i)+'</div><div class="ch">ANGLE '+i+'</div></div>'}).join('')+'</div>'}},
+ gagnantes:{t:"Quand une créative gagne, vous ne savez pas quoi en faire",d:"Elle marche, puis elle s’épuise, et rien ne prend le relais.",s:"On repère vos gagnantes, on comprend pourquoi elles marchent, et on les décline dans les lots suivants.",w:"Une gagnante finit toujours par s’essouffler : il faut avoir la suivante en réserve.",
+   v:function(){return shot(V('adboard-galerie-item03.png'),'Créatives gagnantes',null,'width:100%')}},
+ temps:{t:"Tout repose sur vous",d:"Briefs, retouches, relances : le temps manque pour le reste.",s:"Votre rôle se limite à connecter votre compte et à importer votre produit. On s’occupe du reste.",w:"Votre temps est mieux utilisé sur votre boutique que sur des créatives.",
+   v:function(){return shot(V('adboard-catalogue-item01.png'),'Espace AdBoard',null,'width:100%')}},
+ risque:{t:"Vous investissez avant d’avoir testé",d:"Le stock, le budget : tout est engagé avant d’avoir des preuves.",s:"On commence par tester ce qui marche, et on ne monte que sur les preuves.",w:"Tester coûte moins cher que se tromper de stock.",
+   v:function(){return bars([{l:'Début',v:0,d:'0 $'},{l:'Après 3 mois',v:5,d:'5 000 $',hl:true}],'Veloce : profit par mois','Un client qui a testé d’abord avec l’offre TEST.')}}
+};
+(function(){
+ var list=(D.failles||[]).slice(0,3);
+ list.forEach(function(f,i){
+  var T=TYPES[f.type]||TYPES.angles;
+  var titre=has(f.titre)?f.titre:T.t, det=has(f.detail)?f.detail:T.d;
+  var sol=(has(f.solution)?f.solution:T.s).replace('{liv}',O.liv).replace('{n}',O.n);
+  var why=has(f.pourquoi)?f.pourquoi:T.w;
+  var l=head('Frein '+(i+1)+' sur '+list.length,esc(titre))+'<div class="tri">'+
+   '<div class="tr p a" style="--d:2"><div class="t">Ce que vous vivez</div><p>'+esc(det)+'</p></div>'+
+   '<div class="tr s a" style="--d:3"><div class="t">Ce qu’on fait</div><p>'+esc(sol)+'</p></div>'+
+   '<div class="tr w a" style="--d:4"><div class="t">Pourquoi c’est important</div><p>'+esc(why)+'</p></div></div>';
+  add("",split(l,T.v())+bridge(i<list.length-1?['Voyons le deuxième frein','Et le troisième'][i]:'Et il y a une raison de ne pas attendre'));
+ });
+})();
 
-/* 7 · Analyse de marché */
-add("",head('Étape 1 · On étudie','Une analyse de marché que vous pouvez <span class="grad">toucher du doigt.</span>')+
- '<div class="two"><div class="a" style="--d:2"><div class="shot" style="height:520px">'+img('/assets/vente/adboard-marche-item03.jpg','Exemple d’analyse de marché dans AdBoard')+'</div><div class="cap">Exemple réel, tiré de l’espace d’une marque cliente.</div></div>'+
- '<div class="callouts">'+
- '<div class="co a" style="--d:3"><span><b>Vos concurrents :</b> leurs prix, leur positionnement, les angles qu’ils exploitent.</span></div>'+
- '<div class="co a" style="--d:4"><span><b>Votre client :</b> sa journée, ses freins, ce qui le fait acheter.</span></div>'+
- '<div class="co a" style="--d:5"><span><b>Vos opportunités :</b> les angles que personne n’exploite encore.</span></div>'+
- '</div></div>');
+/* ═════ 7 · Pourquoi maintenant ═════ */
+add("",split(head('Pourquoi maintenant','Et il y a une raison de <span class="grad">ne pas attendre.</span>')+
+ '<div class="pts"><div class="pt a" style="--d:2">En octobre, Meta a annoncé la nouvelle génération du système qui choisit <b>quelles publicités afficher</b>.</div>'+
+ '<div class="pt a" style="--d:3">Il regarde <b>beaucoup plus de publicités</b>, plus vite, avec plus de contexte sur chaque personne.</div>'+
+ '<div class="pt a" style="--d:4">Notre lecture : les marques qui répètent le même message auront plus de mal à sortir du lot.</div></div>'+
+ '',
+ '<div class="fn"><div class="f1 a pop" style="--d:2">Des millions de publicités<small>en compétition pour chaque personne</small></div><div class="ar"></div>'+
+ '<div class="f2 a pop" style="--d:3">Meta fait le tri</div><div class="ar"></div>'+
+ '<div class="f3 a" style="--d:4"><div>Message A</div><div>Message B</div><div>Message C</div></div>'+
+ '<div class="cap a" style="--d:5">Plus vos messages sont variés, plus vous avez de chances d’être retenu.</div>'+(has(D.cout)?'<div class="quote a" style="--d:6">'+esc(D.cout)+'</div>':'')+'</div>')+bridge('Voici comment on s’y prend, concrètement'));
 
-/* 8 · Créatives */
-add("",head('Étape 2 · On produit','Des créatives prêtes à <span class="grad">être lancées.</span>')+
- '<div class="body"><div class="gal">'+
- ['exemple-vitalina','exemple-wellvita','exemple-sunscreen','exemple-tartre'].map(function(n,i){return '<div class="a pop" style="--d:'+(i+2)+'">'+img('/assets/vente/'+n+'.jpg','Exemple de créative')+'</div>'}).join('')+
- '</div><p class="cap a" style="--d:6" >Des vidéos et des images, livrées dans votre espace AdBoard, avec les textes publicitaires prêts à l’emploi.</p></div>');
+/* ═════ 8 · Vue d’ensemble des étapes ═════ */
+add("",head('Après votre inscription','Voici ce qui se passe, <span class="grad">en 3 étapes.</span>')+
+ '<div class="body" style="flex:1;display:flex;flex-direction:column;justify-content:center"><div class="flow">'+
+ '<div class="fs a pop" style="--d:2"><div class="ic">'+img(V('adboard-catalogue-item01.png'),'')+'</div><h3>1. Vous démarrez</h3><p>Vous accédez à AdBoard et vous ajoutez votre produit.</p></div><div class="fa">→</div>'+
+ '<div class="fs a pop" style="--d:3"><div class="ic">'+img(V('adboard-galerie-item01.jpg'),'')+'</div><h3>2. On produit pour vous</h3><p>On étudie votre marché et vous recevez vos créatives.</p></div><div class="fa">→</div>'+
+ '<div class="fs a pop" style="--d:4"><div class="ic">'+img(V('adboard-top-performer-item05.png'),'')+'</div><h3>3. On capitalise</h3><p>On s’appuie sur vos gagnantes et on vous apporte du neuf.</p></div></div>'+
+ '<div class="pillrow a" style="--d:5">Votre rôle : <b>connecter votre compte</b> et <b>importer votre produit</b>. Le reste, c’est nous.</div></div>'+bridge('Étape 1 : vous démarrez'));
 
-/* 9 · Étude de cas */
+/* ═════ 9-10 · Étape 1 ═════ */
+add("",split(head('Étape 1 · Vous démarrez','Vous accédez à <span class="grad">votre espace AdBoard.</span>')+
+ '<div class="pts"><div class="pt a" style="--d:2">Vous vous connectez avec <b>votre compte Google</b>.</div><div class="pt a" style="--d:3">Vous retrouvez <b>tout au même endroit</b> : vos produits, vos créatives, vos données de marché.</div><div class="pt a" style="--d:4">Rien à installer, rien à apprendre.</div></div>',
+ shot(V('adboard-catalogue-item01.png'),'Espace AdBoard',null,'width:100%')+'')+bridge('Ensuite, vous ajoutez votre produit'));
+add("",split(head('Étape 1 · Vous démarrez','Vous ajoutez votre produit, et <span class="grad">vous lancez votre première demande.</span>')+
+ '<div class="pts"><div class="pt a" style="--d:2">Vous renseignez <b>votre produit</b> : photo, prix, pays de vente, lien de votre page.</div><div class="pt a" style="--d:3">Vous cliquez sur <b>« Demander mes images »</b>.</div><div class="pt a" style="--d:4">C’est <b>tout ce qu’on vous demande</b>. Je vous accompagne sur ce début, si vous voulez.</div></div>',
+ '<div style="display:flex;gap:30px;align-items:center;width:100%;justify-content:center"><div class="a pop" style="--d:2">'+shot(V('proc-step2-formulaire.jpg'),'Fiche produit',null,'width:480px;height:600px')+'</div><div class="a pop" style="--d:3">'+shot(V('adboard-catalogue-item01.png'),'Mes produits',null,'width:480px;height:340px')+'</div></div>')+bridge('Ensuite, c’est à notre tour'));
+
+/* ═════ 11-13 · Étape 2 ═════ */
+add("",split(head('Étape 2 · On produit pour vous','D’abord, on étudie <span class="grad">votre marché.</span>')+
+ '<div class="pts"><div class="pt a" style="--d:2">On regarde <b>ce qui marche déjà dans votre niche</b> : les créatives qui performent, les concepts qui reviennent.</div><div class="pt a" style="--d:3">On étudie <b>vos concurrents</b>, leurs prix, leurs angles.</div><div class="pt a" style="--d:4">Et on dresse le portrait de <b>votre client idéal</b>.</div></div>',
+ TYPES.recherche.v())+bridge('Puis on construit les créatives'));
+add("",split(head('Étape 2 · On produit pour vous','Puis on construit <span class="grad">une vraie diversité créative.</span>')+
+ '<div class="pts"><div class="pt a" style="--d:2">Pour un même produit, <b>plusieurs façons d’en parler</b> : la technologie, la démonstration, la situation du client.</div><div class="pt a" style="--d:3">On s’inspire de ce qui marche chez les autres, avec <b>une vision neuve</b> et pas une copie.</div></div>',
+ TYPES.angles.v())+bridge('Et vous recevez tout dans AdBoard'));
+add("",split(head('Étape 2 · On produit pour vous','Vous recevez tout, <span class="grad">prêt à publier.</span>')+
+ '<div class="pts"><div class="pt a" style="--d:2">Vos <b>créatives</b>, en vidéos et en images, dans votre galerie.</div><div class="pt a" style="--d:3">Vos <b>textes publicitaires</b>, prêts à copier.</div><div class="pt a" style="--d:4">Vos <b>données de marché</b>, pour comprendre pourquoi.</div></div>',
+ '<div class="stk"><div class="shot a pop" style="--d:2;top:0;left:0"><span class="tag">Galerie créatives</span>'+img(V('adboard-galerie-item01.jpg'),'')+'</div>'+
+ '<div class="shot a pop" style="--d:3;top:150px;left:12%"><span class="tag">Textes publicitaires</span>'+img(V('adboard-copies-item02.jpg'),'')+'</div>'+
+ '<div class="shot a pop" style="--d:4;top:300px;left:24%"><span class="tag">Données marché</span>'+img(V('adboard-marche-item03.jpg'),'')+'</div></div>')+bridge('Étape 3 : on capitalise'));
+
+/* ═════ 14 · Étape 3 ═════ */
+add("",split(head('Étape 3 · On capitalise','Vous trouvez vos gagnantes, <span class="grad">on construit dessus.</span>')+
+ '<div class="pts"><div class="pt a" style="--d:2">Quand une créative ou un angle marche, <b>vous le repérez</b>.</div><div class="pt a" style="--d:3">On le <b>décline et on le pousse plus loin</b>.</div><div class="pt a" style="--d:4">En même temps, on vous apporte <b>de nouveaux angles</b>, pour que votre compte ne s’essouffle pas.</div></div>',
+ '<div class="cyc a pop" style="--d:2"><svg viewBox="0 0 640 560"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#1FB6FF"/><stop offset="1" stop-color="#2EF2E8"/></linearGradient></defs>'+
+ '<circle cx="320" cy="280" r="190" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="3"/><circle cx="320" cy="280" r="190" fill="none" stroke="url(#g)" stroke-width="5" stroke-dasharray="14 46" style="animation:spin 2.4s linear infinite"/>'+
+ '<g text-anchor="middle" font-size="25"><g transform="translate(320 90)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="9">1. On teste</text></g>'+
+ '<g transform="translate(510 280)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="9">2. Vous repérez</text></g>'+
+ '<g transform="translate(320 470)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="9">3. On décline</text></g>'+
+ '<g transform="translate(130 280)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#0B5CFF" stroke="#2EF2E8" stroke-width="2"/><text y="9">4. Du neuf</text></g></g></svg></div>')+bridge('Et ça marche, voici des chiffres réels'));
+
+/* ═════ 15 · Preuve en chiffres ═════ */
 (function(){
  var key=has(D.etudeCas)?D.etudeCas:CAS_PAR_OFFRE[offKey], cs=getCase(key)||getCase("vitalina"); if(!cs)return;
- var nums=((key==='veloce'&&cs.resultats&&cs.resultats.length)?cs.resultats:(cs.chiffres||cs.resultats||[])).slice(0,3);
- var ns=nums.map(function(n,i){return '<div class="ns a" style="--d:'+(i+3)+'"><b>'+esc(n.valeur)+'</b><span>'+esc(n.label)+'</span></div>'}).join('');
- var t=cs.temoignage||{};
- add("",head('Un cas proche du vôtre','<span class="grad">'+esc(cs.marque)+'</span>')+'<div class="tag a" style="--d:1">'+esc(cs.secteur)+' · '+esc(cs.pays)+'</div>'+
-  '<div class="cs"><div><div class="qt a" style="--d:2">'+esc(cs.titre)+'</div>'+
-  (t.nom?'<div class="who2 a" style="--d:6">'+(t.photo?img(t.photo,t.nom):'')+'<div><b>'+esc(t.nom)+'</b><span>'+esc(t.role)+'</span></div></div>':'')+'</div>'+
-  '<div class="nums">'+ns+'</div></div>');
+ var t=cs.temoignage||{}, r;
+ if(key==="vitalina") r=bars([{l:'Avant',v:2.7,d:'2,7 M'},{l:'Après 6 semaines',v:6.15,d:'6,15 M',hl:true}],'Chiffre d’affaires par mois (FCFA)','ROAS moyen de 4,3 sur nos créatives.');
+ else if(key==="veloce") r=bars([{l:'Début',v:0,d:'0 $'},{l:'Après 3 mois',v:5,d:'5 000 $',hl:true}],'Profit par mois','Pour 15 000 $ de chiffre d’affaires par mois, et plus de 8 créatives gagnantes.');
+ else r='<div class="tiles">'+(cs.chiffres||[]).slice(0,3).map(function(n,i){return '<div class="tile'+(i===2?' glow':'')+' a pop" style="--d:'+(i+2)+'"><div class="big grad">'+esc(n.valeur)+'</div><div class="lab" style="margin:10px 0 0">'+esc(n.label)+'</div></div>'}).join('')+'</div>';
+ add("",split(head('Ce que ça donne','<span class="grad">'+esc(cs.marque)+'</span>')+'<div class="nm a" style="--d:1">'+esc(cs.secteur)+' · '+esc(cs.pays)+'</div>'+
+  '<div class="qt a" style="--d:2">'+esc(cs.titre)+'</div>'+
+  (t.nom?'<div class="who2 a" style="--d:3">'+(t.photo?img(t.photo,t.nom):'')+'<div><b>'+esc(t.nom)+'</b><span>'+esc(t.role)+'</span></div></div>':''),r)+bridge('Et d’autres clients en parlent'));
 })();
 
-/* 10 · Avis */
+/* ═════ 16 · Avis ═════ */
 (function(){
- var T=(window.TEMOIGNAGES||[]).slice(0,3); if(T.length<2)return;
- function ex(t){var ss=String(t).match(/[^.!?]+[.!?]+(\s|$)/g)||[t],o='';for(var k=0;k<ss.length;k++){if(o&&(o+ss[k]).length>230)break;o+=ss[k]}return o.trim()}
- var cards=T.map(function(x,i){return '<div class="tm a" style="--d:'+(i+2)+'">'+(x.mesure?'<div class="ms">'+esc(x.mesure)+'</div>':'')+'<p>« '+esc(ex(x.texte))+' »</p><div class="p">'+(x.photo?img(x.photo,x.nom):'')+'<div><b>'+esc(x.nom)+'</b><span>'+esc(x.role)+'</span></div></div></div>'}).join('');
- add("",head('Ce qu’ils en disent','Des marques comme la vôtre, <span class="grad">déjà accompagnées.</span>')+'<div class="body"><div class="row c3" style="margin-top:44px">'+cards+'</div></div>');
+ var T=(window.TEMOIGNAGES||[]).slice(0,2); if(T.length<2)return;
+ function ex(t){var ss=String(t).match(/[^.!?]+[.!?]+(\s|$)/g)||[t],o='';for(var k=0;k<ss.length;k++){if(o&&(o+ss[k]).length>170)break;o+=ss[k]}return o.trim()}
+ var cards=T.map(function(x,i){return '<div class="tm a" style="--d:'+(i+2)+'">'+(x.photo?img(x.photo,x.nom):'')+'<div><p>« '+esc(ex(x.texte))+' »</p><b>'+esc(x.nom)+'</b><span>'+esc(x.role)+'</span></div></div>'}).join('');
+ add("",split(head('Ils en parlent','Des marques comme la vôtre, <span class="grad">déjà accompagnées.</span>')+'<div class="tmw">'+cards+'</div>',
+  '<div class="a pop" style="--d:3;transform:rotate(2deg)">'+shot(V('trust/trust-01.jpg'),'Message d’un client',null,'width:560px;height:760px')+'<div class="cap" style="text-align:center">Un message reçu d’un client.</div></div>')+bridge('Alors, quelle offre pour vous ?'));
 })();
 
-/* 11 · Plan */
-(function(){
- var liv=(offKey==="GROWTH"||offKey==="SCALE")?"24h":"48h";
- var pl=D.plan&&D.plan.length?D.plan:[
-  {quand:"Jour 1",titre:"Vous démarrez",texte:"Vous vous abonnez, vous vous connectez à AdBoard et vous importez "+(has(D.produit)?"votre "+P:"votre produit")+"."},
-  {quand:"Ensuite",titre:"On étudie",texte:"Analyse de votre marché, de vos concurrents et de votre client, puis choix des angles."},
-  {quand:"Premier lot",titre:"Vous recevez",texte:"Votre premier lot de créatives, livré en "+liv+" maximum, prêt à lancer."},
-  {quand:"Chaque mois",titre:"On capitalise",texte:"Les angles qui gagnent sont repérés et déclinés dans les lots suivants."}];
- var h=pl.slice(0,4).map(function(x,i){return '<div class="st a" style="--d:'+(i+2)+'"><div class="dot">'+(i+1)+'</div><div class="q">'+esc(x.quand)+'</div><h3>'+esc(x.titre)+'</h3><p>'+esc(x.texte)+'</p></div>'}).join('');
- add("",head('Votre plan','Voici comment on <span class="grad">démarre.</span>')+'<div class="body"><div class="tl">'+h+'</div></div>');
-})();
-
-/* 12 · Offre recommandée */
+/* ═════ 17 · Offre ═════ */
 (function(){
  var pts=O.pts.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+(O.garantie?'<li class="g">'+esc(O.garantie)+'</li>':'');
- var why=has(D.pourquoi)?esc(D.pourquoi):'Cette offre correspond à votre situation et à ce que vous voulez atteindre.';
- add("",head('Notre recommandation',(F?F+', l’offre ':'L’offre ')+'<span class="grad">qui vous correspond.</span>')+
-  '<div class="of"><div class="why a" style="--d:2">'+why+'</div>'+
-  '<div class="oc a pop" style="--d:3"><div class="nm">'+esc(O.nom)+'</div><div class="pr">'+esc(O.prix)+'<small>FCFA / mois</small></div><ul>'+pts+'</ul></div></div>'+
-  '<button class="more" data-annex="1">Comparer les offres</button>');
+ var rais=(D.raisons&&D.raisons.length?D.raisons:O.rais).slice(0,3).map(function(x,i){return '<div class="pt a" style="--d:'+(i+2)+'">'+esc(x)+'</div>'}).join('');
+ add("",split(head('Notre recommandation',(F?F+', pour vous : ':'Pour vous : ')+'<span class="grad">'+esc(O.nom)+'.</span>')+'<p class="lead a" style="--d:1">Voici pourquoi.</p><div class="pts" style="margin-top:20px">'+rais+'</div>',
+  '<div class="oc a pop" style="--d:3"><div class="on2">'+esc(O.nom)+'</div><div class="pr">'+esc(O.prix)+'<small>FCFA / mois</small></div><ul>'+pts+'</ul></div>')+bridge('Voyons la suite')+'<button class="more" data-annex="1">Comparer les offres</button>');
 })();
 
-/* 13 · Prochaine étape */
-add("final",
- '<div class="kick a" style="--d:0">Prochaine étape</div>'+
- '<h2 class="a" style="--d:1">'+(has(D.marque)?'On démarre <span class="grad nw">'+M+' ?</span>':'On <span class="grad nw">démarre ?</span>')+'</h2>'+
- '<p class="sub a" style="--d:2">Vous vous abonnez, vous vous connectez à AdBoard, vous importez votre produit. On s’occupe du reste.</p>'+
- '<div class="btns a" style="--d:3"><a class="btn" id="cta" href="'+O.url+'" target="_blank" rel="noopener">Commencer avec '+esc(O.nom)+ARROW+'</a></div>'+
- '<div class="tiny a" style="--d:4"><span>Abonnement mensuel</span>'+(O.garantie?'<span>'+esc(O.garantie.replace('Garantie ','Garantie '))+'</span>':'')+'<span>Vos créatives disponibles dès le paiement</span></div>');
+/* ═════ 18 · Et maintenant ═════ */
+add("",split(head('La suite','Et maintenant, <span class="grad">on fait simple.</span>')+
+ '<div class="recap a" style="--d:2"><span>Abonnement mensuel</span>'+(O.garantie?'<span>'+esc(O.garantie)+'</span>':'')+'<span>Créatives disponibles dès le paiement</span></div>',
+ '<div class="nx"><div class="nxi a" style="--d:2"><div class="d">1</div><div><h3>Je vous envoie votre devis et votre lien de paiement</h3><p>Directement sur WhatsApp.</p></div></div>'+
+ '<div class="nxi a" style="--d:3"><div class="d">2</div><div><h3>Dès le paiement, on connecte AdBoard ensemble</h3><p>Je vous accompagne pour la prise en main.</p></div></div>'+
+ '<div class="nxi a" style="--d:4"><div class="d">3</div><div><h3>On importe votre produit et on lance la première production</h3><p>Votre premier lot arrive en '+O.liv+' maximum.</p></div></div></div>'));
 
-/* Annexe · Comparatif */
+/* ═════ Annexe · Comparatif ═════ */
 (function(){
  var cols=["TEST","PERF+","GROWTH","SCALE"].map(function(k){var o=OFFRES[k];
-  return '<div class="cc'+(k===offKey?' me':'')+'"><div class="nm">'+o.nom+'</div><div class="pr">'+o.prix+' <small>FCFA / mois</small></div><ul>'+o.pts.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(o.garantie?'<li style="color:#fff;font-weight:700">'+esc(o.garantie)+'</li>':'')+'</ul></div>'}).join('');
+  return '<div class="cc'+(k===offKey?' me':'')+'"><div class="nm2">'+o.nom+'</div><div class="pr">'+o.prix+'<small>FCFA / mois</small></div><ul>'+o.pts.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(o.garantie?'<li style="color:#fff;font-weight:700">'+esc(o.garantie)+'</li>':'')+'</ul></div>'}).join('');
  add("",head('Les offres','Comparer les <span class="grad">offres.</span>')+'<div class="cmp a" style="--d:2">'+cols+'</div><button class="back" data-back="1">Retour</button>',{annex:true});
 })();
 
 /* ───────── Rendu et navigation ───────── */
 var stage=document.getElementById('stage'),cur=0,prevIdx=0,main=[];
 slides.forEach(function(s,i){if(s.annex)annexIdx=i;else main.push(i)});
-stage.innerHTML=slides.map(function(s,i){return '<section class="s '+s.cls+'" data-i="'+i+'">'+(s.cls==="cover"?'':LOGO)+(s.cls==="cover"?LOGO:'')+(s.annex||s.cls==="cover"?'':'<div class="num">'+String(main.indexOf(i)+1).padStart(2,"0")+' / '+String(main.length).padStart(2,"0")+'</div>')+s.html+'</section>'}).join('');
+stage.innerHTML=slides.map(function(s,i){var mi=main.indexOf(i);return '<section class="s '+s.cls+'" data-i="'+i+'">'+LOGO+(s.annex||s.cls==="cover"?'':'<div class="num">'+String(mi+1).padStart(2,"0")+' / '+String(main.length).padStart(2,"0")+'</div>')+s.html+'</section>'}).join('');
 var els=[].slice.call(stage.children);
 function go(i,fromJump){
  i=Math.max(0,Math.min(slides.length-1,i)); if(slides[i].annex&&!fromJump)return;
- els.forEach(function(e,k){e.classList.toggle('on',k===i)});
+ els.forEach(function(e,k){e.classList.toggle('on',k===i);e.classList.toggle('past',k<i)});
  cur=i; var mi=main.indexOf(i); document.getElementById('bar').style.width=(mi<0?100:(mi+1)/main.length*100)+'%';
  try{history.replaceState(null,'','#'+(i+1))}catch(e){}
 }
