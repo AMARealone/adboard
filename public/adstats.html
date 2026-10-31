@@ -4002,7 +4002,11 @@ function renderAppels() {
         : '<span style="font-size:10px;font-weight:600;color:var(--muted);background:var(--surface2);padding:2px 8px;border-radius:4px">Alerte dans ' + appelFormatDuree((ech === null ? APPEL_DELAI_MS : ech) - now) + '</span>';
     }
 
-    const sousTitre = esc2(p.produit || '—')
+    const sousTitre = (n.form_nom
+        ? esc2(n.form_nom) + ' · objectif ' + esc2(n.form_ca_objectif || '—')
+          + (n.form_boutique ? ' · <a href="' + esc2(n.form_boutique) + '" target="_blank" rel="noopener" style="color:var(--blue)">boutique</a>' : '')
+          + ' <span style="font-size:10px;font-weight:800;color:var(--blue);background:var(--blue-dim);padding:1px 6px;border-radius:4px">FORMULAIRE SITE</span>'
+        : esc2(p.produit || '—'))
       + (t0 !== null ? ' · Réservé le ' + fmtDate(t0) + (fait ? '' : ' (il y a ' + appelFormatDuree(age) + ')') : '');
 
     const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '');
@@ -4239,7 +4243,7 @@ function ouvrirInfosAppel(id, lancer) {
     '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:460px;width:100%;font-family:var(--font)">'
     + '<div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:2px">Infos de l\'appel</div>'
     + '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">' + esc2(p.nom_marque || 'Ce prospect') + ' — servent à remplir tout seuls les messages J+1 / J+3 / J+7</div>'
-    + '<label style="' + lab + '">Prénom</label><input id="ia-prenom" type="text" style="' + inp + '" value="' + esc2(n.closing_prenom || '') + '">'
+    + '<label style="' + lab + '">Prénom</label><input id="ia-prenom" type="text" style="' + inp + '" value="' + esc2(n.closing_prenom || (n.form_nom || '').split(/\s+/)[0] || '') + '">'
     + '<label style="' + lab + '">Ses mots (sa douleur, tels qu\'il/elle les a dits)</label><div style="' + hint + '">Copie sa phrase exacte. Elle apparaît entre « guillemets » dans le message.</div>'
     + '<textarea id="ia-mots" style="' + inp + ';min-height:64px">' + esc2(n.closing_mots || '') + '</textarea>'
     + '<label style="' + lab + '">Son objectif</label><div style="' + hint + '">Commence par un verbe : « vendre plus de votre crème », « sortir de la saturation »…</div>'

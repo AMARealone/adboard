@@ -509,6 +509,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <h1 class="hero-headline hl-x"><span class="hl-sr">Le système créatif qui rapporte 2, 5 ou 10 fois plus en quelques semaines</span><span class="hl-vis" aria-hidden="true">Le <em>système créatif</em> qui rapporte <span class="hl-pill"><span class="hl-opt">2x</span><span class="hl-opt">5x</span><span class="hl-opt on">10x</span></span> plus en quelques semaines</span></h1>
     <p class="hero-subhead">Stratégie, créatives, amélioration continue : on s’occupe de tout, là où vos concurrents devinent avec des freelances et ChatGPT.</p>
     <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Offres AdStack'});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'Offres AdStack'});">Découvrir Nos Offres</button>
+    <button id="heroBookBtn" type="button" class="cta-secondary" onclick="adsOpenBooking()">Parlons de votre marque</button>
 
     <div class="hero-stars-block">
       <div class="hero-proof"><span class="hp-stars" role="img" aria-label="5 étoiles"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg></span><span class="hp-sep" aria-hidden="true"></span><span class="hp-who"><span class="hp-av" aria-hidden="true"><img src="/assets/vente/aliou-cisse.jpg" alt="" width="30" height="30"><img src="/assets/vente/anissa-coli.jpg" alt="" width="30" height="30"><img src="/assets/vente/ibrahim-gomis.jpg" alt="" width="30" height="30"></span><span class="hp-t"><b>+20</b> marques scalées</span></span><span class="hp-sep" aria-hidden="true"></span><a class="hp-link" href="/etude-de-cas">Voir les études de cas</a></div>
@@ -2734,5 +2735,195 @@ window.lpApplyCurrency = function(){};
 @media(max-width:760px){.edc-card{display:flex;flex-direction:column;gap:0}.edc-txt{display:contents}.edc-brand,.edc-p{text-align:left}.edc-brand{order:1;padding:30px 22px 0;margin:0}.edc-p{order:2;padding:8px 22px 0;margin:0}.edc-btn{order:3;align-self:flex-start;margin:16px 22px 0}.edc-badge{order:4;align-self:flex-start;margin:20px 22px 0}.edc-vis{order:5;width:100%;min-height:215px;margin-top:6px}}
 </style>
 <script>(function(){try{try{if(/^\/vente(\.html)?\/?$/.test(location.pathname))history.replaceState(null,'','/pdv'+location.search+location.hash)}catch(e){}var o=document.querySelectorAll('.hero-headline .hl-opt');if(o.length<3)return;if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;function set(i){for(var k=0;k<o.length;k++)o[k].classList.toggle('on',k===i)}set(0);setTimeout(function(){set(1)},900);setTimeout(function(){set(2)},1800);}catch(e){}})();</script>
+<!-- ═══ RÉSERVATION D'APPEL — formulaire relié au CRM (section Appels) ═══ -->
+<style>
+.cta-secondary{display:block;margin:14px auto 0;background:transparent;color:#fff;font-size:15px;font-weight:700;padding:14px 28px;border-radius:50px;border:1.5px solid rgba(255,255,255,.28);cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;transition:border-color .2s,background .2s,transform .2s;touch-action:manipulation}
+.cta-secondary:hover{border-color:#1FB6FF;background:rgba(31,182,255,.08);transform:translateY(-2px)}
+#bk-ov{position:fixed;inset:0;z-index:100000;background:rgba(5,6,10,.82);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+#bk-ov.bk-on{display:flex}
+#bk-box{position:relative;background:#0F1016;color:#fff;border:1px solid rgba(255,255,255,.1);border-radius:18px;width:100%;max-width:480px;margin:auto;padding:26px 22px 24px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;box-sizing:border-box}
+#bk-box *{box-sizing:border-box}
+#bk-x{position:absolute;top:10px;right:12px;background:none;border:none;color:#8A8D96;font-size:26px;line-height:1;cursor:pointer;padding:6px 10px}
+.bk-t{font-size:21px;font-weight:800;margin:0 0 4px;padding-right:28px;letter-spacing:-.2px}
+.bk-s{font-size:13.5px;color:#9A9DA6;margin:0 0 18px;line-height:1.5}
+.bk-l{display:block;font-size:12px;font-weight:700;color:#C9CCD3;margin:14px 0 5px}
+.bk-i{width:100%;background:#16171F;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:12px 13px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
+.bk-i:focus{outline:none;border-color:#1FB6FF}
+select.bk-i{background-image:linear-gradient(45deg,transparent 50%,#8A8D96 50%),linear-gradient(135deg,#8A8D96 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+.bk-h{font-size:11.5px;color:#7A7D86;margin-top:4px}
+.bk-days{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.bk-days::-webkit-scrollbar{display:none}
+.bk-d{flex:0 0 auto;min-width:64px;background:#16171F;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:8px 6px;text-align:center;cursor:pointer;font-family:inherit}
+.bk-d b{display:block;font-size:11px;color:#9A9DA6;font-weight:600;text-transform:uppercase}
+.bk-d span{font-size:16px;font-weight:800}
+.bk-d.bk-sel{border-color:#1FB6FF;background:rgba(31,182,255,.12)}
+.bk-grp{font-size:11px;color:#7A7D86;margin:10px 0 5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.bk-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.bk-sl{background:#16171F;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:9px;padding:10px 0;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit}
+.bk-sl.bk-sel{border-color:#1FB6FF;background:#1FB6FF;color:#04121C}
+#bk-go{width:100%;margin-top:20px;background:linear-gradient(135deg,#1FB6FF,#0B5CFF);color:#fff;border:none;border-radius:50px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
+#bk-go:disabled{opacity:.6;cursor:wait}
+#bk-err{color:#FF7A8A;font-size:13px;margin-top:12px;display:none;line-height:1.45}
+.bk-hp{position:absolute;left:-9999px;opacity:0;height:0;width:0}
+.bk-ok{text-align:center;padding:14px 0 4px}
+.bk-ok .bk-c{width:58px;height:58px;border-radius:50%;background:rgba(50,255,126,.12);color:#32FF7E;font-size:30px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+</style>
+<div id="bk-ov" role="dialog" aria-modal="true" aria-labelledby="bk-title">
+  <div id="bk-box">
+    <button id="bk-x" type="button" aria-label="Fermer">×</button>
+    <div id="bk-form">
+      <h2 class="bk-t" id="bk-title">Parlons de votre marque</h2>
+      <p class="bk-s">Un échange de 10 à 15 minutes pour regarder où en est votre boutique, votre objectif, et voir si on peut vous aider.</p>
+      <label class="bk-l" for="bk-nom">Votre nom</label>
+      <input class="bk-i" id="bk-nom" type="text" autocomplete="name" placeholder="Prénom et nom">
+      <label class="bk-l" for="bk-marque">Nom de votre marque</label>
+      <input class="bk-i" id="bk-marque" type="text" autocomplete="organization" placeholder="Ex : Maison Kora">
+      <label class="bk-l" for="bk-lien">Lien de votre boutique</label>
+      <input class="bk-i" id="bk-lien" type="text" inputmode="url" autocapitalize="off" autocomplete="url" placeholder="https://votre-boutique.com">
+      <label class="bk-l" for="bk-wa">Votre numéro WhatsApp</label>
+      <input class="bk-i" id="bk-wa" type="tel" autocomplete="tel" placeholder="+221 77 123 45 67">
+      <div class="bk-h">Avec l'indicatif de votre pays (+221, +225…)</div>
+      <label class="bk-l" for="bk-marche">Marché dans lequel vous vendez</label>
+      <select class="bk-i" id="bk-marche"><option value="">Choisir…</option><option>Sénégal</option><option>Côte d'Ivoire</option><option>Cameroun</option><option>Mali</option><option>Burkina Faso</option><option>Guinée</option><option>Bénin</option><option>Togo</option><option>Gabon</option><option>RD Congo</option><option>Congo</option><option>Maroc</option><option>Plusieurs pays d'Afrique francophone</option><option>Autre</option></select>
+      <label class="bk-l" for="bk-ca">Votre objectif de chiffre d'affaires mensuel</label>
+      <select class="bk-i" id="bk-ca"><option value="">Choisir…</option><option>Moins de 2 000 $ / mois</option><option>2 000 – 5 000 $ / mois</option><option>5 000 – 10 000 $ / mois</option><option>10 000 – 30 000 $ / mois</option><option>Plus de 30 000 $ / mois</option></select>
+      <label class="bk-l">Choisissez votre créneau</label>
+      <div class="bk-days" id="bk-days"></div>
+      <div id="bk-slots"></div>
+      <div class="bk-h">Heures de Dakar (GMT). Créneaux de 10h à 15h et de 19h à 22h, tous les jours.</div>
+      <input class="bk-hp" id="bk-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <div id="bk-err"></div>
+      <button id="bk-go" type="button">Réserver mon appel</button>
+    </div>
+    <div id="bk-done" style="display:none"></div>
+  </div>
+</div>
+<script>
+(function(){
+var SB='https://mifljhsusidgzelnswma.supabase.co/rest/v1';
+var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc';
+var SAVE='https://adstack-server.onrender.com/prospector/save-lead';
+var MAX_JOURS=5, PREP_MIN=60, DEBUTS=[[10,15],[19,22]];
+var $=function(id){return document.getElementById(id)};
+var selDay=null, selSlot=null;
+var JS=['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+var MS=['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+var JL=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+var ML=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+function p2(n){return (n<10?'0':'')+n}
+// Dakar = GMT toute l'année : on travaille en UTC
+function dayStart(offset){var n=new Date();return Date.UTC(n.getUTCFullYear(),n.getUTCMonth(),n.getUTCDate()+offset)}
+function slotsFor(offset){
+  var base=dayStart(offset), now=Date.now(), out=[];
+  DEBUTS.forEach(function(pl){
+    var grp=[];
+    for(var m=pl[0]*60;m<pl[1]*60;m+=30){
+      var ts=base+m*60000;
+      if(ts>=now+PREP_MIN*60000) grp.push(ts);
+    }
+    out.push(grp);
+  });
+  return out;
+}
+function hhmm(ts){var d=new Date(ts);return p2(d.getUTCHours())+'h'+p2(d.getUTCMinutes())}
+function renderDays(){
+  var h='';
+  for(var o=0;o<=MAX_JOURS;o++){
+    var any=slotsFor(o).some(function(g){return g.length});
+    if(!any) continue;
+    var d=new Date(dayStart(o));
+    h+='<button type="button" class="bk-d'+(selDay===o?' bk-sel':'')+'" data-o="'+o+'"><b>'+(o===0?'Auj.':JS[d.getUTCDay()])+'</b><span>'+d.getUTCDate()+'</span><b>'+MS[d.getUTCMonth()]+'</b></button>';
+  }
+  $('bk-days').innerHTML=h;
+}
+function renderSlots(){
+  if(selDay===null){$('bk-slots').innerHTML='';return}
+  var g=slotsFor(selDay), h='', noms=['Matin','Soirée'];
+  g.forEach(function(arr,i){
+    if(!arr.length) return;
+    h+='<div class="bk-grp">'+noms[i]+'</div><div class="bk-slots">'+arr.map(function(ts){return '<button type="button" class="bk-sl'+(selSlot===ts?' bk-sel':'')+'" data-ts="'+ts+'">'+hhmm(ts)+'</button>'}).join('')+'</div>';
+  });
+  $('bk-slots').innerHTML=h;
+}
+function init(){
+  selSlot=null; selDay=null;
+  for(var o=0;o<=MAX_JOURS;o++){ if(slotsFor(o).some(function(g){return g.length})){selDay=o;break} }
+  renderDays(); renderSlots();
+}
+function err(m){var e=$('bk-err');e.textContent=m;e.style.display=m?'block':'none'}
+window.adsOpenBooking=function(){
+  $('bk-form').style.display='block'; $('bk-done').style.display='none'; err('');
+  init(); $('bk-ov').classList.add('bk-on'); document.body.style.overflow='hidden';
+  try{if(typeof fbq!=='undefined')fbq('trackCustom','OpenBooking')}catch(e){}
+};
+function close(){$('bk-ov').classList.remove('bk-on');document.body.style.overflow=''}
+$('bk-x').onclick=close;
+$('bk-ov').addEventListener('click',function(e){if(e.target===$('bk-ov'))close()});
+$('bk-days').addEventListener('click',function(e){var b=e.target.closest('.bk-d');if(!b)return;selDay=+b.getAttribute('data-o');selSlot=null;renderDays();renderSlots()});
+$('bk-slots').addEventListener('click',function(e){var b=e.target.closest('.bk-sl');if(!b)return;selSlot=+b.getAttribute('data-ts');renderSlots()});
+function hdr(extra){var h={'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'};for(var k in (extra||{}))h[k]=extra[k];return h}
+function fetchT(url,opt,ms){
+  var c=new AbortController(), t=setTimeout(function(){c.abort()},ms||25000);
+  opt=opt||{};opt.signal=c.signal;
+  return fetch(url,opt).finally(function(){clearTimeout(t)});
+}
+async function trouver(digits){
+  var r=await fetchT(SB+'/prospects?lien_wa=ilike.*'+digits+'*&select=id,statut,notes&limit=1',{headers:hdr()});
+  if(!r.ok) throw new Error('lecture '+r.status);
+  var rows=await r.json(); return rows[0]||null;
+}
+async function envoyer(){
+  err('');
+  if($('bk-hp').value) return;
+  var nom=$('bk-nom').value.trim(), marque=$('bk-marque').value.trim(), lien=$('bk-lien').value.trim(),
+      wa=$('bk-wa').value.trim(), marche=$('bk-marche').value, ca=$('bk-ca').value;
+  if(nom.length<2) return err('Indiquez votre nom.');
+  if(marque.length<2) return err('Indiquez le nom de votre marque.');
+  if(lien.length<4||lien.indexOf('.')<0) return err('Indiquez le lien de votre boutique.');
+  var digits=wa.replace(/\D/g,'');
+  if(wa.replace(/\s/g,'').charAt(0)!=='+' && wa.replace(/\s/g,'').slice(0,2)!=='00') return err('Ajoutez l\'indicatif de votre pays au numéro WhatsApp (ex : +221…).');
+  if(digits.indexOf('00')===0) digits=digits.slice(2);
+  if(digits.length<9||digits.length>15) return err('Ce numéro WhatsApp semble incomplet.');
+  if(!marche) return err('Choisissez votre marché.');
+  if(!ca) return err('Choisissez votre objectif de chiffre d\'affaires.');
+  if(selSlot===null) return err('Choisissez un créneau.');
+  if(selSlot<Date.now()+PREP_MIN*60000-60000) { init(); return err('Ce créneau vient de passer, choisissez-en un autre.'); }
+  if(!/^https?:\/\//i.test(lien)) lien='https://'+lien;
+  var btn=$('bk-go'); btn.disabled=true; btn.textContent='Réservation…';
+  try{
+    var now=new Date().toISOString();
+    var infos={appel_reserve:true,appel_reserve_at:now,appel_programme_at:new Date(selSlot).toISOString(),source:'formulaire_site',form_nom:nom,form_marche:marche,form_ca_objectif:ca,form_boutique:lien};
+    var ex=await trouver(digits);
+    if(ex){
+      var n={}; try{n=JSON.parse(ex.notes||'{}')||{}}catch(e){ n={texte_ancien:ex.notes||''} }
+      ['appel_fait','appel_fait_at','appel_via','pas_interesse','pas_interesse_at','closing_etat','closing_at'].forEach(function(k){delete n[k]});
+      for(var k in infos) n[k]=infos[k];
+      var body={notes:JSON.stringify(n)};
+      if(ex.statut==='a_contacter'||ex.statut==='archive') body.statut='en_suivi';
+      var pr=await fetchT(SB+'/prospects?id=eq.'+ex.id,{method:'PATCH',headers:hdr({'Prefer':'return=minimal'}),body:JSON.stringify(body)});
+      if(!pr.ok) throw new Error('maj '+pr.status);
+    } else {
+      var payload={nom_marque:marque,produit:'',pays:marche,lien_wa:'https://wa.me/'+digits,page_produit:lien,statut:'en_suivi',score:0,date_collecte:now.slice(0,10),notes:JSON.stringify(infos)};
+      var r=await fetchT(SAVE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)},40000);
+      var j=await r.json().catch(function(){return {}});
+      if(!r.ok||j.ok===false) throw new Error('insertion '+(j.status||r.status));
+    }
+    var chk=await trouver(digits);
+    if(!chk) throw new Error('vérification');
+    try{if(typeof fbq!=='undefined')fbq('track','Schedule')}catch(e){}
+    try{if(typeof twq!=='undefined')twq('track','Lead')}catch(e){}
+    var d=new Date(selSlot);
+    $('bk-form').style.display='none';
+    $('bk-done').innerHTML='<div class="bk-ok"><div class="bk-c">✓</div><h2 class="bk-t" style="padding:0">C\'est réservé</h2><p class="bk-s" style="margin-bottom:6px">'+JL[d.getUTCDay()]+' '+d.getUTCDate()+' '+ML[d.getUTCMonth()]+' à <b style="color:#fff">'+hhmm(selSlot)+'</b> (heure de Dakar).</p><p class="bk-s">Nous vous contacterons sur WhatsApp, au +'+digits+', pour notre échange.</p></div>';
+    $('bk-done').style.display='block';
+  }catch(e){
+    console.warn('Réservation:',e&&e.message);
+    err('La réservation n\'a pas pu être enregistrée. Réessayez dans un instant, ou écrivez-nous directement sur WhatsApp.');
+  }finally{ btn.disabled=false; btn.textContent='Réserver mon appel'; }
+}
+$('bk-go').onclick=envoyer;
+})();
+</script>
+
 </body>
 </html>
