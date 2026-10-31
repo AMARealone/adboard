@@ -3373,8 +3373,10 @@ function remplirPitchDataUI() {
 // ── Mise à jour des ads J+10 : liste des leads concernés + lancement du script sur le PC ──
 function leadsJ10() {
   return (DB || []).filter(p => {
-    if (p.statut !== 'lead' || horsLeads(p)) return false;
     let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch (e) {}
+    // closing par écrit : l'audit (Bloc 1) a besoin de ses ads à jour, quel que soit son âge
+    if (n.ecrit_etat === 'actif') return !n.ecrit_sent_b1 && !ecritB1Saute(n) && !pitchVariante(p).maj;
+    if (p.statut !== 'lead' || horsLeads(p)) return false;
     if (n.sent_j3 || n.j3_envoye) return false;
     const j = Math.floor((Date.now() - new Date(p.date_lead || p.date_contact || Date.now())) / 86400000);
     return j >= PITCH_JOUR;
@@ -4473,26 +4475,34 @@ const ECRIT_ETAPES = [
   { key: 'suite', label: 'Lien + suite' }
 ];
 const ECRIT_DELAI = { test: '48 h', perf: '48 h', growth: '24 h', scale: '24 h' };
-const ECRIT_PLAN_FIN = "\n\nVous recevez tout dans AdBoard, sans courir après un freelance ni refaire le travail vous-même.\n\nEst-ce que vous voulez voir l'offre qui correspond à *[Marque]* ?";
+const ECRIT_N = { test: '12', perf: '24', growth: '48', scale: '96' };
+const ECRIT_PLAN_FIN = "\n\nDe votre côté, il vous suffit d'ajouter *[Produit]* dans AdBoard. Le reste, c'est nous.\n\nJe vous montre l'offre qui correspond à *[Marque]* ?";
+const ECRIT_QUATRE_TEMPS = "Concrètement, ça se passe en 4 temps :\n*1. On étudie* votre marché, vos concurrents et votre client idéal.\n*2. On crée* des créatives variées.\n*3. On livre* des lots prêts à publier, avec leurs textes.\n*4. On apprend* : on s'appuie sur ce qui gagne pour le lot suivant.";
 const DEFAULT_ECRIT = {
-  b1_chiffres: "Bonjour *[Marque]* 👋🏾\n\nJ'ai regardé vos pubs pour *[Produit]* aujourd'hui : *[ads] ads actives*, qui tournent en moyenne depuis *[jours] jours*.\n\nJ'ai vu que vous [bonne_nouvelle].\n\nMais peut-être que [mauvaise_nouvelle]. C'est exactement ce que règle [solution].\n\nJe peux vous montrer ce qu'on mettrait en place pour vous ?",
-  b1_sans: "Bonjour *[Marque]* 👋🏾\n\nJe vous résume ici, en quelques lignes et sans appel, comment on pourrait vous faire gagner du temps et des ventes sur *[Produit]*.\n\nJe peux vous montrer ce qu'on mettrait en place pour vous ?",
-  b2_rythme: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. Un flux continu* : chaque mois, un lot de créatives neuves pour *[Produit]*, pour que vos pubs ne s'essoufflent pas avant qu'une autre prenne le relais.\n*2. De vrais tests* : des angles différents, pas la même pub déclinée, pour voir ce que votre audience préfère.\n*3. Une amélioration continue* : on garde ce qui gagne, on remplace ce qui s'éteint." + ECRIT_PLAN_FIN,
-  b2_angles: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. Une analyse de votre marché* : ce que vos clients ressentent, ce qui les fait acheter *[Produit]*, ce que vos concurrents disent déjà.\n*2. Plusieurs angles, pas un seul* : chacun avec sa promesse et son visuel, pour que votre audience ne voie jamais la même pub.\n*3. Une amélioration continue* : on garde les angles qui gagnent, on en teste de nouveaux." + ECRIT_PLAN_FIN,
-  b2_gagnantes: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nQuand une ou deux pubs portent toutes les ventes, tout repose sur elles. Le jour où elles s'essoufflent, il ne reste rien.\n\n*1. Plus de candidates* : un volume régulier de nouvelles créatives pour *[Produit]*, pour trouver la suivante avant que l'actuelle s'éteigne.\n*2. Des angles variés* : pour que le résultat ne dépende pas d'une seule idée.\n*3. Un suivi de ce qui gagne* : on garde, on déploie, on remplace." + ECRIT_PLAN_FIN,
-  b2_production: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. Une équipe qui produit à votre place* : stratégie, créatives, ajustements. Vous ne courez plus après personne.\n*2. Un rythme régulier* : de nouvelles créatives pour *[Produit]* livrées en [delai] à chaque demande, au lieu d'attendre des semaines.\n*3. Une amélioration continue* : chaque lot s'appuie sur ce qui a marché avant." + ECRIT_PLAN_FIN,
-  b2_recherche: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\n*1. On fait la recherche à votre place* : ce que vos clients cherchent vraiment avec *[Produit]*, leurs freins, leurs envies, ce que fait la concurrence.\n*2. On en tire des angles précis* : pas des idées au hasard, des pistes basées sur votre marché.\n*3. On les transforme en créatives* prêtes à diffuser, puis on améliore selon les résultats." + ECRIT_PLAN_FIN,
-  b2_temps: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nQuand on gère une boutique, le temps manque vite. Les pubs ne doivent pas devenir un deuxième travail.\n\n*1. On s'occupe de tout* : analyse, angles, créatives pour *[Produit]*.\n*2. Vous demandez, on livre* en [delai], depuis AdBoard.\n*3. On améliore en continu* : vous gardez votre énergie pour le reste." + ECRIT_PLAN_FIN,
-  b2_risque: "Voici ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nOn comprend la prudence : payer pour des créatives qui ne servent à rien, ça arrive.\n\n*1. Du concret avant tout* : une analyse de votre marché, pas des visuels génériques.\n*2. Des angles pensés pour* *[Produit]*, avec une vraie raison d'être testés.\n*3. Une amélioration continue*, pour ne pas rester sur un coup de dé.\n\nEt selon l'offre, une garantie de 60 jours." + ECRIT_PLAN_FIN,
-  b3_test: "Je vous propose de commencer simplement, pour *[Marque]* 🙂\n\nL'offre *TEST* : *75.000 FCFA*.\n\n12 créatives sur 2 produits, livrées en 48 h.\n\nL'idée : voir par vous-même, sur un vrai lot, ce que donne un travail pensé pour *[Produit]*, sans vous engager sur le long terme.\n\nQuand les premières créatives arrivent, vous ne devinez plus : vous voyez.\n\nOn démarre maintenant ?",
-  b3_perf: "Voici ce que je recommande pour *[Marque]* 🙂\n\nL'offre *PERF+* : *140.000 FCFA / mois*.\n\nVous avez déjà des pubs qui tournent. Ce qu'il manque, c'est un système : 24 créatives par mois sur 4 produits, des angles testés, un lot livré en 48 h, et ce qui marche qui est gardé.\n\nLe jour où vous ouvrez votre gestionnaire de pubs et que vous voyez du neuf, du solide, pensé pour vos clients : c'est ce moment qu'on construit avec vous.\n\nEt une garantie de 60 jours.\n\nOn démarre maintenant ?",
-  b3_growth: "Voici ce que je recommande pour *[Marque]* 🙂\n\nL'offre *GROWTH* : *260.000 FCFA / mois*.\n\nQuand ça marche, le vrai risque, c'est la saturation. Ici, on change d'échelle : 48 créatives par mois sur 8 produits, livrées en 24 h, pour que votre audience ne se lasse jamais et que vous gardiez toujours une longueur d'avance.\n\nVous n'attendez plus que vos pubs s'éteignent pour réagir : le relais est déjà prêt.\n\nEt une garantie de 60 jours.\n\nOn démarre maintenant ?",
-  b3_scale: "Voici ce que je recommande pour *[Marque]* 🙂\n\nL'offre *SCALE* : *480.000 FCFA / mois*.\n\nPour une marque qui veut changer d\'échelle : 96 créatives par mois sur 16 produits, une production prioritaire livrée en 24 h, et une équipe qui travaille votre croissance comme si c'était la sienne.\n\nVous gardez la vision. On s'occupe du volume, de la variété, de la cadence.\n\nEt une garantie de 60 jours.\n\nOn démarre maintenant ?",
-  suite: "Parfait 🙌\n\nVoici votre lien de paiement : [Lien]\n\nDès que c'est fait, [Facture]. Ensuite on connecte AdBoard ensemble, on importe *[Produit]* et on lance votre première production : premier lot en [delai] maximum.\n\nJe reste avec vous à chaque étape."
+  b1_cas1: "J'ai regardé vos pubs pour *[Produit]*.\n\nVous avez *[ads] ads actives*, et elles tournent en moyenne depuis *[jours] jours*.\n\nCe que ça me dit : vos créatives tiennent dans le temps. C'est un vrai point fort, vous avez des messages qui parlent à votre audience.\n\nLe risque, c'est que plus une pub tourne longtemps, plus les mêmes personnes la voient et la revoient. À un moment, elle s'use : les résultats baissent. Et si rien n'est prêt pour prendre le relais, vous repartez de zéro.\n\nC'est là qu'on intervient : préparer les prochaines créatives pendant que les actuelles marchent encore.\n\nJe vous détaille ce qu'on mettrait en place pour *[Marque]* ?",
+  b1_cas2: "J'ai regardé vos pubs pour *[Produit]*.\n\nVous avez *[ads] ads actives*, lancées il y a *[jours] jours* en moyenne.\n\nCe que ça me dit : vous êtes en train de tester. C'est la bonne démarche.\n\nLe souci d'un petit volume : avec si peu de créatives, un mauvais résultat ne veut pas dire grand-chose. Est-ce le produit ? Le message ? La pub elle-même ? On ne sait pas. Et les résultats restent instables d'une semaine à l'autre.\n\nPour savoir ce qui marche vraiment, il faut plus de créatives, et surtout différentes les unes des autres. C'est ce qu'on fait : un flux régulier de nouvelles créatives, avec des angles variés.\n\nJe vous détaille ce qu'on mettrait en place pour *[Marque]* ?",
+  b1_cas3: "J'ai regardé vos pubs pour *[Produit]*.\n\nVous avez *[ads] ads actives*, et elles tournent en moyenne depuis *[jours] jours*.\n\nCe que ça me dit : vous avez un bon rythme, et ça tient dans la durée. C'est solide.\n\nLe risque, quand beaucoup de pubs tournent longtemps : tout finit par se ressembler. Mêmes idées, mêmes visuels. Et l'audience ne réagit plus, parce qu'elle a déjà tout vu.\n\nCe qui change la donne, c'est la variété : des angles vraiment différents, qui parlent chacun à un type de client différent.\n\nJe vous détaille ce qu'on mettrait en place pour *[Marque]* ?",
+  b1_cas4: "J'ai regardé vos pubs pour *[Produit]*.\n\nVous avez *[ads] ads actives*, lancées il y a *[jours] jours* en moyenne.\n\nCe que ça me dit : vous lancez beaucoup de nouveautés, et vite. C'est une vraie énergie.\n\nLe risque, quand on lance autant : on perd de vue ce qui marche vraiment. Une bonne pub se retrouve noyée parmi les autres, et on ne sait plus laquelle garder.\n\nCe qui aide : repérer celles qui gagnent, comprendre pourquoi, et s'en servir pour les prochaines.\n\nJe vous détaille ce qu'on mettrait en place pour *[Marque]* ?",
+  b1_aucune: "J'ai regardé vos pubs pour *[Produit]*.\n\nAujourd'hui, je ne trouve aucune pub active de votre côté dans la bibliothèque de Meta.\n\nSi elles sont en pause, c'est peut-être le bon moment pour repartir sur de nouvelles bases. Et si vous préparez un lancement, le plus important, c'est de démarrer avec les bons angles plutôt que de tester au hasard.\n\nC'est ce qu'on fait : on étudie votre marché, on crée les créatives, et on les améliore au fil des résultats.\n\nJe vous détaille ce qu'on mettrait en place pour *[Marque]* ?",
+  b2_rythme: "Voici concrètement ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nAvec peu de créatives, un résultat décevant ne veut rien dire : c'est peut-être juste le mauvais angle. Il faut du volume varié pour savoir.\n\n• *[n] créatives chaque mois*, avec plusieurs angles testés en parallèle\n• Un volume pensé pour que les résultats veuillent dire quelque chose\n• Plus vous testez vite, plus vite vous trouvez vos gagnantes\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
+  b2_angles: "Voici concrètement ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nMeta montre vos pubs à des personnes très différentes. Si tout votre message est identique, il ne parle qu'à un type de client, puis il s'use.\n\n• Chaque lot défend *plusieurs angles différents*\n• Chaque angle parle à un type de client différent\n• On varie aussi les formats et les accroches\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
+  b2_gagnantes: "Voici concrètement ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nUne pub gagnante finit toujours par s'essouffler. Il faut avoir la suivante prête, et comprendre pourquoi la première marchait.\n\n• On repère vos gagnantes et on analyse *pourquoi* elles marchent\n• On les décline : nouveaux visuels, mêmes ressorts\n• On prépare toujours la suivante en réserve\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
+  b2_production: "Voici concrètement ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nProduire des créatives de qualité demande un process complet : analyse, idée, design, retouches. Seul ou à la tâche, ça prend vite toute la semaine.\n\n• Un seul interlocuteur, un seul espace : *AdBoard*\n• Des lots prêts à publier, livrés en *[delai] maximum*\n• Une équipe qui fait ça tous les jours, avec un process rodé\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
+  b2_recherche: "Voici concrètement ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nSans étude du marché, chaque angle est un pari. Et un pari perdu, c'est du budget dépensé pour rien.\n\n• On étudie vos concurrents, leurs prix et leurs pubs qui performent\n• On dresse le portrait de votre client idéal : ce qu'il craint, ce qu'il veut\n• On en tire des angles précis, prêts à être produits\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
+  b2_temps: "Voici concrètement ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nQuand tout repose sur une seule personne, la création de pubs passe toujours après le reste.\n\n• Vous connectez votre compte et vous ajoutez votre produit\n• On gère l'analyse, la création et la livraison\n• Vous gardez votre énergie pour votre boutique\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
+  b2_risque: "Voici concrètement ce qu'on mettrait en place pour *[Marque]* 👇🏾\n\n[Remarque]\n\nQuand on ne sait pas encore ce qui marche, chaque décision est un risque. Il faut des preuves avant d'investir plus.\n\n• On commence par tester, sur un volume maîtrisé\n• On repère ce qui marche avant de monter\n• Vous n'investissez plus que sur des preuves\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
+  b3_test: "Pour *[Marque]*, je vous propose de commencer par l'offre *TEST* 🙂\n\nAvant de produire quoi que ce soit, on fait une vraie recherche : votre marché, vos concurrents, votre client idéal. On ne devine pas.\n\nEnsuite, chaque mois, vous recevez *12 créatives*, en deux lots. Chaque lot arrive en 48 heures.\n\nAprès chaque lot, on regarde ce qui marche et ce qui ne marche pas, et on s'en sert pour améliorer le suivant. Vous ne repartez jamais de zéro.\n\nEt tout arrive dans *AdBoard*, votre espace : vos créatives, vos produits et vos données au même endroit.\n\nC'est la meilleure façon de voir, sur un vrai lot, ce que ça donne pour *[Produit]*.\n\nÇa vous convient ? On peut démarrer maintenant 🙌",
+  b3_perf: "Pour *[Marque]*, je vous recommande l'offre *PERF+* 🙂\n\nAvant de produire quoi que ce soit, on fait une vraie recherche : votre marché, vos concurrents, votre client idéal. On ne devine pas.\n\nEnsuite, chaque mois, vous recevez *24 créatives*, en quatre lots, avec pour chacune le titre et le texte de la pub, déjà optimisés pour vendre. Chaque lot arrive en 48 heures.\n\nVous avez aussi des données sur votre marché : ce qui se passe, nos recommandations et les opportunités à saisir.\n\nAprès chaque lot, on regarde ce qui marche, et on s'en sert pour améliorer le suivant.\n\nTout arrive dans *AdBoard*, où vous gérez vos créatives, vos produits et vos données. Vous pouvez même y ajouter 2 membres de votre équipe.\n\nEt vous êtes couvert par une garantie Performance de 60 jours.\n\nÇa vous convient ? On peut démarrer maintenant 🙌",
+  b3_growth: "Pour *[Marque]*, je vous recommande l'offre *GROWTH* 🙂\n\nAvant de produire quoi que ce soit, on fait une vraie recherche : votre marché, vos concurrents, votre client idéal. On ne devine pas.\n\nEnsuite, chaque mois, vous recevez *48 créatives*, en huit lots, avec pour chacune le titre et le texte de la pub, déjà optimisés pour vendre. Chaque lot arrive en 24 heures.\n\nVous avez aussi des données détaillées sur votre marché : ce qui se passe, nos recommandations et les opportunités à saisir.\n\nAprès chaque lot, on regarde ce qui marche, et on s'en sert pour améliorer le suivant.\n\nTout arrive dans *AdBoard*, où vous gérez vos créatives, vos produits et vos données. Vous pouvez y ajouter 5 membres de votre équipe.\n\nEt vous êtes couvert par une garantie Croissance de 60 jours.\n\nÇa vous convient ? On peut démarrer maintenant 🙌",
+  b3_scale: "Pour *[Marque]*, je vous recommande l'offre *SCALE* 🙂\n\nAvant de produire quoi que ce soit, on fait une vraie recherche : votre marché, vos concurrents, votre client idéal. Y compris quand vous vendez dans plusieurs marchés, avec des langues et des cultures différentes.\n\nEnsuite, chaque mois, vous recevez *96 créatives*, en seize lots, avec pour chacune le titre et le texte de la pub, déjà optimisés pour vendre. Vos lots passent en priorité et arrivent en 24 heures.\n\nVous avez aussi des données détaillées sur votre marché : ce qui se passe, nos recommandations et les opportunités à saisir.\n\nAprès chaque lot, on regarde ce qui marche, et on s'en sert pour améliorer le suivant.\n\nTout arrive dans *AdBoard*, où vous gérez vos créatives, vos produits et vos données. Vous pouvez y ajouter plus de 10 membres de votre équipe.\n\nEt vous êtes couvert par une garantie Scaling de 60 jours.\n\nÇa vous convient ? On peut démarrer maintenant 🙌",
+  suite: "Parfait 🙌\n\nVoici votre lien de paiement : [Lien]\n\nDès que c'est fait, [Facture]. Ensuite on connecte AdBoard ensemble, on ajoute *[Produit]* et on lance votre première production : premier lot en [delai] maximum.\n\nJe reste avec vous à chaque étape."
 };
 const ECRIT_TPL_LABELS = {
-  b1_chiffres: 'Bloc 1 · Audit — avec chiffres des ads (variables [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [solution])',
-  b1_sans: 'Bloc 1 · Audit — sans chiffres (ads non mises à jour)',
+  b1_cas1: 'Bloc 1 · Audit — cas 1 : peu d\'ads, elles tiennent (variables [ads] [jours])',
+  b1_cas2: 'Bloc 1 · Audit — cas 2 : peu d\'ads, récentes',
+  b1_cas3: 'Bloc 1 · Audit — cas 3 : beaucoup d\'ads, elles tiennent',
+  b1_cas4: 'Bloc 1 · Audit — cas 4 : beaucoup d\'ads, récentes',
+  b1_aucune: 'Bloc 1 · Audit — aucune pub active trouvée',
   b2_rythme: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.rythme, b2_angles: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.angles,
   b2_gagnantes: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.gagnantes, b2_production: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.production,
   b2_recherche: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.recherche, b2_temps: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.temps, b2_risque: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.risque,
@@ -4500,7 +4510,7 @@ const ECRIT_TPL_LABELS = {
   suite: 'Après son « oui » · lien de paiement + suite (variables [Lien] [Facture] [delai])'
 };
 function ecritTemplates() {
-  const saved = (DB._config && DB._config.tpl_ecrit) || {};
+  const saved = (DB._config && DB._config.tpl_ecrit2) || {};
   const out = {};
   Object.keys(DEFAULT_ECRIT).forEach(k => { out[k] = (typeof saved[k] === 'string' && saved[k].trim()) ? saved[k] : DEFAULT_ECRIT[k]; });
   return out;
@@ -4520,7 +4530,11 @@ function ecritMessage(p, etape) {
   const offre = n.ecrit_offre || '';
   let cle = etape;
   const v = pitchVariante(p);
-  if (etape === 'b1') cle = v.cas ? 'b1_chiffres' : 'b1_sans';
+  if (etape === 'b1') {
+    if (v.cas) cle = 'b1_cas' + v.cas;
+    else if (v.maj) cle = 'b1_aucune';
+    else return { msg: '', manque: ['ads à jour (lance « Ads J+3 » sur ton PC : l\'audit a besoin de ses vrais chiffres)'], cle: 'b1' };
+  }
   if (etape === 'b2') cle = 'b2_' + (n.ecrit_faille || '');
   if (etape === 'b3') cle = 'b3_' + offre;
   let tpl = T[cle];
@@ -4529,16 +4543,16 @@ function ecritMessage(p, etape) {
   const lien = offre ? (closingLiens()[offre] || '').trim() : '';
   const vals = {
     marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '',
-    remarque: (n.ecrit_remarque || '').trim(), lien, facture: (CLOSING_OFFRES[offre] || {}).facture || '', delai: ECRIT_DELAI[offre] || '48 h'
+    remarque: (n.ecrit_remarque || '').trim(), lien, facture: (CLOSING_OFFRES[offre] || {}).facture || '', delai: ECRIT_DELAI[offre] || '48 h', n: ECRIT_N[offre] || ''
   };
   // lignes avec une variable facultative vide : supprimées (jamais de trou dans le message)
   tpl = tpl.split('\n').filter(l => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n');
-  let msg = tpl.replace(/\[(marque|produit|pays|remarque|lien|facture|delai)\]/gi, (m, k) => {
+  let msg = tpl.replace(/\[(marque|produit|pays|remarque|lien|facture|delai|n)\]/gi, (m, k) => {
     const x = vals[k.toLowerCase()];
     if (!x) { const nom = k.toLowerCase() === 'lien' ? 'lien de paiement ' + (offre ? offre.toUpperCase() : '(offre ?)') + ' (Templates)' : k.toLowerCase() === 'facture' ? 'offre' : k; if (!manque.includes(nom)) manque.push(nom); }
     return x;
   });
-  if (cle === 'b1_chiffres') msg = remplirPitchDonnees(msg, v);
+  if (/^b1_cas/.test(cle)) msg = remplirPitchDonnees(msg, v);
   return { msg, manque, cle };
 }
 
@@ -4563,7 +4577,7 @@ function ouvrirEcrit(id) {
   const optsO = Object.keys(CLOSING_OFFRES).map(k => '<option value="' + k + '"' + (offreDef === k ? ' selected' : '') + '>' + CLOSING_OFFRES[k].label + '</option>').join('');
   const v = pitchVariante(p);
   const b1 = ecritB1Saute(n) ? 'Bloc 1 sauté : il a déjà reçu ton J+3 (pas de répétition).'
-    : (v.cas ? 'Bloc 1 : audit avec les chiffres de ses ads (relevé récent).' : 'Bloc 1 : audit sans chiffres. Pour la version chiffrée, mets à jour ses ads (bouton « Ads J+3 » dans Leads).');
+    : (v.cas ? 'Bloc 1 : audit de ses ads (relevé récent, cas ' + v.cas + ').' : (v.maj ? 'Bloc 1 : audit « aucune pub active trouvée ».' : 'Bloc 1 : il faut d\'abord mettre à jour ses ads (bouton « Ads J+3 » / script sur ton PC).'));
   const actif = ecritActif(p);
   ov.innerHTML =
     '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:460px;width:100%;font-family:var(--font)">'
@@ -4628,7 +4642,7 @@ async function ecritEnvoyer(id, etape) {
   const { msg, manque } = ecritMessage(p, etape);
   if (manque.length) {
     toast('Il manque : ' + manque.join(', '));
-    if (manque.some(x => x === 'faille' || x === 'offre')) ouvrirEcrit(id);
+    if (manque.some(x => x === 'faille' || x === 'offre')) ouvrirEcrit(id);   // (les autres cas : message de la toast suffit)
     return;
   }
   const restant = msg.match(/\[[^\]]{2,40}\]/);
@@ -8167,7 +8181,7 @@ function getClosing() {
   });
 }
 function getEcrit() {
-  const out = {}, saved = (DB._config && DB._config.tpl_ecrit) || {};
+  const out = {}, saved = (DB._config && DB._config.tpl_ecrit2) || {};
   Object.keys(DEFAULT_ECRIT).forEach(k => { const el = document.getElementById('ecrit-' + k); out[k] = el ? el.value : (saved[k] || ''); });
   return out;
 }
@@ -8194,7 +8208,7 @@ async function saveAllTemplates() {
   const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
   const demo_msg  = demoMsgEl ? demoMsgEl.value : ((DB._config || {}).tpl_demo_msg || '');
-  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, closing_liens: getClosingLiens(), tpl_ecrit: getEcrit(), tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
+  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, closing_liens: getClosingLiens(), tpl_ecrit2: getEcrit(), tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
 
   // Upsert dans la ligne config
   try {
