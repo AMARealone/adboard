@@ -10,6 +10,7 @@ export default defineConfig({
       input: {
         adboard: resolve(__dirname, 'adboard.html'),
         factory: resolve(__dirname, 'factory-next.html'),
+        crm: resolve(__dirname, 'crm-next.html'),
       }
     }
   }

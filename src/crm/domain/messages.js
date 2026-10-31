@@ -1,0 +1,123 @@
+// Construction des messages (reprise de l'ancien CRM). Toutes les fonctions reçoivent la config (templates enregistrés).
+import { N } from './notes'
+import { OFFRES } from './offres'
+import * as D from './defaults'
+
+const pd = (cfg) => {
+  const c = (cfg && cfg.pitch_data) || {}, d = D.PITCH_DATA_DEFAUT
+  const num = (v, def) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : def }
+  const cas = {}
+  ;[1, 2, 3, 4].forEach((k) => { const x = (c.cas || {})[k] || {}; cas[k] = { b: (x.b || '').trim() || d.cas[k].b, m: (x.m || '').trim() || d.cas[k].m, n: (x.n || '').trim() || d.cas[k].n, s: (x.s || '').trim() || d.cas[k].s } })
+  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() ? c.repli : d.repli, cas }
+}
+// Cas du prospect d'après le dernier relevé d'ads (script PC)
+export function pitchVariante(p, cfg) {
+  const prm = pd(cfg), a = p && p.ads_j10
+  if (!a || !a.maj_at) return { cas: null, maj: false, raison: 'ads pas encore mises à jour (lance « Ads J+3 » sur ton PC)' }
+  const t = Date.parse(a.maj_at)
+  if (!Number.isFinite(t)) return { cas: null, maj: false, raison: 'date du relevé illisible' }
+  const age = Math.max(0, Math.floor((Date.now() - t) / 86400000))
+  if (age > prm.fraicheur_j) return { cas: null, maj: false, age, raison: 'relevé vieux de ' + age + ' j (valable ' + prm.fraicheur_j + ' j)' }
+  const ads = parseInt(a.nb, 10)
+  if (!Number.isFinite(ads) || ads < 1) return { cas: null, maj: true, age, raison: "aucune ad active trouvée aujourd'hui" }
+  const dur = a[prm.duree] != null ? a[prm.duree] : (a.med != null ? a.med : a.moy)
+  if (dur == null) return { cas: null, maj: true, age, raison: 'durée des ads illisible' }
+  const jours = Math.max(1, parseInt(dur, 10) || 1)
+  const peu = ads <= prm.seuil_ads, courte = jours < prm.seuil_jours
+  const cas = peu ? (courte ? 2 : 1) : (courte ? 4 : 3)
+  return { cas, maj: true, ads, jours, age, b: prm.cas[cas].b, m: prm.cas[cas].m, n: prm.cas[cas].n, s: prm.cas[cas].s }
+}
+export function remplirPitchDonnees(msg, v) {
+  msg = msg.replace(/\s*\((?:ex|exemple)\s*:[^)]*\)/gi, '')
+  const put = (nom, val) => { msg = msg.replace(new RegExp('\\[' + nom + '\\]', 'gi'), () => val) }
+  put('ads', v.ads); put('jours', v.jours); put('bonne_nouvelle', v.b)
+  put('mauvaise_nouvelle_en_2_mots', v.n); put('mauvaise_nouvelle_2_mots', v.n); put('mauvaise_nouvelle', v.m); put('solution', v.s)
+  if (v.ads === 1) msg = msg.replace(/\b1(\*?) ads actives\b/gi, '1$1 ad active')
+  if (v.jours === 1) msg = msg.replace(/\b1(\*?) jours\b/gi, '1$1 jour')
+  return msg
+}
+export function resoudrePays(paysRaw) {
+  const brut = (paysRaw || '').trim()
+  const adj = D.PAYS_ADJ[brut.toUpperCase()] || brut
+  const code = D.PAYS_CODE[adj] || (D.PAYS_PHRASE[brut.toUpperCase()] ? brut.toUpperCase() : '')
+  return { code, adj, phrase: D.PAYS_PHRASE[code] || adj || brut }
+}
+
+// ── Closing après appel (J+1 / J+3 / J+7)
+export function closingTemplates(cfg) {
+  let t = cfg && cfg.tpl_closing
+  if (!Array.isArray(t) || t.length !== D.CLOSING_SLOTS.length) t = D.DEFAULT_CLOSING
+  return D.CLOSING_SLOTS.map((x, i) => t[i] || D.DEFAULT_CLOSING[i])
+}
+export const closingSlot = (n, i) => (i === 0 ? (n.closing_ab1 === 'B' ? 1 : 0) : i === 1 ? (n.closing_ab3 === 'B' ? 3 : 2) : 4)
+export function closingMessage(p, i, cfg) {
+  const n = N(p), tpl = (closingTemplates(cfg)[closingSlot(n, i)] || '').trim(), offre = OFFRES[n.closing_offre]
+  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Objectif: (n.closing_objectif || '').trim(), Lien: offre ? offre.url : '', Facture: offre ? offre.facture : '' }
+  const manque = []
+  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Mots|Objection|Objectif|Lien|Facture)\]/gi, (m, k) => {
+    const key = Object.keys(vals).find((x) => x.toLowerCase() === k.toLowerCase()), v = vals[key]
+    if (!v) { const nom = key === 'Lien' || key === 'Facture' ? 'offre' : key; if (!manque.includes(nom)) manque.push(nom) }
+    return v
+  })
+  return { msg, manque }
+}
+
+// ── Closing par écrit (blocs 1 à 3 + suite)
+export function ecritTemplates(cfg) {
+  const saved = (cfg && cfg.tpl_ecrit2) || {}, out = {}
+  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() ? saved[k] : D.DEFAULT_ECRIT[k] })
+  return out
+}
+export function ecritMessage(p, etape, cfg) {
+  const n = N(p), T = ecritTemplates(cfg), offre = n.ecrit_offre || ''
+  let cle = etape
+  const v = pitchVariante(p, cfg)
+  if (etape === 'b1') {
+    if (v.cas) cle = 'b1_cas' + v.cas
+    else if (v.maj) cle = 'b1_aucune'
+    else return { msg: '', manque: ['ads à jour (lance « Ads J+3 » sur ton PC : l\'audit a besoin de ses vrais chiffres)'], cle: 'b1' }
+  }
+  if (etape === 'b2') cle = 'b2_' + (n.ecrit_faille || '')
+  if (etape === 'b3') cle = 'b3_' + offre
+  let tpl = T[cle]
+  const manque = []
+  if (!tpl) { manque.push(etape === 'b2' ? 'faille' : 'offre'); return { msg: '', manque, cle } }
+  const o = OFFRES[offre] || {}
+  const vals = { marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '', remarque: (n.ecrit_remarque || '').trim(), lien: o.url || '', facture: o.facture || '', delai: D.ECRIT_DELAI[offre] || '48 h', n: D.ECRIT_N[offre] || '' }
+  tpl = tpl.split('\n').filter((l) => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n')
+  let msg = tpl.replace(/\[(marque|produit|pays|remarque|lien|facture|delai|n)\]/gi, (m, k) => {
+    const x = vals[k.toLowerCase()]
+    if (!x) { const nom = k.toLowerCase() === 'lien' || k.toLowerCase() === 'facture' ? 'offre' : k; if (!manque.includes(nom)) manque.push(nom) }
+    return x
+  })
+  if (/^b1_cas/.test(cle)) msg = remplirPitchDonnees(msg, v)
+  return { msg, manque, cle }
+}
+
+// ── Relances Leads J+3 / J+10 / J+21
+export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t : D.DEFAULT_RELANCES }
+export function relanceMessage(p, idx, cfg) {
+  let tpl = relanceTemplates(cfg)[idx] || ''
+  if (idx !== 0 && D.J10_VARS.test(tpl)) tpl = D.DEFAULT_RELANCES[idx] || ''
+  if (idx === 2 && tpl === D.OLD_J21_DEFAUT) tpl = D.DEFAULT_RELANCES[2]
+  let v = null, avertir = false, trace = ''
+  if (idx === 0 && D.J10_VARS.test(tpl)) {
+    v = pitchVariante(p, cfg)
+    if (v.cas) { tpl = remplirPitchDonnees(tpl, v); trace = 'cas' + v.cas } else { tpl = pd(cfg).repli; trace = 'repli'; avertir = !v.maj }
+  }
+  let msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '')
+  if (/\[Produit\]/i.test(msg)) msg = msg.replace(/\[Produit\]/gi, p.produit || '')
+  if (/\[Pays\]/i.test(msg)) {
+    const { phrase } = resoudrePays(p.pays)
+    msg = msg.replace(/\b(en|au|à)\s+\*\[pays\]\*/gi, '*' + phrase + '*').replace(/\*\[pays\]\*/gi, '*' + phrase + '*').replace(/\b(en|au|à)\s+\[Pays\]/gi, phrase).replace(/\[Pays\]/gi, phrase).replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2')
+  }
+  return { msg, v, avertir, trace, chemin: ((msg.match(/adstackofficial\.com(\/[\w\-\/]*)?/i) || [])[1] || '') }
+}
+export const lienRelance = (idx, id, chemin) => {
+  const campagne = ['j3', 'j10', 'j21'][idx] || 'relance'
+  const ch = chemin && /^\/[\w\-\/]*$/.test(chemin) ? chemin.replace(/\/+$/, '') : ''
+  return `https://adstackofficial.com${ch}/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${id}`
+}
+export function insererLien(msg, lien) {
+  return msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*]*)?\*?/gi, lien).replace(/\*?\[lien_demo\]\*?/gi, lien).replace(/\*?\[lien\]\*?/gi, lien)
+}
