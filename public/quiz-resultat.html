@@ -368,7 +368,8 @@ body{background:#0A0A0E;overflow-x:hidden}
 <script src="/quiz-data.js"></script>
 <script>
 (function(){
-var Q=window.QUIZ, p=new URLSearchParams(location.search), o=p.get('o');
+var Q=window.QUIZ, p=new URLSearchParams(location.search), o=p.get('o'), direct=false;
+if(!o){var seg=location.pathname.replace(/\.html$/,'').replace(/^\/+|\/+$/g,'').toLowerCase();o={test:'test',perf:'starter',growth:'pro',scale:'scale'}[seg];direct=!!o}
 if(!Q.offres[o]){location.replace('/quiz');return}
 var of=Q.offres[o], r=Q.resultats[o], a=(p.get('a')||'').split('').map(function(c){return 'abcde'.indexOf(c)});
 function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
@@ -378,8 +379,8 @@ var said='';
 if(a.length===Q.questions.length&&a.every(function(i){return i>=0})){
   said='<p class="rs-said">Vous nous avez dit :<q>'+esc(Q.questions[0].rep[a[0]].t)+'</q><q>'+esc(Q.questions[3].rep[a[3]].t)+'</q></p>';
 }
-var h='<span class="rs-eye">🎉 Votre résultat</span><h1>'+t+'</h1><p class="rs-sub">'+esc(r.sous)+'</p>'+said;
-h+='<article class="of"><span class="of-tag">Faite pour vous</span><h2 class="of-name">'+of.name+'</h2><p class="of-tl">'+esc(of.tagline)+'</p>';
+var h='<span class="rs-eye">'+(direct?'Votre offre':'🎉 Votre résultat')+'</span><h1>'+t+'</h1><p class="rs-sub">'+esc(r.sous)+'</p>'+said;
+h+='<article class="of"><span class="of-tag">'+(direct?'Offre '+of.name:'Faite pour vous')+'</span><h2 class="of-name">'+of.name+'</h2><p class="of-tl">'+esc(of.tagline)+'</p>';
 h+='<div class="of-pr"><b>'+fmt(of.price)+'</b><span>FCFA / mois</span></div><p class="of-sub">'+of.creas+' créatives par mois · abonnement mensuel</p><hr>';
 if(of.lead)h+='<p class="of-lead">'+esc(of.lead)+'</p>';
 h+='<ul>'+of.items.map(function(f){return '<li><span><strong>'+esc(f[0])+'</strong>'+esc(f[1])+'</span></li>'}).join('')+'</ul>';

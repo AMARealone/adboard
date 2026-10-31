@@ -23,6 +23,7 @@
     { "src": "/etude-de-cas", "dest": "/etude-de-cas.html" },
     { "src": "/quiz", "dest": "/quiz.html" },
     { "src": "/quiz-resultat", "dest": "/quiz-resultat.html" },
+    { "src": "/(test|perf|growth|scale)", "dest": "/quiz-resultat.html" },
     { "src": "/", "dest": "/vente.html" }
   ]
 }
