@@ -2098,7 +2098,7 @@ textarea::placeholder { color: var(--muted); }
   <div class="page-header">
     <div>
       <div class="page-title">Closing</div>
-      <div class="page-sub">Appel fait, pas encore payé — relances douces J+3 / J+10 / J+21 comptées depuis l'appel</div>
+      <div class="page-sub">Appel fait, pas encore payé — relances douces J+1 / J+3 / J+7 comptées depuis l'appel</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
       <div class="search-wrap" style="width:220px">
@@ -3760,7 +3760,7 @@ function ouvrirDecisionAppel(id) {
     + '<div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px">Comment s\'est passé l\'appel ?</div>'
     + '<div style="font-size:12px;color:var(--muted);margin-bottom:14px">' + esc2(p.nom_marque || 'Ce prospect') + '</div>'
     + '<button id="dec-paye" style="' + btn + 'background:rgba(50,255,126,.08);border-color:rgba(50,255,126,.3);color:#32FF7E">✅ Il a payé</button>'
-    + '<button id="dec-relance" style="' + btn + 'background:rgba(255,181,71,.08);border-color:rgba(255,181,71,.3);color:#FFB547">⏳ Pas encore décidé — le relancer (J+3 / J+10 / J+21)</button>'
+    + '<button id="dec-relance" style="' + btn + 'background:rgba(255,181,71,.08);border-color:rgba(255,181,71,.3);color:#FFB547">⏳ Pas encore décidé — le relancer (J+1 / J+3 / J+7)</button>'
     + '<button id="dec-perdu" style="' + btn + 'background:rgba(255,92,92,.08);border-color:rgba(255,92,92,.3);color:#FF5C5C">❌ Pas intéressé</button>'
     + '<button id="dec-plus-tard" class="btn btn-ghost btn-sm" style="margin-top:4px">Décider plus tard</button>'
     + '</div>';
@@ -3769,14 +3769,15 @@ function ouvrirDecisionAppel(id) {
   ov.addEventListener('click', e => { if (e.target === ov) fermer(); });
   document.getElementById('dec-plus-tard').onclick = fermer;
   document.getElementById('dec-paye').onclick = () => { fermer(); decisionAppel(id, 'paye'); };
-  document.getElementById('dec-relance').onclick = () => { fermer(); decisionAppel(id, 'relance'); };
+  document.getElementById('dec-relance').onclick = () => { fermer(); ouvrirInfosAppel(id, true); };
   document.getElementById('dec-perdu').onclick = () => { fermer(); decisionAppel(id, 'perdu'); };
 }
 
 function _effacerClesAppelClosing(s) {
   ['appel_reserve','appel_reserve_at','appel_fait','appel_fait_at','appel_via','appel_programme_at',
    'closing_etat','closing_at','closing_paye_at',
-   'closing_sent_j3','closing_sent_j3_at','closing_sent_j10','closing_sent_j10_at','closing_sent_j21','closing_sent_j21_at'
+   'closing_sent_j1','closing_sent_j1_at','closing_sent_j3','closing_sent_j3_at','closing_sent_j7','closing_sent_j7_at',
+   'closing_sent_j10','closing_sent_j10_at','closing_sent_j21','closing_sent_j21_at'
   ].forEach(k => delete s[k]);
 }
 
@@ -3795,7 +3796,7 @@ async function decisionAppel(id, choix) {
 
   if (choix === 'relance') {
     // nouvelle séquence : on repart de zéro, les jours comptent depuis l'appel
-    ['closing_sent_j3','closing_sent_j3_at','closing_sent_j10','closing_sent_j10_at','closing_sent_j21','closing_sent_j21_at'].forEach(k => delete s[k]);
+    ['closing_sent_j1','closing_sent_j1_at','closing_sent_j3','closing_sent_j3_at','closing_sent_j7','closing_sent_j7_at','closing_sent_j10','closing_sent_j10_at','closing_sent_j21','closing_sent_j21_at'].forEach(k => delete s[k]);
     s.closing_etat = 'relance';
     s.closing_at = s.appel_fait_at || now;
   } else if (choix === 'paye') {
@@ -3820,7 +3821,7 @@ async function decisionAppel(id, choix) {
     toast('Échec — non enregistré, réessaie');
     return;
   }
-  toast(choix === 'relance' ? 'Dans Closing — première relance à J+3 de l\'appel'
+  toast(choix === 'relance' ? 'Dans Closing — première relance à J+1 de l\'appel'
       : choix === 'paye' ? 'Marqué payé ✓ — passé en Acheteur'
       : 'Pas intéressé — retourné dans Suivi');
 }
@@ -4070,7 +4071,7 @@ setInterval(function () {
 }, 60000);
 
 // ═══════════════════════════════════════
-// CLOSING — appel fait, pas encore payé : relances douces J+3 / J+10 / J+21 DEPUIS L'APPEL
+// CLOSING — appel fait, pas encore payé : relances douces J+1 / J+3 / J+7 DEPUIS L'APPEL
 // Données dans prospects.notes (JSON), aucune colonne à créer :
 //   closing_etat   'relance' (en séquence) | 'paye'
 //   closing_at     (ISO)  départ des jours = moment de "Appel fait"
@@ -4078,15 +4079,71 @@ setInterval(function () {
 // Un prospect est dans Closing si closing_etat = 'relance' (peu importe son statut Suivi/Lead) ;
 // il n'apparaît alors ni dans Appels ni dans Leads.
 // ═══════════════════════════════════════
-const CLOSING_JOURS  = [3, 10, 21];
+const CLOSING_JOURS  = [1, 3, 7];
 const CLOSING_LABELS = ['Relance 1', 'Relance 2', 'Relance 3'];
-const DEFAULT_CLOSING = ['', '', ''];
+// 5 textes : J+1 version A, J+1 version B, J+3 A, J+3 B, J+7 (unique)
+const CLOSING_SLOTS = [
+  { j: 1, v: 'A', label: 'J+1 — version A (« tout va bien pour le paiement ? »)' },
+  { j: 1, v: 'B', label: 'J+1 — version B (reprend ses mots)' },
+  { j: 3, v: 'A', label: 'J+3 — version A (coût de l\'attente)' },
+  { j: 3, v: 'B', label: 'J+3 — version B (« qu\'est-ce qui vous retient ? »)' },
+  { j: 7, v: '',  label: 'J+7 — dernier message' }
+];
+const DEFAULT_CLOSING = [
+  "Bonjour [Prénom] 🙂\n\nMerci encore pour notre échange d'hier, j'ai vraiment aimé parler de *[Marque]*.\n\nJe voulais juste m'assurer que tout va bien de votre côté pour le paiement. Si quelque chose a bloqué, dites-moi, on le règle ensemble.\n\nVoici le lien : [Lien]\n\nDès que c'est fait, [Facture], et on connecte AdBoard ensemble.",
+  "Bonjour [Prénom],\n\nMerci pour hier. J'ai repensé à ce que vous m'avez dit : « [Mots] ».\n\nC'est exactement ce qu'on règle pour vous.\n\nSi une question vous est revenue depuis, écrivez-moi, je vous réponds tout de suite. Et quand vous êtes prêt(e) : [Lien]",
+  "Bonjour [Prénom],\n\nJe pense à *[Marque]*. Vous m'aviez dit : « [Mots] ».\n\nChaque semaine qui passe, c'est une semaine de plus comme ça, alors que vous étiez motivé(e) à changer les choses.\n\nOn peut le faire ensemble aujourd'hui, simplement : voici le lien [Lien], et je reste avec vous pour connecter AdBoard et lancer votre première demande.\n\nDites-moi si je peux vous aider.",
+  "Bonjour [Prénom],\n\nVous m'aviez dit : « [Mots] », et je me suis dit que je ne voulais pas que le doute décide à votre place.\n\nQu'est-ce qui vous retient encore ? Si c'est [Objection], on peut en parler deux minutes ici, sans engagement.\n\nEt si tout est clair : [Lien]",
+  "Bonjour [Prénom],\n\nC'est mon dernier message pour ne pas vous déranger 🙂\n\nJ'ai vraiment aimé échanger avec vous sur *[Marque]*, et je crois sincèrement qu'on peut vous aider à [Objectif].\n\nLe lien reste valable quand vous voulez : [Lien]\n\nSi ce n'est pas le moment, aucun souci, je reste disponible. Et si vous avez 10 secondes, dites-moi simplement ce qui vous a fait hésiter : ça m'aide beaucoup."
+];
+// Offres : libellé + phrase fixe « facture / garantie » (la facture est un fichier envoyé par mail,
+// pas un lien : le texte du message est donc fixe selon l'offre, rien à saisir)
+const CLOSING_OFFRES = {
+  test:   { label: 'TEST — 75.000',     facture: 'vous recevez la facture par mail' },
+  perf:   { label: 'PERF+ — 140.000',   facture: 'vous recevez la facture et votre garantie par mail' },
+  growth: { label: 'GROWTH — 260.000',  facture: 'vous recevez la facture et votre garantie par mail' },
+  scale:  { label: 'SCALE — 480.000',   facture: 'vous recevez la facture et votre garantie par mail' }
+};
+const CLOSING_OBJECTIONS = ['le prix', 'la peur que ça ne donne pas de résultats', 'le besoin d\'en parler à votre associé(e)', 'le besoin de réfléchir', 'la crainte de perdre du temps', 'le fait d\'avoir déjà essayé autre chose'];
+function closingLiens() { return (DB._config && DB._config.closing_liens) || {}; }
+// slot du texte à utiliser pour la relance i (0=J+1, 1=J+3, 2=J+7) selon la version A/B choisie
+function closingSlot(n, i) {
+  if (i === 0) return n.closing_ab1 === 'B' ? 1 : 0;
+  if (i === 1) return n.closing_ab3 === 'B' ? 3 : 2;
+  return 4;
+}
 
 function closingTemplates() {
   let t = (DB._config && DB._config.tpl_closing) || null;
   if (!t) { try { t = JSON.parse(localStorage.getItem('tpl_closing') || 'null'); } catch(e) {} }
-  if (!Array.isArray(t)) t = DEFAULT_CLOSING;
-  return CLOSING_JOURS.map((j, i) => t[i] || '');
+  if (!Array.isArray(t) || t.length !== CLOSING_SLOTS.length) t = DEFAULT_CLOSING;
+  return CLOSING_SLOTS.map((x, i) => t[i] || DEFAULT_CLOSING[i]);
+}
+// Message final d'une relance : remplace toutes les variables par les infos stockées sur la fiche
+function closingMessage(p, i) {
+  const n = appelNotes(p);
+  const tpl = (closingTemplates()[closingSlot(n, i)] || '').trim();
+  const offre = CLOSING_OFFRES[n.closing_offre];
+  const vals = {
+    'Prénom': (n.closing_prenom || '').trim(),
+    'Marque': p.nom_marque || '',
+    'Mots': (n.closing_mots || '').trim(),
+    'Objection': (n.closing_objection || '').trim(),
+    'Objectif': (n.closing_objectif || '').trim(),
+    'Lien': offre ? (closingLiens()[n.closing_offre] || '').trim() : '',
+    'Facture': offre ? offre.facture : ''
+  };
+  const manque = [];
+  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Mots|Objection|Objectif|Lien|Facture)\]/gi, (m, k) => {
+    const key = Object.keys(vals).find(x => x.toLowerCase() === k.toLowerCase());
+    const v = vals[key];
+    if (!v) { const nom = key === 'Lien' ? (offre ? 'lien de paiement ' + offre.label.split(' ')[0] + ' (Templates)' : 'offre') : key === 'Facture' ? 'offre' : key; if (!manque.includes(nom)) manque.push(nom); }
+    return v;
+  });
+  return { tpl, msg, manque };
+}
+function closingInfosIncompletes(n) {
+  return !n.closing_prenom || !n.closing_mots || !n.closing_offre;
 }
 function closingDansListe(p) {
   if (!p || p.statut === 'a_contacter' || p.statut === 'archive') return false;
@@ -4136,9 +4193,13 @@ async function saveClosingStatus(id, key, val) {
 async function envoyerClosing(id, i) {
   const p = DB.find(x => x.id === id);
   if (!p) return;
-  const tpl = (closingTemplates()[i] || '').trim();
+  const { tpl, msg, manque } = closingMessage(p, i);
   if (!tpl) { toast('Relance vide — écris-la dans Templates › Conversion › Relances après call'); return; }
-  const msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '').replace(/\[Produit\]/gi, p.produit || '');
+  if (manque.length) {
+    toast('Il manque : ' + manque.join(', '));
+    if (manque.some(x => x.indexOf('lien') !== 0)) ouvrirInfosAppel(id, false);
+    return;
+  }
   const restant = msg.match(/\[[^\]]{2,40}\]/);
   if (restant) { toast('Variable non remplie : ' + restant[0] + ' — vérifie le template'); return; }
 
@@ -4154,6 +4215,85 @@ async function envoyerClosing(id, i) {
   }
   // marqué envoyé tout de suite (décochable avec la case "Envoyé" si l'envoi n'a pas eu lieu)
   await saveClosingStatus(id, 'closing_sent_j' + CLOSING_JOURS[i], true);
+}
+
+// ── Infos de l'appel : saisies juste après l'appel, utilisées pour remplir automatiquement les relances
+//   closing_prenom, closing_mots, closing_objectif, closing_objection, closing_offre (test|perf|growth|scale),
+//   closing_ab1 / closing_ab3 ('A' | 'B')
+function ouvrirInfosAppel(id, lancer) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const n = appelNotes(p);
+  const ancien = document.getElementById('modal-infos-appel');
+  if (ancien) ancien.remove();
+  const ov = document.createElement('div');
+  ov.id = 'modal-infos-appel';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto';
+  const lab = 'font-size:11px;font-weight:700;color:var(--text2);margin:12px 0 4px;display:block';
+  const hint = 'font-size:10.5px;color:var(--muted);margin-bottom:4px';
+  const inp = 'width:100%;font-size:13px;font-family:var(--font)';
+  const optsOffre = '<option value="">— choisir —</option>' + Object.keys(CLOSING_OFFRES).map(k => '<option value="' + k + '"' + (n.closing_offre === k ? ' selected' : '') + '>' + CLOSING_OFFRES[k].label + '</option>').join('');
+  const liens = closingLiens();
+  const sansLien = Object.keys(CLOSING_OFFRES).filter(k => !(liens[k] || '').trim());
+  ov.innerHTML =
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:460px;width:100%;font-family:var(--font)">'
+    + '<div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:2px">Infos de l\'appel</div>'
+    + '<div style="font-size:12px;color:var(--muted);margin-bottom:6px">' + esc2(p.nom_marque || 'Ce prospect') + ' — servent à remplir tout seuls les messages J+1 / J+3 / J+7</div>'
+    + '<label style="' + lab + '">Prénom</label><input id="ia-prenom" type="text" style="' + inp + '" value="' + esc2(n.closing_prenom || '') + '">'
+    + '<label style="' + lab + '">Ses mots (sa douleur, tels qu\'il/elle les a dits)</label><div style="' + hint + '">Copie sa phrase exacte. Elle apparaît entre « guillemets » dans le message.</div>'
+    + '<textarea id="ia-mots" style="' + inp + ';min-height:64px">' + esc2(n.closing_mots || '') + '</textarea>'
+    + '<label style="' + lab + '">Son objectif</label><div style="' + hint + '">Commence par un verbe : « vendre plus de votre crème », « sortir de la saturation »…</div>'
+    + '<input id="ia-objectif" type="text" style="' + inp + '" value="' + esc2(n.closing_objectif || '') + '">'
+    + '<label style="' + lab + '">Son objection (s\'il/elle en a eu une)</label><div style="' + hint + '">Une expression qui suit « Si c\'est… » : « le prix », « la peur de ne pas avoir de résultats »…</div>'
+    + '<input id="ia-objection" list="ia-obj-list" type="text" style="' + inp + '" value="' + esc2(n.closing_objection || '') + '">'
+    + '<datalist id="ia-obj-list">' + CLOSING_OBJECTIONS.map(o => '<option value="' + esc2(o) + '">').join('') + '</datalist>'
+    + '<label style="' + lab + '">Offre présentée</label><select id="ia-offre" style="' + inp + '">' + optsOffre + '</select>'
+    + (sansLien.length ? '<div style="font-size:10.5px;color:#FFB547;margin-top:4px">Lien de paiement manquant pour : ' + sansLien.map(k => CLOSING_OFFRES[k].label.split(' ')[0]).join(', ') + ' → Templates › Relances après call</div>' : '')
+    + '<div style="display:flex;gap:12px;margin-top:12px">'
+      + '<div style="flex:1"><label style="' + lab + ';margin-top:0">Message J+1</label><select id="ia-ab1" style="' + inp + '"><option value="A"' + (n.closing_ab1 !== 'B' ? ' selected' : '') + '>Version A</option><option value="B"' + (n.closing_ab1 === 'B' ? ' selected' : '') + '>Version B (ses mots)</option></select></div>'
+      + '<div style="flex:1"><label style="' + lab + ';margin-top:0">Message J+3</label><select id="ia-ab3" style="' + inp + '"><option value="A"' + (n.closing_ab3 !== 'B' ? ' selected' : '') + '>Version A</option><option value="B"' + (n.closing_ab3 === 'B' ? ' selected' : '') + '>Version B (objection)</option></select></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;margin-top:18px;justify-content:flex-end">'
+      + '<button id="ia-annuler" class="btn btn-ghost btn-sm">Annuler</button>'
+      + '<button id="ia-ok" class="btn btn-primary btn-sm">' + (lancer ? 'Enregistrer et lancer les relances' : 'Enregistrer') + '</button>'
+    + '</div></div>';
+  document.body.appendChild(ov);
+  const fermer = () => ov.remove();
+  ov.addEventListener('click', e => { if (e.target === ov) fermer(); });
+  document.getElementById('ia-annuler').onclick = fermer;
+  document.getElementById('ia-ok').onclick = async () => {
+    const g = k => document.getElementById(k).value.trim();
+    const infos = { closing_prenom: g('ia-prenom'), closing_mots: g('ia-mots'), closing_objectif: g('ia-objectif'),
+                    closing_objection: g('ia-objection'), closing_offre: g('ia-offre'),
+                    closing_ab1: g('ia-ab1'), closing_ab3: g('ia-ab3') };
+    fermer();
+    await enregistrerInfosAppel(id, infos);
+    if (lancer) decisionAppel(id, 'relance');
+  };
+}
+async function enregistrerInfosAppel(id, infos) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return false;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  Object.keys(infos).forEach(k => { if (infos[k]) s[k] = infos[k]; else delete s[k]; });
+  p.notes = JSON.stringify(s);
+  renderClosing();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) { p.notes = ancien; renderClosing(); toast('Échec — non enregistré, réessaie'); return false; }
+  toast('Infos de l\'appel enregistrées ✓');
+  return true;
+}
+async function closingChoisirVersion(id, jour, v) {
+  const p = DB.find(x => x.id === id);
+  if (!p) return;
+  const ancien = p.notes;
+  const s = appelNotes(p);
+  s['closing_ab' + jour] = v;
+  p.notes = JSON.stringify(s);
+  renderClosing();
+  const ok = await patch(id, { notes: p.notes });
+  if (!ok) { p.notes = ancien; renderClosing(); }
 }
 
 async function closingReprogrammer(id) {
@@ -4231,11 +4371,21 @@ function renderClosing() {
           + '<input type="checkbox" ' + (sent ? 'checked' : '') + ' style="accent-color:var(--blue);cursor:pointer;width:12px;height:12px" onchange="saveClosingStatus(\'' + p.id + '\',\'closing_sent_j' + j + '\',this.checked)">'
           + '<span style="font-size:11px;color:' + (sent ? 'var(--blue)' : 'var(--muted)') + '">Envoyé</span></label>'
         : '';
+      const abSel = (j === 1 || j === 3)
+        ? '<select onchange="closingChoisirVersion(\'' + p.id + '\',' + j + ',this.value)" title="Version du message" style="margin-top:4px;font-size:11px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:5px;padding:2px 4px;width:100%"' + (sent ? ' disabled' : '') + '>'
+          + '<option value="A"' + (n['closing_ab' + j] !== 'B' ? ' selected' : '') + '>Version A</option><option value="B"' + (n['closing_ab' + j] === 'B' ? ' selected' : '') + '>Version B</option></select>'
+        : '';
       return '<div style="flex-shrink:0"><button onclick="envoyerClosing(\'' + p.id + '\',' + i + ')" style="' + st + '" ' + (futur || sent ? 'disabled' : '') + '>'
         + '<span style="' + bd + '">J+' + j + '</span><span>' + CLOSING_LABELS[i] + ig + '</span>'
         + (futur ? '<span style="font-size:9px;opacity:.8">dans ' + (j - jDep) + 'j</span>' : '')
-        + '</button>' + check + '</div>';
+        + '</button>' + abSel + check + '</div>';
     }).join('');
+    const incomplet = closingInfosIncompletes(n);
+    const recap = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;font-size:12px;color:var(--muted)">'
+      + (incomplet
+          ? '<span style="font-size:10px;font-weight:800;background:rgba(255,181,71,.12);color:#FFB547;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,181,71,.3)">INFOS DE L\'APPEL À COMPLÉTER</span>'
+          : '<span>' + esc2(n.closing_prenom) + ' · ' + esc2((CLOSING_OFFRES[n.closing_offre] || {}).label || '') + ' · « ' + esc2(n.closing_mots.length > 70 ? n.closing_mots.slice(0, 70) + '…' : n.closing_mots) + ' »</span>')
+      + '<button class="btn btn-ghost btn-sm" onclick="ouvrirInfosAppel(\'' + p.id + '\',false)">✏️ Infos de l\'appel</button></div>';
 
     const cardBorder = retard ? '1px solid rgba(255,76,106,.2)' : du ? '1px solid rgba(31,182,255,.2)' : '1px solid var(--border)';
     return '<div style="background:var(--surface);border:' + cardBorder + ';border-radius:12px;padding:16px 20px;margin-bottom:12px">'
@@ -4256,6 +4406,7 @@ function renderClosing() {
           + '<button class="btn btn-red btn-sm" onclick="deleteProspect(\'' + p.id + '\')">×</button>'
         + '</div>'
       + '</div>'
+      + recap
       + '<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none">' + btns + '</div>'
     + '</div>';
   }).join('');
@@ -7346,7 +7497,7 @@ async function loadTemplates() {
         const cfg = JSON.parse(rows[0].notes || '{}');
         if (cfg.tpl_intros)    intros    = cfg.tpl_intros;
         if (cfg.tpl_relances)  relances  = cfg.tpl_relances;
-        if (Array.isArray(cfg.tpl_closing)) closing = cfg.tpl_closing;
+        if (Array.isArray(cfg.tpl_closing) && cfg.tpl_closing.length === CLOSING_SLOTS.length && cfg.tpl_closing.some(t => (t || '').trim())) closing = cfg.tpl_closing;
         if (cfg.tpl_interesse) interesse = cfg.tpl_interesse;
         if (cfg.tpl_demo_msg)  cfg_demo_msg = cfg.tpl_demo_msg;
         if (cfg.tpl_pitch)     cfg_pitch = cfg.tpl_pitch;
@@ -7527,8 +7678,9 @@ async function loadTemplates() {
           <div id="relances-templates-list"></div>
         </div>
         <div class="tpl-groupe">
-          <div class="tpl-groupe-titre">💬 Relances après call (J+3, J+10, J+21)</div>
-          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Pour les prospects dont l'appel a eu lieu mais qui n'ont pas payé — section Closing. Jours comptés depuis l'appel. Variable : <span style="color:var(--green)">[Marque]</span></div>
+          <div class="tpl-groupe-titre">💬 Relances après call (J+1, J+3, J+7)</div>
+          <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">Pour les prospects dont l'appel a eu lieu mais qui n'ont pas payé — section Closing. Jours comptés depuis l'appel. Variables remplies automatiquement depuis « Infos de l'appel » : <span style="color:var(--green)">[Prénom] [Marque] [Mots] [Objectif] [Objection] [Lien] [Facture]</span>. [Lien] = lien de paiement de l'offre ; [Facture] = phrase fixe selon l'offre (facture seule pour TEST, facture + garantie pour les autres).</div>
+          <div id="closing-liens-list"></div>
           <div id="closing-templates-list"></div>
         </div>
         <div class="tpl-groupe">
@@ -7612,13 +7764,21 @@ async function loadTemplates() {
   // Relances après call (Closing)
   const closingList = document.getElementById('closing-templates-list');
   if (closingList) {
-    closingList.innerHTML = CLOSING_JOURS.map((j, i) => `
+    const liensCfg = closingLiens();
+    const lienBox = document.getElementById('closing-liens-list');
+    if (lienBox) lienBox.innerHTML = '<div style="font-size:11px;font-weight:700;color:var(--text2);margin:4px 0 6px">Liens de paiement (un par offre)</div>'
+      + Object.keys(CLOSING_OFFRES).map(k => `
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span style="font-size:11px;font-weight:700;color:var(--text2);width:130px;flex-shrink:0">${CLOSING_OFFRES[k].label}</span>
+        <input id="closing-lien-${k}" type="text" placeholder="https://…" style="flex:1;font-size:12px" value="${escHtml(liensCfg[k] || '')}" oninput="markDirty()">
+      </div>`).join('');
+    closingList.innerHTML = CLOSING_SLOTS.map((x, i) => `
       <div style="margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:11px;font-weight:800;color:#FFB547;background:rgba(255,181,71,.12);padding:3px 9px;border-radius:4px">J+${j}</span>
-          <span style="font-size:12px;font-weight:600;color:var(--text2)">${CLOSING_LABELS[i]} après l'appel</span>
+          <span style="font-size:11px;font-weight:800;color:#FFB547;background:rgba(255,181,71,.12);padding:3px 9px;border-radius:4px">J+${x.j}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--text2)">${escHtml(x.label)}</span>
         </div>
-        <textarea id="closing-${i}" placeholder="À rédiger — relance très courte et douce" style="min-height:90px;font-size:12px;line-height:1.5" oninput="markDirty();syncTemplatesLive()">${escHtml(closing[i] || '')}</textarea>
+        <textarea id="closing-${i}" style="min-height:120px;font-size:12px;line-height:1.5" oninput="markDirty();syncTemplatesLive()">${escHtml(closing[i] || DEFAULT_CLOSING[i] || "")}</textarea>
       </div>
     `).join('');
   }
@@ -7687,10 +7847,16 @@ function getIntros() {
 
 function getClosing() {
   const saved = (DB._config && Array.isArray(DB._config.tpl_closing)) ? DB._config.tpl_closing : DEFAULT_CLOSING;
-  return CLOSING_JOURS.map((j, i) => {
+  const ok = Array.isArray(saved) && saved.length === CLOSING_SLOTS.length;
+  return CLOSING_SLOTS.map((x, i) => {
     const el = document.getElementById('closing-' + i);
-    return el ? el.value : (saved[i] || '');
+    return el ? el.value : (ok ? saved[i] : DEFAULT_CLOSING[i]);
   });
+}
+function getClosingLiens() {
+  const out = Object.assign({}, closingLiens());
+  Object.keys(CLOSING_OFFRES).forEach(k => { const el = document.getElementById('closing-lien-' + k); if (el) out[k] = el.value.trim(); });
+  return out;
 }
 
 function getRelances() {
@@ -7710,7 +7876,7 @@ async function saveAllTemplates() {
   const pitch    = pitchEl ? pitchEl.value : '';
   const demoMsgEl = document.getElementById('tpl-demo-msg');
   const demo_msg  = demoMsgEl ? demoMsgEl.value : ((DB._config || {}).tpl_demo_msg || '');
-  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
+  const cfg = Object.assign({}, DB._config || {}, { tpl_intros: intros, tpl_relances: relances, tpl_closing: closing, closing_liens: getClosingLiens(), tpl_interesse: interesse, tpl_demo_msg: demo_msg, tpl_pitch: pitch, pitch_data: lirePitchDataUI() });
 
   // Upsert dans la ligne config
   try {
