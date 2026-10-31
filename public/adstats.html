@@ -4003,7 +4003,7 @@ function renderAppels() {
     }
 
     const sousTitre = (n.form_nom
-        ? esc2(n.form_nom) + ' · objectif ' + esc2(n.form_ca_objectif || '—')
+        ? esc2(n.form_nom) + (n.form_ca_objectif ? ' · objectif ' + esc2(n.form_ca_objectif) : '') + (n.form_budget_pub ? ' · pub ' + esc2(n.form_budget_pub) : '')
           + (n.form_boutique ? ' · <a href="' + esc2(n.form_boutique) + '" target="_blank" rel="noopener" style="color:var(--blue)">boutique</a>' : '')
           + ' <span style="font-size:10px;font-weight:800;color:var(--blue);background:var(--blue-dim);padding:1px 6px;border-radius:4px">FORMULAIRE SITE</span>'
         : esc2(p.produit || '—'))

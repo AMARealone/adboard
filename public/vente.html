@@ -508,8 +508,10 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <div class="hero-tags-row"><div class="hero-social"><span class="hs-dot" aria-hidden="true"></span><span class="hs-txt">Pour les marques e-commerce <b>sérieuses</b>, prêtes à passer au niveau supérieur</span></div></div>
     <h1 class="hero-headline hl-x"><span class="hl-sr">Le système créatif qui rapporte 2, 5 ou 10 fois plus en quelques semaines</span><span class="hl-vis" aria-hidden="true">Le <em>système créatif</em> qui rapporte <span class="hl-pill"><span class="hl-opt">2x</span><span class="hl-opt">5x</span><span class="hl-opt on">10x</span></span> plus en quelques semaines</span></h1>
     <p class="hero-subhead">Stratégie, créatives, amélioration continue : on s’occupe de tout, là où vos concurrents devinent avec des freelances et ChatGPT.</p>
+    <div class="hero-ctas">
     <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Offres AdStack'});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'Offres AdStack'});">Découvrir Nos Offres</button>
-    <button id="heroBookBtn" type="button" class="cta-secondary" onclick="adsOpenBooking()">Parlons de votre marque</button>
+      <button id="heroBookBtn" type="button" class="cta-secondary" onclick="adsOpenBooking()">Parlons de votre marque</button>
+    </div>
 
     <div class="hero-stars-block">
       <div class="hero-proof"><span class="hp-stars" role="img" aria-label="5 étoiles"><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg><svg viewBox="0 0 24 24" width="17" height="17" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.2 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z"/></svg></span><span class="hp-sep" aria-hidden="true"></span><span class="hp-who"><span class="hp-av" aria-hidden="true"><img src="/assets/vente/aliou-cisse.jpg" alt="" width="30" height="30"><img src="/assets/vente/anissa-coli.jpg" alt="" width="30" height="30"><img src="/assets/vente/ibrahim-gomis.jpg" alt="" width="30" height="30"></span><span class="hp-t"><b>+20</b> marques scalées</span></span><span class="hp-sep" aria-hidden="true"></span><a class="hp-link" href="/etude-de-cas">Voir les études de cas</a></div>
@@ -1773,6 +1775,7 @@ function lpRenderOffers() {
       });
     }
     html += '<button onclick="lpOpenCheckout(\'' + cycleData.productId + '\',\'' + o.name.replace(/'/g,"\\'") + '\',' + cycleData.price + ')" class="lp-cta-btn">' + o.ctaText + ' →</button>';
+    html += '<button type="button" class="lp-book-link" onclick="adsOpenBooking()">Parlons de votre marque d\'abord</button>';
     {
       html += '<div class="lp-card-proof"><div><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Vous recevrez directement la facture par mail</div>' + (o.garantie ? '<div class="lp-proof-guarantee"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Garantie résultats en 60 jours</div>' : '') + '</div>';
     }
@@ -2737,7 +2740,9 @@ window.lpApplyCurrency = function(){};
 <script>(function(){try{try{if(/^\/vente(\.html)?\/?$/.test(location.pathname))history.replaceState(null,'','/pdv'+location.search+location.hash)}catch(e){}var o=document.querySelectorAll('.hero-headline .hl-opt');if(o.length<3)return;if(window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches)return;function set(i){for(var k=0;k<o.length;k++)o[k].classList.toggle('on',k===i)}set(0);setTimeout(function(){set(1)},900);setTimeout(function(){set(2)},1800);}catch(e){}})();</script>
 <!-- ═══ RÉSERVATION D'APPEL — formulaire relié au CRM (section Appels) ═══ -->
 <style>
-.cta-secondary{display:block;margin:14px auto 0;background:transparent;color:#fff;font-size:15px;font-weight:700;padding:14px 28px;border-radius:50px;border:1.5px solid rgba(255,255,255,.28);cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;transition:border-color .2s,background .2s,transform .2s;touch-action:manipulation}
+.hero-ctas{display:flex;flex-direction:column;align-items:center;gap:14px}.hero-ctas .cta-button{max-width:100%}@media(min-width:768px){.hero-ctas{flex-direction:row;justify-content:center;gap:16px}}
+.lp-book-link{display:block;width:100%;margin:12px 0 0;background:none;border:none;color:#9FD8FF;font-family:inherit;font-size:13.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:center;padding:6px 0}.lp-book-link:hover{color:#fff}
+.cta-secondary{display:block;margin:0;background:transparent;color:#fff;font-size:15px;font-weight:700;padding:14px 28px;border-radius:50px;border:1.5px solid rgba(255,255,255,.28);cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;transition:border-color .2s,background .2s,transform .2s;touch-action:manipulation}
 .cta-secondary:hover{border-color:#1FB6FF;background:rgba(31,182,255,.08);transform:translateY(-2px)}
 #bk-ov{position:fixed;inset:0;z-index:100000;background:rgba(5,6,10,.82);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 #bk-ov.bk-on{display:flex}
@@ -2776,7 +2781,7 @@ select.bk-i{background-image:linear-gradient(45deg,transparent 50%,#8A8D96 50%),
       <p class="bk-s">Un échange de 10 à 15 minutes pour regarder où en est votre boutique, votre objectif, et voir si on peut vous aider.</p>
       <label class="bk-l" for="bk-nom">Votre nom</label>
       <input class="bk-i" id="bk-nom" type="text" autocomplete="name" placeholder="Prénom et nom">
-      <label class="bk-l" for="bk-marque">Nom de votre marque</label>
+      <label class="bk-l" for="bk-marque">Nom de votre marque <span style="font-weight:500;color:#7A7D86">(facultatif)</span></label>
       <input class="bk-i" id="bk-marque" type="text" autocomplete="organization" placeholder="Ex : Maison Kora">
       <label class="bk-l" for="bk-lien">Lien de votre boutique</label>
       <input class="bk-i" id="bk-lien" type="text" inputmode="url" autocapitalize="off" autocomplete="url" placeholder="https://votre-boutique.com">
@@ -2785,8 +2790,10 @@ select.bk-i{background-image:linear-gradient(45deg,transparent 50%,#8A8D96 50%),
       <div class="bk-h">Avec l'indicatif de votre pays (+221, +225…)</div>
       <label class="bk-l" for="bk-marche">Marché dans lequel vous vendez</label>
       <select class="bk-i" id="bk-marche"><option value="">Choisir…</option><option>Sénégal</option><option>Côte d'Ivoire</option><option>Cameroun</option><option>Mali</option><option>Burkina Faso</option><option>Guinée</option><option>Bénin</option><option>Togo</option><option>Gabon</option><option>RD Congo</option><option>Congo</option><option>Maroc</option><option>Plusieurs pays d'Afrique francophone</option><option>Autre</option></select>
-      <label class="bk-l" for="bk-ca">Votre objectif de chiffre d'affaires mensuel</label>
+      <label class="bk-l" for="bk-ca">Votre objectif de chiffre d'affaires mensuel <span style="font-weight:500;color:#7A7D86">(facultatif)</span></label>
       <select class="bk-i" id="bk-ca"><option value="">Choisir…</option><option>Moins de 2 000 $ / mois</option><option>2 000 – 5 000 $ / mois</option><option>5 000 – 10 000 $ / mois</option><option>10 000 – 30 000 $ / mois</option><option>Plus de 30 000 $ / mois</option></select>
+      <label class="bk-l" for="bk-bud">Votre budget publicitaire mensuel <span style="font-weight:500;color:#7A7D86">(facultatif)</span></label>
+      <select class="bk-i" id="bk-bud"><option value="">Choisir…</option><option>Je ne fais pas encore de publicité</option><option>Moins de 300 $ / mois</option><option>300 – 1 000 $ / mois</option><option>1 000 – 3 000 $ / mois</option><option>Plus de 3 000 $ / mois</option></select>
       <label class="bk-l">Choisissez votre créneau</label>
       <div class="bk-days" id="bk-days"></div>
       <div id="bk-slots"></div>
@@ -2876,23 +2883,22 @@ async function envoyer(){
   err('');
   if($('bk-hp').value) return;
   var nom=$('bk-nom').value.trim(), marque=$('bk-marque').value.trim(), lien=$('bk-lien').value.trim(),
-      wa=$('bk-wa').value.trim(), marche=$('bk-marche').value, ca=$('bk-ca').value;
+      wa=$('bk-wa').value.trim(), marche=$('bk-marche').value, ca=$('bk-ca').value, bud=$('bk-bud').value;
   if(nom.length<2) return err('Indiquez votre nom.');
-  if(marque.length<2) return err('Indiquez le nom de votre marque.');
   if(lien.length<4||lien.indexOf('.')<0) return err('Indiquez le lien de votre boutique.');
   var digits=wa.replace(/\D/g,'');
   if(wa.replace(/\s/g,'').charAt(0)!=='+' && wa.replace(/\s/g,'').slice(0,2)!=='00') return err('Ajoutez l\'indicatif de votre pays au numéro WhatsApp (ex : +221…).');
   if(digits.indexOf('00')===0) digits=digits.slice(2);
   if(digits.length<9||digits.length>15) return err('Ce numéro WhatsApp semble incomplet.');
   if(!marche) return err('Choisissez votre marché.');
-  if(!ca) return err('Choisissez votre objectif de chiffre d\'affaires.');
   if(selSlot===null) return err('Choisissez un créneau.');
   if(selSlot<Date.now()+PREP_MIN*60000-60000) { init(); return err('Ce créneau vient de passer, choisissez-en un autre.'); }
   if(!/^https?:\/\//i.test(lien)) lien='https://'+lien;
+  if(!marque){ try{ marque=new URL(lien).hostname.replace(/^www\./,'').split('.')[0]; marque=marque.charAt(0).toUpperCase()+marque.slice(1) }catch(e){ marque=nom } }
   var btn=$('bk-go'); btn.disabled=true; btn.textContent='Réservation…';
   try{
     var now=new Date().toISOString();
-    var infos={appel_reserve:true,appel_reserve_at:now,appel_programme_at:new Date(selSlot).toISOString(),source:'formulaire_site',form_nom:nom,form_marche:marche,form_ca_objectif:ca,form_boutique:lien};
+    var infos={appel_reserve:true,appel_reserve_at:now,appel_programme_at:new Date(selSlot).toISOString(),source:'formulaire_site',form_nom:nom,form_marche:marche,form_ca_objectif:ca,form_budget_pub:bud,form_boutique:lien};
     var ex=await trouver(digits);
     if(ex){
       var n={}; try{n=JSON.parse(ex.notes||'{}')||{}}catch(e){ n={texte_ancien:ex.notes||''} }
