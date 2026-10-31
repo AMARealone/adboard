@@ -98,6 +98,17 @@ export function CrmProvider({ children }) {
       const ok = await mutate(id, { body: { statut: 'a_contacter', date_contact: null, a_repondu: false, interesse: false, lead_qualifie: false }, notes: { appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined } })
       if (ok) toast('Remis dans « À contacter »'); return ok
     },
+    // — À contacter
+    canal: (id, c) => mutate(id, { body: { dernier_canal_clique: c } }),
+    contacte: async (id) => {
+      const p = ref.current.find((x) => x.id === id); if (!p) return false
+      const canal = p.dernier_canal_clique || (p.lien_instagram ? 'instagram' : 'whatsapp')
+      const ok = await mutate(id, { body: { statut: 'en_suivi', date_contact: now(), canal_contact: canal } })
+      if (ok) { try { localStorage.setItem('ig_last_send_at', String(Date.now())) } catch (_) {} toast('Marqué comme contacté') }
+      return ok
+    },
+    whatsappInvalide: async (id) => { const p = ref.current.find((x) => x.id === id); if (!(await confirmDlg('Marquer le WhatsApp de ' + (p.nom_marque || 'ce prospect') + ' comme invalide ?\nLe numéro reste conservé pour le SMS.', 'Marquer invalide'))) return false; return mutate(id, { body: { whatsapp_invalide: true } }) },
+    instagramInvalide: async (id) => { const p = ref.current.find((x) => x.id === id); if (!(await confirmDlg("Marquer l'Instagram de " + (p.nom_marque || 'ce prospect') + ' comme invalide ?\nIl ne sera plus proposé via ce canal.', 'Marquer invalide'))) return false; return mutate(id, { body: { lien_instagram: null } }) },
     // — Ouverture du canal : WhatsApp (nouvel onglet) ou Instagram (texte copié)
     ouvrirCanal: async (p, msg) => {
       if (estInstagram(p)) {

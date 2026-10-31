@@ -144,3 +144,9 @@ export function pitchMessage(p, cfg, lien) {
   if (!avait && !/\[lien\]/i.test(tpl)) msg += '\n\n' + lien
   return msg
 }
+
+// ── Premiers messages (accroches) : une version par modèle enregistré
+export function introMessages(p, cfg) {
+  const t = cfg && Array.isArray(cfg.tpl_intros) && cfg.tpl_intros.length ? cfg.tpl_intros : D.DEFAULT_INTROS
+  return t.map((tpl, i) => ({ label: 'V' + (i + 1), texte: tpl.replace(/\[Marque\]/g, p.nom_marque || '').replace(/\[Produit\]/g, p.produit || '').replace(/\[Pays\]/g, p.pays || '') }))
+}

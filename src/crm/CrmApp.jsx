@@ -18,20 +18,24 @@ import Transactions from './pages/Transactions'
 import Comptabilite from './pages/Comptabilite'
 import Emails from './pages/Emails'
 import Suivi from './pages/Suivi'
+import AContacter from './pages/AContacter'
 import Fiche from './Fiche'
 
 const BASE = '/crm-next'
-const OLD = ['Comportement', 'Utilisateurs', 'Prospection auto', 'Contacts', 'Données']
+const OLD = ['Comportement', 'Utilisateurs', 'Prospection auto', 'Données']
 const slug = (s) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-')
 
 function Shell({ user, onLogout }) {
   const { prospects, cfg, state, reload } = useCrm(), loc = useLocation()
   const t = aFaire(prospects, cfg), [menu, setMenu] = useState(false)
+  const [ferme, setFerme] = useState(() => { try { return JSON.parse(localStorage.getItem('cx_nav_ferme') || '[]') } catch (_) { return [] } })
+  const basculer = (g) => setFerme((f) => { const n = f.includes(g) ? f.filter((x) => x !== g) : [...f, g]; try { localStorage.setItem('cx_nav_ferme', JSON.stringify(n)) } catch (_) {} return n })
   useEffect(() => setMenu(false), [loc.pathname])
   const NAV = [
     { to: '/', label: 'Aujourd\'hui', n: t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length, end: true },
-    { to: '/prospects', label: 'Prospects', n: prospects.length },
+    { to: '/prospects', label: 'Contacts', n: prospects.length },
     { g: 'Pipeline' },
+    { to: '/a-contacter', label: 'À contacter', n: prospects.filter((p) => p.statut === 'a_contacter').length },
     { to: '/suivi', label: 'Suivi', n: prospects.filter((p) => p.statut === 'en_suivi').length },
     { to: '/leads', label: 'Leads', n: leadsARelancer(prospects).length },
     { to: '/appels', label: 'Appels', n: prospects.filter(appelAffiche).length },
@@ -46,11 +50,16 @@ function Shell({ user, onLogout }) {
     { g: 'Bientôt (ancien CRM)' },
     ...OLD.map((o) => ({ to: '/ancien/' + slug(o), label: o, old: true })),
   ]
+  let grp = ''
+  const visibles = NAV.filter((i) => { if (i.g) { grp = i.g; return true } const actif = i.end ? loc.pathname === '/' : loc.pathname.startsWith(i.to); i.grp = grp; return !grp || !ferme.includes(grp) || actif })
+  const rendu = (i, k) => i.g
+    ? <button key={k} className={'cx-grp cx-grpbtn' + (ferme.includes(i.g) ? ' closed' : '')} onClick={() => basculer(i.g)} aria-expanded={!ferme.includes(i.g)}><span>{i.g}</span><i>▾</i></button>
+    : <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => 'cx-link' + (isActive ? ' on' : '') + (i.old ? ' old' : '')}><span>{i.label}</span>{i.n > 0 && <em>{i.n}</em>}</NavLink>
   return (
     <div className="cx-app">
       <aside className="cx-side">
         <div className="cx-brand"><div className="cx-logo">C</div><div><b>CRM AdStack</b><small>version React · bêta</small></div></div>
-        <nav>{NAV.map((i, k) => i.g ? <div key={k} className="cx-grp">{i.g}</div> : <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => 'cx-link' + (isActive ? ' on' : '') + (i.old ? ' old' : '')}><span>{i.label}</span>{i.n > 0 && <em>{i.n}</em>}</NavLink>)}</nav>
+        <nav>{visibles.map(rendu)}</nav>
         <div className="cx-foot"><div className="cx-em">{user.email}</div><button className="cx-btn sm" onClick={reload}>{state.loading ? 'Chargement…' : '↻ Actualiser'}</button><button className="cx-btn sm ghost" onClick={() => { signOut(); onLogout() }}>Se déconnecter</button></div>
       </aside>
       <main className="cx-page">
@@ -65,7 +74,7 @@ function Shell({ user, onLogout }) {
       </nav>
       {menu && <div className="cx-back cx-sheetback" onClick={() => setMenu(false)}><div className="cx-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="cx-grip" />
-        {NAV.map((i, k) => i.g ? <div key={k} className="cx-grp">{i.g}</div> : <NavLink key={i.to} to={i.to} end={i.end} className={({ isActive }) => 'cx-link' + (isActive ? ' on' : '') + (i.old ? ' old' : '')}><span>{i.label}</span>{i.n > 0 && <em>{i.n}</em>}</NavLink>)}
+        {visibles.map(rendu)}
         <div className="cx-em" style={{ padding: '10px 4px 0' }}>{user.email}</div>
         <button className="cx-btn ghost" style={{ width: '100%', marginTop: 8 }} onClick={() => { signOut(); onLogout() }}>Se déconnecter</button>
       </div></div>}
@@ -84,7 +93,8 @@ export default function CrmApp() {
         <Routes>
           <Route element={<Shell user={user} onLogout={recheck} />}>
             <Route index element={<Titre t="Aujourd'hui"><Aujourdhui /></Titre>} />
-            <Route path="prospects" element={<Titre t="Prospects"><Prospects /></Titre>} />
+            <Route path="prospects" element={<Titre t="Contacts"><Prospects /></Titre>} />
+            <Route path="a-contacter" element={<Titre t="À contacter"><AContacter /></Titre>} />
             <Route path="suivi" element={<Titre t="Suivi prospection"><Suivi /></Titre>} />
             <Route path="leads" element={<Titre t="Leads"><Leads /></Titre>} />
             <Route path="appels" element={<Titre t="Appels"><Appels /></Titre>} />
