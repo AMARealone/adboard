@@ -369,7 +369,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 #made-with-systeme-io,.s-io-badge{display:none!important;opacity:0!important;visibility:hidden!important;height:0!important;width:0!important;pointer-events:none!important}
 </style>
 <style id="an-style">
-.an-nav{position:sticky;top:0;z-index:999;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 max(20px,4.5vw);background:rgba(10,10,14,.92);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);box-sizing:border-box;font-family:inherit}
+.an-nav{position:sticky;top:0;z-index:999;height:68px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 max(20px,4.5vw);background:linear-gradient(180deg,rgba(14,26,52,.82),rgba(10,18,38,.66));-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border-bottom:1px solid rgba(31,182,255,.16);box-shadow:0 8px 32px rgba(11,92,255,.07);box-sizing:border-box;font-family:inherit}
 .an-logo{display:flex;align-items:center;gap:8px;text-decoration:none;flex-shrink:0}
 .an-logo img{height:30px;width:auto;display:block}
 .an-logo span{font-size:18px;font-weight:900;letter-spacing:-.5px;background:linear-gradient(120deg,#1FB6FF 0%,#0B5CFF 50%,#2EF2E8 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
@@ -510,7 +510,7 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
     <p class="hero-subhead">Stratégie, créatives, amélioration continue : on s’occupe de tout, là où vos concurrents devinent avec des freelances et ChatGPT.</p>
     <div class="hero-ctas">
     <button id="heroMainBtn" class="cta-button" onclick="var el=document.getElementById('nos-offres');if(el)el.scrollIntoView({behavior:'smooth'});if(typeof fbq!=='undefined')fbq('track','AddToCart',{content_name:'Offres AdStack'});if(typeof twq!=='undefined')twq('track','AddToCart',{content_name:'Offres AdStack'});">Découvrir Nos Offres</button>
-      <button id="heroBookBtn" type="button" class="cta-secondary" onclick="adsOpenBooking()">Parlons de votre marque</button>
+      <button id="heroBookBtn" type="button" class="cta-secondary" onclick="adsOpenBooking()"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span>Parlons de votre marque</span></button>
     </div>
 
     <div class="hero-stars-block">
@@ -1775,7 +1775,8 @@ function lpRenderOffers() {
       });
     }
     html += '<button onclick="lpOpenCheckout(\'' + cycleData.productId + '\',\'' + o.name.replace(/'/g,"\\'") + '\',' + cycleData.price + ')" class="lp-cta-btn">' + o.ctaText + ' →</button>';
-    html += '<button type="button" class="lp-book-link" onclick="adsOpenBooking()">Parlons de votre marque d\'abord</button>';
+    var LPPH='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+    html += '<button type="button" class="lp-book-link" onclick="adsOpenBooking()">'+LPPH+' Parlons de votre marque d\'abord</button>';
     {
       html += '<div class="lp-card-proof"><div><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg> Vous recevrez directement la facture par mail</div>' + (o.garantie ? '<div class="lp-proof-guarantee"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Garantie résultats en 60 jours</div>' : '') + '</div>';
     }
@@ -2741,8 +2742,8 @@ window.lpApplyCurrency = function(){};
 <!-- ═══ RÉSERVATION D'APPEL — formulaire relié au CRM (section Appels) ═══ -->
 <style>
 .hero-ctas{display:flex;flex-direction:column;align-items:center;gap:14px}.hero-ctas .cta-button{max-width:100%}@media(min-width:768px){.hero-ctas{flex-direction:row;justify-content:center;gap:16px}}
-.lp-book-link{display:block;width:100%;margin:12px 0 0;background:none;border:none;color:#9FD8FF;font-family:inherit;font-size:13.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:center;padding:6px 0}.lp-book-link:hover{color:#fff}
-.cta-secondary{display:block;margin:0;background:transparent;color:#fff;font-size:15px;font-weight:700;padding:14px 28px;border-radius:50px;border:1.5px solid rgba(255,255,255,.28);cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;transition:border-color .2s,background .2s,transform .2s;touch-action:manipulation}
+.lp-book-link{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin:12px 0 0;background:none;border:none;color:#9FD8FF;font-family:inherit;font-size:13.5px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer;text-align:center;padding:6px 0}.lp-book-link:hover{color:#fff}
+.cta-secondary{display:inline-flex;align-items:center;justify-content:center;gap:9px;margin:0;background:transparent;color:#fff;font-size:15px;font-weight:700;padding:14px 28px;border-radius:50px;border:1.5px solid rgba(255,255,255,.28);cursor:pointer;font-family:inherit;-webkit-appearance:none;appearance:none;transition:border-color .2s,background .2s,transform .2s;touch-action:manipulation}
 .cta-secondary:hover{border-color:#1FB6FF;background:rgba(31,182,255,.08);transform:translateY(-2px)}
 #bk-ov{position:fixed;inset:0;z-index:100000;background:rgba(5,6,10,.82);display:none;align-items:flex-start;justify-content:center;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
 #bk-ov.bk-on{display:flex}
@@ -2755,6 +2756,8 @@ window.lpApplyCurrency = function(){};
 .bk-i{width:100%;background:#16171F;border:1px solid rgba(255,255,255,.12);color:#fff;border-radius:10px;padding:12px 13px;font-size:16px;font-family:inherit;-webkit-appearance:none;appearance:none}
 .bk-i:focus{outline:none;border-color:#1FB6FF}
 select.bk-i{background-image:linear-gradient(45deg,transparent 50%,#8A8D96 50%),linear-gradient(135deg,#8A8D96 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat;padding-right:34px}
+.bk-meet{display:flex;gap:11px;align-items:flex-start;background:rgba(31,182,255,.1);border:1px solid rgba(31,182,255,.35);color:#D6EEFF;border-radius:12px;padding:12px 14px;font-size:13.5px;line-height:1.5;margin-bottom:6px}.bk-meet svg{color:#1FB6FF}.bk-meet b{color:#fff}
+.bk-chk{display:flex;gap:10px;align-items:flex-start;margin-top:18px;font-size:13.5px;line-height:1.45;color:#C9CCD3;cursor:pointer}.bk-chk input{width:20px;height:20px;flex:none;margin-top:1px;accent-color:#1FB6FF;cursor:pointer}.bk-chk b{color:#fff}
 .bk-h{font-size:11.5px;color:#7A7D86;margin-top:4px}
 .bk-days{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
 .bk-days::-webkit-scrollbar{display:none}
@@ -2778,7 +2781,8 @@ select.bk-i{background-image:linear-gradient(45deg,transparent 50%,#8A8D96 50%),
     <button id="bk-x" type="button" aria-label="Fermer">×</button>
     <div id="bk-form">
       <h2 class="bk-t" id="bk-title">Parlons de votre marque</h2>
-      <p class="bk-s">Un échange de 10 à 15 minutes pour regarder où en est votre boutique, votre objectif, et voir si on peut vous aider.</p>
+      <p class="bk-s" style="margin-bottom:14px">Un échange de 10 à 15 minutes pour regarder où en est votre boutique, votre objectif, et voir si on peut vous aider.</p>
+      <div class="bk-meet"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;margin-top:1px"><rect x="2" y="6" width="13" height="12" rx="2"/><path d="M22 8l-7 4 7 4z"/></svg><div><b>L'appel se fait sur Google Meet.</b> Ce n'est ni un appel téléphonique, ni un appel WhatsApp : on vous écrit sur WhatsApp uniquement pour vous envoyer le lien. Pas besoin d'activer votre caméra, il suffit d'être présent(e) sur l'appel.</div></div>
       <label class="bk-l" for="bk-nom">Votre nom</label>
       <input class="bk-i" id="bk-nom" type="text" autocomplete="name" placeholder="Prénom et nom">
       <label class="bk-l" for="bk-marque">Nom de votre marque <span style="font-weight:500;color:#7A7D86">(facultatif)</span></label>
@@ -2798,6 +2802,7 @@ select.bk-i{background-image:linear-gradient(45deg,transparent 50%,#8A8D96 50%),
       <div class="bk-days" id="bk-days"></div>
       <div id="bk-slots"></div>
       <div class="bk-h">Heures de Dakar (GMT). Créneaux de 10h à 15h et de 19h à 22h, tous les jours.</div>
+      <label class="bk-chk"><input type="checkbox" id="bk-meet-ok"><span>J'ai compris : l'appel se fera sur <b>Google Meet</b> (lien envoyé sur WhatsApp), sans caméra obligatoire.</span></label>
       <input class="bk-hp" id="bk-hp" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
       <div id="bk-err"></div>
       <button id="bk-go" type="button">Réserver mon appel</button>
@@ -2859,7 +2864,7 @@ function init(){
 }
 function err(m){var e=$('bk-err');e.textContent=m;e.style.display=m?'block':'none'}
 window.adsOpenBooking=function(){
-  $('bk-form').style.display='block'; $('bk-done').style.display='none'; err('');
+  $('bk-form').style.display='block'; $('bk-done').style.display='none'; err(''); $('bk-meet-ok').checked=false;
   init(); $('bk-ov').classList.add('bk-on'); document.body.style.overflow='hidden';
   try{if(typeof fbq!=='undefined')fbq('trackCustom','OpenBooking')}catch(e){}
 };
@@ -2892,13 +2897,14 @@ async function envoyer(){
   if(digits.length<9||digits.length>15) return err('Ce numéro WhatsApp semble incomplet.');
   if(!marche) return err('Choisissez votre marché.');
   if(selSlot===null) return err('Choisissez un créneau.');
+  if(!$('bk-meet-ok').checked) return err('Cochez la case pour confirmer que vous avez compris que l\'appel se fait sur Google Meet.');
   if(selSlot<Date.now()+PREP_MIN*60000-60000) { init(); return err('Ce créneau vient de passer, choisissez-en un autre.'); }
   if(!/^https?:\/\//i.test(lien)) lien='https://'+lien;
   if(!marque){ try{ marque=new URL(lien).hostname.replace(/^www\./,'').split('.')[0]; marque=marque.charAt(0).toUpperCase()+marque.slice(1) }catch(e){ marque=nom } }
   var btn=$('bk-go'); btn.disabled=true; btn.textContent='Réservation…';
   try{
     var now=new Date().toISOString();
-    var infos={appel_reserve:true,appel_reserve_at:now,appel_programme_at:new Date(selSlot).toISOString(),source:'formulaire_site',form_nom:nom,form_marche:marche,form_ca_objectif:ca,form_budget_pub:bud,form_boutique:lien};
+    var infos={appel_reserve:true,appel_reserve_at:now,appel_programme_at:new Date(selSlot).toISOString(),source:'formulaire_site',form_nom:nom,form_marche:marche,form_ca_objectif:ca,form_budget_pub:bud,appel_meet_ok:true,form_boutique:lien};
     var ex=await trouver(digits);
     if(ex){
       var n={}; try{n=JSON.parse(ex.notes||'{}')||{}}catch(e){ n={texte_ancien:ex.notes||''} }
@@ -2920,7 +2926,7 @@ async function envoyer(){
     try{if(typeof twq!=='undefined')twq('track','Lead')}catch(e){}
     var d=new Date(selSlot);
     $('bk-form').style.display='none';
-    $('bk-done').innerHTML='<div class="bk-ok"><div class="bk-c">✓</div><h2 class="bk-t" style="padding:0">C\'est réservé</h2><p class="bk-s" style="margin-bottom:6px">'+JL[d.getUTCDay()]+' '+d.getUTCDate()+' '+ML[d.getUTCMonth()]+' à <b style="color:#fff">'+hhmm(selSlot)+'</b> (heure de Dakar).</p><p class="bk-s">Nous vous contacterons sur WhatsApp, au +'+digits+', pour notre échange.</p></div>';
+    $('bk-done').innerHTML='<div class="bk-ok"><div class="bk-c">✓</div><h2 class="bk-t" style="padding:0">C\'est réservé</h2><p class="bk-s" style="margin-bottom:6px">'+JL[d.getUTCDay()]+' '+d.getUTCDate()+' '+ML[d.getUTCMonth()]+' à <b style="color:#fff">'+hhmm(selSlot)+'</b> (heure de Dakar).</p><p class="bk-s">Nous vous écrirons sur WhatsApp, au +'+digits+', pour vous envoyer le lien <b style="color:#fff">Google Meet</b>. L\'appel se fera sur Google Meet.</p></div>';
     $('bk-done').style.display='block';
   }catch(e){
     console.warn('Réservation:',e&&e.message);
