@@ -19,6 +19,7 @@ import Emails from './pages/Emails'
 import Suivi from './pages/Suivi'
 import AContacter from './pages/AContacter'
 import Fiche from './Fiche'
+import { IconeAdStats } from './Logo'
 import Comportement from './pages/Comportement'
 import Donnees from './pages/Donnees'
 import Utilisateurs from './pages/Utilisateurs'
@@ -65,7 +66,7 @@ function Shell({ user, onLogout }) {
   return (
     <div className="cx-app">
       <aside className="cx-side">
-        <div className="cx-brand"><div className="cx-logo">C</div><div><b>CRM AdStack</b><small>version React · bêta</small></div></div>
+        <div className="cx-brand"><div className="cx-logo"><IconeAdStats /></div><div><b>AdStats</b><small>AdStack · CRM</small></div></div>
         <nav>{visibles.map(rendu)}</nav>
         <div className="cx-foot"><div className="cx-em">{user.email}</div><button className="cx-btn sm" onClick={reload}>{state.loading ? 'Chargement…' : '↻ Actualiser'}</button><button className="cx-btn sm ghost" onClick={() => { signOut(); onLogout() }}>Se déconnecter</button></div>
       </aside>

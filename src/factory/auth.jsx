@@ -1,3 +1,4 @@
+import { IconeFactory } from './Logo'
 import React, { useEffect, useState } from 'react'
 import { SB, SB_KEY, ADMIN_EMAIL } from './api'
 
@@ -63,7 +64,7 @@ export function Login({ onDone }) {
   return (
     <div className="fx-login">
       <form className="fx-login-card" onSubmit={go}>
-        <div className="fx-logo big">F</div>
+        <div className="fx-logo big"><IconeFactory /></div>
         <h1>Factory</h1>
         <p>Espace administrateur AdStack</p>
         <button type="button" className="fx-btn primary" onClick={google}>Se connecter avec Google</button>

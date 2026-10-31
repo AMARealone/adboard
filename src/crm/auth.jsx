@@ -1,3 +1,4 @@
+import { IconeAdStats } from './Logo'
 import React, { useEffect, useState } from 'react'
 import { SB, SB_KEY, ADMIN_EMAIL } from './api'
 // Même session que Factory (mêmes clés) : connecté à l'un = connecté à l'autre.
@@ -47,7 +48,7 @@ export function Login({ onDone }) {
   const google = () => { location.href = `${SB}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(/localhost|127\.0\.0\.1/.test(location.hostname) ? location.origin + '/crm-next' : 'https://adstackofficial.com/crm-next')}&prompt=select_account` }
   return (
     <div className="cx-login"><form className="cx-card login" onSubmit={go}>
-      <div className="cx-logo big">C</div><h1>CRM AdStack</h1><p>Espace administrateur</p>
+      <div className="cx-logo big"><IconeAdStats /></div><h1>AdStats</h1><p>Espace administrateur</p>
       <button type="button" className="cx-btn primary" onClick={google}>Se connecter avec Google</button>
       <div className="cx-or"><span>ou avec email</span></div>
       <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />

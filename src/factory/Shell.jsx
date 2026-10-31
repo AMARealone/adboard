@@ -1,3 +1,4 @@
+import { IconeFactory } from './Logo'
 import React, { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import Icon from './Icon'
@@ -22,7 +23,7 @@ export default function Shell({ user, onLogout }) {
     <div className="fx-app">
       <div className={'fx-scrim' + (open ? ' show' : '')} onClick={() => setOpen(false)} />
       <aside className={'fx-side' + (open ? ' open' : '')}>
-        <div className="fx-brand"><div className="fx-logo">F</div><div><b>Factory</b><small>AdStack · admin</small></div></div>
+        <div className="fx-brand"><div className="fx-logo"><IconeFactory /></div><div><b>Factory</b><small>AdStack · admin</small></div></div>
         <nav className="fx-nav">
           {NAV.map((s) => (
             <div key={s.g}>
