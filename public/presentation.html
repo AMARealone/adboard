@@ -570,7 +570,11 @@ add("",split(head('Votre premier mois','Voici ce que vous <span class="grad">viv
 add("",split(head('Votre tranquillité',O.garantie?'Vous n’avancez <span class="grad">pas sans filet.</span>':'Vous commencez <span class="grad">à votre rythme.</span>')+
  pts(O.garantie?['Vous êtes couvert par la <b>'+esc(O.garantie.charAt(0).toLowerCase()+O.garantie.slice(1))+'</b>.','L’abonnement est <b>mensuel</b> : vous restez parce que ça marche.','Vous suivez tout, en direct, dans <b>AdBoard</b>.']:
   ['Vous testez sur <b>un mois</b>, sans vous engager sur un gros volume.','L’abonnement est <b>mensuel</b> : vous montez quand les preuves sont là.','Vous suivez tout, en direct, dans <b>AdBoard</b>.']),
- shot(m('suivi'),'Suivi dans AdBoard',null,'width:100%'))+bridge('Alors, quelle offre pour vous ?'));
+ shot(m('suivi'),'Suivi dans AdBoard',null,'width:100%'))+bridge('Avant de voir l’offre, une question'));
+
+/* ═════ Questions avant l’offre ═════ */
+add("",split(head('Avant l’offre','Avez-vous des questions <span class="grad">avant que je vous montre l’offre ?</span>')+'<p class="lead a" style="--d:2">Prenez le temps. Je préfère répondre maintenant à tout ce qui reste flou, pour que vous décidiez en toute clarté.</p>',
+ '<div class="rc">'+[['Le fonctionnement','Comment ça se passe, concrètement'],['Ce que vous recevez','Les créatives, les textes, AdBoard'],['Les délais','Quand arrive votre premier lot'],['Autre chose','Tout ce qui vous traverse l’esprit']].map(function(x,i){return '<div class="rci a pop" style="--d:'+(i+2)+'"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div>')+bridge('Alors, voici l’offre qui vous correspond'));
 
 /* ═════ Offre ═════ */
 (function(){
@@ -592,9 +596,10 @@ add("",split(head('Votre tranquillité',O.garantie?'Vous n’avancez <span class
 /* ═════ Et maintenant ═════ */
 add("",split(head('La suite','Alors <span class="grad">on commence.</span>')+
  '<div class="recap a" style="--d:2"><span>Abonnement mensuel</span>'+(O.garantie?'<span>'+esc(O.garantie)+'</span>':'')+'<span>Créatives disponibles dès le paiement</span></div>',
- '<div class="nx"><div class="nxi a" style="--d:2"><div class="d">1</div><div><h3>Je vous envoie votre devis et votre lien de paiement</h3><p>Directement sur WhatsApp.</p></div></div>'+
- '<div class="nxi a" style="--d:3"><div class="d">2</div><div><h3>Dès le paiement, on connecte AdBoard ensemble</h3><p>Je vous accompagne pour la prise en main.</p></div></div>'+
- '<div class="nxi a" style="--d:4"><div class="d">3</div><div><h3>On importe votre produit et on lance la première production</h3><p>Votre premier lot arrive en '+O.liv+' maximum.</p></div></div></div>'));
+ '<div class="nx"><div class="nxi a" style="--d:2"><div class="d">1</div><div><h3>Je vous envoie votre lien de paiement</h3><p>Directement ici, par WhatsApp.</p></div></div>'+
+ '<div class="nxi a" style="--d:3"><div class="d">2</div><div><h3>Vous recevez '+(O.garantie?'la facture et votre garantie':'la facture')+' par mail</h3><p>Automatiquement, dès le paiement.</p></div></div>'+
+ '<div class="nxi a" style="--d:4"><div class="d">3</div><div><h3>On connecte AdBoard ensemble</h3><p>Je vous accompagne pour la prise en main.</p></div></div>'+
+ '<div class="nxi a" style="--d:5"><div class="d">4</div><div><h3>On importe votre produit et on lance la première production</h3><p>Votre premier lot arrive en '+O.liv+' maximum.</p></div></div></div>'));
 
 /* ═════ Annexe · Comparatif ═════ */
 (function(){
