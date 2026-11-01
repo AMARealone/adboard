@@ -6,13 +6,12 @@
 // Les chiffres que le client peut donner. Tous facultatifs. `sens` : 'haut' = plus c'est grand, mieux c'est.
 export const TP_CHAMPS = [
   { k: 'roas',     label: 'ROAS',          aide: 'ex. 2,8',            unite: '×',  sens: 'haut', poids: 3,   max: 200 },
-  { k: 'cpa',      label: 'CPA',           aide: 'coût par achat',     unite: '',   sens: 'bas',  poids: 3,   max: 100000000 },
-  { k: 'depenses', label: 'Dépenses',      aide: 'total dépensé',      unite: '',   sens: 'haut', poids: 1.5, max: 1000000000 },
+  { k: 'cpa',      label: 'CPA',           aide: 'en $ ou €',     unite: '',   sens: 'bas',  poids: 3,   max: 100000000 },
+  { k: 'depenses', label: 'Dépenses',      aide: 'en $ ou €',      unite: '',   sens: 'haut', poids: 1.5, max: 1000000000 },
   { k: 'jours',    label: 'Jours actifs',  aide: 'ex. 12',             unite: 'j',  sens: 'haut', poids: 1,   max: 365, entier: true },
   { k: 'achats',   label: 'Achats',        aide: 'nombre de ventes',   unite: '',   sens: 'haut', poids: 1,   max: 10000000, entier: true },
   { k: 'ctr',      label: 'CTR',           aide: 'ex. 1,9',            unite: '%',  sens: 'haut', poids: 1,   max: 100 },
 ];
-export const TP_DEVISES = ['FCFA', 'USD', 'EUR', 'MAD', 'TND', 'DZD', 'GNF'];
 
 function _nombre(v) {
   if (v === null || v === undefined || v === '') return null;
@@ -33,8 +32,6 @@ export function nettoyerStats(brut) {
     out[ch.k] = n;
   }
   if (!Object.keys(out).length) return null;
-  const dev = typeof brut.devise === 'string' ? brut.devise.trim().toUpperCase().slice(0, 6) : '';
-  if (dev) out.devise = dev;
   return out;
 }
 
