@@ -5,7 +5,7 @@ import { labFetch, labQuery, labUrl, labKey, saveLabUrl, saveLabKey } from '../l
 import { useAgentMem, useTick } from '../agentStore'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
 import { getCommandes, SERVER } from '../api'
-import { alertDlg } from '../ui'
+import { alertDlg, confirmDlg } from '../ui'
 
 const readFile = (f) => new Promise((r) => { const x = new FileReader(); x.onload = () => r({ data: String(x.result).split(',')[1], mime: f.type || 'image/jpeg' }); x.readAsDataURL(f) })
 async function urlToB64(url) {
@@ -108,6 +108,18 @@ export default function VideoPanel({ competenceOnly }) {
       clearInterval(POLL); POLL = setInterval(() => poll(j.id, t0), 4000); poll(j.id, t0)
     } catch (e) { fail('Échec au démarrage : ' + e.message) }
   }
+  const annuler = async () => {
+    if (!(await confirmDlg("Annuler la production ? Plus rien de nouveau ne sera lancé. Ce qui est déjà parti chez Google (un clip Veo en cours) reste facturé.", { ok: 'Annuler la production', danger: true }))) return
+    try {
+      const r = await labFetch('/pipe/' + run.pid + '/annuler', { method: 'POST' })
+      if (!r.ok) throw new Error('HTTP ' + r.status)
+      setRun((x) => ({ ...x, status: { ...(x.status || {}), stage: 'annulation en cours…' } }))
+    } catch (e) { alertDlg("Impossible d'annuler : " + e.message + ". Si le service est arrêté, la production est déjà stoppée.") }
+  }
+  const relancer = async () => {
+    if (!(await confirmDlg('Régénérer une vidéo avec le même brief, la même synthèse, le même produit et le même CT ? Une nouvelle production complète sera lancée (budget jusqu’à 10 $).', { ok: 'Régénérer' }))) return
+    start()
+  }
   const download = async (avecImages) => {
     setHistMsg('Préparation du fichier…')
     try {
@@ -158,7 +170,7 @@ export default function VideoPanel({ competenceOnly }) {
           <label>Références <select className="fx-in sm" value={m.ref} onChange={(e) => set({ ref: e.target.value })}><option value="complet">Complet (le plus fidèle)</option><option value="produit">Photo produit seule</option><option value="aucune">Aucune</option></select></label>
           <label className="chk"><input type="checkbox" checked={m.planOnly} onChange={(e) => set({ planOnly: e.target.checked })} /> Plan seulement (sans vidéo, presque gratuit)</label>
         </div></details>
-      <div className="fx-launch"><button className="fx-btn primary big" disabled={run.busy || !!m.prep} onClick={start}>{m.prep ? 'Préparation…' : run.busy ? 'Génération en cours…' : 'Générer la vidéo'}</button><span className="fx-s">{run.busy ? secLive + ' s' : ''}</span></div>
+      <div className="fx-launch"><button className="fx-btn primary big" disabled={run.busy || !!m.prep} onClick={run.pid && !run.busy ? relancer : start}>{m.prep ? 'Préparation…' : run.busy ? 'Génération en cours…' : run.pid ? 'Régénérer la vidéo' : 'Générer la vidéo'}</button>{run.busy && run.pid && <button className="fx-btn danger big" onClick={annuler} style={{ marginLeft: 8 }}>Annuler la production</button>}<span className="fx-s">{run.busy ? secLive + ' s' : ''}</span></div>
       {m.prep && <div className="fx-hint">{m.prep}</div>}
       {m.startErr && <div className="fx-err">{m.startErr} <button className="fx-btn sm" onClick={() => set({ startErr: '' })}>Fermer</button></div>}
       {run.error && !run.status && <div className="fx-err">{run.error}</div>}

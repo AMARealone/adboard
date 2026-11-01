@@ -9,7 +9,7 @@ import { prodv2State } from '../prod/state'
 import { getCommandes } from '../api'
 import { ctGetAll, ctGetBase64, loadCTImages, ctGalerieComplete, NIVEAUX_CLE } from '../ctApi'
 import VideoPanel from './VideoPanel'
-import { alertDlg, toast } from '../ui'
+import { alertDlg, confirmDlg, toast } from '../ui'
 import { writeSkills, getBackupDir } from '../backup'
 
 const Lab = ({ children }) => <div className="fx-lab up">{children}</div>
@@ -110,6 +110,7 @@ function Output({ text, color }) {
   return <div className="fx-out" style={color ? { color } : null}><button className="fx-btn sm copy" onClick={cp}>Copier</button><pre>{text}</pre></div>
 }
 
+const RUNS = {}   // slug -> { cancelled, ac } : permet d'annuler la génération en cours de cet agent
 function StdTest({ a }) {
   const [m, set] = useAgentMem(a.slug, { brief: null, briefName: '', photo: null, logo: null, rctx: null, synthese: '', nb: 0, angle: 0, pos: 0, ct: null, ctRaison: '', output: '', marche: '', outErr: false, images: [], busy: false, t0: 0, dur: 0, prog: '', err: '' })
   const busy = !!m.busy, secLive = useTick(m.t0, busy), sec = busy ? secLive : (m.dur || 0)
@@ -128,6 +129,7 @@ function StdTest({ a }) {
       if (!m.photo || !m.brief) return alertDlg('Charge un brief.json ou prends une commande (photo produit nécessaire).')
       if (!m.synthese.trim()) return alertDlg("Colle la Synthèse produite par l'Analyste de Marché.")
     }
+    const my = (RUNS[a.slug] = { cancelled: false, ac: new AbortController() }); const S = (x) => { if (!my.cancelled) set(x) }
     const t0 = Date.now(); setLive(a.slug, true)
     set({ busy: true, t0, dur: 0, err: '', prog: isImg ? 'Préparation…' : 'Génération en cours…' })
     try {
@@ -139,7 +141,7 @@ function StdTest({ a }) {
           return V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, m.brief, undefined, true)
         })
         const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
-        set({ output: synthesisText, outErr: false, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText, bal: V.dernierBalayage() })
+        S({ output: synthesisText, outErr: false, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText, bal: V.dernierBalayage() })
       } else if (isImg) {
         const productB64 = await V.compressImg(m.photo.b64, m.photo.mime || 'image/jpeg')
         const nbA = Math.max(angles.length, 2), ai = Math.min(m.angle, nbA - 1)
@@ -148,33 +150,42 @@ function StdTest({ a }) {
         // ── Étape 1 : l'agent regarde TOUTE la galerie et choisit lui-même UN CT (aucune sélection manuelle) ──
         await loadCTImages()
         // Le niveau de conscience de la créative RESTREINT la galerie : Most Aware → seulement les CT balisés Most Aware, etc.
-        const gal = await ctGalerieComplete((n, t) => set({ prog: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }), { niveau: NIVEAUX_CLE[m.pos] })
+        const gal = await ctGalerieComplete((n, t) => S({ prog: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }), { niveau: NIVEAUX_CLE[m.pos] })
         if (!gal.cts.length) throw new Error('La galerie CT est vide : ajoute des CT (page Galerie).')
         const libNiv = NIVEAUX[m.pos][0]
-        set({ prog: gal.repli
+        S({ prog: gal.repli
           ? `⚠ Aucun CT de la galerie n'est balisé « ${libNiv} » : l'agent examine ${gal.envoyes} CT et prend la structure la plus proche. Ajoutez ou balisez des CT ${libNiv} dans la galerie.`
           : `Niveau imposé : ${libNiv}. L'agent examine les ${gal.envoyes} CT balisés ${libNiv}${gal.nbBalises > gal.envoyes ? ' (les ' + gal.envoyes + ' plus récents sur ' + gal.nbBalises + ')' : ''} (galerie : ${gal.total} CT) et choisit le meilleur pour cette créative…`, ct: null, ctRaison: '' })
-        const rs = await fetch(SERVER + '/select-ct-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const rs = await fetch(SERVER + '/select-ct-agent', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ briefTexte, synthese: m.synthese, angleInstruction, assets, productBase64: productB64, productMime: 'image/jpeg', cts: gal.cts, niveau: NIVEAUX_CLE[m.pos], isTest: true }) })
         const dsTxt = await rs.text(); let ds = null; try { ds = JSON.parse(dsTxt) } catch (_) {}
         if (!ds) throw new Error(rs.status === 404 ? "Choix du CT : le serveur Render n'a pas encore la nouvelle version (route /select-ct-agent introuvable, HTTP 404). Redéployez serveur.js." : 'Choix du CT : réponse inattendue du serveur (HTTP ' + rs.status + ') ' + dsTxt.slice(0, 120))
         if (!rs.ok || ds.error) throw new Error('Choix du CT : ' + (ds.error || 'HTTP ' + rs.status))
         if (!CT_IMAGES[ds.id]) throw new Error('Le CT choisi (' + ds.id + ') est introuvable dans la galerie.')
-        set({ ct: ds.id, ctRaison: ds.raison || '', prog: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
+        S({ ct: ds.id, ctRaison: ds.raison || '', prog: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
         const ctB64 = await V.compressImg(await ctGetBase64(ds.id), CT_IMAGES[ds.id + '_mime'] || 'image/jpeg')
-        const res = await fetch(SERVER + '/creative-prod', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const res = await fetch(SERVER + '/creative-prod', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ systemPrompt: creativeSystem, synthese: m.synthese, brief: m.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', isTest: true }) })
         const d = await res.json(); if (d.error) throw new Error(d.error)
-        if (d.imageData) set((p) => ({ outErr: false, output: `✓ Générée — angle ${ai + 1} · ${NIVEAUX[m.pos][0]} · CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id} · angle choisi par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: CT_IMAGES[ds.id + '_name'] || ds.id, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
-        else set({ err: 'Aucune image reçue.' })
+        if (d.imageData) S((p) => ({ outErr: false, output: `✓ Générée — angle ${ai + 1} · ${NIVEAUX[m.pos][0]} · CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id} · angle choisi par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: CT_IMAGES[ds.id + '_name'] || ds.id, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
+        else S({ err: 'Aucune image reçue.' })
       } else {
         // Un angle à la fois, comme la production (même consigne, même lecture 5 hooks + description)
         const ai = Math.min(m.angle, Math.max(angles.length, 1) - 1)
         const { hooks, description } = await withProd({ synthesis: m.synthese, angles: angles.length ? angles : ['Angle 1'], brief: m.brief || {} }, () => V.prodv2GenerateOneCopyAttempt(ai))
-        set({ outErr: false, output: `ANGLE ${ai + 1} — ${angles[ai] || ''}\n\n` + hooks.map((h, i) => `HOOK ${i + 1} : ${h}`).join('\n\n') + '\n\nDESCRIPTION :\n' + description })
+        S({ outErr: false, output: `ANGLE ${ai + 1} — ${angles[ai] || ''}\n\n` + hooks.map((h, i) => `HOOK ${i + 1} : ${h}`).join('\n\n') + '\n\nDESCRIPTION :\n' + description })
       }
-    } catch (err) { set({ err: err.message }) }
-    finally { setLive(a.slug, false); set({ busy: false, prog: '', dur: Math.round((Date.now() - t0) / 1000) }) }
+    } catch (err) { S({ err: err.message }) }
+    finally { if (!my.cancelled) { setLive(a.slug, false); set({ busy: false, prog: '', dur: Math.round((Date.now() - t0) / 1000) }) } }
+  }
+  const annuler = async () => {
+    if (!(await confirmDlg("Annuler la génération ? Le navigateur arrête d'attendre et ignore le résultat. Si le serveur avait déjà commencé un appel payant, il peut aller à son terme et être facturé.", { ok: 'Annuler la génération', danger: true }))) return
+    const r = RUNS[a.slug]; if (r) { r.cancelled = true; try { r.ac.abort() } catch (_) {} }
+    setLive(a.slug, false); set({ busy: false, prog: '', err: 'Génération annulée par toi. Tout ce que tu avais rempli est conservé.', dur: 0 })
+  }
+  const relancer = async () => {
+    if (!(await confirmDlg('Relancer la génération avec les mêmes entrées ? Cela refait un appel complet (coût comme la première fois).', { ok: 'Régénérer' }))) return
+    run()
   }
   const dl = (img) => { const x = document.createElement('a'); x.href = img.src; x.download = 'adstack_' + img.ct + '_' + img.ts + '.png'; x.click() }
   const AngleSeg = () => angles.length ? <Seg value={m.angle} onChange={(v) => set({ angle: v })} options={angles.map((t, i) => [i, 'Angle ' + (i + 1)])} /> : <div className="fx-s">Colle une synthèse : les angles seront détectés automatiquement.</div>
@@ -188,7 +199,7 @@ function StdTest({ a }) {
       {(isImg || isCopy) && <div className="fx-fld"><Lab>ANGLE À PRODUIRE</Lab><AngleSeg />{angles[m.angle] && <div className="fx-s">{angles[m.angle]}</div>}</div>}
       {isImg && <div className="fx-fld"><Lab>NIVEAU DE CONSCIENCE (position de la créative dans l'angle)</Lab><Seg value={m.pos} onChange={(v) => set({ pos: v })} options={NIVEAUX.map(([, l], i) => [i, l])} /><div className="fx-s">En production, une créative par niveau pour chaque angle ; ici tu en testes une.</div></div>}
       {isImg && <CTAuto m={m} />}
-      <div className="fx-launch"><button className="fx-btn primary big" disabled={busy} onClick={run}>{busy ? 'Génération…' : 'Tester cet agent'}</button><span className="fx-s">{busy || sec ? sec + 's' : ''}{!busy && m.dur ? ' · dernière génération' : ''}</span></div>
+      <div className="fx-launch">{busy ? <button className="fx-btn danger big" onClick={annuler}>Annuler la génération</button> : <button className="fx-btn primary big" onClick={(m.output || (m.images && m.images.length)) ? relancer : run}>{(m.output || (m.images && m.images.length)) ? 'Régénérer' : 'Tester cet agent'}</button>}<span className="fx-s">{busy || sec ? sec + 's' : ''}{!busy && m.dur ? ' · dernière génération' : ''}</span></div>
       {isAn && m.bal && m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>Balayage : {m.bal.scrapecreators.requetes} requêtes ScrapeCreators ({m.bal.scrapecreators.credits} crédits) · Reddit {m.bal.scrapecreators.reddit} · TikTok {m.bal.scrapecreators.tiktok_videos} vidéos / {m.bal.scrapecreators.tiktok_commentaires} commentaires · pubs Meta {m.bal.scrapecreators.pubs}{m.bal.scrapecreators.erreurs ? ' · ' + m.bal.scrapecreators.erreurs + ' erreur(s) (voir les logs Render)' : ''}</div>}
       {isAn && m.bal && !m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.bal.reutilise ? 'Hypothèse stockée réutilisée' : 'Balayage lancé'} — {m.bal.raison}. Aucune donnée ScrapeCreators reçue : voir les logs Render.</div>}
       {busy && m.prog && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.prog}</div>}
