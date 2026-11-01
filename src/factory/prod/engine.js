@@ -251,6 +251,12 @@ export async function launch() {
   U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente' }))
   U.copy = Array.from({ length: nbAngles }, () => ({ state: 'run' }))
   resetAgents(); U.launched = true; U.running = true; U.launchLabel = 'Production en cours…'; emit()
+  // v5.73 — composition et budget du lot (1 vidéo + 2 images par angle, budget tout compris). Informatif : n'empêche rien.
+  try {
+    const q = nbAngles * 3
+    const rb = await V.fetchAvecTimeout(`${SERVER}/lot/budget?taille=${q}&hypotheseExiste=${S.renewalContext?.syntheseExistante ? 1 : 0}`, { headers: NGROK }, 8000)
+    if (rb.ok) { const j = await rb.json(); S.lotBudget = j; U.banner = { kind: 'info', text: `Lot de ${q} créatives : ${j.composition.angles} angles × (1 vidéo + 2 images) — budget tout compris ${j.budget.total} $ (≈ ${j.budget.parVideo} $ par vidéo). Pour l'instant la production automatique ne génère que les images ; les vidéos se lancent depuis le Video Lab.` }; emit() }
+  } catch (_) {}
   const signal = abortCtl.signal
   try {
     setAgent(1, 'active', 'Recherche multi-sources + synthèse S0→S7…', 20)
