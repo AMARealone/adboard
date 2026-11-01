@@ -7,7 +7,7 @@ import * as V from '../prod/verbatim'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
 import { prodv2State } from '../prod/state'
 import { getCommandes } from '../api'
-import { ctGetAll, ctGetBase64, loadCTImages } from '../ctApi'
+import { ctGetAll, ctGetBase64, loadCTImages, ctGalerieComplete } from '../ctApi'
 import VideoPanel from './VideoPanel'
 import { alertDlg, toast } from '../ui'
 import { writeSkills, getBackupDir } from '../backup'
@@ -89,18 +89,14 @@ function BriefSource({ m, set }) {
   )
 }
 
-function CTPicker({ selected, onSelect }) {
-  const [list, setList] = useState(null)
-  const nav = useNavigate()
-  useEffect(() => { ctGetAll().then((l) => { l.forEach((r) => { CT_IMAGES[r.id] = r.url; CT_IMAGES[r.id + '_mime'] = r.mime; CT_IMAGES[r.id + '_name'] = r.name }); setList(l.slice(0, 18)) }).catch(() => setList([])) }, [])
+// Le CT n'est plus choisi à la main : l'agent le choisit lui-même parmi toute la galerie (aperçu du choix + son raisonnement).
+function CTAuto({ m }) {
+  const [n, setN] = useState(null), nav = useNavigate()
+  useEffect(() => { ctGetAll().then((l) => setN(l.length)).catch(() => setN(0)) }, [])
   return (
-    <div>
-      <div className="fx-lab-row"><Lab>18 CT RÉCENTS</Lab><button className="fx-link-btn" onClick={() => nav('/galerie')}>Gérer la galerie</button></div>
-      {list === null ? <div className="fx-s">Chargement…</div> : !list.length ? <div className="fx-s">Galerie vide — <button className="fx-link-btn" onClick={() => nav('/galerie')}>ajouter des CT →</button></div> : (
-        <div className="fx-ctpick">{list.map((r) => (
-          <button key={r.id} type="button" className={'fx-ctp' + (selected === r.id ? ' on' : '')} title={[r.name, r.meta, r.awareness.length ? 'Conscience : ' + r.awareness.join('/') : ''].filter(Boolean).join('\n')} onClick={() => onSelect(r.id)}>
-            <img src={r.url} alt="" loading="lazy" /><span>{r.name}</span></button>))}</div>)}
-      <div className="fx-s" style={{ marginTop: 6 }}>{selected ? 'CT sélectionné : ' + (CT_IMAGES[selected + '_name'] || selected) : 'Aucun CT sélectionné'}</div>
+    <div className="fx-fld"><div className="fx-lab-row"><Lab>CT : CHOISI AUTOMATIQUEMENT PAR L'AGENT</Lab><button className="fx-link-btn" onClick={() => nav('/galerie')}>Gérer la galerie</button></div>
+      <div className="fx-s">{n === null ? 'Chargement…' : n === 0 ? 'Galerie vide : ajoutez des CT avant de tester.' : 'L\'agent reçoit toute la galerie (' + n + ' CT : image, nom, description, balises) avec le brief, la synthèse et la consigne d\'angle, puis choisit un seul CT.'}</div>
+      {m.ct && CT_IMAGES[m.ct] && <div className="fx-ctchoice"><img className="fx-minithumb" src={CT_IMAGES[m.ct]} alt="" /><div><b>{CT_IMAGES[m.ct + '_name'] || m.ct}</b>{m.ctRaison && <div className="fx-s wrap">{m.ctRaison}</div>}</div></div>}
     </div>
   )
 }
@@ -111,7 +107,7 @@ function Output({ text, color }) {
 }
 
 function StdTest({ a }) {
-  const [m, set] = useAgentMem(a.slug, { brief: null, briefName: '', photo: null, logo: null, rctx: null, synthese: '', nb: 0, angle: 0, pos: 0, ct: null, output: '', marche: '', outErr: false, images: [] })
+  const [m, set] = useAgentMem(a.slug, { brief: null, briefName: '', photo: null, logo: null, rctx: null, synthese: '', nb: 0, angle: 0, pos: 0, ct: null, ctRaison: '', output: '', marche: '', outErr: false, images: [] })
   const [busy, setBusy] = useState(false), [sec, setSec] = useState(0)
   const isImg = a.kind === 'image', isAn = a.kind === 'analyst', isCopy = a.kind === 'copy'
   useEffect(() => { loadSkills(); loadCTImages() }, [])
@@ -123,12 +119,11 @@ function StdTest({ a }) {
     if (isAn && !m.photo) return alertDlg('Ce brief n’a pas de photo produit : l’Analyste en a besoin.')
     if (isCopy && !m.synthese.trim()) return alertDlg('Colle la Synthèse (ou prends une commande déjà analysée).')
     if (isImg) {
-      if (!m.ct || !CT_IMAGES[m.ct]) return alertDlg('Sélectionne un CT dans la galerie.')
       if (!m.photo || !m.brief) return alertDlg('Charge un brief.json ou prends une commande (photo produit nécessaire).')
       if (!m.synthese.trim()) return alertDlg("Colle la Synthèse produite par l'Analyste de Marché.")
     }
     setBusy(true); setSec(0); const t0 = Date.now(); const iv = setInterval(() => setSec(Math.round((Date.now() - t0) / 1000)), 1000)
-    set({ output: isImg ? 'Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…' : '', marche: '', outErr: false })
+    set({ output: isImg ? 'Préparation…' : '', marche: '', outErr: false })
     try {
       await loadSkills()
       if (isAn) {
@@ -140,15 +135,25 @@ function StdTest({ a }) {
         const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
         set({ output: synthesisText, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText })
       } else if (isImg) {
-        const ctB64 = await V.compressImg(await ctGetBase64(m.ct), CT_IMAGES[m.ct + '_mime'] || 'image/jpeg')
         const productB64 = await V.compressImg(m.photo.b64, m.photo.mime || 'image/jpeg')
         const nbA = Math.max(angles.length, 2), ai = Math.min(m.angle, nbA - 1)
         // Consigne IDENTIQUE à la production : angle imposé + niveau de conscience selon la position dans l'angle
-        const { creativeSystem, angleInstruction } = await withProd({ brief: m.brief, angles: angles.length ? angles : ['Angle 1', 'Angle 2'] }, async () => V.buildCreativeInstruction(ai, m.pos))
+        const { creativeSystem, angleInstruction, briefTexte, assets } = await withProd({ brief: m.brief, angles: angles.length ? angles : ['Angle 1', 'Angle 2'] }, async () => ({ ...V.buildCreativeInstruction(ai, m.pos), briefTexte: V.prodv2BriefTextOnly(), assets: V.prodv2AssetsText() }))
+        // ── Étape 1 : l'agent regarde TOUTE la galerie et choisit lui-même UN CT (aucune sélection manuelle) ──
+        await loadCTImages()
+        const gal = await ctGalerieComplete((n, t) => set({ output: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }))
+        if (!gal.cts.length) throw new Error('La galerie CT est vide : ajoute des CT (page Galerie).')
+        set({ output: `L'agent examine ${gal.envoyes} CT${gal.total > gal.envoyes ? ' (les ' + gal.envoyes + ' plus récents sur ' + gal.total + ')' : ''} et choisit le meilleur pour cette créative…`, ct: null, ctRaison: '' })
+        const rs = await fetch(SERVER + '/select-ct-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ briefTexte, synthese: m.synthese, angleInstruction, assets, productBase64: productB64, productMime: 'image/jpeg', cts: gal.cts, isTest: true }) })
+        const ds = await rs.json(); if (!rs.ok || ds.error) throw new Error('Choix du CT : ' + (ds.error || 'HTTP ' + rs.status))
+        if (!CT_IMAGES[ds.id]) throw new Error('Le CT choisi (' + ds.id + ') est introuvable dans la galerie.')
+        set({ ct: ds.id, ctRaison: ds.raison || '', output: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
+        const ctB64 = await V.compressImg(await ctGetBase64(ds.id), CT_IMAGES[ds.id + '_mime'] || 'image/jpeg')
         const res = await fetch(SERVER + '/creative-prod', { method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ systemPrompt: creativeSystem, synthese: m.synthese, brief: m.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', isTest: true }) })
         const d = await res.json(); if (d.error) throw new Error(d.error)
-        if (d.imageData) set((p) => ({ output: `✓ Générée — angle ${ai + 1} · ${NIVEAUX[m.pos][0]} · angle choisi par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: CT_IMAGES[m.ct + '_name'] || m.ct, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
+        if (d.imageData) set((p) => ({ output: `✓ Générée — angle ${ai + 1} · ${NIVEAUX[m.pos][0]} · CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id} · angle choisi par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: CT_IMAGES[ds.id + '_name'] || ds.id, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
         else set({ output: 'Aucune image reçue.', outErr: true })
       } else {
         // Un angle à la fois, comme la production (même consigne, même lecture 5 hooks + description)
@@ -170,7 +175,7 @@ function StdTest({ a }) {
       {(isImg || isCopy) && <div className="fx-fld"><Lab>SYNTHÈSE (de l'Analyste de Marché)</Lab><textarea className="fx-ta" rows={7} value={m.synthese} onChange={(e) => set({ synthese: e.target.value, angle: 0 })} placeholder="Colle ici la synthèse complète, ou prends une commande déjà livrée, ou teste l'Analyste d'abord…" /></div>}
       {(isImg || isCopy) && <div className="fx-fld"><Lab>ANGLE À PRODUIRE</Lab><AngleSeg />{angles[m.angle] && <div className="fx-s">{angles[m.angle]}</div>}</div>}
       {isImg && <div className="fx-fld"><Lab>NIVEAU DE CONSCIENCE (position de la créative dans l'angle)</Lab><Seg value={m.pos} onChange={(v) => set({ pos: v })} options={NIVEAUX.map(([, l], i) => [i, l])} /><div className="fx-s">En production, une créative par niveau pour chaque angle ; ici tu en testes une.</div></div>}
-      {isImg && <div className="fx-fld"><CTPicker selected={m.ct} onSelect={(id) => set({ ct: id })} /></div>}
+      {isImg && <CTAuto m={m} />}
       <div className="fx-launch"><button className="fx-btn primary big" disabled={busy} onClick={run}>{busy ? 'Génération…' : 'Tester cet agent'}</button><span className="fx-s">{busy || sec ? sec + 's' : ''}</span></div>
       {m.output && <Output text={m.output} color={m.outErr ? 'var(--er)' : null} />}
       {isAn && m.marche && <div className="fx-fld"><Lab>DONNÉES MARCHÉ (JSON livré au client)</Lab><Output text={m.marche} /></div>}

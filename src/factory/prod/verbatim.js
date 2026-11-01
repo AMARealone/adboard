@@ -139,6 +139,26 @@ export async function selectCTsForGeneration(synthesis, count, mode, excludeIds)
   return completerParCyclage(ids.sort(function() { return Math.random() - 0.5; }).slice(0, count));
 }
 
+// Assets réels du client (aspects photo, kit, avis, logo, prix, promo, garantie, marchés) — même texte que pour la sélection en production
+export function prodv2AssetsText() {
+  try {
+    const b = prodv2State.brief || null; if (!b) return ''
+    const L = [], ph = (b.photos_produit || []).filter((p) => !p.exclue)
+    if (ph.length) L.push('Aspects photo disponibles : ' + ph.map((p) => p.aspect).join(', '))
+    else if ((b.galerie_images || []).length > 1) L.push('Photos du produit : ' + b.galerie_images.length + ' (aspects non précisés)')
+    else L.push('Une seule photo produit (aspect unique)')
+    if (ph.some((p) => p.aspect === 'kit')) L.push('KIT / CADEAUX fournis : le client vend ou offre des produits complémentaires avec le produit principal')
+    else L.push('Aucun kit ni cadeau fourni')
+    L.push('Avis fournis : ' + (((b.avis_textes || []).length) + (b.avis_captures_nb || 0)) + ' (textes + captures)')
+    L.push('Logo : ' + (b.logo_url ? 'fourni' : 'absent'))
+    L.push('Prix affichable : ' + (b.prix_affichable === false ? 'NON (prix différents selon les pays)' : 'oui'))
+    if (b.promo) L.push('Offre en cours : ' + b.promo)
+    if (b.garantie) L.push('Garantie : ' + b.garantie)
+    if (b.marches && b.marches.length > 1) L.push('Mode multi-marché : ' + b.marches.length + ' pays, aucun lieu précis')
+    return L.join('\n')
+  } catch (e) { return '' }
+}
+
 export function prodv2BriefTextOnly() {
   const b = prodv2State.brief || {};
   const clean = {};

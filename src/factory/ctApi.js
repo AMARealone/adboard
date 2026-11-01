@@ -93,3 +93,27 @@ export async function ctNameAI(b64, mime) {
   if (!name) throw new Error('Nom vide reçu du serveur')
   return { name, meta: (d.meta || '').replace(/^["']|["']$/g, '').substring(0, 500), awareness: d.awareness || [], styleTags: d.styleTags || [], niche: d.niche || '' }
 }
+
+// Galerie COMPLÈTE pour l'agent : chaque CT en miniature (256 px) + ses balises. Miniatures gardées en mémoire pour les essais suivants.
+const MINIS = new Map()
+export const CT_MAX_AGENT = 400
+function miniature(url) {
+  return new Promise((resolve) => {
+    const img = new Image(); img.crossOrigin = 'anonymous'
+    img.onload = () => { const s = Math.min(1, 256 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.width * s)); c.height = Math.max(1, Math.round(img.height * s)); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); resolve(c.toDataURL('image/jpeg', 0.7).split(',')[1]) }
+    img.onerror = () => resolve(null); img.src = url + (url.includes('?') ? '&' : '?') + 'm=1'
+  })
+}
+export async function ctGalerieComplete(onProgress) {
+  const tous = await ctGetAll(), liste = tous.slice(0, CT_MAX_AGENT), sortie = new Array(liste.length); let fait = 0, i = 0
+  const worker = async () => {
+    while (i < liste.length) {
+      const k = i++, r = liste[k], cle = r.id + '|' + r.url
+      let b64 = MINIS.get(cle); if (b64 === undefined) { b64 = await miniature(r.url); MINIS.set(cle, b64) }
+      sortie[k] = { id: r.id, name: r.name, meta: r.meta, awareness: r.awareness, styleTags: r.styleTags, niche: r.niche, mime: 'image/jpeg', b64 }
+      fait++; if (onProgress) onProgress(fait, liste.length)
+    }
+  }
+  await Promise.all(Array.from({ length: 8 }, worker))
+  return { cts: sortie, total: tous.length, envoyes: liste.length, sansImage: sortie.filter((c) => !c.b64).length }
+}
