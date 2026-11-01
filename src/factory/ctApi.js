@@ -21,7 +21,7 @@ export async function ctGetAll() {
     const e = by[id]; if (!e.imgName) continue
     let meta = { name: id, addedAt: 0 }
     if (e.jsonName) { try { const r = await fetch(pub(e.jsonName) + '?t=' + Date.now()); if (r.ok) meta = await r.json() } catch (_) {} }
-    recs.push({ id, name: meta.name || id, addedAt: meta.addedAt || 0, meta: meta.meta || '', awareness: meta.awareness || [], styleTags: meta.styleTags || [], niche: meta.niche || '', mime: e.mime || 'image/jpeg', url: pub(e.imgName) })
+    recs.push({ id, name: meta.name || id, addedAt: meta.addedAt || 0, meta: meta.meta || '', awareness: meta.awareness || [], styleTags: meta.styleTags || [], niche: meta.niche || '', lot: meta.lot || null, mime: e.mime || 'image/jpeg', url: pub(e.imgName) })
   }
   return recs.sort((a, b) => b.addedAt - a.addedAt)
 }
@@ -44,7 +44,7 @@ export async function ctPut(rec) {
     const up = await fetch(`${SB}/storage/v1/object/${BUCKET}/${rec.id}.${ext}`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': rec.mime || 'image/jpeg', 'x-upsert': 'true' }, body: new Blob([arr], { type: rec.mime || 'image/jpeg' }) })
     if (!up.ok) throw new Error('Upload image Supabase échoué : HTTP ' + up.status)
   }
-  const j = await fetch(`${SB}/storage/v1/object/${BUCKET}/${rec.id}.json`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'x-upsert': 'true' }, body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [], niche: rec.niche || '' }) })
+  const j = await fetch(`${SB}/storage/v1/object/${BUCKET}/${rec.id}.json`, { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'x-upsert': 'true' }, body: JSON.stringify({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [], niche: rec.niche || '', ...(rec.lot ? { lot: rec.lot } : {}) }) })
   if (!j.ok) throw new Error('Upload métadonnées Supabase échoué : HTTP ' + j.status)
   return rec
 }

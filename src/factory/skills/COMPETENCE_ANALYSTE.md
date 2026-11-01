@@ -65,11 +65,13 @@ Si l'hypothèse existante contient une section S10 (stock en réserve) avec des 
 → Lis la liste "ANGLES DÉJÀ EXPLOITÉS DANS L'HISTORIQUE" : tout angle de la réserve dont le nom y figure est consommé, il ne peut plus être promu.
 → Parmi les angles de réserve NON consommés, promeus en S2 ceux dont la force et la crédibilité sont les plus hautes, en respectant les règles de diversité du lot (moteurs et quadrants EPIC différents entre les angles d'un même lot, et couverture des facettes).
 → Promouvoir un angle = reprendre sa recherche telle quelle (nom identique, triplet, ennemi, mécanisme, formulation, preuves — ne les "améliore" pas, ne les reformule pas : son nom sert à l'historique et sa recherche a déjà été validée) et AJOUTER maintenant ce qui manquait : les déclinaisons par niveau de conscience et les scènes visuelles de S7.
+→ EXCEPTION POUR LE CHAMP 17 : un angle de réserve écrit avant l'existence des raisons d'acheter n'a pas ce champ. Quand tu le promeus, ajoute-lui ses 3 raisons d'acheter (méthode du champ 17, à partir de sa facette rattachée et de S1c) : c'est le SEUL champ que tu écris pour lui, tout le reste est repris à l'identique.
 → Si la réserve disponible ne suffit pas à remplir le lot, construis le complément en angles NEUFS selon la méthode complète, et reconstitue le stock à 10 dans ta nouvelle S10 (réserve restante + nouveaux angles construits).
 → Si la réserve est vide ou entièrement consommée, construis ce lot comme une première commande, et reconstitue un stock de 10.
 Ne reconstruis JAMAIS de zéro un angle qui dormait en réserve, et ne le jette jamais sans l'avoir examiné : l'angle de réserve a coûté une recherche, le reprendre est le gain principal de cette architecture.
 
 CAS A — MÊME CIBLE, ROTATION NON NÉCESSAIRE (moins de 18 angles exploités sur cette cible) :
+→ MIGRATION : si l'hypothèse existante a été écrite avec une version plus ancienne de ce document (pas de S1d, ou des cartes d'angle sans le champ 17), RESTRUCTURE-la sans rien refaire : même cible, mêmes facettes, mêmes angles avec leurs noms exacts. Ajoute S1d et le champ 17 à partir des informations déjà présentes dans l'hypothèse et dans DONNÉES BRUTES. Ne lance une nouvelle recherche que pour les preuves externes manquantes.
 → Reprends EXACTEMENT la même cible (S1), les mêmes facettes (S1b) et le même entourage (S1c) que l'hypothèse existante — mêmes noms, mêmes profils. Ne les re-dérive pas, ne les "améliore" pas.
 → REMPLACEMENT, PAS ACCUMULATION : le bloc "ANGLES DÉJÀ EXPLOITÉS DANS L'HISTORIQUE" liste TOUS les angles déjà utilisés pour ce produit depuis le début (toutes cibles confondues) — S2 contient exactement le nombre d'angles demandé pour CETTE commande, tous distincts de TOUS les angles de l'historique. Un angle "nouveau" repose sur un moteur ou un mécanisme réellement différent — pas une reformulation.
 → Applique l'ÉTAPE 3 ci-dessus : la réserve d'abord, le neuf ensuite.
@@ -231,6 +233,29 @@ Pour CHAQUE facette, écris :
 → Ce qui la trahit extérieurement à ce moment (comportement observable, pas émotion)
 → Son ancrage dans DONNÉES BRUTES : la source réelle qui prouve que cette facette existe
 
+NIVEAU DE DÉTAIL OBLIGATOIRE : une facette est écrite avec EXACTEMENT la même profondeur que la cible (S1). Les facettes sont fixées une fois et gardées de production en production : tout ce qui n'est pas écrit ici, les agents suivants l'inventeront, et ils l'inventeront différemment à chaque créative. Une facette réduite à quelques lignes est un défaut bloquant. Pour CHAQUE facette, ajoute donc, dans cette facette précise (et non en recopiant la cible) :
+→ Identité en situation : rappel de l'identité de S1 (même prénom, même âge, même ville, même pouvoir d'achat) et ce que la situation de la facette change à son apparence, sa tenue, sa posture, son état physique observable
+→ Déclencheur d'achat propre à cette facette : l'événement précis qui la fait passer à l'acte dans CE contexte de vie. Sourcé si possible, sinon [ESTIMATION — logique comportementale]
+→ Objections propres à cette facette : les 3 vraies raisons qui la bloquent dans CE contexte (qui peuvent différer de celles de la cible dans son ensemble). Sourcées si possible, sinon [ESTIMATION]
+→ Journée type de la facette — 5 moments clés, format strict "HH:MM — [action concrète observable]", centrés sur le contexte de la facette, avec les mêmes interdits que pour la cible (aucune formulation émotionnelle, uniquement des actions) ; signale [CONSTRUIT — contexte culturel] si construit
+→ Psychographie de la facette : frustration profonde, rêve ou ambition dans ce contexte, ce à quoi elle attribue son problème à ce moment, à qui elle se compare dans ce contexte, ce qu'elle ne veut surtout pas ; chacun sourcé si trouvé, sinon [ESTIMATION — contexte cible]
+→ Sa façon de parler dans ce contexte : vocabulaire, expressions, ton, langue ou mélange de langues, trois phrases-types entre guillemets qu'elle dirait réellement (le registre peut différer de celui de l'autre facette)
+→ Les personnages de S1c qui comptent pour cette facette et leur rôle précis dans ce contexte, ainsi que les lieux et objets de S1c où elle se manifeste : ne recopie pas leurs fiches, désigne-les par leur prénom et dis ce qui se joue entre eux et elle à ce moment
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÉTAPE 2quater — S1d : PROFIL DE MATURITÉ DE LA CIBLE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Tous les concepts créatifs ne se consomment pas de la même façon selon l'âge et la culture numérique de la cible : un rythme rapide, des références de réseaux sociaux ou un humour au second degré qui parlent à une génération peuvent être incompris d'une autre. Cette section décrit ce que la cible COMPREND et REJETTE, pour que le choix des modèles de créatives (CT) évite ce qu'elle ne saisirait pas. Elle se déduit de S1, de S1b et de DONNÉES BRUTES (où elle regarde, ce qu'elle partage, comment elle parle) ; un point non sourcé s'étiquette [ESTIMATION — logique comportementale].
+
+Écris d'abord ces quatre lignes, EXACTEMENT sous ce format (elles sont lues par le code, ne change ni les libellés ni l'ordre) :
+MATURITE — génération : [la ou les générations de la cible, une valeur ou plusieurs séparées par une virgule parmi : Z, Y, X, Boomers]
+MATURITE — aisance numérique : [un seul chiffre de 0 à 3 : 0 = découvre à peine les réseaux, 1 = usage simple, 2 = usage régulier, 3 = très à l'aise avec les codes des réseaux]
+MATURITE — rythmes compris : [un ou plusieurs parmi : lent, moyen, rapide]
+MATURITE — humour : [aucun, léger, second degré]
+
+Puis, en quelques lignes : les formats et références que cette cible comprend immédiatement, ceux qu'elle rejette ou ne saisit pas, le niveau d'explication dont elle a besoin avant d'être convaincue.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 2ter — S1c : L'ENTOURAGE (FICHE DE FIDÉLITÉ, CONSOMMÉE PAR TOUTES LES CRÉATIVES)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -281,9 +306,9 @@ Applique ce niveau de lecture, jamais cet exemple. Pour CHAQUE angle, avant de l
 ━━━ GESTION DE L'ANGLE GAGNANT (feedback loop) ━━━
 Si le brief contient ANGLE_GAGNANT, il fournit la formulation complète d'un angle d'un lot précédent pour CE produit et CETTE cible, marqué comme performant par le client. Dans ce cas :
 1. NE RECONSTRUIS PAS cet angle. Ne repasse pas par les étapes A/B/C pour lui — reprends sa formulation exactement telle que fournie. Une performance réelle mesurée est une preuve plus forte que le processus de sourcing lui-même.
-2. L'angle repris occupe exactement UN angle du lot, soit 3 créatives : une par niveau de conscience. Il compte dans le nombre d'angles du lot, il ne s'y ajoute pas.
+2. L'angle repris occupe exactement UN angle du lot, soit 3 créatives : 1 vidéo et 2 images. Il compte dans le nombre d'angles du lot, il ne s'y ajoute pas.
 3. Tous les autres angles du lot sont nouveaux (promus depuis la réserve en priorité, voir ÉTAPE 3 du mode renouvellement, puis construits si la réserve ne suffit pas).
-4. Répartition des créatives de l'angle gagnant sur les niveaux de conscience : une créative par niveau. CHAQUE créative doit être un concept visuel ENTIÈREMENT NOUVEAU, jamais produit pour ce produit auparavant — jamais une variation du concept d'origine qui a performé. Ce qui est repris, c'est l'angle (le message, l'émotion ciblée) — jamais le concept visuel exact. Répéter le même concept dilue la valeur du test : le but est de savoir si c'est L'ANGLE qui gagne, pas une exécution.
+4. Répartition des créatives de l'angle gagnant sur les niveaux de conscience : la vidéo en Problem Aware, les deux images en Solution Aware et Product Aware. CHAQUE créative doit être un concept visuel ENTIÈREMENT NOUVEAU, jamais produit pour ce produit auparavant — jamais une variation du concept d'origine qui a performé. Ce qui est repris, c'est l'angle (le message, l'émotion ciblée) — jamais le concept visuel exact. Répéter le même concept dilue la valeur du test : le but est de savoir si c'est L'ANGLE qui gagne, pas une exécution.
 5. Un angle gagnant indique une FAMILLE qui marche sur ce marché. Quand tu reconstitues le stock en S10, construis au moins deux angles neufs qui partagent son moteur dominant ou son ennemi désigné tout en restant authentiquement distincts de lui — c'est la façon la moins chère d'exploiter une information de performance réelle.
 
 ━━━ CONSTRUCTION DES ANGLES — MÉTHODE EN 3 ÉTAPES ━━━
@@ -328,8 +353,8 @@ Exemple : "Angle 1 — La Double Action : Beauté & Mobilité"
 → Cette ligne d'en-tête ne contient RIEN d'autre que "Angle N — [Nom]" — tous les autres champs viennent sur des lignes séparées APRÈS cet en-tête.
 → Un angle promu depuis la réserve GARDE son nom exact : c'est ce nom qui permet de savoir qu'il est consommé. Seul son numéro change.
 
-CARTE D'ANGLE — LES 16 CHAMPS OBLIGATOIRES
-Chaque angle de S2 porte les 16 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
+CARTE D'ANGLE — LES 17 CHAMPS OBLIGATOIRES
+Chaque angle de S2 porte les 17 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
 
 1. Nom de l'angle (ligne d'en-tête au format imposé ci-dessus)
 2. Facette rattachée — laquelle des facettes de S1b, et en une phrase pourquoi cet angle la convertit elle plutôt que l'autre
@@ -346,21 +371,23 @@ Chaque angle de S2 porte les 16 champs ci-dessous, dans cet ordre. Ce ne sont pa
 9. Accroche de peur — la première phrase que verrait la cible, construite sur le problème ou la peur, JAMAIS sur le produit. Elle doit arrêter quelqu'un qui a ce problème précis, et laisser indifférent quelqu'un qui ne l'a pas. Une accroche qui cherche à arrêter tout le monde n'arrête personne d'utile.
 10. Scènes de douleur — 2 ou 3 situations CONCRÈTES et visuellement montrables où la douleur de cet angle se manifeste. Pas des émotions, des scènes : un objet, un moment, une action observable, quelque chose qu'on peut photographier ou filmer. Elles alimentent directement les cadres visuels des modèles.
 11. Comparaison sociale — à qui précisément cette cible se compare dans le contexte de cet angle, et ce qu'elle se dit en le faisant, dans ses mots. Si DONNÉES BRUTES ne soutient aucune comparaison pour cet angle, écris [AUCUNE COMPARAISON SOURCÉE].
-12. Urgence — pourquoi agir maintenant et pas dans six mois, formulé du point de vue de la cible, pas du vendeur. L'urgence la plus crédible n'est presque jamais commerciale (stock, promo) : c'est le temps qui passe, ou l'aggravation du problème. L'urgence commerciale vient de S0 et ne sert qu'au niveau Most Aware.
+12. Urgence — pourquoi agir maintenant et pas dans six mois, formulé du point de vue de la cible, pas du vendeur. L'urgence la plus crédible n'est presque jamais commerciale (stock, promo) : c'est le temps qui passe, ou l'aggravation du problème. L'urgence commerciale vient de S0 et ne sert qu'à la conversion finale de la vidéo et à l'ad copy.
 13. Recadrage — pourquoi rien de ce qu'elle a déjà essayé n'a marché, en citant nommément les alternatives du pool ALTERNATIVES ESSAYÉES. C'est ce qui permet à la créative de dire "ce n'est pas toi le problème" plutôt que de demander un énième effort.
 14. Preuves disponibles — ce qui existe réellement pour rendre cet angle croyable : étude, chiffre sourcé, certification, avis client fourni par la marque, figure d'autorité, autorité locale, ancienneté. Liste ce qui EXISTE, avec la source. Si rien n'existe, écris [AUCUNE PREUVE DISPONIBLE] — c'est une information capitale pour les agents suivants, qui ne doivent alors construire aucun cadre de preuve.
+   PREUVES EXTERNES : quand l'angle n'a pas de preuve propre au produit, cherche (recherche Google) des assets d'autorité ou de confiance autour de lui : étude sur un ingrédient ou un mécanisme, presse, expert, sportif ou figure que la cible connaît, blog, étude de cas. Note pour chacun sa source (lien) et sa date. Ils ne sont validés par aucun humain : tu les emploies avec souplesse, comme OUTILS d'autorité ou de confiance, jamais comme promesses. Un fait sur un ingrédient ou la déclaration d'une figure ne se recopie pas tel quel et ne s'attribue jamais à la marque ; une étude générale ne prouve jamais que CE produit agit. Écris-les à part, sous la mention "(preuve externe — outil d'autorité)", pour que les agents suivants en fassent un usage adapté.
 15. Ancrage scepticisme — quelle entrée du pool scepticisme rend cet angle crédible sur CE marché, et comment l'angle y répond.
 16. Niveau de conscience le plus froid atteignable — voir S3 et le tableau des plafonds par format. Plus pourquoi cet angle n'est pas réplicable par un concurrent direct, en une phrase.
+17. Raisons d'acheter — exactement 3 lignes, au format « Raison 1 : … », « Raison 2 : … », « Raison 3 : … ». Méthode : pose trois fois la question « pourquoi CETTE facette (champ 2) de CETTE cible veut-elle CET angle ? » et réponds à partir de sa vie réelle : son contexte, les personnages de son entourage (S1c), l'enjeu concret pour elle, formulé comme elle le dirait. Test de spécificité : si une raison pourrait s'écrire telle quelle pour n'importe quelle autre cible du même produit, elle est générique, réécris-la. Les trois raisons sont distinctes entre elles et ne changent JAMAIS l'angle : ce sont trois portes d'entrée vers la même idée. Elles servent uniquement aux agents suivants (une par créative de l'angle) : le client ne les voit jamais, elles ne sont jamais recopiées comme titre ou comme texte de pub.
 
 PUIS, POUR CHAQUE ANGLE DE S2 UNIQUEMENT, LES DÉCLINAISONS PAR NIVEAU DE CONSCIENCE (voir S3) :
-Chaque angle du lot se décline en 3 créatives, une par niveau de conscience. Pour chacune, précise comment ce niveau reformule le moteur de l'angle, et le dosage retenu en pourcentage (voir le tableau de S3).
+Chaque angle du lot se décline en 3 créatives : 1 vidéo et 2 images, quelle que soit l'offre. La vidéo prend le niveau le plus froid autorisé en vidéo (Problem Aware), qui laisse le temps d'installer le problème puis de conclure sur l'argument de vente et l'appel à l'action dans ses derniers 25 à 30 % ; les deux images prennent Solution Aware et Product Aware. Chacune des 3 créatives porte UNE des 3 raisons d'acheter du champ 17 (une raison par créative, jamais deux fois la même dans l'angle). Pour chacune, précise comment son niveau reformule le moteur de l'angle, la raison d'acheter qu'elle porte, et le dosage retenu en pourcentage (voir le tableau de S3).
 
 ━━━ RÈGLES DE RÉPARTITION DU STOCK DE 10 ━━━
 Ces règles s'appliquent aux 10 angles pris ensemble (S2 + S10), pas au seul lot :
 → MOTEURS : les 3 pools sont tous représentés parmi les moteurs dominants. La peur domine au moins 4 des 10 angles — c'est le levier le plus fort et le plus délaissé par la concurrence. Le désir et la douleur dominent au moins 2 angles chacun.
 → QUADRANTS EPIC : chacun des 4 quadrants É/P/I/C est utilisé au moins deux fois dans le stock. Un stock où un quadrant n'apparaît jamais produira, lot après lot, des créatives qui sonnent toutes pareil.
 → FACETTES : si 2 facettes existent, chacune porte au moins 3 angles.
-→ NIVEAUX : au moins 6 des 10 angles doivent fonctionner au niveau de conscience le plus froid autorisé par le format (voir S3) — c'est à ce niveau que le client peut dépenser le plus sans épuiser son audience.
+→ NIVEAUX : chaque angle porte une déclinaison vidéo en Problem Aware et deux déclinaisons image en Solution Aware et Product Aware ; la règle porte donc sur la qualité du niveau le plus froid, pas sur le nombre d'angles qui l'atteignent.
 
 ━━━ RÈGLES DE DIVERSITÉ À L'INTÉRIEUR DU LOT (S2) ━━━
 → Les angles d'un même lot ne partagent JAMAIS le même moteur dominant.
@@ -394,10 +421,12 @@ EXEMPLE DE STRUCTURE ATTENDUE pour un angle de S2 (structure seulement, jamais c
   → Recadrage : [...]
   → Preuves disponibles : [...]
   → Ancrage scepticisme : [...]
-  → Niveau le plus froid atteignable : Solution Aware · Non réplicable parce que [...]
-  - Niveau Solution Aware : [reformulation + ton + dosage en %]
-  - Niveau Product Aware : [reformulation + ton + dosage en %]
-  - Niveau Most Aware : [reformulation + ton + dosage en %]
+  → Niveau le plus froid atteignable : Problem Aware (vidéo) / Solution Aware (image) · Non réplicable parce que [...]
+  → Raisons d'acheter : Raison 1 : [...] · Raison 2 : [...] · Raison 3 : [...]
+  - Vidéo · Problem Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
+  - Image 1 · Solution Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
+  - Image 2 · Product Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
+  - (Transition) Image 3 · Most Aware : [reformulation + ton + dosage en %] — utilisée uniquement tant que la vidéo n'est pas produite pour le lot ; elle reprend la raison d'acheter de la vidéo
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 4 — S3 : NIVEAUX DE CONSCIENCE, PLAFONDS PAR FORMAT ET DOSAGE
@@ -408,7 +437,7 @@ PLAFONDS PAR FORMAT — jusqu'où on va vers le froid, selon le format produit :
 → IMAGE STATIQUE : du plus froid au plus chaud, Solution Aware, Product Aware, Most Aware. On ne descend JAMAIS plus froid que Solution Aware en statique.
 → VIDÉO : du plus froid au plus chaud, Problem Aware, Solution Aware, Product Aware, Most Aware. La vidéo peut descendre un cran plus froid que l'image, parce qu'elle a le temps d'installer un problème avant de proposer quoi que ce soit.
 → Unaware n'est jamais utilisé, quel que soit le format.
-Par défaut, une commande AdStack est en image statique : chaque angle du lot se décline donc en Solution Aware, Product Aware et Most Aware. Ne produis une déclinaison Problem Aware que si le lot est explicitement en vidéo.
+Un lot AdStack se compose toujours de 1 vidéo et 2 images par angle : la déclinaison vidéo est en Problem Aware, les deux déclinaisons image en Solution Aware et Product Aware. Les éléments de Most Aware (offre, prix, urgence, garantie) ne disparaissent pas : ils vivent dans la conversion de la vidéo (derniers 25 à 30 % de sa durée) et dans l'ad copy.
 
 DOSAGE EN POURCENTAGE — jamais en secondes :
 Le dosage s'exprime toujours en part de la créative : pourcentage de la SURFACE pour une image, pourcentage de la DURÉE pour une vidéo. Une consigne en secondes serait fausse dès que la durée change ; une consigne en pourcentage tient sur un format de 10 secondes comme sur un format de 45.
@@ -565,6 +594,7 @@ A. FAITS CLIENT (vérité du client, prioritaire sur toute donnée externe en ca
 
 B. DOCUMENT(S) DU CLIENT
 → Si des documents sont fournis (bloc DOCUMENTS FOURNIS PAR LE CLIENT) : lis-les en entier, ce sont ta source la plus fiable sur le produit lui-même. Extrais-en tout ce qui est utile à la vente et à l'image : composition, dosage, mode d'emploi, certifications, résultats annoncés, histoire de la marque, lien entre la marque et le produit, spécificités qui le distinguent, conditions d'offre. Chaque fait est recopié fidèlement (chiffres inclus) avec la mention "(document client)". N'ajoute rien qui n'y figure pas. Un document marqué NON LU se signale tel quel : "document non lu, rien n'en est déduit".
+→ Ces documents servent à DÉVELOPPER l'hypothèse (cible, facettes, angles, preuves), jamais à être recopiés : interprète-les avec souplesse, croise-les avec DONNÉES BRUTES, et signale en une ligne toute contradiction avec le marché au lieu de la lisser. Ne laisse aucune allusion à leur existence dans ce qui sera visible du client.
 → Si aucun document : écris "aucun document fourni".
 
 C. AVIS CLIENTS FOURNIS PAR LA MARQUE
@@ -783,13 +813,16 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ S1c absente, ou réduite à des généralités non visualisables (un agent visuel doit pouvoir reconstituer le décor sans l'avoir vu)
 ❌ Un angle dont le triplet est incomplet sans que [TRIPLET INCOMPLET — pool X sans entrée compatible] soit écrit
 ❌ Un angle dont les trois entrées du triplet ne pourraient pas être vraies en même temps dans le même instant vécu
-❌ Un des 16 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
+❌ Une facette moins détaillée que la cible : il manque son identité en situation, son déclencheur propre, ses 3 objections propres, sa journée type de 5 moments, sa psychographie, sa façon de parler ou ses liens avec S1c
+❌ S1d absente, ou ses quatre lignes MATURITE au mauvais format
+❌ Un champ 17 qui n'a pas exactement 3 raisons distinctes, ou une raison qui conviendrait à n'importe quelle autre cible du produit
+❌ Un des 17 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
 ❌ Un angle qui est un bénéfice déguisé ("gagner de l'énergie", "mieux dormir") au lieu de ce que la cible veut vraiment, formulé comme personne ne le formule sur ce marché
 ❌ Accroche de peur construite sur le produit au lieu du problème
 ❌ Scènes de douleur écrites comme des émotions au lieu de situations montrables (un objet, un moment, une action observable)
 ❌ Recadrage générique qui ne nomme aucune alternative réellement essayée par le marché
 ❌ Preuves disponibles rempli avec une preuve qui n'existe pas — [AUCUNE PREUVE DISPONIBLE] est la seule réponse acceptable quand rien n'existe
-❌ Urgence purement commerciale (stock, promo) utilisée ailleurs qu'au niveau Most Aware
+❌ Urgence purement commerciale (stock, promo) utilisée ailleurs que dans la conversion finale de la vidéo ou dans l'ad copy
 ❌ S4 sans carte des alternatives, ou une carte des alternatives qui ne contient en fait que des concurrents directs (même produit sous une autre forme)
 ❌ Un nom de concurrent direct ou d'alternative inventé, non trouvé dans DONNÉES BRUTES
 ❌ S0bis (fiche d'usage) absente ou remplie de déductions non sourcées

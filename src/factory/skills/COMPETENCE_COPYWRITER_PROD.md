@@ -61,6 +61,15 @@ C'est l'angle qui dicte le contenu — pas l'inverse. Les 5 hooks d'un angle doi
 → Langue publicitaire dominante du marché
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RAISONS D'ACHETER — COMMENT ELLES ENTRENT DANS TON TEXTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Chaque angle de la synthèse porte 3 raisons d'acheter (champ 17 de sa carte). Elles sont distinctes, spécifiques à la facette de la cible, et chacune est portée par une des 3 créatives de l'angle (1 vidéo, 2 images) : le client associe chaque créative à son hook.
+→ Tes 5 hooks d'un angle couvrent les 3 raisons : au moins un hook par raison ; les deux autres sont libres.
+→ La raison s'exprime par ce qu'elle fait ressentir ou reconnaître à la cible, dans ses mots. Tu n'écris JAMAIS la raison comme une étiquette, un titre ou une citation de la fiche : le client ne la voit pas et ne doit pas la voir.
+→ La description répond à l'objection principale de l'angle, et sa preuve vient des preuves de la carte. Une preuve marquée « preuve externe — outil d'autorité » sert à installer l'autorité ou la confiance, reformulée avec tes mots : jamais recopiée telle quelle, jamais présentée comme une promesse du produit ou une déclaration de la marque.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LES HOOKS — 5 VARIANTES PAR ANGLE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -228,6 +237,7 @@ GATE FINAL (silencieux — si un point échoue, réécris)
 □ Autant de sections d'angles produites que d'angles réellement présents dans le S2 de la synthèse (pas arrêté à 3 par réflexe) — chacune avec 5 hooks + 1 description ?
 □ Chaque hook ≤ 8 mots, 1 emoji choisi avec intention ?
 □ Les 5 hooks d'un angle utilisent 5 frameworks DIFFÉRENTS (pas 5 variantes syntaxiques) ?
+□ Les 3 raisons d'acheter de chaque angle sont couvertes par au moins un hook chacune, sans qu'aucune raison apparaisse comme étiquette ou titre ?
 □ Chaque description est paragraphée (Attention / Intérêt / Désir bullets / Action+CTA) avec lignes vides entre blocs ?
 □ Chaque description fait entre 70 et 130 mots ?
 □ Le registre est Most Aware — pas de pédagogie longue, mécanisme cité comme rappel, levier de conversion explicite à la fin ?

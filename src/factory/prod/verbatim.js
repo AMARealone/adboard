@@ -50,7 +50,9 @@ export async function apiSynthesize(system, parts, maxTokens, enrichWithSearch, 
 }
 
 let _dernierBalayage = null
+let _dernierCout = null
 export function dernierBalayage() { return _dernierBalayage }
+export function dernierCout() { return _dernierCout }
 export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal, isTest=false, extra={}) {
   const res = await fetch(SERVER+'/analyste-synthese', {
     method:'POST', headers:{'Content-Type':'application/json'},
@@ -60,6 +62,7 @@ export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signa
   const d = await res.json();
   if(d.error) throw new Error(d.error);
   _dernierBalayage = d.balayage || null;
+  _dernierCout = typeof d.cout_estime_usd === 'number' ? d.cout_estime_usd : null;
   return d.text;
 }
 
@@ -517,7 +520,9 @@ export function buildCreativeInstruction(angleIdx, ctPositionInAngle) {
   const niveauConscience = niveauxConscience[consciencePos];
 
   const angleInstruction = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nANGLE IMPOSÉ POUR CETTE CRÉATIVE (NON-NÉGOCIABLE) :\nAngle ${angleIdx+1} — ${angle}\n\n⛔ INTERDICTION ABSOLUE : tu ne dois PAS choisir un autre angle. L'angle ${angleIdx+1} est déjà sélectionné par l'orchestrateur. La PHASE de choix d'angle est NEUTRALISÉE.\n\n✅ DANS TON BLOC ===META===, tu écris OBLIGATOIREMENT : "ANGLE CHOISI : ${angleIdx+1} · ${angle}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ TAILLE RÉELLE DE CE RUN (prime sur toute mention "3 angles"/"9 créatives" du fichier de compétences, qui décrit le cas le plus courant mais pas systématique) :\nCette commande compte ${nbAnglesTotal} angles au total (pas nécessairement 3) et ${nbCreativesTotalRun} créatives au total (pas nécessairement 9) — 3 niveaux de conscience par angle, comme toujours.\n\nROUTAGE ${nbAnglesTotal} ANGLES × 3 NIVEAUX DE CONSCIENCE (NON-NÉGOCIABLE) :\nCette créative est la créative n°${consciencePos+1} de l'Angle ${angleIdx+1}.\n\nNIVEAU DE CONSCIENCE IMPOSÉ : ${niveauConscience}. Utilise la déclinaison "${niveauConscience}" de l'Angle ${angleIdx+1} telle que définie dans S3 de la synthèse (ton, instructions spécifiques, dosage peur/désir-douleur — voir RÈGLE V4.3).\n\n✅ Dans le bloc ===META===, déclare :\n   NIVEAU DE CONSCIENCE CHOISI : ${niveauConscience}\n   MOTEUR DOMINANT : [peur/désir/douleur de l'Angle ${angleIdx+1}, depuis S2]\n   VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX ${nbCreativesTotalRun-1} AUTRES : Niveau ${niveauConscience} · Angle ${angleIdx+1} · Concept CT [type observé en IMAGE 2]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-  return { creativeSystem, angleInstruction }
+  // v5.73 — raison d'acheter imposée : la créative k de l'angle porte la raison k+1 (champ 17 de la carte de l'angle).
+  const raisonLine = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRAISON D'ACHETER IMPOSÉE POUR CETTE CRÉATIVE : Raison ${ctPositionInAngle + 1} du champ 17 de la carte de l'angle ${angleIdx + 1} (si la carte n'a pas de champ 17, ignore cette consigne). Elle ne s'écrit jamais dans l'image.\n`
+  return { creativeSystem, angleInstruction: angleInstruction + raisonLine }
 }
 
 export function buildCopyPromptUnused(){}

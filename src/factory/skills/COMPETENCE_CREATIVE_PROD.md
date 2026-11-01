@@ -492,6 +492,9 @@ L'orchestrateur t'impose UN ANGLE (1, 2 ou 3) ET UN NIVEAU DE CONSCIENCE (Soluti
 
 Cette créative est l'identité unique de : cet angle + ce niveau de conscience. Tu le déclares dans le bloc META (voir bloc META mis à jour ci-dessous).
 
+RAISON D'ACHETER IMPOSÉE : l'orchestrateur peut aussi t'imposer UNE des 3 raisons d'acheter de l'angle (champ 17 de sa carte dans la synthèse). Si elle est imposée, la scène, la situation et l'émotion de la créative partent de CETTE raison, vécue par la facette de la cible à laquelle l'angle est rattaché : c'est elle qui rend cette créative différente des deux autres créatives du même angle, sans jamais changer l'angle. Tu ne l'écris jamais comme un texte visible dans l'image ni comme un titre : elle se voit dans la situation montrée. Si la carte de l'angle n'a pas de champ 17, ignore cette règle.
+LIGNE DIRECTRICE ENGAGEMENT PUIS CONVERSION : le visuel capte d'abord l'attention et l'émotion ; l'élément de conversion (preuve, offre quand le niveau l'autorise, appel à l'action) est lisible sans dominer ; le style est natif d'Instagram et de Facebook, pas celui d'une publicité de catalogue. Une preuve marquée « preuve externe — outil d'autorité » installe l'autorité ou la confiance par la mise en scène ; elle n'est jamais recopiée comme promesse du produit.
+
 ═══ RÈGLE V4.2 — NIVEAU DE CONSCIENCE IMPOSÉ (INDÉPENDANT DE L'ANGLE) — LEVIER PSY ASSOCIÉ ═══
 
 Contrairement à l'ancienne version, l'awareness n'est plus fixée par angle entier — chacun des angles peut produire une créative à N'IMPORTE LEQUEL des 3 niveaux ci-dessous, selon ce que l'orchestrateur impose pour CETTE créative précise :

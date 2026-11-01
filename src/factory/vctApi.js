@@ -17,7 +17,7 @@ export async function vctGetAll() {
     try {
       const r = await fetch(pub(id + '.json') + '?t=' + Date.now()); if (!r.ok) return null
       const m = await r.json()
-      return Object.assign({ id, name: m.name || id, addedAt: m.addedAt || 0, meta: m.meta || '', awareness: m.awareness || [], styleTags: m.styleTags || [], niche: m.niche || '', source: m.source || '', taille: m.taille || 0 }, _vctExtra(m))
+      return Object.assign({ id, name: m.name || id, addedAt: m.addedAt || 0, meta: m.meta || '', awareness: m.awareness || [], styleTags: m.styleTags || [], niche: m.niche || '', source: m.source || '', taille: m.taille || 0, lot: m.lot || null }, _vctExtra(m))
     } catch (_) { return null }
   }))
   return recs.filter(Boolean).sort((a, b) => b.addedAt - a.addedAt)
@@ -26,7 +26,7 @@ async function upload(name, obj) {
   const r = await fetch(base() + name, { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'x-upsert': 'true' }, body: JSON.stringify(obj) })
   if (!r.ok) throw new Error('Enregistrement CT vidéo échoué : HTTP ' + r.status)
 }
-export const vctPutMeta = (rec) => upload(rec.id + '.json', Object.assign({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [], niche: rec.niche || '', source: rec.source || '', taille: rec.taille || 0 }, _vctExtra(rec)))
+export const vctPutMeta = (rec) => upload(rec.id + '.json', Object.assign({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [], niche: rec.niche || '', source: rec.source || '', taille: rec.taille || 0, ...(rec.lot ? { lot: rec.lot } : {}) }, _vctExtra(rec)))
 export const vctPutTexte = (id, texte) => upload(id + '.texte.json', { texte })
 export async function vctGetTexte(id) {
   const r = await fetch(pub(id + '.texte.json') + '?t=' + Date.now())

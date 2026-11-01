@@ -30,7 +30,7 @@ export const nbCrea = () => S.creatives.filter(done).length
 export const nbCopy = () => S.copies.filter(Boolean).length
 export const angleCount = () => V.prodv2GetAngleCount()
 export const estComplet = () => V.prodv2EstActuellementComplet()
-export const livrablesPayload = () => JSON.stringify({ creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche })
+export const livrablesPayload = () => JSON.stringify({ creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche, couts: S.couts || null })
 
 // ── Sauvegarde automatique des livrables sur la commande ──
 export function autosave(immediat = false) {
@@ -263,6 +263,16 @@ export async function launch() {
     const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbTot)
     const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, signal, false, { productId: S.productId, nbAngles })
     const bal = V.dernierBalayage()
+    // v5.73 — registre de coûts (hypothèse réelle côté serveur ; images et copies estimées) + diagnostic de l'hypothèse (raisons d'acheter, maturité).
+    S.couts = { ...(S.couts || {}), hypothese: V.dernierCout() ?? 0, images: 0, copies: 0, videos: 0, estime: true }
+    try {
+      const dg = await V.fetchAvecTimeout(`${SERVER}/lot/diagnostic`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ synthese: raw }) }, 10000)
+      if (dg.ok) {
+        const j = await dg.json(); S.diagnostic = j.diagnostic
+        if (j.diagnostic && j.diagnostic.aMigrer) U.banner = { kind: 'warn', text: `Hypothèse incomplète : ${j.diagnostic.maturite ? '' : 'profil de maturité de la cible absent ; '}${j.diagnostic.anglesSansRaisons.length ? 'raisons d\'acheter absentes sur les angles ' + j.diagnostic.anglesSansRaisons.join(', ') : ''}. La production continue, mais ces angles n'ont pas leurs raisons d'acheter.` }
+        emit()
+      }
+    } catch (_) {}
     const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
     S.synthesis = synthesisText; S.marche = marche; S.angles = V.prodv2ExtractAngles(synthesisText, nbAngles)
     setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles extraits${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée, pas de nouveau balayage' : ' · nouveau balayage du marché') : ''}`, 100)
@@ -312,6 +322,7 @@ export async function launch() {
     for (let a = 0; a < nbAngles; a++) copyPromises.push(generateOneCopy(a, signal).catch((err) => { if (err.name === 'AbortError') throw err; markCopyError(a, err.message) }))
     if (S.productId && !S.marche) console.warn('[Données Marché] Extraction échouée pour ce batch.')
     await Promise.all([seqPromise, ...copyPromises])
+    S.couts = { ...(S.couts || {}), images: Math.round(S.creatives.filter(done).length * 0.30 * 100) / 100, copies: Math.round(S.copies.filter(Boolean).length * 0.10 * 100) / 100 }
     setAgent(2, 'done', `${nbTot} / ${nbTot} créatives générées`, 100)
     setAgent(3, 'done', `${nbAngles} / ${nbAngles} sets ad copy générés`, 100)
     if (S.briefSource === 'commande' && S.commandeId) {
