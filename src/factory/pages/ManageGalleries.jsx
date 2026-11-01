@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { usePersist } from '../agentStore'
 import { ctGetAll, ctPut, ctDel, ctGetBase64, ctCompress, ctNameAI, loadCTImages } from '../ctApi'
 import { vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll } from '../vctApi'
 import { labFetch, labUrl } from '../lab'
@@ -48,7 +49,7 @@ const hay = (x) => [x.name, x.meta, x.niche, (x.styleTags || []).join(' '), x.pr
 /* ───────── Galerie CT image ───────── */
 export function GalerieImage() {
   const [list, setList] = useState([]), [loading, setLoading] = useState(true), [err, setErr] = useState('')
-  const [q, setQ] = useState(''), [aw, setAw] = useState('')
+  const [q, setQ] = usePersist('galerie.image.q', ''), [aw, setAw] = usePersist('galerie.image.aw', '')
   const [edit, setEdit] = useState(null), [light, setLight] = useState(null), [prog, setProg] = useState(null), [drag, setDrag] = useState(false)
   const fileRef = useRef(null)
   const load = useCallback(async () => { setLoading(true); try { setList(await ctGetAll()); setErr('') } catch (e) { setErr(e.message) } setLoading(false); loadCTImages() }, [])
@@ -142,7 +143,7 @@ function EditImage({ rec, onClose, onSaved }) {
 /* ───────── Galerie CT vidéo ───────── */
 export function GalerieVideo() {
   const [list, setList] = useState([]), [loading, setLoading] = useState(true), [err, setErr] = useState('')
-  const [q, setQ] = useState(''), [aw, setAw] = useState(''), [status, setStatus] = useState({ t: '', err: false }), [edit, setEdit] = useState(null), [busy, setBusy] = useState(false)
+  const [q, setQ] = usePersist('galerie.video.q', ''), [aw, setAw] = usePersist('galerie.video.aw', ''), [status, setStatus] = useState({ t: '', err: false }), [edit, setEdit] = useState(null), [busy, setBusy] = useState(false)
   const fileRef = useRef(null)
   const st = (t, e = false) => setStatus({ t, err: e })
   const load = useCallback(async () => { setLoading(true); try { const l = await vctGetAll(); setList(l); setErr(''); return l } catch (e) { setErr(e.message); return [] } finally { setLoading(false) } }, [])

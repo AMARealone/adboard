@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './factory.css'
 import { useAdmin, Login } from './auth'
@@ -11,11 +11,14 @@ import AgentTest from './pages/AgentTest'
 import Production from './pages/Production'
 import { GalerieImage, GalerieVideo } from './pages/ManageGalleries'
 import { DialogHost } from './ui'
+import { hydrateMem } from './agentStore'
 
 export const BASE = location.pathname.startsWith('/factory-next') ? '/factory-next' : '/factory'
 export default function FactoryApp() {
   const { loading, user, recheck } = useAdmin()
-  if (loading) return <div className="fx-login"><div className="fx-empty">Chargement…</div></div>
+  const [ready, setReady] = useState(false)
+  useEffect(() => { let ok = true; const t = setTimeout(() => ok && setReady(true), 2500); hydrateMem().finally(() => { clearTimeout(t); ok && setReady(true) }); return () => { ok = false; clearTimeout(t) } }, [])
+  if (loading || !ready) return <div className="fx-login"><div className="fx-empty">Chargement…</div></div>
   if (!user) return <Login onDone={recheck} />
   return (
     <DataProvider>

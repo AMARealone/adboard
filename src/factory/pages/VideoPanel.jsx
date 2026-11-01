@@ -2,7 +2,7 @@ import { COMP_FILES, loadSkills } from '../prod/state'
 import React, { useEffect, useRef, useState } from 'react'
 import { vctGetAll, vctGetTexte } from '../vctApi'
 import { labFetch, labQuery, labUrl, labKey, saveLabUrl, saveLabKey } from '../lab'
-import { useAgentMem } from '../agentStore'
+import { useAgentMem, useTick } from '../agentStore'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
 import { getCommandes, SERVER } from '../api'
 import { alertDlg } from '../ui'
@@ -14,15 +14,19 @@ async function urlToB64(url) {
   return new Promise((res) => { const x = new FileReader(); x.onload = () => res({ data: String(x.result).split(',')[1], mime: b.type || 'image/jpeg' }); x.readAsDataURL(b) })
 }
 
+// Le suivi d'une production tourne même quand tu changes de page (il n'est plus lié à l'écran) ; au retour, tout est repris.
+let POLL = null
+const RUN0 = { pid: null, busy: false, status: null, error: '', t0: 0, sec: 0 }
 export default function VideoPanel({ competenceOnly }) {
-  const [m, set] = useAgentMem('creative-video', { ctId: '', syn: '', brief: null, briefInfo: '', model: 'auto', ref: 'complet', planOnly: false })
+  const [m, set] = useAgentMem('creative-video', { ctId: '', syn: '', brief: null, briefInfo: '', model: 'auto', ref: 'complet', planOnly: false, photo: null, aspects: [], photoCmd: null, run: RUN0, last: null, prep: '', startErr: '', histMsg: '' })
+  const photo = m.photo, aspects = m.aspects || [], photoCmd = m.photoCmd, run = m.run || RUN0, histMsg = m.histMsg
+  const setPhoto = (v) => set({ photo: v }), setAspects = (v) => set({ aspects: v }), setPhotoCmd = (v) => set({ photoCmd: v }), setHistMsg = (v) => set({ histMsg: v })
+  const setRun = (f) => set((p) => ({ run: typeof f === 'function' ? f(p.run || RUN0) : f }))
+  const secLive = useTick(run.t0, run.busy)
   const [url, setUrl] = useState(labUrl()), [key, setKey] = useState(labKey())
   const [ping, setPing] = useState({ s: 'wait', t: 'Service vidéo : vérification…' }), [models, setModels] = useState([])
   const [cts, setCts] = useState(null), [comp, setComp] = useState('Chargement…')
-  const [photo, setPhoto] = useState(null), [aspects, setAspects] = useState([])
-  const [photoCmd, setPhotoCmd] = useState(null), [listeCmd, setListeCmd] = useState(null), [busyCmd, setBusyCmd] = useState(false)
-  const [run, setRun] = useState({ pid: null, busy: false, status: null, error: '', t0: 0, sec: 0 }), [histMsg, setHistMsg] = useState('')
-  const timer = useRef(null)
+  const [listeCmd, setListeCmd] = useState(null), [busyCmd, setBusyCmd] = useState(false)
 
   const doPing = async () => {
     try {
@@ -35,9 +39,9 @@ export default function VideoPanel({ competenceOnly }) {
   }
   useEffect(() => {
     doPing()
+    if (!competenceOnly && run.pid && run.busy && !POLL) { POLL = setInterval(() => poll(run.pid, run.t0), 4000); poll(run.pid, run.t0) }
     if (competenceOnly) { const secours = async (why) => { await loadSkills(); setComp((COMP_FILES['COMPETENCE_CREATIVE_VIDEO.md'] || '') + '\n\n— ' + why) }; labFetch('/competence').then(async (r) => r.ok ? setComp(await r.text()) : secours('Version du dépôt (service vidéo : HTTP ' + r.status + ').')).catch(() => secours('Version du dépôt (service vidéo non lancé).')) }
     else vctGetAll().then((l) => { setCts(l); if (!m.ctId && l[0]) set({ ctId: l[0].id }) }).catch((e) => setCts({ error: e.message }))
-    return () => clearInterval(timer.current)
   }, [])
 
   if (competenceOnly) return <div className="fx-comp"><textarea className="fx-ta mono comp" readOnly value={comp} /><p className="fx-s wrap">Compétence lue depuis le service vidéo (lecture seule).</p></div>
@@ -66,20 +70,22 @@ export default function VideoPanel({ competenceOnly }) {
   const onBrief = async (e) => { const f = e.target.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); setPhotoCmd(null); set({ brief: j, briefInfo: 'brief chargé (' + (j.marque || j.produit || (j.product && j.product.nom) || f.name) + ')' }) } catch (_) { set({ brief: null, briefInfo: 'JSON illisible' }) } }
 
   const poll = async (pid, t0) => {
-    setRun((r) => ({ ...r, sec: Math.round((Date.now() - t0) / 1000) }))
     try {
-      const s = await (await labFetch('/pipe/' + pid, { cache: 'no-store' })).json()
+      const rs = await labFetch('/pipe/' + pid, { cache: 'no-store' })
+      if (rs.status === 404) { clearInterval(POLL); POLL = null; return setRun((r) => ({ ...r, busy: false, softError: '', error: "Le service vidéo ne connaît plus cette production (il a été relancé ?). Les fichiers déjà montés restent dans son dossier de sortie." })) }
+      const s = await rs.json()
       const finished = s.state && s.state !== 'running'
-      if (finished) clearInterval(timer.current)
+      if (finished) { clearInterval(POLL); POLL = null }
       setRun((r) => ({ ...r, status: s, busy: !finished, error: finished && s.error ? s.error : '', softError: '' }))
+      if (finished && s.montage) set({ last: { pid, montage: s.montage, video_url: s.video_url || null, ts: Date.now() } })
     } catch (e) { setRun((r) => ({ ...r, softError: `Le service ne répond plus (${e.message}). La production continue de son côté ; nouvel essai dans 4 s.` })) }
   }
   const start = async () => {
-    const fail = (t) => setRun((r) => ({ ...r, error: t, busy: false, status: null }))
+    const fail = (t) => set({ startErr: t, prep: '' })
     const manque = [!m.syn.trim() && 'la synthèse', !m.ctId && 'le CT vidéo', !photo && !photoCmd && !photosBrief.length && 'la photo produit (ou une commande / un brief qui en contient)'].filter(Boolean)
     if (manque.length) return fail('Il manque : ' + manque.join(', ') + '.')
     if (!(await doPing())) return fail("Le service vidéo n'est pas joignable. Lance-le (ou vérifie son adresse), puis réessaie.")
-    setRun({ pid: null, busy: true, status: { stage: 'Préparation des entrées…' }, error: '', t0: Date.now(), sec: 0 }); setHistMsg('')
+    set({ startErr: '', prep: 'Préparation des entrées…', histMsg: '' })
     try {
       const texte = await vctGetTexte(m.ctId)
       let produit, asp = []
@@ -98,8 +104,8 @@ export default function VideoPanel({ competenceOnly }) {
       const r = await labFetch('/pipeline', { method: 'POST', body: JSON.stringify(body) })
       const j = await r.json()
       if (!j.id) throw new Error(j.error || "le service n'a pas démarré la production")
-      const t0 = Date.now(); setRun({ pid: j.id, busy: true, status: { stage: 'Démarrage…' }, error: '', t0, sec: 0 })
-      clearInterval(timer.current); timer.current = setInterval(() => poll(j.id, t0), 4000); poll(j.id, t0)
+      const t0 = Date.now(); set({ prep: '', run: { pid: j.id, busy: true, status: { stage: 'Démarrage…' }, error: '', t0, sec: 0 } })
+      clearInterval(POLL); POLL = setInterval(() => poll(j.id, t0), 4000); poll(j.id, t0)
     } catch (e) { fail('Échec au démarrage : ' + e.message) }
   }
   const download = async (avecImages) => {
@@ -131,8 +137,8 @@ export default function VideoPanel({ competenceOnly }) {
         {ct && <div className="fx-hint">{ct.meta || '(pas de méta-description)'}</div>}</div>
       <div className="fx-fld"><div className="fx-lab up">SYNTHÈSE DE L'ANALYSTE</div><textarea className="fx-ta" rows={6} value={m.syn} onChange={(e) => set({ syn: e.target.value })} placeholder="Colle ici la synthèse complète produite par l'Analyste de Marché…" /></div>
       <div className="fx-two">
-        <div className="fx-fld"><div className="fx-lab up">PHOTO PRODUIT</div><input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0] || null)} /></div>
-        <div className="fx-fld"><div className="fx-lab up">AUTRES ASPECTS (facultatif, 5 max)</div><input type="file" accept="image/*" multiple onChange={(e) => setAspects(Array.from(e.target.files))} /></div>
+        <div className="fx-fld"><div className="fx-lab up">PHOTO PRODUIT</div><input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0] || null)} />{photo && <div className="fx-s">Photo gardée : {photo.name}</div>}</div>
+        <div className="fx-fld"><div className="fx-lab up">AUTRES ASPECTS (facultatif, 5 max)</div><input type="file" accept="image/*" multiple onChange={(e) => setAspects(Array.from(e.target.files))} />{aspects.length > 0 && <div className="fx-s">{aspects.length} aspect(s) gardé(s) : {aspects.map((x) => x.name).join(', ')}</div>}</div>
       </div>
       <div className="fx-fld"><div className="fx-lab up">BRIEF CLIENT (une commande, ou un JSON : complète la photo, les aspects et le lien)</div>
         <div className="fx-btnrow">
@@ -152,7 +158,9 @@ export default function VideoPanel({ competenceOnly }) {
           <label>Références <select className="fx-in sm" value={m.ref} onChange={(e) => set({ ref: e.target.value })}><option value="complet">Complet (le plus fidèle)</option><option value="produit">Photo produit seule</option><option value="aucune">Aucune</option></select></label>
           <label className="chk"><input type="checkbox" checked={m.planOnly} onChange={(e) => set({ planOnly: e.target.checked })} /> Plan seulement (sans vidéo, presque gratuit)</label>
         </div></details>
-      <div className="fx-launch"><button className="fx-btn primary big" disabled={run.busy} onClick={start}>Générer la vidéo</button><span className="fx-s">{run.busy ? run.sec + ' s' : ''}</span></div>
+      <div className="fx-launch"><button className="fx-btn primary big" disabled={run.busy || !!m.prep} onClick={start}>{m.prep ? 'Préparation…' : run.busy ? 'Génération en cours…' : 'Générer la vidéo'}</button><span className="fx-s">{run.busy ? secLive + ' s' : ''}</span></div>
+      {m.prep && <div className="fx-hint">{m.prep}</div>}
+      {m.startErr && <div className="fx-err">{m.startErr} <button className="fx-btn sm" onClick={() => set({ startErr: '' })}>Fermer</button></div>}
       {run.error && !run.status && <div className="fx-err">{run.error}</div>}
       {run.status && <div className="fx-vprog"><div><b>Étape :</b> {s.stage || '…'}</div>
         {dernier && <div className="fx-s wrap">{String(dernier).slice(0, 220)}</div>}
@@ -161,6 +169,7 @@ export default function VideoPanel({ competenceOnly }) {
         {finished && run.error && <div style={{ color: 'var(--er)', marginTop: 6 }}>Erreur : {run.error}</div>}
         {finished && !run.error && !s.montage && <div className="fx-s wrap" style={{ marginTop: 6 }}>Terminé sans vidéo montée{m.planOnly ? ' (mode « plan seulement »)' : ''}. Télécharge l'historique pour voir le détail.</div>}</div>}
       {vUrl && <div className="fx-vres"><video src={vUrl} controls playsInline /><div><a className="fx-btn primary" href={vDl} download={s.montage}>Télécharger la vidéo</a></div></div>}
+      {!vUrl && m.last && <div className="fx-vres"><div className="fx-s">Dernière vidéo réussie ({new Date(m.last.ts).toLocaleString('fr-FR')}) :</div><video src={m.last.video_url ? m.last.video_url : labQuery('/video/' + m.last.montage)} controls playsInline /><div><a className="fx-btn" href={m.last.video_url ? m.last.video_url + '?download=' + encodeURIComponent(m.last.montage) : labQuery('/video/' + m.last.montage, 'dl=1')} download={m.last.montage}>Télécharger cette vidéo</a></div></div>}
       {finished && <div className="fx-hist"><div className="fx-s wrap">Journaux, planches, images refaites, coûts : tout est enregistré. Télécharge l'historique et envoie-le moi pour corriger.</div>
         <div className="fx-acts"><button className="fx-btn" onClick={() => download(true)}>Historique complet (avec images)</button><button className="fx-btn" onClick={() => download(false)}>Texte seul (léger)</button><span className="fx-s">{histMsg}</span></div></div>}
     </div>

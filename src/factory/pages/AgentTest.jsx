@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { AGENTS } from './Agents'
-import { useAgentMem } from '../agentStore'
+import { useAgentMem, usePersist, useTick, setLive, isLive } from '../agentStore'
 import { COMP_FILES, SERVER, CT_IMAGES, loadSkills } from '../prod/state'
 import * as V from '../prod/verbatim'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
@@ -111,10 +111,12 @@ function Output({ text, color }) {
 }
 
 function StdTest({ a }) {
-  const [m, set] = useAgentMem(a.slug, { brief: null, briefName: '', photo: null, logo: null, rctx: null, synthese: '', nb: 0, angle: 0, pos: 0, ct: null, ctRaison: '', output: '', marche: '', outErr: false, images: [] })
-  const [busy, setBusy] = useState(false), [sec, setSec] = useState(0)
+  const [m, set] = useAgentMem(a.slug, { brief: null, briefName: '', photo: null, logo: null, rctx: null, synthese: '', nb: 0, angle: 0, pos: 0, ct: null, ctRaison: '', output: '', marche: '', outErr: false, images: [], busy: false, t0: 0, dur: 0, prog: '', err: '' })
+  const busy = !!m.busy, secLive = useTick(m.t0, busy), sec = busy ? secLive : (m.dur || 0)
   const isImg = a.kind === 'image', isAn = a.kind === 'analyst', isCopy = a.kind === 'copy'
   useEffect(() => { loadSkills(); loadCTImages() }, [])
+  // Page rechargée pendant une génération : elle n'existe plus, on le dit sans rien effacer de ce qui est rempli.
+  useEffect(() => { if (m.busy && !isLive(a.slug)) set({ busy: false, prog: '', err: 'La page a été rechargée pendant la génération : elle a été interrompue. Tout ce que tu avais rempli est conservé, relance simplement.' }) }, [])
   const angles = useMemo(() => (m.synthese.trim() ? V.prodv2ExtractAngles(m.synthese, 0) : []), [m.synthese])
   const nbProd = m.brief ? Math.max(2, Math.min(12, Math.round((Number(m.brief.quantite) || 6) / 3))) : 2
   const nbAngles = m.nb || nbProd
@@ -126,8 +128,8 @@ function StdTest({ a }) {
       if (!m.photo || !m.brief) return alertDlg('Charge un brief.json ou prends une commande (photo produit nécessaire).')
       if (!m.synthese.trim()) return alertDlg("Colle la Synthèse produite par l'Analyste de Marché.")
     }
-    setBusy(true); setSec(0); const t0 = Date.now(); const iv = setInterval(() => setSec(Math.round((Date.now() - t0) / 1000)), 1000)
-    set({ output: isImg ? 'Préparation…' : '', marche: '', outErr: false })
+    const t0 = Date.now(); setLive(a.slug, true)
+    set({ busy: true, t0, dur: 0, err: '', prog: isImg ? 'Préparation…' : 'Génération en cours…' })
     try {
       await loadSkills()
       if (isAn) {
@@ -137,7 +139,7 @@ function StdTest({ a }) {
           return V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, m.brief, undefined, true)
         })
         const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
-        set({ output: synthesisText, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText, bal: V.dernierBalayage() })
+        set({ output: synthesisText, outErr: false, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText, bal: V.dernierBalayage() })
       } else if (isImg) {
         const productB64 = await V.compressImg(m.photo.b64, m.photo.mime || 'image/jpeg')
         const nbA = Math.max(angles.length, 2), ai = Math.min(m.angle, nbA - 1)
@@ -146,10 +148,10 @@ function StdTest({ a }) {
         // ── Étape 1 : l'agent regarde TOUTE la galerie et choisit lui-même UN CT (aucune sélection manuelle) ──
         await loadCTImages()
         // Le niveau de conscience de la créative RESTREINT la galerie : Most Aware → seulement les CT balisés Most Aware, etc.
-        const gal = await ctGalerieComplete((n, t) => set({ output: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }), { niveau: NIVEAUX_CLE[m.pos] })
+        const gal = await ctGalerieComplete((n, t) => set({ prog: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }), { niveau: NIVEAUX_CLE[m.pos] })
         if (!gal.cts.length) throw new Error('La galerie CT est vide : ajoute des CT (page Galerie).')
         const libNiv = NIVEAUX[m.pos][0]
-        set({ output: gal.repli
+        set({ prog: gal.repli
           ? `⚠ Aucun CT de la galerie n'est balisé « ${libNiv} » : l'agent examine ${gal.envoyes} CT et prend la structure la plus proche. Ajoutez ou balisez des CT ${libNiv} dans la galerie.`
           : `Niveau imposé : ${libNiv}. L'agent examine les ${gal.envoyes} CT balisés ${libNiv}${gal.nbBalises > gal.envoyes ? ' (les ' + gal.envoyes + ' plus récents sur ' + gal.nbBalises + ')' : ''} (galerie : ${gal.total} CT) et choisit le meilleur pour cette créative…`, ct: null, ctRaison: '' })
         const rs = await fetch(SERVER + '/select-ct-agent', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -158,21 +160,21 @@ function StdTest({ a }) {
         if (!ds) throw new Error(rs.status === 404 ? "Choix du CT : le serveur Render n'a pas encore la nouvelle version (route /select-ct-agent introuvable, HTTP 404). Redéployez serveur.js." : 'Choix du CT : réponse inattendue du serveur (HTTP ' + rs.status + ') ' + dsTxt.slice(0, 120))
         if (!rs.ok || ds.error) throw new Error('Choix du CT : ' + (ds.error || 'HTTP ' + rs.status))
         if (!CT_IMAGES[ds.id]) throw new Error('Le CT choisi (' + ds.id + ') est introuvable dans la galerie.')
-        set({ ct: ds.id, ctRaison: ds.raison || '', output: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
+        set({ ct: ds.id, ctRaison: ds.raison || '', prog: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
         const ctB64 = await V.compressImg(await ctGetBase64(ds.id), CT_IMAGES[ds.id + '_mime'] || 'image/jpeg')
         const res = await fetch(SERVER + '/creative-prod', { method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ systemPrompt: creativeSystem, synthese: m.synthese, brief: m.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', isTest: true }) })
         const d = await res.json(); if (d.error) throw new Error(d.error)
-        if (d.imageData) set((p) => ({ output: `✓ Générée — angle ${ai + 1} · ${NIVEAUX[m.pos][0]} · CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id} · angle choisi par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: CT_IMAGES[ds.id + '_name'] || ds.id, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
-        else set({ output: 'Aucune image reçue.', outErr: true })
+        if (d.imageData) set((p) => ({ outErr: false, output: `✓ Générée — angle ${ai + 1} · ${NIVEAUX[m.pos][0]} · CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id} · angle choisi par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: CT_IMAGES[ds.id + '_name'] || ds.id, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
+        else set({ err: 'Aucune image reçue.' })
       } else {
         // Un angle à la fois, comme la production (même consigne, même lecture 5 hooks + description)
         const ai = Math.min(m.angle, Math.max(angles.length, 1) - 1)
         const { hooks, description } = await withProd({ synthesis: m.synthese, angles: angles.length ? angles : ['Angle 1'], brief: m.brief || {} }, () => V.prodv2GenerateOneCopyAttempt(ai))
-        set({ output: `ANGLE ${ai + 1} — ${angles[ai] || ''}\n\n` + hooks.map((h, i) => `HOOK ${i + 1} : ${h}`).join('\n\n') + '\n\nDESCRIPTION :\n' + description })
+        set({ outErr: false, output: `ANGLE ${ai + 1} — ${angles[ai] || ''}\n\n` + hooks.map((h, i) => `HOOK ${i + 1} : ${h}`).join('\n\n') + '\n\nDESCRIPTION :\n' + description })
       }
-    } catch (err) { set({ output: 'ERREUR : ' + err.message, outErr: true }) }
-    finally { clearInterval(iv); setSec(Math.round((Date.now() - t0) / 1000)); setBusy(false) }
+    } catch (err) { set({ err: err.message }) }
+    finally { setLive(a.slug, false); set({ busy: false, prog: '', dur: Math.round((Date.now() - t0) / 1000) }) }
   }
   const dl = (img) => { const x = document.createElement('a'); x.href = img.src; x.download = 'adstack_' + img.ct + '_' + img.ts + '.png'; x.click() }
   const AngleSeg = () => angles.length ? <Seg value={m.angle} onChange={(v) => set({ angle: v })} options={angles.map((t, i) => [i, 'Angle ' + (i + 1)])} /> : <div className="fx-s">Colle une synthèse : les angles seront détectés automatiquement.</div>
@@ -186,9 +188,11 @@ function StdTest({ a }) {
       {(isImg || isCopy) && <div className="fx-fld"><Lab>ANGLE À PRODUIRE</Lab><AngleSeg />{angles[m.angle] && <div className="fx-s">{angles[m.angle]}</div>}</div>}
       {isImg && <div className="fx-fld"><Lab>NIVEAU DE CONSCIENCE (position de la créative dans l'angle)</Lab><Seg value={m.pos} onChange={(v) => set({ pos: v })} options={NIVEAUX.map(([, l], i) => [i, l])} /><div className="fx-s">En production, une créative par niveau pour chaque angle ; ici tu en testes une.</div></div>}
       {isImg && <CTAuto m={m} />}
-      <div className="fx-launch"><button className="fx-btn primary big" disabled={busy} onClick={run}>{busy ? 'Génération…' : 'Tester cet agent'}</button><span className="fx-s">{busy || sec ? sec + 's' : ''}</span></div>
+      <div className="fx-launch"><button className="fx-btn primary big" disabled={busy} onClick={run}>{busy ? 'Génération…' : 'Tester cet agent'}</button><span className="fx-s">{busy || sec ? sec + 's' : ''}{!busy && m.dur ? ' · dernière génération' : ''}</span></div>
       {isAn && m.bal && m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>Balayage : {m.bal.scrapecreators.requetes} requêtes ScrapeCreators ({m.bal.scrapecreators.credits} crédits) · Reddit {m.bal.scrapecreators.reddit} · TikTok {m.bal.scrapecreators.tiktok_videos} vidéos / {m.bal.scrapecreators.tiktok_commentaires} commentaires · pubs Meta {m.bal.scrapecreators.pubs}{m.bal.scrapecreators.erreurs ? ' · ' + m.bal.scrapecreators.erreurs + ' erreur(s) (voir les logs Render)' : ''}</div>}
       {isAn && m.bal && !m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.bal.reutilise ? 'Hypothèse stockée réutilisée' : 'Balayage lancé'} — {m.bal.raison}. Aucune donnée ScrapeCreators reçue : voir les logs Render.</div>}
+      {busy && m.prog && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.prog}</div>}
+      {m.err && <div className="fx-err" style={{ marginBottom: 8 }}>ERREUR : {m.err} <button className="fx-btn sm" onClick={() => set({ err: '' })}>Fermer</button></div>}
       {m.output && <Output text={m.output} color={m.outErr ? 'var(--er)' : null} />}
       {isAn && m.marche && <div className="fx-fld"><Lab>DONNÉES MARCHÉ (JSON livré au client)</Lab><Output text={m.marche} /></div>}
       {m.images.length > 0 && <div className="fx-imgs">{m.images.map((img, i) => (
@@ -202,7 +206,7 @@ function StdTest({ a }) {
 export default function AgentTest() {
   const { slug } = useParams()
   const a = AGENTS.find((x) => x.slug === slug)
-  const [tab, setTab] = useState('test')
+  const [tab, setTab] = usePersist('agenttab.' + slug, 'test')
   if (!a) return <Navigate to="/agents" replace />
   return (
     <div className="fx-wrap">

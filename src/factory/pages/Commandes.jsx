@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { usePersist } from '../agentStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useData } from '../data'
 import { etat, SERVER, prio, estPrioritaire, delaiClientH } from '../api'
@@ -98,8 +99,8 @@ export default function Commandes() {
   const { cmd, reload } = useData()
   const [sp, setSp] = useSearchParams()
   const f = sp.get('f') || 'all'
-  const [q, setQ] = useState('')
-  const [brief, setBrief] = useState(null)
+  const [q, setQ] = usePersist('commandes.q', '')
+  const [brief, setBrief] = usePersist('commandes.brief', null)
   const now = useNow()
   const list = useMemo(() => cmd.list
     .filter((b) => f === 'all' || etat(b).key === f)
