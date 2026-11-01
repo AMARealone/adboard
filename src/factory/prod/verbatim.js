@@ -48,14 +48,17 @@ export async function apiSynthesize(system, parts, maxTokens, enrichWithSearch, 
   return d.text;
 }
 
-export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal, isTest=false) {
+let _dernierBalayage = null
+export function dernierBalayage() { return _dernierBalayage }
+export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal, isTest=false, extra={}) {
   const res = await fetch(SERVER+'/analyste-synthese', {
     method:'POST', headers:{'Content-Type':'application/json'},
     signal,
-    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 32000, brief, isTest})
+    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 32000, brief, isTest, ...extra})
   });
   const d = await res.json();
   if(d.error) throw new Error(d.error);
+  _dernierBalayage = d.balayage || null;
   return d.text;
 }
 

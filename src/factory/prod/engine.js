@@ -255,10 +255,11 @@ export async function launch() {
   try {
     setAgent(1, 'active', 'Recherche multi-sources + synthèse S0→S7…', 20)
     const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbTot)
-    const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, signal)
+    const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, signal, false, { productId: S.productId, nbAngles })
+    const bal = V.dernierBalayage()
     const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
     S.synthesis = synthesisText; S.marche = marche; S.angles = V.prodv2ExtractAngles(synthesisText, nbAngles)
-    setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles extraits`, 100)
+    setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles extraits${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée, pas de nouveau balayage' : ' · nouveau balayage du marché') : ''}`, 100)
     setAgent(2, 'active', 'Sélection des CTs adaptés à la synthèse…', 5)
     const ctPick = await V.selectCTsForGeneration(synthesisText, nbTot, 'production', S.renewalContext?.ctsUtilisesDernierLot)
     if (ctPick.length === 0) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT image.')
