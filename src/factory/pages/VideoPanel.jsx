@@ -3,6 +3,9 @@ import React, { useEffect, useRef, useState } from 'react'
 import { vctGetAll, vctGetTexte } from '../vctApi'
 import { labFetch, labQuery, labUrl, labKey, saveLabUrl, saveLabKey } from '../lab'
 import { useAgentMem } from '../agentStore'
+import { commandeToBrief, commandePhoto } from '../prod/engine'
+import { getCommandes } from '../api'
+import { alertDlg } from '../ui'
 
 const readFile = (f) => new Promise((r) => { const x = new FileReader(); x.onload = () => r({ data: String(x.result).split(',')[1], mime: f.type || 'image/jpeg' }); x.readAsDataURL(f) })
 async function urlToB64(url) {
@@ -17,6 +20,7 @@ export default function VideoPanel({ competenceOnly }) {
   const [ping, setPing] = useState({ s: 'wait', t: 'Service vidéo : vérification…' }), [models, setModels] = useState([])
   const [cts, setCts] = useState(null), [comp, setComp] = useState('Chargement…')
   const [photo, setPhoto] = useState(null), [aspects, setAspects] = useState([])
+  const [photoCmd, setPhotoCmd] = useState(null), [listeCmd, setListeCmd] = useState(null), [busyCmd, setBusyCmd] = useState(false)
   const [run, setRun] = useState({ pid: null, busy: false, status: null, error: '', t0: 0, sec: 0 }), [histMsg, setHistMsg] = useState('')
   const timer = useRef(null)
 
@@ -40,7 +44,21 @@ export default function VideoPanel({ competenceOnly }) {
 
   const ct = Array.isArray(cts) ? cts.find((x) => x.id === m.ctId) : null
   const photosBrief = (() => { const b = m.brief || {}; const l = (b.product && b.product.photos_produit) || b.photos_produit || []; return Array.isArray(l) ? l.filter((x) => x && x.url && !x.exclue) : [] })()
-  const onBrief = async (e) => { const f = e.target.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); set({ brief: j, briefInfo: 'brief chargé (' + (j.marque || j.produit || (j.product && j.product.nom) || f.name) + ')' }) } catch (_) { set({ brief: null, briefInfo: 'JSON illisible' }) } }
+  // Comme pour les autres agents : on prend une commande existante (brief + photo produit + synthèse déjà produite).
+  const ouvrirCommandes = async () => { setBusyCmd(true); try { setListeCmd(await getCommandes()) } catch (e) { alertDlg('Commandes : ' + e.message) } finally { setBusyCmd(false) } }
+  const choisirCommande = async (id) => {
+    const c = (listeCmd || []).find((x) => String(x.id) === id); if (!c) return
+    setBusyCmd(true)
+    try {
+      const brief = commandeToBrief(c)
+      let ph = null; try { ph = await commandePhoto(c) } catch (_) {}
+      const syn = c.deliverables && c.deliverables.synthesis ? c.deliverables.synthesis : ''
+      setPhotoCmd(ph); setPhoto(null); setAspects([])
+      set({ brief, syn: syn || m.syn, briefInfo: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${ph ? ' · photo produit chargée' : ' · ⚠ pas de photo produit'}${syn ? ' · synthèse reprise' : ' · ⚠ pas de synthèse (colle-la ci-dessous)'}` })
+      setListeCmd(null)
+    } catch (e) { alertDlg(e.message) } finally { setBusyCmd(false) }
+  }
+  const onBrief = async (e) => { const f = e.target.files[0]; if (!f) return; try { const j = JSON.parse(await f.text()); setPhotoCmd(null); set({ brief: j, briefInfo: 'brief chargé (' + (j.marque || j.produit || (j.product && j.product.nom) || f.name) + ')' }) } catch (_) { set({ brief: null, briefInfo: 'JSON illisible' }) } }
 
   const poll = async (pid, t0) => {
     setRun((r) => ({ ...r, sec: Math.round((Date.now() - t0) / 1000) }))
@@ -53,7 +71,7 @@ export default function VideoPanel({ competenceOnly }) {
   }
   const start = async () => {
     const fail = (t) => setRun((r) => ({ ...r, error: t, busy: false, status: null }))
-    const manque = [!m.syn.trim() && 'la synthèse', !m.ctId && 'le CT vidéo', !photo && !photosBrief.length && 'la photo produit (ou un brief qui en contient)'].filter(Boolean)
+    const manque = [!m.syn.trim() && 'la synthèse', !m.ctId && 'le CT vidéo', !photo && !photoCmd && !photosBrief.length && 'la photo produit (ou une commande / un brief qui en contient)'].filter(Boolean)
     if (manque.length) return fail('Il manque : ' + manque.join(', ') + '.')
     if (!(await doPing())) return fail("Le service vidéo n'est pas joignable. Lance-le (ou vérifie son adresse), puis réessaie.")
     setRun({ pid: null, busy: true, status: { stage: 'Préparation des entrées…' }, error: '', t0: Date.now(), sec: 0 }); setHistMsg('')
@@ -61,6 +79,10 @@ export default function VideoPanel({ competenceOnly }) {
       const texte = await vctGetTexte(m.ctId)
       let produit, asp = []
       if (photo) { produit = await readFile(photo); asp = await Promise.all(aspects.slice(0, 5).map(readFile)) }
+      else if (photoCmd) {
+        produit = { data: photoCmd.b64, mime: photoCmd.mime }
+        asp = (await Promise.all(photosBrief.filter((x) => x.aspect !== 'face').slice(0, 5).map((x) => urlToB64(x.url).catch(() => null)))).filter(Boolean)
+      }
       else {
         const face = photosBrief.find((x) => x.aspect === 'face') || photosBrief[0]
         produit = await urlToB64(face.url)
@@ -107,7 +129,18 @@ export default function VideoPanel({ competenceOnly }) {
         <div className="fx-fld"><div className="fx-lab up">PHOTO PRODUIT</div><input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0] || null)} /></div>
         <div className="fx-fld"><div className="fx-lab up">AUTRES ASPECTS (facultatif, 5 max)</div><input type="file" accept="image/*" multiple onChange={(e) => setAspects(Array.from(e.target.files))} /></div>
       </div>
-      <div className="fx-fld"><div className="fx-lab up">BRIEF CLIENT (JSON, facultatif : complète la photo, les aspects et le lien)</div><input type="file" accept="application/json" onChange={onBrief} /> <span className="fx-s">{m.briefInfo}</span></div>
+      <div className="fx-fld"><div className="fx-lab up">BRIEF CLIENT (une commande, ou un JSON : complète la photo, les aspects et le lien)</div>
+        <div className="fx-btnrow">
+          <button className="fx-btn" disabled={busyCmd} onClick={ouvrirCommandes}>{busyCmd ? '…' : 'Prendre une commande'}</button>
+          <label className="fx-btn" style={{ cursor: 'pointer' }}>Charger un brief.json<input type="file" accept="application/json" hidden onChange={onBrief} /></label>
+        </div>
+        {listeCmd && <select className="fx-in full" defaultValue="" onChange={(e) => choisirCommande(e.target.value)}>
+          <option value="" disabled>{listeCmd.length ? 'Choisis une commande…' : 'Aucune commande'}</option>
+          {listeCmd.map((b) => <option key={b.id} value={b.id}>{(b.product || {}).nom || 'Produit'} · {(b.product || {}).marque || ''} · {b.quantity || 6} créatives · {b.status}</option>)}
+        </select>}
+        <div className="fx-s">{m.briefInfo || 'Aucun brief chargé'}</div>
+        {photoCmd && <img className="fx-minithumb" src={`data:${photoCmd.mime};base64,${photoCmd.b64}`} alt="" />}
+      </div>
       <details className="fx-det"><summary>Réglages</summary>
         <div className="fx-opts">
           <label>Modèle vidéo <select className="fx-in sm" value={m.model} onChange={(e) => set({ model: e.target.value })}><option value="auto">Automatique</option>{models.map((k) => <option key={k} value={k}>{k}</option>)}</select></label>
