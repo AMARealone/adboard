@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { WS, wsOwner, can, isMember, resolveWorkspace, captureInviteFromUrl, switchWorkspace, clearWorkspaceMemory, teamFetch, SERVER as TEAM_SERVER } from "./team.js";
 import TeamPage from "./TeamPage.jsx";
+import { TP_CHAMPS, TP_DEVISES, nettoyerStats, aDesChiffres, scoresTopPerformer, classerTopPerformer, multiplicateurTP } from "./topPerformer.js";
 captureInviteFromUrl();
 // ADBOARD_VERSION v8.2-4offres (4 offres TEST / PERF+ / GROWTH / SCALE, créatives accordées au mois sans logique hebdomadaire, fin du One Shot) | v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
@@ -3916,6 +3917,100 @@ function ordonnerParAngle(liste) {
   return { plat, completer };
 }
 
+// ── Top Performer : formulaire des chiffres + résumé du classement ─────────────────────────────
+const fmtTP = (n) => Number(n).toLocaleString('fr-FR', { maximumFractionDigits: 2 });
+
+function ResumeTopPerformer({ groupe, scores, cible, produit, modeAuto, selectedForSwap }) {
+  const n = groupe.length;
+  const chiffrees = groupe.filter(aDesChiffres);
+  const moy = (k) => { const v = chiffrees.map(c => c.tpStats[k]).filter(Number.isFinite); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+  const roasMoy = moy('roas'), cpaMoy = moy('cpa');
+  const depTotal = chiffrees.map(c => c.tpStats.depenses).filter(Number.isFinite).reduce((a, b) => a + b, 0);
+  const devise = (chiffrees.find(c => c.tpStats.devise) || {tpStats:{}}).tpStats.devise || '';
+  const livraison = (produit?.deliveries || []).find(d => d.cible === cible);
+  const gagnant = livraison ? getAngleGagnantActuel(produit, livraison.cible_signature || livraison.cible) : null;
+  const tuile = (label, valeur) => (
+    <div style={{flex:'1 1 90px',minWidth:90,padding:'8px 10px',borderRadius:9,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+      <div style={{fontSize:9.5,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:0.4}}>{label}</div>
+      <div style={{fontSize:15,fontWeight:800,color:C.text,marginTop:2}}>{valeur}</div>
+    </div>
+  );
+  return (
+    <div data-testid="tp-resume" style={{marginBottom:16,padding:'14px 14px 12px',borderRadius:12,background:'rgba(255,193,7,0.06)',border:'1px solid rgba(255,193,7,0.25)'}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10}}>
+        <Icon name="star" size={14} color="#FFC107"/>
+        <div style={{fontSize:13,fontWeight:800,color:C.text}}>Classement de cette cible</div>
+        <div style={{fontSize:11,color:C.sec,minWidth:0,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{cible}</div>
+      </div>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:10}}>
+        {tuile('Marquées', n)}
+        {tuile('Chiffrées', `${chiffrees.length}/${n}`)}
+        {roasMoy != null && tuile('ROAS moyen', `${fmtTP(roasMoy)}×`)}
+        {cpaMoy != null && tuile('CPA moyen', `${fmtTP(cpaMoy)}${devise ? ' ' + devise : ''}`)}
+        {depTotal > 0 && tuile('Dépensé', `${fmtTP(depTotal)}${devise ? ' ' + devise : ''}`)}
+      </div>
+      {gagnant && (
+        <div data-testid="tp-gagnant" style={{fontSize:12,color:C.text,marginBottom:8,lineHeight:1.45}}>
+          <b style={{color:'#FFC107'}}>⚡ Angle qui gagne sur cette cible :</b> {gagnant} — c'est lui que nous reprenons en priorité pour vos prochains lots.
+        </div>
+      )}
+      <div data-testid="tp-aide" style={{fontSize:11,color:C.sec,lineHeight:1.5}}>
+        {modeAuto
+          ? <>Classement <b style={{color:C.text}}>automatique</b> : chaque créative est comparée à la moyenne de cette cible (ROAS, CPA, dépenses, durée…).{chiffrees.length < n ? ` ${n - chiffrees.length} créative${n - chiffrees.length > 1 ? 's n’ont' : ' n’a'} pas de chiffres : ${n - chiffrees.length > 1 ? 'elles sont placées' : 'elle est placée'} à la fin. Touchez « i » pour les ajouter.` : ''}</>
+          : (n > 1
+              ? (selectedForSwap ? 'Tapez une deuxième créative pour échanger leurs places.' : <>Sans chiffres, le classement est <b style={{color:C.text}}>manuel</b> : tapez deux créatives pour échanger leurs places (celle du haut est la plus performante). Ajoutez vos chiffres via « i » pour un classement automatique, plus juste.</>)
+              : 'Touchez « i » pour ajouter vos chiffres (ROAS, CPA…) : ils serviront à classer vos prochaines créatives.')}
+      </div>
+    </div>
+  );
+}
+
+function FormulaireTopPerformer({ form, setForm, onSave, onRemove, busy, isMobile }) {
+  const { creative, vals, edition } = form;
+  const maj = (k, v) => setForm(f => ({ ...f, vals: { ...f.vals, [k]: v } }));
+  const aDesValeurs = !!nettoyerStats(vals);
+  const champ = { width:'100%', boxSizing:'border-box', padding:'10px 34px 10px 12px', borderRadius:9, background:'rgba(255,255,255,0.05)', border:`1px solid ${C.border}`, color:C.text, fontSize:14, fontFamily:'inherit', outline:'none' };
+  return (
+    <div data-testid="tp-form" onClick={() => !busy && setForm(null)} style={{position:'fixed',inset:0,zIndex:100100,background:'rgba(0,0,0,0.72)',display:'flex',alignItems:isMobile?'flex-end':'center',justifyContent:'center',padding:isMobile?0:20}}>
+      <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:440,maxHeight:'92vh',overflowY:'auto',background:C.card,border:`1px solid ${C.borderM}`,borderRadius:isMobile?'16px 16px 0 0':16,padding:'20px 18px 18px'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8}}>
+          <Icon name="star" size={16} color="#FFC107"/>
+          <div style={{fontSize:16,fontWeight:800,color:C.text}}>{edition ? 'Chiffres de cette créative' : 'Marquer comme Top Performer'}</div>
+        </div>
+        <div style={{fontSize:11.5,color:C.sec,marginTop:4}}>{creative.angle} · Lot {String(creative.week || '').replace(/^[SB]/, '')}</div>
+        <div style={{fontSize:12,color:C.sec,lineHeight:1.5,margin:'12px 0 14px'}}>Donnez ce que vous avez : <b style={{color:C.text}}>tout est facultatif</b>. Avec vos chiffres, vos créatives sont classées automatiquement et nous savons quels angles reprendre.</div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+          {TP_CHAMPS.map(ch => (
+            <label key={ch.k} style={{display:'block'}}>
+              <span style={{display:'block',fontSize:11,fontWeight:700,color:C.sec,marginBottom:4}}>{ch.label}{(ch.k === 'cpa' || ch.k === 'depenses') ? ` (${vals.devise || ''})` : ''}</span>
+              <span style={{position:'relative',display:'block'}}>
+                <input data-testid={`tp-${ch.k}`} inputMode="decimal" autoComplete="off" value={vals[ch.k]} placeholder={ch.aide}
+                  onChange={e => maj(ch.k, e.target.value)} style={champ}/>
+                {ch.unite && <span style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',fontSize:12,color:C.muted,pointerEvents:'none'}}>{ch.unite}</span>}
+              </span>
+            </label>
+          ))}
+        </div>
+        <label style={{display:'block',marginTop:10}}>
+          <span style={{display:'block',fontSize:11,fontWeight:700,color:C.sec,marginBottom:4}}>Devise (pour le CPA et les dépenses)</span>
+          <select data-testid="tp-devise" value={vals.devise} onChange={e => maj('devise', e.target.value)} style={{...champ,padding:'10px 12px'}}>
+            {TP_DEVISES.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        </label>
+        <div style={{display:'flex',gap:8,marginTop:16}}>
+          <button onClick={() => !busy && setForm(null)} style={{flex:'0 0 auto',padding:'11px 16px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
+          <button data-testid="tp-enregistrer" disabled={busy} onClick={onSave} style={{flex:1,padding:'11px 16px',borderRadius:9,border:'none',background:'#FFC107',color:'#1a1a1a',fontSize:13,fontWeight:800,cursor:busy?'default':'pointer',fontFamily:'inherit',opacity:busy?0.6:1}}>
+            {busy ? 'Enregistrement…' : (edition ? 'Enregistrer' : (aDesValeurs ? 'Marquer avec ces chiffres' : 'Marquer sans chiffres'))}
+          </button>
+        </div>
+        {edition && (
+          <button data-testid="tp-retirer" disabled={busy} onClick={onRemove} style={{display:'block',width:'100%',marginTop:10,padding:'9px',background:'transparent',border:'none',color:'#F87171',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Retirer du Top Performer</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
@@ -4058,6 +4153,9 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const batchSet = Object.keys(batchLabelParKey)
     .sort((a,b) => batchLabelParKey[a].localeCompare(batchLabelParKey[b], undefined, {numeric:true}));
   const cibleSet = [...new Set(creativesFiltreesSauf('cible').map(c => c.cible || CIBLE_INCONNUE))];
+  // Top Performer : les cibles qui ont au moins une créative marquée, pour le produit choisi.
+  const cibleSetTP = [...new Set(creativesDuProduit.filter(c => c.topPerformer).map(c => c.cible || CIBLE_INCONNUE))];
+  const cibleTP = filterMode==='topPerformer' ? (cibleSetTP.includes(activeChip) ? activeChip : (cibleSetTP.length===1 ? cibleSetTP[0] : null)) : null;
 
   // Si une valeur déjà sélectionnée disparaît des options possibles (devenue incompatible avec
   // un autre filtre choisi entre-temps), la retirer automatiquement — sinon elle reste active
@@ -4100,7 +4198,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     if (filterMode==='topPerformer') {
       if (!c.topPerformer) return false;
       if (!selectedProduct) return false;
-      if (activeChip && (c.cible||CIBLE_INCONNUE)!==activeChip) return false;
+      // Un classement = UN produit + UNE cible. Jamais deux cibles mélangées.
+      if (!cibleTP || (c.cible||CIBLE_INCONNUE)!==cibleTP) return false;
     }
     return true;
   }).sort((a, b) => {
@@ -4116,7 +4215,15 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   // manuel) et quand on ne montre que les vidéos ou que les images (les groupes seraient incomplets).
   const regroupe = filterMode !== 'topPerformer' && formatActif === 'tous';
   const ordreAngles = regroupe ? ordonnerParAngle(filteredBrut) : { plat: filteredBrut, completer: {} };
-  const filtered = ordreAngles.plat;
+  // Classement Top Performer : AUTOMATIQUE d'après les chiffres donnés (comparés aux autres créatives de la
+  // même cible), et manuel (tap pour échanger) pour celles qui n'ont pas de chiffres. Calculé sur TOUT le
+  // groupe produit + cible, pas seulement sur ce que la recherche laisse visible.
+  const groupeTP = (filterMode==='topPerformer' && selectedProduct && cibleTP)
+    ? classerTopPerformer(creativesDuProduit.filter(c => c.topPerformer && (c.cible||CIBLE_INCONNUE)===cibleTP)) : [];
+  const rangTP = {}; groupeTP.forEach((c, i) => { rangTP[c.id] = i; });
+  const scoresTP = scoresTopPerformer(groupeTP);
+  const modeAuto = groupeTP.some(aDesChiffres);
+  const filtered = filterMode==='topPerformer' ? groupeTP.filter(c => ordreAngles.plat.some(x => x.id === c.id)) : ordreAngles.plat;
   const filteredRef = useRef(filtered); filteredRef.current = filtered;
   // Visionneuse : flèches du clavier, Échap, et préchargement des deux voisines.
   useEffect(() => {
@@ -4134,28 +4241,72 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   }, [selected && selected.id]);
   const [progressionDl, setProgressionDl] = useState(null);
 
-  const chips = filterMode==='topPerformer' ? cibleSet : []; // mode normal : les 3 groupes (cibleSet/batchSet/angleSet) s'affichent directement, plus besoin de ce sélecteur unique
+  const chips = filterMode==='topPerformer' ? cibleSetTP : []; // mode normal : les 3 groupes (cibleSet/batchSet/angleSet) s'affichent directement, plus besoin de ce sélecteur unique
 
   const [togglingTopPerformer, setTogglingTopPerformer] = useState(false);
-  const toggleTopPerformer = async (creative) => {
+  // Formulaire « chiffres » : s'ouvre quand on marque une créative Top Performer (ou qu'on corrige ses chiffres).
+  // Tous les champs sont facultatifs.
+  const [tpForm, setTpForm] = useState(null); // { creative, vals, edition }
+  const SERVEUR_TP = 'https://adstack-server.onrender.com';
+  const majCreativeLocale = (creative, patch) => {
+    setProducts(prev => prev.map(p => p.id !== creative.productId ? p : { ...p, creatives: (p.creatives||[]).map(c => c.id === creative.id ? {...c, ...patch} : c) }));
+    setSelected(s => s && s.id === creative.id ? {...s, ...patch} : s);
+  };
+  const ouvrirFormTP = (creative) => {
+    let devise = 'FCFA'; try { devise = localStorage.getItem('adboard_tp_devise') || 'FCFA'; } catch(e) {}
+    const st = creative.tpStats || {};
+    const vals = { devise: st.devise || devise };
+    TP_CHAMPS.forEach(ch => { vals[ch.k] = st[ch.k] != null ? String(st[ch.k]).replace('.', ',') : ''; });
+    setTpForm({ creative, vals, edition: !!creative.topPerformer });
+  };
+  const enregistrerTP = async () => {
+    if (!tpForm) return;
+    const { creative, vals, edition } = tpForm;
+    const stats = nettoyerStats(vals);
     setTogglingTopPerformer(true);
-    const nextValue = !creative.topPerformer;
     try {
-      await fetch(`https://adstack-server.onrender.com/products/${creative.productId}/mark-top-performer`, {
+      const r = await fetch(`${SERVEUR_TP}/products/${creative.productId}/${edition ? 'top-performer-stats' : 'mark-top-performer'}`, {
         method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ creativeId: creative.id, value: nextValue })
+        body: JSON.stringify(edition ? { creativeId: creative.id, stats: vals } : { creativeId: creative.id, value: true, stats: vals })
       });
-      setProducts(prev => prev.map(p => p.id !== creative.productId ? p : {
-        ...p,
-        creatives: (p.creatives||[]).map(c => c.id === creative.id ? {...c, topPerformer: nextValue} : c)
-      }));
-      setSelected(s => s && s.id === creative.id ? {...s, topPerformer: nextValue} : s);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      try { if (vals.devise) localStorage.setItem('adboard_tp_devise', vals.devise); } catch(e) {}
+      majCreativeLocale(creative, edition ? { tpStats: stats || undefined } : { topPerformer: true, tpStats: stats || undefined, tpAt: new Date().toISOString() });
+      setTpForm(null);
+      notify && notify(edition ? 'Chiffres enregistrés — classement mis à jour' : (stats ? 'Marquée Top Performer — classée d’après vos chiffres' : 'Marquée Top Performer'), 'success');
     } catch(e) {
       console.error('Marquage Top Performer échoué :', e.message);
+      notify && notify('Enregistrement impossible — vérifiez votre connexion', 'error');
     } finally {
       setTogglingTopPerformer(false);
     }
   };
+  const retirerTP = async () => {
+    if (!tpForm) return;
+    const { creative } = tpForm;
+    setTogglingTopPerformer(true);
+    try {
+      const r = await fetch(`${SERVEUR_TP}/products/${creative.productId}/mark-top-performer`, {
+        method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ creativeId: creative.id, value: false })
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      majCreativeLocale(creative, { topPerformer: false, tpStats: undefined, topPerformerRank: undefined });
+      setTpForm(null);
+      notify && notify('Retirée du Top Performer', 'success');
+    } catch(e) {
+      notify && notify('Impossible de retirer — vérifiez votre connexion', 'error');
+    } finally {
+      setTogglingTopPerformer(false);
+    }
+  };
+  // Cible par défaut en mode Top Performer : si le produit a plusieurs cibles marquées, on prend la plus récente.
+  useEffect(() => {
+    if (filterMode !== 'topPerformer' || !selectedProduct || cibleSetTP.length < 2) return;
+    if (activeChip && cibleSetTP.includes(activeChip)) return;
+    const prod = products.find(p => p.id === selectedProduct);
+    const dernieres = [...(prod?.deliveries || [])].reverse().map(d => d.cible).filter(Boolean);
+    setActiveChip(dernieres.find(c => cibleSetTP.includes(c)) || cibleSetTP[0]);
+  }, [filterMode, selectedProduct, cibleSetTP.join('|')]);
 
   // Ordre affiché : celui du drag en cours si un drag est actif, sinon l'ordre trié par rang.
   // Recalculé à chaque rendu — jamais de désync possible entre ce qui s'affiche et filtered.
@@ -4463,11 +4614,12 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         </div>
       )}
 
-      {filterMode==='topPerformer' && (
-        <div style={{display:'flex',gap:6,marginBottom:18,flexWrap:'wrap'}}>
+      {filterMode==='topPerformer' && selectedProduct && chips.length > 0 && (
+        <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap',alignItems:'center'}} data-testid="tp-cibles">
+          <span style={{fontSize:11,color:C.muted,fontWeight:600,marginRight:2}}>Cible</span>
           {chips.map(ch => (
-            <button key={ch} onClick={() => setActiveChip(activeChip===ch?null:ch)}
-              style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${activeChip===ch?C.borderM:C.border}`,cursor:'pointer',background:activeChip===ch?'rgba(255,255,255,0.09)':'transparent',color:activeChip===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s',maxWidth:280,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}
+            <button key={ch} onClick={() => setActiveChip(ch)}
+              style={{padding:'5px 14px',borderRadius:20,border:`1px solid ${cibleTP===ch?C.accent:C.border}`,cursor:'pointer',background:cibleTP===ch?'rgba(91,141,239,0.14)':'transparent',color:cibleTP===ch?C.text:C.sec,fontSize:11,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}
               title={ch}>
               {ch}
             </button>
@@ -4482,20 +4634,23 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         </div>
       )}
 
-      {filterMode==='topPerformer' && selectedProduct && cibleSet.length > 1 && !activeChip && (
+      {filterMode==='topPerformer' && selectedProduct && cibleSetTP.length > 1 && !cibleTP && (
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'10px 12px',borderRadius:8,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
           <Icon name="person" size={13} color={C.sec}/>
           <span style={{fontSize:11,color:C.sec}}>Ce produit a eu plusieurs cibles différentes — choisissez celle à classer ci-dessus (un angle qui marche sur une cible ne dit rien sur une autre).</span>
         </div>
       )}
 
-      {filterMode==='topPerformer' && selectedProduct && (activeChip || cibleSet.length <= 1) && filtered.length > 1 && (
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,padding:'8px 12px',borderRadius:8,background:'rgba(255,193,7,0.08)',border:'1px solid rgba(255,193,7,0.25)'}}>
-          <Icon name="star" size={13} color="#FFC107"/>
-          <span style={{fontSize:11,color:C.sec}}>
-            {selectedForSwap ? 'Tapez une deuxième créative pour échanger leurs places.' : 'Tapez une créative, puis une deuxième pour échanger leurs places — celle du haut est celle que vous jugez la plus performante. Ça nous aide à faire mieux la prochaine fois.'}
-          </span>
+      {filterMode==='topPerformer' && selectedProduct && cibleSetTP.length === 0 && (
+        <div style={{padding:'28px 18px',textAlign:'center',borderRadius:12,border:`1px dashed ${C.border}`,marginBottom:14}} data-testid="tp-vide">
+          <Icon name="star" size={22} color="#FFC107"/>
+          <div style={{fontSize:14,fontWeight:700,color:C.text,marginTop:8}}>Aucune créative marquée pour ce produit</div>
+          <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:440,margin:'6px auto 0'}}>Ouvrez une créative dans « Tous » et touchez « Top Performer » dès qu'elle fonctionne. Vous pouvez donner vos chiffres (ROAS, CPA…) : ils servent à classer vos créatives automatiquement.</div>
         </div>
+      )}
+
+      {filterMode==='topPerformer' && selectedProduct && cibleTP && groupeTP.length > 0 && (
+        <ResumeTopPerformer groupe={groupeTP} scores={scoresTP} cible={cibleTP} produit={products.find(p => p.id === selectedProduct)} modeAuto={modeAuto} selectedForSwap={selectedForSwap}/>
       )}
 
       {aDesVideos && (
@@ -4519,7 +4674,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
           <Fragment key={c.id}>
           <div className="gallery-item"
             onClick={() => {
-              if (isTpMode) { handleTapSwap(c.id); return; }
+              if (isTpMode) { if (modeAuto || filtered.length < 2) setSelected(c); else handleTapSwap(c.id); return; }
               if (selectMode) setSelectedIds(ids => ids.includes(c.id) ? ids.filter(i=>i!==c.id) : [...ids, c.id]);
               else setSelected(c);
             }}
@@ -4563,8 +4718,22 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
               </div>
             )}
             {isTpMode && (
-              <div style={{position:'absolute',top:6,left:6,minWidth:20,height:20,padding:'0 6px',borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:i===0?'#FFC107':'rgba(0,0,0,0.55)',border:i===0?'none':'1px solid rgba(255,255,255,0.25)',backdropFilter:'blur(2px)',zIndex:2}}>
-                <span style={{fontSize:10,fontWeight:800,color:i===0?'#1a1a1a':'#fff'}}>#{i+1}</span>
+              <div style={{position:'absolute',top:6,left:6,minWidth:20,height:20,padding:'0 6px',borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:rangTP[c.id]===0?'#FFC107':'rgba(0,0,0,0.55)',border:rangTP[c.id]===0?'none':'1px solid rgba(255,255,255,0.25)',backdropFilter:'blur(2px)',zIndex:2}}>
+                <span style={{fontSize:10,fontWeight:800,color:rangTP[c.id]===0?'#1a1a1a':'#fff'}}>#{(rangTP[c.id] ?? i)+1}</span>
+              </div>
+            )}
+            {isTpMode && (
+              <button onClick={e => { e.stopPropagation(); setSelected(c); }} aria-label="Voir et modifier les chiffres" data-testid="tp-details"
+                style={{position:'absolute',top:6,right:6,width:22,height:22,borderRadius:6,border:'1px solid rgba(255,255,255,0.25)',background:'rgba(0,0,0,0.55)',color:'#fff',fontSize:11,fontWeight:800,cursor:'pointer',zIndex:4,display:'flex',alignItems:'center',justifyContent:'center',padding:0}}>i</button>
+            )}
+            {isTpMode && (
+              <div style={{position:'absolute',left:4,bottom:34,right:4,display:'flex',gap:3,flexWrap:'wrap',zIndex:2,pointerEvents:'none'}}>
+                {aDesChiffres(c)
+                  ? <>
+                      {c.tpStats.roas != null && <span style={{fontSize:9,fontWeight:800,color:'#1a1a1a',background:'#FFC107',borderRadius:4,padding:'1px 5px'}}>ROAS {fmtTP(c.tpStats.roas)}×</span>}
+                      {c.tpStats.cpa != null && <span style={{fontSize:9,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.65)',borderRadius:4,padding:'1px 5px'}}>CPA {fmtTP(c.tpStats.cpa)}</span>}
+                    </>
+                  : <span style={{fontSize:9,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.55)',borderRadius:4,padding:'1px 5px'}}>Sans chiffres</span>}
               </div>
             )}
             {isSelectedForSwap && (
@@ -4615,9 +4784,6 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         const aller = (d) => { if (idx >= 0 && filtered[idx + d]) setSelected(filtered[idx + d]); };
         const video = estVideo(selected);
         const ratio = video ? 9 / 16 : 4 / 5;
-        const ageMs = Date.now() - dateCreative(selected);
-        const eligible = dateCreative(selected) === 0 || ageMs >= 7*24*60*60*1000;
-        const joursRestants = eligible ? 0 : Math.ceil((7*24*60*60*1000 - ageMs) / (24*60*60*1000));
         const flecheStyle = (actif, cote) => ({position:'absolute',[cote]:24,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:'50%',border:`1px solid rgba(255,255,255,${actif?0.22:0.08})`,background:'rgba(255,255,255,0.07)',backdropFilter:'blur(8px)',color:'#fff',cursor:actif?'pointer':'default',opacity:actif?1:0.3,display:isMobile?'none':'flex',alignItems:'center',justifyContent:'center'});
         const btnAction = {height:42,padding:'0 14px',borderRadius:11,border:'1px solid rgba(255,255,255,0.16)',background:'rgba(255,255,255,0.07)',color:'#fff',fontSize:12.5,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:7,fontFamily:'inherit'};
         let x0 = null;
@@ -4656,14 +4822,20 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                     <Icon name="download" size={15} color="#fff"/>Télécharger
                   </button>
                 )}
-                <button onClick={() => eligible && toggleTopPerformer(selected)} disabled={!eligible || togglingTopPerformer}
-                  style={{...btnAction,flex:1,justifyContent:'center',borderColor:selected.topPerformer?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:selected.topPerformer?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:selected.topPerformer?'#FFC107':'#fff',opacity:eligible?1:0.55,cursor:eligible?'pointer':'default'}}
+                <button onClick={() => ouvrirFormTP(selected)} data-testid="btn-top-performer"
+                  style={{...btnAction,flex:1,justifyContent:'center',borderColor:selected.topPerformer?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:selected.topPerformer?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:selected.topPerformer?'#FFC107':'#fff'}}
                   aria-label="Top Performer">
-                  <Icon name="star" size={15} color={selected.topPerformer?'#FFC107':'#fff'}/>Top Performer
+                  <Icon name="star" size={15} color={selected.topPerformer?'#FFC107':'#fff'}/>{selected.topPerformer ? (aDesChiffres(selected) ? 'Top Performer · chiffres' : 'Top Performer · ajouter les chiffres') : 'Top Performer'}
                 </button>
               </div>
             </div>
-            {!eligible && <div style={{fontSize:10.5,color:'rgba(255,255,255,0.45)'}}>Top Performer : revenez dans {joursRestants} jour{joursRestants>1?'s':''} si elle a bien performé.</div>}
+            {selected.topPerformer && aDesChiffres(selected) && (
+              <div style={{display:'flex',gap:6,flexWrap:'wrap'}} data-testid="viewer-chiffres">
+                {TP_CHAMPS.filter(ch => selected.tpStats[ch.k] != null).map(ch => (
+                  <span key={ch.k} style={{fontSize:11,fontWeight:700,color:'#FFC107',background:'rgba(255,193,7,0.12)',border:'1px solid rgba(255,193,7,0.3)',borderRadius:8,padding:'3px 9px'}}>{ch.label} {fmtTP(selected.tpStats[ch.k])}{ch.unite ? (ch.unite==='j' ? ' j' : ch.unite) : ''}{(ch.k==='cpa'||ch.k==='depenses') && selected.tpStats.devise ? ' '+selected.tpStats.devise : ''}</span>
+                ))}
+              </div>
+            )}
             {accesGrowth() && (
               <button onClick={() => { window.__copiesFocus = { productId: selected.productId, angle: selected.angle, week: selected.week, ticket: ticketDeCreative(selected) }; setSelected(null); setSection && setSection('copies'); }}
                 style={{...btnAction,width:'100%',justifyContent:'center',height:40,background:'rgba(91,141,239,0.14)',borderColor:'rgba(91,141,239,0.4)'}}>
@@ -4674,6 +4846,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         </div>
         );
       })()}
+      {tpForm && <FormulaireTopPerformer form={tpForm} setForm={setTpForm} onSave={enregistrerTP} onRemove={retirerTP} busy={togglingTopPerformer} isMobile={isMobile}/>}
       {deleteConfirm && (
         <ConfirmModal
           title="Supprimer ces créatives ?"
@@ -4722,6 +4895,9 @@ function getAngleGagnantActuel(product, cible) {
   if (!creativesTopPerformer.length || !deliveries.length) return null;
 
   const scores = {}; // nom d'angle -> score cumulé
+  // Score chiffré (ROAS, CPA, dépenses…) comparé aux autres créatives de LA MÊME cible ; sans chiffres : rang manuel.
+  const semainesCible = new Set(deliveries.map(d => d.semaine));
+  const scoresTP = scoresTopPerformer(creativesTopPerformer.filter(c => semainesCible.has(c.week)));
   deliveries.forEach((d, i) => {
     const poidsRecence = i + 1; // livraison la plus ancienne DE CETTE CIBLE = 1, chaque suivante pèse plus
     creativesTopPerformer.filter(c => c.week === d.semaine).forEach(c => {
@@ -4730,7 +4906,7 @@ function getAngleGagnantActuel(product, cible) {
       // élevés ou les créatives non classées. Volontairement pas dominant à lui seul : c'est
       // un avis client, précieux mais pas aussi fiable qu'une vraie donnée de performance
       // (spend, ventes) — voir note dans COMPETENCE_ANALYSTE.md.
-      const rankMultiplier = c.topPerformerRank ? (1 + 1 / c.topPerformerRank) : 1;
+      const rankMultiplier = multiplicateurTP(c, scoresTP);
       if (!c.angle) return;
       scores[c.angle] = (scores[c.angle] || 0) + poidsRecence * rankMultiplier;
     });
