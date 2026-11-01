@@ -4,7 +4,7 @@ import { labFetch } from '../lab'
 import { backupSupported, getBackupDir, pickBackupDir, writeSkills } from '../backup'
 import { useNavigate } from 'react-router-dom'
 export const AGENTS = [
-  { slug: 'analyst', n: 1, name: 'Analyste de Marché', sub: 'Brief client (JSON) → Hypothèse S0→S11, cible + 2 facettes + stock de 10 angles', model: 'gemini-3.1-pro', file: 'COMPETENCE_ANALYSTE.md', color: '#5C7A99', kind: 'analyst', maxTokens: 64000,
+  { slug: 'analyst', n: 1, name: 'Analyste de Marché', sub: 'Brief client (JSON) → Hypothèse S0→S12, cible + 2 facettes + stock de 10 angles', model: 'gemini-3.1-pro', file: 'COMPETENCE_ANALYSTE.md', color: '#5C7A99', kind: 'analyst', maxTokens: 64000,
     prompt: 'DONNÉES BRUTES :\n[Sources externes (Gemini/Trends/YouTube/Jumia/CSE) non connectées pour ce test — applique RÈGLE #1/#2/#3 de ta compétence : marque chaque point qui en dépendrait par [NON TROUVÉ DANS DONNÉES BRUTES].]\n\nProduis la Synthèse complète S0→S7 selon ta compétence.' },
   { slug: 'creative-prod', n: 2, name: 'Creative Image', sub: 'Brief.json + Synthèse → l\'agent choisit le CT dans toute la galerie → Static ad Meta Ads 4:5', model: 'gemini-2.5-pro + gemini-3-pro-image', file: 'COMPETENCE_CREATIVE_PROD.md', color: '#5AB4FF', kind: 'image', maxTokens: 8000 },
   { slug: 'copywriter', n: 3, name: 'Copywriter', sub: 'Synthèse → chaque angle × (5 hooks + 1 description AIDA)', model: 'gemini-2.5-pro', file: 'COMPETENCE_COPYWRITER_PROD.md', color: '#7FA8D9', kind: 'copy', maxTokens: 8000,

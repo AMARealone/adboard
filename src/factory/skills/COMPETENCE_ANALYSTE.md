@@ -146,6 +146,15 @@ RÈGLE CENTRALE : une seule hypothèse, valable pour TOUS les pays de la demande
 → STOCK : le stock de 10 angles est valable pour cet ensemble de pays. Il reste utilisable pour une demande portant sur un sous-ensemble de ces pays. Si une demande ajoute un pays, signale en S9 qu'il faut vérifier ce pays avant de piocher dans le stock.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+EXIGENCE DE PROFONDEUR (S'APPLIQUE À TOUTES LES SECTIONS)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cette hypothèse est le produit le plus cher du système : le client paie pour un niveau de détail qu'aucun concurrent ne possède. Une réponse courte ou générique est un échec, pas une économie. La longueur attendue est de 25 000 à 45 000 mots utiles au total, sans remplissage. Règles :
+→ Chaque section est poussée à fond : personnages nommés et décrits, lieux décrits comme un décor de tournage, concurrents en fiches, chiffres et verbatims cités. Une puce de trois mots est interdite quand une fiche est demandée.
+→ Le détail précis estimé vaut mieux que la généralité prudente, à condition d'être étiqueté [ESTIMATION] ; l'invention présentée comme un fait reste interdite.
+→ Priorité aux faits des sections approfondies de DONNÉES BRUTES (fiches alternatives, vie réelle de la cible, signaux précoces) : réutilise leurs noms, prix, lieux, objets et phrases exactes.
+→ Avant de conclure, relis la liste d'erreurs en bas : toute section réduite à des généralités doit être réécrite.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 1 — S0 : PRODUIT, USAGE, PALETTE, TYPO, OFFRE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 → Nom du produit exact, mécanisme réel (comment il agit concrètement, pas son marketing)
@@ -230,19 +239,26 @@ Cette section décrit l'univers concret autour de la cible. Elle sert à rendre 
 
 Écris-la en 4 rubriques, chacune aussi précise que si tu décrivais un décor de tournage à quelqu'un qui doit le reconstituer sans l'avoir vu. Un élément non sourcé s'étiquette [ESTIMATION — contexte culturel] ; un élément faux est pire qu'un élément manquant.
 
-A. ENTOURAGE HUMAIN
-→ Qui vit avec elle, qui elle croise tous les jours, qui compte dans sa décision d'acheter
-→ À qui elle demande son avis avant d'acheter ce type de produit, et ce que cette personne lui répond habituellement
-→ Qui, dans son entourage, incarne ce qu'elle voudrait être, et qui incarne ce qu'elle redoute de devenir
-→ Devant qui elle n'avouerait jamais son problème
+A. ENTOURAGE HUMAIN — UNE FICHE PAR PERSONNE (6 à 9 personnages, jamais une liste de rôles)
+L'entourage n'est pas "son mari, ses collègues". C'est une distribution de personnages que l'agent visuel et le copywriter pourront mettre en scène sans rien inventer. Pour CHAQUE personnage, écris une fiche de 6 à 10 lignes :
+→ Place : lien avec la cible, prénom local plausible, âge, métier précis, où il/elle vit, à quelle fréquence ils se voient
+→ Physique et allure : corpulence, tenue habituelle, détail qui le/la signale (lunettes, boubou, montre, voix)
+→ Personnalité : 3 traits concrets avec un exemple de comportement chacun (pas "gentil" : "rit fort, interrompt, offre toujours à manger")
+→ Façon de parler : phrases-types entre guillemets, expressions favorites, langue/mélange de langues, ton (moqueur, protecteur, sec)
+→ Rapport au problème : le voit-il/elle ? comment le nomme-t-il/elle ? minimise, se moque, conseille, s'inquiète ? ce qu'il/elle ne dit jamais
+→ Rapport aux solutions : ce qu'il/elle recommande (remède, produit, habitude), ce qu'il/elle pense des produits achetés en ligne, des publicités, du prix
+→ Rôle dans la décision d'achat : alerte, freine, valide, paie, influence — et la phrase exacte qui fait basculer dans un sens ou dans l'autre
+→ Scène type : un moment précis où ce personnage et la cible interagissent autour du problème (lieu, heure, geste, réplique)
+Couvre obligatoirement : la personne avec qui elle vit ; la personne dont elle demande l'avis avant d'acheter ; celle qui incarne ce qu'elle voudrait être ; celle qui incarne ce qu'elle redoute de devenir ; un collègue/ami qui a le même problème sans l'avouer ; une figure d'autorité (médecin, pharmacien, aîné, chef) ; une influence en ligne qu'elle suit (type de créateur, ton, format) ; devant qui elle n'avouerait jamais son problème, et pourquoi.
+Si DONNÉES BRUTES contient la section « VIE RÉELLE DE LA CIBLE », appuie-toi dessus en priorité et cite ce qui est sourcé. Tout le reste est [ESTIMATION — contexte culturel], mais RESTE un personnage précis : une fiche vague est interdite, une fiche estimée mais précise est attendue.
 
 B. ENVIRONNEMENT MATÉRIEL
 → Les objets de son quotidien qui ont un lien avec le problème ou avec le produit : ce qu'elle a déjà acheté, ce qui traîne chez elle, ce qu'elle utilise à la place
 → Son téléphone, son moyen de transport, ce qu'elle porte habituellement (vêtements, marques réellement disponibles et portées dans ce pays)
 → Ce qu'on voit dans sa cuisine, sa chambre, son sac, son lieu de travail — les objets réels, nommés
 
-C. LIEUX ET ENVIRONNEMENT
-→ Les 3 ou 4 lieux où sa vie se passe réellement, décrits concrètement (pas "chez elle" mais quel type de logement, quelle pièce, quel mobilier)
+C. LIEUX ET ENVIRONNEMENT — 6 à 8 lieux, chacun avec sa fiche de décor
+→ Pour chaque lieu : type exact (logement, pièce, mobilier, matériaux, état), ce qu'on y voit en gros plan, la lumière à 3 heures différentes, les sons, les odeurs, la densité de monde, qui s'y trouve d'habitude, ce que la cible y fait précisément et ce qui y rappelle le problème. Lieux attendus : domicile (2 pièces), trajet, lieu de travail ou d'activité, lieu d'achat des produits de santé/bien-être, lieu de sociabilité, lieu de ressourcement. Le décor doit pouvoir être reconstitué par quelqu'un qui ne l'a jamais vu.
 → La lumière de ces lieux selon le moment de la journée, les sons, la densité de monde autour
 → Les moments de la journée où le problème est le plus présent, et où elle est le plus seule avec lui
 
@@ -441,6 +457,18 @@ CARTE DES ALTERNATIVES — rubrique obligatoire, aussi importante que la précé
 Les alternatives sont les autres solutions au MÊME problème, sans être le même produit (pour le manque d'énergie : shilajit, maca, café, thé, boissons énergisantes, vitamines, et les solutions non commerciales comme dormir plus ou changer d'alimentation). Pour chacune : ce qu'elle promet, pourquoi la cible s'y tourne spontanément, ce qui la rend insatisfaisante selon les verbatims, et son prix ou son coût réel quand il est connu.
 Cette carte est ce qui rend le recadrage des angles possible. Une hypothèse qui n'identifie que les concurrents directs condamne les 10 angles à un recadrage générique, parce que la cible ne choisit presque jamais entre deux marques du même produit — elle choisit entre ce produit et une habitude qu'elle a déjà.
 
+FICHES DÉTAILLÉES — UNE PAR CONCURRENT DIRECT ET UNE PAR ALTERNATIVE (6 à 10 fiches au total, depuis la section « FICHES ALTERNATIVES ET CONCURRENTS » de DONNÉES BRUTES). Une ligne par alternative ne suffit pas. Chaque fiche contient :
+→ Nom exact, nature, prix réel et coût par jour d'usage, où on l'achète (lieux, sites, vendeurs)
+→ Promesse exacte et mots employés, formats de publicité et angles qu'il diffuse, rituel d'usage
+→ Ce que les gens en disent de bien (verbatim) et de mal (verbatim)
+→ Faiblesse structurelle (ce qu'il ne pourra jamais corriger sans se renier)
+→ Pourquoi la cible l'a choisi, pourquoi elle l'abandonne ou le garde malgré tout
+→ NOTRE UNFAIR ADVANTAGE FACE À LUI : l'avantage précis, vérifiable et difficile à copier du produit du client sur CE concurrent ou CETTE alternative (mécanisme, preuve, format, prix par jour, facilité d'usage, offre), en une à trois phrases, avec ce qui le prouve. Si aucun avantage réel n'existe : écris [PAS D'AVANTAGE RÉEL FACE À CELUI-CI] — jamais un avantage inventé.
+
+TABLEAU DES UNFAIR ADVANTAGES (synthèse) : un tableau « Concurrent/alternative → Notre avantage → Preuve disponible → Angle du stock qui l'exploite ». Il doit y avoir au moins un angle du stock rattaché à chacun des 3 plus gros avantages.
+
+TERRITOIRES LIBRES (white space) : 3 à 6 positions que AUCUN concurrent n'occupe aujourd'hui (angle, émotion, preuve, format, moment de la journée, type de personnage) avec, pour chacune, la preuve de l'absence (ce qu'on a cherché et pas trouvé dans les pubs et les avis) et l'angle du stock qui l'occupe.
+
 PRICING MAP de la niche : prix des concurrents directs identifiés (nom + prix + source), positionnement du produit du client dans cette carte (entrée/milieu/premium de gamme).
 
 BENCHMARK DES OFFRES : pour chaque concurrent direct dont l'offre est visible dans DONNÉES BRUTES, note ce qu'il donne en plus du produit (bundle, cadeau, garantie, durée, conditions). Puis, en deux phrases, dis ce qu'il faudrait pour que l'offre du client soit nettement meilleure que la meilleure offre observée — sans inventer une offre que le client n'a pas. C'est une recommandation interne, reprise ensuite en langage client dans le bloc données marché ; ce n'est jamais présenté comme une offre existante dans un angle.
@@ -586,6 +614,17 @@ En fin de section, écris obligatoirement ces trois lignes de suivi :
 → "RÉPARTITION DU STOCK : [nombre d'angles par moteur dominant] · [nombre par quadrant EPIC] · [nombre par facette]" — pour vérifier d'un coup d'œil que les règles de répartition du stock sont respectées.
 
 Si le stock n'atteint pas 10 angles authentiquement distincts, écris [STOCK INCOMPLET — N angles sur 10, raison : ...] et n'invente jamais la différence.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÉTAPE 9quinquies — S12 : INSIGHTS EN AVANCE (L'UNFAIR ADVANTAGE DE L'HYPOTHÈSE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Cette hypothèse vaut ce qu'elle apprend au client AVANT ses concurrents, d'un mois à plusieurs mois. Écris 6 à 10 insights que les concurrents n'exploitent pas encore. Pour chacun :
+→ L'insight en une phrase (un fait sur la cible, le marché ou un mécanisme, pas un conseil générique)
+→ La preuve : verbatim ou donnée avec source ([SOURCÉ — origine]), ou [DÉDUIT — raisonnement en une ligne], ou [HYPOTHÈSE À TESTER]. Les trois statuts ne se mélangent jamais.
+→ Pourquoi les concurrents ne l'ont pas encore (signal faible, trop récent, contre-intuitif, mal placé dans leurs données)
+→ Fenêtre estimée avant qu'il ne soit copié (mois) et ce qui la ferme
+→ Comment l'exploiter : angle du stock, format, personnage ou lieu de S1c concernés
+Un insight que n'importe quel concurrent écrirait en trente secondes (« les gens veulent plus d'énergie ») n'en est pas un : il est refusé. Appuie-toi d'abord sur la section « SIGNAUX PRÉCOCES » de DONNÉES BRUTES. N'invente aucune statistique.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 10 — DONNÉES MARCHÉ (LIVRABLE CLIENT, DANS CETTE MÊME RÉPONSE)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -737,6 +776,10 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ S1b absente, ou plus de 2 facettes, ou 2 facettes qui sont en réalité 2 personnes différentes (âge, situation ou pouvoir d'achat différents) — ce sont alors 2 cibles, pas 2 facettes
 ❌ Une facette non ancrée dans un élément réel de DONNÉES BRUTES
 ❌ Un angle rattaché à deux facettes à la fois, ou à aucune
+❌ S1c dont l'entourage humain compte moins de 6 fiches de personnages, ou dont une fiche n'a pas de personnalité, de façon de parler, de rapport au problème et de rôle dans l'achat
+❌ S1c avec moins de 6 lieux décrits comme des décors
+❌ S4 sans fiche détaillée par concurrent/alternative, sans unfair advantage face à chacun (ou sans [PAS D'AVANTAGE RÉEL]), sans tableau d'unfair advantages ni territoires libres
+❌ S12 absente, ou des insights que n'importe quel concurrent écrirait en trente secondes, ou des statistiques non sourcées
 ❌ S1c absente, ou réduite à des généralités non visualisables (un agent visuel doit pouvoir reconstituer le décor sans l'avoir vu)
 ❌ Un angle dont le triplet est incomplet sans que [TRIPLET INCOMPLET — pool X sans entrée compatible] soit écrit
 ❌ Un angle dont les trois entrées du triplet ne pourraient pas être vraies en même temps dans le même instant vécu
