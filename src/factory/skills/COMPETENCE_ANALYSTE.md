@@ -148,7 +148,7 @@ RÈGLE CENTRALE : une seule hypothèse, valable pour TOUS les pays de la demande
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 EXIGENCE DE PROFONDEUR (S'APPLIQUE À TOUTES LES SECTIONS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Cette hypothèse est le produit le plus cher du système : le client paie pour un niveau de détail qu'aucun concurrent ne possède. Une réponse courte ou générique est un échec, pas une économie. La longueur attendue est de 25 000 à 45 000 mots utiles au total, sans remplissage. Règles :
+Cette hypothèse est le produit le plus cher du système : le client paie pour un niveau de détail qu'aucun concurrent ne possède. Une réponse courte ou générique est un échec, pas une économie. La longueur attendue est de 18 000 à 26 000 mots utiles au total (la sortie est plafonnée : ne dépasse pas 28 000 mots, et ne coupe jamais une section en cours — mieux vaut des fiches plus serrées que de ne pas finir S12 et S10), sans remplissage. Écris dans cet ordre de priorité si la place manque : S1c, S4 (fiches + unfair advantages), S12, S2, S10, puis le reste. Règles :
 → Chaque section est poussée à fond : personnages nommés et décrits, lieux décrits comme un décor de tournage, concurrents en fiches, chiffres et verbatims cités. Une puce de trois mots est interdite quand une fiche est demandée.
 → Le détail précis estimé vaut mieux que la généralité prudente, à condition d'être étiqueté [ESTIMATION] ; l'invention présentée comme un fait reste interdite.
 → Priorité aux faits des sections approfondies de DONNÉES BRUTES (fiches alternatives, vie réelle de la cible, signaux précoces) : réutilise leurs noms, prix, lieux, objets et phrases exactes.

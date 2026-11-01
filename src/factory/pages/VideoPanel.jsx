@@ -4,7 +4,7 @@ import { vctGetAll, vctGetTexte } from '../vctApi'
 import { labFetch, labQuery, labUrl, labKey, saveLabUrl, saveLabKey } from '../lab'
 import { useAgentMem } from '../agentStore'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
-import { getCommandes } from '../api'
+import { getCommandes, SERVER } from '../api'
 import { alertDlg } from '../ui'
 
 const readFile = (f) => new Promise((r) => { const x = new FileReader(); x.onload = () => r({ data: String(x.result).split(',')[1], mime: f.type || 'image/jpeg' }); x.readAsDataURL(f) })
@@ -52,9 +52,14 @@ export default function VideoPanel({ competenceOnly }) {
     try {
       const brief = commandeToBrief(c)
       let ph = null; try { ph = await commandePhoto(c) } catch (_) {}
-      const syn = c.deliverables && c.deliverables.synthesis ? c.deliverables.synthesis : ''
+      let synSrc = 'synthèse de la commande reprise'
+      let syn = c.deliverables && c.deliverables.synthesis ? c.deliverables.synthesis : ''
+      if (!syn) {
+        const pid = (c.product || {}).id
+        if (pid) { try { const rc = await (await fetch(`${SERVER}/products/${pid}/renewal-context`, { headers: { 'ngrok-skip-browser-warning': '1' } })).json(); if (rc && rc.syntheseExistante) { syn = rc.syntheseExistante; synSrc = 'dernière synthèse du produit reprise' } } catch (_) {} }
+      }
       setPhotoCmd(ph); setPhoto(null); setAspects([])
-      set({ brief, syn: syn || m.syn, briefInfo: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${ph ? ' · photo produit chargée' : ' · ⚠ pas de photo produit'}${syn ? ' · synthèse reprise' : ' · ⚠ pas de synthèse (colle-la ci-dessous)'}` })
+      set({ brief, syn: syn || m.syn || '', briefInfo: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${ph ? ' · photo produit chargée' : ' · ⚠ pas de photo produit'}${syn ? ' · ' + synSrc : ' · ⚠ pas de synthèse (colle-la ci-dessous)'}` })
       setListeCmd(null)
     } catch (e) { alertDlg(e.message) } finally { setBusyCmd(false) }
   }

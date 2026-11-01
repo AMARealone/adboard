@@ -3,6 +3,7 @@ import { COMP_FILES, loadSkills } from '../prod/state'
 import { labFetch } from '../lab'
 import { backupSupported, getBackupDir, pickBackupDir, writeSkills } from '../backup'
 import { useNavigate } from 'react-router-dom'
+import { SERVER } from '../api'
 export const AGENTS = [
   { slug: 'analyst', n: 1, name: 'Analyste de Marché', sub: 'Brief client (JSON) → Hypothèse S0→S12, cible + 2 facettes + stock de 10 angles', model: 'gemini-3.1-pro', file: 'COMPETENCE_ANALYSTE.md', color: '#5C7A99', kind: 'analyst', maxTokens: 64000,
     prompt: 'DONNÉES BRUTES :\n[Sources externes (Gemini/Trends/YouTube/Jumia/CSE) non connectées pour ce test — applique RÈGLE #1/#2/#3 de ta compétence : marque chaque point qui en dépendrait par [NON TROUVÉ DANS DONNÉES BRUTES].]\n\nProduis la Synthèse complète S0→S7 selon ta compétence.' },
@@ -36,18 +37,41 @@ function Secours({ onClose }) {
     </div>
   )
 }
+function Couts({ onClose }) {
+  const [d, setD] = useState(null), [err, setErr] = useState('')
+  useEffect(() => { fetch(SERVER + '/couts').then((r) => r.json()).then(setD).catch((e) => setErr('Serveur injoignable : ' + e.message)) }, [])
+  const $ = (n) => (n == null ? '—' : n.toFixed(2) + ' $')
+  return (
+    <div className="fx-modal-back" onClick={onClose}>
+      <div className="fx-modal" onClick={(e) => e.stopPropagation()}>
+        <h3>Coût par agent</h3>
+        {err && <p className="fx-s wrap">{err}</p>}
+        {!d && !err && <p className="fx-s">Chargement…</p>}
+        {d && <>
+          <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+            <thead><tr style={{ textAlign: 'left' }}><th>Agent</th><th>Total</th><th>Dernière prod.</th><th>Moyenne / prod.</th><th>Appels</th></tr></thead>
+            <tbody>{d.agents.length ? d.agents.map((l) => (
+              <tr key={l.agent}><td>{l.agent}</td><td>{$(l.total_usd)}</td><td>{l.productions ? $(l.derniere_production_usd) : '—'}</td><td>{$(l.moyenne_par_production_usd)}</td><td>{l.appels}</td></tr>)) : <tr><td colSpan="5">Aucun appel depuis le dernier démarrage du serveur.</td></tr>}</tbody>
+          </table>
+          <p className="fx-s wrap" style={{ marginTop: 8 }}>Total : <b>{$(d.total_usd)}</b>. Plafond d’une hypothèse : <b>{d.plafond_hypothese_usd} $</b>. {d.note}</p></>}
+        <div className="fx-modal-act"><button className="fx-btn" onClick={onClose}>Fermer</button></div>
+      </div>
+    </div>
+  )
+}
 export default function Agents() {
   const nav = useNavigate()
-  const [sec, setSec] = useState(false)
+  const [sec, setSec] = useState(false), [cou, setCou] = useState(false)
   return (
     <div className="fx-wrap">
-      <div className="fx-h"><div><h1>Agents</h1><p>Interfaces de test, une par agent.</p></div><button className="fx-btn" onClick={() => setSec(true)}>Sauvegarde skills</button></div>
+      <div className="fx-h"><div><h1>Agents</h1><p>Interfaces de test, une par agent.</p></div><div className="fx-btnrow"><button className="fx-btn" onClick={() => setCou(true)}>Coût par agent</button><button className="fx-btn" onClick={() => setSec(true)}>Sauvegarde skills</button></div></div>
       <div className="fx-ag">{AGENTS.map((a) => (
         <div key={a.slug} className="fx-agc" onClick={() => nav('/agents/' + a.slug)}>
           <div className="fx-agc-h"><span className="fx-badge-n" style={{ background: a.color + '28', color: a.color }}>{a.n}</span><div className="fx-t" style={{ fontSize: 15 }}>{a.name}</div></div>
           <div className="fx-s wrap">{a.sub}</div><div className="fx-s mono">{a.model}</div>
         </div>))}</div>
       {sec && <Secours onClose={() => setSec(false)} />}
+      {cou && <Couts onClose={() => setCou(false)} />}
     </div>
   )
 }

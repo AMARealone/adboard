@@ -47,8 +47,12 @@ async function briefFromCommande(b) {
   let rctx = null
   const pid = (b.product || {}).id
   if (pid) { try { rctx = await (await fetch(`${SERVER}/products/${pid}/renewal-context`, { headers: { 'ngrok-skip-browser-warning': '1' } })).json() } catch (_) {} }
-  const syn = b.deliverables && b.deliverables.synthesis ? b.deliverables.synthesis : ''
-  return { brief, photo, logo: null, rctx, briefName: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${rctx && rctx.estRenouvellement ? ' (renouvellement)' : ''}`, syn }
+  // La synthèse vient avec la commande : celle de la commande, sinon la dernière hypothèse stockée pour ce produit.
+  const synCmd = b.deliverables && b.deliverables.synthesis ? b.deliverables.synthesis : ''
+  const synProd = rctx && rctx.syntheseExistante ? rctx.syntheseExistante : ''
+  const syn = synCmd || synProd
+  const synSrc = synCmd ? ' · synthèse de la commande reprise' : synProd ? ' · dernière synthèse du produit reprise' : ' · ⚠ aucune synthèse pour cette commande'
+  return { brief, photo, logo: null, rctx, briefName: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${rctx && rctx.estRenouvellement ? ' (renouvellement)' : ''}${synSrc}`, syn }
 }
 // Les agents de production lisent un état partagé : on le prête le temps du test, puis on le rend tel quel.
 async function withProd(patch, fn) {
@@ -70,7 +74,7 @@ function BriefSource({ m, set }) {
   const pick = async (id) => {
     const b = list.find((x) => String(x.id) === id); if (!b) return
     setBusy(true)
-    try { const r = await briefFromCommande(b); set({ ...r, synthese: m.synthese || r.syn || '', output: '', marche: '', outErr: false }); setList(null) } catch (e) { alertDlg(e.message) } finally { setBusy(false) }
+    try { const r = await briefFromCommande(b); set({ ...r, synthese: r.syn || m.synthese || '', output: '', marche: '', outErr: false }); setList(null) } catch (e) { alertDlg(e.message) } finally { setBusy(false) }
   }
   return (
     <div className="fx-fld"><Lab>BRIEF CLIENT</Lab>
