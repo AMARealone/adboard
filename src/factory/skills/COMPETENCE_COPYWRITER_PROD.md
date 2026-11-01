@@ -38,7 +38,7 @@ Avant d'écrire le moindre hook, comprends silencieusement :
 → Si une offre promo est mentionnée dans S0 ou S4 (pricing map), elle devient ton arme principale de conversion
 
 1.2 — LE PERSONA (S1)
-→ Prénom, âge, ville, occupation — un seul persona, pas de facettes
+→ Prénom, âge, ville, occupation — une seule cible (S1). Si l'angle imposé est rattaché à une facette (S1b : la même personne dans un autre moment de vie), écris depuis le moment précis de cette facette (heure, lieu, ce qu'elle se dit à ce moment), avec les mots de la même personne. La section S10 « STOCK EN RÉSERVE » (« Réserve R1 — … ») concerne des angles d'un futur lot : ne l'utilise jamais.
 → Les verbatims réels s'ils existent — c'est la matière la plus précieuse, à utiliser tel quel quand le ton le permet
 → Les objections principales — chaque description AIDA doit les neutraliser quelque part
 → Le déclencheur d'achat principal — c'est ce que tes hooks doivent déclencher

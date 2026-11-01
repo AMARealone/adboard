@@ -104,8 +104,31 @@ function miniature(url) {
     img.onerror = () => resolve(null); img.src = url + (url.includes('?') ? '&' : '?') + 'm=1'
   })
 }
-export async function ctGalerieComplete(onProgress) {
-  const tous = await ctGetAll(), liste = tous.slice(0, CT_MAX_AGENT), sortie = new Array(liste.length); let fait = 0, i = 0
+// Niveau de conscience d'un CT : balises 'solution' | 'product' | 'most' | 'problem' (ou « Most Aware »…)
+export const NIVEAUX_CLE = ['solution', 'product', 'most']
+export function niveauCT(v) {
+  const t = String(v || '').toLowerCase()
+  if (t.includes('most')) return 'most'
+  if (t.includes('product')) return 'product'
+  if (t.includes('solution')) return 'solution'
+  if (t.includes('problem')) return 'problem'
+  return ''
+}
+// opts : { niveau, exclure: [ids], max, echantillon } — le niveau de conscience RESTREINT la galerie aux seuls CT balisés à ce niveau
+export async function ctGalerieComplete(onProgress, opts = {}) {
+  const tous = await ctGetAll()
+  let pool = tous, nbBalises = 0, repli = false
+  if (opts.niveau) {
+    const b = pool.filter((r) => (r.awareness || []).some((a) => niveauCT(a) === opts.niveau))
+    nbBalises = b.length
+    if (b.length) pool = b; else repli = true
+  }
+  const exclus = new Set(opts.exclure || [])
+  if (exclus.size) { const r = pool.filter((x) => !exclus.has(x.id)); if (r.length) pool = r }
+  const max = opts.max || CT_MAX_AGENT
+  let liste = pool.slice(0, max)
+  if (opts.echantillon && pool.length > max) liste = pool.slice().sort(() => Math.random() - 0.5).slice(0, max)
+  const sortie = new Array(liste.length); let fait = 0, i = 0
   const worker = async () => {
     while (i < liste.length) {
       const k = i++, r = liste[k], cle = r.id + '|' + r.url
@@ -115,5 +138,5 @@ export async function ctGalerieComplete(onProgress) {
     }
   }
   await Promise.all(Array.from({ length: 8 }, worker))
-  return { cts: sortie, total: tous.length, envoyes: liste.length, sansImage: sortie.filter((c) => !c.b64).length }
+  return { cts: sortie, total: tous.length, envoyes: liste.length, sansImage: sortie.filter((c) => !c.b64).length, niveau: opts.niveau || null, nbBalises, repli }
 }

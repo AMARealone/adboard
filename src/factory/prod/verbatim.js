@@ -1,5 +1,6 @@
 /* GÉNÉRÉ automatiquement depuis l'ancien Factory (code repris tel quel, sans l'affichage). Ne pas modifier à la main. */
 import { prodv2State, SERVER, COMP_FILES, CT_IMAGES } from './state'
+import { ctGalerieComplete, NIVEAUX_CLE, niveauCT } from '../ctApi'
 
 export function fetchAvecTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
@@ -73,6 +74,34 @@ export async function apiCopywriter(system, parts, maxTokens, signal, isTest=fal
   return d.text;
 }
 
+// ── PRODUCTION : l'agent choisit le CT de CHAQUE créative, parmi les CT balisés au niveau de conscience de la créative ──
+export const CT_MAX_PROD = 120 // plafond de CT montrés à l'agent par créative (échantillon aléatoire au-delà : coût et délai maîtrisés)
+export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal) {
+  const niveau = NIVEAUX_CLE[pos]
+  const { angleInstruction } = buildCreativeInstruction(angleIdx, pos)
+  const exclure = [...dejaChoisis, ...((prodv2State.renewalContext && prodv2State.renewalContext.ctsUtilisesDernierLot) || [])]
+  const gal = await ctGalerieComplete(null, { niveau, exclure, max: CT_MAX_PROD, echantillon: true })
+  if (!gal.cts.length) throw new Error('Galerie CT vide')
+  const productB64 = await compressImg(prodv2State.productB64, prodv2State.productMime || 'image/jpeg')
+  const res = await fetch(SERVER + '/select-ct-agent', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+    body: JSON.stringify({ briefTexte: prodv2BriefTextOnly(), synthese: prodv2State.synthesis, angleInstruction, assets: prodv2AssetsText(), productBase64: productB64, productMime: 'image/jpeg', cts: gal.cts, niveau, isTest: false })
+  })
+  const txt = await res.text(); let d = null; try { d = JSON.parse(txt) } catch (_) {}
+  if (!d) throw new Error(res.status === 404 ? 'route /select-ct-agent introuvable (serveur pas à jour)' : 'réponse inattendue (HTTP ' + res.status + ')')
+  if (!res.ok || d.error) throw new Error(d.error || 'HTTP ' + res.status)
+  if (!CT_IMAGES[d.id]) throw new Error('CT choisi introuvable dans la galerie : ' + d.id)
+  return { id: d.id, raison: d.raison || '', repli: !!d.repli, niveau }
+}
+// Secours si l'agent est indisponible : un CT au bon niveau de conscience, pas encore utilisé dans ce lot.
+export function ctSecours(pos, dejaChoisis) {
+  const niveau = NIVEAUX_CLE[pos]
+  const ids = Object.keys(CT_IMAGES).filter((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))
+  const lib = ids.filter((id) => !dejaChoisis.has(id))
+  const bons = lib.filter((id) => (CT_IMAGES[id + '_awareness'] || []).some((a) => niveauCT(a) === niveau))
+  const pool = bons.length ? bons : (lib.length ? lib : ids)
+  return pool.length ? { id: pool[Math.floor(Math.random() * pool.length)], bonNiveau: bons.length > 0 } : null
+}
 export async function selectCTsForGeneration(synthesis, count, mode, excludeIds) {
   const ids = Object.keys(CT_IMAGES).filter(function(k) {
     return !k.endsWith('_mime') && !k.endsWith('_name') && !k.endsWith('_addedAt') && !k.endsWith('_meta') && !k.endsWith('_awareness') && !k.endsWith('_styleTags') && !k.endsWith('_niche');

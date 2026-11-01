@@ -260,13 +260,12 @@ export async function launch() {
     const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
     S.synthesis = synthesisText; S.marche = marche; S.angles = V.prodv2ExtractAngles(synthesisText, nbAngles)
     setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles extraits${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée, pas de nouveau balayage' : ' · nouveau balayage du marché') : ''}`, 100)
-    setAgent(2, 'active', 'Sélection des CTs adaptés à la synthèse…', 5)
-    const ctPick = await V.selectCTsForGeneration(synthesisText, nbTot, 'production', S.renewalContext?.ctsUtilisesDernierLot)
-    if (ctPick.length === 0) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT image.')
-    console.log('[PROD] CTs sélectionnés :', ctPick.map((id) => CT_IMAGES[id + '_name'] || id).join(' / '))
+    setAgent(2, 'active', 'Le CT de chaque créative est choisi par l\'agent, au niveau de conscience voulu…', 5)
+    await loadCTImages()
+    if (!Object.keys(CT_IMAGES).some((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT image.')
     for (let a = 0; a < nbAngles; a++) for (let c = 0; c < 3; c++) {
       const idx = a * 3 + c
-      S.creatives.push({ angleIdx: a, ctIdx: c, ct: ctPick[idx % ctPick.length], status: 'pending' })
+      S.creatives.push({ angleIdx: a, ctIdx: c, ct: null, status: 'pending' })
     }
     setAgent(2, 'active', `0 / ${nbTot} créatives générées`, 0)
     setAgent(3, 'active', 'Écriture des hooks et descriptions…', 10)
@@ -275,7 +274,23 @@ export async function launch() {
       for (let a = 0; a < nbAngles; a++) for (let c = 0; c < 3; c++) {
         if (signal.aborted) throw new DOMException('Annulé', 'AbortError')
         const idx = a * 3 + c
-        try { await generateOneCreativeWithRetry(idx, a, c, ctPick[idx], signal) }
+        try {
+          // Choix du CT par l'agent : uniquement parmi les CT balisés au niveau de conscience de CETTE créative
+          U.crea[idx] = { state: 'running', text: 'Choix du CT par l\'agent' }; emit()
+          const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
+          let ctId, ctRaison = ''
+          try { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison }
+          catch (errCT) {
+            if (errCT.name === 'AbortError' && signal.aborted) throw errCT
+            const sec = V.ctSecours(c, deja)
+            if (!sec) throw new Error('Aucun CT disponible : ' + errCT.message)
+            console.warn('[PROD] choix de CT par l\'agent impossible, CT de secours :', errCT.message)
+            ctId = sec.id; ctRaison = 'CT de secours (agent indisponible : ' + errCT.message + ')' + (sec.bonNiveau ? '' : ' — aucun CT balisé à ce niveau')
+          }
+          S.creatives[idx].ct = ctId; S.creatives[idx].ctRaison = ctRaison
+          console.log(`[PROD] créative ${idx + 1} · niveau ${['Solution', 'Product', 'Most'][c]} · CT ${CT_IMAGES[ctId + '_name'] || ctId} · ${ctRaison.slice(0, 120)}`)
+          await generateOneCreativeWithRetry(idx, a, c, ctId, signal)
+        }
         catch (err) {
           if (err.name === 'AbortError' && signal.aborted) throw err
           console.error(`Erreur créative ${idx + 1} :`, err)
