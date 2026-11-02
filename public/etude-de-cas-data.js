@@ -75,10 +75,10 @@ window.ETUDE_DE_CAS = {
 
   // Créatives produites pour la marque
   galerie: [
-    "/assets/vente/proc-step3-vitalina1.jpg",
-    "/assets/vente/proc-step3-vitalina2.jpg"
+    "/assets/vente/vitalina-creative-1.jpg",
+    "/assets/vente/vitalina-creative-2.jpg"
   ],
-  image: "/assets/vente/proc-step3-vitalina1.jpg"
+  image: "/assets/vente/vitalina-creative-1.jpg"
 };
 
 (window.ETUDES_DE_CAS = window.ETUDES_DE_CAS || {}).vitalina = window.ETUDE_DE_CAS;
