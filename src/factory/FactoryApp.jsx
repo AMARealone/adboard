@@ -17,7 +17,7 @@ export const BASE = location.pathname.startsWith('/factory-next') ? '/factory-ne
 export default function FactoryApp() {
   const { loading, user, recheck } = useAdmin()
   const [ready, setReady] = useState(false)
-  useEffect(() => { let ok = true; const t = setTimeout(() => ok && setReady(true), 2500); hydrateMem().finally(() => { clearTimeout(t); ok && setReady(true) }); return () => { ok = false; clearTimeout(t) } }, [])
+  useEffect(() => { let ok = true; const t = setTimeout(() => ok && setReady(true), 20000); hydrateMem().finally(() => { clearTimeout(t); ok && setReady(true) }); return () => { ok = false; clearTimeout(t) } }, [])
   if (loading || !ready) return <div className="fx-login"><div className="fx-empty">Chargement…</div></div>
   if (!user) return <Login onDone={recheck} />
   return (

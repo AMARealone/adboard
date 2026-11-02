@@ -4,6 +4,8 @@ import { useState, useCallback, useEffect } from 'react'
 
 const mem = {}          // une entrée par agent / par vue
 const dirty = new Set()
+const touched = new Set()   // v5.75 : clés modifiées par l'utilisateur depuis le chargement de la page
+const abonnes = new Set()   // vues à rafraîchir quand la mémoire sauvegardée arrive après leur premier affichage
 const live = {}         // générations qui tournent vraiment dans cette page (perdues si la page est rechargée)
 const DB = 'adstack_factory_mem', STORE = 'kv'
 
@@ -20,6 +22,7 @@ const db = () => (dbp = dbp || openDb())
 
 // À appeler une fois avant d'afficher Factory : recharge tout ce qui avait été sauvegardé.
 let hydrated = null
+let avis = false
 export function hydrateMem() {
   if (hydrated) return hydrated
   hydrated = (async () => {
@@ -27,10 +30,13 @@ export function hydrateMem() {
       const d = await db()
       await new Promise((res) => {
         const tx = d.transaction(STORE, 'readonly'), st = tx.objectStore(STORE), c = st.openCursor()
-        c.onsuccess = () => { const cur = c.result; if (cur) { if (!(cur.key in mem)) mem[cur.key] = cur.value; cur.continue() } else res() }
+        // v5.75 — AVANT : une clé déjà créée par un écran (valeurs par défaut) n'était jamais remplacée par la sauvegarde → « quand je reviens tout s'envole ».
+        // Maintenant la sauvegarde l'emporte tant que l'utilisateur n'a rien touché dans cette vue ; les vues déjà affichées sont rafraîchies.
+        c.onsuccess = () => { const cur = c.result; if (cur) { if (!(cur.key in mem)) mem[cur.key] = cur.value; else if (!touched.has(cur.key)) { mem[cur.key] = { ...mem[cur.key], ...cur.value }; avis = true } cur.continue() } else res() }
         c.onerror = () => res()
       })
     } catch (_) { /* navigateur sans IndexedDB : on garde la mémoire de page seulement */ }
+    if (avis) abonnes.forEach((f) => { try { f() } catch (_) {} })
   })()
   return hydrated
 }
@@ -40,14 +46,19 @@ function flush() {
   clearTimeout(timer); timer = null
   if (!dirty.size) return
   const keys = [...dirty]; dirty.clear()
+  // v5.75 — une transaction PAR clé : avant, un seul échec (photo trop lourde, quota) annulait toute la sauvegarde de l'agent.
   db().then((d) => {
-    const tx = d.transaction(STORE, 'readwrite'), st = tx.objectStore(STORE)
-    keys.forEach((k) => { try { st.put(strip(mem[k]), k) } catch (_) { /* valeur non sauvegardable : ignorée */ } })
+    keys.forEach((k) => {
+      try {
+        const tx = d.transaction(STORE, 'readwrite'); tx.objectStore(STORE).put(strip(mem[k]), k)
+        tx.onerror = tx.onabort = () => { console.warn('Factory : sauvegarde impossible pour « ' + k + ' » (' + (tx.error && tx.error.name) + ')'); dirty.add(k) }
+      } catch (e) { console.warn('Factory : valeur non sauvegardable « ' + k + ' » : ' + (e && e.name)) }
+    })
   }).catch(() => {})
 }
 // On ne sauvegarde jamais les réponses d'un état « en cours » comme vivantes : seul `busy` + `t0` sont gardés pour reprendre l'affichage.
 const strip = (v) => v
-function touch(k) { dirty.add(k); if (!timer) timer = setTimeout(flush, 350) }
+function touch(k) { touched.add(k); dirty.add(k); if (!timer) timer = setTimeout(flush, 350) }
 if (typeof window !== 'undefined') {
   window.addEventListener('pagehide', flush)
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flush() })
@@ -56,6 +67,7 @@ if (typeof window !== 'undefined') {
 // Mémoire d'un agent (le test d'un agent, le panneau vidéo, …).
 export function useAgentMem(slug, init) {
   const [, force] = useState(0)
+  useEffect(() => { const f = () => force((n) => n + 1); abonnes.add(f); return () => { abonnes.delete(f) } }, [])
   // Les champs ajoutés plus tard dans le code reçoivent leur valeur par défaut sans effacer ce qui était sauvegardé.
   if (!mem[slug]) mem[slug] = { ...init }
   else if (init) { for (const k of Object.keys(init)) if (!(k in mem[slug])) mem[slug][k] = init[k] }
@@ -83,6 +95,7 @@ export const heureCourte = (t) => new Date(t).toLocaleString('fr-FR', { day: '2-
 export function usePersist(key, init) {
   const k = 'v:' + key
   const [, force] = useState(0)
+  useEffect(() => { const f = () => force((n) => n + 1); abonnes.add(f); return () => { abonnes.delete(f) } }, [])
   if (!(k in mem)) mem[k] = { v: init }
   const set = useCallback((v) => { mem[k] = { v: typeof v === 'function' ? v(mem[k].v) : v }; touch(k); force((n) => n + 1) }, [k])
   return [mem[k].v, set]
