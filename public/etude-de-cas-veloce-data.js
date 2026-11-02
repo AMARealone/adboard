@@ -18,7 +18,7 @@
   carteBg: "#DCE8F5",
   badge: "0 à 5K$ de profit/mois en 90 jours",
   teaserTexte: "Un ancien développeur e-commerce qui hésitait à lancer sa première publicité.",
-  teaserImages: ["/assets/vente/veloce-lunette.jpg"],
+  teaserImages: ["/assets/vente/veloce-creative-2.jpg", "/assets/vente/veloce-creative-1.jpg"],
 
   // Haut de la page
   titre: "« Ancien développeur pour e-commerçants, je savais créer une page et une offre qui convertissent. Vous avez amené la cible qui achète. »",
@@ -74,6 +74,6 @@
     { valeur: "15K$", label: "de chiffre d’affaires par mois" }
   ],
   gagnantes: [],
-  galerie: [],
+  galerie: ["/assets/vente/veloce-creative-1.jpg", "/assets/vente/veloce-creative-2.jpg"],
   image: ""
 };
