@@ -181,6 +181,40 @@ Ces détails sont ce qui permet à une créative de montrer le produit en situat
 → Ce qui se voit à l'œil nu sur le produit lui-même : étiquette, mentions, certifications, format réel comparé à un objet du quotidien
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÉTAPE 1bis — LECTURE DU PRODUIT ET TERRITOIRE DE CIBLE (OBLIGATOIRE, AVANT TOUTE CIBLE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+POURQUOI CETTE ÉTAPE EXISTE. Une cible se choisit d'abord dans le territoire des acheteurs NATURELS du produit, puis se rend précise à l'intérieur de ce territoire. Erreur déjà observée et refusée : un produit dont la forme, le nom, la palette et la photo disent « équipement de sport » a été vendu à une population sans lien avec le sport, parce que les DONNÉES BRUTES parlaient surtout d'une douleur médicale liée à l'usage ; toute l'hypothèse (cible, facettes, angles, preuves) a alors été bâtie dans un autre monde que celui du produit. Une douleur forte chez quelqu'un qui n'achètera pas ce produit vaut zéro.
+
+LA MÉTHODE (tu l'appliques en raisonnant, jamais en recopiant un exemple) :
+1. LIS CE QUE LE PRODUIT EST, d'après ce qui est visible et certain : la photo (forme, silhouette, matière, finition), le nom du produit et de la marque, la palette, la typographie, la page produit, le prix, le canal de vente. Écris en une phrase ce que c'est, comme le ferait un vendeur qui l'a dans les mains.
+2. TROUVE LE RAYON : dans un magasin physique, sur quel panneau ce produit serait-il posé, et qui s'arrête devant ce panneau sans qu'on l'y pousse ? C'est la niche réelle de la boutique. Si le produit appartient à une niche de pratique (sport, auto, bébé, cuisine, beauté, bricolage…), la niche est celle de la PRATIQUE, pas celle du problème que cette pratique peut provoquer.
+3. NOMME LE TERRITOIRE : la famille d'acheteurs que n'importe quel vendeur de cette niche citerait spontanément en premier, en 2 à 4 sous-populations différentes par ce qu'elles FONT (leur pratique, leur moment, leur raison d'acheter), pas par leur métier ou leur âge. C'est un ensemble de populations qui achètent déjà ce genre de produit ou y sont culturellement prêtes.
+4. HIÉRARCHIE DES SIGNAUX : ce que le produit EST (forme, nom, marque, positionnement de la page) prime sur ce que le marché raconte des problèmes voisins. Les DONNÉES BRUTES servent à APPROFONDIR le territoire (comment ces gens vivent, parlent, doutent, comparent), jamais à en changer. Si les DONNÉES BRUTES montrent une population qui souffre du problème mais n'appartient pas au territoire, elle reste une piste pour S9, elle ne devient pas la cible.
+5. TEST DE LA BOUTIQUE : imagine le client derrière un comptoir qui vend ce produit ; la cible que tu vas retenir est-elle quelqu'un qui entrerait dans cette boutique, prendrait ce produit en main et se dirait « c'est pour moi » sans qu'on le lui explique ? Sinon elle est éliminée, même si elle souffre beaucoup.
+
+Écris ce bloc EN TÊTE de S1, avant « CIBLE RETENUE », sous ce format (4 lignes, libellés inchangés) :
+PRODUIT LU : [une phrase : ce que c'est et pour quelle pratique il est fait, d'après ce qui est visible]
+RAYON : [la niche réelle de la boutique]
+TERRITOIRE DE CIBLE : [2 à 4 sous-populations d'acheteurs naturels, définies par ce qu'elles font]
+SIGNAUX QUI LE PROUVENT : [2 à 3 éléments concrets du produit ou de la page, cités]
+
+RÈGLE DURE : la cible retenue en S1 est UNE de ces sous-populations (ou une situation vécue à l'intérieur de l'une d'elles). Si tu constates à la fin que ta cible est hors du TERRITOIRE, tu recommences S1 : ce n'est pas un choix créatif, c'est une erreur de lecture du produit.
+RAISON D'ACHAT : une cible qui achèterait ce produit « pour un autre usage que celui pour lequel il est fait » n'est jamais retenue comme cible principale ; cet usage détourné, s'il est réel et documenté, peut nourrir un angle de réserve, rien de plus.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RÈGLE TRANSVERSE — CAPACITÉS DU PRODUIT, PROMESSES ET SOURCES (valable pour TOUTES les sections, y compris les angles, le stock S10 et S12)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+→ CAPACITÉS ÉTABLIES. Avant d'écrire le premier angle, liste mentalement ce que le produit FAIT d'après la page, le brief et la photo, et ce qu'il NE FAIT PAS. Tout mécanisme, bénéfice ou propriété cité dans un angle, une accroche, une formulation ou un insight doit correspondre à une capacité de cette liste. Une propriété que la page ne mentionne pas (un filtre, une protection, une certification, un effet) est INTERDITE, même si elle est plausible pour la catégorie, même si un concurrent la propose. Écris [NON ÉTABLI] plutôt que de l'inventer.
+→ PROMESSES DE SANTÉ. Un produit qui n'est pas vendu comme dispositif médical ne « soigne », « élimine » ni « prévient » aucune pathologie ; tu décris ce que la personne ressent et fait (plisse les yeux en moins, enlève ses lunettes en moins), pas un résultat médical. N'attribue jamais à des « ophtalmologues », « médecins » ou « études » une alerte absente de DONNÉES BRUTES.
+→ ÉTIQUETTES DE SOURCE HONNÊTES. [SOURCÉ] est réservé à un élément retrouvable dans DONNÉES BRUTES ou dans le brief, avec son origine. Une affirmation sur la presse locale, un forum, un événement daté ou une statistique que tu ne peux pas pointer dans DONNÉES BRUTES est [DÉDUIT] ou [HYPOTHÈSE À TESTER], ou elle est supprimée. Un insight inventé étiqueté [SOURCÉ] est la faute la plus grave de ce document : elle fabrique de fausses preuves que toute la production reprend ensuite.
+→ VERBATIMS. Un verbatim attribué à une population n'est utilisable que s'il vient d'une personne de cette population ou d'un contexte comparable ; sinon il est écrit comme analogie et étiqueté comme tel.
+→ PEURS ET SITUATIONS. Une peur ou une scène qui n'existe que parce qu'elle remplit une case (peur « de faire une erreur de transfert », scène « au kiosque ») est supprimée : chaque peur, désir et douleur doit être reconnaissable par la cible comme SIENNE dans le contexte de la pratique du produit.
+→ CONCURRENTS DIRECTS ET ALTERNATIVES. Les concurrents directs sont les produits qu'un acheteur du TERRITOIRE compare réellement sur le même rayon ; une catégorie voisine achetée pour une autre raison (soins, médicaments, produits premium d'un autre univers) est une ALTERNATIVE, pas un concurrent direct. Le « prix X fois moins cher » face à un produit d'un autre univers n'est pas un unfair advantage.
+→ FACETTES ET ANGLES. Facettes et angles restent à l'intérieur de la cible et du territoire : une facette est un autre MOMENT de la même pratique, jamais un décor sans rapport avec elle.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 2 — S1 : LA CIBLE (UNE SEULE, VALIDÉE PAR FILTRES)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -192,14 +226,15 @@ Une cible générique ("femmes de 25-45 ans") produit des créatives fades qui n
 → Contre quoi ou qui se bat-elle concrètement (un antagoniste identifiable, pas une fatalité vague) ?
 Exemple du niveau de précision recherché (à ne jamais recopier tel quel, juste illustratif du PRINCIPE) : "Personnes qui répondent 'ça va' par réflexe quand on leur demande comment elles vont, alors qu'elles n'en peuvent vraiment plus — et qui culpabilisent à l'idée de dire la vérité, de peur de déranger les autres." Remarque : aucun métier, aucun âge, aucun genre précisé — la netteté vient entièrement du comportement/de la tension, jamais de la niche démographique. Applique ce même PRINCIPE avec une situation propre au produit et au marché traités, jamais cet exemple recopié.
 Si le client a donné une cible déjà précise sur ce plan-là (situation vécue déjà nette), ne la dilue pas — construis dessus.
+SPÉCIFIQUE NE VEUT JAMAIS DIRE « AILLEURS ». Être plus spécifique que les concurrents, c'est connaître la cible du TERRITOIRE (ÉTAPE 1bis) mieux qu'eux : son moment exact, ses rituels, ses mots, ses doutes, ce qu'elle compare, ce qui la gêne vraiment, ce que ses pairs en pensent. C'est de la PROFONDEUR sur la bonne population. Aller chercher une population sans lien avec la pratique du produit pour « se différencier » est une faute : l'originalité se trouve dans la finesse du portrait et dans l'angle, jamais dans le choix d'une population qui n'achète pas.
 
 RÈGLE DE VALIDATION — LES 5 CRITÈRES SONT DES FILTRES, PAS DES DESCRIPTIONS.
 Avant de retenir la cible, valide les 5 critères dans l'ordre. Si UN SEUL échoue → ÉLIMINÉE, passe au candidat suivant. Une cible qui valide 4/5 est pire qu'aucune cible.
 1. TAM (Total Addressable Market) suffisamment large pour permettre de dépenser en publicité tout en restant rentable — c'est la démographie qui doit rester large, jamais la tension vécue (voir AFFINEMENT DE LA CIBLE ci-dessus)
 2. Douleur/désir vécu au quotidien, assez intense pour vouloir agir rapidement — pas un inconfort mineur
-3. Pouvoir d'achat suffisant pour s'offrir ce produit à ce prix
-4. Croyances et éducation compatibles avec l'achat de ce produit en ligne. Ce critère est le plus souvent mal appliqué : il ne suffit pas que la personne ait le problème et l'argent, il faut qu'elle CROIE qu'un produit de ce type peut régler son problème, et qu'elle sache acheter en ligne. Une personne qui, face au même problème, ira spontanément vers un remède traditionnel ou vers un pharmacien échoue ce critère même si tout le reste colle — et aucune créative ne rattrapera ça.
-5. Évidence ET spécificité — les deux à la fois, c'est la condition la plus exigeante. La cible doit être ÉVIDENTE pour ce produit : personne ne doit avoir besoin d'une explication pour comprendre pourquoi ce produit est fait pour cette personne. Et elle doit être assez SPÉCIFIQUE pour que le client surperforme ses concurrents, qui s'adressent à la même population avec un profil beaucoup plus flou que le tien. Test : si cette description pouvait être copiée-collée telle quelle dans le brief d'un concurrent direct sans rien changer, elle échoue ce critère ; si elle est si pointue qu'il faut la justifier pour qu'elle paraisse logique, elle échoue aussi.
+3. Pouvoir d'achat suffisant pour s'offrir ce produit à ce prix SANS que ce soit un sacrifice : le prix doit ressembler à un achat que cette personne fait déjà pour ce genre d'objet (équipement, plaisir, remplacement). Un prix qui représente plusieurs jours de revenu pour la cible, justifié par « ça protège son outil de travail », est une rationalisation, pas un pouvoir d'achat.
+4. Croyances et éducation compatibles avec l'achat de ce produit en ligne. DEUX questions distinctes, ne les confonds pas : (a) IDENTITÉ D'ACHAT : cette personne se reconnaît-elle comme quelqu'un à qui ce genre de produit s'adresse, dans sa culture et son quotidien ? Sinon, ÉLIMINÉE. (b) VOCABULAIRE : connaît-elle les mots techniques du produit ? Si non, ce n'est PAS un motif d'élimination pour une cible du territoire : on traduit alors la technique en effet vécu avec ses mots (S6). Habitude d'acheter sur Facebook/WhatsApp ou de payer par mobile money ne suffit jamais à valider ce critère : c'est un mode de paiement, pas une croyance sur le produit. Ce critère est le plus souvent mal appliqué : il ne suffit pas que la personne ait le problème et l'argent, il faut qu'elle CROIE qu'un produit de ce type peut régler son problème, et qu'elle sache acheter en ligne. Une personne qui, face au même problème, ira spontanément vers un remède traditionnel ou vers un pharmacien échoue ce critère même si tout le reste colle — et aucune créative ne rattrapera ça.
+5. Évidence ET spécificité — les deux à la fois, c'est la condition la plus exigeante. L'ÉVIDENCE se vérifie contre l'ÉTAPE 1bis : quelqu'un qui ne voit que la photo du produit doit pouvoir deviner la cible. Si la cible demande plusieurs étapes de raisonnement pour paraître logique, ou si elle sort du TERRITOIRE, le critère est échoué. La cible doit être ÉVIDENTE pour ce produit : personne ne doit avoir besoin d'une explication pour comprendre pourquoi ce produit est fait pour cette personne. Et elle doit être assez SPÉCIFIQUE pour que le client surperforme ses concurrents, qui s'adressent à la même population avec un profil beaucoup plus flou que le tien. Test : si cette description pouvait être copiée-collée telle quelle dans le brief d'un concurrent direct sans rien changer, elle échoue ce critère ; si elle est si pointue qu'il faut la justifier pour qu'elle paraisse logique, elle échoue aussi.
 
 TECHNIQUE DE REVERSE-ENGINEERING (à appliquer sur le verbatim le plus riche trouvé dans DONNÉES BRUTES, avant de finaliser la cible) : ne t'arrête jamais au contenu littéral d'un avis/commentaire. Pose-toi la question : qu'est-ce qui a dû se passer dans la vie de cette personne pour qu'elle écrive précisément ÇA, avec précisément CES mots ? Quel est son environnement, son entourage, ce à quoi elle aspire, ce qu'elle déteste, à qui elle se compare ? Le portrait qui en ressort doit être plus précis et plus spécifique que ce que l'avis dit explicitement — c'est cette inférence, pas la lecture de surface, qui distingue une cible réelle d'une fiche démographique et qui alimente le critère 5 ci-dessus.
 
@@ -376,10 +411,10 @@ Chaque angle de S2 porte les 17 champs ci-dessous, dans cet ordre. Ce ne sont pa
 14. Preuves disponibles — ce qui existe réellement pour rendre cet angle croyable : étude, chiffre sourcé, certification, avis client fourni par la marque, figure d'autorité, autorité locale, ancienneté. Liste ce qui EXISTE, avec la source. Si rien n'existe, écris [AUCUNE PREUVE DISPONIBLE] — c'est une information capitale pour les agents suivants, qui ne doivent alors construire aucun cadre de preuve.
    PREUVES EXTERNES : quand l'angle n'a pas de preuve propre au produit, cherche (recherche Google) des assets d'autorité ou de confiance autour de lui : étude sur un ingrédient ou un mécanisme, presse, expert, sportif ou figure que la cible connaît, blog, étude de cas. Note pour chacun sa source (lien) et sa date. Ils ne sont validés par aucun humain : tu les emploies avec souplesse, comme OUTILS d'autorité ou de confiance, jamais comme promesses. Un fait sur un ingrédient ou la déclaration d'une figure ne se recopie pas tel quel et ne s'attribue jamais à la marque ; une étude générale ne prouve jamais que CE produit agit. Écris-les à part, sous la mention "(preuve externe — outil d'autorité)", pour que les agents suivants en fassent un usage adapté.
 15. Ancrage scepticisme — quelle entrée du pool scepticisme rend cet angle crédible sur CE marché, et comment l'angle y répond.
-16. Niveau de conscience le plus froid atteignable — voir S3 et le tableau des plafonds par format. Plus pourquoi cet angle n'est pas réplicable par un concurrent direct, en une phrase.
+16. Non-réplicabilité — pourquoi cet angle n'est pas réplicable par un concurrent direct, en une phrase. (Un angle n'a PAS de niveau de conscience : le niveau est une variable de la créative, voir le principe en tête de S3. Ne rattache aucun niveau à l'angle.)
 17. Raisons d'acheter — exactement 3 lignes, au format « Raison 1 : … », « Raison 2 : … », « Raison 3 : … ». Méthode : pose trois fois la question « pourquoi CETTE facette (champ 2) de CETTE cible veut-elle CET angle ? » et réponds à partir de sa vie réelle : son contexte, les personnages de son entourage (S1c), l'enjeu concret pour elle, formulé comme elle le dirait. Test de spécificité : si une raison pourrait s'écrire telle quelle pour n'importe quelle autre cible du même produit, elle est générique, réécris-la. Les trois raisons sont distinctes entre elles et ne changent JAMAIS l'angle : ce sont trois portes d'entrée vers la même idée. Elles servent uniquement aux agents suivants (une par créative de l'angle) : le client ne les voit jamais, elles ne sont jamais recopiées comme titre ou comme texte de pub.
 
-PUIS, POUR CHAQUE ANGLE DE S2 UNIQUEMENT, LES DÉCLINAISONS PAR NIVEAU DE CONSCIENCE (voir S3) :
+PUIS, POUR CHAQUE ANGLE DE S2 UNIQUEMENT, LES CONCEPTS PAR DÉFAUT (angle × raison d'acheter × niveau de conscience ; voir S3). Le niveau appartient au CONCEPT, jamais à l'angle ni à la raison : ces trois concepts montrent comment l'angle sonne à trois niveaux, ils n'enferment ni l'angle ni la raison dans un niveau. Quand la production prendra un autre CT, à un autre niveau, elle reformulera le même cœur d'angle à ce niveau-là :
 Chaque angle du lot se décline en 3 créatives : 1 vidéo et 2 images, quelle que soit l'offre. La vidéo prend le niveau le plus froid autorisé en vidéo (Problem Aware), qui laisse le temps d'installer le problème puis de conclure sur l'argument de vente et l'appel à l'action dans ses derniers 25 à 30 % ; les deux images prennent Solution Aware et Product Aware. Chacune des 3 créatives porte UNE des 3 raisons d'acheter du champ 17 (une raison par créative, jamais deux fois la même dans l'angle). Pour chacune, précise comment son niveau reformule le moteur de l'angle, la raison d'acheter qu'elle porte, et le dosage retenu en pourcentage (voir le tableau de S3).
 
 ━━━ RÈGLES DE RÉPARTITION DU STOCK DE 10 ━━━
@@ -421,7 +456,7 @@ EXEMPLE DE STRUCTURE ATTENDUE pour un angle de S2 (structure seulement, jamais c
   → Recadrage : [...]
   → Preuves disponibles : [...]
   → Ancrage scepticisme : [...]
-  → Niveau le plus froid atteignable : Problem Aware (vidéo) / Solution Aware (image) · Non réplicable parce que [...]
+  → Non réplicable parce que [...]
   → Raisons d'acheter : Raison 1 : [...] · Raison 2 : [...] · Raison 3 : [...]
   - Vidéo · Problem Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
   - Image 1 · Solution Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
@@ -433,7 +468,9 @@ EXEMPLE DE STRUCTURE ATTENDUE pour un angle de S2 (structure seulement, jamais c
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Framework Schwartz : unaware / problem aware / solution aware / product aware / most aware.
 
-PLAFONDS PAR FORMAT — jusqu'où on va vers le froid, selon le format produit :
+PRINCIPE DIRECTEUR — LE NIVEAU DE CONSCIENCE EST UNE VARIABLE À PART ENTIÈRE. Tout angle, toute cible, toute facette, toute raison d'acheter et tout produit s'adaptent à n'importe quel niveau, de Problem Aware à Most Aware. Aucun d'eux n'a « son » niveau, aucun n'est « faux pour un niveau ». Ce que l'analyste fixe pour chaque angle, c'est son cœur (moteur, ennemi, mécanisme, recadrage, raisons d'acheter) ; la production le place ensuite dans des concepts de niveaux différents. La répartition 1 vidéo Problem Aware + 2 images Solution/Product Aware ci-dessous est la distribution PAR DÉFAUT des concepts d'un lot, pas une propriété des angles.
+
+PLAFONDS PAR FORMAT — jusqu'où on va vers le froid, selon le format produit (une propriété du FORMAT, pas de l'angle) :
 → IMAGE STATIQUE : du plus froid au plus chaud, Solution Aware, Product Aware, Most Aware. On ne descend JAMAIS plus froid que Solution Aware en statique.
 → VIDÉO : du plus froid au plus chaud, Problem Aware, Solution Aware, Product Aware, Most Aware. La vidéo peut descendre un cran plus froid que l'image, parce qu'elle a le temps d'installer un problème avant de proposer quoi que ce soit.
 → Unaware n'est jamais utilisé, quel que soit le format.
@@ -775,6 +812,10 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Prix de catégorie inventés sans source dans S4
 ❌ Interprétations émotionnelles dans les journées type ("elle se sent", "elle espère", "elle souhaite")
 ❌ Cible retenue qui n'a pas validé les 5 critères (TAM + douleur quotidienne + pouvoir d'achat + croyances/éducation + évidence ET spécificité)
+❌ Cible hors du TERRITOIRE DE CIBLE de l'ÉTAPE 1bis (population qui souffre du problème mais n'achèterait pas ce produit pour cet usage)
+❌ Bloc PRODUIT LU / RAYON / TERRITOIRE DE CIBLE / SIGNAUX absent en tête de S1
+❌ Mécanisme, bénéfice ou propriété cité dans un angle qui n'est pas établi par la page, le brief ou la photo
+❌ Élément étiqueté [SOURCÉ] introuvable dans DONNÉES BRUTES ou le brief
 ❌ Cible générique copiable telle quelle par un concurrent (critère 5), même si elle valide les 4 autres critères
 ❌ Angle construit sans être passé par les 3 étapes A/B/C (pools de 15-20 entrées tracées par source → classement force/crédibilité → combinaison en triplets peur+désir+douleur compatibles) — une formulation d'angle qui semble sortie de nulle part sans cette traçabilité
 ❌ Deux angles du même lot partagent le même moteur dominant, ou le même quadrant EPIC alors qu'un autre quadrant restait disponible dans le stock
