@@ -66,6 +66,19 @@ export function useAgentMem(slug, init) {
   return [mem[slug], set]
 }
 
+// v5.74 — La dernière synthèse produite par le TEST Analyste est gardée par produit et par commande : les tests Image, Copywriter et Vidéo la
+// reprennent quand on prend la même commande (avant : elle restait seulement dans l'écran de l'Analyste, d'où « l'hypothèse n'apparaît pas »).
+export function memoriserSynthese(cles, texte, info) {
+  if (!texte) return
+  ;(cles || []).filter(Boolean).forEach((c) => { const k = 'synthese:' + c; mem[k] = { texte, t: Date.now(), info: info || '' }; touch(k) })
+}
+export function syntheseMemorisee(cles, maxJours = 7) {
+  let best = null
+  ;(cles || []).filter(Boolean).forEach((c) => { const v = mem['synthese:' + c]; if (v && v.texte && Date.now() - v.t < maxJours * 86400000 && (!best || v.t > best.t)) best = v })
+  return best
+}
+export const heureCourte = (t) => new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+
 // Une simple valeur de vue (recherche, filtre, onglet…) qui survit au changement de page et à l'actualisation.
 export function usePersist(key, init) {
   const k = 'v:' + key

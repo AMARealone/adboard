@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { AGENTS } from './Agents'
-import { useAgentMem, usePersist, useTick, setLive, isLive } from '../agentStore'
+import { useAgentMem, usePersist, useTick, setLive, isLive, memoriserSynthese, syntheseMemorisee, heureCourte } from '../agentStore'
 import { COMP_FILES, SERVER, CT_IMAGES, loadSkills } from '../prod/state'
 import * as V from '../prod/verbatim'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
@@ -39,7 +39,7 @@ const parseImg = (o, def) => (o && o.data ? { b64: o.data, mime: o.mime || def }
 // Un brief de test = exactement un brief de production (même contenu que celui envoyé aux agents en vrai).
 async function readBrief(file) {
   const brief = JSON.parse(await file.text())
-  return { brief, photo: parseImg(brief.photo_produit, 'image/png'), logo: parseImg(brief.logo, 'image/png'), rctx: null, briefName: file.name }
+  return { brief, photo: parseImg(brief.photo_produit, 'image/png'), logo: parseImg(brief.logo, 'image/png'), rctx: null, cles: [], briefName: file.name }
 }
 async function briefFromCommande(b) {
   const brief = commandeToBrief(b)
@@ -50,9 +50,11 @@ async function briefFromCommande(b) {
   // La synthèse vient avec la commande : celle de la commande, sinon la dernière hypothèse stockée pour ce produit.
   const synCmd = b.deliverables && b.deliverables.synthesis ? b.deliverables.synthesis : ''
   const synProd = rctx && rctx.syntheseExistante ? rctx.syntheseExistante : ''
-  const syn = synCmd || synProd
-  const synSrc = synCmd ? ' · synthèse de la commande reprise' : synProd ? ' · dernière synthèse du produit reprise' : ' · ⚠ aucune synthèse pour cette commande'
-  return { brief, photo, logo: null, rctx, briefName: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${rctx && rctx.estRenouvellement ? ' (renouvellement)' : ''}${synSrc}`, syn }
+  const cles = [pid && 'p' + pid, b.id != null && 'c' + b.id].filter(Boolean)
+  const synTest = syntheseMemorisee(cles)   // v5.74 : l'hypothèse que tu viens de générer dans le test Analyste
+  const syn = synTest ? synTest.texte : (synCmd || synProd)
+  const synSrc = synTest ? ' · synthèse du dernier test Analyste reprise (' + heureCourte(synTest.t) + ')' : synCmd ? ' · synthèse de la commande reprise' : synProd ? ' · dernière synthèse du produit reprise' : ' · ⚠ aucune synthèse pour cette commande'
+  return { brief, photo, logo: null, rctx, cles, briefName: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${rctx && rctx.estRenouvellement ? ' (renouvellement)' : ''}${synSrc}`, syn }
 }
 // Les agents de production lisent un état partagé : on le prête le temps du test, puis on le rend tel quel.
 async function withProd(patch, fn) {
@@ -122,6 +124,7 @@ function StdTest({ a }) {
   const nbProd = m.brief ? Math.max(2, Math.min(12, Math.round((Number(m.brief.quantite) || 6) / 3))) : 2
   const nbAngles = m.nb || nbProd
   const run = async () => {
+    if (isLive(a.slug)) return   // v5.74 : une génération de cet agent tourne déjà (double clic, double lancement : ~1 $ chaque fois)
     if (isAn && !m.brief) return alertDlg('Charge un brief.json ou prends une commande.')
     if (isAn && !m.photo) return alertDlg('Ce brief n’a pas de photo produit : l’Analyste en a besoin.')
     if (isCopy && !m.synthese.trim()) return alertDlg('Colle la Synthèse (ou prends une commande déjà analysée).')
@@ -142,6 +145,7 @@ function StdTest({ a }) {
         })
         const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
         S({ output: synthesisText, outErr: false, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText, bal: V.dernierBalayage() })
+        memoriserSynthese(m.cles, synthesisText, m.briefName)   // v5.74 : reprise automatique par les tests Image / Copywriter / Vidéo (même commande)
       } else if (isImg) {
         const productB64 = await V.compressImg(m.photo.b64, m.photo.mime || 'image/jpeg')
         const nbA = Math.max(angles.length, 2), ai = Math.min(m.angle, nbA - 1)

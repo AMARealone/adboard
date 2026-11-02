@@ -2,7 +2,7 @@ import { COMP_FILES, loadSkills } from '../prod/state'
 import React, { useEffect, useRef, useState } from 'react'
 import { vctGetAll, vctGetTexte } from '../vctApi'
 import { labFetch, labQuery, labUrl, labKey, saveLabUrl, saveLabKey } from '../lab'
-import { useAgentMem, useTick } from '../agentStore'
+import { useAgentMem, useTick, syntheseMemorisee, heureCourte } from '../agentStore'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
 import { getCommandes, SERVER } from '../api'
 import { alertDlg, confirmDlg } from '../ui'
@@ -58,6 +58,8 @@ export default function VideoPanel({ competenceOnly }) {
       let ph = null; try { ph = await commandePhoto(c) } catch (_) {}
       let synSrc = 'synthèse de la commande reprise'
       let syn = c.deliverables && c.deliverables.synthesis ? c.deliverables.synthesis : ''
+      const pidS = (c.product || {}).id, synTest = syntheseMemorisee([pidS && 'p' + pidS, c.id != null && 'c' + c.id])   // v5.74 : hypothèse du dernier test Analyste
+      if (synTest) { syn = synTest.texte; synSrc = 'synthèse du dernier test Analyste reprise (' + heureCourte(synTest.t) + ')' }
       if (!syn) {
         const pid = (c.product || {}).id
         if (pid) { try { const rc = await (await fetch(`${SERVER}/products/${pid}/renewal-context`, { headers: { 'ngrok-skip-browser-warning': '1' } })).json(); if (rc && rc.syntheseExistante) { syn = rc.syntheseExistante; synSrc = 'dernière synthèse du produit reprise' } } catch (_) {} }
