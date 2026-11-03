@@ -3961,6 +3961,71 @@ function FormulaireTopPerformer({ form, setForm, onSave, onRemove, busy, isMobil
   );
 }
 
+
+// ── v: APERÇUS FLOUTÉS (galerie, ad copies, données marché) — ce qu'un compte voit tant qu'il n'a rien reçu : la section comme si elle était remplie,
+// nette sur 40 % du haut, floutée et verrouillée sur les 60 % du bas. Exemples non téléchargeables (miniatures 400 px en fond d'image, pas de balise <img>, clic droit et glisser bloqués).
+const TeaserVerrou = ({children, titre, texte, cta, onCta, hauteur=560}) => (
+  <div style={{position:'relative',overflow:'hidden',borderRadius:12,height:hauteur,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.015)'}} onContextMenu={e=>e.preventDefault()}>
+    <div aria-hidden="true" style={{pointerEvents:'none',userSelect:'none',WebkitUserSelect:'none',padding:14}}>{children}</div>
+    <div style={{position:'absolute',left:0,right:0,top:'38%',bottom:0,backdropFilter:'blur(14px)',WebkitBackdropFilter:'blur(14px)',background:`linear-gradient(to bottom, rgba(10,12,17,0) 0%, rgba(10,12,17,0.70) 40%, ${C.bg} 100%)`,WebkitMaskImage:'linear-gradient(to bottom, transparent 0%, #000 28%)',maskImage:'linear-gradient(to bottom, transparent 0%, #000 28%)'}}/>
+    <div style={{position:'absolute',left:0,right:0,top:'52%',bottom:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',gap:10,padding:'0 20px'}}>
+      <div style={{width:44,height:44,borderRadius:12,background:'rgba(91,141,239,0.16)',border:`1px solid ${C.accentM}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      </div>
+      <div style={{fontSize:15,fontWeight:700,color:C.text}}>{titre}</div>
+      <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:440}}>{texte}</div>
+      {cta && <button onClick={onCta} style={{marginTop:4,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{cta}</button>}
+    </div>
+  </div>
+);
+const TeaserTag = () => <div style={{position:'absolute',top:10,left:10,zIndex:2,padding:'3px 9px',borderRadius:20,background:'rgba(0,0,0,0.55)',fontSize:9.5,fontWeight:700,letterSpacing:'0.06em',color:'#fff'}}>EXEMPLES</div>;
+const TeaserGalerie = ({setSection}) => (
+  <div style={{position:'relative'}}>
+    <TeaserVerrou titre="Votre galerie sera comme ceci" texte="Vos créatives, triées par angle et par semaine, prêtes à télécharger et à publier. Elle se remplit dès votre première production." cta="Découvrir nos offres" onCta={()=>setSection && setSection('tarifs')}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))',gap:10}}>
+        {[1,2,3,4,5,6].map(i => (
+          <div key={i} style={{position:'relative',aspectRatio:'4 / 5',borderRadius:8,overflow:'hidden',backgroundImage:`url(/assets/teaser/g${i}.jpg)`,backgroundSize:'cover',backgroundPosition:'center',border:`1px solid ${C.border}`}}>
+            <div style={{position:'absolute',left:8,bottom:8,padding:'2px 8px',borderRadius:20,background:'rgba(0,0,0,0.6)',fontSize:9.5,fontWeight:700,color:'#fff'}}>Angle {((i-1)%3)+1} · Semaine {i<4?1:2}</div>
+          </div>
+        ))}
+      </div>
+    </TeaserVerrou>
+    <TeaserTag/>
+  </div>
+);
+const TEASER_COPIES = [
+  {angle:'Angle 1', hook:"Bouton surprise la veille d'un mariage ? On a ce qu'il vous faut.", txt:"Un soin ciblé qui calme les rougeurs en quelques heures. Appliquez le soir, retrouvez une peau plus nette au réveil. Paiement à la livraison."},
+  {angle:'Angle 2', hook:"Vos racines blanches reviennent trop vite ? Dix minutes suffisent.", txt:"Un shampoing colorant qui couvre les cheveux blancs et laisse les cheveux brillants. Sans produit bizarre, simple à utiliser à la maison."},
+  {angle:'Angle 3', hook:"Un seul soin pour toute la famille, sans mauvaise surprise.", txt:"Une huile naturelle qui nourrit les cheveux crépus de la racine aux pointes. Facile à utiliser, douce, sans sulfates."},
+  {angle:'Angle 1', hook:"Elle a unifié son teint en six semaines. Et vous ?", txt:"Un sérum ciblé contre les taches. Résultats progressifs, textes et preuves prêts à publier sur Meta Ads."},
+  {angle:'Angle 2', hook:"Fini les abdos de la salle, place à la télé.", txt:"Une ceinture qui travaille pour vous pendant que vous vous détendez. Livraison rapide, paiement à la réception."},
+  {angle:'Angle 3', hook:"Chaque mois, il en reste moins. Agissez maintenant.", txt:"Un traitement pour garder vos cheveux plus longtemps. Application simple, résultats suivis semaine après semaine."},
+];
+const TeaserCopies = ({setSection}) => (
+  <div style={{position:'relative'}}>
+    <TeaserVerrou titre="Vos ad copies seront comme ceci" texte="Hooks accrocheurs et descriptions prêtes pour Meta Ads, classés par angle. Copiez-collez directement dans votre Ads Manager." cta="Ajouter un produit" onCta={()=>setSection && setSection('produits')} hauteur={520}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:10}}>
+        {TEASER_COPIES.map((c,i) => (
+          <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:14}}>
+            <div style={{display:'inline-block',padding:'2px 9px',borderRadius:20,background:C.accentS,color:C.accent,fontSize:10,fontWeight:700,marginBottom:8}}>{c.angle}</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,lineHeight:1.4,marginBottom:6}}>{c.hook}</div>
+            <div style={{fontSize:11.5,color:C.sec,lineHeight:1.55}}>{c.txt}</div>
+          </div>
+        ))}
+      </div>
+    </TeaserVerrou>
+    <TeaserTag/>
+  </div>
+);
+const TeaserMarche = ({setSection}) => (
+  <div style={{position:'relative'}}>
+    <TeaserVerrou titre="Vos données marché seront comme ceci" texte="Taille du marché, concurrence, persona cible, angles et ciblage Meta Ads pour chacun de vos produits, mis à jour régulièrement." cta="Ajouter un produit" onCta={()=>setSection && setSection('produits')} hauteur={600}>
+      <div style={{width:'100%',aspectRatio:'1100 / 756',borderRadius:8,backgroundImage:'url(/assets/teaser/marche.jpg)',backgroundSize:'cover',backgroundPosition:'top center'}}/>
+    </TeaserVerrou>
+    <TeaserTag/>
+  </div>
+);
+
 const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
@@ -4727,20 +4792,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       )}
 
       {realCreatives.length===0 && !query && (
-        <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
-          <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name="grid" size={26} color={C.accent}/>
-          </div>
-          <div>
-            <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos créatives apparaîtront ici</div>
-            <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
-              Dès que votre agence aura produit vos créatives Meta Ads, vous les retrouverez ici — triées par angle, par semaine, prêtes à télécharger et à publier.
-            </div>
-          </div>
-          <button onClick={() => setSection && setSection('tarifs')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
-            Découvrir nos offres <Icon name="arrow" size={12} color="#fff"/>
-          </button>
-        </div>
+        <TeaserGalerie setSection={setSection}/>
       )}
 
 
@@ -5072,20 +5124,7 @@ const Copies = ({products, setSection}) => {
 
           {/* Product card grid */}
           {products.length === 0
-            ? <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
-                <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                  <Icon name="document" size={26} color={C.accent}/>
-                </div>
-                <div>
-                  <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos ad copies apparaîtront ici</div>
-                  <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
-                    Hooks accrocheurs et descriptions optimisées Meta Ads, classés par angle. Copiez-collez directement dans votre Ads Manager pour gagner du temps.
-                  </div>
-                </div>
-                <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
-                  Ajouter un produit <Icon name="arrow" size={12} color="#fff"/>
-                </button>
-              </div>
+            ? <TeaserCopies setSection={setSection}/>
             : filtered.length === 0 && query
             ? <div style={{textAlign:'center',padding:'32px 0'}}>
                 <Icon name="search" size={26} color={C.muted}/>
@@ -5310,20 +5349,7 @@ const Marche = ({products, isDemo, setSection, subscription, onOpenPayment}) => 
 
         {/* Product card grid */}
         {products.length === 0
-          ? <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'60px 24px',textAlign:'center',gap:14,minHeight:300,border:`1px dashed ${C.border}`,borderRadius:12,background:'rgba(255,255,255,0.015)'}}>
-              <div style={{width:56,height:56,borderRadius:14,background:'rgba(45,127,249,0.10)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <Icon name="chart" size={26} color={C.accent}/>
-              </div>
-              <div>
-                <div style={{fontSize:15,fontWeight:700,color:C.text,marginBottom:6}}>Vos données marché apparaîtront ici</div>
-                <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:420}}>
-                  Analyse de la concurrence, tendances actuelles, persona cible et ciblage Meta Ads optimisé pour chacun de vos produits — mis à jour régulièrement.
-                </div>
-              </div>
-              <button onClick={() => setSection && setSection('produits')} style={{marginTop:6,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7}}>
-                Ajouter un produit <Icon name="arrow" size={12} color="#fff"/>
-              </button>
-            </div>
+          ? <TeaserMarche setSection={setSection}/>
           : filtered.length === 0 && query
           ? <div style={{textAlign:'center',padding:'32px 0'}}>
               <Icon name="search" size={26} color={C.muted}/>
@@ -6495,8 +6521,8 @@ export default function Platform() {
       if (path && PATH_TO_SECTION[path]) return PATH_TO_SECTION[path];
       return sessionStorage.getItem('adstack_section')
         || localStorage.getItem('adstack_section')
-        || 'produits';
-    } catch(e) { return 'produits'; }
+        || 'galerie';   // v : première arrivée → la galerie (aperçu flouté des créatives), plus « Mes produits »
+    } catch(e) { return 'galerie'; }
   });
   const setSection = (s) => {
     _setSection(s);
