@@ -11,8 +11,11 @@ export function DataProvider({ children }) {
   }, [])
   useEffect(() => {
     load(); ping().then(setSrv)
-    const t = setInterval(load, 60000)
-    return () => clearInterval(t)
+    // v: la liste pèse ~20 Mo côté Supabase — rafraîchie seulement si l'onglet est visible, toutes les 3 minutes (avant : chaque minute, onglet caché ou non)
+    const t = setInterval(() => { if (!document.hidden) load() }, 180000)
+    const onVis = () => { if (!document.hidden) load() }
+    document.addEventListener('visibilitychange', onVis)
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', onVis) }
   }, [load])
   return <Ctx.Provider value={{ cmd, reload: load, srv }}>{children}</Ctx.Provider>
 }
