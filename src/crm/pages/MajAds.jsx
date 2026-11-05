@@ -28,11 +28,11 @@ export function MajAds({ onClose }) {
           <span style={{ textAlign: 'right', color: v.cas ? '#32ff7e' : v.maj ? undefined : '#ffb547' }}>{v.cas ? '✅ ' + v.ads + ' ads · ' + v.jours + ' j · cas ' + v.cas : v.maj ? '○ ' + v.raison : '⏳ à mettre à jour'}</span>
         </div>) }) : <div className="cx-empty"><b>Aucun lead à J+3 pour le moment</b></div>}
       <div className="cx-act" style={{ marginTop: 14 }}>
-        <button className="cx-btn primary" onClick={() => { window.location.href = 'adstack-maj://j10' }}>▶ Lancer sur mon PC</button>
+        <button className="cx-btn primary" onClick={() => { window.location.href = 'adstack-maj://j3' }}>▶ Lancer sur mon PC</button>
         <button className="cx-btn" disabled={ch} onClick={async () => { setCh(true); try { await reload() } catch (_) {} setCh(false) }}>{ch ? '…' : 'Actualiser la liste'}</button>
         <button className="cx-btn ghost" onClick={onClose}>Fermer</button>
       </div>
-      <p className="cx-note" style={{ marginTop: 10 }}>« Lancer sur mon PC » ouvre le script s'il a été installé (une seule fois, voir installer_maj_j10.ps1). Sinon, double-cliquez sur MAJ_J10 sur votre PC, puis « Actualiser la liste ».</p>
+      <p className="cx-note" style={{ marginTop: 10 }}>« Lancer sur mon PC » ouvre le script s'il a été installé (une seule fois, voir installer_maj_j3.ps1). Sinon, double-cliquez sur MAJ_J3 sur votre PC, puis « Actualiser la liste ».</p>
     </Modal>
   )
 }

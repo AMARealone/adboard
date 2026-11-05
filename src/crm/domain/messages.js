@@ -105,14 +105,14 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
   return { msg, manque, cle }
 }
 
-// ── Relances Leads J+3 / J+10 / J+21
+// ── Relances Leads J+3 (pitch avec les ads, variables) / J+10 (preuve) / J+21 (alerte)
 export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => (i > 0 && (estAncien(x, PV.PREV_DEFAULT_RELANCES[i]) || (i === 2 && /trou sur la route/i.test(x)))) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }
 export function relanceMessage(p, idx, cfg) {
   let tpl = relanceTemplates(cfg)[idx] || ''
-  if (idx !== 0 && D.J10_VARS.test(tpl)) tpl = D.DEFAULT_RELANCES[idx] || ''
+  if (idx !== 0 && D.J3_VARS.test(tpl)) tpl = D.DEFAULT_RELANCES[idx] || ''
   if (idx === 2 && tpl === D.OLD_J21_DEFAUT) tpl = D.DEFAULT_RELANCES[2]
   let v = null, avertir = false, trace = ''
-  if (idx === 0 && D.J10_VARS.test(tpl)) {
+  if (idx === 0 && D.J3_VARS.test(tpl)) {
     v = pitchVariante(p, cfg)
     if (v.cas) { tpl = remplirPitchDonnees(tpl, v); trace = 'cas' + v.cas } else { tpl = pd(cfg).repli; trace = 'repli'; avertir = !v.maj }
   }
@@ -127,7 +127,7 @@ export function relanceMessage(p, idx, cfg) {
 export const lienRelance = (idx, id, chemin) => {
   const campagne = ['j3', 'j10', 'j21'][idx] || 'relance'
   const ch = chemin && /^\/[\w\-\/]*$/.test(chemin) ? chemin.replace(/\/+$/, '') : ''
-  return `https://adstackofficial.com${ch}/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${id}`
+  return `https://www.adstackofficial.com${ch}/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${id}`
 }
 // Un seul lien suivi par message : toute mention du site (« adstackofficial.com », avec ou sans @, https, www, *…*) ou [lien]
 // devient le lien suivi ; si le même lien se retrouve plusieurs fois, on ne garde que le premier.
@@ -152,11 +152,11 @@ export const CAMPAGNES_LIENS = {
 }
 export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
   const o = OFFRES[offreKey]; if (!o) return ''
-  return `https://adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}`
+  return `https://www.adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}`
 }
 
 // ── Pitch (envoyé quand le prospect a répondu) : lien suivi, campagne « pitch »
-export const lienPitch = (id) => `https://adstackofficial.com/?utm_source=crm&utm_medium=pitch&utm_campaign=pitch&utm_content=${id}`
+export const lienPitch = (id) => `https://www.adstackofficial.com/?utm_source=crm&utm_medium=pitch&utm_campaign=pitch&utm_content=${id}`
 export function pitchMessage(p, cfg, lien) {
   const tpl = (cfg && cfg.tpl_pitch) || D.DEFAULT_PITCH
   let msg = tpl.replace(/\[Produit\]/gi, (p.produit || '').trim() || 'votre produit').replace(/\[Marque\]/gi, p.nom_marque || '')

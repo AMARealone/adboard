@@ -3279,8 +3279,8 @@ async function remettreArchiveEnSuivi(id) {
   toast('Prospect remis dans le Suivi');
 }
 
-// ── J+10 PERSONNALISÉ PAR LES ADS DU JOUR ───────────────────────────────────────
-// Le message J+3 (relance n°1) ne s'appuie que sur des chiffres relevés par le script PC (maj_ads_j10.py)
+// ── J+3 PERSONNALISÉ PAR LES ADS DU JOUR ───────────────────────────────────────
+// Le message J+3 (relance n°1) ne s'appuie que sur des chiffres relevés par le script PC (maj_ads_j3.py)
 // juste avant l'envoi (colonne ads_j10 : nb d'ads actives + durée moyenne/médiane de toutes ces ads).
 // Relevé absent, ancien, ou sans ad active → texte de repli (sans chiffres, avec [Marque] et [Produit]).
 const J10_REPLI_DEFAUT = "Re-bonjour *[Marque]*, j'espère que vous allez bien 😊\n\nQuand on a vu votre publicité pour *[Produit]*, une question nous est venue : comment garder des publicités qui vendent dans la durée, sans que les mêmes visuels s'essoufflent ?\n\nUne partie de notre service consiste justement à éviter *l'essoufflement publicitaire* via *la diversité créative*, et à repartir de ce qui marche pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.";
@@ -3344,9 +3344,9 @@ function remplirPitchDonnees(msg, v) {
   if (v.jours === 1) msg = msg.replace(/\b1(\*?) jours\b/gi, '1$1 jour');
   return msg;
 }
-// Texte du J+10 pour un prospect : { msg, v, trace, avertir }
+// Texte du J+3 pour un prospect : { msg, v, trace, avertir }
 function garnirRelance(p, relanceIndex, tpl) {
-  // Garde-fou : un texte encore à variables (ancien pitch resté en J+10) ne doit jamais partir avec ses crochets.
+  // Garde-fou : un texte encore à variables (ancien pitch resté en J+10 ou J+21) ne doit jamais partir avec ses crochets.
   if (relanceIndex !== PITCH_RELANCE_I && J10_VARS.test(tpl || '')) tpl = DEFAULT_RELANCES[relanceIndex] || '';
   if (relanceIndex === 2 && tpl === OLD_J21_DEFAUT) tpl = DEFAULT_RELANCES[2];   // J+21 jamais personnalisé → nouveau texte Andromeda
   if (relanceIndex === PITCH_RELANCE_I && J10_VARS.test(tpl || '')) {
@@ -3375,7 +3375,7 @@ function remplirPitchDataUI() {
   [1, 2, 3, 4].forEach(k => { set('pd-b-' + k, prm.cas[k].b); set('pd-m-' + k, prm.cas[k].m); set('pd-n-' + k, prm.cas[k].n); set('pd-s-' + k, prm.cas[k].s); });
 }
 
-// ── Mise à jour des ads J+10 : liste des leads concernés + lancement du script sur le PC ──
+// ── Mise à jour des ads J+3 : liste des leads concernés + lancement du script sur le PC ──
 function leadsJ10() {
   return (DB || []).filter(p => {
     let n = {}; try { n = JSON.parse(p.notes || '{}'); } catch (e) {}
@@ -3413,12 +3413,12 @@ function ouvrirMajJ10() {
     + '<button class="btn btn-sm" style="background:var(--blue);color:#fff" onclick="lancerMajJ10()">▶ Lancer sur mon PC</button>'
     + '<button class="btn btn-ghost btn-sm" onclick="actualiserMajJ10()">Actualiser la liste</button>'
     + '<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'ov-maj-j10\').remove()">Fermer</button></div>'
-    + '<div style="font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.5">« Lancer sur mon PC » ouvre le script s\'il a été installé (une seule fois, voir installer_maj_j10.ps1). Sinon, double-clique sur MAJ_J10.bat dans le dossier du prospecteur. Quand il affiche « Terminé », clique sur « Actualiser la liste ».</div>'
+    + '<div style="font-size:10.5px;color:var(--muted);margin-top:10px;line-height:1.5">« Lancer sur mon PC » ouvre le script s\'il a été installé (une seule fois, voir installer_maj_j3.ps1). Sinon, double-clique sur MAJ_J3.bat dans le dossier du prospecteur. Quand il affiche « Terminé », clique sur « Actualiser la liste ».</div>'
     + '</div>';
   ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
   document.body.appendChild(ov);
 }
-function lancerMajJ10() { toast('Ouverture du script sur ton PC…'); window.location.href = 'adstack-maj://j10'; }
+function lancerMajJ10() { toast('Ouverture du script sur ton PC…'); window.location.href = 'adstack-maj://j3'; }
 async function actualiserMajJ10() { try { await load(); } catch (e) {} ouvrirMajJ10(); majJ10Badge(); }
 
 async function sendPitchMsg(pid) {
