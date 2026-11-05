@@ -127,7 +127,7 @@ export function relanceMessage(p, idx, cfg) {
 export const lienRelance = (idx, id, chemin) => {
   const campagne = ['j3', 'j10', 'j21'][idx] || 'relance'
   const ch = chemin && /^\/[\w\-\/]*$/.test(chemin) ? chemin.replace(/\/+$/, '') : ''
-  return `https://www.adstackofficial.com${ch}/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${id}`
+  return `https://www.adstackofficial.com${ch || '/'}?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${id}`
 }
 // Un seul lien suivi par message : toute mention du site (« adstackofficial.com », avec ou sans @, https, www, *…*) ou [lien]
 // devient le lien suivi ; si le même lien se retrouve plusieurs fois, on ne garde que le premier.
