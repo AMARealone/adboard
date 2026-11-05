@@ -19,7 +19,7 @@
   carteBg: "#F8D6DF",
   badge: "+10K$ d’adspend",
   teaserTexte: "Une boutique cosmétique qui croyait avoir saturé son marché.",
-  teaserImages: ["/assets/vente/saelia-creative-2.jpg", "/assets/vente/saelia-creative-1.jpg"],
+  teaserImages: ["/assets/vente/video/saelia.jpg", "/assets/vente/saelia-creative-1.jpg"],
 
   // Haut de la page
   titre: "« Nous avons dépensé +10K$ sur Meta Ads, en restant rentables, avec les créatives d’AdStack. »",
@@ -78,6 +78,6 @@
   gagnantes: [],               // à remplir : { img, legende, metrique }
 
   // Créatives produites pour la marque (à remplir avec les vraies créatives)
-  galerie: ["/assets/vente/saelia-creative-1.jpg", "/assets/vente/saelia-creative-2.jpg"],
+  galerie: ["/assets/vente/saelia-creative-1.jpg", { video: "/assets/vente/video/saelia.mp4", poster: "/assets/vente/video/saelia.jpg" }, "/assets/vente/saelia-creative-2.jpg"],
   image: ""
 };

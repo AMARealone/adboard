@@ -10,11 +10,11 @@
 <meta property="og:title" content="AdStack — Agence de créatives publicitaires Meta Ads">
 <meta property="og:description" content="Le système créatif qui rapporte 2, 5 ou 10 fois plus : stratégie, créatives et amélioration continue.">
 <meta property="og:url" content="https://www.adstackofficial.com/">
-<meta property="og:image" content="https://www.adstackofficial.com/assets/miniatures/pitch-page-de-vente.jpg">
+<meta property="og:image" content="https://www.adstackofficial.com/assets/miniatures/pitch-page-de-vente.jpg?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://www.adstackofficial.com/assets/miniatures/pitch-page-de-vente.jpg">
+<meta name="twitter:image" content="https://www.adstackofficial.com/assets/miniatures/pitch-page-de-vente.jpg?v=2">
 
     <meta name="description" content="Créatives publicitaires Meta Ads (vidéos et images) basées sur une vraie analyse de marché, livrées en 48h. Pensé pour les vendeurs e-commerce au Sénégal, en Côte d'Ivoire et en Afrique francophone. Livraison sous 48h.">
     <link rel="canonical" href="https://www.adstackofficial.com/">
@@ -301,6 +301,7 @@ body{background:transparent!important}
 .adstack-hero-v2,.sp-hero,.exemple-section,.pf-section,.sol-v2-section,.sys-section,.grw-section,.cvr,.travaux-section,.process-section,.edc-section,.avis-section,.offers-section-lp,.reviews-section,.faq-section,.cst-section,.final-cta-section,.tm-section,.pricing-section,#nos-offres{background:transparent!important}
 .ads-footer{background:rgba(10,10,14,.72)!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 </style>
+<script src="/protect-media.js"></script>
 </head>
   <body>
 <div class="bg-flow" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -559,6 +560,16 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
 </section>
 <section class="exemple-section" id="exemple">
   <div style="overflow:hidden;mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)">
+    <div class="exemple-row exemple-row-1 exemple-row-video">
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/vitalina.jpg" data-src="/assets/vente/video/vitalina.mp4" aria-label="Créative vidéo Vitalina Energy"></video></div>
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/deirol.jpg" data-src="/assets/vente/video/deirol.mp4" aria-label="Créative vidéo fond de teint"></video></div>
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/sommeil.jpg" data-src="/assets/vente/video/sommeil.mp4" aria-label="Créative vidéo complément sommeil"></video></div>
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/saelia.jpg" data-src="/assets/vente/video/saelia.mp4" aria-label="Créative vidéo Saelia"></video></div>
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/vitalina.jpg" data-src="/assets/vente/video/vitalina.mp4" aria-label="Créative vidéo Vitalina Energy"></video></div>
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/deirol.jpg" data-src="/assets/vente/video/deirol.mp4" aria-label="Créative vidéo fond de teint"></video></div>
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/sommeil.jpg" data-src="/assets/vente/video/sommeil.mp4" aria-label="Créative vidéo complément sommeil"></video></div>
+      <div class="exemple-card exemple-video"><video muted loop playsinline preload="metadata" poster="/assets/vente/video/saelia.jpg" data-src="/assets/vente/video/saelia.mp4" aria-label="Créative vidéo Saelia"></video></div>
+    </div>
     <div class="exemple-row exemple-row-2">
       <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dbb452d076.16131025_DEMO16.png" loading="lazy" alt=""></div>
       <div class="exemple-card"><img src="https://d1yei2z3i6k35z.cloudfront.net/14215846/69d7dd7cf13fd3.41258798_DEMO30.png" loading="lazy" alt=""></div>
@@ -582,63 +593,14 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
   </div>
 </section>
 <script>
-/* Bande vidéo 9:16 : lecture auto, sans son, en boucle — pause hors écran pour économiser la data/batterie */
+/* Bande vidéo 9:16 : lecture auto, sans son, en boucle, vitesse x1,5. L'image de couverture reste affichée tant que la vidéo n'a pas chargé ; pause hors écran. */
 (function(){
   var vids=document.querySelectorAll('.exemple-video video');
-  vids.forEach(function(v){v.muted=true;v.defaultMuted=true;v.setAttribute('muted','');v.setAttribute('playsinline','');});
-  if(!('IntersectionObserver' in window)){vids.forEach(function(v){var p=v.play();if(p&&p.catch)p.catch(function(){});});return;}
-  var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){var p=v.play();if(p&&p.catch)p.catch(function(){});}else{v.pause();}});},{threshold:0.1});
+  function prep(v){if(v.getAttribute('data-ready'))return;v.setAttribute('data-ready','1');v.muted=true;v.defaultMuted=true;v.setAttribute('muted','');v.setAttribute('playsinline','');v.disablePictureInPicture=true;v.setAttribute('controlsList','nodownload noremoteplayback');v.removeAttribute('controls');v.addEventListener('loadedmetadata',function(){v.playbackRate=1.5;});v.addEventListener('play',function(){v.playbackRate=1.5;});v.src=v.getAttribute('data-src');}
+  function go(v){prep(v);v.playbackRate=1.5;var p=v.play();if(p&&p.catch)p.catch(function(){});}
+  if(!('IntersectionObserver' in window)){vids.forEach(go);return;}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){go(v);}else{v.pause();}});},{threshold:0.1,rootMargin:'200px'});
   vids.forEach(function(v){io.observe(v);});
-})();
-</script>
-<style>
-.exemple-card.exv-clickable{cursor:pointer;position:relative}
-.exemple-card.exv-clickable::after{content:"";position:absolute;right:8px;bottom:8px;width:26px;height:26px;border-radius:50%;background:rgba(10,10,14,.62) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'/%3E%3C/svg%3E") center/14px no-repeat;pointer-events:none;z-index:3}
-.exemple-card.exv-clickable:focus-visible{outline:2px solid #1FB6FF;outline-offset:2px}
-.exv-lb{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;background:rgba(5,7,12,.93);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
-.exv-lb.open{display:flex}
-.exv-lb-stage{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
-.exv-lb-media{max-width:min(94vw,560px);max-height:92vh;width:auto;height:auto;object-fit:contain;border-radius:14px;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-img.exv-lb-media{max-width:94vw}
-.exv-lb-close{position:absolute;top:max(14px,env(safe-area-inset-top));right:14px;width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;font-size:26px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
-.exv-lb-close:hover{background:rgba(255,255,255,.2)}
-</style>
-<script>
-/* Bandes de créatives : clic = affichage plein écran (image ou vidéo avec son et contrôles) */
-(function(){
-  var box,stage,closeBtn,lastFocus;
-  function cardSrc(card){var vd=card.querySelector('video'),s=card.querySelector('video source');if(s)return{type:'video',src:(vd&&vd.getAttribute('data-full'))||s.getAttribute('src'),poster:(vd&&vd.poster)||''};var i=card.querySelector('img');if(i&&(i.currentSrc||i.src))return{type:'img',src:i.currentSrc||i.src};return null;}
-  document.querySelectorAll('.exemple-card').forEach(function(c){if(cardSrc(c)){c.classList.add('exv-clickable');c.setAttribute('role','button');c.setAttribute('tabindex','0');c.setAttribute('aria-label','Afficher en plein écran');}});
-  function build(){
-    if(box)return;
-    box=document.createElement('div');box.className='exv-lb';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Aperçu en plein écran');
-    box.innerHTML='<button type="button" class="exv-lb-close" aria-label="Fermer">×</button><div class="exv-lb-stage"></div>';
-    document.body.appendChild(box);stage=box.querySelector('.exv-lb-stage');closeBtn=box.querySelector('.exv-lb-close');
-    box.addEventListener('click',function(e){if(e.target===box||e.target===stage||e.target===closeBtn)close();});
-  }
-  function open(info,opener){
-    build();lastFocus=opener;stage.innerHTML='';
-    var el;
-    if(info.type==='video'){
-      el=document.createElement('video');el.className='exv-lb-media';el.controls=true;el.autoplay=true;el.loop=true;el.muted=false;el.defaultMuted=false;el.volume=1;el.playsInline=true;el.setAttribute('playsinline','');if(info.poster)el.poster=info.poster;el.src=info.src;
-      stage.appendChild(el);
-      var p=el.play();if(p&&p.catch)p.catch(function(){el.muted=true;var q=el.play();if(q&&q.catch)q.catch(function(){});});
-    }else{
-      el=document.createElement('img');el.className='exv-lb-media';el.alt='';el.src=info.src;stage.appendChild(el);
-    }
-    box.classList.add('open');document.documentElement.style.overflow='hidden';closeBtn.focus();
-  }
-  function close(){
-    if(!box||!box.classList.contains('open'))return;
-    var v=stage.querySelector('video');if(v){v.pause();v.removeAttribute('src');v.load();}
-    stage.innerHTML='';box.classList.remove('open');document.documentElement.style.overflow='';
-    if(lastFocus&&lastFocus.focus)lastFocus.focus();
-  }
-  document.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('.exemple-card.exv-clickable');if(!c)return;var info=cardSrc(c);if(info)open(info,c);});
-  document.addEventListener('keydown',function(e){
-    if(e.key==='Escape'){close();return;}
-    if((e.key==='Enter'||e.key===' ')&&document.activeElement&&document.activeElement.classList&&document.activeElement.classList.contains('exv-clickable')){e.preventDefault();var info=cardSrc(document.activeElement);if(info)open(info,document.activeElement);}
-  });
 })();
 </script>
 <style>
@@ -1075,58 +1037,140 @@ img.exv-lb-media{max-width:94vw}
 
 <section class="cvr" id="ce-que-vous-recevez">
   <div class="cvr-wrap">
-    <h2 class="cvr-title">Là où toute la magie opère, <em>sans effort de votre part.</em></h2>
-    <p class="cvr-sub">AdBoard est la plateforme intelligente où tout l'écosystème créatif évolue : Organisation, Planification, Vue d'ensemble, Amélioration etc…</p>
+    <h2 class="cvr-title">Toutes vos créatives, <em>au même endroit.</em></h2>
+    <p class="cvr-sub">AdBoard est votre espace client. Vous y ajoutez vos produits, vous suivez notre travail, et vous récupérez vos créatives : images et vidéos.</p>
     <div class="cvr-items">
       <div class="cvr-item">
         <div class="cvr-item-num">01</div>
-        <div class="cvr-item-title">Votre Catalogue Produits</div>
-        <p class="cvr-item-desc">Gestion intelligente de tous vos produits, <strong>pas de formulaire compliqué</strong>.</p>
-        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-catalogue-item01.png"><img src="/assets/vente/adboard-catalogue-item01.png" alt="Catalogue Produits AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
+        <div class="cvr-item-title">Vos produits</div>
+        <p class="cvr-item-desc">Ajoutez un produit en quelques minutes. <strong>Collez le lien de votre page, la fiche se remplit toute seule.</strong></p>
+        <div class="cvr-item-img ab" aria-hidden="true">
+          <div class="ab-bar"><span class="ab-dots"><i></i><i></i><i></i></span><span class="ab-url">adboard · Mes Produits</span></div>
+          <div class="ab-body">
+            <div class="ab-h"><div><b>Mes Produits</b><small>2 produits dans votre catalogue</small></div><span class="ab-btn">+ Ajouter un produit</span></div>
+            <div class="ab-prods">
+              <div class="ab-prod">
+                <div class="ab-prod-img" style="--a:#2b6f6a;--b:#0f2a3a"><span class="ab-bottle"></span><span class="ab-chip">Prêt à commander</span></div>
+                <div class="ab-prod-t">Sérum Éclat</div><div class="ab-prod-p">12 900 FCFA</div>
+                <div class="ab-prod-r"><span class="ab-pill">Sénégal</span><span class="ab-cols"><i style="background:#2b6f6a"></i><i style="background:#fff"></i></span></div>
+                <div class="ab-go">✦ Demander une production</div>
+              </div>
+              <div class="ab-prod">
+                <div class="ab-prod-img" style="--a:#7a4a2b;--b:#2a1a12"><span class="ab-bottle ab-bottle2"></span><span class="ab-chip ab-chip-on">En production</span></div>
+                <div class="ab-prod-t">Huile Racines</div><div class="ab-prod-p">8 500 FCFA</div>
+                <div class="ab-prod-r"><span class="ab-pill">Côte d'Ivoire</span><span class="ab-cols"><i style="background:#7a4a2b"></i><i style="background:#e9c46a"></i></span></div>
+                <div class="ab-go ab-go-off">En production…</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="cvr-item">
         <div class="cvr-item-num">02</div>
-        <div class="cvr-item-title">Suivi De Demande</div>
-        <p class="cvr-item-desc">Regardez où en est notre équipe sur votre demande <strong>en temps réel et en toute transparence</strong>.</p>
-        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-suivi-item02.png"><img src="/assets/vente/adboard-suivi-item02.png" alt="Suivi de Demande AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
+        <div class="cvr-item-title">Le suivi de votre demande</div>
+        <p class="cvr-item-desc">Vous voyez où en est notre équipe, <strong>étape par étape, avec le temps restant avant la livraison.</strong></p>
+        <div class="cvr-item-img ab" aria-hidden="true">
+          <div class="ab-bar"><span class="ab-dots"><i></i><i></i><i></i></span><span class="ab-url">adboard · Suivi Demande</span></div>
+          <div class="ab-body">
+            <div class="ab-h"><div><b>Suivi Demande</b><small>1 demande en cours</small></div></div>
+            <div class="ab-suivi">
+              <div class="ab-glow"></div>
+              <div class="ab-s-head"><span class="ab-s-ph" style="--a:#2b6f6a;--b:#0f2a3a"></span><div><b>Sérum Éclat</b><small><em>9 créatives</em> · 5 nov, 10:24</small></div></div>
+              <div class="ab-step"><span class="ab-pulse"></span><div><b>Production créative</b><small>Vos images et vidéos sont en cours de création.</small></div><span class="ab-n">3/5</span></div>
+              <div class="ab-lbl">Livraison estimée dans</div>
+              <div class="ab-count" id="abCount">17h 42m 08s</div>
+              <div class="ab-line"><i id="abLine"></i></div>
+              <div class="ab-steps5"><span class="on">Démarrage</span><span class="on">Recherche</span><span class="on cur">Production</span><span>Contrôle</span><span>Livré</span></div>
+            </div>
+          </div>
+        </div>
       </div>
       <div class="cvr-item">
         <div class="cvr-item-num">03</div>
-        <div class="cvr-item-title">Galerie Créatives</div>
-        <p class="cvr-item-desc">Toutes vos créatives seront centralisées ici, <strong>après stratégie + production</strong>.</p>
-        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-galerie-item03.png"><img src="/assets/vente/adboard-galerie-item03.png" alt="Galerie Créatives AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
-      </div>
-      <div class="cvr-item">
-        <div class="cvr-item-num">04</div>
-        <div class="cvr-item-title">Données Marché</div>
-        <p class="cvr-item-desc">Vue globale de toutes les données accumulées sur votre marché, produit, cible. <strong>Pour une meilleure prise de décision</strong>. Inclus à partir de PERF+.</p>
-        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-marche-item04.png"><img src="/assets/vente/adboard-marche-item04.png" alt="Données Marché AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
-      </div>
-      <div class="cvr-item">
-        <div class="cvr-item-num">05</div>
-        <div class="cvr-item-title">Top Performer Créatives</div>
-        <p class="cvr-item-desc">Organisez et classez les créatives qui ont le mieux performé sur votre compte publicitaire dans AdBoard. <strong>Cette donnée nous permet d'améliorer les prochains lots</strong>.</p>
-        <div class="cvr-item-img" data-lightbox="/assets/vente/adboard-top-performer-item05.png"><img src="/assets/vente/adboard-top-performer-item05.png" alt="Top Performer Créatives AdBoard" loading="lazy"><div class="cvr-item-img-zoom"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div></div>
+        <div class="cvr-item-title">Votre galerie de créatives</div>
+        <p class="cvr-item-desc">Vos images et vos vidéos arrivent ici, <strong>classées par lot et par angle, prêtes à publier.</strong></p>
+        <div class="cvr-item-img ab" aria-hidden="true">
+          <div class="ab-bar"><span class="ab-dots"><i></i><i></i><i></i></span><span class="ab-url">adboard · Galerie Créatives</span></div>
+          <div class="ab-body">
+            <div class="ab-h"><div><b>Galerie Créatives</b><small>9 créatives · 3 angles</small></div><span class="ab-btn ab-btn-g">Sélectionner</span></div>
+            <div class="ab-chips"><span class="on">Tout</span><span>Vidéos</span><span>Images</span><span>Lot 1</span></div>
+            <div class="ab-gal">
+              <div class="ab-t" style="--a:#1f5f8b;--b:#0b1b2e"><i class="ab-sh1"></i><em>Douleur sociale<small>Lot 1</small></em></div>
+              <div class="ab-t ab-vid" style="--a:#8b3a5f;--b:#2a0f1e"><i class="ab-sh2"></i><span class="ab-play"></span><span class="ab-time">0:32</span><em>Douleur sociale<small>Vidéo · Lot 1</small></em></div>
+              <div class="ab-t" style="--a:#c98a2e;--b:#3a2408"><i class="ab-sh3"></i><em>Douleur sociale<small>Lot 1</small></em></div>
+              <div class="ab-t" style="--a:#2e8b6f;--b:#0b2a22"><i class="ab-sh2"></i><em>Preuve sociale<small>Lot 1</small></em></div>
+              <div class="ab-t ab-vid" style="--a:#5b4bb5;--b:#1a1440"><i class="ab-sh1"></i><span class="ab-play"></span><span class="ab-time">0:45</span><em>Preuve sociale<small>Vidéo · Lot 1</small></em></div>
+              <div class="ab-t" style="--a:#b5504b;--b:#340f10"><i class="ab-sh3"></i><em>Preuve sociale<small>Lot 1</small></em></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-  <div class="cvr-lightbox" id="cvrLightbox"><div class="cvr-lightbox-close" id="cvrLightboxClose"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><img id="cvrLightboxImg" src="" alt="Vue agrandie"></div>
 </section>
-<script>(function(){
-  var lb=document.getElementById('cvrLightbox');
-  var lbImg=document.getElementById('cvrLightboxImg');
-  var lbClose=document.getElementById('cvrLightboxClose');
-  document.querySelectorAll('.cvr-item-img[data-lightbox]').forEach(function(el){
-    el.addEventListener('click',function(){
-      lbImg.src=el.getAttribute('data-lightbox');
-      lb.classList.add('is-open');
-    });
-  });
-  function closeLb(){lb.classList.remove('is-open');lbImg.src='';}
-  lbClose.addEventListener('click',closeLb);
-  lb.addEventListener('click',function(e){if(e.target===lb)closeLb();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLb();});
-})();</script>
+<style>
+.cvr-item-img.ab{aspect-ratio:auto!important;height:auto!important;cursor:default;background:#0A0C11;border:1px solid rgba(255,255,255,.1);border-radius:16px!important;overflow:hidden;pointer-events:none;user-select:none;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+.cvr-item-img.ab:hover img{transform:none}
+.ab{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#F2F4F8;text-align:left}
+.ab-bar{display:flex;align-items:center;gap:10px;padding:8px 12px;background:#0d1017;border-bottom:1px solid rgba(255,255,255,.07)}
+.ab-dots{display:flex;gap:5px}.ab-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.16)}
+.ab-url{font-size:10px;color:#626B7A;flex:1;text-align:center;margin-right:36px}
+.ab-body{padding:14px}
+.ab-h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:12px}
+.ab-h b{display:block;font-size:14px;font-weight:700;color:#F2F4F8}.ab-h small{display:block;font-size:10px;color:#8891A0;margin-top:2px}
+.ab-btn{flex-shrink:0;font-size:9.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,#5B8DEF,#2D6FE0);padding:7px 10px;border-radius:8px;white-space:nowrap}
+.ab-btn-g{background:rgba(255,255,255,.06);color:#8891A0;border:1px solid rgba(255,255,255,.1)}
+.ab-prods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ab-prod{background:#12151C;border:1px solid rgba(255,255,255,.09);border-radius:12px;overflow:hidden;padding-bottom:10px}
+.ab-prod-img{aspect-ratio:4/3;position:relative;background:radial-gradient(circle at 30% 20%,var(--a),var(--b));display:flex;align-items:center;justify-content:center}
+.ab-bottle{width:22%;height:62%;border-radius:6px 6px 8px 8px;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.55));position:relative;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+.ab-bottle::before{content:"";position:absolute;left:30%;right:30%;top:-14%;height:16%;border-radius:3px 3px 0 0;background:rgba(255,255,255,.8)}
+.ab-bottle2{width:30%;height:50%;border-radius:10px}
+.ab-chip{position:absolute;left:6px;bottom:6px;font-size:8px;font-weight:700;color:#C9CDD6;background:rgba(10,12,17,.72);border:1px solid rgba(255,255,255,.12);padding:3px 7px;border-radius:99px}
+.ab-chip-on{color:#9DBBFF;background:rgba(20,34,66,.85);border-color:rgba(91,141,239,.35)}
+.ab-prod-t{font-size:12px;font-weight:700;padding:9px 10px 0}.ab-prod-p{font-size:10.5px;color:#8891A0;font-family:'DM Mono',ui-monospace,monospace;padding:2px 10px 0}
+.ab-prod-r{display:flex;justify-content:space-between;align-items:center;padding:7px 10px 0}
+.ab-pill{font-size:9px;font-weight:600;color:#9a9eb2;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);padding:2px 8px;border-radius:99px}
+.ab-cols{display:flex;gap:3px}.ab-cols i{width:10px;height:10px;border-radius:50%;border:1.5px solid rgba(255,255,255,.2)}
+.ab-go{margin:9px 10px 0;text-align:center;font-size:9.5px;font-weight:700;color:#fff;background:linear-gradient(135deg,#5B8DEF,#2D6FE0);padding:8px 4px;border-radius:8px}
+.ab-go-off{background:rgba(255,255,255,.06);color:#8891A0}
+.ab-suivi{position:relative;overflow:hidden;background:linear-gradient(160deg,#12151f,#0d0f16);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:16px 16px 14px}
+.ab-glow{position:absolute;top:-50px;right:-40px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,rgba(45,127,249,.2),transparent 70%)}
+.ab-s-head{display:flex;align-items:center;gap:10px;margin-bottom:16px;position:relative}
+.ab-s-ph{width:34px;height:34px;border-radius:9px;background:radial-gradient(circle at 30% 20%,var(--a),var(--b))}
+.ab-s-head b{display:block;font-size:13px;font-weight:800}.ab-s-head small{font-size:10px;color:#626B7A}.ab-s-head em{font-style:normal;color:#5B8DEF;font-weight:700}
+.ab-step{display:flex;align-items:center;gap:10px;margin-bottom:16px;position:relative}
+.ab-step b{display:block;font-size:12.5px;font-weight:700}.ab-step small{display:block;font-size:10.5px;color:#8891A0;margin-top:1px}
+.ab-n{margin-left:auto;font-size:9.5px;color:#626B7A;font-family:'DM Mono',ui-monospace,monospace}
+.ab-pulse{width:9px;height:9px;border-radius:50%;background:#5B8DEF;flex-shrink:0;animation:ab-pulse 1.8s ease-in-out infinite}
+@keyframes ab-pulse{0%,100%{box-shadow:0 0 0 0 rgba(91,141,239,.5)}50%{box-shadow:0 0 0 7px rgba(91,141,239,0)}}
+.ab-lbl{font-size:8.5px;color:#626B7A;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:7px;position:relative}
+.ab-count{font-family:'DM Mono',ui-monospace,monospace;font-size:30px;font-weight:800;letter-spacing:-.5px;line-height:1;background:linear-gradient(90deg,#fff,#9fbcff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;position:relative}
+.ab-line{margin-top:14px;height:3px;border-radius:2px;background:rgba(255,255,255,.07);overflow:hidden;position:relative}.ab-line i{display:block;height:100%;width:62%;border-radius:2px;background:linear-gradient(90deg,#5B8DFF,#2D7FF9)}
+.ab-steps5{display:flex;justify-content:space-between;gap:4px;margin-top:12px;position:relative}
+.ab-steps5 span{font-size:8px;color:#626B7A;font-weight:600;flex:1;text-align:center;padding-top:7px;border-top:2px solid rgba(255,255,255,.07)}
+.ab-steps5 span.on{color:#9DBBFF;border-top-color:#5B8DEF}.ab-steps5 span.cur{color:#fff}
+.ab-chips{display:flex;gap:5px;margin-bottom:10px}
+.ab-chips span{font-size:9.5px;font-weight:600;color:#8891A0;border:1px solid rgba(255,255,255,.1);padding:4px 10px;border-radius:20px}
+.ab-chips span.on{color:#F2F4F8;border-color:#5B8DEF;background:rgba(91,141,239,.14)}
+.ab-gal{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.ab-t{position:relative;aspect-ratio:4/5;border-radius:7px;overflow:hidden;background:radial-gradient(circle at 25% 15%,var(--a),var(--b))}
+.ab-t i{position:absolute;display:block;background:rgba(255,255,255,.14);border-radius:50%}
+.ab-sh1{width:62%;height:44%;left:19%;top:22%;border-radius:10px!important;transform:rotate(-8deg)}
+.ab-sh2{width:50%;height:50%;left:25%;top:20%}
+.ab-sh3{width:70%;height:30%;left:15%;top:30%;border-radius:8px!important;transform:rotate(6deg)}
+.ab-t em{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 5px;background:linear-gradient(transparent,rgba(0,0,0,.72));font-style:normal;font-size:8px;font-weight:700;color:#fff;line-height:1.2}
+.ab-t em small{display:block;font-size:7px;font-weight:500;color:rgba(255,255,255,.6)}
+.ab-vid::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.16) 50%,transparent 70%);transform:translateX(-100%);animation:ab-shine 3.2s ease-in-out infinite}
+@keyframes ab-shine{0%{transform:translateX(-100%)}55%,100%{transform:translateX(100%)}}
+.ab-play{position:absolute;left:50%;top:44%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.5);z-index:2}
+.ab-play::before{content:"";position:absolute;left:10px;top:7px;border-left:8px solid #fff;border-top:5px solid transparent;border-bottom:5px solid transparent}
+.ab-time{position:absolute;right:5px;top:5px;font-size:8px;font-weight:700;color:#fff;background:rgba(0,0,0,.6);padding:2px 5px;border-radius:5px;z-index:2}
+.cvr-item:nth-child(n+4){display:none}
+@media(prefers-reduced-motion:reduce){.ab-vid::after,.ab-pulse{animation:none}}
+</style>
+<script>(function(){var c=document.getElementById('abCount'),l=document.getElementById('abLine');if(!c)return;var t=17*3600+42*60+8;function f(n){var h=Math.floor(n/3600),m=Math.floor(n%3600/60),s=n%60;return h+'h '+('0'+m).slice(-2)+'m '+('0'+s).slice(-2)+'s'}setInterval(function(){t=t>60?t-1:17*3600+42*60+8;c.textContent=f(t);if(l)l.style.width=(t/86400*100*1.19).toFixed(1)+'%'},1000)})();</script>
+
 
 
 <style>
@@ -1402,17 +1446,45 @@ img.exv-lb-media{max-width:94vw}
       <div class="proc-step">
         <div class="proc-step-header"><div class="proc-step-dot">2</div><div><div class="proc-step-label">Étape 2</div><div class="proc-step-title">Vous importez vos produits.</div></div></div>
         <p class="proc-step-desc">Connectez-vous avec votre compte Google, ajoutez votre produit et demandez une production en <strong>1 clic</strong>. Zéro formulaire à refaire à chaque fois.</p>
-        <div class="proc-img2-frame"><img src="/assets/vente/proc-step2-formulaire.jpg" alt="Ajout de produit dans AdBoard" loading="lazy"></div>
+        <div class="proc-img2-frame st2-ill" aria-hidden="true">
+          <div class="st2-sec"><div class="st2-top"><span class="st2-n">1</span><b>Votre page produit</b><em>facultatif</em></div>
+            <div class="st2-p">Collez le lien : nous remplissons la fiche pour vous.</div>
+            <div class="st2-in st2-link">https://votre-boutique.com/produit<span class="st2-spin"></span></div>
+            <div class="st2-ok">C'est rempli : <b>nom, offre, marché, photos</b>. Vérifiez et corrigez si besoin.</div></div>
+          <div class="st2-sec"><div class="st2-top"><span class="st2-n">2</span><b>L'essentiel</b></div>
+            <label>Nom du produit</label><div class="st2-in">Sérum Éclat Intense<span class="st2-auto">auto</span></div>
+            <label>Offre actuelle</label><div class="st2-in">12 900 FCFA au lieu de 18 000 FCFA<span class="st2-auto">auto</span></div>
+            <label>Marché</label><div class="st2-in">Sénégal<span class="st2-auto">auto</span></div></div>
+        </div>
       </div>
       <div class="proc-step">
         <div class="proc-step-header"><div class="proc-step-dot">3</div><div><div class="proc-step-label">Étape 3</div><div class="proc-step-title">Vous suivez tout,<br>en direct.</div></div></div>
         <p class="proc-step-desc">En <strong>48h max</strong>, recevez tout dans AdBoard — organisé et prêt à uploader sur Meta Ads, en attendant votre prochaine demande, quand vous voulez.</p>
-        <div class="proc-img-stack"><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina1.jpg" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina2.jpg" alt="" loading="lazy"></div><div class="proc-stack-card"><img src="/assets/vente/proc-step3-vitalina3.jpg" alt="" loading="lazy"></div></div>
+        <div class="proc-img-stack"><div class="proc-stack-card"><img src="/assets/vente/exemple-veloce.jpg" alt="" loading="lazy" draggable="false"></div><div class="proc-stack-card proc-stack-vid"><video muted loop playsinline preload="none" poster="/assets/vente/video/deirol.jpg" data-src="/assets/vente/video/deirol.mp4" aria-label="Créative vidéo"></video></div><div class="proc-stack-card"><img src="/assets/vente/exemple-vitalina.jpg" alt="" loading="lazy" draggable="false"></div></div>
         <div class="proc-wa-badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1FB6FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Livraison en 48h</div>
       </div>
     </div></div>
   </div>
 </section>
+<style id="proc-ill">
+.st2-ill{aspect-ratio:auto!important;max-height:none!important;background:#0A0C11;padding:10px;display:flex;flex-direction:column;gap:8px;pointer-events:none;user-select:none;text-align:left;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif}
+.st2-sec{background:linear-gradient(160deg,#12151f,#0d0f16);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:10px 10px 11px}
+.st2-top{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.st2-n{width:18px;height:18px;border-radius:6px;background:rgba(91,141,239,.14);color:#5B8DEF;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.st2-top b{font-size:11.5px;font-weight:800;color:#F2F4F8}.st2-top em{font-style:normal;font-size:7.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#626B7A;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:1px 6px}
+.st2-p{font-size:9.5px;color:#8891A0;line-height:1.4;margin-bottom:7px}
+.st2-in{position:relative;font-size:10.5px;color:#F2F4F8;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.11);border-radius:7px;padding:7px 36px 7px 9px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st2-link{border-color:rgba(91,141,239,.5);margin-bottom:5px}
+.st2-spin{position:absolute;right:9px;top:50%;margin-top:-6px;width:12px;height:12px;border-radius:50%;border:2px solid rgba(255,255,255,.12);border-top-color:#5B8DEF;animation:st2spin .8s linear infinite}
+@keyframes st2spin{to{transform:rotate(360deg)}}
+.st2-ok{font-size:9px;color:#5B8DEF;line-height:1.4}.st2-ok b{font-weight:700}
+.st2-sec label{display:block;font-size:8.5px;font-weight:700;color:#8891A0;margin:0 0 3px}
+.st2-auto{position:absolute;right:7px;top:50%;margin-top:-7px;font-size:7.5px;font-weight:700;color:#5BD6A0;border:1px solid rgba(91,214,160,.35);border-radius:20px;padding:1px 6px}
+.proc-stack-vid video{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;background:#0e1118}
+.proc-stack-card img{pointer-events:none;-webkit-user-drag:none}
+</style>
+<script>(function(){var vs=document.querySelectorAll('.proc-stack-vid video');vs.forEach(function(v){v.muted=true;v.setAttribute('muted','');v.disablePictureInPicture=true;});if(!('IntersectionObserver' in window)){vs.forEach(function(v){v.src=v.getAttribute('data-src');v.play()});return}var io=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.src)v.src=v.getAttribute('data-src');var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause()})},{threshold:.2,rootMargin:'150px'});vs.forEach(function(v){io.observe(v)})})();</script>
+
 <style>
 .avis-section{width:100vw;position:relative;left:50%;margin-left:-50vw;background:#0A0A0E;padding:52px 0 60px;color:#fff;overflow:hidden}
 .avis-section::before,.avis-section::after{content:'';position:absolute;top:0;bottom:0;width:80px;z-index:3;pointer-events:none}

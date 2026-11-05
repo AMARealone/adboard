@@ -9,11 +9,11 @@
 <meta property="og:title" content="Vitalina Energy : 2,7 M → 6,15 M FCFA par mois en 6 semaines">
 <meta property="og:description" content="Étude de cas AdStack : comment une marque de compléments a doublé son chiffre d’affaires mensuel.">
 <meta property="og:url" content="https://www.adstackofficial.com/etude-de-cas/vitalina">
-<meta property="og:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-vitalina.jpg">
+<meta property="og:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-vitalina.jpg?v=2">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-vitalina.jpg">
+<meta name="twitter:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-vitalina.jpg?v=2">
 
 <meta name="description" content="Comment une marque e-commerce a trouvé ses créatives gagnantes avec AdStack.">
 <link rel="icon" href="/favicon.ico">
@@ -69,11 +69,13 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
 .res{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:28px}
 .win{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
 .win figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
-.win img{display:block;width:100%;height:auto;cursor:zoom-in}
+.win img{display:block;width:100%;height:auto}
 .win figcaption{padding:12px 14px;font-size:13px;color:var(--mut)}
 .win figcaption b{display:block;color:var(--sticker);font-size:16px}
-.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
-.gal img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);cursor:zoom-in;display:block}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;align-items:center}
+.gal img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);display:block}
+.gal video{width:100%;height:100%;object-fit:cover;border-radius:14px;border:1px solid var(--line);display:block;background:#0e1118;pointer-events:none}
+.gal .galv{position:relative;aspect-ratio:9/16;grid-row:span 1}
 .cta{text-align:center;padding:64px 0 90px}
 .cta h2{margin-bottom:12px}
 .cta p{color:var(--mut);margin:0 0 26px}
@@ -241,6 +243,7 @@ h2{font-weight:900;letter-spacing:-1.1px;line-height:1.12;font-size:clamp(28px,4
 @media(max-width:640px){.idx{grid-template-columns:1fr}.idx-v{height:280px}.idx-cta{padding:40px 20px;margin:60px 16px 0}}
 </style>
 <script src="/suivi.js"></script>
+<script src="/protect-media.js"></script>
 </head>
 <body>
 <div class="bg-flow" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -369,7 +372,7 @@ h2{font-weight:900;letter-spacing:-1.1px;line-height:1.12;font-size:clamp(28px,4
 <script>(function(){var list=document.getElementById('faqList');function faqSync(){if(!list)return;list.querySelectorAll('.faq-item').forEach(function(el){var a=el.querySelector('.faq-answer');if(!a)return;a.style.maxHeight=el.classList.contains('open')?a.scrollHeight+'px':'';});}window.addEventListener('resize',faqSync);window.addEventListener('load',faqSync);setTimeout(faqSync,50);if(list){list.addEventListener('click',function(e){var btn=e.target.closest('.faq-question');if(!btn)return;var item=btn.closest('.faq-item');var isOpen=item.classList.contains('open');list.querySelectorAll('.faq-item.open').forEach(function(el){el.classList.remove('open');});if(!isOpen)item.classList.add('open');faqSync();});}var obs=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){entry.target.classList.add('is-visible');obs.unobserve(entry.target);}});},{threshold:0.08});document.querySelectorAll('.faq-item').forEach(function(el,i){el.style.transitionDelay=(i*0.06)+'s';obs.observe(el);});})();</script>
 <div class="sticky" id="sticky"><span>Des résultats comme ceux-ci ?</span><a class="btn sm" href="/pdv#nos-offres" data-cta="sticky">Voir les offres</a></div>
 <script>(function(){try{var st=document.getElementById("sticky"),ft=document.querySelector("footer");if(st&&ft&&"IntersectionObserver" in window){st.style.transition="transform .2s";new IntersectionObserver(function(es){st.style.transform=es[0].isIntersecting?"translateY(110%)":"";},{threshold:0}).observe(ft)}}catch(e){}})();</script>
-<div class="lb" id="lb"><img alt=""></div>
+
 <script src="/etude-de-cas-data.js"></script>
 <script src="/etude-de-cas-saelia-data.js"></script>
 <script src="/etude-de-cas-veloce-data.js"></script>
@@ -417,7 +420,7 @@ if(has(D.resultats)||has(D.gagnantes)){h+='<section class="s"><div class="wrap r
  if(has(D.gagnantes))h+='<div class="win">'+D.gagnantes.map(function(g){return '<figure><img src="'+esc(g.img)+'" alt="'+esc(g.legende)+'" loading="lazy"><figcaption>'+(g.metrique?'<b>'+esc(g.metrique)+'</b>':'')+esc(g.legende)+'</figcaption></figure>'}).join('')+'</div>';
  h+='</div></section>'}
 // 7. Galerie
-if(has(D.galerie)){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Les créatives</div><h2>Réalisées pour '+esc(D.marque)+'</h2><div class="gal">'+D.galerie.map(function(g){return '<img src="'+esc(g)+'" alt="Créative '+esc(D.marque)+'" loading="lazy">'}).join('')+'</div></div></section>'}
+if(has(D.galerie)){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Les créatives</div><h2>Réalisées pour '+esc(D.marque)+'</h2><div class="gal">'+D.galerie.map(function(g){if(g&&typeof g==='object'&&g.video)return '<div class="galv"><video data-src="'+esc(g.video)+'" poster="'+esc(g.poster||'')+'" muted loop playsinline preload="none" aria-label="Créative vidéo '+esc(D.marque)+'"></video></div>';return '<img src="'+esc(g)+'" alt="Créative '+esc(D.marque)+'" loading="lazy" draggable="false">'}).join('')+'</div></div></section>'}
 // 8. CTA
 h+='<section class="cta"><div class="wrap rv"><h2>Vous voulez des résultats comme ceux-ci ?</h2><p>Choisissez votre offre et recevez vos premières créatives dans AdBoard.</p><div class="row"><a class="btn" href="/pdv#nos-offres" data-cta="fin">Voir les offres</a><a class="btn ghost" href="/etude-de-cas">Voir les études de cas</a></div></div></section>';
 document.getElementById('page').innerHTML='<div class="wrap" style="padding-top:10px"><a class="back" href="/etude-de-cas">← Toutes les études de cas</a></div>'+h;
@@ -425,9 +428,8 @@ document.getElementById('page').innerHTML='<div class="wrap" style="padding-top:
 var io='IntersectionObserver' in window?new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.08}):null;
 document.querySelectorAll('.rv').forEach(function(el){io?io.observe(el):el.classList.add('in')});
 setTimeout(function(){document.querySelectorAll('.rv:not(.in)').forEach(function(el){el.classList.add('in')})},2500);
-var lb=document.getElementById('lb'),li=lb.querySelector('img');
-document.addEventListener('click',function(e){var im=e.target.closest('.win img,.gal img');if(im){li.src=im.src;lb.classList.add('on')}else if(e.target.closest('#lb')){lb.classList.remove('on')}});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')lb.classList.remove('on')});
+var gv=document.querySelectorAll('.galv video');gv.forEach(function(v){v.muted=true;v.setAttribute('muted','');v.disablePictureInPicture=true;});
+if('IntersectionObserver' in window){var iv=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.src)v.src=v.getAttribute('data-src');var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause()})},{threshold:.15,rootMargin:'150px'});gv.forEach(function(v){iv.observe(v)})}else{gv.forEach(function(v){v.src=v.getAttribute('data-src');v.play()})}
 document.querySelectorAll('[data-cta]').forEach(function(a){a.addEventListener('click',function(){try{if(window.fbq)fbq('trackCustom','EtudeDeCasCTA',{emplacement:a.getAttribute('data-cta')})}catch(x){}})});
 try{if(window.fbq)fbq('track','ViewContent',{content_name:'Etude de cas '+D.marque})}catch(x){}
 })();

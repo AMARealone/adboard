@@ -3962,69 +3962,89 @@ function FormulaireTopPerformer({ form, setForm, onSave, onRemove, busy, isMobil
 }
 
 
-// ── v: APERÇUS FLOUTÉS (galerie, ad copies, données marché) — ce qu'un compte voit tant qu'il n'a rien reçu : la section comme si elle était remplie,
-// nette sur 40 % du haut, floutée et verrouillée sur les 60 % du bas. Exemples non téléchargeables (miniatures 400 px en fond d'image, pas de balise <img>, clic droit et glisser bloqués).
-const TeaserVerrou = ({children, titre, texte, cta, onCta, hauteur=560}) => (
-  <div style={{position:'relative',overflow:'hidden',borderRadius:12,height:hauteur,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.015)'}} onContextMenu={e=>e.preventDefault()}>
-    <div aria-hidden="true" style={{pointerEvents:'none',userSelect:'none',WebkitUserSelect:'none',padding:14}}>{children}</div>
-    <div style={{position:'absolute',left:0,right:0,top:'38%',bottom:0,backdropFilter:'blur(14px)',WebkitBackdropFilter:'blur(14px)',background:`linear-gradient(to bottom, rgba(10,12,17,0) 0%, rgba(10,12,17,0.70) 40%, ${C.bg} 100%)`,WebkitMaskImage:'linear-gradient(to bottom, transparent 0%, #000 28%)',maskImage:'linear-gradient(to bottom, transparent 0%, #000 28%)'}}/>
-    <div style={{position:'absolute',left:0,right:0,top:'52%',bottom:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center',gap:10,padding:'0 20px'}}>
-      <div style={{width:44,height:44,borderRadius:12,background:'rgba(91,141,239,0.16)',border:`1px solid ${C.accentM}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+// ── APERÇUS FLOUTÉS (galerie, ad copies, données marché) — ce que voit un compte qui n'a encore rien reçu.
+// Chaque aperçu reprend le vrai rendu de sa section « remplie » (mêmes cartes, même grille, mêmes couleurs : pour Ad Copies c'est
+// le vrai composant CarteAngleCopies), le tout recouvert d'un flou sur TOUTE la section, avec le texte et le bouton par-dessus.
+// Exemples non téléchargeables : miniatures en fond d'image (pas de balise <img>), clic droit et glisser bloqués.
+const TeaserVerrou = ({children, titre, texte, cta, onCta, hauteur=620}) => (
+  <div style={{position:'relative',overflow:'hidden',borderRadius:12,height:hauteur,border:`1px solid ${C.border}`}} onContextMenu={e=>e.preventDefault()} data-testid="teaser-verrou">
+    <div aria-hidden="true" style={{position:'relative',zIndex:0,isolation:'isolate',pointerEvents:'none',userSelect:'none',WebkitUserSelect:'none'}}>{children}</div>
+    <div style={{position:'absolute',inset:0,zIndex:5,backdropFilter:'blur(7px)',WebkitBackdropFilter:'blur(7px)',background:'rgba(10,12,17,0.34)'}}/>
+    <div style={{position:'absolute',top:10,left:10,zIndex:7,padding:'3px 9px',borderRadius:20,background:'rgba(0,0,0,0.55)',fontSize:9.5,fontWeight:700,letterSpacing:'0.06em',color:'#fff'}}>EXEMPLE</div>
+    <div style={{position:'absolute',inset:0,zIndex:6,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 16px'}}>
+    <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:10,padding:'26px 28px',maxWidth:520,borderRadius:16,background:'rgba(10,12,17,0.78)',border:`1px solid ${C.borderM}`,backdropFilter:'blur(10px)',WebkitBackdropFilter:'blur(10px)',boxShadow:'0 18px 50px rgba(0,0,0,0.5)'}}>
+      <div style={{width:48,height:48,borderRadius:14,background:'rgba(91,141,239,0.18)',border:`1px solid ${C.accentM}`,display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
       </div>
-      <div style={{fontSize:15,fontWeight:700,color:C.text}}>{titre}</div>
-      <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:440}}>{texte}</div>
-      {cta && <button onClick={onCta} style={{marginTop:4,padding:'9px 18px',borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{cta}</button>}
+      <div style={{fontSize:18,fontWeight:800,color:C.text,maxWidth:460}}>{titre}</div>
+      <div style={{fontSize:13,color:C.sec,lineHeight:1.55,maxWidth:460}}>{texte}</div>
+      {cta && <button onClick={onCta} style={{marginTop:6,padding:'11px 24px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>{cta}</button>}
+    </div>
     </div>
   </div>
 );
-const TeaserTag = () => <div style={{position:'absolute',top:10,left:10,zIndex:2,padding:'3px 9px',borderRadius:20,background:'rgba(0,0,0,0.55)',fontSize:9.5,fontWeight:700,letterSpacing:'0.06em',color:'#fff'}}>EXEMPLES</div>;
-const TeaserGalerie = ({setSection}) => (
-  <div style={{position:'relative'}}>
-    <TeaserVerrou titre="Votre galerie sera comme ceci" texte="Vos créatives, triées par angle et par semaine, prêtes à télécharger et à publier. Elle se remplit dès votre première production." cta="Découvrir nos offres" onCta={()=>setSection && setSection('tarifs')}>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))',gap:10}}>
-        {[1,2,3,4,5,6].map(i => (
-          <div key={i} style={{position:'relative',aspectRatio:'4 / 5',borderRadius:8,overflow:'hidden',backgroundImage:`url(/assets/teaser/g${i}.jpg)`,backgroundSize:'cover',backgroundPosition:'center',border:`1px solid ${C.border}`}}>
-            <div style={{position:'absolute',left:8,bottom:8,padding:'2px 8px',borderRadius:20,background:'rgba(0,0,0,0.6)',fontSize:9.5,fontWeight:700,color:'#fff'}}>Angle {((i-1)%3)+1} · Semaine {i<4?1:2}</div>
-          </div>
-        ))}
+const TEASER_ANGLES = ['Douleur sociale','Transformation rapide','Preuve sociale','Urgence et rareté','Comparaison produits','Crédibilité'];
+const TeaserGalerie = ({setSection}) => {
+  const isMobile = useIsMobile();
+  const nb = isMobile ? 18 : 30;
+  return (
+    <TeaserVerrou titre="Vous aurez accès à vos créatives ici" texte="Chaque angle livre 3 créatives (2 images et 1 vidéo), classées par lot et prêtes à télécharger et à publier. Cette galerie se remplit dès votre première production." cta="Découvrir nos offres" onCta={()=>setSection && setSection('tarifs')} hauteur={isMobile?560:640}>
+      <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:10}}>
+        {['Tous les produits','Cible','Lot','Angle','Date'].map((l,k)=>(<span key={k} style={{padding:'6px 14px',borderRadius:20,border:`1px solid ${C.border}`,color:C.sec,fontSize:11.5,fontWeight:600}}>{l}</span>))}
+      </div>
+      <div style={{padding:'11px 14px',borderRadius:9,background:C.card,border:`1px solid ${C.border}`,color:C.sec,fontSize:12,marginBottom:12}}>Rechercher par produit, angle, lot...</div>
+      <div style={{display:'grid',gridTemplateColumns:`repeat(${isMobile?3:6},1fr)`,gap:isMobile?4:6}}>
+        {Array.from({length:nb}).map((_,i) => {
+          const angle = TEASER_ANGLES[Math.floor(i/3) % TEASER_ANGLES.length];
+          const video = i % 3 === 1;
+          const lot = Math.floor(i/9) + 1;
+          return (
+            <div key={i} style={{position:'relative',aspectRatio:'4/5',borderRadius:6,overflow:'hidden',background:`#14161D url(${video ? `/assets/teaser/v${(Math.floor(i/3)%4)+1}.jpg` : `/assets/teaser/g${((i*5+Math.floor(i/3))%6)+1}.jpg`}) center/cover no-repeat`}}>
+              {video && <div style={{position:'absolute',left:6,bottom:6,width:22,height:22,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.55)',zIndex:2}}><Icon name="play" size={10} color="#fff"/></div>}
+              <div style={{position:'absolute',bottom:0,left:0,right:0,padding:'18px 8px 6px',background:'linear-gradient(transparent,rgba(0,0,0,0.7))',zIndex:2}}>
+                <div style={{fontSize:9,color:'#fff',fontWeight:600,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',paddingLeft:video?26:0}}>{angle}</div>
+                <div style={{fontSize:8,color:'rgba(255,255,255,0.6)',paddingLeft:video?26:0}}>{video?'Vidéo · ':''}Lot {lot}</div>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </TeaserVerrou>
-    <TeaserTag/>
-  </div>
-);
-const TEASER_COPIES = [
-  {angle:'Angle 1', hook:"Bouton surprise la veille d'un mariage ? On a ce qu'il vous faut.", txt:"Un soin ciblé qui calme les rougeurs en quelques heures. Appliquez le soir, retrouvez une peau plus nette au réveil. Paiement à la livraison."},
-  {angle:'Angle 2', hook:"Vos racines blanches reviennent trop vite ? Dix minutes suffisent.", txt:"Un shampoing colorant qui couvre les cheveux blancs et laisse les cheveux brillants. Sans produit bizarre, simple à utiliser à la maison."},
-  {angle:'Angle 3', hook:"Un seul soin pour toute la famille, sans mauvaise surprise.", txt:"Une huile naturelle qui nourrit les cheveux crépus de la racine aux pointes. Facile à utiliser, douce, sans sulfates."},
-  {angle:'Angle 1', hook:"Elle a unifié son teint en six semaines. Et vous ?", txt:"Un sérum ciblé contre les taches. Résultats progressifs, textes et preuves prêts à publier sur Meta Ads."},
-  {angle:'Angle 2', hook:"Fini les abdos de la salle, place à la télé.", txt:"Une ceinture qui travaille pour vous pendant que vous vous détendez. Livraison rapide, paiement à la réception."},
-  {angle:'Angle 3', hook:"Chaque mois, il en reste moins. Agissez maintenant.", txt:"Un traitement pour garder vos cheveux plus longtemps. Application simple, résultats suivis semaine après semaine."},
+  );
+};
+const TEASER_PRODUIT = {
+  nom:'Sérum Éclat', photo:null, pricing:'12 900 FCFA', pays:'Sénégal',
+  creatives:[1,2,3,4,5,6].map(i => ({id:`T1_${i}`, productId:'ex', week:'S1', angle: i<=3?'Douleur sociale':'Preuve sociale', thumbUrl:(i===2||i===5)?`/assets/teaser/v${i===2?1:4}.jpg`:`/assets/teaser/g${i}.jpg`, type: (i===2||i===5)?'video':'image'})),
+};
+const TEASER_ANGLES_COPIES = [
+  {numero:1, nom:'Douleur sociale', hooks:["Votre teint fatigué se remarque avant vous.","Vous brillez pour les autres, jamais pour vous ?","Le geste du matin qui change votre miroir.","Pourquoi vos amies ont meilleure mine ?","21 jours pour un teint que vous aimez."], description:"Vous croisez votre reflet dans une vitrine et vous voyez un teint fatigué.\n\nCe sérum unifie le teint et redonne de l'éclat en 21 jours. Un geste simple, matin et soir.\n\nPaiement à la livraison. Commandez aujourd'hui."},
+  {numero:2, nom:'Preuve sociale', hooks:["« Je ne mets plus de fond de teint » — Fatou.","Plus de 800 femmes l'ont déjà adopté.","Avant et après, sans aucun filtre.","Le sérum dont tout le monde parle à Dakar.","Elles ont essayé. Elles recommandent."], description:"Quand Aminata a reçu son premier flacon, elle doutait.\n\nTrois semaines plus tard, son entourage lui demandait son secret.\n\nLivraison rapide, paiement à la réception."},
 ];
-const TeaserCopies = ({setSection}) => (
-  <div style={{position:'relative'}}>
-    <TeaserVerrou titre="Vos ad copies seront comme ceci" texte="Hooks accrocheurs et descriptions prêtes pour Meta Ads, classés par angle. Copiez-collez directement dans votre Ads Manager." cta="Ajouter un produit" onCta={()=>setSection && setSection('produits')} hauteur={520}>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))',gap:10}}>
-        {TEASER_COPIES.map((c,i) => (
-          <div key={i} style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:9,padding:14}}>
-            <div style={{display:'inline-block',padding:'2px 9px',borderRadius:20,background:C.accentS,color:C.accent,fontSize:10,fontWeight:700,marginBottom:8}}>{c.angle}</div>
-            <div style={{fontSize:13,fontWeight:700,color:C.text,lineHeight:1.4,marginBottom:6}}>{c.hook}</div>
-            <div style={{fontSize:11.5,color:C.sec,lineHeight:1.55}}>{c.txt}</div>
-          </div>
+const TeaserCopies = ({setSection}) => {
+  const isMobile = useIsMobile();
+  return (
+    <TeaserVerrou titre="Vous aurez accès à vos ad copies ici" texte="Pour chaque angle : des titres et un texte principal prêts à copier-coller dans votre gestionnaire de publicités Meta, avec l'aperçu de la pub." cta="Découvrir nos offres" onCta={()=>setSection && setSection('tarifs')} hauteur={isMobile?640:700}>
+      <div style={{display:'flex',alignItems:'center',gap:14,padding:'14px 16px',borderRadius:10,background:'rgba(45,127,249,0.10)',border:'1px solid rgba(45,127,249,0.28)',marginBottom:16}}>
+        <div style={{width:48,height:48,borderRadius:8,flexShrink:0,background:'rgba(255,255,255,0.06)',border:`1px solid ${C.border}`}}/>
+        <div><div style={{fontSize:14,fontWeight:700,color:C.text}}>{TEASER_PRODUIT.nom}</div><div style={{fontSize:11,color:C.sec,marginTop:2}}>{TEASER_PRODUIT.pricing} · {TEASER_PRODUIT.pays} · 6 angles livrés</div></div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:16}}>
+        {TEASER_ANGLES_COPIES.map(a => (
+          <CarteAngleCopies key={a.numero} angle={a} delivery={{semaine:'S1'}} produit={TEASER_PRODUIT} estGagnant={a.numero===1} repriseDe={null}
+            copied={null} copy={()=>{}} dejaCopie={new Set()} isMobile={isMobile} refEl={null}/>
         ))}
       </div>
     </TeaserVerrou>
-    <TeaserTag/>
-  </div>
-);
-const TeaserMarche = ({setSection}) => (
-  <div style={{position:'relative'}}>
-    <TeaserVerrou titre="Vos données marché seront comme ceci" texte="Taille du marché, concurrence, persona cible, angles et ciblage Meta Ads pour chacun de vos produits, mis à jour régulièrement." cta="Ajouter un produit" onCta={()=>setSection && setSection('produits')} hauteur={600}>
-      <div style={{width:'100%',aspectRatio:'1100 / 756',borderRadius:8,backgroundImage:'url(/assets/teaser/marche.jpg)',backgroundSize:'cover',backgroundPosition:'top center'}}/>
+  );
+};
+const TeaserMarche = ({setSection}) => {
+  const isMobile = useIsMobile();
+  return (
+    <TeaserVerrou titre="Vous aurez accès à vos données marché ici" texte="Taille du marché, concurrence, client type, angles gagnants et ciblage Meta Ads pour chacun de vos produits." cta="Découvrir nos offres" onCta={()=>setSection && setSection('tarifs')} hauteur={isMobile?560:680}>
+      <div style={{width:'100%',aspectRatio:'1100 / 756',backgroundImage:'url(/assets/teaser/marche.jpg)',backgroundSize:'cover',backgroundPosition:'top center'}}/>
     </TeaserVerrou>
-    <TeaserTag/>
-  </div>
-);
+  );
+};
 
 const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user}) => {
   const [query, setQuery] = useState('');
