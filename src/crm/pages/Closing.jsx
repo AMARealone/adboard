@@ -6,7 +6,7 @@ import { CLOSING_JOURS, CLOSING_LABELS } from '../domain/defaults'
 import { closingMessage, lienOffreSuivi } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { Chip, Empty, toast } from '../ui'
-import { Marque, Meta, InfosAppel, BtnNotes, BtnSupprimer } from './common'
+import { Marque, Meta, InfosAppel, BtnNotes, BtnSupprimer, CaseEnvoye } from './common'
 
 export function ClosingCard({ p }) {
   const { A, cfg } = useCrm(); const n = N(p), now = Date.now(), age = closingJours(n, now), pj = closingProchainJ(n)
@@ -32,6 +32,7 @@ export function ClosingCard({ p }) {
             <b>J+{j}</b><span>{CLOSING_LABELS[i]}</span>
             {sent ? <button className="cx-lnk" onClick={() => A.marquer(p.id, 'closing_sent_j' + j, false)}>✓ {quand(n['closing_sent_j' + j + '_at'])}</button>
               : <><button className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>
+                <CaseEnvoye onCheck={() => A.marquer(p.id, 'closing_sent_j' + j, true)} />
                 {i < 2 && <button className="cx-ab" title="Version du texte" onClick={() => A.closingVersion(p.id, i === 0 ? 1 : 3, (i === 0 ? n.closing_ab1 : n.closing_ab3) === 'B' ? 'A' : 'B')}>{(i === 0 ? n.closing_ab1 : n.closing_ab3) === 'B' ? 'B' : 'A'}</button>}</>}
           </div>
         })}</div>

@@ -6,7 +6,7 @@ import { RELANCE_LABELS } from '../domain/defaults'
 import { insererLien, lienRelance, relanceMessage } from '../domain/messages'
 import { BoutonMajAds } from './MajAds'
 import { Chip, Empty, toast, confirmDlg } from '../ui'
-import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos } from './common'
+import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos, CaseEnvoye } from './common'
 
 export function LeadCard({ p }) {
   const { A, cfg, mutate } = useCrm(); const n = N(p), j = jDepuisLead(p), pj = prochaineRelance(n), [busy, setBusy] = useState(false)
@@ -38,7 +38,8 @@ export function LeadCard({ p }) {
         <div className="cx-steps">{RELANCES.map((d, i) => {
           const sent = relanceEnvoyee(n, d), due = !sent && j >= d && pj === d
           return <div key={d} className={'cx-step' + (sent ? ' done' : due ? ' due' : '')}><b>J+{d}</b><span>{RELANCE_LABELS[i]}</span>
-            {sent ? <button className="cx-lnk" onClick={() => mutate(p.id, { notes: { ['sent_j' + d]: undefined, ['j' + d + '_envoye']: undefined, ['j' + d + '_envoye_at']: undefined } })}>✓ {quand(n['j' + d + '_envoye_at']) || 'fait'}</button> : <button disabled={busy} className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>}</div>
+            {sent ? <button className="cx-lnk" onClick={() => mutate(p.id, { notes: { ['sent_j' + d]: undefined, ['j' + d + '_envoye']: undefined, ['j' + d + '_envoye_at']: undefined } })}>✓ {quand(n['j' + d + '_envoye_at']) || 'fait'}</button> : <button disabled={busy} className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>}
+            {!sent && <CaseEnvoye disabled={busy} onCheck={() => mutate(p.id, { notes: { ['j' + d + '_envoye']: true, ['j' + d + '_envoye_at']: new Date().toISOString() } })} />}</div>
         })}</div>
       </div>
       <div className="cx-acts">

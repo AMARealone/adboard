@@ -88,3 +88,8 @@ export function BtnsContact({ p }) {
   if (!num && !p.lien_instagram) return <span className="cx-note">Aucun contact enregistré</span>
   return <>{num && <a className="cx-btn sm wa" href={'https://wa.me/' + num} target="_blank" rel="noreferrer">📱 WhatsApp</a>}{p.lien_instagram && <a className="cx-btn sm ig" href={p.lien_instagram} target="_blank" rel="noreferrer">📷 Instagram</a>}</>
 }
+
+// Case « déjà envoyé » : pour cocher à la main un message parti hors du CRM (copié, envoyé depuis le téléphone…).
+export function CaseEnvoye({ onCheck, disabled }) {
+  return <label className="cx-sentbox" title="J'ai déjà envoyé ce message : le marquer comme envoyé"><input type="checkbox" checked={false} disabled={disabled} onChange={() => onCheck()} /><span>déjà envoyé</span></label>
+}
