@@ -302,6 +302,53 @@ h2{font-size:70px;margin-top:26px}
 .zw{position:relative;width:100%}
 .cx div.im video{width:100%;height:100%;object-fit:cover}
 
+/* ── Repères de section : couleur + pastille en haut + gros numéros, lisibles de loin ── */
+.s{--ac:#1FB6FF}
+.s[data-sec="pb"]{--ac:#FF6B85}
+.s[data-sec="sy"]{--ac:#1FB6FF}
+.s[data-sec="re"]{--ac:#2EF2A0}
+.s[data-sec="go"]{--ac:#FFC53D}
+.s[data-sec="of"]{--ac:#B58CFF}
+.s .kick{color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,transparent);border-color:color-mix(in srgb,var(--ac) 40%,transparent);font-size:26px}
+.s .kick:before{background:var(--ac);box-shadow:0 0 14px var(--ac)}
+.s .pt:before{background:var(--ac);box-shadow:0 0 16px var(--ac)}
+.s .bridge:after{color:var(--ac)}
+.trk{position:absolute;left:50%;top:40px;transform:translateX(-50%);display:flex;gap:12px;align-items:center;z-index:3}
+.trk span{height:54px;min-width:54px;border-radius:999px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:#7C8087;padding:0 14px;white-space:nowrap}
+.trk span.on{background:var(--ac);color:#0A0A0E;border-color:transparent;font-size:28px;padding:0 32px;box-shadow:0 0 34px color-mix(in srgb,var(--ac) 55%,transparent)}
+.prog{display:flex;align-items:center;gap:26px;align-self:flex-start}
+.prog .pn{flex:0 0 112px;height:112px;border-radius:50%;background:var(--ac);color:#0A0A0E;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:68px;box-shadow:0 0 0 14px color-mix(in srgb,var(--ac) 20%,transparent)}
+.prog .pl{font-size:30px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--ac);margin-bottom:14px}
+.prog .pd{display:flex;gap:10px}
+.prog .pd i{width:64px;height:16px;border-radius:8px;background:rgba(255,255,255,.14)}
+.prog .pd i.done{background:color-mix(in srgb,var(--ac) 55%,transparent)}
+.prog .pd i.cur{background:var(--ac);box-shadow:0 0 20px var(--ac)}
+.bridge{font-size:30px}
+.tr p{font-size:31px}.tr .t{font-size:23px}
+.tr.b .t{color:var(--b1)}.tr.g .t{color:#2EF2A0}
+.tr.g{border-color:rgba(46,242,160,.4);background:linear-gradient(160deg,rgba(46,242,160,.08),var(--card))}
+.syi{font-size:32px}
+.fs p{font-size:28px}
+.fs h3{font-size:40px}
+/* étape 2 : un angle = 1 vidéo + 2 images */
+.ang{width:100%;margin-bottom:18px}
+.ang .al2{display:inline-block;font-size:26px;font-weight:900;letter-spacing:2px;color:#0A0A0E;background:var(--ac);border-radius:999px;padding:7px 24px;margin-bottom:12px}
+.ang .at{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:16px}
+.ang .v,.ang .im{position:relative;aspect-ratio:1/1;border-radius:20px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.ang .im img{width:100%;height:100%;object-fit:cover;display:block}
+.ang .v span,.ang .im span{position:absolute;left:12px;bottom:12px;font-size:20px;font-weight:800;letter-spacing:1.5px;background:rgba(10,10,14,.82);border:1.5px solid rgba(255,255,255,.2);border-radius:999px;padding:5px 14px;color:#fff}
+/* résultats */
+.rm{width:100%;display:flex;flex-direction:column;gap:22px}
+.rm .big{font-size:112px;font-weight:900;letter-spacing:-4px;line-height:1}
+.rm .bl2{font-size:32px;color:#D5D8DE;line-height:1.3;margin-top:8px}
+.rm .rt{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.rm .rt div{background:var(--card);border:1.5px solid var(--line);border-radius:26px;padding:20px 26px}
+.rm .rt b{display:block;font-size:54px;letter-spacing:-1.5px;line-height:1.05}
+.rm .rt span{font-size:25px;color:#C4C6CA}
+.rm .md{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:16px}
+.rm .md>div{position:relative;aspect-ratio:3/4;border-radius:20px;overflow:hidden;border:1.5px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.45)}
+.rm .md img{width:100%;height:100%;object-fit:cover;display:block}
+.chipbrand{display:inline-flex;align-self:flex-start;margin-top:18px;font-size:26px;font-weight:700;color:#C4C6CA;background:rgba(255,255,255,.06);border:1.5px solid var(--line);border-radius:999px;padding:8px 22px}
 </style>
 <script src="/protect-media.js"></script>
 </head>
@@ -314,7 +361,7 @@ h2{font-size:70px;margin-top:26px}
 <script>
 (function(){
 "use strict";
-/* PRÉSENTATION UNIVERSELLE · 20 slides, aucune donnée client. Mêmes slides pour tout le monde. */
+/* PRÉSENTATION UNIVERSELLE · 25 slides, aucune donnée client. Mêmes slides pour tout le monde. */
 var G=function(n){return '/assets/teaser/g'+n+'.jpg'};
 var OFFRES={
  "TEST":{nom:"TEST",prix:"75.000",pts:["12 créatives par mois, vidéos et images","Jusqu’à 2 produits","Chaque lot livré en 48h maximum","Stratégie marketing et espace AdBoard inclus"],garantie:""},
@@ -329,7 +376,7 @@ function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return
 function img(src,alt){return '<img src="'+src+'" alt="'+esc(alt||"")+'" decoding="async">'}
 var LOGO='<div class="logo">Ad<b>Stack</b></div>';
 var slides=[],annexIdx=-1;
-function add(cls,html,o){slides.push({cls:cls||"",html:html,annex:o&&o.annex})}
+function add(cls,html,o){slides.push({cls:cls||"",html:html,annex:o&&o.annex,sec:o&&o.sec})}
 function head(k,t){return '<div class="kick a" style="--d:0">'+k+'</div><h2 class="a" style="--d:1">'+t+'</h2>'}
 function split(l,r,cls){return '<div class="split '+(cls||'')+'"><div class="L">'+l+'</div><div class="R">'+r+'</div></div>'}
 function bridge(t){return '<div class="bridge a" style="--d:9">'+t+'</div>'}
@@ -391,13 +438,30 @@ function vidSync(){
  });
 }
 setInterval(function(){[].forEach.call(document.querySelectorAll('.js-count'),function(c){var t=c.getAttribute('data-t');t=t?parseInt(t,10):17*3600+42*60+8;t=t>60?t-1:17*3600+42*60+8;c.setAttribute('data-t',t);var h=Math.floor(t/3600),mi=Math.floor(t%3600/60),sc=t%60;c.textContent=h+'h '+('0'+mi).slice(-2)+'m '+('0'+sc).slice(-2)+'s'})},1000);
-/* Un frein = une slide : ce qui bloque, pourquoi, et ce qu’on observe */
+/* ── Repères : section en cours (haut) et progression (gros numéro + barres) ── */
+var SECS=[['pb','Ce qui bloque'],['sy','Notre système'],['re','Résultats'],['go','Démarrer'],['of','L’offre']];
+function trk(k){return '<div class="trk">'+SECS.map(function(x,i){return '<span'+(x[0]===k?' class="on">'+x[1]:'>'+(i+1))+'</span>'}).join('')+'</div>'}
+function prog(n,total,label){var d='';for(var i=1;i<=total;i++)d+='<i class="'+(i===n?'cur':i<n?'done':'')+'"></i>';return '<div class="prog a" style="--d:0"><div class="pn">'+n+'</div><div><div class="pl">'+label+' '+n+' sur '+total+'</div><div class="pd">'+d+'</div></div></div>'}
+/* Un frein = une slide */
 function frein(n,titre,cause,why,signes,next){
- var l=head('Frein '+n+' sur 5',titre)+
+ var l=prog(n,5,'Frein')+'<h2 class="a" style="--d:1">'+titre+'</h2>'+
   '<div class="tri"><div class="tr p a" style="--d:2"><div class="t">Pourquoi ça bloque</div><p>'+cause+'</p></div>'+
   '<div class="tr w a" style="--d:3"><div class="t">Ce que ça coûte</div><p>'+why+'</p></div></div>';
  var r='<div class="sym a pop" style="--d:2"><div class="ct">Ce qu’on voit souvent</div>'+signes.map(function(x){return '<div class="syi">'+x+'</div>'}).join('')+'</div>';
- add("",split(l,r)+bridge(next));
+ add("",split(l,r)+bridge(next),{sec:'pb'});
+}
+function etape(n,titre,points,visuel,next){
+ add("",split(prog(n,4,'Étape')+'<h2 class="a" style="--d:1">'+titre+'</h2>'+pts(points),visuel)+bridge(next),{sec:'sy'});
+}
+function angRow(label,v,i1,i2,d){return '<div class="ang a pop" style="--d:'+d+'"><div class="al2">'+label+'</div><div class="at"><div class="v">'+vid(v)+'<span>VIDÉO</span></div><div class="im"><img src="'+i1+'" alt=""><span>IMAGE</span></div><div class="im"><img src="'+i2+'" alt=""><span>IMAGE</span></div></div></div>'}
+function resultat(n,marque,secteur,avant,fait,res,big,lab,tuiles,media,next){
+ var l=prog(n,3,'Résultat')+'<h2 class="a" style="--d:1"><span class="grad">'+marque+'</span></h2><div class="chipbrand a" style="--d:1">'+secteur+'</div>'+
+  '<div class="tri"><div class="tr p a" style="--d:2"><div class="t">Avant</div><p>'+avant+'</p></div>'+
+  '<div class="tr b a" style="--d:3"><div class="t">Ce qu’on a fait</div><p>'+fait+'</p></div></div>';
+ var r='<div class="rm"><div class="a pop" style="--d:2"><div class="big grad">'+big+'</div><div class="bl2">'+lab+'</div></div>'+
+  '<div class="rt a pop" style="--d:3">'+tuiles.map(function(x){return '<div><b>'+x[0]+'</b><span>'+x[1]+'</span></div>'}).join('')+'</div>'+
+  '<div class="md a pop" style="--d:4">'+media.map(function(x){return '<div>'+x+'</div>'}).join('')+'</div></div>';
+ add("",split(l,r)+bridge(next),{sec:'re'});
 }
 
 /* ═════ 1 · Couverture ═════ */
@@ -411,51 +475,50 @@ function frein(n,titre,cause,why,signes,next){
 })();
 
 /* ═════ 2 · Le point de départ ═════ */
-add("",split(head('Le point de départ','Sur Meta, ce sont <span class="grad">vos créatives</span> qui font vendre.')+
- pts(['Meta décide à qui montrer votre publicité. Mais c’est <b>la créative</b> qui donne envie de cliquer.','Plus vous dépensez, plus elle est vue, et <b>plus vite elle s’use</b>.','Pour continuer à grandir, il faut donc <b>de nouvelles créatives, régulièrement</b>.']),
- '<div class="chain">'+[['Vous augmentez votre budget',0],['Votre publicité est vue par plus de monde',0],['Elle s’use plus vite',0],['Il vous faut de nouvelles créatives, régulièrement',1]].map(function(x,i){return (i?'<div class="chd a" style="--d:'+(i+2)+'">↓</div>':'')+'<div class="chi'+(x[1]?' ok':'')+' a pop" style="--d:'+(i+2)+'">'+x[0]+'</div>'}).join('')+'</div>')+
- bridge('C’est là que beaucoup de marques se retrouvent bloquées'));
+add("",split(head('Le point de départ','Sur Meta, c’est <span class="grad">la créative</span> qui vend.')+
+ pts(['Meta a un seul rôle : <b>montrer votre publicité à la bonne personne</b>.','Ce qui <b>parle directement à votre cible</b> et déclenche les bonnes émotions, c’est la créative.','Plus vous dépensez, plus elle s’use vite : il vous faut <b>de nouvelles créatives, régulièrement</b>.']),
+ '<div class="chain">'+[['Meta montre votre publicité à la bonne personne',0],['La créative lui parle et lui donne envie',0],['Elle achète',0],['Plus de budget : la créative s’use plus vite',1]].map(function(x,i){return (i?'<div class="chd a" style="--d:'+(i+2)+'">↓</div>':'')+'<div class="chi'+(x[1]?' end':'')+' a pop" style="--d:'+(i+2)+'">'+x[0]+'</div>'}).join('')+'</div>')+
+ bridge('Voici ce qui bloque la plupart des marques'),{sec:'pb'});
 
-/* ═════ 3 à 7 · Les freins ═════ */
-frein(1,'Savoir quoi dire dans ses <span class="grad">publicités.</span>',
- 'Chaque créative repose sur un angle : la façon de présenter le produit. Sans étude du marché, chaque angle est un pari.',
- 'Un pari perdu, c’est du budget publicitaire dépensé pour rien.',
- ['Des angles choisis au feeling','Des idées copiées sur les concurrents, sans savoir pourquoi elles marchent','Chaque nouvelle créative qui repart de zéro'],
+/* ═════ 3 à 6 · Les freins ═════ */
+frein(1,'Trouver <span class="grad">le bon angle</span> marketing.',
+ 'Une créative marche grâce à son angle : la façon unique d’amener votre produit à votre cible. Sans étude de marché, chaque angle est un pari.',
+ 'Quand un angle est connu de tous, il est déjà fatigué. Il faut le trouver avant vos concurrents.',
+ ['Des angles choisis au feeling','Des idées copiées sur les concurrents','Un angle déjà fatigué le jour du lancement'],
  'Deuxième frein : produire');
-frein(2,'Produire assez de créatives, <span class="grad">assez vite.</span>',
- 'Une bonne créative demande une étude, un concept, un design, des retouches. Seul, ou avec un prestataire à la tâche, ça prend vite toute la semaine.',
+frein(2,'Produire <span class="grad">assez de créatives, vite.</span>',
+ 'Une bonne créative demande une étude, un concept, un design, des retouches. Seul, ça prend vite toute la semaine.',
  'Quand la production est lente, les nouvelles créatives arrivent après l’usure des anciennes.',
  ['Des délais qui s’allongent entre deux livraisons','Des briefs et des retouches à gérer soi-même','Une qualité qui change selon la personne ou l’outil'],
  'Troisième frein : tester');
-frein(3,'Tester assez pour savoir <span class="grad">ce qui marche.</span>',
- 'Avec trois ou quatre créatives, un mauvais résultat ne dit rien : c’est peut-être le produit, peut-être juste le mauvais angle. Il faut assez de variété pour comprendre.',
- 'Moins on teste, plus il faut de temps pour trouver une créative gagnante.',
- ['Trois ou quatre créatives testées, puis on conclut trop vite','Une créative seule, qui ne prouve rien','Le doute : est-ce le produit, le message ou la publicité ?'],
- 'Quatrième frein : garder ce qui marche');
-frein(4,'Garder ses créatives gagnantes <span class="grad">performantes.</span>',
- 'Une créative gagnante a une durée de vie limitée. Si on ne comprend pas pourquoi elle marche, on ne peut pas la reproduire.',
- 'Quand elle s’essouffle et que rien n’est prêt derrière, les ventes baissent.',
- ['Une créative gagne, puis s’essouffle','On ne sait pas toujours pourquoi elle marchait','Rien n’est prêt pour prendre la relève'],
+frein(3,'Tester <span class="grad">assez de créatives</span> pour savoir.',
+ 'Avec 2 ou 3 créatives, le volume est trop petit pour conclure : est-ce le produit, le message ou la créative ?',
+ 'Il faut assez de volume pour pouvoir dire « cet angle ne marche pas », en s’appuyant sur ce qui marche déjà sur le marché.',
+ ['2 ou 3 créatives testées, puis une conclusion trop vite','Une seule créative, qui ne prouve rien','Le doute : le produit, le message ou la créative ?'],
+ 'Quatrième frein : exploiter les gagnantes');
+frein(4,'Exploiter <span class="grad">vos créatives gagnantes.</span>',
+ 'C’est la partie la plus importante, et la plus négligée. On le fait, mais mal, sans le savoir : itérer sur une gagnante est une vraie compétence.',
+ 'Sans ça, la marque stagne et se fait dépasser par la concurrence.',
+ ['Une créative gagne, puis s’essouffle','On ne sait pas pourquoi elle marchait','Rien n’est prêt pour prendre la relève'],
  'Cinquième frein : Meta a changé');
 
 /* ═════ 7 · Frein 5 : Meta ═════ */
-add("",split(head('Frein 5 sur 5','Meta choisit maintenant parmi <span class="grad">beaucoup plus de publicités.</span>')+
- pts(['Fin octobre, Meta a annoncé la nouvelle génération d’<b>Andromeda</b>, le système qui choisit quelles publicités afficher.','Il compare <b>beaucoup plus de publicités</b> qu’avant, avec plus d’informations sur chaque personne.','Une créative qui ne dit pas clairement à qui elle parle a <b>moins de chances d’être retenue</b>.']),
+add("",split(prog(5,5,'Frein')+'<h2 class="a" style="--d:1">Meta a changé : <span class="grad">le message prime.</span></h2>'+
+ pts(['Fin octobre, Meta a annoncé <b>Andromeda 2.0</b>, le système qui choisit quelles publicités afficher.','Il compare <b>beaucoup plus de publicités</b>, avec plus d’informations sur chaque personne. Le ciblage et le media buying ne font plus la différence.','Ce qui compte : <b>le bon message, la bonne offre, à la bonne cible</b>. Et en varier plusieurs, pour multiplier vos chances de scaler.']),
  '<div class="fn"><div class="f1 a pop" style="--d:2">Des millions de publicités<small>en compétition pour chaque personne</small></div><div class="ar"></div>'+
  '<div class="f2 a pop" style="--d:3">Meta fait le tri</div><div class="ar"></div>'+
  '<div class="f3 a" style="--d:4"><div>Message A</div><div>Message B</div><div>Message C</div></div>'+
- '<div class="cap a" style="--d:5">Plus vos messages sont variés, plus vous avez de chances d’être retenu.</div></div>')+bridge('Beaucoup de marques ont déjà essayé de régler ça autrement'));
+ '<div class="cap a" style="--d:5">Plus vos messages sont variés, plus vous avez de chances d’être retenu.</div></div>')+bridge('Beaucoup de marques ont déjà essayé de régler ça autrement'),{sec:'pb'});
 
 /* ═════ 8 · Les solutions habituelles ═════ */
 (function(){
  var list=[
-  ['Un freelance','Un visuel propre, sur demande','Une créative à la fois, sans étude de marché ni stratégie d’angles'],
-  ['Les outils d’IA','Rapide et peu coûteux','Des visuels qui se ressemblent tous, et des journées à y passer'],
-  ['Une agence classique','Un accompagnement complet','Des délais longs, un coût élevé et peu de volume']];
- add("",head('Les solutions habituelles','Chacune règle <span class="grad">une partie du problème.</span>')+
-  '<p class="lead a" style="--d:2">Chacune a sa place. Voici ce qu’elle apporte, et où elle s’arrête.</p>'+
-  '<div class="alt">'+list.map(function(x,i){return '<div class="ac a pop" style="--d:'+(i+3)+'"><h3>'+x[0]+'</h3><div class="al g"><span>Ce que ça apporte</span>'+x[1]+'</div><div class="al r"><span>Là où ça s’arrête</span>'+x[2]+'</div></div>'}).join('')+'</div>'+
-  bridge('Nous, on a construit un système qui couvre tout, de bout en bout'));
+  ['Un freelance','Un visuel ou une vidéo propre, à petit prix','Pas de stratégie derrière : personne ne pense à la croissance de votre marque'],
+  ['Les outils d’IA','Rapide et très peu coûteux, utilisé par presque tout le monde','Les mêmes angles et les mêmes visuels que tout le monde, et des journées à tout corriger'],
+  ['Une agence classique','Une bonne qualité de créatives','Peu de volume, des délais longs, un coût élevé, et pas de vraie stratégie e-commerce pour scaler']];
+ add("",head('Les solutions habituelles','Chacune <span class="grad">s’arrête à mi-chemin.</span>')+
+  '<div class="alt">'+list.map(function(x,i){return '<div class="ac a pop" style="--d:'+(i+2)+'"><h3>'+x[0]+'</h3><div class="al g"><span>Ce que ça apporte</span>'+x[1]+'</div><div class="al r"><span>Là où ça s’arrête</span>'+x[2]+'</div></div>'}).join('')+'</div>'+
+  bridge('Nous, on a créé un système qui couvre tout, de bout en bout'),{sec:'pb'});
 })();
 
 /* ═════ 9 · Notre système ═════ */
@@ -464,66 +527,101 @@ add("",split(head('Frein 5 sur 5','Meta choisit maintenant parmi <span class="gr
  var v2='<div class="mini3"><img src="'+G(2)+'" alt=""><div class="vc">'+vid('sommeil')+'</div><img src="'+G(5)+'" alt=""></div>';
  var v3='<div class="mini3 g"><img src="'+G(3)+'" alt=""><img src="'+G(1)+'" alt=""><div class="vc">'+vid('deirol')+'</div><img src="'+G(6)+'" alt=""><span class="bdg">48h max</span></div>';
  var v4='<div class="mini3"><div class="top"><img src="'+G(6)+'" alt=""><span class="bdg">★ Top performer</span></div><div class="top"><img src="'+G(4)+'" alt=""></div></div>';
- add("",head('Notre approche','Un seul système, <span class="grad">quatre étapes.</span>')+
-  flow([[v1,'1. On étudie','Votre marché, vos concurrents, votre client idéal.'],[v2,'2. On crée','Des créatives variées, en vidéos et en images.'],[v3,'3. On livre','Des lots prêts à publier, dans AdBoard.'],[v4,'4. On apprend','On s’appuie sur ce qui gagne pour le lot suivant.']])+
-  bridge('Reprenons les freins, un par un'));
+ add("",head('Notre système','Un seul système, <span class="grad">quatre étapes.</span>')+
+  flow([[v1,'1. On étudie','Votre marché, vos concurrents, votre client idéal.'],[v2,'2. On crée','Pour chaque angle : 1 vidéo et 2 images.'],[v3,'3. On livre','Des lots prêts à publier, dans AdBoard.'],[v4,'4. On améliore','On s’appuie sur ce qui gagne, et on teste du neuf.']])+
+  bridge('Reprenons chaque étape'),{sec:'sy'});
 })();
 
-/* ═════ 10 à 13 · Les réponses ═════ */
-add("",split(head('Frein 1 · Notre réponse','On étudie votre marché <span class="grad">avant de créer.</span>')+
- pts(['On regarde <b>ce qui marche déjà dans votre niche</b> : les créatives qui performent, les concepts qui reviennent.','On étudie <b>vos concurrents</b> : leurs offres, leurs prix, leurs angles.','On dresse le portrait de <b>votre client idéal</b>, puis on en tire des angles précis.']),
- '<div class="a pop" style="--d:2">'+mMarche(2.05)+'</div>')+bridge('Ensuite, on passe à la création'));
-add("",split(head('Freins 3 et 5 · Notre réponse','Plusieurs angles testés en même temps, <span class="grad">en vidéos et en images.</span>')+
- pts(['Pour un même produit, <b>plusieurs façons d’en parler</b> : la démonstration, la preuve, la situation du client.','Chaque angle parle à <b>un type de client différent</b>, donc Meta a de quoi choisir.','Assez de créatives pour que <b>vos résultats veuillent dire quelque chose</b>.']),
- '<div class="tri3">'+[['<img src="'+G(3)+'" alt="">','ANGLE 1'],[vid('sommeil'),'ANGLE 2 · VIDÉO'],['<img src="'+G(5)+'" alt="">','ANGLE 3']].map(function(x,i){return '<div class="cx a pop" style="--d:'+(i+2)+'"><div class="im">'+x[0]+'</div><div class="ch">'+x[1]+'</div></div>'}).join('')+'</div>')+bridge('Et tout arrive prêt à publier'));
-add("",split(head('Frein 2 · Notre réponse','Vous recevez tout, prêt à publier, <span class="grad">dans AdBoard.</span>')+
- pts(['Vos créatives, en vidéos et en images, <b>classées par lot et par angle</b>.','Vos textes publicitaires et vos données de marché, <b>au même endroit</b>.','Chaque lot est livré en <b>48h maximum</b>, sans brief ni retouche à gérer.']),
- '<div class="zw a pop" style="--d:2;height:700px">'+'<div style="position:absolute;top:0;left:0">'+mGalerie(1.7)+'</div><div style="position:absolute;top:330px;right:0;z-index:20">'+mSuivi(1.45)+'</div></div>')+bridge('Et on ne s’arrête pas à la livraison'));
-add("",split(head('Frein 4 · Notre réponse','On repère vos gagnantes, <span class="grad">et on construit dessus.</span>')+
- pts(['Quand une créative ou un angle marche, <b>vous le repérez</b>.','On le <b>décline et on le pousse plus loin</b>.','En même temps, on vous apporte <b>de nouveaux angles</b>, pour que votre compte ne s’essouffle pas.']),
- '<div class="cyc a pop" style="--d:2"><svg viewBox="0 0 640 560"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#1FB6FF"/><stop offset="1" stop-color="#2EF2E8"/></linearGradient></defs>'+
- '<circle cx="320" cy="280" r="190" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="3"/><circle cx="320" cy="280" r="190" fill="none" stroke="url(#g)" stroke-width="5" stroke-dasharray="14 46" style="animation:spin 2.4s linear infinite"/>'+
- '<g text-anchor="middle" font-size="25"><g transform="translate(320 90)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="9">1. On teste</text></g>'+
- '<g transform="translate(510 280)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="9">2. Vous repérez</text></g>'+
- '<g transform="translate(320 470)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="9">3. On décline</text></g>'+
- '<g transform="translate(130 280)"><rect x="-130" y="-34" width="260" height="68" rx="34" fill="#0B5CFF" stroke="#2EF2E8" stroke-width="2"/><text y="9">4. Du neuf</text></g></g></svg></div>')+bridge('Voici ce que ça donne chez nos clients'));
+/* ═════ 10 à 13 · Les quatre étapes ═════ */
+etape(1,'On étudie <span class="grad">votre marché.</span>',
+ ['Avec notre équipe et nos propres outils, on regarde <b>les créatives de vos concurrents</b>, et celles des alternatives.','On regarde <b>là où votre cible s’exprime</b> : commentaires, avis, frustrations.','On en tire <b>le portrait de votre client idéal</b>, puis <b>les angles les plus susceptibles de performer</b>.'],
+ '<div class="a pop" style="--d:2">'+mMarche(2.05)+'</div>','Ensuite, on passe à la création');
+etape(2,'On crée <span class="grad">pour chaque angle.</span>',
+ ['Pour chaque angle marketing : <b>1 vidéo optimisée conversion</b> et <b>2 images</b> sur le même angle.','Un même produit, <b>plusieurs façons d’en parler</b> : différents types de personnes sont touchés.','Meta trouve plus facilement <b>la créative qui performe</b> et la met en avant.'],
+ '<div style="width:100%">'+angRow('ANGLE 1','sommeil',G(3),G(5),2)+angRow('ANGLE 2','vitalina',G(2),G(6),3)+'</div>','Et tout arrive prêt à publier');
+etape(3,'Vous recevez tout <span class="grad">dans AdBoard.</span>',
+ ['<b>AdBoard</b> est notre plateforme, développée en interne. <b>L’accès est gratuit</b>.','Vous suivez la production. Tout est <b>classé par angle, produit et cible</b> : rien ne se perd.','Chaque lot arrive en <b>48h maximum</b>, <b>sans défaut</b> : vous n’avez qu’à publier.'],
+ '<div class="zw a pop" style="--d:2;height:700px">'+'<div style="position:absolute;top:0;left:0">'+mGalerie(1.7)+'</div><div style="position:absolute;top:330px;right:0;z-index:20">'+mSuivi(1.45)+'</div></div>','Et on ne s’arrête pas à la livraison');
+etape(4,'On repère ce qui marche, <span class="grad">on construit dessus.</span>',
+ ['Vous <b>lancez vos créatives</b> et vous repérez ce qui fonctionne.','Dans AdBoard, on <b>récupère les métriques</b> et on <b>identifie vos gagnantes</b>.','On les <b>exploite avec de nouveaux concepts créatifs</b>, tout en continuant de <b>tester de nouveaux angles</b>.'],
+ '<div class="cyc a pop" style="--d:2"><svg viewBox="0 0 700 560"><defs><linearGradient id="g" x1="0" x2="1"><stop offset="0" stop-color="#1FB6FF"/><stop offset="1" stop-color="#2EF2E8"/></linearGradient></defs>'+
+ '<circle cx="350" cy="280" r="190" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="3"/><circle cx="350" cy="280" r="190" fill="none" stroke="url(#g)" stroke-width="5" stroke-dasharray="14 46" style="animation:spin 2.4s linear infinite"/>'+
+ '<g text-anchor="middle" font-size="27"><g transform="translate(350 90)"><rect x="-150" y="-36" width="300" height="72" rx="36" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="10">1. Vous lancez</text></g>'+
+ '<g transform="translate(540 280)"><rect x="-150" y="-36" width="300" height="72" rx="36" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="10">2. On identifie</text></g>'+
+ '<g transform="translate(350 470)"><rect x="-150" y="-36" width="300" height="72" rx="36" fill="#121722" stroke="#1FB6FF" stroke-width="2"/><text y="10">3. On exploite</text></g>'+
+ '<g transform="translate(160 280)"><rect x="-150" y="-36" width="300" height="72" rx="36" fill="#0B5CFF" stroke="#2EF2E8" stroke-width="2"/><text y="10">4. On teste du neuf</text></g></g></svg></div>','Voici ce que ça donne chez nos clients');
 
-/* ═════ 14 · Résultats ═════ */
-add("",split(head('Résultats','Ce que ça donne chez <span class="grad">trois de nos clients.</span>')+'<p class="lead a" style="--d:2">Ce sont des chiffres mesurés sur leurs comptes.</p>',
- tiles([['Vitalina · en 6 semaines','2,7 M → 6,15 M',false,true,'FCFA de chiffre d’affaires par mois'],['Veloce · en 90 jours','0 → 5 000 $',false,true,'de profit par mois'],['Saelia · avec 10 000 $ de dépenses en plus','ROAS 3,6',true,true,'et 8 créatives devenues top performer']],2))+bridge('Voyons ce que ça change au quotidien'));
+/* ═════ 14 à 16 · Résultats : une slide par marque ═════ */
+resultat(1,'Vitalina Energy','Compléments alimentaires · Sénégal',
+ 'Pas assez d’idées créatives, et des créatives qui s’essoufflaient en 7 à 10 jours.',
+ 'Une étude de marché, puis des lots sur plusieurs angles : 3 angles gagnants repérés et exploités.',
+ 'Le chiffre d’affaires passe de 2,7 M à 6,15 M FCFA par mois en 6 semaines.',
+ '2,7 M → 6,15 M','FCFA de chiffre d’affaires par mois, en 6 semaines',
+ [['4,3','ROAS moyen'],['+3 000 $','dépensés sur nos créatives']],
+ [vid('vitalina'),'<img src="/assets/vente/vitalina-creative-1.jpg" alt="">','<img src="/assets/vente/vitalina-creative-2.jpg" alt="">'],
+ 'Deuxième résultat : Veloce');
+resultat(2,'Veloce','Sport · Guinée et Côte d’Ivoire',
+ 'Aucune donnée, une cible floue, des angles génériques, et un stock déjà commandé sans test.',
+ 'Offre TEST : premier lot dès la semaine 1, des ROAS jusqu’à 7 en semaine 2, puis passage à PERF+.',
+ 'De 0 à 5 000 $ de profit par mois en 90 jours, avec plus de 8 créatives gagnantes.',
+ '0 → 5 000 $','de profit par mois, en 90 jours',
+ [['+50','créatives livrées'],['+8','créatives gagnantes']],
+ ['<img src="/assets/vente/veloce-creative-1.jpg" alt="">','<img src="/assets/vente/veloce-creative-2.jpg" alt="">','<img src="/assets/vente/veloce-lunette.jpg" alt="">'],
+ 'Troisième résultat : Saelia');
+resultat(3,'Saelia','Cosmétiques · RDC',
+ 'Elle pensait avoir saturé son marché : plus d’idées créatives, des résultats en baisse.',
+ 'Des créatives variées, en vidéos et en images, testées avec une vraie méthode.',
+ 'Plus de 10 000 $ dépensés sur nos créatives en 2 mois, avec 8 créatives top performer.',
+ '+10 000 $','dépensés sur nos créatives en 2 mois, en restant rentable',
+ [['3,6','ROAS'],['+8','créatives top performer']],
+ [vid('saelia'),'<img src="/assets/vente/saelia-creative-1.jpg" alt="">','<img src="/assets/vente/saelia-creative-2.jpg" alt="">'],
+ 'Voyons ce que ça change au quotidien');
 
-/* ═════ 15 · Au quotidien ═════ */
+/* ═════ 17 · Au quotidien ═════ */
 add("",head('Au quotidien','Ce que ça change, <span class="grad">concrètement.</span>')+
  '<div class="body" style="flex:1;display:flex;flex-direction:column;justify-content:center">'+
- ba('Sans système',['Une créative qui marche quelques semaines, puis les résultats baissent','Des briefs, des retouches et des relances à gérer','Des idées qui viennent du feeling'],'Avec AdStack',['Des angles testés en continu, appuyés sur votre marché','Des lots prêts à publier, sans rien à gérer','Des gagnantes repérées, déclinées, puis remplacées avant l’usure'])+
- '<div class="cap a" style="--d:5;margin-top:34px">Résultat : vous continuez à grandir sans que la production vous ralentisse, et vous gardez votre temps pour votre boutique.</div></div>'+
- bridge('Voyons comment on démarre'));
+ ba('Sans système',['Une production lente','Pas de vraie stratégie','Une qualité de production faible','Des gagnantes qui s’usent sans être remplacées'],'Avec AdStack',['Des angles testés en continu','Des créatives prêtes à convertir','Une production rapide, qui soutient votre rythme de croissance','Des gagnantes repérées, déclinées, puis remplacées avant l’usure'])+'</div>'+
+ bridge('Voyons comment on démarre'),{sec:'re'});
 
-/* ═════ 16 · Démarrer ═════ */
-add("",head('Pour démarrer','Trois étapes <span class="grad">pour commencer.</span>')+
- flow([[mCatalogue(1.12),'1. Vous accédez à AdBoard','Vous vous connectez avec votre compte Google.',1],[mForm(1.12),'2. Vous ajoutez votre produit','Photo, prix, pays de vente, lien de votre page.',1],[mSuivi(1.12),'3. Vous lancez votre première demande','En un clic, depuis votre espace.',1]],
-  'Votre rôle : <b>connecter votre compte</b> et <b>importer votre produit</b>. Le reste, c’est nous.')+
- bridge('Après ça, c’est à notre tour'));
+/* ═════ 18 à 20 · Démarrer : une slide par partie ═════ */
+function demarrage(n,titre,points,visuel,next){
+ add("",split(prog(n,3,'Démarrage')+'<h2 class="a" style="--d:1">'+titre+'</h2>'+pts(points),visuel)+bridge(next),{sec:'go'});
+}
+demarrage(1,'Vous vous connectez <span class="grad">à AdBoard.</span>',
+ ['<b>AdBoard</b> est notre plateforme : c’est là que tout se passe.','Vous vous connectez avec <b>votre compte Google</b>.','Vous retrouvez <b>vos produits</b> et vos demandes au même endroit.'],
+ '<div class="zw a pop" style="--d:2;display:flex;justify-content:center;align-items:center">'+mCatalogue(1.55)+'</div>','Ensuite, vous nous donnez vos infos');
+demarrage(2,'Vous nous donnez <span class="grad">les infos de votre produit.</span>',
+ ['Les <b>photos</b> de votre produit : face, dos, côtés, comme vous voulez.','Les <b>avis clients</b> : captures WhatsApp, Instagram, tout ce que vous avez.','Vos <b>documents marketing</b> déjà utilisés : cible, angles testés, offre.'],
+ '<div class="zw a pop" style="--d:2;display:flex;justify-content:center;align-items:center">'+mForm(1.55)+'</div>','Puis vous demandez votre premier lot');
+demarrage(3,'Vous demandez un lot, <span class="grad">vous le recevez en 48h.</span>',
+ ['Vous choisissez la taille du lot : <b>6, 12 créatives</b>, c’est vous qui voyez.','On produit : vidéos et images, sur plusieurs angles.','Vous le recevez en <b>48h maximum</b>, directement dans AdBoard.'],
+ '<div class="zw a pop" style="--d:2;display:flex;justify-content:center;align-items:center">'+mSuivi(1.6)+'</div>','Voyons ce qui se passe après votre demande');
 
-/* ═════ 17 · Après la demande ═════ */
+/* ═════ 21 · Après la demande ═════ */
 add("",split(head('Ensuite','Ce qui se passe <span class="grad">après votre demande.</span>')+'<p class="lead a" style="--d:2">Votre premier lot arrive vite. Ensuite, chaque mois, on s’appuie sur ce qui a marché.</p>',
  timeline([['On étudie votre marché','Concurrents, client idéal, angles.'],['On crée vos créatives','Vidéos et images, sur plusieurs angles.'],['Vous recevez votre premier lot','En 48h maximum, dans AdBoard.'],['Puis, chaque mois','Chaque lot s’appuie sur ce qui a marché dans le précédent.']]))+
- bridge('Avant de voir l’offre, une question'));
+ bridge('Avant de voir l’offre, une question'),{sec:'go'});
 
-/* ═════ 18 · Questions ═════ */
-add("",split(head('Avant l’offre','Avez-vous des <span class="grad">questions</span> avant que je vous montre l’offre ?')+'<p class="lead a" style="--d:2">Prenez le temps. Je préfère répondre maintenant à tout ce qui reste flou.</p>',
- '<div class="rc">'+[['Le fonctionnement','Comment ça se passe, concrètement'],['Ce que vous recevez','Les créatives, les textes, AdBoard'],['Les délais','Quand arrive votre premier lot'],['Autre chose','Tout ce qui vous passe par la tête']].map(function(x,i){return '<div class="rci a pop" style="--d:'+(i+2)+'"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div>')+bridge('Si tout est clair, voici l’offre'));
+/* ═════ 22 · Questions ═════ */
+add("",split(head('Avant l’offre','Avez-vous des <span class="grad">questions</span> avant que je vous montre l’offre ?')+'<p class="lead a" style="--d:2">Je préfère répondre maintenant à tout ce qui reste flou.</p>',
+ '<div class="rc">'+[['Les créatives','Ce que vous recevez, comment on les fait'],['Les délais de production','Quand arrive votre premier lot'],['Autre chose','Tout ce qui vous passe par la tête']].map(function(x,i){return '<div class="rci a pop" style="--d:'+(i+2)+'"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div>')+bridge('Si tout est clair, voici l’offre'),{sec:'go'});
 
-/* ═════ 19 · L’offre ═════ */
-add("",split(head('L’offre','Voici l’offre : <span class="grad">PERF+.</span>')+
- pts(['Un rythme régulier de <b>nouvelles créatives</b>, en vidéos et en images.','Chaque lot s’appuie sur <b>ce qui a marché</b> dans le précédent.','<b>Aucune équipe</b> à gérer, aucun brief à répéter.']),
- '<div class="oc a pop" style="--d:3"><div class="on2">'+esc(O.nom)+'</div><div class="pr">'+esc(O.prix)+'<small>FCFA / mois</small></div><ul>'+O.pts.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'<li class="g">'+esc(O.garantie)+'</li></ul></div>')+
- bridge('Voyons ce qui vous protège')+'<button class="more" data-annex="1">Comparer les offres</button>');
+/* ═════ 23 · L’offre ═════ */
+add("",split(head('L’offre','L’offre faite pour vous : <span class="grad">PERF+.</span>')+
+ '<p class="lead a" style="--d:2">Pour améliorer vos performances publicitaires, tout en vous détachant de la production. Le moins de temps et d’intervention possible.</p>'+
+ pts(['Un rythme régulier de <b>nouvelles créatives</b>, en vidéos et en images.','Chaque lot s’appuie sur <b>ce qui a marché</b> dans le précédent.','<b>Aucune équipe</b> à gérer : vous donnez les infos, vous demandez, vous recevez.'],3),
+ '<div class="oc a pop" style="--d:3"><div class="on2">'+esc(O.nom)+'</div><div class="pr">'+esc(O.prix)+'<small>FCFA / mois</small></div><ul><li>24 créatives par mois</li><li>Jusqu’à 4 produits couverts</li><li>Chaque lot livré en 48h maximum</li></ul></div>')+
+ bridge('Voyons ce qui est inclus')+'<button class="more" data-annex="1">Comparer les offres</button>',{sec:'of'});
 
-/* ═════ 20 · La suite ═════ */
+/* ═════ 24 · Ce qui est inclus ═════ */
+add("",split(head('Inclus','Bien plus que <span class="grad">des créatives.</span>'),
+ '<div class="rc">'+[['Avant chaque lot','Une stratégie marketing bien définie'],['Les textes publicitaires','Déjà faits, pour accompagner votre campagne'],['Les données de votre marché','Concurrents, portrait de votre cible, angles produits, opportunités, recommandations'],['Votre équipe','Invitez votre assistant ou media buyer dans AdBoard'],['Garantie de performance','Après 2 mois sans meilleurs résultats : remboursé intégralement']].map(function(x,i){return '<div class="rci a pop" style="--d:'+(i+2)+'"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>'}).join('')+'</div>')+
+ bridge('Si vous êtes prêt, on commence'),{sec:'of'});
+
+/* ═════ 25 · La suite ═════ */
 add("",split(head('Pour finir','Vous êtes couvert. <span class="grad">On commence ?</span>')+
- pts(['<b>Garantie Performance de 60 jours</b> : vous publiez nos créatives. Si vos performances ne s’améliorent pas, vous nous envoyez les captures de votre compte publicitaire et on vous rembourse.','Abonnement <b>mensuel</b>, vos créatives disponibles <b>dès le paiement</b>.']),
- timeline([['Je vous envoie le lien de paiement','Directement ici, par WhatsApp.'],['Vous recevez la facture et la garantie','Par mail, automatiquement, dès le paiement.'],['On connecte AdBoard ensemble','Je vous accompagne pour la prise en main.'],['On importe votre produit et on lance la production','Votre premier lot arrive en 48h maximum.']])));
+ pts(['<b>Garantie de performance</b> : après 2 mois de travail ensemble, si vous n’obtenez pas de meilleurs résultats, vous êtes <b>intégralement remboursé</b>.','Abonnement <b>mensuel</b>, vos créatives disponibles <b>dès le paiement</b>.']),
+ timeline([['Je vous envoie le lien de paiement','Directement ici, par WhatsApp.'],['Vous recevez la facture et la garantie','Par mail, automatiquement, dès le paiement.'],['On connecte AdBoard ensemble','Vous connectez votre compte Google.'],['Vous me donnez les infos de votre produit','Je vous accompagne jusqu’à votre première demande de production.']])),{sec:'of'});
 
 /* ═════ Annexe · Comparatif ═════ */
 (function(){
@@ -533,7 +631,7 @@ add("",split(head('Pour finir','Vous êtes couvert. <span class="grad">On commen
 })();
 var stage=document.getElementById('stage'),cur=0,prevIdx=0,main=[];
 slides.forEach(function(s,i){if(s.annex)annexIdx=i;else main.push(i)});
-stage.innerHTML=slides.map(function(s,i){var mi=main.indexOf(i);return '<section class="s '+s.cls+'" data-i="'+i+'">'+LOGO+(s.annex||s.cls==="cover"?'':'<div class="num">'+String(mi+1).padStart(2,"0")+' / '+String(main.length).padStart(2,"0")+'</div>')+s.html+'</section>'}).join('');
+stage.innerHTML=slides.map(function(s,i){var mi=main.indexOf(i);return '<section class="s '+s.cls+'" data-i="'+i+'"'+(s.sec?' data-sec="'+s.sec+'"':'')+'>'+LOGO+(s.sec?trk(s.sec):'')+(s.annex||s.cls==="cover"?'':'<div class="num">'+String(mi+1).padStart(2,"0")+' / '+String(main.length).padStart(2,"0")+'</div>')+s.html+'</section>'}).join('');
 var els=[].slice.call(stage.children);
 function go(i,fromJump){
  i=Math.max(0,Math.min(slides.length-1,i)); if(slides[i].annex&&!fromJump)return;
