@@ -54,7 +54,6 @@ export function EcritCard({ p }) {
 export default function Ecrit() {
   const { prospects } = useCrm(); const l = prospects.filter(ecritActif)
   return (<>
-    <p className="cx-sub">Prospects qui préfèrent discuter par écrit sur WhatsApp : audit (bloc 1), plan (bloc 2), offre (bloc 3), puis lien et suite. Le bloc 1 a besoin des ads à jour.</p>
     <div style={{ marginBottom: 10 }}><BoutonMajAds /></div>
     {l.length ? l.map((p) => <EcritCard key={p.id} p={p} />) : <Empty t="Personne en closing par écrit" s="Depuis Leads (« Reste sur WhatsApp ») ou depuis Suivi (« Closing par écrit »)." />}
   </>)

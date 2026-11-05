@@ -56,7 +56,6 @@ export default function Leads() {
   const l = leadsARelancer(prospects).map((p) => { const e = etatRelances(p); return { p, s: e.pj === null ? -9999 : -e.reste } }).sort((a, b) => b.s - a.s)
   const urgents = l.filter((x) => x.s >= 0).length
   return (<>
-    <p className="cx-sub">Leads qualifiés à relancer : J+3 (pitch avec les ads du jour), J+10 (preuve), J+21 (alerte Andromeda). Les leads qui ont réservé un appel sont dans Appels, ceux qui restent sur WhatsApp dans Écrit.</p>
     <div style={{ marginBottom: 10 }}><BoutonMajAds /></div>
     {urgents > 0 && <div className="cx-banner">{urgents} relance{urgents > 1 ? 's' : ''} à envoyer maintenant</div>}
     {l.length ? l.map(({ p }) => <LeadCard key={p.id} p={p} />) : <Empty t="Aucun lead à relancer" />}

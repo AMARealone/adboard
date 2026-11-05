@@ -32,7 +32,6 @@ export default function Appels() {
   const { prospects } = useCrm()
   const l = prospects.filter(appelAffiche).sort((a, b) => (appelEcheance(N(a)) || 9e15) - (appelEcheance(N(b)) || 9e15))
   return (<>
-    <p className="cx-sub">Prospects qui ont réservé un appel (site ou à la main), triés par échéance. « Appel fait » ouvre la décision : payé, à relancer (Closing) ou pas intéressé.</p>
     {l.length ? l.map((p) => <AppelCard key={p.id} p={p} />) : <Empty t="Aucun appel en attente" s="Les réservations du site arrivent ici automatiquement." />}
   </>)
 }

@@ -68,7 +68,6 @@ export default function AContacter() {
   const ids = [...sel]
   const fin = (ok) => { if (ok) setSel(new Set()) }
   return (<>
-    <p className="cx-sub">Envoyez le premier message (choisissez une version), puis marquez le prospect comme contacté.</p>
     <div className="cx-minis" style={{ marginBottom: 12 }}><div className="cx-mini"><b>{prospects.length}</b><span>Total base</span></div><div className="cx-mini"><b>{base.length}</b><span>À contacter</span></div><div className="cx-mini"><b>{prospects.filter((p) => p.statut === 'en_suivi').length}</b><span>En suivi</span></div><div className="cx-mini"><b>{prospects.filter((p) => p.date_collecte === jour).length}</b><span>Collectés aujourd'hui</span></div></div>
     <Rythme />
     <div className="cx-tools"><input className="cx-search" placeholder="Rechercher marque ou produit…" value={q} onChange={(e) => { setQ(e.target.value); setMax(50) }} />

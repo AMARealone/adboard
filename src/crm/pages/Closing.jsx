@@ -52,7 +52,6 @@ export default function Closing() {
   const { prospects } = useCrm(); const now = Date.now()
   const l = prospects.filter(closingDansListe).sort((a, b) => (closingEnRetard(N(b), now) ? 1 : 0) - (closingEnRetard(N(a), now) ? 1 : 0) || closingJours(N(b), now) - closingJours(N(a), now))
   return (<>
-    <p className="cx-sub">Prospects dont l'appel a eu lieu mais qui n'ont pas payé : relances J+1, J+3, J+7 comptées depuis l'appel. Les messages se remplissent avec « Infos de l'appel » et pointent vers la page de l'offre.</p>
     {l.length ? l.map((p) => <ClosingCard key={p.id} p={p} />) : <Empty t="Aucune relance de closing" s="Un prospect arrive ici quand vous choisissez « À relancer » après l'appel." />}
   </>)
 }

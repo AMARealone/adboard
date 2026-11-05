@@ -42,7 +42,6 @@ export default function Templates() {
     {onglet === 'closing' && D.CLOSING_SLOTS.map((x, i) => <Editeur key={i} titre={x.label} aide={VARS_CLOSING} valeur={closing[i] || ''} defaut={D.DEFAULT_CLOSING[i]} onSave={(v) => { const t = [...closing]; t[i] = v; return sauve({ tpl_closing: t }) }} />)}
     {onglet === 'ecrit' && Object.keys(D.DEFAULT_ECRIT).map((k) => <Editeur key={k} titre={D.ECRIT_TPL_LABELS[k] || k} aide={VARS_ECRIT} rows={k.startsWith('b1') || k.startsWith('b2') || k === 'suite' ? 11 : 8} valeur={ecrit[k]} defaut={D.DEFAULT_ECRIT[k]} onSave={(v) => sauve({ tpl_ecrit2: { ...(cfg.tpl_ecrit2 || {}), [k]: v } })} />)}
     {onglet === 'intros' && <>
-      <p className="cx-sub">Messages d'accroche envoyés en premier. Ils tournent pour ne pas se répéter. Variables : [Marque] [Produit].</p>
       {intros.map((t, i) => <Editeur key={i} titre={'Accroche ' + (i + 1)} valeur={t} defaut={D.DEFAULT_INTROS[i] || ''} rows={5} onSave={(v) => { const n = [...intros]; n[i] = v; return sauve({ tpl_intros: n }) }} />)}
       <button className="cx-btn sm" onClick={() => sauve({ tpl_intros: [...intros, 'Bonjour *[Marque]*,\n'] }, 'Accroche ajoutée')}>+ Ajouter une accroche</button>
     </>}

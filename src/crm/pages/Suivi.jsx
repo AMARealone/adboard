@@ -58,7 +58,6 @@ export default function Suivi() {
   const c = base.length, r = base.filter((p) => p.a_repondu).length, i = base.filter((p) => p.interesse).length, l = base.filter((p) => p.lead_qualifie).length
   const pc = (x) => (c ? Math.round((x / c) * 100) + '%' : '—')
   return (<>
-    <p className="cx-sub">Cochez l'évolution : les 3 cases cochées donnent le bouton « Passer en Lead ».</p>
     <div className="cx-hero" style={{ marginBottom: 10 }}>{[['En suivi', c, null], ['Réponses', r, pc(r)], ['Intéressés', i, pc(i)], ['Leads qualifiés', l, pc(l)]].map(([lb, v, p], k) => <React.Fragment key={lb}>{k > 0 && <span className="cx-arrow">›</span>}<div className={k === 3 ? 'acc' : ''}><b>{v}</b><span>{lb}{p ? ' · ' + p : ''}</span></div></React.Fragment>)}</div>
     <div className="cx-tools"><input className="cx-search" placeholder="Rechercher un prospect…" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="cx-tabs"><button className={'cx-tab' + (!rep ? ' on' : '')} onClick={() => setRep(false)}>Tous <i>{c}</i></button><button className={'cx-tab' + (rep ? ' on' : '')} onClick={() => setRep(true)}>Ont répondu <i>{r}</i></button>
