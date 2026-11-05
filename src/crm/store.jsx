@@ -84,6 +84,7 @@ export function CrmProvider({ children }) {
     marquer: (id, cle, val) => mutate(id, { notes: { [cle]: val ? true : undefined, [cle + '_at']: val ? now() : undefined } }),
     // — Écrit
     passerEcrit: (id) => mutate(id, { notes: { ecrit_etat: 'actif', ecrit_at: now() } }),
+    ecritCas: (id, cas) => mutate(id, { notes: { ecrit_cas: cas } }),
     ecritInfos: (id, v) => mutate(id, { notes: { ecrit_faille: v.faille || undefined, ecrit_offre: v.offre || undefined, ecrit_remarque: v.remarque.trim() || undefined } }),
     // — Suivi
     setCheck: (id, champ, val) => mutate(id, { body: { [champ]: val }, notes: champ === 'interesse' && val ? { pas_interesse: undefined, pas_interesse_at: undefined } : {} }),

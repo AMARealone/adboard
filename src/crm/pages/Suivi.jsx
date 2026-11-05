@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
-import { appelProgrammeTs, estInstagram, numeroWa } from '../domain/rules'
+import { appelProgrammeTs, estInstagram, numeroWa, ecritActif } from '../domain/rules'
 import { lienPitch, pitchMessage } from '../domain/messages'
 import { Chip, Empty, confirmDlg, toast } from '../ui'
 import { BtnNotes, BtnSupprimer, BtnCopierInfos } from './common'
@@ -42,6 +42,7 @@ function SuiviCard({ p }) {
       </div>
       <div className="cx-acts">
         {tout && <button className="cx-btn ok sm" onClick={() => A.versLead(p.id)}>Passer en Lead</button>}
+        <button className="cx-btn sm" onClick={async () => { if (await A.passerEcrit(p.id)) toast('Passé en Closing par écrit') }}>💬 Closing par écrit</button>
         <BtnNotes p={p} /><BtnCopierInfos p={p} />
         <button className="cx-btn ghost sm" onClick={() => A.remettreAContacter(p.id)}>Annuler le suivi</button><BtnSupprimer p={p} />
       </div>
@@ -53,7 +54,7 @@ export default function Suivi() {
   const { prospects } = useCrm()
   const [q, setQ] = useState(''), [rep, setRep] = useState(false), [date, setDate] = useState('')
   const base = useMemo(() => prospects.filter((p) => p.statut === 'en_suivi'), [prospects])
-  const liste = useMemo(() => base.filter((p) => (!rep || p.a_repondu) && (!date || (p.date_contact || '').slice(0, 10) === date) && (!q.trim() || [p.nom_marque, p.produit, p.pays].some((v) => (v || '').toLowerCase().includes(q.trim().toLowerCase())))).sort((a, b) => Date.parse(a.date_contact || 0) - Date.parse(b.date_contact || 0)), [base, q, rep, date])
+  const liste = useMemo(() => base.filter((p) => !ecritActif(p) && (!rep || p.a_repondu) && (!date || (p.date_contact || '').slice(0, 10) === date) && (!q.trim() || [p.nom_marque, p.produit, p.pays].some((v) => (v || '').toLowerCase().includes(q.trim().toLowerCase())))).sort((a, b) => Date.parse(a.date_contact || 0) - Date.parse(b.date_contact || 0)), [base, q, rep, date])
   const c = base.length, r = base.filter((p) => p.a_repondu).length, i = base.filter((p) => p.interesse).length, l = base.filter((p) => p.lead_qualifie).length
   const pc = (x) => (c ? Math.round((x / c) * 100) + '%' : '—')
   return (<>

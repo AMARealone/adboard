@@ -44,7 +44,7 @@ export default function Fiche() {
           {n.form_objectif && <div className="cx-dim">🎯 {n.form_objectif}{n.form_budget ? ' · 💰 ' + n.form_budget : ''}</div>}
         </div>
         <div><h4>Ads (relevé du PC)</h4>
-          <div className="cx-dim">{v.cas ? v.ads + ' ads · ' + v.jours + ' j · cas ' + v.cas + ' · relevé il y a ' + v.age + ' j' : v.raison}</div>
+          <div className="cx-dim">{v.cas === 0 ? '0 ad active · cas 0 · relevé il y a ' + v.age + ' j' : v.cas ? v.ads + ' ads · ' + v.jours + ' j · cas ' + v.cas + ' · relevé il y a ' + v.age + ' j' : v.raison}</div>
           {n.closing_prenom && <><h4>Infos de l'appel</h4><div className="cx-dim">{n.closing_prenom} · « {n.closing_mots || '—'} » · {n.closing_objectif || '—'}</div></>}
         </div>
       </div>
@@ -52,7 +52,7 @@ export default function Fiche() {
       <div className="cx-tl">{L.length ? L.map((x, i) => <div key={i} className={'cx-tli ' + (x.c || '')}><i />{<span>{quand(new Date(x.at).toISOString())}</span>}<b>{x.txt}</b></div>) : <div className="cx-dim">Pas encore d'historique.</div>}</div>
       <div className="cx-act wrap">
         {!appelAffiche(p) && !closingDansListe(p) && p.statut !== 'acheteur' && <button className="cx-btn sm" onClick={() => A.reserver(p.id, null, '')}>A réservé un appel</button>}
-        {!ecritActif(p) && p.statut === 'lead' && <button className="cx-btn sm" onClick={() => A.passerEcrit(p.id)}>💬 Passer en Écrit</button>}
+        {!ecritActif(p) && (p.statut === 'lead' || p.statut === 'en_suivi') && <button className="cx-btn sm" onClick={() => A.passerEcrit(p.id)}>💬 Passer en Écrit</button>}
         {(closingDansListe(p) || appelAffiche(p)) && <button className="cx-btn sm" onClick={() => setSub('infos')}>Infos de l'appel</button>}
         {ecritActif(p) && <button className="cx-btn sm" onClick={() => setSub('ecrit')}>Faille / offre</button>}
         {appelAffiche(p) && <button className="cx-btn sm primary" onClick={() => setSub('decision')}>Après l'appel</button>}

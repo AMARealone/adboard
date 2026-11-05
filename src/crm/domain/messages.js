@@ -3,27 +3,29 @@ import { N } from './notes'
 import { OFFRES } from './offres'
 import * as D from './defaults'
 import * as PV from './defaults_prev'
+import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
 // compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
 const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
-const estAncien = (x, prev) => !!prev && norm(x) === norm(prev)
+const estAncien = (x, ...prevs) => prevs.some((prev) => !!prev && norm(x) === norm(prev))
 
 const pd = (cfg) => {
   const c = (cfg && cfg.pitch_data) || {}, d = D.PITCH_DATA_DEFAUT
   const num = (v, def) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : def }
   const cas = {}
   ;[1, 2, 3, 4].forEach((k) => { const x = (c.cas || {})[k] || {}; cas[k] = { b: (x.b || '').trim() || d.cas[k].b, m: (x.m || '').trim() || d.cas[k].m, n: (x.n || '').trim() || d.cas[k].n, s: (x.s || '').trim() || d.cas[k].s } })
-  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() ? c.repli : d.repli, cas }
+  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() ? c.repli : d.repli, cas0: (c.cas0 || '').trim() ? c.cas0 : d.cas0, cas }
 }
 // Cas du prospect d'après le dernier relevé d'ads (script PC)
 export function pitchVariante(p, cfg) {
   const prm = pd(cfg), a = p && p.ads_j10
-  if (!a || !a.maj_at) return { cas: null, maj: false, raison: 'ads pas encore mises à jour (lance « Ads J+3 » sur ton PC)' }
+  if (!a || !a.maj_at) return { cas: null, maj: false, raison: 'ads pas encore mises à jour (bouton « Mettre à jour ses ads »)' }
   const t = Date.parse(a.maj_at)
   if (!Number.isFinite(t)) return { cas: null, maj: false, raison: 'date du relevé illisible' }
   const age = Math.max(0, Math.floor((Date.now() - t) / 86400000))
   if (age > prm.fraicheur_j) return { cas: null, maj: false, age, raison: 'relevé vieux de ' + age + ' j (valable ' + prm.fraicheur_j + ' j)' }
   const ads = parseInt(a.nb, 10)
-  if (!Number.isFinite(ads) || ads < 1) return { cas: null, maj: true, age, raison: "aucune ad active trouvée aujourd'hui" }
+  if (!Number.isFinite(ads)) return { cas: null, maj: true, age, raison: 'nombre d\'ads illisible' }
+  if (ads < 1) return { cas: 0, maj: true, ads: 0, jours: null, age }
   const dur = a[prm.duree] != null ? a[prm.duree] : (a.med != null ? a.med : a.moy)
   if (dur == null) return { cas: null, maj: true, age, raison: 'durée des ads illisible' }
   const jours = Math.max(1, parseInt(dur, 10) || 1)
@@ -41,7 +43,7 @@ export function remplirPitchDonnees(msg, v) {
   }
   put('ads', v.ads); put('jours', v.jours); put('bonne_nouvelle', v.b)
   put('mauvaise_nouvelle_en_2_mots', v.n); put('mauvaise_nouvelle_2_mots', v.n); put('mauvaise_nouvelle', v.m); put('solution', v.s)
-  if (v.ads === 1) msg = msg.replace(/\b1(\*?) ads actives\b/gi, '1$1 ad active')
+  if (v.ads === 1) msg = msg.replace(/\b1(\*?) ads actives\b/gi, '1$1 ad active').replace(/ en moyenne/gi, '')
   if (v.jours === 1) msg = msg.replace(/\b1(\*?) jours\b/gi, '1$1 jour')
   return msg
 }
@@ -75,23 +77,28 @@ export function closingMessage(p, i, cfg, lienPerso) {
 // ── Closing par écrit (blocs 1 à 3 + suite)
 export function ecritTemplates(cfg) {
   const saved = (cfg && cfg.tpl_ecrit2) || {}, out = {}
-  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
+  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k], PREV2_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
   return out
 }
 export function ecritMessage(p, etape, cfg, lienPerso) {
   const n = N(p), T = ecritTemplates(cfg), offre = n.ecrit_offre || ''
   let cle = etape
   const v = pitchVariante(p, cfg)
+  let casEcrit = null
   if (etape === 'b1') {
-    if (v.cas) cle = 'b1_cas' + v.cas
-    else if (v.maj) cle = 'b1_aucune'
-    else return { msg: '', manque: ['ads à jour (lance « Ads J+3 » sur ton PC : l\'audit a besoin de ses vrais chiffres)'], cle: 'b1' }
+    if (v.cas != null) { cle = 'b1_cas' + v.cas; casEcrit = v.cas }
+    else if (v.maj) return { msg: '', manque: ['durée des ads illisible (relance « Mettre à jour les ads »)'], cle: 'b1' }
+    else return { msg: '', manque: ['ads à jour (clique sur « Mettre à jour les ads » : l\'audit a besoin de ses vrais chiffres)'], cle: 'b1' }
   }
-  if (etape === 'b2') cle = 'b2_' + (n.ecrit_faille || '')
+  if (etape === 'b2') {
+    // la faille vient de ses ads (cas relevé à l'envoi du bloc 1, sinon relevé actuel) ; un choix manuel passe avant
+    const auto = D.ECRIT_FAILLE_AUTO[n.ecrit_cas != null ? n.ecrit_cas : v.cas]
+    cle = 'b2_' + (n.ecrit_faille || auto || '')
+  }
   if (etape === 'b3') cle = 'b3_' + offre
   let tpl = T[cle]
   const manque = []
-  if (!tpl) { manque.push(etape === 'b2' ? 'faille' : 'offre'); return { msg: '', manque, cle } }
+  if (!tpl) { manque.push(etape === 'b2' ? 'faille (mets à jour ses ads, elle se définit d\'après eux)' : 'offre'); return { msg: '', manque, cle } }
   const o = OFFRES[offre] || {}
   const vals = { marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '', remarque: (n.ecrit_remarque || '').trim(), lien: o.url ? (lienPerso || o.url) : '', facture: o.facture || '', delai: D.ECRIT_DELAI[offre] || '48 h', n: D.ECRIT_N[offre] || '' }
   tpl = tpl.split('\n').filter((l) => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n')
@@ -102,7 +109,7 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
   })
   if (/^b1_cas/.test(cle)) msg = remplirPitchDonnees(msg, v)
   if (lienPerso) msg = unifierLiens(msg, lienPerso)
-  return { msg, manque, cle }
+  return { msg, manque, cle, cas: casEcrit }
 }
 
 // ── Relances Leads J+3 (pitch avec les ads, variables) / J+10 (preuve) / J+21 (alerte)
@@ -114,7 +121,7 @@ export function relanceMessage(p, idx, cfg) {
   let v = null, avertir = false, trace = ''
   if (idx === 0 && D.J3_VARS.test(tpl)) {
     v = pitchVariante(p, cfg)
-    if (v.cas) { tpl = remplirPitchDonnees(tpl, v); trace = 'cas' + v.cas } else { tpl = pd(cfg).repli; trace = 'repli'; avertir = !v.maj }
+    if (v.cas === 0) { tpl = pd(cfg).cas0; trace = 'cas0' } else if (v.cas) { tpl = remplirPitchDonnees(tpl, v); trace = 'cas' + v.cas } else { tpl = pd(cfg).repli; trace = 'repli'; avertir = !v.maj }
   }
   let msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '')
   if (/\[Produit\]/i.test(msg)) msg = msg.replace(/\[Produit\]/gi, p.produit || '')

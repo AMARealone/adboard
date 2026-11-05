@@ -1,6 +1,6 @@
 import React from 'react'
 import { useCrm } from '../store'
-import { aFaire, closingEnRetard } from '../domain/rules'
+import { aFaire, closingEnRetard, ecritB1Saute } from '../domain/rules'
 import { ECRIT_ETAPES } from '../domain/defaults'
 import { N, duree } from '../domain/notes'
 import { pitchVariante } from '../domain/messages'
@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom'
 export default function Aujourdhui() {
   const { prospects, cfg, ouvrirFiche, A } = useCrm(), nav = useNavigate()
   const t = aFaire(prospects, cfg)
-  const adsAMajour = prospects.filter((p) => { const n = N(p); return n.ecrit_etat === 'actif' && !n.ecrit_sent_b1 && !pitchVariante(p, cfg).maj }).length
+  const adsAMajour = prospects.filter((p) => { const n = N(p); return n.ecrit_etat === 'actif' && !n.ecrit_sent_b1 && !ecritB1Saute(n) && !pitchVariante(p, cfg).maj }).length
   const total = t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length
   const Bloc = ({ titre, to, items, children }) => items.length > 0 && (
     <section className="cx-bloc"><header><b>{titre}</b><Chip c="bl">{items.length}</Chip><button className="cx-lnk" onClick={() => nav(to)}>Ouvrir la section →</button></header>{children}</section>)
