@@ -4,6 +4,7 @@ import { OFFRES } from './offres'
 import * as D from './defaults'
 import * as PV from './defaults_prev'
 import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
+import { PREV3_DEFAULT_ECRIT, PREV3_J3_REPLI } from './defaults_prev3'
 // compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
 const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
 const estAncien = (x, ...prevs) => prevs.some((prev) => !!prev && norm(x) === norm(prev))
@@ -13,7 +14,7 @@ const pd = (cfg) => {
   const num = (v, def) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : def }
   const cas = {}
   ;[1, 2, 3, 4].forEach((k) => { const x = (c.cas || {})[k] || {}; cas[k] = { b: (x.b || '').trim() || d.cas[k].b, m: (x.m || '').trim() || d.cas[k].m, n: (x.n || '').trim() || d.cas[k].n, s: (x.s || '').trim() || d.cas[k].s } })
-  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() ? c.repli : d.repli, cas0: (c.cas0 || '').trim() ? c.cas0 : d.cas0, cas }
+  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() && !estAncien(c.repli, PREV3_J3_REPLI) ? c.repli : d.repli, cas0: (c.cas0 || '').trim() ? c.cas0 : d.cas0, cas }
 }
 // Cas du prospect d'après le dernier relevé d'ads (script PC)
 export function pitchVariante(p, cfg) {
@@ -77,7 +78,7 @@ export function closingMessage(p, i, cfg, lienPerso) {
 // ── Closing par écrit (blocs 1 à 3 + suite)
 export function ecritTemplates(cfg) {
   const saved = (cfg && cfg.tpl_ecrit2) || {}, out = {}
-  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k], PREV2_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
+  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k], PREV2_DEFAULT_ECRIT[k], PREV3_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
   return out
 }
 export function ecritMessage(p, etape, cfg, lienPerso) {
