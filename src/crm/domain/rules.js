@@ -28,6 +28,19 @@ export const RELANCES = [3, 10, 21]
 export const relanceEnvoyee = (n, j) => !!(n['sent_j' + j] || n['j' + j + '_envoye'])
 export const prochaineRelance = (n) => { for (const j of RELANCES) if (!relanceEnvoyee(n, j)) return j; return null }
 export const jDepuisLead = (p, now = Date.now()) => Math.floor((now - new Date(p.date_lead || p.date_contact || now)) / 86400000)
+// Échéancier : J+3 se compte depuis l'entrée en lead ; J+10 se compte 7 jours après l'ENVOI de J+3 ; J+21 se compte 11 jours après l'ENVOI de J+10.
+// Le retard d'une relance ne décale donc que la suivante, jamais les autres. Si la date d'envoi précédente est inconnue (anciennes données), on retombe sur J+X depuis le lead.
+export const RELANCES_DELAIS = [3, 7, 11]
+export function etatRelances(p, now = Date.now()) {
+  const n = N(p), pj = prochaineRelance(n)
+  if (pj === null) return { pj: null, ecoule: 0, delai: 0, reste: 0, retard: 0 }
+  const i = RELANCES.indexOf(pj), lead = new Date(p.date_lead || p.date_contact || now).getTime()
+  let ref = lead, delai = pj
+  if (i > 0) { const t = ts(n['j' + RELANCES[i - 1] + '_envoye_at']); if (t !== null) { ref = t; delai = RELANCES_DELAIS[i] } }
+  else delai = RELANCES_DELAIS[0]
+  const ecoule = Math.floor((now - ref) / 86400000)
+  return { pj, ecoule, delai, reste: delai - ecoule, retard: Math.max(0, ecoule - delai) }
+}
 export function leadsARelancer(prospects) { return prospects.filter((p) => p.statut === 'lead' && !horsLeads(p) && !N(p).pas_interesse) }
 
 // Écrit : étape suivante à envoyer
@@ -57,8 +70,8 @@ export function aFaire(prospects, cfg, now = Date.now()) {
       const e = ecritProchaine(n)
       if (e) out.ecrit.push({ p, etape: e, depuis: ecritDerniereAt(n) })
     } else if (p.statut === 'lead' && !horsLeads(p) && !n.pas_interesse) {
-      const j = jDepuisLead(p, now), pj = prochaineRelance(n)
-      if (pj !== null && j >= pj) out.relances.push({ p, j: pj, retard: j - pj })
+      const e = etatRelances(p, now)
+      if (e.pj !== null && e.reste <= 0) out.relances.push({ p, j: e.pj, retard: e.retard })
     }
   }
   out.appels.sort((a, b) => a.at - b.at)

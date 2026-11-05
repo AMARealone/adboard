@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useCrm } from '../store'
 import { N, quand } from '../domain/notes'
-import { RELANCES, jDepuisLead, leadsARelancer, prochaineRelance, relanceEnvoyee, numeroWa } from '../domain/rules'
+import { RELANCES, jDepuisLead, leadsARelancer, etatRelances, relanceEnvoyee, numeroWa } from '../domain/rules'
 import { RELANCE_LABELS } from '../domain/defaults'
 import { insererLien, lienRelance, relanceMessage } from '../domain/messages'
 import { BoutonMajAds } from './MajAds'
@@ -9,7 +9,7 @@ import { Chip, Empty, toast, confirmDlg } from '../ui'
 import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos, CaseEnvoye } from './common'
 
 export function LeadCard({ p }) {
-  const { A, cfg, mutate } = useCrm(); const n = N(p), j = jDepuisLead(p), pj = prochaineRelance(n), [busy, setBusy] = useState(false)
+  const { A, cfg, mutate } = useCrm(); const n = N(p), j = jDepuisLead(p), er = etatRelances(p), pj = er.pj, [busy, setBusy] = useState(false)
   const envoyer = async (i) => {
     const g = relanceMessage(p, i, cfg)
     if (g.avertir && !(await confirmDlg('Les ads de ' + (p.nom_marque || 'ce lead') + ' ne sont pas à jour (' + g.v.raison + ').\nEnvoyer quand même la version SANS chiffres ?', 'Envoyer sans chiffres'))) return
@@ -24,19 +24,19 @@ export function LeadCard({ p }) {
       const num = numeroWa(p)
       if (tab && num) tab.location.href = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg)
       else if (!(await A.ouvrirCanal(p, msg))) { if (tab) tab.close(); return }
-      const d = RELANCES[i]
-      await mutate(p.id, { notes: { ['j' + d + '_envoye']: true, ['j' + d + '_envoye_at']: new Date().toISOString(), ...(i === 0 && g.trace ? { j3_variante: g.trace } : {}) } })
+      // On n'auto-confirme PAS l'envoi : c'est toi qui coches « déjà envoyé ». On garde seulement la variante utilisée.
+      if (i === 0 && g.trace) await mutate(p.id, { notes: { j3_variante: g.trace } })
     } finally { setBusy(false) }
   }
-  const retard = pj !== null && j > pj, aujourdhui = pj !== null && j === pj
+  const retard = pj !== null && er.retard > 0, aujourdhui = pj !== null && er.reste === 0
   return (
     <div className={'cx-row' + (retard ? ' alert' : '')}>
       <div className="cx-main">
-        <div className="cx-line"><Marque p={p} />{pj === null ? <Chip>SÉQUENCE TERMINÉE</Chip> : retard ? <Chip c="red">EN RETARD · J+{pj}</Chip> : aujourdhui ? <Chip c="bl">À ENVOYER AUJOURD'HUI · J+{pj}</Chip> : <Chip c="mu">prochaine : J+{pj} (dans {pj - j} j)</Chip>}{n.no_show_count ? <Chip c="wa">NO-SHOW</Chip> : null}</div>
+        <div className="cx-line"><Marque p={p} />{pj === null ? <Chip>SÉQUENCE TERMINÉE</Chip> : retard ? <Chip c="red">EN RETARD · J+{pj} · {er.retard} j</Chip> : aujourdhui ? <Chip c="bl">À ENVOYER AUJOURD'HUI · J+{pj}</Chip> : <Chip c="mu">prochaine : J+{pj} (dans {er.reste} j)</Chip>}{n.no_show_count ? <Chip c="wa">NO-SHOW</Chip> : null}</div>
         <Meta p={p} />
         <div className="cx-when">Lead depuis {j} j</div>
         <div className="cx-steps">{RELANCES.map((d, i) => {
-          const sent = relanceEnvoyee(n, d), due = !sent && j >= d && pj === d
+          const sent = relanceEnvoyee(n, d), due = !sent && pj === d && er.reste <= 0
           return <div key={d} className={'cx-step' + (sent ? ' done' : due ? ' due' : '')}><b>J+{d}</b><span>{RELANCE_LABELS[i]}</span>
             {sent ? <button className="cx-lnk" onClick={() => mutate(p.id, { notes: { ['sent_j' + d]: undefined, ['j' + d + '_envoye']: undefined, ['j' + d + '_envoye_at']: undefined } })}>✓ {quand(n['j' + d + '_envoye_at']) || 'fait'}</button> : <button disabled={busy} className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>}
             {!sent && <CaseEnvoye disabled={busy} onCheck={() => mutate(p.id, { notes: { ['j' + d + '_envoye']: true, ['j' + d + '_envoye_at']: new Date().toISOString() } })} />}</div>
@@ -53,7 +53,7 @@ export function LeadCard({ p }) {
 }
 export default function Leads() {
   const { prospects } = useCrm()
-  const l = leadsARelancer(prospects).map((p) => { const n = N(p), j = jDepuisLead(p), pj = prochaineRelance(n); return { p, s: pj === null ? -9999 : j - pj } }).sort((a, b) => b.s - a.s)
+  const l = leadsARelancer(prospects).map((p) => { const e = etatRelances(p); return { p, s: e.pj === null ? -9999 : -e.reste } }).sort((a, b) => b.s - a.s)
   const urgents = l.filter((x) => x.s >= 0).length
   return (<>
     <p className="cx-sub">Leads qualifiés à relancer : J+3 (pitch avec les ads du jour), J+10 (preuve), J+21 (alerte Andromeda). Les leads qui ont réservé un appel sont dans Appels, ceux qui restent sur WhatsApp dans Écrit.</p>

@@ -20,7 +20,6 @@ function SuiviCard({ p }) {
       const num = numeroWa(p)
       if (tab && num) tab.location.href = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg)
       else { if (tab) tab.close(); if (!(await A.ouvrirCanal(p, msg))) return }
-      if (!n.pitch_envoye) A.pitchEnvoye(p.id, true)
     } finally { setBusy(false) }
   }
   const prog = appelProgrammeTs(n)

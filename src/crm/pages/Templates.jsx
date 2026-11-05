@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useCrm } from '../store'
 import * as D from '../domain/defaults'
+import { relanceTemplates, closingTemplates, ecritTemplates } from '../domain/messages'
 import { Chip, confirmDlg, toast } from '../ui'
 
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b)
@@ -30,10 +31,10 @@ export default function Templates() {
   const [onglet, setOnglet] = useState('relances')
   const sauve = async (changes, ok) => { if (await saveCfg(changes)) toast(ok || 'Enregistré ✓') }
   const tab = (k, l) => <button className={'cx-tab' + (onglet === k ? ' on' : '')} onClick={() => setOnglet(k)}>{l}</button>
-  const relances = Array.isArray(cfg.tpl_relances) && cfg.tpl_relances.length ? cfg.tpl_relances : D.DEFAULT_RELANCES
+  const relances = relanceTemplates(cfg)
   const intros = Array.isArray(cfg.tpl_intros) && cfg.tpl_intros.length ? cfg.tpl_intros : D.DEFAULT_INTROS
-  const closing = Array.isArray(cfg.tpl_closing) && cfg.tpl_closing.length === D.CLOSING_SLOTS.length ? cfg.tpl_closing : D.DEFAULT_CLOSING
-  const ecrit = { ...D.DEFAULT_ECRIT, ...(cfg.tpl_ecrit2 || {}) }
+  const closing = closingTemplates(cfg)
+  const ecrit = ecritTemplates(cfg)
   const pd = { ...D.PITCH_DATA_DEFAUT, ...(cfg.pitch_data || {}) }
   return (<>
     <div className="cx-tools"><div className="cx-tabs">{tab('relances', 'Relances J+3 / J+10 / J+21')}{tab('closing', 'Closing')}{tab('ecrit', 'Closing par écrit')}{tab('intros', 'Premiers messages')}{tab('pitch', 'Pitch & audit')}</div></div>

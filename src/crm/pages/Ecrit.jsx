@@ -22,7 +22,7 @@ export function EcritCard({ p }) {
       const lien = await A.shorten(lienOffreSuivi(n.ecrit_offre, camp, 'ecrit', p.id), camp)
       final = ecritMessage(p, etape, cfg, lien).msg
     }
-    if (await A.ouvrirCanal(p, final)) A.marquer(p.id, 'ecrit_sent_' + etape, true)
+    await A.ouvrirCanal(p, final) // l'envoi n'est confirmé que quand tu coches « déjà envoyé »
   }
   const v = pitchVariante(p, cfg)
   return (

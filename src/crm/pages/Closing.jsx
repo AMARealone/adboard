@@ -17,7 +17,7 @@ export function ClosingCard({ p }) {
     const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { toast('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
     const lien = await A.shorten(lienOffreSuivi(n.closing_offre, 'closing_j' + CLOSING_JOURS[i], 'closing', p.id), 'closing_j' + CLOSING_JOURS[i])
     const final = closingMessage(p, i, cfg, lien).msg
-    if (await A.ouvrirCanal(p, final)) A.marquer(p.id, 'closing_sent_j' + CLOSING_JOURS[i], true)
+    await A.ouvrirCanal(p, final) // l'envoi n'est confirmé que quand tu coches « déjà envoyé »
   }
   const o = OFFRES[n.closing_offre]
   return (

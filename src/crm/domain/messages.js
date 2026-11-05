@@ -3,6 +3,9 @@ import { N } from './notes'
 import { OFFRES } from './offres'
 import * as D from './defaults'
 import * as PV from './defaults_prev'
+// compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
+const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
+const estAncien = (x, prev) => !!prev && norm(x) === norm(prev)
 
 const pd = (cfg) => {
   const c = (cfg && cfg.pitch_data) || {}, d = D.PITCH_DATA_DEFAUT
@@ -54,7 +57,7 @@ export function closingTemplates(cfg) {
   let t = cfg && cfg.tpl_closing
   if (!Array.isArray(t) || t.length !== D.CLOSING_SLOTS.length) t = D.DEFAULT_CLOSING
   // un modèle jamais modifié (= ancien défaut) prend le nouveau défaut (mis en gras)
-  return D.CLOSING_SLOTS.map((x, i) => (!t[i] || t[i] === PV.PREV_DEFAULT_CLOSING[i]) ? D.DEFAULT_CLOSING[i] : t[i])
+  return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i])) ? D.DEFAULT_CLOSING[i] : t[i])
 }
 export const closingSlot = (n, i) => (i === 0 ? (n.closing_ab1 === 'B' ? 1 : 0) : i === 1 ? (n.closing_ab3 === 'B' ? 3 : 2) : 4)
 export function closingMessage(p, i, cfg, lienPerso) {
@@ -72,7 +75,7 @@ export function closingMessage(p, i, cfg, lienPerso) {
 // ── Closing par écrit (blocs 1 à 3 + suite)
 export function ecritTemplates(cfg) {
   const saved = (cfg && cfg.tpl_ecrit2) || {}, out = {}
-  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && saved[k] !== PV.PREV_DEFAULT_ECRIT[k] ? saved[k] : D.DEFAULT_ECRIT[k] })
+  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
   return out
 }
 export function ecritMessage(p, etape, cfg, lienPerso) {
@@ -103,7 +106,7 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
 }
 
 // ── Relances Leads J+3 / J+10 / J+21
-export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => (i > 0 && x === PV.PREV_DEFAULT_RELANCES[i]) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }
+export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => (i > 0 && (estAncien(x, PV.PREV_DEFAULT_RELANCES[i]) || (i === 2 && /trou sur la route/i.test(x)))) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }
 export function relanceMessage(p, idx, cfg) {
   let tpl = relanceTemplates(cfg)[idx] || ''
   if (idx !== 0 && D.J10_VARS.test(tpl)) tpl = D.DEFAULT_RELANCES[idx] || ''
