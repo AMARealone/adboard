@@ -3332,6 +3332,11 @@ function pitchVariante(p) {
 function remplirPitchDonnees(msg, v) {
   msg = msg.replace(/\s*\((?:ex|exemple)\s*:[^)]*\)/gi, '');   // retire les « (ex: …) » restés dans un texte copié
   const put = (nom, val) => { msg = msg.replace(new RegExp('\\[' + nom + '\\]', 'gi'), () => val); };
+  // Durée approximative au-delà de 30 jours : « plusieurs semaines » (30–60 j), « plusieurs mois » (> 60 j)
+  if (v.jours > 30) {
+    const phrase = v.jours > 60 ? 'plusieurs mois' : 'plusieurs semaines';
+    msg = msg.replace(/\[jours\](\*?)\s+jours\b(\*?)/gi, (m, a, b) => phrase + (a || b)).replace(/\[jours\]/gi, phrase);
+  }
   put('ads', v.ads); put('jours', v.jours); put('bonne_nouvelle', v.b);
   put('mauvaise_nouvelle_en_2_mots', v.n); put('mauvaise_nouvelle_2_mots', v.n);
   put('mauvaise_nouvelle', v.m); put('solution', v.s);
@@ -3467,6 +3472,7 @@ async function sendPitchMsg(pid) {
     const _avaitMention = /\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*)]*)?\*?/i.test(msg);
     msg = msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*)]*)?\*?/gi, curLien);
     msg = msg.replace(/\[lien\]/gi, curLien);
+    { const _i = msg.indexOf(curLien); if (_i >= 0) { const _f = _i + curLien.length; msg = msg.slice(0, _f) + msg.slice(_f).split(curLien).join('').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n'); } }  // un seul lien par message
     if (!_avaitMention && !/\[lien\]/i.test(d.tpl)) msg += '\n\n' + curLien;
 
     const numeroFinal = d.numero || (document.getElementById('btn-send-pitch-'+pid)||{}).dataset?.numero || '';

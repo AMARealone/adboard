@@ -30,6 +30,11 @@ export function pitchVariante(p, cfg) {
 export function remplirPitchDonnees(msg, v) {
   msg = msg.replace(/\s*\((?:ex|exemple)\s*:[^)]*\)/gi, '')
   const put = (nom, val) => { msg = msg.replace(new RegExp('\\[' + nom + '\\]', 'gi'), () => val) }
+  // Durée approximative au-delà de 30 jours : « plusieurs semaines » (30–60 j), « plusieurs mois » (> 60 j)
+  if (v.jours > 30) {
+    const phrase = v.jours > 60 ? 'plusieurs mois' : 'plusieurs semaines'
+    msg = msg.replace(/\[jours\](\*?)\s+jours\b(\*?)/gi, (m, a, b) => phrase + (a || b)).replace(/\[jours\]/gi, phrase)
+  }
   put('ads', v.ads); put('jours', v.jours); put('bonne_nouvelle', v.b)
   put('mauvaise_nouvelle_en_2_mots', v.n); put('mauvaise_nouvelle_2_mots', v.n); put('mauvaise_nouvelle', v.m); put('solution', v.s)
   if (v.ads === 1) msg = msg.replace(/\b1(\*?) ads actives\b/gi, '1$1 ad active')
@@ -59,7 +64,7 @@ export function closingMessage(p, i, cfg, lienPerso) {
     if (!v) { const nom = key === 'Lien' || key === 'Facture' ? 'offre' : key; if (!manque.includes(nom)) manque.push(nom) }
     return v
   })
-  return { msg, manque }
+  return { msg: lienPerso ? unifierLiens(msg, lienPerso) : msg, manque }
 }
 
 // ── Closing par écrit (blocs 1 à 3 + suite)
@@ -91,6 +96,7 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
     return x
   })
   if (/^b1_cas/.test(cle)) msg = remplirPitchDonnees(msg, v)
+  if (lienPerso) msg = unifierLiens(msg, lienPerso)
   return { msg, manque, cle }
 }
 
@@ -118,9 +124,20 @@ export const lienRelance = (idx, id, chemin) => {
   const ch = chemin && /^\/[\w\-\/]*$/.test(chemin) ? chemin.replace(/\/+$/, '') : ''
   return `https://adstackofficial.com${ch}/?utm_source=crm&utm_medium=relance&utm_campaign=${campagne}&utm_content=${id}`
 }
-export function insererLien(msg, lien) {
-  return msg.replace(/\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*]*)?\*?/gi, lien).replace(/\*?\[lien_demo\]\*?/gi, lien).replace(/\*?\[lien\]\*?/gi, lien)
+// Un seul lien suivi par message : toute mention du site (« adstackofficial.com », avec ou sans @, https, www, *…*) ou [lien]
+// devient le lien suivi ; si le même lien se retrouve plusieurs fois, on ne garde que le premier.
+const MENTION_SITE = /@?\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*)]*)?\*?/gi
+export function unifierLiens(msg, lien) {
+  if (!lien) return msg
+  let out = msg.replace(MENTION_SITE, () => lien).replace(/\*?\[lien_demo\]\*?/gi, () => lien).replace(/\*?\[lien\]\*?/gi, () => lien)
+  const i = out.indexOf(lien)
+  if (i < 0) return out
+  const fin = i + lien.length
+  const reste = out.slice(fin).split(lien).join('')
+  out = out.slice(0, fin) + reste
+  return out.replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n')
 }
+export function insererLien(msg, lien) { return unifierLiens(msg, lien) }
 
 // ── Liens suivis (UTM) vers la page d'une offre : une campagne par type de message, l'identifiant du prospect en utm_content.
 export const CAMPAGNES_LIENS = {
@@ -138,10 +155,9 @@ export const lienPitch = (id) => `https://adstackofficial.com/?utm_source=crm&ut
 export function pitchMessage(p, cfg, lien) {
   const tpl = (cfg && cfg.tpl_pitch) || D.DEFAULT_PITCH
   let msg = tpl.replace(/\[Produit\]/gi, (p.produit || '').trim() || 'votre produit').replace(/\[Marque\]/gi, p.nom_marque || '')
-  const mention = /\*?(?:https?:\/\/)?(?:www\.)?adstackofficial\.com(?:\/[^\s*)]*)?\*?/i
-  const avait = mention.test(msg)
-  msg = msg.replace(new RegExp(mention.source, 'gi'), lien).replace(/\[lien\]/gi, lien)
-  if (!avait && !/\[lien\]/i.test(tpl)) msg += '\n\n' + lien
+  const avait = /adstackofficial\.com/i.test(msg) || /\[lien\]/i.test(msg)
+  msg = unifierLiens(msg, lien)
+  if (!avait) msg += '\n\n' + lien
   return msg
 }
 
