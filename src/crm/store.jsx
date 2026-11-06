@@ -65,7 +65,7 @@ export function CrmProvider({ children }) {
       if (choix === 'paye' && !(await confirmDlg('Confirmer : ' + nom + ' a payé ?\nIl passe en « Acheteur ».', 'Oui, a payé'))) return false
       if (choix === 'perdu' && !(await confirmDlg('Marquer ' + nom + ' « pas intéressé » ?\nIl retourne dans Suivi (réversible).', 'Pas intéressé'))) return false
       const t = now(), n = N(p), efface = {}
-      const clesClosing = ['closing_sent_j1', 'closing_sent_j3', 'closing_sent_j7', 'closing_sent_j10', 'closing_sent_j21']
+      const clesClosing = ['closing_sent_j1', 'closing_sent_j3', 'closing_sent_j4', 'closing_sent_j7', 'closing_sent_j11', 'closing_sent_j10', 'closing_sent_j21']
       clesClosing.forEach((k) => { efface[k] = undefined; efface[k + '_at'] = undefined })
       let notes = {}, body = {}
       if (choix === 'relance') notes = { ...efface, closing_etat: 'relance', closing_at: n.appel_fait_at || t }

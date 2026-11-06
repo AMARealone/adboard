@@ -23,7 +23,7 @@ function Editeur({ titre, aide, valeur, defaut, onSave, rows = 9 }) {
   )
 }
 const VARS_RELANCE = 'Variables : [Marque] [Produit] [Pays]. Le site d\'Adstack dans le message est remplacé par un lien suivi et raccourci. Sans lien dans le message, rien n\'est ajouté.'
-const VARS_CLOSING = 'Variables : [Prénom] [Marque] [Mots] [Objection] [Objectif] [Facture] et [Lien] (page de l\'offre discutée, raccourcie et suivie à l\'envoi).'
+const VARS_CLOSING = 'Variables : [Prénom] [Marque] [Objectif] [Problème] et [Lien] (page de l\'offre discutée, raccourcie et suivie à l\'envoi). J+4 se compte 3 jours après l\'envoi du J+1, J+11 sept jours après l\'envoi du J+4.'
 const VARS_ECRIT = 'Variables : [marque] [produit] [pays] [remarque] [facture] [delai] [n] et [lien] (page de l\'offre, suivie à l\'envoi pour « Bloc 3 » et « suite »).'
 
 export default function Templates() {

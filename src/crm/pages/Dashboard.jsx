@@ -81,8 +81,8 @@ export default function Dashboard() {
       </Bloc>
       <Bloc t="Closing après appel">
         <div className="cx-minis"><Mini l="Entrés" v={s.closing.entres} /><Mini l="Payés" v={s.closing.payes} /><Mini l="Pas intéressés" v={s.closing.perdus} /></div>
-        <table className="cx-tbl sm"><thead><tr><th>Version</th><th>J+1 envoyés</th><th>payés</th><th>J+3 envoyés</th><th>payés</th></tr></thead><tbody>
-          {['A', 'B'].map((v) => { const a1 = s.closing.j1.find((x) => x.v === v), a3 = s.closing.j3.find((x) => x.v === v); return <tr key={v}><td>{v}</td><td>{a1.envoyes}</td><td>{a1.payes}</td><td>{a3.envoyes}</td><td>{a3.payes}</td></tr> })}
+        <table className="cx-tbl sm"><thead><tr><th>Relance</th><th>Envoyées</th><th>Payés après</th></tr></thead><tbody>
+          {s.closing.relances.map((r) => <tr key={r.j}><td>J+{r.j}</td><td>{r.envoyes}</td><td>{r.payes}</td></tr>)}
         </tbody></table>
         <p className="cx-foot-note">Les « payés » comptent les prospects devenus acheteurs, quelle que soit la relance qui les a convaincus.</p>
       </Bloc>

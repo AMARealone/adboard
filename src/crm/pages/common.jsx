@@ -23,9 +23,9 @@ export function InfosAppel({ p, onClose }) {
     <Modal title={'Infos de l\'appel · ' + (p.nom_marque || '')} onClose={onClose}>
       <div className="cx-form">
         <label>Prénom<input value={v.prenom} onChange={set('prenom')} /></label>
-        <label>Ses mots (sa douleur, tels qu'il/elle les a dits)<textarea value={v.mots} onChange={set('mots')} placeholder="Copie sa phrase exacte, elle apparaîtra entre guillemets" /></label>
-        <label>Son objectif (commence par un verbe)<input value={v.objectif} onChange={set('objectif')} placeholder="vendre plus de votre crème" /></label>
-        <label>Son objection (suit « Si c'est… »)<input list="objs" value={v.objection} onChange={set('objection')} /></label>
+        <label>Son problème (groupe nominal, suit « l'enjeu, c'est… »)<textarea value={v.mots} onChange={set('mots')} placeholder="plus de créatives, sans y passer votre temps" /></label>
+        <label>Son objectif (verbe à l'infinitif, suit « pour… »)<input value={v.objectif} onChange={set('objectif')} placeholder="atteindre 1 000 000 FCFA par semaine" /></label>
+        <label>Son objection (pour ton suivi)<input list="objs" value={v.objection} onChange={set('objection')} /></label>
         <datalist id="objs">{CLOSING_OBJECTIONS.map((o) => <option key={o} value={o} />)}</datalist>
         <label>Offre discutée<OffrePick value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></label>
       </div>
@@ -94,7 +94,7 @@ export function infosProspect(p, cfg) {
     add('Ads actives', a.nb); add('Durée moyenne des ads (jours)', a.moy); add('Durée médiane des ads (jours)', a.med); add('Cas ads', v.cas != null ? 'cas ' + v.cas : ''); add('Relevé ads du', fd(a.maj_at))
   }
   L.push('')
-  add('Objectif', n.form_objectif || n.closing_objectif); add('Budget', n.form_budget); add('Ses mots', n.closing_mots); add('Objection', n.closing_objection); add('Offre discutée', n.closing_offre || n.ecrit_offre)
+  add('Objectif', n.form_objectif || n.closing_objectif); add('Budget', n.form_budget); add('Son problème', n.closing_mots); add('Objection', n.closing_objection); add('Offre discutée', n.closing_offre || n.ecrit_offre)
   add('Statut', p.statut); add('Premier contact', fd(p.date_contact)); add('Lead depuis', fd(p.date_lead))
   add('A répondu', p.a_repondu ? 'oui' : ''); add('Intéressé', p.interesse ? 'oui' : ''); add('Pitch envoyé', fd(n.pitch_envoye_at))
   const pr = appelProgrammeTs(n)

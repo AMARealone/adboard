@@ -20,7 +20,7 @@ function parcours(p, cfg) {
   add(n.appel_programme_at, 'Appel programmé', 'bl')
   add(n.no_show_at, 'No-show', 'wa')
   add(n.appel_fait_at, 'Appel fait', 'ok')
-  ;[1, 3, 7, 10, 21].forEach((j) => add(n['closing_sent_j' + j + '_at'], 'Closing J+' + j + ' envoyé'))
+  ;[1, 3, 4, 7, 11, 10, 21].forEach((j) => add(n['closing_sent_j' + j + '_at'], 'Closing J+' + j + ' envoyé'))
   add(n.ecrit_at, 'Passé en closing par écrit')
   ;['b1', 'b2', 'b3', 'suite'].forEach((e) => add(n['ecrit_sent_' + e + '_at'], 'Écrit : ' + e + ' envoyé'))
   add(n.pas_interesse_at, 'Pas intéressé', 'red')

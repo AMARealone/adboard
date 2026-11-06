@@ -28,7 +28,7 @@ export default function Aujourdhui() {
     {total === 0 && <Empty t="Rien d'urgent 🎉" s="Tout ce qui est dû aujourd'hui est traité." />}
     <Bloc titre="No-show à appliquer" to="/appels" items={t.noshow}>{t.noshow.map(({ p, depuis }) => <Ligne key={p.id} p={p} chips={<Chip c="wa">programmé il y a {duree(depuis)}</Chip>} action={<button className="cx-btn sm" onClick={() => A.noShow(p.id, true)}>Marquer no-show</button>} />)}</Bloc>
     <Bloc titre="Appels du jour" to="/appels" items={t.appels}>{t.appels.map(({ p, retard, at }) => <Ligne key={p.id} p={p} chips={retard ? <Chip c="red">en retard de {duree(Date.now() - at)}</Chip> : <Chip c="bl">{new Date(at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</Chip>} />)}</Bloc>
-    <Bloc titre="Closing à envoyer" to="/closing" items={t.closing}>{t.closing.map(({ p, j, age }) => <Ligne key={p.id} p={p} chips={<Chip c="red">J+{j} · appel il y a {age} j</Chip>} />)}</Bloc>
+    <Bloc titre="Closing à envoyer" to="/closing" items={t.closing}>{t.closing.map(({ p, j, age }) => <Ligne key={p.id} p={p} chips={<Chip c="red">Relance J+{j} · appel il y a {age} j</Chip>} />)}</Bloc>
     <Bloc titre="Écrit : prochain bloc" to="/ecrit" items={t.ecrit}>{t.ecrit.map(({ p, etape, depuis }) => <Ligne key={p.id} p={p} chips={<Chip c="bl">{(ECRIT_ETAPES.find((e) => e.key === etape) || {}).label}</Chip>} />)}</Bloc>
     <Bloc titre="Relances Leads" to="/leads" items={t.relances}>{t.relances.map(({ p, j, retard }) => <Ligne key={p.id} p={p} chips={<Chip c={retard > 0 ? 'red' : 'bl'}>J+{j}{retard > 0 ? ' · ' + retard + ' j de retard' : ''}</Chip>} />)}</Bloc>
   </>)

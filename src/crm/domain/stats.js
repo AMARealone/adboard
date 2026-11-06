@@ -11,8 +11,10 @@ export const CAMPAGNES = [
   { cle: 'j10', label: 'Relance J+10', groupe: 'Relances' },
   { cle: 'j21', label: 'Relance J+21', groupe: 'Relances' },
   { cle: 'closing_j1', label: 'Closing J+1', groupe: 'Closing' },
-  { cle: 'closing_j3', label: 'Closing J+3', groupe: 'Closing' },
-  { cle: 'closing_j7', label: 'Closing J+7', groupe: 'Closing' },
+  { cle: 'closing_j4', label: 'Closing J+4', groupe: 'Closing' },
+  { cle: 'closing_j11', label: 'Closing J+11', groupe: 'Closing' },
+  { cle: 'closing_j3', label: 'Closing J+3 (ancien)', groupe: 'Closing', historique: true },
+  { cle: 'closing_j7', label: 'Closing J+7 (ancien)', groupe: 'Closing', historique: true },
   { cle: 'ecrit_b3', label: 'Écrit · offre', groupe: 'Écrit' },
   { cle: 'ecrit_suite', label: 'Écrit · suite', groupe: 'Écrit' },
   { cle: 'statut_whatsapp', label: 'Statut WhatsApp', groupe: 'Autres', sansEnvoi: true },
@@ -64,7 +66,7 @@ export function calculer({ prospects, liens, funnel, tx, w }) {
   P.forEach(({ n }) => {
     compte('pitch', n.pitch_envoye, n.pitch_envoye_at); compte('demo', n.demo_envoye, n.demo_envoye_at)
     ;[3, 10, 21].forEach((j) => compte('j' + j, n['sent_j' + j] || n['j' + j + '_envoye'], n['sent_j' + j + '_at'] || n['j' + j + '_envoye_at']))
-    ;[1, 3, 7].forEach((j) => compte('closing_j' + j, n['closing_sent_j' + j], n['closing_sent_j' + j + '_at']))
+    ;[1, 3, 4, 7, 11].forEach((j) => compte('closing_j' + j, n['closing_sent_j' + j], n['closing_sent_j' + j + '_at']))
     ;['b3', 'suite'].forEach((e) => compte('ecrit_' + e, n['ecrit_sent_' + e], n['ecrit_sent_' + e + '_at']))
   })
   // — Clics, panier, paiement, achats par campagne
@@ -93,14 +95,12 @@ export function calculer({ prospects, liens, funnel, tx, w }) {
   const achatsTx = txCore.length
   // — Closing et Écrit
   const closingEntres = P.filter(({ n }) => n.closing_etat && dans(n.closing_at, w))
-  const ab = (jour, cle) => ['A', 'B'].map((v) => {
-    const g = P.filter(({ n }) => n['closing_sent_j' + jour] && (n[cle] === 'B' ? 'B' : 'A') === v)
-    return { v, envoyes: g.length, payes: g.filter(({ p, n }) => p.statut === 'acheteur' || n.closing_etat === 'paye').length }
-  })
+  // Par relance : combien ont été envoyées, et combien de ceux qui l'ont reçue ont fini par payer (J+3 / J+7 = anciens rythmes)
+  const parJour = (jour) => { const g = P.filter(({ n }) => n['closing_sent_j' + jour]); return { j: jour, envoyes: g.length, payes: g.filter(({ p, n }) => p.statut === 'acheteur' || n.closing_etat === 'paye').length } }
   const closing = {
     entres: closingEntres.length, payes: P.filter(({ n }) => dans(n.closing_paye_at, w)).length,
     perdus: P.filter(({ n }) => n.pas_interesse && dans(n.pas_interesse_at, w)).length,
-    j1: ab(1, 'closing_ab1'), j3: ab(3, 'closing_ab3'),
+    relances: [1, 4, 11].map(parJour),
   }
   const ecritEnv = (e) => P.filter(({ n }) => n['ecrit_sent_' + e] && dans(n['ecrit_sent_' + e + '_at'], w)).length
   const ecrit = {

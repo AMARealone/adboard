@@ -5,6 +5,7 @@ import * as D from './defaults'
 import * as PV from './defaults_prev'
 import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
 import { PREV3_DEFAULT_ECRIT, PREV3_J3_REPLI } from './defaults_prev3'
+import { PREV4_DEFAULT_ECRIT } from './defaults_prev4'
 // compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
 const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
 const estAncien = (x, ...prevs) => prevs.some((prev) => !!prev && norm(x) === norm(prev))
@@ -55,20 +56,19 @@ export function resoudrePays(paysRaw) {
   return { code, adj, phrase: D.PAYS_PHRASE[code] || adj || brut }
 }
 
-// ── Closing après appel (J+1 / J+3 / J+7)
+// ── Closing après appel (J+1 / J+4 / J+11)
 export function closingTemplates(cfg) {
   let t = cfg && cfg.tpl_closing
   if (!Array.isArray(t) || t.length !== D.CLOSING_SLOTS.length) t = D.DEFAULT_CLOSING
   // un modèle jamais modifié (= ancien défaut) prend le nouveau défaut (mis en gras)
   return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i])) ? D.DEFAULT_CLOSING[i] : t[i])
 }
-export const closingSlot = (n, i) => (i === 0 ? (n.closing_ab1 === 'B' ? 1 : 0) : i === 1 ? (n.closing_ab3 === 'B' ? 3 : 2) : 4)
 export function closingMessage(p, i, cfg, lienPerso) {
-  const n = N(p), tpl = (closingTemplates(cfg)[closingSlot(n, i)] || '').trim(), offre = OFFRES[n.closing_offre]
-  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Objectif: (n.closing_objectif || '').trim(), Lien: offre ? (lienPerso || offre.url) : '', Facture: offre ? offre.facture : '' }
+  const n = N(p), tpl = (closingTemplates(cfg)[i] || '').trim(), offre = OFFRES[n.closing_offre]
+  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Problème: (n.closing_mots || '').trim(), Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Objectif: (n.closing_objectif || '').trim(), Lien: offre ? (lienPerso || offre.url) : '', Facture: offre ? offre.facture : '' }
   const manque = []
-  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Mots|Objection|Objectif|Lien|Facture)\]/gi, (m, k) => {
-    const key = Object.keys(vals).find((x) => x.toLowerCase() === k.toLowerCase()), v = vals[key]
+  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Probl[èe]me|Mots|Objection|Objectif|Lien|Facture)\]/gi, (m, k) => {
+    const key = Object.keys(vals).find((x) => x.toLowerCase() === k.toLowerCase().replace('probleme', 'problème').replace('prenom', 'prénom')), v = vals[key]
     if (!v) { const nom = key === 'Lien' || key === 'Facture' ? 'offre' : key; if (!manque.includes(nom)) manque.push(nom) }
     return v
   })
@@ -78,7 +78,7 @@ export function closingMessage(p, i, cfg, lienPerso) {
 // ── Closing par écrit (blocs 1 à 3 + suite)
 export function ecritTemplates(cfg) {
   const saved = (cfg && cfg.tpl_ecrit2) || {}, out = {}
-  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k], PREV2_DEFAULT_ECRIT[k], PREV3_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
+  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k], PREV2_DEFAULT_ECRIT[k], PREV3_DEFAULT_ECRIT[k], PREV4_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
   return out
 }
 export function ecritMessage(p, etape, cfg, lienPerso) {
@@ -155,7 +155,7 @@ export function insererLien(msg, lien) { return unifierLiens(msg, lien) }
 // ── Liens suivis (UTM) vers la page d'une offre : une campagne par type de message, l'identifiant du prospect en utm_content.
 export const CAMPAGNES_LIENS = {
   pitch: 'Pitch (1er message)', j10: 'Relance J+10', j21: 'Relance J+21',
-  closing_j1: 'Closing J+1', closing_j3: 'Closing J+3', closing_j7: 'Closing J+7',
+  closing_j1: 'Closing J+1', closing_j4: 'Closing J+4', closing_j11: 'Closing J+11', closing_j3: 'Closing J+3 (ancien)', closing_j7: 'Closing J+7 (ancien)',
   ecrit_b3: 'Écrit · offre', ecrit_suite: 'Écrit · suite',
 }
 export const lienOffreSuivi = (offreKey, campagne, medium, id) => {

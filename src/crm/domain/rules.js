@@ -1,6 +1,6 @@
 // Règles métier (reprises de l'ancien CRM) : qui est dans Appels, Closing, Écrit, Leads, et ce qui est dû.
 import { N, jours } from './notes'
-import { CLOSING_JOURS, APPEL_DELAI_MS } from './defaults'
+import { CLOSING_JOURS, CLOSING_DELAIS, APPEL_DELAI_MS } from './defaults'
 
 export const closingEtat = (p) => (N(p).closing_etat || '')
 export const ecritEtat = (p) => (N(p).ecrit_etat || '')
@@ -19,9 +19,24 @@ export const appelEcheance = (n) => { const pr = appelProgrammeTs(n); if (pr !==
 export const appelEnRetard = (n, now = Date.now()) => { if (!n || n.appel_fait) return false; const e = appelEcheance(n); return e !== null && now >= e }
 
 export const closingJours = (n, now = Date.now()) => { const t = ts(n.closing_at || n.appel_fait_at); return t === null ? 0 : Math.max(0, Math.floor((now - t) / 86400000)) }
-export const closingProchainJ = (n) => { for (const j of CLOSING_JOURS) if (!n['closing_sent_j' + j]) return j; return null }
-export const closingEnRetard = (n, now) => { const pj = closingProchainJ(n); return pj !== null && closingJours(n, now) >= pj }
-export const closingInfosIncompletes = (n) => !n.closing_prenom || !n.closing_mots || !n.closing_offre
+// Anciens rythmes J+3 / J+7 : une relance déjà envoyée sous l'ancien nom compte pour la nouvelle (J+3 → J+4, J+7 → J+11).
+const CLOSING_ANCIEN = { 4: 3, 11: 7 }
+export const closingEnvoye = (n, j) => !!(n['closing_sent_j' + j] || (CLOSING_ANCIEN[j] && n['closing_sent_j' + CLOSING_ANCIEN[j]]))
+const closingEnvoiAt = (n, j) => ts(n['closing_sent_j' + j + '_at']) ?? (CLOSING_ANCIEN[j] ? ts(n['closing_sent_j' + CLOSING_ANCIEN[j] + '_at']) : null)
+export const closingProchainJ = (n) => { for (const j of CLOSING_JOURS) if (!closingEnvoye(n, j)) return j; return null }
+// Échéancier : J+1 se compte depuis l'appel ; J+4 se compte 3 jours après l'ENVOI de J+1 ; J+11 se compte 7 jours après l'ENVOI de J+4.
+// Si la date d'envoi précédente est inconnue (anciennes données), on retombe sur J+X depuis l'appel.
+export function closingEcheance(n, now = Date.now()) {
+  const pj = closingProchainJ(n); if (pj === null) return null
+  const i = CLOSING_JOURS.indexOf(pj), appel = ts(n.closing_at || n.appel_fait_at)
+  let ref = appel, delai = pj
+  if (i > 0) { const t = closingEnvoiAt(n, CLOSING_JOURS[i - 1]); if (t !== null) { ref = t; delai = CLOSING_DELAIS[i] } }
+  else delai = CLOSING_DELAIS[0]
+  const ecoule = ref === null ? 0 : Math.floor((now - ref) / 86400000)
+  return { pj, ecoule, delai, reste: delai - ecoule }
+}
+export const closingEnRetard = (n, now) => { const e = closingEcheance(n, now); return !!e && e.reste <= 0 }
+export const closingInfosIncompletes = (n) => !n.closing_prenom || !n.closing_mots || !n.closing_objectif || !n.closing_offre
 
 // Relances Leads J+3 / J+10 / J+21 : « envoyée » = case cochée à la main OU envoi depuis le CRM
 export const RELANCES = [3, 10, 21]

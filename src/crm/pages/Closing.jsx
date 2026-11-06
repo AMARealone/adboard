@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useCrm } from '../store'
 import { N, quand } from '../domain/notes'
-import { closingDansListe, closingEnRetard, closingInfosIncompletes, closingJours, closingProchainJ } from '../domain/rules'
+import { closingDansListe, closingEcheance, closingEnRetard, closingEnvoye, closingInfosIncompletes, closingJours, closingProchainJ } from '../domain/rules'
 import { CLOSING_JOURS, CLOSING_LABELS } from '../domain/defaults'
 import { closingMessage, lienOffreSuivi } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
@@ -10,7 +10,7 @@ import { Chip, Empty, toast } from '../ui'
 import { Marque, Meta, InfosAppel, BtnNotes, BtnSupprimer, BtnCopierInfos, CaseEnvoye } from './common'
 
 export function ClosingCard({ p }) {
-  const { A, cfg } = useCrm(); const n = N(p), now = Date.now(), age = closingJours(n, now), pj = closingProchainJ(n)
+  const { A, cfg } = useCrm(); const n = N(p), now = Date.now(), age = closingJours(n, now), pj = closingProchainJ(n), ech = closingEcheance(n, now)
   const [infos, setInfos] = useState(false)
   const envoyer = async (i) => {
     const { msg, manque } = closingMessage(p, i, cfg)
@@ -28,13 +28,13 @@ export function ClosingCard({ p }) {
         <Meta p={p} />
         <div className="cx-when">Appel il y a {age} j{n.closing_mots ? <> · « {n.closing_mots} »</> : null}</div>
         <div className="cx-steps">{CLOSING_JOURS.map((j, i) => {
-          const sent = !!n['closing_sent_j' + j], due = !sent && age >= j && pj === j
+          const sent = closingEnvoye(n, j), due = !sent && pj === j && !!ech && ech.reste <= 0
           return <div key={j} className={'cx-step' + (sent ? ' done' : due ? ' due' : '')}>
             <b>J+{j}</b><span>{CLOSING_LABELS[i]}</span>
             {sent ? <button className="cx-lnk" onClick={() => A.marquer(p.id, 'closing_sent_j' + j, false)}>✓ {quand(n['closing_sent_j' + j + '_at'])}</button>
               : <><button className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>
                 <CaseEnvoye onCheck={() => A.marquer(p.id, 'closing_sent_j' + j, true)} />
-                {i < 2 && <button className="cx-ab" title="Version du texte" onClick={() => A.closingVersion(p.id, i === 0 ? 1 : 3, (i === 0 ? n.closing_ab1 : n.closing_ab3) === 'B' ? 'A' : 'B')}>{(i === 0 ? n.closing_ab1 : n.closing_ab3) === 'B' ? 'B' : 'A'}</button>}</>}
+                {!due && pj === j && ech && ech.reste > 0 && <span className="cx-dim">dans {ech.reste} j</span>}</>}
           </div>
         })}</div>
       </div>
