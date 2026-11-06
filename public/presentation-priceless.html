@@ -764,7 +764,7 @@ etape(4,'On repère ce qui marche, <span class="grad">on construit dessus.</span
  var v4='<div class="mini3"><div class="top"><img src="'+G(6)+'" alt=""><span class="bdg">★ Top performer</span></div><div class="top"><img src="'+G(4)+'" alt=""></div></div>';
  var loop='<div class="loop a" style="--d:6"><span>Puis on recommence, en s’appuyant sur ce qui a gagné</span></div>';
  add("",head('En résumé','Un seul système, <span class="grad">quatre étapes.</span>')+
-  flow([[v1,'1. On étudie','Votre marché, vos concurrents, votre client idéal.'],[v2,'2. On crée','Pour chaque angle : 1 vidéo et 2 images.'],[v3,'3. On livre','Des lots prêts à publier, dans AdBoard.'],[v4,'4. On améliore','On s’appuie sur ce qui gagne, et on teste du neuf.']]).slice(0,-6)+loop+'</div>'+
+  flow([[v1,'1. On étudie','Votre marché, vos concurrents, votre client idéal.'],[v2,'2. On crée','Pour chaque angle : 1 vidéo et 2 images.'],[v3,'3. On livre','Des lots prêts à publier, dans AdBoard.'],[v4,'4. On améliore','On s’appuie sur ce qui gagne, et on teste du neuf.']],loop)+
   bridge('Vous pourriez aussi vous y prendre autrement'),{sec:'sy'});
 })();
 
@@ -812,19 +812,12 @@ resultat(3,'Saelia','Cosmétiques · RDC',
   bridge('Voyons comment on démarre'),{sec:'re'});
 })();
 
-/* ═════ 15 à 17 · Démarrer ═════ */
-function demarrage(n,titre,points,visuel,next){
- add("",split(prog(n,3,'Démarrage')+'<h2 class="a" style="--d:1">'+titre+'</h2>'+pts(points),visuel)+bridge(next),{sec:'go'});
-}
-demarrage(1,'Vous vous connectez <span class="grad">à AdBoard.</span>',
- ['<b>AdBoard</b> est notre plateforme : c’est là que tout se passe.','Vous vous connectez avec <b>votre compte Google</b>.','Vous retrouvez <b>vos produits</b> et vos demandes au même endroit.'],
- '<div class="zw a pop" style="--d:2;display:flex;justify-content:center;align-items:center">'+mCatalogue(1.55)+'</div>','Ensuite, vous nous donnez vos infos');
-demarrage(2,'Vous nous donnez <span class="grad">les infos de votre produit.</span>',
- ['Les <b>photos</b> de votre produit : face, dos, côtés. <b>Rien à nous envoyer physiquement</b>, même pour les vidéos.','Les <b>avis clients</b> : captures WhatsApp, Instagram, tout ce que vous avez.','Vos <b>documents marketing</b> déjà utilisés : cible, angles testés, offre.'],
- '<div class="zw a pop" style="--d:2;display:flex;justify-content:center;align-items:center">'+mForm(1.55)+'</div>','Puis vous demandez votre premier lot');
-demarrage(3,'Vous demandez un lot, <span class="grad">vous le recevez en 48h.</span>',
- ['Vous choisissez la taille du lot : <b>6, 12 créatives</b>, c’est vous qui voyez.','On produit : vidéos et images, sur plusieurs angles.','Vous le recevez en <b>48h maximum</b>, directement dans AdBoard.'],
- '<div class="zw a pop" style="--d:2;display:flex;justify-content:center;align-items:center">'+mSuivi(1.6)+'</div>','Voyons ce qui se passe après votre demande');
+/* ═════ 15 · Démarrer (une seule slide) ═════ */
+add("",head('Pour démarrer','Trois gestes, et <span class="grad">c’est lancé.</span>')+
+ flow([[mCatalogue(.9),'1. Vous vous connectez','Avec votre compte Google. Vos produits et vos demandes sont au même endroit.',1],
+       [mForm(.9),'2. Vous donnez les infos','Photos, avis clients, documents marketing. Rien à nous envoyer physiquement, même pour les vidéos.',1],
+       [mSuivi(.9),'3. Vous demandez un lot','Vous le recevez en 48h maximum, directement dans AdBoard.',1]])+
+ bridge('Voyons ce qui se passe après votre demande'),{sec:'go'});
 
 /* ═════ 18 · Après la demande ═════ */
 add("",split(head('Ensuite','Ce qui se passe <span class="grad">après votre demande.</span>')+'<p class="lead a" style="--d:2">Votre premier lot arrive vite. Ensuite, chaque mois, on s’appuie sur ce qui a marché.</p>',
@@ -861,7 +854,7 @@ add("",split(head('Pour finir','Tout est prêt. <span class="grad">On commence ?
 var stage=document.getElementById('stage'),cur=0,prevIdx=0,main=[];
 slides.forEach(function(s,i){if(s.annex)annexIdx=i;else main.push(i)});
 stage.innerHTML=DEFS+slides.map(function(s,i){var mi=main.indexOf(i);return '<section class="s '+s.cls+'" data-i="'+i+'"'+(s.sec?' data-sec="'+s.sec+'"':'')+'>'+LOGO+(s.sec?trk(s.sec):'')+(s.annex||s.cls==="cover"?'':'<div class="num">'+String(mi+1).padStart(2,"0")+' / '+String(main.length).padStart(2,"0")+'</div>')+s.html+'</section>'}).join('');
-var els=[].slice.call(stage.children);
+var els=[].slice.call(stage.children).filter(function(e){return e.tagName==='SECTION'});
 function go(i,fromJump){
  i=Math.max(0,Math.min(slides.length-1,i)); if(slides[i].annex&&!fromJump)return;
  els.forEach(function(e,k){e.classList.toggle('on',k===i);e.classList.toggle('past',k<i)});
