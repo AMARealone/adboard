@@ -32,6 +32,7 @@
   // Témoignage (texte retravaillé pour la lecture : à faire valider par la fondatrice avant publication)
   temoignage: {
     texte: "Je pensais avoir saturé mon marché. Je n’arrivais plus à trouver de nouvelles idées créatives, et mes résultats baissaient de plus en plus : c’était inquiétant. En quelques semaines, AdStack a tout remis en place, avec une excellente diversité créative. Ça a redonné vie à ma marque.",
+    preuve: { img: "/assets/vente/saelia-ads-manager.jpg" },
     nom: "Anissa Coli",
     role: "Owner de Saelia",
     photo: "/assets/vente/anissa-coli.jpg",

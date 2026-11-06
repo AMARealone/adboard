@@ -9,11 +9,11 @@
 <meta property="og:title" content="Saelia : +10K $ d’adspend, ROAS 3,6 | Étude de cas AdStack">
 <meta property="og:description" content="Étude de cas AdStack : une boutique de cosmétiques qui pensait avoir saturé son marché.">
 <meta property="og:url" content="https://www.adstackofficial.com/etude-de-cas/saelia">
-<meta property="og:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-saelia.jpg?v=2">
+<meta property="og:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-saelia.jpg?v=3">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-saelia.jpg?v=2">
+<meta name="twitter:image" content="https://www.adstackofficial.com/assets/miniatures/etude-de-cas-saelia.jpg?v=3">
 
 <meta name="description" content="Comment une marque e-commerce a trouvé ses créatives gagnantes avec AdStack.">
 <link rel="icon" href="/favicon.ico">
@@ -47,6 +47,7 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
 .fig b{display:block;font-size:clamp(26px,4vw,40px);line-height:1.1;letter-spacing:-1px;background:linear-gradient(135deg,var(--a),#7fe3ff);-webkit-background-clip:text;background-clip:text;color:transparent}
 .fig span{display:block;margin-top:8px;font-size:13px;color:var(--mut)}
 .quote{display:grid;grid-template-columns:1fr;gap:22px}
+.proof{margin:0 0 4px}.proof img{display:block;width:100%;height:auto;border-radius:16px;border:1px solid rgba(255,255,255,.14);box-shadow:0 18px 50px rgba(0,0,0,.45)}.proof figcaption{margin-top:10px;font-size:13px;color:var(--mut)}
 .quote blockquote{margin:0;font-size:clamp(19px,2.6vw,26px);line-height:1.4;font-weight:600}
 .who{display:flex;align-items:center;gap:12px;margin-top:18px;font-size:14px;color:var(--mut)}
 .who img{width:52px;height:52px;border-radius:50%;object-fit:cover}
@@ -404,7 +405,7 @@ h+=figs((D.chiffres||[]).slice(0,4))+'</div></section>';
 var t=D.temoignage||{};
 if(t.texte||t.youtube){h+='<section class="s"><div class="wrap rv"><div class="eyebrow">Ce que dit le fondateur</div><h2>Entendu directement de la marque</h2><div class="quote">';
  if(t.youtube)h+='<div class="video"><iframe src="https://www.youtube-nocookie.com/embed/'+esc(t.youtube)+'" title="Témoignage" loading="lazy" allowfullscreen></iframe></div>';
- if(t.texte){h+='<div><blockquote>« '+esc(t.texte)+' »</blockquote>';
+ if(t.texte){h+='<div>'+(t.preuve&&t.preuve.img?'<figure class="proof"><img src="'+esc(t.preuve.img)+'" alt="" loading="lazy"></figure>':'')+'<blockquote>« '+esc(t.texte)+' »</blockquote>';
   if(t.nom)h+='<div class="who">'+(t.photo?'<img src="'+esc(t.photo)+'" alt="'+esc(t.nom)+'">':'')+'<div><b>'+esc(t.nom)+'</b>'+esc(t.role)+'</div></div>';
   h+='</div>'}
  h+='</div></div></section>'}
