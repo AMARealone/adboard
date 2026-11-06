@@ -33,6 +33,7 @@ window.ETUDE_DE_CAS = {
   // Témoignage
   temoignage: {
     texte: "Avant AdStack, j’avais de bons résultats publicitaires, mais jamais assez stables pour augmenter mon budget sans casser ma rentabilité. Résultat : six mois de stagnation, très difficiles à vivre. Aujourd’hui, avec tout ce système créatif en place, mes campagnes sont beaucoup plus stables. J’ai de plus en plus de créatives gagnantes et je peux augmenter mon budget pub sans crainte. J’ai doublé mon chiffre d’affaires, et j’envisage d’aller chercher avec eux plusieurs dizaines de milliers de dollars de chiffre d’affaires par mois.",
+    preuve: { img: "/assets/vente/vitalina-ads-manager.jpg" },
     nom: "Aliou Cissé",
     role: "Fondateur de Vitalina",
     photo: "/assets/vente/aliou-cisse.jpg",
