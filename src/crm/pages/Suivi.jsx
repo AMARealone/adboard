@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { correspond } from '../filtre'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
 import { appelProgrammeTs, estInstagram, numeroWa, ecritActif } from '../domain/rules'
@@ -54,12 +55,12 @@ export default function Suivi() {
   const { prospects } = useCrm()
   const [q, setQ] = useState(''), [rep, setRep] = useState(false), [date, setDate] = useState('')
   const base = useMemo(() => prospects.filter((p) => p.statut === 'en_suivi'), [prospects])
-  const liste = useMemo(() => base.filter((p) => !ecritActif(p) && (!rep || p.a_repondu) && (!date || (p.date_contact || '').slice(0, 10) === date) && (!q.trim() || [p.nom_marque, p.produit, p.pays].some((v) => (v || '').toLowerCase().includes(q.trim().toLowerCase())))).sort((a, b) => Date.parse(a.date_contact || 0) - Date.parse(b.date_contact || 0)), [base, q, rep, date])
+  const liste = useMemo(() => base.filter((p) => !ecritActif(p) && (!rep || p.a_repondu) && (!date || (p.date_contact || '').slice(0, 10) === date) && correspond(p, q)).sort((a, b) => Date.parse(a.date_contact || 0) - Date.parse(b.date_contact || 0)), [base, q, rep, date])
   const c = base.length, r = base.filter((p) => p.a_repondu).length, i = base.filter((p) => p.interesse).length, l = base.filter((p) => p.lead_qualifie).length
   const pc = (x) => (c ? Math.round((x / c) * 100) + '%' : '—')
   return (<>
     <div className="cx-hero" style={{ marginBottom: 10 }}>{[['En suivi', c, null], ['Réponses', r, pc(r)], ['Intéressés', i, pc(i)], ['Leads qualifiés', l, pc(l)]].map(([lb, v, p], k) => <React.Fragment key={lb}>{k > 0 && <span className="cx-arrow">›</span>}<div className={k === 3 ? 'acc' : ''}><b>{v}</b><span>{lb}{p ? ' · ' + p : ''}</span></div></React.Fragment>)}</div>
-    <div className="cx-tools"><input className="cx-search" placeholder="Rechercher un prospect…" value={q} onChange={(e) => setQ(e.target.value)} />
+    <div className="cx-tools"><input className="cx-search" placeholder="Rechercher une marque, un produit, un pays, un numéro…" value={q} onChange={(e) => setQ(e.target.value)} />
       <div className="cx-tabs"><button className={'cx-tab' + (!rep ? ' on' : '')} onClick={() => setRep(false)}>Tous <i>{c}</i></button><button className={'cx-tab' + (rep ? ' on' : '')} onClick={() => setRep(true)}>Ont répondu <i>{r}</i></button>
         <span className="cx-range"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Date de contact" />{date && <button className="cx-btn ghost sm" onClick={() => setDate('')}>✕</button>}</span></div></div>
     {liste.length ? liste.map((p) => <SuiviCard key={p.id} p={p} />) : <Empty t="Aucun prospect en suivi" s="Contactez des prospects pour les voir apparaître ici." />}

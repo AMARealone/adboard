@@ -5,6 +5,7 @@ import { RELANCES, jDepuisLead, leadsARelancer, etatRelances, relanceEnvoyee, nu
 import { RELANCE_LABELS } from '../domain/defaults'
 import { insererLien, lienRelance, relanceMessage } from '../domain/messages'
 import { BoutonMajAds } from './MajAds'
+import { useFiltre } from '../filtre'
 import { Chip, Empty, toast, confirmDlg } from '../ui'
 import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos, CaseEnvoye } from './common'
 
@@ -55,9 +56,11 @@ export default function Leads() {
   const { prospects } = useCrm()
   const l = leadsARelancer(prospects).map((p) => { const e = etatRelances(p); return { p, s: e.pj === null ? -9999 : -e.reste } }).sort((a, b) => b.s - a.s)
   const urgents = l.filter((x) => x.s >= 0).length
+  const F = useFiltre(l.map((x) => x.p))
   return (<>
     <div style={{ marginBottom: 10 }}><BoutonMajAds /></div>
     {urgents > 0 && <div className="cx-banner">{urgents} relance{urgents > 1 ? 's' : ''} à envoyer maintenant</div>}
-    {l.length ? l.map(({ p }) => <LeadCard key={p.id} p={p} />) : <Empty t="Aucun lead à relancer" />}
+    {l.length > 0 && F.bar}
+    {F.liste.length ? F.liste.map((p) => <LeadCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucun lead à relancer" />}
   </>)
 }

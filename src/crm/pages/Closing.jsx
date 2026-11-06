@@ -5,6 +5,7 @@ import { closingDansListe, closingEnRetard, closingInfosIncompletes, closingJour
 import { CLOSING_JOURS, CLOSING_LABELS } from '../domain/defaults'
 import { closingMessage, lienOffreSuivi } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
+import { useFiltre } from '../filtre'
 import { Chip, Empty, toast } from '../ui'
 import { Marque, Meta, InfosAppel, BtnNotes, BtnSupprimer, CaseEnvoye } from './common'
 
@@ -51,7 +52,9 @@ export function ClosingCard({ p }) {
 export default function Closing() {
   const { prospects } = useCrm(); const now = Date.now()
   const l = prospects.filter(closingDansListe).sort((a, b) => (closingEnRetard(N(b), now) ? 1 : 0) - (closingEnRetard(N(a), now) ? 1 : 0) || closingJours(N(b), now) - closingJours(N(a), now))
+  const F = useFiltre(l)
   return (<>
-    {l.length ? l.map((p) => <ClosingCard key={p.id} p={p} />) : <Empty t="Aucune relance de closing" s="Un prospect arrive ici quand vous choisissez « À relancer » après l'appel." />}
+    {l.length > 0 && F.bar}
+    {F.liste.length ? F.liste.map((p) => <ClosingCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucune relance de closing" s="Un prospect arrive ici quand vous choisissez « À relancer » après l'appel." />}
   </>)
 }

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { correspond } from '../filtre'
 import { useCrm } from '../store'
 import { introMessages } from '../domain/messages'
 import { Chip, Empty, confirmDlg, toast } from '../ui'
@@ -55,7 +56,7 @@ export default function AContacter() {
   const [q, setQ] = useState(''), [pays, setPays] = useState(''), [anc, setAnc] = useState(''), [canal, setCanal] = useState(''), [max, setMax] = useState(50), [sel, setSel] = useState(() => new Set())
   const base = useMemo(() => prospects.filter((p) => p.statut === 'a_contacter'), [prospects])
   const liste = useMemo(() => base.filter((p) => {
-    if (q.trim() && ![p.nom_marque, p.produit].some((v) => (v || '').toLowerCase().includes(q.trim().toLowerCase()))) return false
+    if (!correspond(p, q)) return false
     if (pays && p.pays !== pays) return false
     if (canal === 'ig' && !p.lien_instagram) return false
     if (canal === 'wa' && (!p.lien_wa || p.whatsapp_invalide)) return false
@@ -70,7 +71,7 @@ export default function AContacter() {
   return (<>
     <div className="cx-minis" style={{ marginBottom: 12 }}><div className="cx-mini"><b>{prospects.length}</b><span>Total base</span></div><div className="cx-mini"><b>{base.length}</b><span>À contacter</span></div><div className="cx-mini"><b>{prospects.filter((p) => p.statut === 'en_suivi').length}</b><span>En suivi</span></div><div className="cx-mini"><b>{prospects.filter((p) => p.date_collecte === jour).length}</b><span>Collectés aujourd'hui</span></div></div>
     <Rythme />
-    <div className="cx-tools"><input className="cx-search" placeholder="Rechercher marque ou produit…" value={q} onChange={(e) => { setQ(e.target.value); setMax(50) }} />
+    <div className="cx-tools"><input className="cx-search" placeholder="Rechercher une marque, un produit, un numéro…" value={q} onChange={(e) => { setQ(e.target.value); setMax(50) }} />
       <div className="cx-tabs">
         <select value={pays} onChange={(e) => { setPays(e.target.value); setMax(50) }}><option value="">Tous les pays</option>{Object.entries(PAYS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
         <select value={anc} onChange={(e) => setAnc(e.target.value)}><option value="">Toute ancienneté</option><option value="30">Winner confirmé (≥ 30 j)</option><option value="14">A passé la fatigue (≥ 14 j)</option></select>

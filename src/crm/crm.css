@@ -87,3 +87,4 @@ button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit
 .cx-btn.red,.cx-btn.ghost.red{color:#ff6b6b}
 
 .cx-sentbox{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--sec);cursor:pointer;white-space:nowrap}.cx-sentbox input{width:16px;height:16px;accent-color:var(--ac);margin:0}
+.cx-searchbox{display:flex;gap:6px;align-items:center}.cx-searchbox .cx-search{flex:1}

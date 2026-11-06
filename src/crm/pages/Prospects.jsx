@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { correspond } from '../filtre'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
 import { Chip, Empty, toast } from '../ui'
@@ -13,8 +14,7 @@ export default function Prospects() {
   const [q, setQ] = useState(''), [s, setS] = useState(''), [pays, setPays] = useState(''), [date, setDate] = useState(''), [tri, setTri] = useState('recents'), [max, setMax] = useState(100)
   const listePays = useMemo(() => [...new Set(prospects.map((p) => p.pays).filter(Boolean))].sort(), [prospects])
   const liste = useMemo(() => {
-    const t = q.trim().toLowerCase()
-    const l = prospects.filter((p) => (!s || p.statut === s) && (!pays || p.pays === pays) && (!date || (p.date_contact || '').slice(0, 10) === date) && (!t || [p.nom_marque, p.produit, p.pays, p.lien_wa].some((v) => (v || '').toLowerCase().includes(t))))
+    const l = prospects.filter((p) => (!s || p.statut === s) && (!pays || p.pays === pays) && (!date || (p.date_contact || '').slice(0, 10) === date) && correspond(p, q))
     const d = (p) => Date.parse(p.date_contact || 0) || 0
     return l.sort(tri === 'recents' ? (a, b) => d(b) - d(a) : tri === 'anciens' ? (a, b) => d(a) - d(b) : tri === 'az' ? (a, b) => (a.nom_marque || '').localeCompare(b.nom_marque || '') : (a, b) => (b.nom_marque || '').localeCompare(a.nom_marque || ''))
   }, [prospects, q, s, pays, date, tri])

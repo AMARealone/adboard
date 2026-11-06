@@ -6,6 +6,7 @@ import { ECRIT_ETAPES, ECRIT_FAILLES, ECRIT_FAILLE_AUTO } from '../domain/defaul
 import { BoutonMajAds, BoutonMajAdsProspect, texteAds } from './MajAds'
 import { ecritMessage, lienOffreSuivi, pitchVariante } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
+import { useFiltre } from '../filtre'
 import { Chip, Empty, toast } from '../ui'
 import { Marque, Meta, EcritInfos, BtnNotes, BtnSupprimer, CaseEnvoye } from './common'
 
@@ -53,8 +54,10 @@ export function EcritCard({ p }) {
 }
 export default function Ecrit() {
   const { prospects } = useCrm(); const l = prospects.filter(ecritActif)
+  const F = useFiltre(l)
   return (<>
     <div style={{ marginBottom: 10 }}><BoutonMajAds /></div>
-    {l.length ? l.map((p) => <EcritCard key={p.id} p={p} />) : <Empty t="Personne en closing par écrit" s="Depuis Leads (« Reste sur WhatsApp ») ou depuis Suivi (« Closing par écrit »)." />}
+    {l.length > 0 && F.bar}
+    {F.liste.length ? F.liste.map((p) => <EcritCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Personne en closing par écrit" s="Depuis Leads (« Reste sur WhatsApp ») ou depuis Suivi (« Closing par écrit »)." />}
   </>)
 }

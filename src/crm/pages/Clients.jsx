@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { serveurAdmin, tauxUsd } from '../api'
 import { nomPlan } from './Transactions'
 import { Modal } from '../ui'
+import { norm } from '../filtre'
 
 const ADBOARD = 'https://www.adstackofficial.com/adboard'
 const wa = (t) => String(t || '').replace(/\D/g, '')
@@ -10,7 +11,7 @@ export default function Clients() {
   useEffect(() => { serveurAdmin('/crm/clients').then((d) => setC(Array.isArray(d) ? d : d.clients || [])).catch((e) => { setErr(e.message); setC([]) }); tauxUsd().then(setTaux) }, [])
   const usd = (f) => '$' + ((f || 0) * taux).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const date = (d) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—')
-  const liste = useMemo(() => (c || []).filter((x) => !q || ((x.nom || '') + ' ' + (x.email || '')).toLowerCase().includes(q.toLowerCase())), [c, q])
+  const liste = useMemo(() => (c || []).filter((x) => !q.trim() || norm(q).split(/\s+/).every((m) => norm((x.nom || '') + ' ' + (x.email || '') + ' ' + (x.telephone_whatsapp || '') + ' ' + nomPlan(x.plan)).includes(m))), [c, q])
   if (!c) return <p className="cx-sub">Chargement…</p>
   const actifs = c.filter((x) => x.active), used = c.reduce((s, x) => s + (x.credits_used || 0), 0), cred = c.reduce((s, x) => s + (x.credits_total || 0), 0)
   return (<>
@@ -18,7 +19,7 @@ export default function Clients() {
     <div className="cx-minis" style={{ marginBottom: 12 }}>
       <div className="cx-mini"><b>{actifs.length}</b><span>Clients actifs</span></div><div className="cx-mini"><b>{usd(c.reduce((s, x) => s + (x.total_depense_fcfa || 0), 0))}</b><span>Total dépensé</span></div><div className="cx-mini"><b>{used} / {cred}</b><span>Crédits utilisés</span></div>
     </div>
-    <div className="cx-tools"><input className="cx-search" type="search" placeholder="Rechercher un client…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
+    <div className="cx-tools"><input className="cx-search" type="search" placeholder="Rechercher un nom, un email, un plan, un numéro…" value={q} onChange={(e) => setQ(e.target.value)} /></div>
     {!liste.length ? <div className="cx-empty"><b>{c.length ? 'Aucun résultat' : 'Aucun client pour l\'instant'}</b>{!c.length && <div>Ils apparaissent ici dès qu'un abonnement est activé.</div>}</div> : liste.map((x) => { const pct = x.credits_total > 0 ? Math.min(100, Math.round((100 * x.credits_used) / x.credits_total)) : 0; return (
       <div key={x.user_id || x.email} className="cx-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>

@@ -3,6 +3,7 @@ import { useCrm } from '../store'
 import { N, quand, duree } from '../domain/notes'
 import { appelAffiche, appelEcheance, appelEnRetard, appelProgrammeTs, closingInfosIncompletes } from '../domain/rules'
 import { Chip, Empty, toast } from '../ui'
+import { useFiltre } from '../filtre'
 import { Marque, Meta, Decision, BtnNotes, BtnSupprimer, BtnLienDemo, BtnsContact } from './common'
 
 const toLocal = (ms) => { const d = new Date(ms - new Date(ms).getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16) }
@@ -31,7 +32,9 @@ export function AppelCard({ p }) {
 export default function Appels() {
   const { prospects } = useCrm()
   const l = prospects.filter(appelAffiche).sort((a, b) => (appelEcheance(N(a)) || 9e15) - (appelEcheance(N(b)) || 9e15))
+  const F = useFiltre(l)
   return (<>
-    {l.length ? l.map((p) => <AppelCard key={p.id} p={p} />) : <Empty t="Aucun appel en attente" s="Les réservations du site arrivent ici automatiquement." />}
+    {l.length > 0 && F.bar}
+    {F.liste.length ? F.liste.map((p) => <AppelCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucun appel en attente" s="Les réservations du site arrivent ici automatiquement." />}
   </>)
 }
