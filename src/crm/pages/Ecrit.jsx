@@ -41,7 +41,7 @@ export function EcritCard({ p }) {
         })}</div>
       </div>
       <div className="cx-acts">
-        {!ecritB1Saute(n) && !n.ecrit_sent_b1 && <BoutonMajAdsProspect p={p} />}
+        <BoutonMajAdsProspect p={p} />
         <button className="cx-btn sm" onClick={() => setInfos(true)}>Offre / faille</button>
         <button className="cx-btn ok sm" onClick={() => A.decision(p.id, 'paye')}>A payé</button>
         <button className="cx-btn ghost sm" onClick={() => A.decision(p.id, 'perdu')}>Pas intéressé</button>
