@@ -37,7 +37,7 @@ export function EcritCard({ p }) {
           const cle = e.key, label = e.label
           const skip = cle === 'b1' && ecritB1Saute(n), sent = !!n['ecrit_sent_' + cle], due = !sent && !skip && prochaine === cle
           return <div key={cle} className={'cx-step' + (sent || skip ? ' done' : due ? ' due' : '')}><b>{String(label).split('·')[0]}</b>
-            {skip ? <span>sauté</span> : sent ? <button className="cx-lnk" onClick={() => A.marquer(p.id, 'ecrit_sent_' + cle, false)}>✓ {quand(n['ecrit_sent_' + cle + '_at'])}</button> : <button className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(cle)}>Envoyer</button>}{!skip && !sent && <CaseEnvoye onCheck={() => A.marquer(p.id, 'ecrit_sent_' + cle, true)} />}</div>
+            {skip ? <span>sauté</span> : sent && <button className="cx-lnk" title="Cliquer pour décocher « envoyé »" onClick={() => A.marquer(p.id, 'ecrit_sent_' + cle, false)}>✓ {quand(n['ecrit_sent_' + cle + '_at'])}</button>}<button className={'cx-btn sm' + (due ? ' primary' : sent || skip ? ' ghost' : '')} onClick={() => envoyer(cle)}>{sent ? 'Renvoyer' : 'Envoyer'}</button>{!skip && !sent && <CaseEnvoye onCheck={() => A.marquer(p.id, 'ecrit_sent_' + cle, true)} />}</div>
         })}</div>
       </div>
       <div className="cx-acts">
