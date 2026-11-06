@@ -31,6 +31,7 @@
   // Témoignage (texte retravaillé pour la lecture : à faire valider par le fondateur avant publication)
   temoignage: {
     texte: "Ça faisait plusieurs semaines que j’hésitais à lancer ma boutique dans la niche sportive : je ne savais pas par où commencer côté créatives. Je voulais simplement tester mon produit. Dès les premières créatives reçues, elles étaient si bien pensées que j’ai su que j’avais fait le bon choix. Ma campagne a été rentable dès le départ, puis j’ai pu scaler et stabiliser en injectant régulièrement de nouvelles créatives stratégiques.",
+    preuve: { img: "/assets/vente/veloce-ads-manager.jpg" },
     nom: "Ibrahim Gomis",
     role: "Owner de Veloce",
     photo: "/assets/vente/ibrahim-gomis.jpg",
@@ -45,7 +46,7 @@
     { valeur: "Budget restreint", label: "pas d’ad-spend fixe au départ" }
   ],
   produitsImgs: [
-    { img: "/assets/vente/veloce-lunette.jpg", legende: "Lunette de vitesse photochromique" }
+    { img: "/assets/vente/veloce-lunette.jpg" }
   ],
 
   // Le problème
