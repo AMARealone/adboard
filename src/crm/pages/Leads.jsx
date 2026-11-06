@@ -7,7 +7,7 @@ import { insererLien, lienRelance, relanceMessage } from '../domain/messages'
 import { BoutonMajAds } from './MajAds'
 import { useFiltre } from '../filtre'
 import { Chip, Empty, toast, confirmDlg } from '../ui'
-import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos, CaseEnvoye } from './common'
+import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos, BtnReserverAppel, CaseEnvoye } from './common'
 
 export function LeadCard({ p }) {
   const { A, cfg, mutate } = useCrm(); const n = N(p), j = jDepuisLead(p), er = etatRelances(p), pj = er.pj, [busy, setBusy] = useState(false)
@@ -44,7 +44,7 @@ export function LeadCard({ p }) {
         })}</div>
       </div>
       <div className="cx-acts">
-        <button className="cx-btn sm" onClick={() => A.reserver(p.id, null, '')}>A réservé un appel</button>
+        <BtnReserverAppel p={p} />
         <button className="cx-btn sm" onClick={async () => { if (await A.passerEcrit(p.id)) toast('Passé en Écrit') }}>💬 Reste sur WhatsApp</button>
         <button className="cx-btn ghost sm" onClick={async () => { if (await confirmDlg('Remettre ce lead en suivi ?')) mutate(p.id, { body: { statut: 'en_suivi', date_lead: null } }) }}>Remettre en suivi</button>
         <BtnLienDemo p={p} /><BtnNotes p={p} /><BtnCopierInfos p={p} /><BtnSupprimer p={p} />

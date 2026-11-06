@@ -5,13 +5,13 @@ import { N } from '../domain/notes'
 import { appelProgrammeTs, estInstagram, numeroWa, ecritActif } from '../domain/rules'
 import { lienPitch, pitchMessage } from '../domain/messages'
 import { Chip, Empty, confirmDlg, toast } from '../ui'
-import { BtnNotes, BtnSupprimer, BtnCopierInfos } from './common'
+import { BtnNotes, BtnSupprimer, BtnCopierInfos, ModalDateAppel } from './common'
 
 const CHECKS = [{ k: 'a_repondu', l: 'A répondu' }, { k: 'interesse', l: 'Intéressé' }, { k: 'lead_qualifie', l: 'Lead qualifié' }]
 const jour = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR') : '—')
 
 function SuiviCard({ p }) {
-  const { A, cfg, ouvrirFiche } = useCrm(), n = N(p), [busy, setBusy] = useState(false)
+  const { A, cfg, ouvrirFiche } = useCrm(), n = N(p), [busy, setBusy] = useState(false), [dateAppel, setDateAppel] = useState(false)
   const tout = p.a_repondu && p.interesse && p.lead_qualifie, insta = estInstagram(p)
   const pitch = async () => {
     setBusy(true)
@@ -37,7 +37,7 @@ function SuiviCard({ p }) {
             {((n.pitch_envoye && !p.interesse) || n.pas_interesse) && <label className="cx-lbl red"><input type="checkbox" checked={!!n.pas_interesse} onChange={(e) => A.pasInteresse(p.id, e.target.checked)} />Pas intéressé</label>}</div>
         </div>}
         {p.interesse && <div className="cx-sub2 wa"><b>Intéressé · appel</b>
-          <label className="cx-lbl"><input type="checkbox" checked={!!n.appel_reserve} onChange={(e) => (e.target.checked ? A.reserver(p.id, null, '') : A.annulerAppel(p.id))} />A réservé un call</label>
+          <label className="cx-lbl"><input type="checkbox" checked={!!n.appel_reserve} onChange={(e) => (e.target.checked ? setDateAppel(true) : A.annulerAppel(p.id))} />A réservé un call</label>
           {n.appel_reserve && prog !== null && <div className="cx-when">📅 Appel programmé le {new Date(prog).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</div>}
         </div>}
       </div>
@@ -45,6 +45,7 @@ function SuiviCard({ p }) {
         {tout && <button className="cx-btn ok sm" onClick={() => A.versLead(p.id)}>Passer en Lead</button>}
         <button className="cx-btn sm" onClick={async () => { if (await A.passerEcrit(p.id)) toast('Passé en Closing par écrit') }}>💬 Closing par écrit</button>
         <BtnNotes p={p} /><BtnCopierInfos p={p} />
+        {dateAppel && <ModalDateAppel p={p} onClose={() => setDateAppel(false)} />}
         <button className="cx-btn ghost sm" onClick={() => A.remettreAContacter(p.id)}>Annuler le suivi</button><BtnSupprimer p={p} />
       </div>
     </div>

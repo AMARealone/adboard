@@ -5,7 +5,7 @@ import { OFFRES } from './domain/offres'
 import { appelAffiche, closingDansListe, ecritActif, horsLeads } from './domain/rules'
 import { pitchVariante } from './domain/messages'
 import { Chip, Modal } from './ui'
-import { InfosAppel, EcritInfos, Decision } from './pages/common'
+import { InfosAppel, EcritInfos, Decision, BtnCopierInfos, BtnReserverAppel } from './pages/common'
 
 // Parcours complet d'un prospect : tout ce qui lui est arrivé, dans l'ordre.
 function parcours(p, cfg) {
@@ -51,7 +51,8 @@ export default function Fiche() {
       <h4>Parcours</h4>
       <div className="cx-tl">{L.length ? L.map((x, i) => <div key={i} className={'cx-tli ' + (x.c || '')}><i />{<span>{quand(new Date(x.at).toISOString())}</span>}<b>{x.txt}</b></div>) : <div className="cx-dim">Pas encore d'historique.</div>}</div>
       <div className="cx-act wrap">
-        {!appelAffiche(p) && !closingDansListe(p) && p.statut !== 'acheteur' && <button className="cx-btn sm" onClick={() => A.reserver(p.id, null, '')}>A réservé un appel</button>}
+        {!appelAffiche(p) && !closingDansListe(p) && p.statut !== 'acheteur' && <BtnReserverAppel p={p} />}
+        <BtnCopierInfos p={p} />
         {!ecritActif(p) && (p.statut === 'lead' || p.statut === 'en_suivi') && <button className="cx-btn sm" onClick={() => A.passerEcrit(p.id)}>💬 Passer en Écrit</button>}
         {(closingDansListe(p) || appelAffiche(p)) && <button className="cx-btn sm" onClick={() => setSub('infos')}>Infos de l'appel</button>}
         {ecritActif(p) && <button className="cx-btn sm" onClick={() => setSub('ecrit')}>Faille / offre</button>}

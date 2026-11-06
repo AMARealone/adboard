@@ -4,6 +4,8 @@ import { useCrm } from '../store'
 import { OFFRES, OFFRE_KEYS } from '../domain/offres'
 import { CLOSING_OBJECTIONS, ECRIT_FAILLES } from '../domain/defaults'
 import { N } from '../domain/notes'
+import { pitchVariante } from '../domain/messages'
+import { appelProgrammeTs } from '../domain/rules'
 
 export function Marque({ p }) { const { ouvrirFiche } = useCrm(); return <button className="cx-name" onClick={() => ouvrirFiche(p.id)}>{p.nom_marque || '—'}</button> }
 export function Meta({ p }) {
@@ -76,8 +78,52 @@ export function BtnSupprimer({ p, label = 'Supprimer' }) {
   const { A } = useCrm()
   return <button className="cx-btn ghost sm red" onClick={() => A.retirer(p.id)}>{label}</button>
 }
+const fd = (iso) => { const t = Date.parse(iso || ''); return isNaN(t) ? '' : new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) }
+// Toutes les infos connues sur un prospect, prêtes à coller (préparer un appel).
+export function infosProspect(p, cfg) {
+  const n = N(p), L = []
+  const add = (k, v) => { if (v !== undefined && v !== null && String(v).trim() !== '') L.push(k + ' : ' + String(v).trim()) }
+  add('Marque', p.nom_marque); add('Produit', p.produit); add('Pays', p.pays)
+  add('Contact (formulaire)', n.form_nom); add('Email', p.email || n.form_email)
+  add('WhatsApp', p.lien_wa); add('Instagram', p.lien_instagram)
+  L.push('')
+  add('Page produit', p.page_produit || p.lien_ads); add('Bibliothèque publicitaire', p.lien_ads); add('Page Facebook', p.page_facebook); add('Image produit', p.image_produit_url)
+  const a = p.ads_j10
+  if (a && a.maj_at) {
+    let v = {}; try { v = pitchVariante(p, cfg) || {} } catch (_) {}
+    add('Ads actives', a.nb); add('Durée moyenne des ads (jours)', a.moy); add('Durée médiane des ads (jours)', a.med); add('Cas ads', v.cas != null ? 'cas ' + v.cas : ''); add('Relevé ads du', fd(a.maj_at))
+  }
+  L.push('')
+  add('Objectif', n.form_objectif || n.closing_objectif); add('Budget', n.form_budget); add('Ses mots', n.closing_mots); add('Objection', n.closing_objection); add('Offre discutée', n.closing_offre || n.ecrit_offre)
+  add('Statut', p.statut); add('Premier contact', fd(p.date_contact)); add('Lead depuis', fd(p.date_lead))
+  add('A répondu', p.a_repondu ? 'oui' : ''); add('Intéressé', p.interesse ? 'oui' : ''); add('Pitch envoyé', fd(n.pitch_envoye_at))
+  const pr = appelProgrammeTs(n)
+  add('Appel Google Meet', pr !== null ? fd(new Date(pr).toISOString()) : (n.appel_reserve ? 'réservé, date à programmer' : ''))
+  add('No-show', n.no_show_count); add('Notes', n.note_texte)
+  return L.filter((x, i, t) => x !== '' || (i > 0 && t[i - 1] !== '')).join('\n').trim()
+}
 export function BtnCopierInfos({ p }) {
-  return <button className="cx-btn ghost sm" title="Copier les infos (marque, pays, page produit)" onClick={async () => { const t = ['Marque : ' + (p.nom_marque || '—'), 'Pays : ' + (p.pays || '—'), 'Page produit : ' + (p.lien_ads || p.page_facebook || 'Non renseignée')].join('\n'); try { await navigator.clipboard.writeText(t); toast('Infos copiées') } catch (_) { toast('Copie automatique impossible') } }}>Copier infos</button>
+  const { cfg } = useCrm()
+  return <button className="cx-btn ghost sm" title="Copier toutes les infos du prospect (pour préparer un appel)" onClick={async () => { try { await navigator.clipboard.writeText(infosProspect(p, cfg)); toast('Toutes les infos copiées') } catch (_) { toast('Copie automatique impossible') } }}>📋 Copier infos</button>
+}
+// « A réservé un appel » : demande la date/heure du Google Meet (facultatif) avant de l'envoyer dans Appels.
+export function BtnReserverAppel({ p, className = 'cx-btn sm', label = 'A réservé un appel' }) {
+  const [ouvert, setOuvert] = useState(false)
+  return (<>
+    <button className={className} onClick={() => setOuvert(true)}>{label}</button>
+    {ouvert && <ModalDateAppel p={p} onClose={() => setOuvert(false)} />}
+  </>)
+}
+export function ModalDateAppel({ p, onClose }) {
+  const { A } = useCrm(), [d, setD] = useState('')
+  return (
+    <Modal title={'Appel Google Meet · ' + (p.nom_marque || '')} onClose={onClose}>
+      <p className="cx-p">Date et heure du Google Meet (vous pouvez aussi la mettre plus tard dans Appels).</p>
+      <input type="datetime-local" value={d} onChange={(e) => setD(e.target.value)} style={{ width: '100%' }} autoFocus />
+      <div className="cx-act"><button className="cx-btn" onClick={onClose}>Annuler</button>
+        <button className="cx-btn primary" onClick={async () => { const ok = await A.reserver(p.id, d ? new Date(d).toISOString() : null, ''); if (ok !== false) { toast(d ? 'Appel programmé, envoyé dans Appels' : 'Envoyé dans Appels : programmez la date'); onClose() } }}>{d ? 'Programmer' : 'Envoyer dans Appels sans date'}</button></div>
+    </Modal>
+  )
 }
 export function BtnLienDemo({ p }) {
   const l = N(p).lien_demo; if (!l) return null

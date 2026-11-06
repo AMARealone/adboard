@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { serveurAdmin, tauxUsd } from '../api'
 import { nomPlan } from './Transactions'
-import { Modal } from '../ui'
+import { Modal, toast } from '../ui'
 import { norm } from '../filtre'
 
 const ADBOARD = 'https://www.adstackofficial.com/adboard'
@@ -35,6 +35,7 @@ export default function Clients() {
           {x.email && <a className="cx-btn ghost sm" href={'mailto:' + x.email}>✉ Contacter</a>}
           {wa(x.telephone_whatsapp) && <a className="cx-btn ghost sm" href={'https://wa.me/' + wa(x.telephone_whatsapp)} target="_blank" rel="noreferrer">WhatsApp</a>}
           <button className="cx-btn ghost sm" onClick={() => setDet(x)}>Détail</button>
+          <button className="cx-btn ghost sm" title="Copier toutes les infos du client" onClick={async () => { const t = ['Nom : ' + (x.nom || '—'), 'Email : ' + (x.email || '—'), 'WhatsApp : ' + (x.telephone_whatsapp || '—'), 'Plan : ' + nomPlan(x.plan) + (x.cycle ? ' (' + x.cycle + ')' : ''), 'Statut : ' + (x.active ? 'actif' : 'inactif'), 'Crédits : ' + x.credits_used + ' / ' + x.credits_total, 'Total dépensé : ' + usd(x.total_depense_fcfa) + ' (' + x.nb_achats + ' achat' + (x.nb_achats > 1 ? 's' : '') + ')', 'Client depuis : ' + date(x.started_at)].join('\n'); try { await navigator.clipboard.writeText(t); toast('Infos copiées') } catch (_) { toast('Copie automatique impossible') } }}>📋 Copier infos</button>
           {x.email && <a className="cx-btn ghost sm" href={ADBOARD + '/?impersonate=' + encodeURIComponent(x.email)} target="_blank" rel="noreferrer">👁 Son compte</a>}
         </div>
       </div>) })}
