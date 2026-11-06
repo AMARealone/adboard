@@ -79,7 +79,7 @@ export function CrmProvider({ children }) {
       if (ok) toast(choix === 'relance' ? 'Dans Closing : première relance à J+1' : choix === 'paye' ? 'Marqué payé ✓ : passé en Acheteur' : choix === 'perdu' ? 'Pas intéressé : retourné dans Suivi' : 'Remis dans les relances'); return ok
     },
     // — Closing
-    infosAppel: (id, v) => mutate(id, { notes: { closing_prenom: v.prenom.trim() || undefined, closing_mots: v.mots.trim() || undefined, closing_objectif: v.objectif.trim() || undefined, closing_objection: v.objection.trim() || undefined, closing_offre: v.offre || undefined } }),
+    infosAppel: (id, v) => mutate(id, { notes: { closing_prenom: v.prenom.trim() || undefined, closing_mots: v.mots.trim() || undefined, closing_objectif: v.objectif.trim() || undefined, closing_situation: v.situation && v.situation !== 'reflechir' ? v.situation : undefined, closing_offre: v.offre || undefined } }),
     closingVersion: (id, jour, v) => mutate(id, { notes: { ['closing_ab' + jour]: v === 'B' ? 'B' : undefined } }),
     marquer: (id, cle, val) => mutate(id, { notes: { [cle]: val ? true : undefined, [cle + '_at']: val ? now() : undefined } }),
     // — Écrit
