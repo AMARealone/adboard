@@ -105,7 +105,7 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
   tpl = tpl.split('\n').filter((l) => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n')
   let msg = tpl.replace(/\[(marque|produit|pays|remarque|lien|facture|delai|n)\]/gi, (m, k) => {
     const x = vals[k.toLowerCase()]
-    if (!x) { const nom = k.toLowerCase() === 'lien' || k.toLowerCase() === 'facture' ? 'offre' : k; if (!manque.includes(nom)) manque.push(nom) }
+    if (!x) { const nom = ['lien', 'facture', 'n', 'delai'].includes(k.toLowerCase()) ? 'offre' : k; if (!manque.includes(nom)) manque.push(nom) }
     return x
   })
   if (/^b1_cas/.test(cle)) msg = remplirPitchDonnees(msg, v)
