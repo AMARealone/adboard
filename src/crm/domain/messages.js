@@ -176,9 +176,11 @@ export const CAMPAGNES_LIENS = {
   closing_j1: 'Closing J+1', closing_j4: 'Closing J+4', closing_j11: 'Closing J+11', closing_j3: 'Closing J+3 (ancien)', closing_j7: 'Closing J+7 (ancien)',
   ecrit_b4: 'Écrit · offre', ecrit_b3: 'Écrit · offre (ancien)', ecrit_suite: 'Écrit · suite',
 }
+// `v` change à chaque nouvelle miniature d'offre : le lien devient « nouveau » pour WhatsApp, qui ne ressert plus l'ancien aperçu gardé en cache.
+const V_MINIATURES = 4
 export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
   const o = OFFRES[offreKey]; if (!o) return ''
-  return `https://www.adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}`
+  return `https://www.adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}&v=${V_MINIATURES}`
 }
 
 // ── Pitch (envoyé quand le prospect a répondu) : lien suivi, campagne « pitch »
