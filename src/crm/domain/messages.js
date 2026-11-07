@@ -5,6 +5,7 @@ import * as D from './defaults'
 import * as PV from './defaults_prev'
 import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
 import { PREV3_DEFAULT_ECRIT, PREV3_J3_REPLI } from './defaults_prev3'
+import { PREV4_RELANCES, PREV4_J3_CAS0 } from './defaults_prev4'
 // compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
 const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
 const estAncien = (x, ...prevs) => prevs.some((prev) => !!prev && norm(x) === norm(prev))
@@ -14,7 +15,7 @@ const pd = (cfg) => {
   const num = (v, def) => { const n = parseInt(v, 10); return Number.isFinite(n) && n >= 0 ? n : def }
   const cas = {}
   ;[1, 2, 3, 4].forEach((k) => { const x = (c.cas || {})[k] || {}; cas[k] = { b: (x.b || '').trim() || d.cas[k].b, m: (x.m || '').trim() || d.cas[k].m, n: (x.n || '').trim() || d.cas[k].n, s: (x.s || '').trim() || d.cas[k].s } })
-  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() && !estAncien(c.repli, PREV3_J3_REPLI) ? c.repli : d.repli, cas0: (c.cas0 || '').trim() ? c.cas0 : d.cas0, cas }
+  return { seuil_ads: num(c.seuil_ads, d.seuil_ads), seuil_jours: num(c.seuil_jours, d.seuil_jours), fraicheur_j: num(c.fraicheur_j, d.fraicheur_j), duree: c.duree === 'moy' ? 'moy' : 'med', repli: (c.repli || '').trim() && !estAncien(c.repli, PREV3_J3_REPLI) ? c.repli : d.repli, cas0: (c.cas0 || '').trim() && !estAncien(c.cas0, PREV4_J3_CAS0, D.J3_CAS0_DEFAUT) ? c.cas0 : d.cas0, j10: c.j10 || {}, cas }
 }
 // Cas du prospect d'après le dernier relevé d'ads (script PC)
 export function pitchVariante(p, cfg) {
@@ -117,15 +118,29 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
 }
 
 // ── Relances Leads J+3 (pitch avec les ads, variables) / J+10 (preuve) / J+21 (alerte)
-export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => (i > 0 && (estAncien(x, PV.PREV_DEFAULT_RELANCES[i]) || (i === 2 && /trou sur la route/i.test(x)))) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }
+export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => ((i <= 1 && estAncien(x, PREV4_RELANCES[i])) || (i > 0 && (estAncien(x, PV.PREV_DEFAULT_RELANCES[i]) || (i === 2 && /trou sur la route/i.test(x))))) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }
 export function relanceMessage(p, idx, cfg) {
   let tpl = relanceTemplates(cfg)[idx] || ''
   if (idx !== 0 && D.J3_VARS.test(tpl)) tpl = D.DEFAULT_RELANCES[idx] || ''
   if (idx === 2 && tpl === D.OLD_J21_DEFAUT) tpl = D.DEFAULT_RELANCES[2]
-  let v = null, avertir = false, trace = ''
+  let v = null, bloque = '', trace = ''
+  // J+3 : il faut un relevé d'ads à jour. Sinon on n'envoie rien : le CRM demande de mettre les ads à jour (pas de texte de repli).
   if (idx === 0 && D.J3_VARS.test(tpl)) {
     v = pitchVariante(p, cfg)
-    if (v.cas === 0) { tpl = pd(cfg).cas0; trace = 'cas0' } else if (v.cas) { tpl = remplirPitchDonnees(tpl, v); trace = 'cas' + v.cas } else { tpl = pd(cfg).repli; trace = 'repli'; avertir = !v.maj }
+    if (v.cas === 0) { tpl = pd(cfg).cas0; trace = 'cas0' } else if (v.cas) { tpl = remplirPitchDonnees(tpl, v); trace = 'cas' + v.cas } else bloque = v.raison || 'ads pas à jour'
+  }
+  // J+10 : l'étude de cas suit le cas relevé à l'envoi du J+3 (notes.j3_cas) ; à défaut, le relevé du jour.
+  if (idx === 1 && /\[cas_(histoire|solution|resultat|slug)\]/i.test(tpl)) {
+    const n3 = N(p).j3_cas
+    let cas = Number.isInteger(n3) ? n3 : null
+    if (cas === null) { v = pitchVariante(p, cfg); cas = v.cas }
+    if (cas === null || cas === undefined) bloque = (v && v.raison) || 'ads pas à jour'
+    else {
+      const cle = D.J10_ETUDE_DE_CAS[cas], base = D.J10_ETUDES[cle], perso = pd(cfg).j10[cle] || {}
+      const val = (k) => ((perso[k] || '').trim() ? perso[k] : base[k])
+      trace = 'cas' + cas + ':' + cle
+      tpl = tpl.replace(/\[cas_histoire\]/gi, () => val('histoire')).replace(/\[cas_solution\]/gi, () => val('solution')).replace(/\[cas_resultat\]/gi, () => val('resultat')).replace(/\[cas_slug\]/gi, () => base.slug)
+    }
   }
   let msg = tpl.replace(/\[Marque\]/gi, p.nom_marque || '')
   if (/\[Produit\]/i.test(msg)) msg = msg.replace(/\[Produit\]/gi, p.produit || '')
@@ -133,7 +148,7 @@ export function relanceMessage(p, idx, cfg) {
     const { phrase } = resoudrePays(p.pays)
     msg = msg.replace(/\b(en|au|à)\s+\*\[pays\]\*/gi, '*' + phrase + '*').replace(/\*\[pays\]\*/gi, '*' + phrase + '*').replace(/\b(en|au|à)\s+\[Pays\]/gi, phrase).replace(/\[Pays\]/gi, phrase).replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2')
   }
-  return { msg, v, avertir, trace, chemin: ((msg.match(/adstackofficial\.com(\/[\w\-\/]*)?/i) || [])[1] || '') }
+  return { msg, v, bloque, trace, chemin: ((msg.match(/adstackofficial\.com(\/[\w\-\/]*)?/i) || [])[1] || '') }
 }
 export const lienRelance = (idx, id, chemin) => {
   const campagne = ['j3', 'j10', 'j21'][idx] || 'relance'

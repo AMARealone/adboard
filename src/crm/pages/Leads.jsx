@@ -14,7 +14,7 @@ export function LeadCard({ p }) {
   const { A, cfg, mutate } = useCrm(); const n = N(p), j = jDepuisLead(p), er = etatRelances(p), pj = er.pj, [busy, setBusy] = useState(false)
   const envoyer = async (i) => {
     const g = relanceMessage(p, i, cfg)
-    if (g.avertir && !(await confirmDlg('Les ads de ' + (p.nom_marque || 'ce lead') + ' ne sont pas à jour (' + g.v.raison + ').\nEnvoyer quand même la version SANS chiffres ?', 'Envoyer sans chiffres'))) return
+    if (g.bloque) { toast('Mets d\'abord à jour les ads de ' + (p.nom_marque || 'ce lead') + ' (' + g.bloque + ') : bouton « Mettre à jour ses ads »'); return }
     setBusy(true)
     const tab = (!p.canal_contact || p.canal_contact !== 'instagram') && numeroWa(p) ? window.open('', '_blank') : null
     try {
@@ -27,7 +27,7 @@ export function LeadCard({ p }) {
       if (tab && num) tab.location.href = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg)
       else if (!(await A.ouvrirCanal(p, msg))) { if (tab) tab.close(); return }
       // On n'auto-confirme PAS l'envoi : c'est toi qui coches « déjà envoyé ». On garde seulement la variante utilisée.
-      if (i === 0 && g.trace) await mutate(p.id, { notes: { j3_variante: g.trace } })
+      if (i === 0 && g.trace) await mutate(p.id, { notes: { j3_variante: g.trace, j3_cas: g.v && Number.isInteger(g.v.cas) ? g.v.cas : undefined } }) // le J+10 reprend ce cas
     } finally { setBusy(false) }
   }
   const retard = pj !== null && er.retard > 0, aujourdhui = pj !== null && er.reste === 0

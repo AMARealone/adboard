@@ -1,7 +1,7 @@
 // GÉNÉRÉ depuis l'ancien CRM (adstats.html) : textes et réglages repris tels quels. Modifiables dans Templates.
 export const J3_REPLI_DEFAUT = "Re-bonjour *[Marque]*, j'espère que vous allez bien 😊\n\nQuand on a vu vos publicités, une question nous est venue : comment garder des publicités qui vendent dans la durée, sans que les mêmes visuels s'essoufflent ?\n\nUne partie de notre service consiste justement à éviter *l'essoufflement publicitaire* via *la diversité créative*, et à repartir de ce qui marche pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.";
 
-export const J3_CAS0_DEFAUT = "Bonjour *[Marque]*, j'espère ne pas vous avoir trop dérangé la dernière fois 😊\n\nOn vient de regarder votre compte publicitaire : vous avez *0 ad active* en ce moment.\n\nÇa veut dire une de ces deux choses : *une rupture de stock*, ou *plus de créatives qui performent*.\n\nEt une partie de notre service, c'est justement de vous assurer *un flux constant de nouvelles créatives qui performent*, pour de très bons résultats.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement ce qui pourrait freiner vos performances publicitaires et comment les résoudre.";
+export const J3_CAS0_DEFAUT = "Bonjour *[Marque]* 😊\n\nOn a regardé votre compte publicitaire : *0 ad active* en ce moment.\n\nUne pause, ça arrive : une rupture de stock, ou des créatives qui ne performaient plus comme avant.\n\nDans les deux cas, l'important, c'est de repartir vite avec de nouvelles créatives prêtes à performer.\n\nC'est ce qu'on apporte (adstackofficial.com) : un flux de nouvelles créatives qui performent, pour que les ventes de *[Marque]* redémarrent.\n\nUn *Google Meet* pour regarder ça ensemble ?";
 
 export const PITCH_DATA_DEFAUT = {
   seuil_ads: 12, seuil_jours: 15, fraicheur_j: 3, duree: 'med',
@@ -191,15 +191,38 @@ export const PAYS_PHRASE = {
 
 export const RELANCE_JOURS  = [3, 10, 21];
 
-export const RELANCE_LABELS = ['Pitch personnalisé (ads du jour)', 'Preuve et autorité (étude de cas)', 'Alerte d\'ami : nouveau Meta Andromeda (lien vers l\'article)'];
+export const RELANCE_LABELS = ['Constat sur ses ads (relevé du jour)', 'Preuve : étude de cas choisie d\'après le cas du J+3', 'Alerte d\'ami : nouveau Meta Andromeda (lien vers l\'article)'];
 
 export const DEFAULT_INTROS = ["Bonjour *[Marque]*,\nje viens de voir votre pub pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nvotre pub sur *[Produit]*\nJe me demandais, est-ce vous qui l'avez créée ?", "Bonjour *[Marque]*,\nje suis tombé sur votre pub *[Produit]* en scrollant\nEst-ce vous qui êtes derrière ?", "Bonjour *[Marque]*, petite question\nLa pub *[Produit]* que je viens de voir,\nest-ce vous qui l'avez faite ?", "Bonjour *[Marque]*\nJe viens de voir votre pub avec *[Produit]*\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje regardais votre pub sur *[Produit]*. J'avais une question !\nEst-ce vous qui l'avez faites ?", "Bonjour *[Marque]*,\nj'ai vu votre pub pour *[Produit]* passer aujourd'hui\nEst-ce vous qui la gérez ?", "Bonjour *[Marque]*,\nje viens de consulter votre publicité pour *[Produit]*\nEst-ce vous qui l'avez réalisée ?", "Bonjour *[Marque]*,\nje suis tombé sur vos pubs, notamment celle pour *[Produit]*\nEst-ce vous qui l'avez faite ?", "Bonjour *[Marque]*,\nje viens de tomber sur votre pub avec *[Produit]* à l'instant\nEst-ce vous qui êtes derrière ?"];
 
 export const OLD_J21_DEFAUT = "Salut *[Marque]*,\n\nRécemment une étude a montré que *80%* des profits d'une marque e-commerce sur Facebook Ads venaient de l'exploitation des créatives performantes, recyclées correctement sur d'autres concepts créatifs.\n\nMais cela n'est possible que si l'on a un bon suivi et une organisation qui permet d'agir vite.\n\nC'est pour ça qu'on a *AdBoard* (adstackofficial.com/adboard) : notre plateforme où toutes vos créatives sont organisées et classées, afin de repartir de ce qui marche et d'améliorer les prochaines.\n\nLe tout pour que vous ne ratiez pas ces *80%* de revenus potentiels.\n\nEn tout cas voici mon dernier message ! J'espère que vous passerez une excellente semaine.";
 
+// J+10 : une étude de cas choisie d'après le cas relevé à l'envoi du J+3 (mémorisé dans les notes : j3_cas).
+export const J10_ETUDE_DE_CAS = { 0: 'veloce', 1: 'saelia', 2: 'veloce', 3: 'saelia', 4: 'vitalina' };
+export const J10_ETUDES = {
+  veloce: {
+    label: 'Veloce · cas 0 et 2 (aucune ad ou peu d\'ads récentes)', slug: 'veloce',
+    histoire: "On a accompagné *Veloce*, une boutique de sport. Son fondateur, ancien développeur pour e-commerçants, savait faire une page de vente et une offre, mais il n'y connaissait rien en pub.",
+    solution: "Avec une *recherche marketing approfondie* et une *stratégie personnalisée*, il a visé juste dès ses premiers lancements.",
+    resultat: "Résultat : *5K$ de profit par mois* en 3 mois."
+  },
+  vitalina: {
+    label: 'Vitalina · cas 4 (beaucoup d\'ads récentes)', slug: 'vitalina',
+    histoire: "On a accompagné *Vitalina*, une marque de compléments alimentaires. Ses créatives s'essoufflaient en quelques jours, et la marque stagnait depuis longtemps.",
+    solution: "On a trouvé les *angles et concepts que ses concurrents n'exploitaient pas encore*. Ses pubs ont duré beaucoup plus longtemps.",
+    resultat: "Résultat : *chiffre d'affaires presque doublé en 6 semaines*, avec un ROAS de *4,3*."
+  },
+  saelia: {
+    label: 'Saelia · cas 1 et 3 (ads qui tiennent longtemps)', slug: 'saelia',
+    histoire: "On a accompagné *Saelia*, une boutique de cosmétiques en RDC. Elle pensait avoir saturé son marché : plus aucune idée de nouvelles créatives.",
+    solution: "Avec de *nouvelles idées et une vraie diversité créative*, la marque a retrouvé de l'élan.",
+    resultat: "Résultat : *+10K$ dépensés en 2 mois*, avec un bon ROAS de *3,6*."
+  }
+};
+
 export const DEFAULT_RELANCES = [
-  "Bonjour *[Marque]*, j'espère ne pas vous avoir trop dérangé la dernière fois 😊 car on a vu que :\n\nVous aviez *[ads]* ads actives, en moyenne depuis *[jours]* jours, ce qui montre que vous *[bonne_nouvelle]* mais aussi que *[mauvaise_nouvelle]*.\n\nEt une partie de notre service consiste à éviter *[mauvaise_nouvelle_en_2_mots]* via *[solution]* pour aller chercher davantage de ventes.\n\nUn *Google Meet* pourrait être parfait ?\n\nOn voit concrètement tout ce qui pourrait freiner vos performances publicitaires et comment les résoudre.",
-  "Re-bonjour *[Marque]* 👋\n\nQuand *Saelia* nous a contactés, elle pensait avoir *saturé son marché* : ses résultats baissaient, faute de nouvelles idées créatives.\n\nOn a d'abord *repéré ce qui bloquait*, puis remis en place la production. Résultat : *+10K$ dépensés en pub avec nos créatives, ROAS de 3,6*.\n\nOn ferait la même chose pour *[Marque]* : *trouver la faille avant de scaler*.\n\nLe cas complet : adstackofficial.com/etude-de-cas/saelia\n\nUn petit *Google Meet* pour voir ce que ça donnerait chez vous ?",
+  "Bonjour *[Marque]* 😊\n\nOn a regardé votre compte publicitaire : vous aviez *[ads]* ads actives, en moyenne depuis *[jours]* jours. Ça montre que vous *[bonne_nouvelle]*.\n\nÀ ce stade, *[mauvaise_nouvelle]*.\n\nC'est là qu'on intervient (adstackofficial.com) : éviter *[mauvaise_nouvelle_en_2_mots]* grâce à *[solution]*, pour aller chercher davantage de ventes.\n\nUn *Google Meet* pour regarder ça ensemble ?",
+  "Bonjour *[Marque]* 👋🏾\n\n[cas_histoire]\n\n[cas_solution]\n\n[cas_resultat]\n\nTout est ici 👉🏾 adstackofficial.com/etude-de-cas/[cas_slug]\n\nEt pour *[Marque]*, on regarde ça ensemble en *Google Meet* ?",
   "Salut *[Marque]*, un petit message d'ami avant de vous laisser tranquille 🙂\n\nLe 28 octobre, Meta a dévoilé *Andromeda 2.0*, le système qui choisit les pubs montrées à chaque personne.\n\nUne créative qui ne dit pas clairement *à qui elle parle et pourquoi acheter* a maintenant *beaucoup moins de chances de passer*. Publier comme avant, c'est *risquer de perdre en résultats*.\n\nOn s'est déjà adaptés, tout est expliqué ici : adstackofficial.com/blog/meta-andromeda-2-0\n\nLisez-le, et si vous voulez voir ce que ça change pour *[Marque]*, je suis là.\n\nC'est mon *dernier message*, belle semaine !"
 ];
 
