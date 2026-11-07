@@ -6,7 +6,8 @@ import { RELANCE_LABELS } from '../domain/defaults'
 import { insererLien, lienRelance, relanceMessage } from '../domain/messages'
 import { BoutonMajAds } from './MajAds'
 import { useFiltre } from '../filtre'
-import { Chip, Empty, toast, confirmDlg } from '../ui'
+import { Chip, Empty, Pills, Stat, toast, confirmDlg } from '../ui'
+import { usePref } from '../prefs'
 import { Marque, Meta, BtnNotes, BtnSupprimer, BtnLienDemo, BtnCopierInfos, BtnReserverAppel, CaseEnvoye } from './common'
 
 export function LeadCard({ p }) {
@@ -57,10 +58,14 @@ export default function Leads() {
   const l = leadsARelancer(prospects).map((p) => { const e = etatRelances(p); return { p, s: e.pj === null ? -9999 : -e.reste } }).sort((a, b) => b.s - a.s)
   const urgents = l.filter((x) => x.s >= 0).length
   const F = useFiltre(l.map((x) => x.p))
+  const [vue, setVue] = usePref('leads_vue', 'tous')
+  const dues = new Set(l.filter((x) => x.s >= 0).map((x) => x.p.id))
+  const liste = F.liste.filter((p) => vue === 'tous' || (vue === 'dues' ? dues.has(p.id) : !dues.has(p.id)))
   return (<>
+    <div className="cx-stats"><Stat l="Leads à relancer" v={l.length} /><Stat l="À relancer maintenant" v={urgents} t="hot" onClick={() => setVue('dues')} /><Stat l="En attente" v={l.length - urgents} /></div>
     <div style={{ marginBottom: 10 }}><BoutonMajAds /></div>
-    {urgents > 0 && <div className="cx-banner">{urgents} relance{urgents > 1 ? 's' : ''} à envoyer maintenant</div>}
+    {l.length > 0 && <div className="cx-tools" style={{ position: 'static' }}><Pills value={vue} onChange={setVue} options={[['tous', 'Tous', l.length], ['dues', 'À relancer maintenant', urgents, 'hot'], ['attente', 'En attente', l.length - urgents]]} /></div>}
     {l.length > 0 && F.bar}
-    {F.liste.length ? F.liste.map((p) => <LeadCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucun lead à relancer" />}
+    {liste.length ? liste.map((p) => <LeadCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucun lead à relancer" />}
   </>)
 }

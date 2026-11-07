@@ -1,10 +1,11 @@
+import { usePref } from '../prefs'
 import React, { useEffect, useMemo, useState } from 'react'
 import { fetchEmailEvents, fetchEmailsEnvoyes, fetchFunnelCampagnes } from '../api'
 import { LABELS, regrouper } from '../domain/emails'
 
 const pc = (n, t) => (t > 0 ? Math.round((n / t) * 100) + ' %' : '—')
 export default function Emails() {
-  const [d, setD] = useState(null), [err, setErr] = useState([]), [anciennes, setAnc] = useState(false)
+  const [d, setD] = useState(null), [err, setErr] = useState([]), [anciennes, setAnc] = usePref('em_anc', false)
   useEffect(() => {
     const e = [], g = async (n, f) => { try { return await f() } catch (x) { e.push(n + ' : ' + x.message); return [] } }
     Promise.all([g('Envois', fetchEmailsEnvoyes), g('Ouvertures et clics', fetchEmailEvents), g('Événements panier / paiement', fetchFunnelCampagnes)]).then(([a, b, c]) => { setErr(e); setD({ a, b, c }) })

@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo } from 'react'
+import { useLocation } from 'react-router-dom'
+import { usePref } from './prefs'
 import { N } from './domain/notes'
 import { OFFRES } from './domain/offres'
 
@@ -32,7 +34,8 @@ const TRIS = { defaut: 'Ordre habituel', recents: 'Plus récents', anciens: 'Plu
 
 // Barre de recherche + filtres automatiques (pays, canal, offre) construits d'après les personnes présentes dans la liste.
 export function useFiltre(base, { placeholder = 'Rechercher une marque, un produit, un numéro…', tris = true } = {}) {
-  const [q, setQ] = useState(''), [pays, setPays] = useState(''), [canal, setCanal] = useState(''), [offre, setOffre] = useState(''), [tri, setTri] = useState('defaut')
+  const k = 'f' + useLocation().pathname.replace(/\W/g, '_')
+  const [q, setQ] = usePref(k + '_q', ''), [pays, setPays] = usePref(k + '_pays', ''), [canal, setCanal] = usePref(k + '_canal', ''), [offre, setOffre] = usePref(k + '_offre', ''), [tri, setTri] = usePref(k + '_tri', 'defaut')
   const listePays = useMemo(() => {
     const m = new Map(); base.forEach((p) => { if (p.pays) m.set(p.pays, (m.get(p.pays) || 0) + 1) }); return [...m].sort((a, b) => b[1] - a[1])
   }, [base])
@@ -48,11 +51,11 @@ export function useFiltre(base, { placeholder = 'Rechercher une marque, un produ
   const bar = (
     <div className="cx-tools">
       <div className="cx-searchbox"><input className="cx-search" type="search" placeholder={placeholder} value={q} onChange={(e) => setQ(e.target.value)} aria-label="Rechercher" />{q && <button className="cx-btn ghost sm" onClick={() => setQ('')} aria-label="Effacer la recherche">✕</button>}</div>
-      <div className="cx-tabs">
-        {[['wa', '💬 WhatsApp'], ['ig', '📷 Instagram'], ['mail', '✉ Email']].map(([k, l]) => <button key={k} className={'cx-tab' + (canal === k ? ' on' : '')} onClick={() => setCanal(canal === k ? '' : k)}>{l}</button>)}
-        {listePays.length > 1 && <select value={pays} onChange={(e) => setPays(e.target.value)} aria-label="Pays"><option value="">Tous les pays</option>{listePays.map(([x, c]) => <option key={x} value={x}>{x} ({c})</option>)}</select>}
-        {listeOffres.length > 0 && <select value={offre} onChange={(e) => setOffre(e.target.value)} aria-label="Offre"><option value="">Toutes les offres</option>{listeOffres.map((k) => <option key={k} value={k}>{OFFRES[k].label}</option>)}</select>}
-        {tris && <select value={tri} onChange={(e) => setTri(e.target.value)} aria-label="Trier">{Object.entries(TRIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>}
+      <div className="cx-bar2">
+        {[['wa', '💬 WhatsApp'], ['ig', '📷 Instagram'], ['mail', '✉ Email']].map(([k, l]) => <button key={k} className={'cx-pill' + (canal === k ? ' on' : '')} onClick={() => setCanal(canal === k ? '' : k)}>{l}</button>)}
+        {listePays.length > 1 && <select className="cx-sel" value={pays} onChange={(e) => setPays(e.target.value)} aria-label="Pays"><option value="">Tous les pays</option>{listePays.map(([x, c]) => <option key={x} value={x}>{x} ({c})</option>)}</select>}
+        {listeOffres.length > 0 && <select className="cx-sel" value={offre} onChange={(e) => setOffre(e.target.value)} aria-label="Offre"><option value="">Toutes les offres</option>{listeOffres.map((k) => <option key={k} value={k}>{OFFRES[k].label}</option>)}</select>}
+        {tris && <select className="cx-sel" value={tri} onChange={(e) => setTri(e.target.value)} aria-label="Trier">{Object.entries(TRIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>}
         {actif && <button className="cx-btn ghost sm" onClick={reset}>Réinitialiser</button>}
       </div>
       {actif && <p className="cx-when" style={{ margin: 0 }}>{liste.length} sur {base.length}</p>}

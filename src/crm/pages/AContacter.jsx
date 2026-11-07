@@ -2,7 +2,9 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { correspond } from '../filtre'
 import { useCrm } from '../store'
 import { introMessages } from '../domain/messages'
-import { Chip, Empty, confirmDlg, toast } from '../ui'
+import { Chip, Empty, Stat, confirmDlg, toast } from '../ui'
+import { Ring } from '../charts'
+import { usePref } from '../prefs'
 import { BtnNotes, BtnSupprimer, BtnCopierInfos } from './common'
 
 const PAYS = { SN: 'Sénégal', CI: "Côte d'Ivoire", CM: 'Cameroun', BJ: 'Bénin', BF: 'Burkina Faso', ML: 'Mali', TG: 'Togo', NE: 'Niger', CG: 'Congo-Brazzaville', GA: 'Gabon', TD: 'Tchad', CF: 'RCA', CD: 'RDC', GN: 'Guinée', MG: 'Madagascar', RW: 'Rwanda', BI: 'Burundi' }
@@ -40,7 +42,7 @@ function Carte({ p, sel, onSel }) {
           <button className="cx-btn ghost sm red" onClick={() => { menu === 'wa' ? A.whatsappInvalide(p.id) : A.instagramInvalide(p.id); setMenu('') }}>🚫 Marquer {menu === 'wa' ? 'WhatsApp' : 'Instagram'} invalide</button>
         </div>}
       </div>
-      <div className="cx-acts">
+      <div className="cx-acts cx-acts3">
         <button className="cx-btn sm wa" disabled={!wa} onClick={() => setMenu(menu === 'wa' ? '' : 'wa')} title={wa ? '' : p.whatsapp_invalide ? 'WhatsApp marqué invalide' : 'Pas de numéro'}>WhatsApp ▾</button>
         <button className="cx-btn sm ig" disabled={!p.lien_instagram} onClick={() => setMenu(menu === 'ig' ? '' : 'ig')} title={p.lien_instagram ? '' : 'Pas de compte Instagram trouvé'}>Instagram ▾</button>
         <button className="cx-btn sm" disabled={!p.lien_wa} onClick={() => { A.canal(p.id, 'sms'); toast('Numéro marqué disponible pour SMS') }}>SMS</button>
@@ -53,7 +55,7 @@ function Carte({ p, sel, onSel }) {
 
 export default function AContacter() {
   const { prospects, A } = useCrm()
-  const [q, setQ] = useState(''), [pays, setPays] = useState(''), [anc, setAnc] = useState(''), [canal, setCanal] = useState(''), [max, setMax] = useState(50), [sel, setSel] = useState(() => new Set())
+  const [q, setQ] = usePref('ac_q', ''), [pays, setPays] = usePref('ac_pays', ''), [anc, setAnc] = usePref('ac_anc', ''), [canal, setCanal] = usePref('ac_canal', ''), [obj] = usePref('obj_contacts', 30), [max, setMax] = useState(50), [sel, setSel] = useState(() => new Set())
   const base = useMemo(() => prospects.filter((p) => p.statut === 'a_contacter'), [prospects])
   const liste = useMemo(() => base.filter((p) => {
     if (!correspond(p, q)) return false
@@ -66,16 +68,23 @@ export default function AContacter() {
     return true
   }), [base, q, pays, anc, canal])
   const jour = new Date().toISOString().slice(0, 10)
+  const auj = prospects.filter((p) => p.date_contact && new Date(p.date_contact).toLocaleDateString('sv-SE') === new Date().toLocaleDateString('sv-SE')).length
   const ids = [...sel]
   const fin = (ok) => { if (ok) setSel(new Set()) }
   return (<>
-    <div className="cx-minis" style={{ marginBottom: 12 }}><div className="cx-mini"><b>{prospects.length}</b><span>Total base</span></div><div className="cx-mini"><b>{base.length}</b><span>À contacter</span></div><div className="cx-mini"><b>{prospects.filter((p) => p.statut === 'en_suivi').length}</b><span>En suivi</span></div><div className="cx-mini"><b>{prospects.filter((p) => p.date_collecte === jour).length}</b><span>Collectés aujourd'hui</span></div></div>
+    <div className="cx-stats">
+      <Stat l="Contactés aujourd'hui" v={auj} t={auj >= obj ? 'ok' : 'acc'}><em>objectif {obj}</em><span className="sp"><Ring v={auj} max={obj} size={46} label="Objectif du jour" /></span></Stat>
+      <Stat l="À contacter" v={base.length}><em>dans la file</em></Stat>
+      <Stat l="En suivi" v={prospects.filter((p) => p.statut === 'en_suivi').length} />
+      <Stat l="Collectés aujourd'hui" v={prospects.filter((p) => p.date_collecte === jour).length} />
+    </div>
     <Rythme />
-    <div className="cx-tools"><input className="cx-search" placeholder="Rechercher une marque, un produit, un numéro…" value={q} onChange={(e) => { setQ(e.target.value); setMax(50) }} />
-      <div className="cx-tabs">
-        <select value={pays} onChange={(e) => { setPays(e.target.value); setMax(50) }}><option value="">Tous les pays</option>{Object.entries(PAYS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
-        <select value={anc} onChange={(e) => setAnc(e.target.value)}><option value="">Toute ancienneté</option><option value="30">Winner confirmé (≥ 30 j)</option><option value="14">A passé la fatigue (≥ 14 j)</option></select>
-        {[['ig', '📷 Instagram'], ['wa', '💬 WhatsApp'], ['sms', '📩 SMS'], ['mail', '✉ Email']].map(([k, l]) => <button key={k} className={'cx-tab' + (canal === k ? ' on' : '')} onClick={() => { setCanal(canal === k ? '' : k); setMax(50) }}>{l}</button>)}
+    <div className="cx-tools"><input className="cx-search" type="search" placeholder="Rechercher marque, produit, numéro…" value={q} onChange={(e) => { setQ(e.target.value); setMax(50) }} />
+      <div className="cx-bar2">
+        {[['ig', '📷 Instagram'], ['wa', '💬 WhatsApp'], ['sms', '📩 SMS'], ['mail', '✉ Email']].map(([k, l]) => <button key={k} className={'cx-pill' + (canal === k ? ' on' : '')} onClick={() => { setCanal(canal === k ? '' : k); setMax(50) }}>{l}</button>)}
+        <select className="cx-sel" value={pays} onChange={(e) => { setPays(e.target.value); setMax(50) }}><option value="">Tous les pays</option>{Object.entries(PAYS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        <select className="cx-sel" value={anc} onChange={(e) => setAnc(e.target.value)}><option value="">Toute ancienneté</option><option value="30">Winner confirmé (≥ 30 j)</option><option value="14">A passé la fatigue (≥ 14 j)</option></select>
+        {(q || pays || anc || canal) && <button className="cx-btn ghost sm" onClick={() => { setQ(''); setPays(''); setAnc(''); setCanal('') }}>Réinitialiser</button>}
       </div></div>
     <div className="cx-line" style={{ margin: '0 0 10px' }}><span className="cx-when">{liste.length} prospect{liste.length > 1 ? 's' : ''}</span>
       {liste.length > 0 && <button className="cx-btn ghost sm" onClick={() => setSel(sel.size ? new Set() : new Set(liste.slice(0, max).map((p) => p.id)))}>{sel.size ? 'Tout désélectionner' : 'Tout sélectionner (page)'}</button>}</div>

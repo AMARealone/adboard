@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { usePref } from '../prefs'
 import { correspond } from '../filtre'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
@@ -11,7 +12,7 @@ const info = (p) => ['Marque : ' + (p.nom_marque || '—'), 'Produit : ' + (p.pr
 // Annuaire de tous les prospects (remplace « Contacts ») : recherche, statut, pays, date de contact, tri.
 export default function Prospects() {
   const { prospects, ouvrirFiche, A } = useCrm()
-  const [q, setQ] = useState(''), [s, setS] = useState(''), [pays, setPays] = useState(''), [date, setDate] = useState(''), [tri, setTri] = useState('recents'), [max, setMax] = useState(100)
+  const [q, setQ] = usePref('ct_q', ''), [s, setS] = usePref('ct_s', ''), [pays, setPays] = usePref('ct_pays', ''), [date, setDate] = usePref('ct_date', ''), [tri, setTri] = usePref('ct_tri', 'recents'), [max, setMax] = useState(100)
   const listePays = useMemo(() => [...new Set(prospects.map((p) => p.pays).filter(Boolean))].sort(), [prospects])
   const liste = useMemo(() => {
     const l = prospects.filter((p) => (!s || p.statut === s) && (!pays || p.pays === pays) && (!date || (p.date_contact || '').slice(0, 10) === date) && correspond(p, q))

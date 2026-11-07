@@ -1,3 +1,4 @@
+import { usePref } from '../prefs'
 import React, { useEffect, useMemo, useState } from 'react'
 import { serveurAdmin, tauxUsd } from '../api'
 import { nomPlan } from './Transactions'
@@ -7,7 +8,7 @@ import { norm } from '../filtre'
 const ADBOARD = 'https://www.adstackofficial.com/adboard'
 const wa = (t) => String(t || '').replace(/\D/g, '')
 export default function Clients() {
-  const [c, setC] = useState(null), [err, setErr] = useState(''), [q, setQ] = useState(''), [taux, setTaux] = useState(1 / 600), [det, setDet] = useState(null)
+  const [c, setC] = useState(null), [err, setErr] = useState(''), [q, setQ] = usePref('cl_q', ''), [taux, setTaux] = useState(1 / 600), [det, setDet] = useState(null)
   useEffect(() => { serveurAdmin('/crm/clients').then((d) => setC(Array.isArray(d) ? d : d.clients || [])).catch((e) => { setErr(e.message); setC([]) }); tauxUsd().then(setTaux) }, [])
   const usd = (f) => '$' + ((f || 0) * taux).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const date = (d) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—')

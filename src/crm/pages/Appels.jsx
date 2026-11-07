@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { useCrm } from '../store'
 import { N, quand, duree } from '../domain/notes'
 import { appelAffiche, appelEcheance, appelEnRetard, appelProgrammeTs, closingInfosIncompletes } from '../domain/rules'
-import { Chip, Empty, toast } from '../ui'
+import { Chip, Empty, Pills, Stat, toast } from '../ui'
+import { usePref } from '../prefs'
 import { useFiltre } from '../filtre'
 import { Marque, Meta, Decision, BtnNotes, BtnSupprimer, BtnLienDemo, BtnsContact, BtnCopierInfos } from './common'
 
@@ -33,8 +34,13 @@ export default function Appels() {
   const { prospects } = useCrm()
   const l = prospects.filter(appelAffiche).sort((a, b) => (appelEcheance(N(a)) || 9e15) - (appelEcheance(N(b)) || 9e15))
   const F = useFiltre(l)
+  const [vue, setVue] = usePref('appels_vue', 'tous')
+  const retard = new Set(l.filter((p) => appelEnRetard(N(p))).map((p) => p.id))
+  const liste = F.liste.filter((p) => vue === 'tous' || (vue === 'retard' ? retard.has(p.id) : !retard.has(p.id)))
   return (<>
+    <div className="cx-stats"><Stat l="Appels en attente" v={l.length} /><Stat l="À faire / en retard" v={retard.size} t="hot" onClick={() => setVue('retard')} /><Stat l="À venir" v={l.length - retard.size} /></div>
+    {l.length > 0 && <div className="cx-tools" style={{ position: 'static' }}><Pills value={vue} onChange={setVue} options={[['tous', 'Tous', l.length], ['retard', 'À faire maintenant', retard.size, 'hot'], ['venir', 'À venir', l.length - retard.size]]} /></div>}
     {l.length > 0 && F.bar}
-    {F.liste.length ? F.liste.map((p) => <AppelCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucun appel en attente" s="Les réservations du site arrivent ici automatiquement." />}
+    {liste.length ? liste.map((p) => <AppelCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucun appel en attente" s="Les réservations du site arrivent ici automatiquement." />}
   </>)
 }

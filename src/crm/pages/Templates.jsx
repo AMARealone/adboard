@@ -2,23 +2,27 @@ import React, { useEffect, useState } from 'react'
 import { useCrm } from '../store'
 import * as D from '../domain/defaults'
 import { relanceTemplates, closingTemplates, ecritTemplates } from '../domain/messages'
-import { Chip, confirmDlg, toast } from '../ui'
+import { Chip, Icon, Pills, Seg, confirmDlg, toast } from '../ui'
+import { usePref } from '../prefs'
 
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b)
-function Editeur({ titre, aide, valeur, defaut, onSave, rows = 9 }) {
-  const [v, setV] = useState(valeur), [busy, setBusy] = useState(false)
+function Editeur({ titre, aide, valeur, defaut, onSave, rows = 9, ouvertDefaut = false }) {
+  const [v, setV] = useState(valeur), [busy, setBusy] = useState(false), [ouv, setOuv] = useState(ouvertDefaut)
   useEffect(() => setV(valeur), [valeur])
   const change = v !== valeur
+  const apercu = (valeur || '').replace(/\s+/g, ' ').trim()
   return (
-    <div className="cx-tpl">
-      <div className="cx-tplh"><b>{titre}</b>{v === defaut && <Chip c="mu">modèle d'origine</Chip>}{change && <Chip c="wa">modifié, pas enregistré</Chip>}</div>
-      {aide && <p className="cx-help">{aide}</p>}
-      <textarea rows={rows} value={v} onChange={(e) => setV(e.target.value)} spellCheck="false" />
-      <div className="cx-tpla">
-        <button className="cx-btn primary sm" disabled={!change || busy} onClick={async () => { setBusy(true); await onSave(v); setBusy(false) }}>Enregistrer</button>
-        <button className="cx-btn ghost sm" disabled={!change} onClick={() => setV(valeur)}>Annuler</button>
-        <button className="cx-btn ghost sm" disabled={v === defaut && valeur === defaut} onClick={async () => { if (await confirmDlg('Revenir au modèle d\'origine pour « ' + titre + ' » ?\nVotre version actuelle sera remplacée.', 'Revenir au modèle')) { setBusy(true); await onSave(defaut); setBusy(false) } }}>Modèle d'origine</button>
-      </div>
+    <div className={'cx-acc' + (ouv || change ? ' open' : '')}>
+      <button onClick={() => setOuv(!ouv)} aria-expanded={ouv}><b>{titre}</b>{change ? <Chip c="wa">non enregistré</Chip> : valeur !== defaut && <Chip c="bl">personnalisé</Chip>}{!ouv && <span className="pv">{apercu}</span>}<Icon n="chev" s={16} /></button>
+      {(ouv || change) && <div className="bd"><div className="cx-tpl">
+        {aide && <p className="cx-help">{aide}</p>}
+        <textarea rows={rows} value={v} onChange={(e) => setV(e.target.value)} spellCheck="false" />
+        <div className="cx-tpla">
+          <button className="cx-btn primary sm" disabled={!change || busy} onClick={async () => { setBusy(true); await onSave(v); setBusy(false) }}>Enregistrer</button>
+          <button className="cx-btn ghost sm" disabled={!change} onClick={() => setV(valeur)}>Annuler</button>
+          <button className="cx-btn ghost sm" disabled={v === defaut && valeur === defaut} onClick={async () => { if (await confirmDlg('Revenir au modèle d\'origine pour « ' + titre + ' » ?\nVotre version actuelle sera remplacée.', 'Revenir au modèle')) { setBusy(true); await onSave(defaut); setBusy(false) } }}>Modèle d'origine</button>
+        </div>
+      </div></div>}
     </div>
   )
 }
@@ -26,23 +30,33 @@ const VARS_RELANCE = 'Variables : [Marque] [Produit] [Pays]. Le site d\'Adstack 
 const VARS_CLOSING = 'Variables : [Prénom] [Marque] [Objectif] [Problème] et [Lien] (page de l\'offre discutée, raccourcie et suivie à l\'envoi). J+4 se compte 3 jours après l\'envoi du J+1, J+11 sept jours après l\'envoi du J+4.'
 const VARS_ECRIT = 'Variables : [marque] [produit] [pays] [remarque] [facture] [delai] [n] et [lien] (page de l\'offre, suivie à l\'envoi pour « Bloc 3 » et « suite »).'
 
+const SIT_COURT = { reflechir: 'Il réfléchit', equipe: 'Équipe / associés', budget: 'Budget pas complet', stock: 'Attend du stock' }
+const BLOCS_ECRIT = [['b1', 'Bloc 1 · audit'], ['b2', 'Bloc 2 · plan'], ['b3', 'Bloc 3 · offre'], ['autre', 'Suite & autres']]
+const blocDe = (k) => (k.startsWith('b1') ? 'b1' : k.startsWith('b2') ? 'b2' : k.startsWith('b3') ? 'b3' : 'autre')
+
 export default function Templates() {
   const { cfg, saveCfg } = useCrm()
-  const [onglet, setOnglet] = useState('relances')
+  const [onglet, setOnglet] = usePref('tpl_onglet', 'closing'), [sit, setSit] = usePref('tpl_sit', 'reflechir'), [bloc, setBloc] = usePref('tpl_bloc', 'b1'), [q, setQ] = usePref('tpl_q', '')
   const sauve = async (changes, ok) => { if (await saveCfg(changes)) toast(ok || 'Enregistré ✓') }
-  const tab = (k, l) => <button className={'cx-tab' + (onglet === k ? ' on' : '')} onClick={() => setOnglet(k)}>{l}</button>
   const relances = relanceTemplates(cfg)
   const intros = Array.isArray(cfg.tpl_intros) && cfg.tpl_intros.length ? cfg.tpl_intros : D.DEFAULT_INTROS
   const closing = closingTemplates(cfg)
   const ecrit = ecritTemplates(cfg)
   const pd = { ...D.PITCH_DATA_DEFAUT, ...(cfg.pitch_data || {}) }
+  const rech = q.trim().toLowerCase(), vu = (...t) => !rech || t.join(' ').toLowerCase().includes(rech)
+  const ongs = [['closing', 'Closing après appel', D.CLOSING_SLOTS.length], ['relances', 'Relances leads', D.RELANCE_LABELS.length], ['ecrit', 'Closing écrit', Object.keys(D.DEFAULT_ECRIT).length], ['intros', 'Premiers messages', intros.length], ['pitch', 'Pitch & audit', null]]
   return (<>
-    <div className="cx-tools"><div className="cx-tabs">{tab('relances', 'Relances J+3 / J+10 / J+21')}{tab('closing', 'Closing')}{tab('ecrit', 'Closing par écrit')}{tab('intros', 'Premiers messages')}{tab('pitch', 'Pitch & audit')}</div></div>
-    {onglet === 'relances' && D.RELANCE_LABELS.map((l, i) => <Editeur key={i} titre={'J+' + D.RELANCE_JOURS[i] + ' · ' + l} aide={VARS_RELANCE + (i === 0 ? ' Peut contenir [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [solution] (audit des ads).' : '')} valeur={relances[i] || ''} defaut={D.DEFAULT_RELANCES[i]} onSave={(v) => { const t = [...relances]; t[i] = v; return sauve({ tpl_relances: t }) }} />)}
-    {onglet === 'closing' && D.CLOSING_SLOTS.map((x, i) => <Editeur key={i} titre={x.label} aide={VARS_CLOSING} valeur={closing[i] || ''} defaut={D.DEFAULT_CLOSING[i]} onSave={(v) => { const t = [...closing]; t[i] = v; return sauve({ tpl_closing: t }) }} />)}
-    {onglet === 'ecrit' && Object.keys(D.DEFAULT_ECRIT).map((k) => <Editeur key={k} titre={D.ECRIT_TPL_LABELS[k] || k} aide={VARS_ECRIT} rows={k.startsWith('b1') || k.startsWith('b2') || k === 'suite' ? 11 : 8} valeur={ecrit[k]} defaut={D.DEFAULT_ECRIT[k]} onSave={(v) => sauve({ tpl_ecrit2: { ...(cfg.tpl_ecrit2 || {}), [k]: v } })} />)}
+    <div className="cx-tools">
+      <div className="cx-bar2"><Seg value={onglet} onChange={setOnglet} options={ongs.map(([k, l, c]) => [k, l, c])} />
+        {onglet !== 'pitch' && <input className="cx-search" style={{ flex: 1, minWidth: 160, maxWidth: 320 }} type="search" placeholder="Chercher dans les messages…" value={q} onChange={(e) => setQ(e.target.value)} />}</div>
+      {onglet === 'closing' && !rech && <Pills value={sit} onChange={setSit} options={D.CLOSING_SITUATIONS.map((x) => [x.k, SIT_COURT[x.k] || x.label])} />}
+      {onglet === 'ecrit' && !rech && <Pills value={bloc} onChange={setBloc} options={BLOCS_ECRIT.map(([k, l]) => [k, l, Object.keys(D.DEFAULT_ECRIT).filter((x) => blocDe(x) === k).length])} />}
+    </div>
+    {onglet === 'relances' && D.RELANCE_LABELS.map((l, i) => vu(l, relances[i]) && <Editeur key={i} titre={'J+' + D.RELANCE_JOURS[i] + ' · ' + l} aide={VARS_RELANCE + (i === 0 ? ' Peut contenir [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [solution] (audit des ads).' : '')} valeur={relances[i] || ''} defaut={D.DEFAULT_RELANCES[i]} onSave={(v) => { const t = [...relances]; t[i] = v; return sauve({ tpl_relances: t }) }} />)}
+    {onglet === 'closing' && D.CLOSING_SLOTS.map((x, i) => (rech ? vu(x.label, closing[i]) : x.v === sit) && <Editeur key={i} titre={rech ? x.label : 'J+' + x.j} aide={VARS_CLOSING} valeur={closing[i] || ''} defaut={D.DEFAULT_CLOSING[i]} ouvertDefaut={!rech && x.j === 1} onSave={(v) => { const t = [...closing]; t[i] = v; return sauve({ tpl_closing: t }) }} />)}
+    {onglet === 'ecrit' && Object.keys(D.DEFAULT_ECRIT).map((k) => (rech ? vu(D.ECRIT_TPL_LABELS[k] || k, ecrit[k]) : blocDe(k) === bloc) && <Editeur key={k} titre={D.ECRIT_TPL_LABELS[k] || k} aide={VARS_ECRIT} rows={k.startsWith('b1') || k.startsWith('b2') || k === 'suite' ? 11 : 8} valeur={ecrit[k]} defaut={D.DEFAULT_ECRIT[k]} onSave={(v) => sauve({ tpl_ecrit2: { ...(cfg.tpl_ecrit2 || {}), [k]: v } })} />)}
     {onglet === 'intros' && <>
-      {intros.map((t, i) => <Editeur key={i} titre={'Accroche ' + (i + 1)} valeur={t} defaut={D.DEFAULT_INTROS[i] || ''} rows={5} onSave={(v) => { const n = [...intros]; n[i] = v; return sauve({ tpl_intros: n }) }} />)}
+      {intros.map((t, i) => vu(t) && <Editeur key={i} titre={'Accroche ' + (i + 1)} valeur={t} defaut={D.DEFAULT_INTROS[i] || ''} rows={5} onSave={(v) => { const n = [...intros]; n[i] = v; return sauve({ tpl_intros: n }) }} />)}
       <button className="cx-btn sm" onClick={() => sauve({ tpl_intros: [...intros, 'Bonjour *[Marque]*,\n'] }, 'Accroche ajoutée')}>+ Ajouter une accroche</button>
     </>}
     {onglet === 'pitch' && <>

@@ -6,7 +6,8 @@ import { CLOSING_JOURS, CLOSING_LABELS } from '../domain/defaults'
 import { closingMessage, lienOffreSuivi } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { useFiltre } from '../filtre'
-import { Chip, Empty, toast } from '../ui'
+import { Chip, Empty, Pills, Stat, toast } from '../ui'
+import { usePref } from '../prefs'
 import { Marque, Meta, InfosAppel, BtnNotes, BtnSupprimer, BtnCopierInfos, CaseEnvoye } from './common'
 
 export function ClosingCard({ p }) {
@@ -53,8 +54,13 @@ export default function Closing() {
   const { prospects } = useCrm(); const now = Date.now()
   const l = prospects.filter(closingDansListe).sort((a, b) => (closingEnRetard(N(b), now) ? 1 : 0) - (closingEnRetard(N(a), now) ? 1 : 0) || closingJours(N(b), now) - closingJours(N(a), now))
   const F = useFiltre(l)
+  const [vue, setVue] = usePref('closing_vue', 'tous')
+  const dues = new Set(l.filter((p) => closingEnRetard(N(p), now)).map((p) => p.id))
+  const liste = F.liste.filter((p) => vue === 'tous' || (vue === 'dues' ? dues.has(p.id) : !dues.has(p.id)))
   return (<>
+    <div className="cx-stats"><Stat l="En closing" v={l.length} /><Stat l="Relance à envoyer" v={dues.size} t="hot" onClick={() => setVue('dues')} /><Stat l="En attente" v={l.length - dues.size} /></div>
+    {l.length > 0 && <div className="cx-tools" style={{ position: 'static' }}><Pills value={vue} onChange={setVue} options={[['tous', 'Tous', l.length], ['dues', 'À relancer maintenant', dues.size, 'hot'], ['attente', 'En attente', l.length - dues.size]]} /></div>}
     {l.length > 0 && F.bar}
-    {F.liste.length ? F.liste.map((p) => <ClosingCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucune relance de closing" s="Un prospect arrive ici quand vous choisissez « À relancer » après l'appel." />}
+    {liste.length ? liste.map((p) => <ClosingCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Aucune relance de closing" s="Un prospect arrive ici quand vous choisissez « À relancer » après l'appel." />}
   </>)
 }

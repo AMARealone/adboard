@@ -7,7 +7,7 @@ import { BoutonMajAds, BoutonMajAdsProspect, texteAds } from './MajAds'
 import { ecritMessage, lienOffreSuivi, pitchVariante } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { useFiltre } from '../filtre'
-import { Chip, Empty, toast } from '../ui'
+import { Chip, Empty, Stat, toast } from '../ui'
 import { Marque, Meta, EcritInfos, BtnNotes, BtnSupprimer, BtnCopierInfos, CaseEnvoye } from './common'
 
 export function EcritCard({ p }) {
@@ -56,6 +56,7 @@ export default function Ecrit() {
   const { prospects } = useCrm(); const l = prospects.filter(ecritActif)
   const F = useFiltre(l)
   return (<>
+    <div className="cx-stats"><Stat l="En closing écrit" v={l.length} /><Stat l="Prochain bloc à envoyer" v={l.filter((p) => ecritProchaine(N(p))).length} t="hot" /></div>
     <div style={{ marginBottom: 10 }}><BoutonMajAds /></div>
     {l.length > 0 && F.bar}
     {F.liste.length ? F.liste.map((p) => <EcritCard key={p.id} p={p} />) : l.length ? <Empty t="Aucun résultat" s="Modifiez la recherche ou les filtres." /> : <Empty t="Personne en closing par écrit" s="Depuis Leads (« Reste sur WhatsApp ») ou depuis Suivi (« Closing par écrit »)." />}

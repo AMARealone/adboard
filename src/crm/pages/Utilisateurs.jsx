@@ -1,3 +1,4 @@
+import { usePref } from '../prefs'
 import React, { useEffect, useMemo, useState } from 'react'
 import { serveurAdmin, tauxUsd } from '../api'
 import { nomPlan } from './Transactions'
@@ -5,7 +6,7 @@ import { norm } from '../filtre'
 
 const ADBOARD = 'https://www.adstackofficial.com/adboard'
 export default function Utilisateurs() {
-  const [u, setU] = useState(null), [err, setErr] = useState(''), [q, setQ] = useState(''), [taux, setTaux] = useState(1 / 600)
+  const [u, setU] = useState(null), [err, setErr] = useState(''), [q, setQ] = usePref('us_q', ''), [taux, setTaux] = useState(1 / 600)
   useEffect(() => { serveurAdmin('/crm/utilisateurs').then((d) => setU(d.utilisateurs || [])).catch((e) => { setErr(e.message); setU([]) }); tauxUsd().then(setTaux) }, [])
   const usd = (f) => '$' + ((f || 0) * taux).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const liste = useMemo(() => (u || []).filter((x) => !q.trim() || norm(q).split(/\s+/).every((m) => norm((x.email || '') + ' ' + nomPlan(x.plan)).includes(m))).sort((a, b) => new Date(b.created_at) - new Date(a.created_at)), [u, q])

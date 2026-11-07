@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react'
+import { usePref } from '../prefs'
 import { correspond } from '../filtre'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
 import { appelProgrammeTs, estInstagram, numeroWa, ecritActif } from '../domain/rules'
 import { lienPitch, pitchMessage } from '../domain/messages'
-import { Chip, Empty, confirmDlg, toast } from '../ui'
+import { Chip, Empty, Pills, Stat, confirmDlg, toast } from '../ui'
 import { BtnNotes, BtnSupprimer, BtnCopierInfos, ModalDateAppel } from './common'
 
 const CHECKS = [{ k: 'a_repondu', l: 'A répondu' }, { k: 'interesse', l: 'Intéressé' }, { k: 'lead_qualifie', l: 'Lead qualifié' }]
@@ -52,18 +53,49 @@ function SuiviCard({ p }) {
   )
 }
 
+const FILTRES = {
+  tous: () => true,
+  sans: (p) => !p.a_repondu && !N(p).pas_interesse,
+  repondu: (p) => !!p.a_repondu,
+  pitch: (p) => !!p.a_repondu && !N(p).pitch_envoye && !N(p).pas_interesse,
+  pitchok: (p) => !!N(p).pitch_envoye && !N(p).pas_interesse,
+  interesse: (p) => !!p.interesse,
+  call: (p) => !!N(p).appel_reserve,
+  perdu: (p) => !!N(p).pas_interesse,
+}
+const TRIS = { ancien: 'Contactés en premier', recent: 'Plus récents', az: 'Nom A → Z' }
+
 export default function Suivi() {
   const { prospects } = useCrm()
-  const [q, setQ] = useState(''), [rep, setRep] = useState(false), [date, setDate] = useState('')
-  const base = useMemo(() => prospects.filter((p) => p.statut === 'en_suivi'), [prospects])
-  const liste = useMemo(() => base.filter((p) => !ecritActif(p) && (!rep || p.a_repondu) && (!date || (p.date_contact || '').slice(0, 10) === date) && correspond(p, q)).sort((a, b) => Date.parse(a.date_contact || 0) - Date.parse(b.date_contact || 0)), [base, q, rep, date])
-  const c = base.length, r = base.filter((p) => p.a_repondu).length, i = base.filter((p) => p.interesse).length, l = base.filter((p) => p.lead_qualifie).length
-  const pc = (x) => (c ? Math.round((x / c) * 100) + '%' : '—')
+  const [q, setQ] = usePref('suivi_q', ''), [f, setF] = usePref('suivi_f', 'tous'), [tri, setTri] = usePref('suivi_tri', 'ancien'), [pays, setPays] = usePref('suivi_pays', ''), [date, setDate] = usePref('suivi_date', ''), [max, setMax] = useState(50)
+  const base = useMemo(() => prospects.filter((p) => p.statut === 'en_suivi' && !ecritActif(p)), [prospects])
+  const cnt = useMemo(() => Object.fromEntries(Object.keys(FILTRES).map((k) => [k, base.filter(FILTRES[k]).length])), [base])
+  const listePays = useMemo(() => { const m = new Map(); base.forEach((p) => { if (p.pays) m.set(p.pays, (m.get(p.pays) || 0) + 1) }); return [...m].sort((a, b) => b[1] - a[1]) }, [base])
+  const liste = useMemo(() => {
+    const l = base.filter((p) => (FILTRES[f] || FILTRES.tous)(p) && (!pays || p.pays === pays) && (!date || (p.date_contact || '').slice(0, 10) === date) && correspond(p, q))
+    const t = (p) => Date.parse(p.date_contact || 0) || 0
+    return l.sort(tri === 'recent' ? (a, b) => t(b) - t(a) : tri === 'az' ? (a, b) => (a.nom_marque || '').localeCompare(b.nom_marque || '') : (a, b) => t(a) - t(b))
+  }, [base, q, f, tri, pays, date])
+  const c = base.length, pc = (x) => (c ? Math.round((x / c) * 100) + ' % des contactés' : '')
+  const actif = q || f !== 'tous' || pays || date
   return (<>
-    <div className="cx-hero" style={{ marginBottom: 10 }}>{[['En suivi', c, null], ['Réponses', r, pc(r)], ['Intéressés', i, pc(i)], ['Leads qualifiés', l, pc(l)]].map(([lb, v, p], k) => <React.Fragment key={lb}>{k > 0 && <span className="cx-arrow">›</span>}<div className={k === 3 ? 'acc' : ''}><b>{v}</b><span>{lb}{p ? ' · ' + p : ''}</span></div></React.Fragment>)}</div>
-    <div className="cx-tools"><input className="cx-search" placeholder="Rechercher une marque, un produit, un pays, un numéro…" value={q} onChange={(e) => setQ(e.target.value)} />
-      <div className="cx-tabs"><button className={'cx-tab' + (!rep ? ' on' : '')} onClick={() => setRep(false)}>Tous <i>{c}</i></button><button className={'cx-tab' + (rep ? ' on' : '')} onClick={() => setRep(true)}>Ont répondu <i>{r}</i></button>
-        <span className="cx-range"><input type="date" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Date de contact" />{date && <button className="cx-btn ghost sm" onClick={() => setDate('')}>✕</button>}</span></div></div>
-    {liste.length ? liste.map((p) => <SuiviCard key={p.id} p={p} />) : <Empty t="Aucun prospect en suivi" s="Contactez des prospects pour les voir apparaître ici." />}
+    <div className="cx-stats">
+      <Stat l="En suivi" v={c} />
+      <Stat l="Ont répondu" v={cnt.repondu}><em>{pc(cnt.repondu)}</em></Stat>
+      <Stat l="Pitch à envoyer" v={cnt.pitch} t="hot" onClick={() => setF('pitch')}><em>réponse sans pitch</em></Stat>
+      <Stat l="Intéressés" v={cnt.interesse}><em>{pc(cnt.interesse)}</em></Stat>
+      <Stat l="Call réservé" v={cnt.call} t="acc" onClick={() => setF('call')} />
+    </div>
+    <div className="cx-tools">
+      <input className="cx-search" type="search" placeholder="Rechercher marque, produit, numéro…" value={q} onChange={(e) => { setQ(e.target.value); setMax(50) }} />
+      <Pills value={f} onChange={(v) => { setF(v); setMax(50) }} options={[['tous', 'Tous', cnt.tous], ['sans', 'Sans réponse', cnt.sans], ['repondu', 'Ont répondu', cnt.repondu], ['pitch', 'Pitch à envoyer', cnt.pitch, 'hot'], ['pitchok', 'Pitch envoyé', cnt.pitchok], ['interesse', 'Intéressés', cnt.interesse], ['call', 'Call réservé', cnt.call], ['perdu', 'Pas intéressés', cnt.perdu]]} />
+      <div className="cx-bar2">
+        {listePays.length > 1 && <select value={pays} onChange={(e) => setPays(e.target.value)} aria-label="Pays" className="cx-sel"><option value="">Tous les pays</option>{listePays.map(([x, k]) => <option key={x} value={x}>{x} ({k})</option>)}</select>}
+        <select value={tri} onChange={(e) => setTri(e.target.value)} aria-label="Trier" className="cx-sel">{Object.entries(TRIS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
+        <input type="date" className="cx-sel" value={date} onChange={(e) => setDate(e.target.value)} aria-label="Date de contact" />
+        {actif && <button className="cx-btn ghost sm" onClick={() => { setQ(''); setF('tous'); setPays(''); setDate('') }}>Réinitialiser · {liste.length} résultat{liste.length > 1 ? 's' : ''}</button>}
+      </div>
+    </div>
+    {liste.length ? <>{liste.slice(0, max).map((p) => <SuiviCard key={p.id} p={p} />)}{liste.length > max && <button className="cx-btn" style={{ width: '100%' }} onClick={() => setMax(max + 50)}>Afficher plus ({liste.length - max} restants)</button>}</> : <Empty t={base.length ? 'Aucun prospect avec ce filtre' : 'Aucun prospect en suivi'} s={base.length ? 'Change de filtre ou réinitialise.' : 'Contactez des prospects pour les voir apparaître ici.'} />}
   </>)
 }

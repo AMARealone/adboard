@@ -1,3 +1,4 @@
+import { usePref } from '../prefs'
 import React, { useEffect, useMemo, useState } from 'react'
 import { fetchClarity } from '../api'
 import { comportement } from '../domain/donnees'
@@ -5,7 +6,7 @@ import { comportement } from '../domain/donnees'
 const temps = (s) => (s >= 60 ? Math.floor(s / 60) + ' min ' + Math.round(s % 60) + ' s' : Math.round(s) + ' s')
 const court = (u) => (u || '').replace(/^https?:\/\/(www\.)?adstackofficial\.com/, '') || '/'
 export default function Comportement() {
-  const [rows, setRows] = useState(null), [err, setErr] = useState(''), [jours, setJours] = useState(30), [ouv, setOuv] = useState({})
+  const [rows, setRows] = useState(null), [err, setErr] = useState(''), [jours, setJours] = usePref('cmp_j', 30), [ouv, setOuv] = useState({})
   useEffect(() => { fetchClarity().then(setRows).catch((e) => { setErr(e.message); setRows([]) }) }, [])
   const c = useMemo(() => (rows ? comportement(rows, jours) : null), [rows, jours])
   if (!c) return <p className="cx-sub">Chargement…</p>
