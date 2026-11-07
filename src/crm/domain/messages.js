@@ -5,7 +5,7 @@ import * as D from './defaults'
 import * as PV from './defaults_prev'
 import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
 import { PREV3_DEFAULT_ECRIT, PREV3_J3_REPLI } from './defaults_prev3'
-import { PREV4_RELANCES, PREV4_J3_CAS0 } from './defaults_prev4'
+import { PREV4_RELANCES, PREV4_J3_CAS0, PREV4_CLOSING0 } from './defaults_prev4'
 // compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
 const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
 const estAncien = (x, ...prevs) => prevs.some((prev) => !!prev && norm(x) === norm(prev))
@@ -61,7 +61,7 @@ export function closingTemplates(cfg) {
   let t = cfg && cfg.tpl_closing
   if (!Array.isArray(t) || t.length !== D.CLOSING_SLOTS.length) t = D.DEFAULT_CLOSING
   // un modèle jamais modifié (= ancien défaut) prend le nouveau défaut (mis en gras)
-  return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i])) ? D.DEFAULT_CLOSING[i] : t[i])
+  return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i]) || (i === 0 && estAncien(t[i], PREV4_CLOSING0))) ? D.DEFAULT_CLOSING[i] : t[i])
 }
 // Situation du prospect (réfléchit, en parle à son équipe, budget, stock) : choisit la série de trois relances ; « réfléchir » par défaut.
 export const closingSituation = (n) => (D.CLOSING_SITUATIONS.some((s) => s.k === n.closing_situation) ? n.closing_situation : 'reflechir')
