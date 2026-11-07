@@ -89,9 +89,10 @@ export const ECRIT_FAILLES = {
 export const ECRIT_FAILLE_AUTO = { 0: 'vide', 1: 'gagnantes', 2: 'rythme', 3: 'angles', 4: 'dispersion' };
 
 export const ECRIT_ETAPES = [
-  { key: 'b1',    label: 'Bloc 1 · Audit' },
+  { key: 'b1',    label: 'Bloc 1 · Diagnostic' },
   { key: 'b2',    label: 'Bloc 2 · Plan' },
-  { key: 'b3',    label: 'Bloc 3 · Offre' },
+  { key: 'b3',    label: 'Bloc 3 · Étude de cas' },
+  { key: 'b4',    label: 'Bloc 4 · Offre' },
   { key: 'suite', label: 'Lien + suite' }
 ];
 
@@ -103,44 +104,57 @@ export const ECRIT_PLAN_FIN = "\n\nVous ajoutez votre produit dans AdBoard, on f
 
 export const ECRIT_QUATRE_TEMPS = "En pratique :\n*1. On étudie* votre marché et votre client.\n*2. On crée* vos créatives.\n*3. On livre* des lots prêts à publier.\n*4. On améliore* avec ce qui gagne.";
 
-const B2_ENTETE = "Voici ce qu'on ferait pour *[Marque]* 👇🏾\n\n[Remarque]\n\n";
-const B1_FIN = "\n\nJe vous montre comment on ferait pour *[Marque]* ?";
-const B3_FIN = "\n\n*Ça vous convient ?* On peut démarrer maintenant 🙌";
+// ── Closing par écrit : 4 blocs (1 diagnostic · 2 plan · 3 étude de cas · 4 offre) + suite.
+// Les blocs 1 à 3 dépendent du cas (nombre d'ads actives × durée moyenne) ; le bloc 4 dépend de l'offre choisie dans la fiche.
+const B1_TETE = "J'ai regardé votre compte publicitaire 👀\n\n";
+const B2_TETE = "Voici ce qu'on ferait pour *[Marque]* 👇🏾\n\n[Remarque]\n\n";
+const PRATIQUE = (e1, e2) => "En pratique :\n1. " + e1 + "\n2. " + e2 + "\n3. On vous livre des créatives prêtes à lancer\n4. Vous lancez, et on regarde ce qui marche le mieux\n\nVous nous donnez un minimum d'infos sur votre produit, on fait le reste.\n\n";
+const ANGLES_DEF = "On définit vos angles marketing. Pour chaque angle, 1 vidéo et 2 images optimisées conversion";
+const ANGLES_NEUFS = "On en tire de nouveaux angles marketing. Pour chaque angle, 1 vidéo et 2 images optimisées conversion";
+const B3_FIN = "\n\nJe vous montre l'offre qui colle à *[Marque]* ?";
+const B4_FIN = "\n\nTout le détail est ici 👇🏾\n👉🏾 [lien]\n\n*Ça vous convient ?* On peut démarrer maintenant 🙌";
 
 export const DEFAULT_ECRIT = {
-  b1_cas0: "J'ai regardé votre compte publicitaire : *0 ad active* en ce moment.\n\nÇa veut dire une de ces deux choses : *une rupture de stock*, ou *plus de créatives qui performent*.\n\nDans les deux cas, il faut *des créatives prêtes pour repartir fort*. C'est notre métier : on vous assure *un flux constant de nouvelles créatives qui performent*, pour de très bons résultats." + B1_FIN,
-  b1_cas1: "J'ai regardé vos pubs.\n\nVous avez *[ads] ads actives*, depuis *[jours] jours* en moyenne.\n\nC'est bon signe : *vos créatives tiennent*, votre message parle à votre audience.\n\nMais une pub qui tourne longtemps finit par *s'user*. Et si rien n'est prêt pour prendre le relais, *vos ventes baissent*.\n\nNous, on prépare les prochaines pendant que les vôtres marchent encore." + B1_FIN,
-  b1_cas2: "J'ai regardé vos pubs.\n\nVous avez *[ads] ads actives*, depuis *[jours] jours* en moyenne.\n\nVous testez, c'est la bonne démarche. Mais avec si peu de créatives, *un mauvais résultat ne dit rien* : le produit, le message ou la pub ? Impossible de savoir.\n\nIl vous faut *plus de créatives, et surtout différentes*. C'est ce qu'on fait : un flux régulier de nouvelles créatives, avec des angles variés." + B1_FIN,
-  b1_cas3: "J'ai regardé vos pubs.\n\nVous avez *[ads] ads actives*, depuis *[jours] jours* en moyenne.\n\nC'est solide : *du volume, et ça tient*.\n\nLe risque : *tout finit par se ressembler*, et votre audience ne réagit plus, elle a déjà tout vu.\n\nCe qui relance les résultats, c'est *la variété* : des angles vraiment différents, chacun pour un type de client." + B1_FIN,
-  b1_cas4: "J'ai regardé vos pubs.\n\nVous avez *[ads] ads actives*, depuis *[jours] jours* en moyenne.\n\nVous lancez beaucoup, et vite : c'est une vraie énergie.\n\nLe piège : *on ne sait plus ce qui marche*. Une bonne pub se noie parmi les autres.\n\nIl faut *repérer celles qui gagnent*, comprendre pourquoi, et s'en servir pour les suivantes." + B1_FIN,
-  b2_vide: B2_ENTETE + "Sans pub active, *vous ne vendez pas*. Il faut repartir avec de *bons angles*, pas au hasard.\n\n• *[n] créatives par mois*, chacune sur un angle pensé pour votre client\n• Des lots *prêts à publier* en *[delai] maximum*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_rythme: B2_ENTETE + "Avec peu de créatives, vous ne savez jamais ce qui marche. Il faut *du volume, et des angles différents*.\n\n• *[n] créatives par mois*, chacune sur un angle différent\n• Vous trouvez vos *gagnantes beaucoup plus vite*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_gagnantes: B2_ENTETE + "Une pub gagnante finit toujours par s'user. Il faut *la suivante prête avant que ça arrive*.\n\n• On repère vos gagnantes et on comprend *pourquoi elles marchent*\n• On les décline : *mêmes ressorts, nouveaux visuels*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_angles: B2_ENTETE + "Meta montre vos pubs à des gens très différents. Un message unique ne parle qu'à *un seul type de client*.\n\n• Chaque lot défend *plusieurs angles différents*\n• Chaque angle vise *un type de client précis*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_dispersion: B2_ENTETE + "Quand on lance beaucoup, on finit par *ne plus savoir ce qui marche*. Il faut trier, pas lancer plus.\n\n• On repère vos *vraies gagnantes*\n• On vous dit *pourquoi* elles gagnent, et on s'en sert pour les suivantes\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_production: B2_ENTETE + "Créer de bonnes créatives prend du temps : analyse, idée, design, retouches. *Ça mange vite toute votre semaine*.\n\n• Un seul interlocuteur, un seul espace : *AdBoard*\n• Des lots *prêts à publier* en *[delai] maximum*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_recherche: B2_ENTETE + "Sans étude de marché, *chaque angle est un pari*, et un pari perdu, c'est du budget perdu.\n\n• On étudie *vos concurrents* et leurs pubs qui marchent\n• On cerne *votre client idéal* : ce qu'il craint, ce qu'il veut\n• On en tire des *angles précis*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_temps: B2_ENTETE + "Quand tout repose sur vous, *les pubs passent toujours après le reste*.\n\n• *On gère* l'analyse, la création et la livraison\n• Vous gardez votre énergie pour *votre boutique*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b2_risque: B2_ENTETE + "Tant qu'on ne sait pas ce qui marche, chaque dépense est un risque. Il vous faut *des preuves avant d'investir plus*.\n\n• On teste *sur un volume maîtrisé*\n• On repère ce qui marche *avant de monter en budget*\n\n" + ECRIT_QUATRE_TEMPS + ECRIT_PLAN_FIN,
-  b3_test: "Pour *[Marque]*, je vous propose de commencer par l'offre *TEST* 🙂\n\nChaque mois : *12 créatives stratégiques, prêtes à performer*, en 2 lots livrés en *48 h*.\n\nElles viennent d'une vraie étude de votre marché : *fini le budget pub gaspillé* sur des créatives faites au hasard.\n\nVous trouvez vos *premières créatives gagnantes* et vous accumulez les données qui améliorent vos résultats.\n\nTout arrive dans *AdBoard*." + B3_FIN,
-  b3_perf: "Pour *[Marque]*, je vous recommande l'offre *PERF+* 🙂\n\nChaque mois : *24 créatives stratégiques*, avec leurs titres et textes déjà optimisés pour vendre. 4 lots, chacun livré en *48 h*.\n\nAprès chaque lot, on garde ce qui gagne et on corrige le reste : *vous ne repartez jamais de zéro*.\n\nVous avez les données de votre marché, et 2 membres de votre équipe peuvent rejoindre *AdBoard*.\n\nEt la *garantie Performance de 60 jours* vous couvre." + B3_FIN,
-  b3_growth: "Pour *[Marque]*, je vous recommande l'offre *GROWTH* 🙂\n\nChaque mois : *48 créatives stratégiques*, avec leurs titres et textes déjà optimisés pour vendre. 8 lots, chacun livré en *24 h*.\n\nC'est le rythme pour *tester beaucoup d'angles en même temps*, trouver vite ce qui gagne, et scaler dessus.\n\nVous avez les données détaillées de votre marché, et jusqu'à 5 membres de votre équipe dans *AdBoard*.\n\nEt la *garantie Croissance de 60 jours* vous couvre." + B3_FIN,
-  b3_scale: "Pour *[Marque]*, je vous recommande l'offre *SCALE* 🙂\n\nChaque mois : *96 créatives stratégiques*, avec leurs titres et textes déjà optimisés pour vendre. 16 lots, livrés en *24 h* et *en priorité*.\n\nPensée pour vendre sur *plusieurs marchés* : chacun a sa langue, sa culture, et ses propres angles.\n\nVous avez les données détaillées de vos marchés, et plus de 10 membres de votre équipe dans *AdBoard*.\n\nEt la *garantie Scaling de 60 jours* vous couvre." + B3_FIN,
+  // ── Bloc 1 · diagnostic (aucune question, aucune phrase de fin : le bloc 2 suit tout de suite)
+  b1_cas0: "J'ai regardé votre compte publicitaire : *0 ad active* en ce moment.\n\nDans la plupart des cas, c'est une rupture de stock, ou plus de créatives qui performent.\n\nDans les deux cas, on repart pareil : avec de nouvelles créatives, prêtes à performer.\n\nC'est ce qu'on apporte à *[Marque]*.",
+  b1_cas1: B1_TETE + "Vous avez *[ads] ads actives*, depuis en moyenne *[jours] jours*.\n\nDes pubs qui tiennent aussi longtemps, c'est un très bon signe : elles parlent à votre audience.\n\nCe qu'on voit souvent à ce stade : quand tout repose sur quelques créatives, il reste peu de marge pour monter le budget sans risque.\n\nPour avancer, il faut un renouvellement continu de créatives prêtes à performer, avec une vraie diversité créative.\n\nC'est ce qu'on apporte à *[Marque]*.",
+  b1_cas2: B1_TETE + "Vous avez *[ads] ads actives*, depuis en moyenne *[jours] jours*.\n\nC'est une bonne base : vous avez déjà lancé et vous êtes en mouvement.\n\nCe qu'on voit souvent chez les marques à ce stade : avec peu de créatives en parallèle, Meta a peu de choix pour trouver la bonne combinaison.\n\nAvec plus de créatives et des angles bien différents, les résultats montent beaucoup plus vite.\n\nC'est exactement là qu'on peut accélérer *[Marque]*.",
+  b1_cas3: B1_TETE + "Vous avez *[ads] ads actives*, depuis en moyenne *[jours] jours*.\n\nC'est du solide : beaucoup de pubs, et elles tiennent dans la durée. Vous savez ce qui marche pour *[Marque]*.\n\nÀ ce stade, ce qu'on voit souvent, c'est qu'on finit par manquer d'idées de nouvelles créatives à lancer.\n\nLes résultats se tassent, et on se dit que le marché est saturé.\n\nEn général, il reste de la place. Il manque juste de nouvelles idées pour la prendre.",
+  b1_cas4: B1_TETE + "Vous avez *[ads] ads actives*, depuis en moyenne *[jours] jours*.\n\nVous testez beaucoup, et c'est le bon réflexe : c'est comme ça qu'on trouve ce qui marche.\n\nCe qu'on voit souvent à ce stade : les pubs partent d'une même idée de base, avec des variantes. Pour Meta, ça fait peu de vrai choix, donc aucune ne ressort vraiment.\n\nOn coupe, on relance, et le cycle recommence.\n\nAvec des idées vraiment distinctes, chaque test apprend quelque chose.",
+
+  // ── Bloc 2 · plan (3 puces tirées de la situation du cas, « En pratique », transition vers l'étude de cas, aucune question)
+  b2_cas0: B2_TETE + "Sans pub active, les ventes s'arrêtent. L'objectif : vous remettre en route vite, et durablement.\n\n• Un redémarrage rapide : vos premières créatives prêtes à lancer, sans attendre\n• Des créatives construites sur ce que vos clients veulent vraiment, pas au hasard\n• Un flux de nouvelles créatives pour ne plus jamais revenir à zéro pub\n\n" + PRATIQUE("On étudie votre marché et vos clients", ANGLES_DEF) + "Des marques sont reparties de zéro avec nous. Regardez ce que ça a donné 👇🏾",
+  b2_cas1: B2_TETE + "Vous avez déjà des pubs qui tiennent. L'objectif : vous donner de quoi monter plus haut.\n\n• De la diversité créative : de vrais nouveaux concepts, pas des variantes\n• Après votre premier lancement, on repart de ce qui marche\n• Une campagne plus stable, pour monter le budget sans crainte\n\n" + PRATIQUE("On étudie votre marché et vos clients", ANGLES_DEF) + "Une marque dans votre situation a franchi ce cap. Regardez ce que ça a donné 👇🏾",
+  b2_cas2: B2_TETE + "Votre point de départ est bon. L'objectif, c'est de le pousser plus loin, plus vite.\n\n• Plus de matière pour Meta : il a plus de créatives à tester, donc plus de chances de trouver celles qui performent\n• Des angles vraiment différents : chacun parle à un type de client différent\n• Une gagnante identifiée plus tôt, pour mettre votre budget dessus\n\n" + PRATIQUE("On analyse votre marché et vos clients", ANGLES_DEF) + "Des marques sont parties d'une situation proche de la vôtre. Regardez ce que ça a donné 👇🏾",
+  b2_cas3: B2_TETE + "Vous avez de bonnes bases. Notre rôle : vous éviter de tomber à court d'idées.\n\n• Une source d'idées qui ne s'épuise pas : toujours de nouvelles créatives à lancer\n• On écoute vos clients et on regarde vos concurrents, pour trouver ce que personne n'exploite encore\n• Un marché pas saturé : des places encore libres, qu'on vous ouvre\n\n" + PRATIQUE("On étudie vos clients et vos concurrents", ANGLES_NEUFS) + "Des marques qui scalaient déjà sont passées par là. Regardez ce que ça a donné 👇🏾",
+  b2_cas4: B2_TETE + "Vous avez déjà le réflexe de tester. On vous aide à ce que chaque test compte.\n\n• Moins de pubs à couper : chaque créative part d'une vraie idée, pas d'une simple variante\n• Des idées qui n'ont rien à voir entre elles : Meta a enfin de quoi choisir\n• Des créatives pensées pour convertir dès le lancement, pour qu'elles aient le temps de faire leurs preuves\n\n" + PRATIQUE("On part de vos clients : ce qu'ils veulent, ce qui les freine", ANGLES_NEUFS) + "Des marques testaient beaucoup avant de trouver leur formule. Regardez ce que ça a donné 👇🏾",
+
+  // ── Bloc 3 · preuve (étude de cas du profil, lien, puis la question vers l'offre)
+  b3_cas0: "Veloce est partie de zéro, avec un petit budget.\n\nCampagne rentable dès les premières créatives. Ensuite, elle a scalé en ajoutant de nouvelles créatives.\n\nRésultat : de 0 à 5K$ de profit par mois en 90 jours, avec +50 créatives produites et +8 gagnantes.\n\n👉🏾 adstackofficial.com/etude-de-cas/veloce" + B3_FIN,
+  b3_cas1: "Vitalina avait de bons résultats, mais jamais assez stables pour augmenter son budget sans casser sa rentabilité.\n\nAvec un flux de nouvelles créatives, ses campagnes sont devenues stables. Elle a pu monter son budget sans crainte.\n\nRésultat : un chiffre d'affaires mensuel presque doublé en 6 semaines, avec un ROAS moyen de 4,3.\n\n👉🏾 adstackofficial.com/etude-de-cas/vitalina" + B3_FIN,
+  b3_cas2: "Veloce est partie de zéro, avec un petit budget.\n\nCampagne rentable dès les premières créatives. Ensuite, elle a scalé en ajoutant de nouvelles créatives.\n\nRésultat : de 0 à 5K$ de profit par mois en 90 jours, avec +50 créatives produites et +8 gagnantes.\n\n👉🏾 adstackofficial.com/etude-de-cas/veloce" + B3_FIN,
+  b3_cas3: "Saelia pensait avoir saturé son marché : plus d'idées de nouvelles créatives, et des résultats qui baissaient.\n\nEn quelques semaines, tout a été remis en place, avec une vraie diversité créative.\n\nRésultat : +10K$ dépensés sur Meta Ads avec nos créatives, en restant rentable. ROAS de 3,6 et +8 créatives top performer.\n\n👉🏾 adstackofficial.com/etude-de-cas/saelia" + B3_FIN,
+  b3_cas4: "Chez Vitalina, les créatives marchaient quelques jours, puis les résultats s'effondraient. Et quand une créative gagnait, impossible de savoir comment l'exploiter.\n\nAvec de nouvelles créatives construites sur une vraie étude de marché, les angles gagnants sont apparus, puis ont été exploités.\n\nRésultat : un chiffre d'affaires mensuel presque doublé en 6 semaines, avec un ROAS moyen de 4,3.\n\n👉🏾 adstackofficial.com/etude-de-cas/vitalina" + B3_FIN,
+
+  // ── Bloc 4 · offre (choisie dans la fiche ; jamais de prix, de détail des fonctionnalités ni de garantie ; toujours le lien)
+  b4_test: "Pour *[Marque]*, on commencerait par l'offre *TEST*.\n\n*[n] créatives stratégiques*, prêtes à performer, appuyées sur une étude de marché.\n\nL'objectif : trouver vos premières gagnantes sans tâtonner." + B4_FIN,
+  b4_perf: "Pour *[Marque]*, on vous recommande l'offre *PERF+*.\n\n*[n] créatives stratégiques*, prêtes à performer, appuyées sur une étude de marché.\n\nL'objectif : garder ce qui gagne et ne plus jamais repartir de zéro." + B4_FIN,
+  b4_growth: "Pour *[Marque]*, on vous recommande l'offre *GROWTH*.\n\n*[n] créatives stratégiques*, prêtes à performer, appuyées sur une étude de marché.\n\nL'objectif : tester beaucoup d'idées en parallèle, trouver vite ce qui gagne et scaler dessus." + B4_FIN,
+  b4_scale: "Pour *[Marque]*, on vous recommande l'offre *SCALE*.\n\n*[n] créatives stratégiques*, prêtes à performer, appuyées sur une étude de marché.\n\nL'objectif : porter votre croissance sur plusieurs marchés, chacun avec ses propres angles." + B4_FIN,
+
   suite: "Parfait 🙌\n\nVoici la page de votre offre : [Lien]\n\nDès que c'est fait, [Facture]. On connecte *AdBoard* ensemble, et *votre premier lot arrive en [delai] maximum*.\n\nJe suis là à chaque étape."
 };
 
+const CAS_L = ['0 ad active', 'peu d\'ads, elles tiennent', 'peu d\'ads, durée courte', 'beaucoup d\'ads, elles tiennent', 'beaucoup d\'ads, durée courte']
 export const ECRIT_TPL_LABELS = {
-  b1_cas0: 'Bloc 1 · Audit — cas 0 : 0 ad active (rupture de stock ou plus de créatives)',
-  b1_cas1: 'Bloc 1 · Audit — cas 1 : peu d\'ads, elles tiennent (variables [ads] [jours])',
-  b1_cas2: 'Bloc 1 · Audit — cas 2 : peu d\'ads, récentes',
-  b1_cas3: 'Bloc 1 · Audit — cas 3 : beaucoup d\'ads, elles tiennent',
-  b1_cas4: 'Bloc 1 · Audit — cas 4 : beaucoup d\'ads, récentes',
-  b2_rythme: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.rythme, b2_angles: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.angles,
-  b2_gagnantes: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.gagnantes, b2_production: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.production,
-  b2_recherche: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.recherche, b2_dispersion: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.dispersion, b2_vide: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.vide, b2_temps: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.temps, b2_risque: 'Bloc 2 · Plan — ' + ECRIT_FAILLES.risque,
-  b3_test: 'Bloc 3 · Offre TEST', b3_perf: 'Bloc 3 · Offre PERF+', b3_growth: 'Bloc 3 · Offre GROWTH', b3_scale: 'Bloc 3 · Offre SCALE',
   suite: 'Après son « oui » · lien de l\'offre + suite (variables [Lien] [Facture] [delai])'
 };
+;[0, 1, 2, 3, 4].forEach((c) => {
+  ECRIT_TPL_LABELS['b1_cas' + c] = 'Bloc 1 · Diagnostic — cas ' + c + ' : ' + CAS_L[c] + (c ? ' (variables [ads] [jours])' : '')
+  ECRIT_TPL_LABELS['b2_cas' + c] = 'Bloc 2 · Plan — cas ' + c + ' : ' + CAS_L[c]
+  ECRIT_TPL_LABELS['b3_cas' + c] = 'Bloc 3 · Étude de cas — cas ' + c + ' : ' + CAS_L[c]
+})
+Object.assign(ECRIT_TPL_LABELS, { b4_test: 'Bloc 4 · Offre TEST', b4_perf: 'Bloc 4 · Offre PERF+', b4_growth: 'Bloc 4 · Offre GROWTH', b4_scale: 'Bloc 4 · Offre SCALE' })
 
 export const PAYS_ADJ = {
   'CI':'ivoirien', 'CÔTE D\'IVOIRE':'ivoirien', 'COTE D IVOIRE':'ivoirien', 'IVOIRE':'ivoirien',

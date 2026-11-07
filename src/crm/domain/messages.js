@@ -79,8 +79,8 @@ export function closingMessage(p, i, cfg, lienPerso) {
 
 // ── Closing par écrit (blocs 1 à 3 + suite)
 export function ecritTemplates(cfg) {
-  const saved = (cfg && cfg.tpl_ecrit2) || {}, out = {}
-  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() && !estAncien(saved[k], PV.PREV_DEFAULT_ECRIT[k], PREV2_DEFAULT_ECRIT[k], PREV3_DEFAULT_ECRIT[k]) ? saved[k] : D.DEFAULT_ECRIT[k] })
+  const saved = (cfg && cfg.tpl_ecrit3) || {}, out = {}
+  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() ? saved[k] : D.DEFAULT_ECRIT[k] })
   return out
 }
 export function ecritMessage(p, etape, cfg, lienPerso) {
@@ -93,15 +93,16 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
     else if (v.maj) return { msg: '', manque: ['durée des ads illisible (relance « Mettre à jour les ads »)'], cle: 'b1' }
     else return { msg: '', manque: ['ads à jour (clique sur « Mettre à jour les ads » : l\'audit a besoin de ses vrais chiffres)'], cle: 'b1' }
   }
-  if (etape === 'b2') {
-    // la faille vient de ses ads (cas relevé à l'envoi du bloc 1, sinon relevé actuel) ; un choix manuel passe avant
-    const auto = D.ECRIT_FAILLE_AUTO[n.ecrit_cas != null ? n.ecrit_cas : v.cas]
-    cle = 'b2_' + (n.ecrit_faille || auto || '')
+  if (etape === 'b2' || etape === 'b3') {
+    // le cas vient de ses ads (relevé à l'envoi du bloc 1, sinon relevé actuel)
+    const cas = n.ecrit_cas != null ? n.ecrit_cas : v.cas
+    if (cas == null) return { msg: '', manque: ['ads à jour (clique sur « Mettre à jour les ads » : le cas se définit d\'après ses ads)'], cle: etape }
+    cle = etape + '_cas' + cas
   }
-  if (etape === 'b3') cle = 'b3_' + offre
+  if (etape === 'b4') cle = 'b4_' + offre
   let tpl = T[cle]
   const manque = []
-  if (!tpl) { manque.push(etape === 'b2' ? 'faille (mets à jour ses ads, elle se définit d\'après eux)' : 'offre'); return { msg: '', manque, cle } }
+  if (!tpl) { manque.push('offre'); return { msg: '', manque, cle } }
   const o = OFFRES[offre] || {}
   const vals = { marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '', remarque: (n.ecrit_remarque || '').trim(), lien: o.url ? (lienPerso || o.url) : '', facture: o.facture || '', delai: D.ECRIT_DELAI[offre] || '48 h', n: D.ECRIT_N[offre] || '' }
   tpl = tpl.split('\n').filter((l) => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n')
@@ -158,7 +159,7 @@ export function insererLien(msg, lien) { return unifierLiens(msg, lien) }
 export const CAMPAGNES_LIENS = {
   pitch: 'Pitch (1er message)', j10: 'Relance J+10', j21: 'Relance J+21',
   closing_j1: 'Closing J+1', closing_j4: 'Closing J+4', closing_j11: 'Closing J+11', closing_j3: 'Closing J+3 (ancien)', closing_j7: 'Closing J+7 (ancien)',
-  ecrit_b3: 'Écrit · offre', ecrit_suite: 'Écrit · suite',
+  ecrit_b4: 'Écrit · offre', ecrit_b3: 'Écrit · offre (ancien)', ecrit_suite: 'Écrit · suite',
 }
 export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
   const o = OFFRES[offreKey]; if (!o) return ''

@@ -59,10 +59,13 @@ export function etatRelances(p, now = Date.now()) {
 export function leadsARelancer(prospects) { return prospects.filter((p) => p.statut === 'lead' && !horsLeads(p) && !N(p).pas_interesse) }
 
 // Écrit : étape suivante à envoyer
-export const ECRIT_ORDRE = ['b1', 'b2', 'b3', 'suite']
+export const ECRIT_ORDRE = ['b1', 'b2', 'b3', 'b4', 'suite']
+// Avant la refonte en 4 blocs, « b3 » était le message d'offre : un prospect qui l'a déjà reçu est considéré comme ayant eu l'étude de cas et l'offre.
+export const b3Ancien = (n) => !!n.ecrit_sent_b3 && !n.ecrit_sent_b4 && (ts(n.ecrit_sent_b3_at) || 0) < Date.parse('2026-11-08T00:00:00Z')
+export const ecritEnvoye = (n, e) => !!n['ecrit_sent_' + e] || (e === 'b4' && b3Ancien(n))
 export const ecritB1Saute = (n) => !!(n.sent_j3 || n.sent_j10 || n.sent_j21 || n.j3_envoye)
 export function ecritProchaine(n) {
-  for (const e of ECRIT_ORDRE) { if (e === 'b1' && ecritB1Saute(n)) continue; if (!n['ecrit_sent_' + e]) return e }
+  for (const e of ECRIT_ORDRE) { if (e === 'b1' && ecritB1Saute(n)) continue; if (!ecritEnvoye(n, e)) return e }
   return null
 }
 export function ecritDerniereAt(n) { let best = null; ECRIT_ORDRE.forEach((e) => { const t = ts(n['ecrit_sent_' + e + '_at']); if (t !== null && (best === null || t > best)) best = t }); return best || ts(n.ecrit_at) }

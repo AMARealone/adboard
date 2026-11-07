@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useCrm } from '../store'
 import { N, quand } from '../domain/notes'
-import { ecritActif, ecritB1Saute, ecritProchaine } from '../domain/rules'
-import { ECRIT_ETAPES, ECRIT_FAILLES, ECRIT_FAILLE_AUTO } from '../domain/defaults'
+import { ecritActif, ecritB1Saute, ecritEnvoye, ecritProchaine } from '../domain/rules'
+import { ECRIT_ETAPES } from '../domain/defaults'
 import { BoutonMajAds, BoutonMajAdsProspect, texteAds } from './MajAds'
 import { ecritMessage, lienOffreSuivi, pitchVariante } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
@@ -15,10 +15,10 @@ export function EcritCard({ p }) {
   const [infos, setInfos] = useState(false)
   const envoyer = async (etape) => {
     const { msg, manque, cas } = ecritMessage(p, etape, cfg)
-    if (manque.length) { toast('Il manque : ' + manque.join(', ')); if (manque.some((x) => x === 'faille' || x === 'offre')) setInfos(true); return }
+    if (manque.length) { toast('Il manque : ' + manque.join(', ')); if (manque.includes('offre')) setInfos(true); return }
     const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { toast('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
     let final = msg
-    if ((etape === 'b3' || etape === 'suite') && n.ecrit_offre) {
+    if ((etape === 'b4' || etape === 'suite') && n.ecrit_offre) {
       const camp = 'ecrit_' + etape
       const lien = await A.shorten(lienOffreSuivi(n.ecrit_offre, camp, 'ecrit', p.id), camp)
       final = ecritMessage(p, etape, cfg, lien).msg
@@ -26,18 +26,18 @@ export function EcritCard({ p }) {
     if (etape === 'b1' && cas != null) A.ecritCas(p.id, cas) // la faille du bloc 2 en découle
     await A.ouvrirCanal(p, final) // l'envoi n'est confirmé que quand tu coches « déjà envoyé »
   }
-  const v = pitchVariante(p, cfg), faille = n.ecrit_faille || ECRIT_FAILLE_AUTO[n.ecrit_cas != null ? n.ecrit_cas : v.cas] || '', auto = !n.ecrit_faille && !!faille
+  const v = pitchVariante(p, cfg), cas = n.ecrit_cas != null ? n.ecrit_cas : v.cas
   return (
     <div className="cx-row">
       <div className="cx-main">
-        <div className="cx-line"><Marque p={p} />{n.ecrit_offre && <Chip c="off">{OFFRES[n.ecrit_offre]?.label}</Chip>}{faille && <Chip c="mu" title={auto ? 'Faille définie d\'après ses ads' : 'Faille choisie à la main'}>{(auto ? '⚙ ' : '') + ECRIT_FAILLES[faille]}</Chip>}</div>
+        <div className="cx-line"><Marque p={p} />{n.ecrit_offre && <Chip c="off">{OFFRES[n.ecrit_offre]?.label}</Chip>}{cas != null && <Chip c="mu" title="Cas défini d'après ses ads (nombre d'ads actives × durée moyenne)">{'⚙ Cas ' + cas}</Chip>}</div>
         <Meta p={p} />
         <div className="cx-when">{ecritB1Saute(n) ? 'Audit déjà envoyé par les relances (bloc 1 sauté)' : v.cas != null ? 'ads à jour : ' + texteAds(v).replace('✅ ', '') : (v.maj ? '○ ' : '⚠ ') + 'ads : ' + v.raison}</div>
         <div className="cx-steps">{ECRIT_ETAPES.map((e) => {
           const cle = e.key, label = e.label
-          const skip = cle === 'b1' && ecritB1Saute(n), sent = !!n['ecrit_sent_' + cle], due = !sent && !skip && prochaine === cle
+          const skip = cle === 'b1' && ecritB1Saute(n), sent = ecritEnvoye(n, cle), due = !sent && !skip && prochaine === cle
           return <div key={cle} className={'cx-step' + (sent || skip ? ' done' : due ? ' due' : '')}><b>{String(label).split('·')[0]}</b>
-            {skip ? <span>sauté</span> : sent && <button className="cx-lnk" title="Cliquer pour décocher « envoyé »" onClick={() => A.marquer(p.id, 'ecrit_sent_' + cle, false)}>✓ {quand(n['ecrit_sent_' + cle + '_at'])}</button>}<button className={'cx-btn sm' + (due ? ' primary' : sent || skip ? ' ghost' : '')} onClick={() => envoyer(cle)}>{sent ? 'Renvoyer' : 'Envoyer'}</button>{!skip && !sent && <CaseEnvoye onCheck={() => A.marquer(p.id, 'ecrit_sent_' + cle, true)} />}</div>
+            {skip ? <span>sauté</span> : sent && <button className="cx-lnk" title="Cliquer pour décocher « envoyé »" onClick={() => A.marquer(p.id, 'ecrit_sent_' + cle, false)}>✓ {quand(n['ecrit_sent_' + cle + '_at'] || n.ecrit_sent_b3_at)}</button>}<button className={'cx-btn sm' + (due ? ' primary' : sent || skip ? ' ghost' : '')} onClick={() => envoyer(cle)}>{sent ? 'Renvoyer' : 'Envoyer'}</button>{!skip && !sent && <CaseEnvoye onCheck={() => A.marquer(p.id, 'ecrit_sent_' + cle, true)} />}</div>
         })}</div>
       </div>
       <div className="cx-acts">

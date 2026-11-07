@@ -85,7 +85,7 @@ export function CrmProvider({ children }) {
     // — Écrit
     passerEcrit: (id) => mutate(id, { notes: { ecrit_etat: 'actif', ecrit_at: now() } }),
     ecritCas: (id, cas) => mutate(id, { notes: { ecrit_cas: cas } }),
-    ecritInfos: (id, v) => mutate(id, { notes: { ecrit_faille: v.faille || undefined, ecrit_offre: v.offre || undefined, ecrit_remarque: v.remarque.trim() || undefined } }),
+    ecritInfos: (id, v) => mutate(id, { notes: { ecrit_faille: undefined, ecrit_offre: v.offre || undefined, ecrit_remarque: v.remarque.trim() || undefined } }),
     // — Suivi
     setCheck: (id, champ, val) => mutate(id, { body: { [champ]: val }, notes: champ === 'interesse' && val ? { pas_interesse: undefined, pas_interesse_at: undefined } : {} }),
     pitchEnvoye: (id, val) => { const p = ref.current.find((x) => x.id === id), n = N(p); return mutate(id, { notes: val ? { pitch_envoye: true, pitch_envoye_at: n.pitch_envoye_at || now() } : { pitch_envoye: false } }) },

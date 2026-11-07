@@ -1,6 +1,6 @@
 // Calculs du Dashboard (fonctions pures : mêmes entrées → mêmes chiffres, testables sans écran).
 import { N } from './notes'
-import { appelDansListe } from './rules'
+import { appelDansListe, b3Ancien } from './rules'
 
 export const CORE_PLANS = ['discovery', 'test', 'starter', 'pro', 'scale']
 // Campagnes suivies. « lien: false » = message sans lien (rien à mesurer côté clics).
@@ -15,7 +15,7 @@ export const CAMPAGNES = [
   { cle: 'closing_j11', label: 'Closing J+11', groupe: 'Closing' },
   { cle: 'closing_j3', label: 'Closing J+3 (ancien)', groupe: 'Closing', historique: true },
   { cle: 'closing_j7', label: 'Closing J+7 (ancien)', groupe: 'Closing', historique: true },
-  { cle: 'ecrit_b3', label: 'Écrit · offre', groupe: 'Écrit' },
+  { cle: 'ecrit_b4', label: 'Écrit · offre', groupe: 'Écrit' },
   { cle: 'ecrit_suite', label: 'Écrit · suite', groupe: 'Écrit' },
   { cle: 'statut_whatsapp', label: 'Statut WhatsApp', groupe: 'Autres', sansEnvoi: true },
 ]
@@ -67,7 +67,7 @@ export function calculer({ prospects, liens, funnel, tx, w }) {
     compte('pitch', n.pitch_envoye, n.pitch_envoye_at); compte('demo', n.demo_envoye, n.demo_envoye_at)
     ;[3, 10, 21].forEach((j) => compte('j' + j, n['sent_j' + j] || n['j' + j + '_envoye'], n['sent_j' + j + '_at'] || n['j' + j + '_envoye_at']))
     ;[1, 3, 4, 7, 11].forEach((j) => compte('closing_j' + j, n['closing_sent_j' + j], n['closing_sent_j' + j + '_at']))
-    ;['b3', 'suite'].forEach((e) => compte('ecrit_' + e, n['ecrit_sent_' + e], n['ecrit_sent_' + e + '_at']))
+    ;['b4', 'suite'].forEach((e) => compte('ecrit_' + e, n['ecrit_sent_' + e], n['ecrit_sent_' + e + '_at']))
   })
   // — Clics, panier, paiement, achats par campagne
   const clics = {}; (liens || []).forEach((x) => { if (dans(x.created_at, w)) clics[x.campagne] = (clics[x.campagne] || 0) + (x.clicks || 0) })
@@ -105,7 +105,7 @@ export function calculer({ prospects, liens, funnel, tx, w }) {
   const ecritEnv = (e) => P.filter(({ n }) => n['ecrit_sent_' + e] && dans(n['ecrit_sent_' + e + '_at'], w)).length
   const ecrit = {
     entres: P.filter(({ n }) => n.ecrit_etat && dans(n.ecrit_at, w)).length, payes: P.filter(({ n }) => dans(n.ecrit_paye_at, w)).length,
-    perdus: P.filter(({ n }) => n.ecrit_etat === 'perdu').length, b1: ecritEnv('b1'), b2: ecritEnv('b2'), b3: ecritEnv('b3'), suite: ecritEnv('suite'),
+    perdus: P.filter(({ n }) => n.ecrit_etat === 'perdu').length, b1: ecritEnv('b1'), b2: ecritEnv('b2'), b3: ecritEnv('b3'), b4: ecritEnv('b4') + P.filter(({ n }) => b3Ancien(n)).length, suite: ecritEnv('suite'),
   }
   // — Acheteurs par jour (30 derniers jours, transactions)
   const jours = []

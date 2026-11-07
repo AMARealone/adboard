@@ -28,11 +28,11 @@ function Editeur({ titre, aide, valeur, defaut, onSave, rows = 9, ouvertDefaut =
 }
 const VARS_RELANCE = 'Variables : [Marque] [Produit] [Pays]. Le site d\'Adstack dans le message est remplacé par un lien suivi et raccourci. Sans lien dans le message, rien n\'est ajouté.'
 const VARS_CLOSING = 'Variables : [Prénom] [Marque] [Objectif] [Problème] et [Lien] (page de l\'offre discutée, raccourcie et suivie à l\'envoi). J+4 se compte 3 jours après l\'envoi du J+1, J+11 sept jours après l\'envoi du J+4.'
-const VARS_ECRIT = 'Variables : [marque] [produit] [pays] [remarque] [facture] [delai] [n] et [lien] (page de l\'offre, suivie à l\'envoi pour « Bloc 3 » et « suite »).'
+const VARS_ECRIT = 'Variables : [marque] [produit] [pays] [remarque] [facture] [delai] [n] et [lien] (page de l\'offre, suivie à l\'envoi pour « Bloc 4 » et « suite »).'
 
 const SIT_COURT = { reflechir: 'Il réfléchit', equipe: 'Équipe / associés', budget: 'Budget pas complet', stock: 'Attend du stock' }
-const BLOCS_ECRIT = [['b1', 'Bloc 1 · audit'], ['b2', 'Bloc 2 · plan'], ['b3', 'Bloc 3 · offre'], ['autre', 'Suite & autres']]
-const blocDe = (k) => (k.startsWith('b1') ? 'b1' : k.startsWith('b2') ? 'b2' : k.startsWith('b3') ? 'b3' : 'autre')
+const BLOCS_ECRIT = [['b1', 'Bloc 1 · diagnostic'], ['b2', 'Bloc 2 · plan'], ['b3', 'Bloc 3 · étude de cas'], ['b4', 'Bloc 4 · offre'], ['autre', 'Suite & autres']]
+const blocDe = (k) => (k.startsWith('b1') ? 'b1' : k.startsWith('b2') ? 'b2' : k.startsWith('b3') ? 'b3' : k.startsWith('b4') ? 'b4' : 'autre')
 
 export default function Templates() {
   const { cfg, saveCfg } = useCrm()
@@ -54,7 +54,7 @@ export default function Templates() {
     </div>
     {onglet === 'relances' && D.RELANCE_LABELS.map((l, i) => vu(l, relances[i]) && <Editeur key={i} titre={'J+' + D.RELANCE_JOURS[i] + ' · ' + l} aide={VARS_RELANCE + (i === 0 ? ' Peut contenir [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [solution] (audit des ads).' : '')} valeur={relances[i] || ''} defaut={D.DEFAULT_RELANCES[i]} onSave={(v) => { const t = [...relances]; t[i] = v; return sauve({ tpl_relances: t }) }} />)}
     {onglet === 'closing' && D.CLOSING_SLOTS.map((x, i) => (rech ? vu(x.label, closing[i]) : x.v === sit) && <Editeur key={i} titre={rech ? x.label : 'J+' + x.j} aide={VARS_CLOSING} valeur={closing[i] || ''} defaut={D.DEFAULT_CLOSING[i]} ouvertDefaut={!rech && x.j === 1} onSave={(v) => { const t = [...closing]; t[i] = v; return sauve({ tpl_closing: t }) }} />)}
-    {onglet === 'ecrit' && Object.keys(D.DEFAULT_ECRIT).map((k) => (rech ? vu(D.ECRIT_TPL_LABELS[k] || k, ecrit[k]) : blocDe(k) === bloc) && <Editeur key={k} titre={D.ECRIT_TPL_LABELS[k] || k} aide={VARS_ECRIT} rows={k.startsWith('b1') || k.startsWith('b2') || k === 'suite' ? 11 : 8} valeur={ecrit[k]} defaut={D.DEFAULT_ECRIT[k]} onSave={(v) => sauve({ tpl_ecrit2: { ...(cfg.tpl_ecrit2 || {}), [k]: v } })} />)}
+    {onglet === 'ecrit' && Object.keys(D.DEFAULT_ECRIT).map((k) => (rech ? vu(D.ECRIT_TPL_LABELS[k] || k, ecrit[k]) : blocDe(k) === bloc) && <Editeur key={k} titre={D.ECRIT_TPL_LABELS[k] || k} aide={VARS_ECRIT} rows={k.startsWith('b1') || k.startsWith('b2') || k === 'suite' ? 11 : 8} valeur={ecrit[k]} defaut={D.DEFAULT_ECRIT[k]} onSave={(v) => sauve({ tpl_ecrit3: { ...(cfg.tpl_ecrit3 || {}), [k]: v } })} />)}
     {onglet === 'intros' && <>
       {intros.map((t, i) => vu(t) && <Editeur key={i} titre={'Accroche ' + (i + 1)} valeur={t} defaut={D.DEFAULT_INTROS[i] || ''} rows={5} onSave={(v) => { const n = [...intros]; n[i] = v; return sauve({ tpl_intros: n }) }} />)}
       <button className="cx-btn sm" onClick={() => sauve({ tpl_intros: [...intros, 'Bonjour *[Marque]*,\n'] }, 'Accroche ajoutée')}>+ Ajouter une accroche</button>

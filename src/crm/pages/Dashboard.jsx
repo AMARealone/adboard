@@ -104,7 +104,7 @@ export default function Dashboard() {
         <Funnel steps={[{ l: 'Entrés', v: s.closing.entres }, ...s.closing.relances.map((r) => ({ l: 'Relance J+' + r.j, v: r.envoyes })), { l: 'Payés', v: s.closing.payes, accent: true }]} />
       </Card>
       <Card t="Closing par écrit" note={s.ecrit.entres + ' entrés · ' + s.ecrit.payes + ' payés'}>
-        <Funnel steps={[{ l: 'Entrés', v: s.ecrit.entres }, { l: 'Bloc 1 · audit', v: s.ecrit.b1 }, { l: 'Bloc 2 · plan', v: s.ecrit.b2 }, { l: 'Bloc 3 · offre', v: s.ecrit.b3 }, { l: 'Payés', v: s.ecrit.payes, accent: true }]} />
+        <Funnel steps={[{ l: 'Entrés', v: s.ecrit.entres }, { l: 'Bloc 1 · diagnostic', v: s.ecrit.b1 }, { l: 'Bloc 2 · plan', v: s.ecrit.b2 }, { l: 'Bloc 3 · étude de cas', v: s.ecrit.b3 }, { l: 'Bloc 4 · offre', v: s.ecrit.b4 }, { l: 'Payés', v: s.ecrit.payes, accent: true }]} />
       </Card>
     </div>
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Modal, toast } from '../ui'
 import { useCrm } from '../store'
 import { OFFRES, OFFRE_KEYS } from '../domain/offres'
-import { CLOSING_SITUATIONS, ECRIT_FAILLES } from '../domain/defaults'
+import { CLOSING_SITUATIONS } from '../domain/defaults'
 import { N } from '../domain/notes'
 import { pitchVariante } from '../domain/messages'
 import { appelProgrammeTs } from '../domain/rules'
@@ -34,12 +34,10 @@ export function InfosAppel({ p, onClose }) {
 }
 export function EcritInfos({ p, onClose }) {
   const { A } = useCrm(); const n = N(p)
-  const [v, setV] = useState({ faille: n.ecrit_faille || '', offre: n.ecrit_offre || '', remarque: n.ecrit_remarque || '' })
+  const [v, setV] = useState({ offre: n.ecrit_offre || '', remarque: n.ecrit_remarque || '' })
   return (
     <Modal title={'Écrit · ' + (p.nom_marque || '')} onClose={onClose}>
       <div className="cx-form">
-        <label>Sa faille (définie automatiquement d'après ses ads ; à changer seulement si vous savez mieux)
-          <select value={v.faille} onChange={(e) => setV({ ...v, faille: e.target.value })}><option value="">Automatique (d'après ses ads)</option>{Object.keys(ECRIT_FAILLES).map((k) => <option key={k} value={k}>{ECRIT_FAILLES[k].label || ECRIT_FAILLES[k]}</option>)}</select></label>
         <label>Offre à lui proposer<OffrePick value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></label>
         <label>Remarque personnelle (facultatif, apparaît en haut du bloc 2)<textarea value={v.remarque} onChange={(e) => setV({ ...v, remarque: e.target.value })} /></label>
       </div>
