@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePersist } from '../agentStore'
 import { ctGetAll, ctPut, ctDel, ctGetBase64, ctCompress, ctNameAI, loadCTImages } from '../ctApi'
-import { vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll } from '../vctApi'
+import { vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll, vctMettreVideo, vctNouveauVideo, vctChangerMiniature, vctSupprimerVideo } from '../vctApi'
+import { captureFrame } from '../r2'
 import { labFetch, labUrl } from '../lab'
 import { confirmDlg, alertDlg, toast } from '../ui'
 
@@ -144,7 +145,7 @@ function EditImage({ rec, onClose, onSaved }) {
 export function GalerieVideo() {
   const [list, setList] = useState([]), [loading, setLoading] = useState(true), [err, setErr] = useState('')
   const [q, setQ] = usePersist('galerie.video.q', ''), [aw, setAw] = usePersist('galerie.video.aw', ''), [status, setStatus] = useState({ t: '', err: false }), [edit, setEdit] = useState(null), [busy, setBusy] = useState(false)
-  const fileRef = useRef(null)
+  const fileRef = useRef(null), vidRef = useRef(null), [play, setPlay] = useState(null)
   const st = (t, e = false) => setStatus({ t, err: e })
   const load = useCallback(async () => { setLoading(true); try { const l = await vctGetAll(); setList(l); setErr(''); return l } catch (e) { setErr(e.message); return [] } finally { setLoading(false) } }, [])
   useEffect(() => { load() }, [load])
@@ -159,6 +160,17 @@ export function GalerieVideo() {
       catch (e) { ko++; console.error('[CT vidéo]', fl[i].name, e) }
     }
     st(`${ok} ajouté(s)` + (sansMeta ? ` (dont ${sansMeta} sans méta-description : le serveur n'a pas répondu, utilise « Enrichir »)` : '') + (ko ? ` · ${ko} refusé(s)` : '') + '.', ko > 0 || sansMeta > 0)
+    setBusy(false); load()
+  }
+  const addVideos = async (files) => {
+    const fl = Array.from(files || []).filter((f) => /^video\//.test(f.type) || /\.(mp4|mov|webm)$/i.test(f.name))
+    if (!fl.length) { st('Aucune vidéo reconnue (mp4, mov ou webm).', true); return }
+    setBusy(true); let ok = 0, ko = 0
+    for (let i = 0; i < fl.length; i++) {
+      try { await vctNouveauVideo(fl[i], (t) => st(`Vidéo ${i + 1}/${fl.length} · ${fl[i].name} · ${t}`)); ok++ }
+      catch (e) { ko++; console.error('[CT vidéo]', fl[i].name, e); st(`Échec pour ${fl[i].name} : ${e.message}`, true); await new Promise((r) => setTimeout(r, 2500)) }
+    }
+    st(`${ok} vidéo(s) ajoutée(s) sur Cloudflare` + (ko ? ` · ${ko} en échec` : '') + '. Complète ensuite leurs balises avec « Modifier ».', ko > 0)
     setBusy(false); load()
   }
   const importLab = async () => {
@@ -190,14 +202,18 @@ export function GalerieVideo() {
     <div className="fx-wrap">
       <div className="fx-h"><div><h1>Galerie CT vidéo</h1><p>{list.length} CT vidéo{sansMeta ? ` · ${sansMeta} sans méta-description` : ''}</p></div>
         <div className="fx-acts"><button className="fx-btn" disabled={busy} onClick={importLab}>Importer depuis le labo</button><button className="fx-btn" disabled={busy} onClick={enrich}>Enrichir les CT sans méta</button>
-          <button className="fx-btn primary" disabled={busy} onClick={() => fileRef.current.click()}>+ Ajouter des CT vidéo</button></div></div>
+          <button className="fx-btn" disabled={busy} onClick={() => fileRef.current.click()}>+ Ajouter un texte de CT</button>
+          <button className="fx-btn primary" disabled={busy} onClick={() => vidRef.current.click()}>+ Ajouter des vidéos de CT</button></div></div>
       <input ref={fileRef} type="file" accept=".md,.txt" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
+      <input ref={vidRef} type="file" accept="video/*,.mp4,.mov,.webm" multiple hidden onChange={(e) => { addVideos(e.target.files); e.target.value = '' }} />
       {status.t && <div className={'fx-banner ' + (status.err ? 'warn' : 'info')}>{status.t}</div>}
       <Toolbar list={list} q={q} setQ={setQ} aw={aw} setAw={setAw} />
       {err && <div className="fx-err">{err}</div>}
       {loading ? <div className="fx-gal">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="fx-skel" style={{ height: 190 }} />)}</div>
         : l.length ? <div className="fx-gal wide">{l.map((x) => (
           <div key={x.id} className="fx-ct fx-vid">
+            {x.videoUrl ? <button className="fx-poster" onClick={() => setPlay(x)} title="Voir la vidéo">{x.posterUrl ? <img src={x.posterUrl} alt="" loading="lazy" /> : <span className="fx-poster-vide">▶</span>}<i>▶</i></button>
+              : <button className="fx-poster vide" onClick={() => setEdit(x)}>Pas de vidéo source<br /><small>cliquer pour l'ajouter</small></button>}
             <div className="fx-t wrap">{x.name}</div>
             <div className={'fx-meta' + (x.meta ? '' : ' warn')}>{x.meta ? x.meta : 'Pas de méta-description : le sélecteur ne pourra pas bien choisir ce CT.'}</div>
             <div className="fx-chips">
@@ -210,7 +226,23 @@ export function GalerieVideo() {
           </div>))}</div>
           : <div className="fx-empty">{list.length ? 'Aucun CT ne correspond.' : 'Aucun CT vidéo — ajoute des fichiers .md ou importe ceux de ton labo.'}</div>}
       {edit && <EditVideo rec={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load() }} />}
+      {play && <LecteurCT rec={play} onClose={() => setPlay(null)} onDone={() => load()} />}
     </div>
+  )
+}
+function LecteurCT({ rec, onClose, onDone }) {
+  const ref = useRef(null), [busy, setBusy] = useState(false)
+  const miniature = async () => {
+    setBusy(true)
+    try { ref.current.pause(); const b = await captureFrame(ref.current); await vctChangerMiniature(rec, b); toast('Miniature mise à jour'); onDone() }
+    catch (e) { await alertDlg("Capture impossible : " + e.message + " (la règle CORS du bucket Cloudflare est-elle enregistrée ?)") }
+    setBusy(false)
+  }
+  return (
+    <Modal title={rec.name} onClose={onClose}>
+      <div className="fx-player"><video ref={ref} src={rec.videoUrl} poster={rec.posterUrl || undefined} controls autoPlay playsInline crossOrigin="anonymous" /></div>
+      <div className="fx-modal-act spread"><span className="fx-s">Mets en pause sur le moment le plus fort du CT, puis :</span><button className="fx-btn primary" disabled={busy} onClick={miniature}>{busy ? '…' : 'Utiliser cette image comme miniature'}</button></div>
+    </Modal>
   )
 }
 function EditVideo({ rec, onClose, onDone }) {
@@ -220,23 +252,33 @@ function EditVideo({ rec, onClose, onDone }) {
     duree: rec.duree_s || '', blocs: rec.blocs || '', mps: rec.mots_par_seconde || '', produit: rec.produit_compatible || '',
     angles: (rec.angles_fit || []).join(', '), lieux: (rec.lieux_interdits || []).join(', '), hook: rec.hook || '', chute: rec.chute || '', epic: rec.epic || '',
   })
-  const [texte, setTexte] = useState(null), [busy, setBusy] = useState(false)
-  useEffect(() => { vctGetTexte(rec.id).then(setTexte).catch((e) => { setTexte(''); toast(e.message) }) }, [rec.id])
+  const [texte, setTexte] = useState(null), [busy, setBusy] = useState(false), [vst, setVst] = useState(''), vref = useRef(null)
+  useEffect(() => { vctGetTexte(rec.id).then(setTexte).catch((e) => { setTexte(''); if (!rec.videoUrl) toast(e.message) }) }, [rec.id])
+  const changerVideo = async (file) => { if (!file) return; setBusy(true); try { await vctMettreVideo(rec, file, setVst); toast('Vidéo enregistrée sur Cloudflare'); onDone() } catch (e) { setVst(''); await alertDlg('Échec : ' + e.message) } setBusy(false) }
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   const num = (v) => { const n = Number(v); return isFinite(n) && n > 0 ? n : undefined }
   const save = async () => {
-    if (texte == null || texte.length < 500) { await alertDlg("Le texte du CT est vide ou trop court : rien n'a été enregistré."); return }
+    if (texte == null) return
+    if (texte.length < 500 && !rec.videoUrl) { await alertDlg("Le texte du CT est vide ou trop court : rien n'a été enregistré."); return }
     setBusy(true)
     const r = { ...rec, name: f.name.trim() || rec.name, meta: f.meta.trim(), awareness: f.awareness, styleTags: csv(f.tags).map((s) => s.replace(/^#/, '')), niche: f.niche.trim(), niches: csv(f.niche),
-      duree_s: num(f.duree), blocs: num(f.blocs), mots_par_seconde: num(f.mps), produit_compatible: f.produit.trim(), angles_fit: csv(f.angles), lieux_interdits: csv(f.lieux), hook: f.hook.trim(), chute: f.chute.trim(), epic: f.epic.trim(), taille: texte.length }
-    try { await vctPutTexte(r.id, texte); await vctPutMeta(r); toast('CT enregistré'); onDone() } catch (e) { await alertDlg('Échec : ' + e.message) }
+      duree_s: num(f.duree), blocs: num(f.blocs), mots_par_seconde: num(f.mps), produit_compatible: f.produit.trim(), angles_fit: csv(f.angles), lieux_interdits: csv(f.lieux), hook: f.hook.trim(), chute: f.chute.trim(), epic: f.epic.trim(), taille: texte.length || rec.taille || 0 }
+    try { if (texte.length >= 500) await vctPutTexte(r.id, texte); await vctPutMeta(r); toast('CT enregistré'); onDone() } catch (e) { await alertDlg('Échec : ' + e.message) }
     setBusy(false)
   }
-  const del = async () => { if (!(await confirmDlg(`Supprimer le CT vidéo « ${rec.name} » ?`, { ok: 'Supprimer', danger: true }))) return; await vctDel(rec.id); toast('CT supprimé'); onDone() }
+  const del = async () => { if (!(await confirmDlg(`Supprimer le CT vidéo « ${rec.name} » ?`, { ok: 'Supprimer', danger: true }))) return; await vctDel(rec.id); await vctSupprimerVideo(rec); toast('CT supprimé'); onDone() }
   return (
     <Modal title="Modifier le CT vidéo" onClose={onClose} wide>
       <div className="fx-two">
         <div>
+          <Field l="Vidéo source (Cloudflare)">
+            <div className="fx-vsrc">{rec.posterUrl ? <img src={rec.posterUrl} alt="" /> : null}<div>
+              <div className="fx-s">{rec.videoUrl ? 'Vidéo en ligne' + (rec.video_octets ? ' · ' + (rec.video_octets / 1e6).toFixed(1) + ' Mo' : '') + (rec.duree_s ? ' · ' + rec.duree_s + ' s' : '') : 'Aucune vidéo pour ce CT.'}</div>
+              <button className="fx-btn sm" disabled={busy} onClick={() => vref.current.click()}>{rec.videoUrl ? 'Remplacer la vidéo' : 'Ajouter la vidéo'}</button>
+              {vst && <div className="fx-s">{vst}</div>}
+              <input ref={vref} type="file" accept="video/*,.mp4,.mov,.webm" hidden onChange={(e) => { changerVideo(e.target.files[0]); e.target.value = '' }} />
+            </div></div>
+          </Field>
           <Field l="Nom"><input className="fx-in full" value={f.name} onChange={set('name')} /></Field>
           <Field l="Méta-description"><textarea className="fx-ta" rows={3} value={f.meta} onChange={set('meta')} /></Field>
           <Field l="Niveau de conscience"><AwarenessPick value={f.awareness} onChange={(v) => setF({ ...f, awareness: v })} /></Field>

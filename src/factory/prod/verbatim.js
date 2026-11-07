@@ -423,7 +423,7 @@ export function _vctAppliquerFiche(rec, f, ecraser){
   return change;
 }
 
-export const _VCT_EXTRA_CLES = ['duree_s','blocs','mots_par_seconde','niches','produit_compatible','angles_fit','hook','chute','lieux_interdits','epic','awareness2']
+export const _VCT_EXTRA_CLES = ['duree_s','blocs','mots_par_seconde','niches','produit_compatible','angles_fit','hook','chute','lieux_interdits','epic','awareness2','videoUrl','videoKey','posterUrl','posterKey','video_octets']
 
 export async function buildAnalysteInputs(nbAngles, nbCreativesTotal) {
     const analysteSystem = (COMP_FILES['COMPETENCE_ANALYSTE.md'] || COMP_FILES['ANALYSTE_DE_MARCHÉ.md'] || '');

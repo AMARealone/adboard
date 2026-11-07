@@ -1,6 +1,7 @@
 // CT vidéo : stockage Supabase (bucket ct-gallery, dossier video/) — repris de l'ancien Factory.
 import { SB, SB_KEY, SERVER } from './api'
 import { BUCKET } from './ctApi'
+import { r2Put, r2Delete, videoInfos } from './r2'
 import { _vctExtra, _vctNomDuTexte, _vctAwDuTexte, _vctFicheDuTexte, _vctAppliquerFiche, _vctNiveau } from './prod/verbatim'
 export { _vctFicheDuTexte, _vctAppliquerFiche, _vctNiveau }
 const PREFIX = 'video'
@@ -78,3 +79,41 @@ export async function vctEnrichAll(list, onStatus) {
   }
   return { relus, ok, ko, cibles: cibles.length }
 }
+
+// ── Vidéo source du CT (stockée sur Cloudflare R2) ──
+const extDe = (f) => ((f.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4')
+const idNeuf = () => 'vct_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)
+// Met (ou remplace) la vidéo d'un CT : envoi sur R2, durée lue dans le fichier, miniature prise au tiers de la vidéo.
+export async function vctMettreVideo(rec, file, onStatus = () => {}) {
+  onStatus('Lecture de la vidéo…')
+  const info = await videoInfos(file)
+  const ts = Date.now(), vkey = `ct-video/${rec.id}/video-${ts}.${extDe(file)}`
+  onStatus('Envoi de la vidéo… 0 %')
+  const videoUrl = await r2Put(file, vkey, (p) => onStatus('Envoi de la vidéo… ' + Math.round(p * 100) + ' %'))
+  let posterUrl = '', posterKey = ''
+  if (info.poster) { posterKey = `ct-video/${rec.id}/poster-${ts}.jpg`; posterUrl = await r2Put(info.poster, posterKey) }
+  const ancien = { v: rec.videoKey, p: rec.posterKey }
+  Object.assign(rec, { videoUrl, videoKey: vkey, posterUrl, posterKey, video_octets: file.size })
+  if (info.duree && !rec.duree_s) rec.duree_s = info.duree
+  await vctPutMeta(rec)
+  if (ancien.v) r2Delete(ancien.v)
+  if (ancien.p) r2Delete(ancien.p)
+  return rec
+}
+// Nouveau CT à partir d'une vidéo seule : le nom vient du fichier, les balises se complètent ensuite.
+export async function vctNouveauVideo(file, onStatus) {
+  const rec = { id: idNeuf(), name: file.name.replace(/\.[^.]+$/, ''), addedAt: Date.now(), meta: '', awareness: [], styleTags: [], niche: '', source: file.name, taille: 0 }
+  await vctMettreVideo(rec, file, onStatus)
+  return rec
+}
+// Remplace la miniature (image choisie dans le lecteur : le moment le plus fort du CT).
+export async function vctChangerMiniature(rec, blob) {
+  const key = `ct-video/${rec.id}/poster-${Date.now()}.jpg`
+  const url = await r2Put(blob, key)
+  const ancien = rec.posterKey
+  Object.assign(rec, { posterUrl: url, posterKey: key })
+  await vctPutMeta(rec)
+  if (ancien) r2Delete(ancien)
+  return rec
+}
+export async function vctSupprimerVideo(rec) { if (rec.videoKey) await r2Delete(rec.videoKey); if (rec.posterKey) await r2Delete(rec.posterKey) }
