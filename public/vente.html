@@ -2315,7 +2315,7 @@ var asHistory   = [];
 var asOpen      = false;
 var asLoading   = false;
 var asMsgCount  = 0;
-var asSessionId = 'as_' + Date.now();
+var asSessionId = (function () { try { var k = localStorage.getItem('as_visitor'); if (!k) { k = 'as_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8); localStorage.setItem('as_visitor', k); } return k; } catch (e) { return 'as_' + Date.now(); } })(); // un identifiant par appareil : le CRM regroupe tous ses messages en un seul chat
 var asPromoShown = false;
 var asHotness   = 0;
 

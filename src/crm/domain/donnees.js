@@ -14,10 +14,29 @@ const VIDES = new Set('alors avec avoir bien cela comme dans donc elle etre fair
 const txt = (t) => (t || '').toString().replace(/\r\n/g, '\n').trim()
 const frDate = (d) => (d ? new Date(d).toLocaleString('fr-FR') : '')
 
+// Origine d'une conversation d'après l'identifiant de session : « as_ » = page de vente, « sess_ » ou identifiant de compte = AdBoard.
+export const ORIGINES = { vente: 'Page de vente', adboard: 'AdBoard' }
+export const origineDe = (id) => (/^as_/.test(id || '') ? 'vente' : 'adboard')
+const PAUSE_VISITE = 30 * 60 * 1000
+const heure = (t) => (t ? new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '')
+const jourLong = (t) => (t ? new Date(t).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '')
+// Une conversation = un visiteur (un appareil) : tous ses messages, dans l'ordre, découpés en visites (pause de plus de 30 min).
 export function groupesChat(rows) {
   const par = {}
   ;(rows || []).forEach((r) => { (par[r.session_id] = par[r.session_id] || []).push(r) })
-  return Object.entries(par).map(([id, ms]) => ({ id, label: 'Session ' + (id || '').slice(0, 8), date: ms[0] && ms[0].created_at ? new Date(ms[0].created_at).getTime() : 0, dateAff: frDate(ms[0] && ms[0].created_at), entries: ms.map((m) => ({ qui: m.role === 'user' ? 'Visiteur' : 'Ava', visiteur: m.role === 'user', texte: m.content })) }))
+  return Object.entries(par).map(([id, ms]) => {
+    ms.sort((a, b) => Date.parse(a.created_at || 0) - Date.parse(b.created_at || 0))
+    const origine = origineDe(id), fin4 = (id || '').slice(-4)
+    let prec = null, visites = 0
+    const entries = ms.map((m) => {
+      const at = Date.parse(m.created_at) || 0, nouvelle = prec === null || at - prec > PAUSE_VISITE
+      if (nouvelle) visites++
+      prec = at
+      return { qui: m.role === 'user' ? 'Visiteur' : 'Ava', visiteur: m.role === 'user', texte: m.content, at, heure: heure(at), nouvelle, quand: nouvelle ? jourLong(at) + ' · ' + heure(at) : '' }
+    })
+    const premier = ms[0] && ms[0].created_at, dernier = ms[ms.length - 1] && ms[ms.length - 1].created_at
+    return { id, origine, label: (origine === 'vente' ? 'Visiteur du site' : 'Client AdBoard') + ' · ' + fin4, date: premier ? Date.parse(premier) : 0, fin: dernier ? Date.parse(dernier) : 0, dateAff: frDate(premier), visites, nbVisiteur: entries.filter((e) => e.visiteur).length, entries }
+  })
 }
 export function groupesForm(rows) {
   const par = {}
@@ -38,10 +57,41 @@ export function markdown(titre, groupes, chat) {
   })
   return md
 }
+const normaliser = (t) => (t || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+const VIDES2 = new Set('faites fais voir veux part reviens vois sais pouvoir est les des une pas que qui par sur ses mes nos vos mon ton son leur leurs cet ces aux dont chez entre sans sous vers ete suis sommes etes etait serait sera aurait avez avons ont avait faut faire fais fait dire dit veux veut voudrais peux pouvez peut puis puisque parce comme comment pourquoi quand combien quoi bonjour bonsoir salut merci svp ok oui non rien tout tous toute toutes autre autres meme tres trop assez deja encore toujours jamais souvent aussi alors donc mais car ainsi bien beaucoup peu plus moins quel quelle quels quelles cette celui celle ceux celles voila ici labas apres avant depuis pendant votre notre'.split(' '))
+const vide = (m) => m.length < 4 || VIDES.has(m) || VIDES2.has(m) || /^\d+$/.test(m)
+const sing = (m) => (m.length > 5 && m.endsWith('s') && !m.endsWith('ss') ? m.slice(0, -1) : m)
+// Ce que disent les visiteurs, et seulement eux (jamais les réponses du chatbot, ni les questions posées par le formulaire).
+const mesVisiteur = (g) => g.entries.filter((e) => e.visiteur && e.texte)
+const jetons = (t) => normaliser(t).replace(/[^a-z0-9\s']/g, ' ').replace(/'/g, ' ').split(/\s+/).filter(Boolean)
+// Mots qui reviennent : comptés une seule fois par conversation (X conversations en parlent), sur les messages du visiteur uniquement.
 export function motsCles(groupes, n = 10) {
-  const f = {}
-  groupes.forEach((g) => g.entries.forEach((e) => (e.texte || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).forEach((m) => { if (m.length < 4 || VIDES.has(m)) return; f[m] = (f[m] || 0) + 1 })))
-  return Object.entries(f).sort((a, b) => b[1] - a[1]).slice(0, n)
+  const f = {}, aff = {}
+  groupes.forEach((g) => {
+    const vus = new Set()
+    mesVisiteur(g).forEach((e) => {
+      const orig = (e.texte || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
+      orig.forEach((o) => { const m = sing(normaliser(o)); if (!m || vide(m) || vus.has(m)) return; vus.add(m); f[m] = (f[m] || 0) + 1; if (!aff[m]) aff[m] = o })
+    })
+  })
+  return Object.entries(f).sort((a, b) => b[1] - a[1]).slice(0, n).map(([m, c]) => [aff[m] || m, c])
+}
+// Expressions (deux mots qui se suivent) dites par au moins deux visiteurs : « budget pub », « pas de ventes »…
+export function expressions(groupes, n = 8) {
+  const f = {}, aff = {}
+  groupes.forEach((g) => {
+    const vus = new Set()
+    mesVisiteur(g).forEach((e) => {
+      const brut = (e.texte || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean)
+      for (let i = 0; i < brut.length - 1; i++) {
+        const a = sing(normaliser(brut[i])), b = sing(normaliser(brut[i + 1]))
+        if (vide(a) || vide(b) || a === b) continue
+        const k = a + ' ' + b; if (vus.has(k)) continue
+        vus.add(k); f[k] = (f[k] || 0) + 1; if (!aff[k]) aff[k] = brut[i] + ' ' + brut[i + 1]
+      }
+    })
+  })
+  return Object.entries(f).filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, n).map(([k, c]) => [aff[k], c])
 }
 // Par question : nombre de fois où chaque réponse a été choisie. Seules les questions posées à l'identique à ≥ 2 personnes comptent.
 export function tally(groupes) {
@@ -54,10 +104,12 @@ export function statsGlobales(groupes) {
   groupes.forEach((g) => { const e = g.entries; for (let i = 0; i < e.length - 1; i += 2) { if (e[i].texte !== 'Score quiz / Offre recommandée' || !e[i + 1].texte) continue; const m = e[i + 1].texte.match(/Score:\s*(\d+)\s*—\s*Recommandé:\s*(.+)/); if (!m) continue; scores.push(+m[1]); const o = m[2].trim(); offres[o] = (offres[o] || 0) + 1 } })
   return scores.length ? { n: scores.length, moyenne: scores.reduce((a, b) => a + b, 0) / scores.length, offres: Object.entries(offres).sort((a, b) => b[1] - a[1]) } : null
 }
-export function filtrer(groupes, q, tri) {
-  const s = (q || '').trim().toLowerCase()
-  const l = !s ? groupes : groupes.filter((g) => g.label.toLowerCase().includes(s) || g.entries.some((e) => (e.texte || '').toLowerCase().includes(s)))
-  return [...l].sort((a, b) => (tri === 'ancien' ? (a.date || 0) - (b.date || 0) : (b.date || 0) - (a.date || 0)))
+// Recherche (sans accents ni majuscules) dans ce que dit le visiteur uniquement, plus le nom de la conversation.
+export function filtrer(groupes, q, tri, origine) {
+  const s = normaliser((q || '').trim())
+  let l = origine ? groupes.filter((g) => g.origine === origine) : groupes
+  if (s) l = l.filter((g) => normaliser(g.label).includes(s) || mesVisiteur(g).some((e) => normaliser(e.texte).includes(s)))
+  return [...l].sort((a, b) => (tri === 'ancien' ? (a.date || 0) - (b.date || 0) : tri === 'actif' ? (b.fin || b.date || 0) - (a.fin || a.date || 0) : (b.date || 0) - (a.date || 0)))
 }
 
 // Comportement (Clarity) : cumul par page, moyennes pondérées par sessions

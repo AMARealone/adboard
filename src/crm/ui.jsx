@@ -42,6 +42,7 @@ const IC = {
   refresh: '<path d="M21 12a9 9 0 11-3-6.7L21 8"/><path d="M21 3v5h-5"/>',
   down: '<path d="M12 3v12M7 11l5 5 5-5M4 21h16"/>',
   chev: '<path d="M6 9l6 6 6-6"/>',
+  expand: '<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>',
 }
 export const Icon = ({ n, s = 18 }) => <svg className="cx-ic" width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: IC[n] || '' }} />
 
