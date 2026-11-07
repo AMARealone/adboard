@@ -177,7 +177,7 @@ export const CAMPAGNES_LIENS = {
   ecrit_b4: 'Écrit · offre', ecrit_b3: 'Écrit · offre (ancien)', ecrit_suite: 'Écrit · suite',
 }
 // `v` change à chaque nouvelle miniature d'offre : le lien devient « nouveau » pour WhatsApp, qui ne ressert plus l'ancien aperçu gardé en cache.
-const V_MINIATURES = 4
+const V_MINIATURES = 5
 export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
   const o = OFFRES[offreKey]; if (!o) return ''
   return `https://www.adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}&v=${V_MINIATURES}`
