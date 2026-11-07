@@ -14,17 +14,21 @@ export function EcritCard({ p }) {
   const { A, cfg } = useCrm(); const n = N(p), prochaine = ecritProchaine(n)
   const [infos, setInfos] = useState(false)
   const envoyer = async (etape) => {
-    const { msg, manque, cas } = ecritMessage(p, etape, cfg)
-    if (manque.length) { toast('Il manque : ' + manque.join(', ')); if (manque.includes('offre')) setInfos(true); return }
-    const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { toast('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
-    let final = msg
-    if ((etape === 'b4' || etape === 'suite') && n.ecrit_offre) {
-      const camp = 'ecrit_' + etape
-      const lien = await A.shorten(lienOffreSuivi(n.ecrit_offre, camp, 'ecrit', p.id), camp)
-      final = ecritMessage(p, etape, cfg, lien).msg
-    }
-    if (etape === 'b1' && cas != null) A.ecritCas(p.id, cas) // la faille du bloc 2 en découle
-    await A.ouvrirCanal(p, final) // l'envoi n'est confirmé que quand tu coches « déjà envoyé »
+    const tab = A.preOuvrir(p) // onglet ouvert au clic : sinon le mobile bloque l'ouverture après le raccourcissement du lien
+    const fin = (m) => { if (m) toast(m); if (tab) tab.close() }
+    try {
+      const { msg, manque, cas } = ecritMessage(p, etape, cfg)
+      if (manque.length) { fin('Il manque : ' + manque.join(', ')); if (manque.includes('offre')) setInfos(true); return }
+      const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { fin('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
+      let final = msg
+      if ((etape === 'b4' || etape === 'suite') && n.ecrit_offre) {
+        const camp = 'ecrit_' + etape
+        const lien = await A.shorten(lienOffreSuivi(n.ecrit_offre, camp, 'ecrit', p.id), camp)
+        final = ecritMessage(p, etape, cfg, lien).msg
+      }
+      if (etape === 'b1' && cas != null) A.ecritCas(p.id, cas) // la faille du bloc 2 en découle
+      await A.ouvrirCanal(p, final, tab) // l'envoi n'est confirmé que quand tu coches « déjà envoyé »
+    } catch (err) { fin('Envoi impossible : ' + (err && err.message || err)) }
   }
   const v = pitchVariante(p, cfg), cas = n.ecrit_cas != null ? n.ecrit_cas : v.cas
   return (

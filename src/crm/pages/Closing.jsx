@@ -14,12 +14,16 @@ export function ClosingCard({ p }) {
   const { A, cfg } = useCrm(); const n = N(p), now = Date.now(), age = closingJours(n, now), pj = closingProchainJ(n), ech = closingEcheance(n, now)
   const [infos, setInfos] = useState(false)
   const envoyer = async (i) => {
-    const { msg, manque } = closingMessage(p, i, cfg)
-    if (manque.length) { toast('Il manque : ' + manque.join(', ')); setInfos(true); return }
-    const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { toast('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
-    const lien = await A.shorten(lienOffreSuivi(n.closing_offre, 'closing_j' + CLOSING_JOURS[i], 'closing', p.id), 'closing_j' + CLOSING_JOURS[i])
-    const final = closingMessage(p, i, cfg, lien).msg
-    await A.ouvrirCanal(p, final) // l'envoi n'est confirmé que quand tu coches « déjà envoyé »
+    const tab = A.preOuvrir(p) // onglet ouvert au clic : sinon le mobile bloque l'ouverture après le raccourcissement du lien
+    const fin = (m) => { if (m) toast(m); if (tab) tab.close() }
+    try {
+      const { msg, manque } = closingMessage(p, i, cfg)
+      if (manque.length) { fin('Il manque : ' + manque.join(', ')); setInfos(true); return }
+      const rest = msg.match(/\[[^\]]{2,40}\]/); if (rest) { fin('Variable non remplie : ' + rest[0] + ' (vérifie Templates)'); return }
+      const lien = await A.shorten(lienOffreSuivi(n.closing_offre, 'closing_j' + CLOSING_JOURS[i], 'closing', p.id), 'closing_j' + CLOSING_JOURS[i])
+      const final = closingMessage(p, i, cfg, lien).msg
+      await A.ouvrirCanal(p, final, tab) // l'envoi n'est confirmé que quand tu coches « déjà envoyé »
+    } catch (e) { fin('Envoi impossible : ' + (e && e.message || e)) }
   }
   const o = OFFRES[n.closing_offre]
   return (

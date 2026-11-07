@@ -128,14 +128,19 @@ export function CrmProvider({ children }) {
       return mutate(id, { notes: { appel_fait: undefined, appel_fait_at: undefined, appel_programme_at: undefined, closing_etat: undefined, closing_at: undefined, appel_reserve: true, appel_reserve_at: now() } })
     },
     // — Ouverture du canal : WhatsApp (nouvel onglet) ou Instagram (texte copié)
-    ouvrirCanal: async (p, msg) => {
+    // Sur mobile, ouvrir WhatsApp APRÈS un await (raccourcissement du lien) est bloqué par le navigateur :
+    // on ouvre l'onglet tout de suite, au clic (preOuvrir), puis on y met le message (ouvrirCanal).
+    preOuvrir: (p) => (!estInstagram(p) && numeroWa(p) ? window.open('', '_blank') : null),
+    ouvrirCanal: async (p, msg, tab) => {
       if (estInstagram(p)) {
         if (!p.lien_instagram) { toast('Pas de lien Instagram pour ce prospect'); return false }
         try { await navigator.clipboard.writeText(msg); toast('Texte copié : colle-le (Ctrl+V) dans la conversation Instagram') } catch (_) { toast('Copie automatique impossible : copie le texte à la main') }
         window.open(p.lien_instagram, '_blank'); return true
       }
-      const num = numeroWa(p); if (!num) { toast('Pas de numéro WhatsApp pour ce prospect'); return false }
-      window.open('https://wa.me/' + num + '?text=' + encodeURIComponent(msg), '_blank'); return true
+      const num = numeroWa(p); if (!num) { if (tab) tab.close(); toast('Pas de numéro WhatsApp pour ce prospect'); return false }
+      const url = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg)
+      if (tab && !tab.closed) tab.location.href = url; else window.open(url, '_blank')
+      return true
     },
     shorten,
   }), [mutate])
