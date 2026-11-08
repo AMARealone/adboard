@@ -4141,11 +4141,12 @@ const CLOSING_OFFRES = {
   test:   { label: 'TEST — 75.000',     facture: 'vous recevez la facture par mail' },
   perf:   { label: 'PERF+ — 140.000',   facture: 'vous recevez la facture et votre garantie par mail' },
   growth: { label: 'GROWTH — 260.000',  facture: 'vous recevez la facture et votre garantie par mail' },
-  scale:  { label: 'SCALE — 480.000',   facture: 'vous recevez la facture et votre garantie par mail' }
+  scale:  { label: 'SCALE — 480.000',   facture: 'vous recevez la facture et votre garantie par mail' },
+  oneshot:{ label: 'ONE SHOT — 50.000', facture: 'vous recevez la facture par mail' }
 };
 const CLOSING_OBJECTIONS = ['le prix', 'la peur que ça ne donne pas de résultats', 'le besoin d\'en parler à votre associé(e)', 'le besoin de réfléchir', 'la crainte de perdre du temps', 'le fait d\'avoir déjà essayé autre chose'];
 // Liens envoyés au prospect : page de l'offre (détail + paiement sur la page), plus de lien de paiement brut
-const OFFRE_URL = { test: 'https://www.adstackofficial.com/test', perf: 'https://www.adstackofficial.com/perf', growth: 'https://www.adstackofficial.com/growth', scale: 'https://www.adstackofficial.com/scale' };
+const OFFRE_URL = { test: 'https://www.adstackofficial.com/test', perf: 'https://www.adstackofficial.com/perf', growth: 'https://www.adstackofficial.com/growth', scale: 'https://www.adstackofficial.com/scale', oneshot: 'https://shop.adstackofficial.com/prd_y6lv33mv/checkout' };
 function closingLiens() { return OFFRE_URL; }
 // slot du texte à utiliser pour la relance i (0=J+1, 1=J+3, 2=J+7) selon la version A/B choisie
 function closingSlot(n, i) {
@@ -4256,103 +4257,6 @@ async function envoyerClosing(id, i) {
   }
   // marqué envoyé tout de suite (décochable avec la case "Envoyé" si l'envoi n'a pas eu lieu)
   await saveClosingStatus(id, 'closing_sent_j' + CLOSING_JOURS[i], true);
-}
-
-// ═══════════════════════════════════════
-// ONE SHOT — offre d'entrée (8 nov. 2026) : 6 créatives (2 vidéos + 4 images) pour 1 produit, achat unique, livrées dans AdBoard sous 48h.
-// Bouton dans Closing : prépare le message (code promo + réduction facultatifs), l'envoie sur WhatsApp / Instagram, et note l'envoi.
-// ═══════════════════════════════════════
-const ONESHOT_LIEN = 'https://shop.adstackofficial.com/prd_y6lv33mv/checkout';
-const ONESHOT_PRIX = 50000;
-function _fcfaOS(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
-function oneShotMessage(p, code, reduc) {
-  const n = appelNotes(p);
-  const prenom = (n.closing_prenom || '').trim();
-  const marque = (p.nom_marque || '').trim();
-  const produit = (p.produit || '').trim();
-  const promo = !!code && reduc > 0;
-  const pour = produit ? 'votre ' + produit.toLowerCase() + (marque ? ' (' + marque + ')' : '') : (marque ? 'la marque ' + marque : 'votre produit');
-  let m = 'Bonjour' + (prenom ? ' ' + prenom : '') + ',\n\n'
-    + 'Merci pour l\'échange. Comme convenu, voici votre offre pour ' + pour + ' 👇\n\n'
-    + '*ONE SHOT - DONE FOR YOU*\n'
-    + '_6 créatives prêtes à tester, pour savoir enfin ce qui fait vendre votre produit._\n\n'
-    + '✅ Stratégie marketing construite pour votre produit\n'
-    + '✅ Un batch stratégique : 2 vidéos + 4 images\n'
-    + '✅ Créatives optimisées conversion\n'
-    + '✅ Tout livré dans votre AdBoard sous 48h maximum\n'
-    + '✅ Organisation et suivi de votre production dans AdBoard\n\n';
-  if (promo) {
-    m += '💰 Prix normal : ' + _fcfaOS(ONESHOT_PRIX) + ' FCFA\n'
-      + '🎁 Pour vous : *' + _fcfaOS(ONESHOT_PRIX - reduc) + ' FCFA* avec le code *' + code + '* (-' + _fcfaOS(reduc) + ' FCFA), valable 24h\n\n';
-  } else {
-    m += '💰 *' + _fcfaOS(ONESHOT_PRIX) + ' FCFA*, une seule fois\n\n';
-  }
-  m += '👉 ' + ONESHOT_LIEN + '\n\n'
-    + '*Et après le paiement ?*\n'
-    + '1. Vous recevez votre facture automatiquement par email.\n'
-    + '2. Vous vous connectez à AdBoard avec le même email que celui utilisé pour payer.\n'
-    + '3. Vous faites votre première demande de production.\n\n'
-    + 'Vous n\'avez plus rien à faire ensuite, on s\'occupe du reste. 🙌\n\n'
-    + 'Si vous avez la moindre question, je suis là.';
-  return m;
-}
-function ouvrirOneShot(id) {
-  const p = DB.find(x => x.id === id);
-  if (!p) return;
-  const ancien = document.getElementById('modal-oneshot');
-  if (ancien) ancien.remove();
-  const n = appelNotes(p);
-  const ov = document.createElement('div');
-  ov.id = 'modal-oneshot';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto';
-  const lab = 'font-size:11px;font-weight:700;color:var(--text2);margin:10px 0 4px;display:block';
-  const inp = 'width:100%;font-size:13px;font-family:var(--font)';
-  const ig = estCanalInstagram(p);
-  ov.innerHTML =
-    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:22px;max-width:520px;width:100%;font-family:var(--font)">'
-    + '<div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:2px">🎯 ONE SHOT — ' + esc2(p.nom_marque || 'ce prospect') + '</div>'
-    + '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">6 créatives (2 vidéos + 4 images), 1 produit, AdBoard sous 48h · ' + _fcfaOS(ONESHOT_PRIX) + ' FCFA</div>'
-    + '<div style="display:flex;gap:10px"><div style="flex:1"><label style="' + lab + '">Code promo (facultatif)</label><input id="os-code" type="text" style="' + inp + '" placeholder="ex : ForDealtoo" value="' + esc2(n.oneshot_code || '') + '"></div>'
-    + '<div style="width:140px"><label style="' + lab + '">Réduction (FCFA)</label><input id="os-reduc" type="number" min="0" step="1000" style="' + inp + '" value="' + (n.oneshot_reduc || 15000) + '"></div></div>'
-    + '<div style="font-size:10.5px;color:var(--muted);margin-top:4px">Avec un code : prix barré + prix réduit + « valable 24h ». Sans code : prix normal. Crée le code dans Chariow avant l\'envoi.</div>'
-    + '<label style="' + lab + '">Message (modifiable)</label><textarea id="os-msg" style="' + inp + ';min-height:300px;line-height:1.45"></textarea>'
-    + '<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">'
-      + '<button id="os-annuler" class="btn btn-ghost btn-sm">Annuler</button>'
-      + '<button id="os-copier" class="btn btn-ghost btn-sm">Copier</button>'
-      + '<button id="os-envoyer" class="btn btn-primary btn-sm">' + (ig ? 'Copier et ouvrir Instagram' : 'Envoyer sur WhatsApp') + '</button>'
-    + '</div></div>';
-  document.body.appendChild(ov);
-  const g = k => document.getElementById(k);
-  const rafraichir = () => { g('os-msg').value = oneShotMessage(p, g('os-code').value.trim(), parseInt(g('os-reduc').value, 10) || 0); };
-  rafraichir();
-  g('os-code').oninput = rafraichir; g('os-reduc').oninput = rafraichir;
-  const fermer = () => ov.remove();
-  ov.addEventListener('click', e => { if (e.target === ov) fermer(); });
-  g('os-annuler').onclick = fermer;
-  g('os-copier').onclick = async () => { const ok = await copierTexteAvecRepli(g('os-msg').value); toast(ok ? 'Message copié ✓' : 'Copie automatique impossible — copie le texte manuellement'); };
-  g('os-envoyer').onclick = async () => {
-    const msg = g('os-msg').value;
-    const code = g('os-code').value.trim(), reduc = parseInt(g('os-reduc').value, 10) || 0;
-    if (ig) {
-      if (!p.lien_instagram) { toast('Pas de lien Instagram pour ce prospect'); return; }
-      const ok = await copierTexteAvecRepli(msg);
-      toast(ok ? 'Texte copié — colle-le (Ctrl+V) dans la conversation Instagram' : 'Copie automatique impossible — copie le texte manuellement');
-      window.open(p.lien_instagram, '_blank');
-    } else {
-      const numero = (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '');
-      if (!numero) { toast('Pas de numéro WhatsApp pour ce prospect'); return; }
-      window.open('https://wa.me/' + numero + '?text=' + encodeURIComponent(msg), '_blank');
-    }
-    fermer();
-    const ancienNotes = p.notes;
-    const s = appelNotes(p);
-    s.oneshot_sent = true; s.oneshot_sent_at = new Date().toISOString();
-    if (code) { s.oneshot_code = code; s.oneshot_reduc = reduc; } else { delete s.oneshot_code; delete s.oneshot_reduc; }
-    p.notes = JSON.stringify(s);
-    renderClosing();
-    const ok = await patch(id, { notes: p.notes });
-    if (!ok) { p.notes = ancienNotes; renderClosing(); }
-  };
 }
 
 // ── Infos de l'appel : saisies juste après l'appel, utilisées pour remplir automatiquement les relances
@@ -4523,7 +4427,6 @@ function renderClosing() {
       + (incomplet
           ? '<span style="font-size:10px;font-weight:800;background:rgba(255,181,71,.12);color:#FFB547;padding:2px 8px;border-radius:4px;border:1px solid rgba(255,181,71,.3)">INFOS DE L\'APPEL À COMPLÉTER</span>'
           : '<span>' + esc2(n.closing_prenom) + ' · ' + esc2((CLOSING_OFFRES[n.closing_offre] || {}).label || '') + ' · « ' + esc2(n.closing_mots.length > 70 ? n.closing_mots.slice(0, 70) + '…' : n.closing_mots) + ' »</span>')
-      + (n.oneshot_sent ? '<span style="font-size:10px;font-weight:800;background:rgba(46,242,232,.1);color:#2EF2E8;padding:2px 8px;border-radius:4px;border:1px solid rgba(46,242,232,.3)">ONE SHOT ENVOYÉ' + (n.oneshot_code ? ' · ' + esc2(n.oneshot_code) : '') + '</span>' : '')
       + '<button class="btn btn-ghost btn-sm" onclick="ouvrirInfosAppel(\'' + p.id + '\',false)">✏️ Infos de l\'appel</button></div>';
 
     const cardBorder = retard ? '1px solid rgba(255,76,106,.2)' : du ? '1px solid rgba(31,182,255,.2)' : '1px solid var(--border)';
@@ -4539,7 +4442,6 @@ function renderClosing() {
         + '</div>'
         + '<div style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap">'
           + '<button class="btn btn-ghost btn-sm" data-notes-id="' + p.id + '" onclick="openNotes(this.dataset.notesId)">Notes</button>'
-          + '<button class="btn btn-sm" style="background:rgba(31,182,255,.1);color:var(--blue);border:1px solid rgba(31,182,255,.3)" onclick="ouvrirOneShot(\'' + p.id + '\')">🎯 One Shot' + (n.oneshot_sent ? ' ✓' : '') + '</button>'
           + '<button class="btn btn-ghost btn-sm" onclick="closingReprogrammer(\'' + p.id + '\')">📞 Nouvel appel</button>'
           + '<button class="btn btn-sm" style="background:rgba(50,255,126,.1);color:#32FF7E;border:1px solid rgba(50,255,126,.25)" onclick="decisionAppel(\'' + p.id + '\',\'paye\')">✅ A payé</button>'
           + '<button class="btn btn-ghost btn-sm" style="color:#FF5C5C" onclick="decisionAppel(\'' + p.id + '\',\'perdu\')">❌ Pas intéressé</button>'
@@ -4581,8 +4483,8 @@ const ECRIT_ETAPES = [
   { key: 'b3',    label: 'Bloc 3 · Offre' },
   { key: 'suite', label: 'Lien + suite' }
 ];
-const ECRIT_DELAI = { test: '48 h', perf: '48 h', growth: '24 h', scale: '24 h' };
-const ECRIT_N = { test: '12', perf: '24', growth: '48', scale: '96' };
+const ECRIT_DELAI = { test: '48 h', perf: '48 h', growth: '24 h', scale: '24 h', oneshot: '48 h' };
+const ECRIT_N = { test: '12', perf: '24', growth: '48', scale: '96', oneshot: '6' };
 const ECRIT_PLAN_FIN = "\n\nDe votre côté, il vous suffit d'ajouter *[Produit]* dans AdBoard. Le reste, c'est nous.\n\nJe vous montre l'offre qui correspond à *[Marque]* ?";
 const ECRIT_QUATRE_TEMPS = "Concrètement, ça se passe en 4 temps :\n*1. On étudie* votre marché, vos concurrents et votre client idéal.\n*2. On crée* des créatives variées.\n*3. On livre* des lots prêts à publier, avec leurs textes.\n*4. On apprend* : on s'appuie sur ce qui gagne pour le lot suivant.";
 const DEFAULT_ECRIT = {
