@@ -145,6 +145,7 @@ h2{font-size:70px;margin-top:26px}
 .oc li{display:flex;gap:18px;font-size:27px;line-height:1.3;color:#E6E8EC}
 .oc li:before{content:"";flex:0 0 34px;height:34px;border-radius:50%;background:rgba(46,242,232,.14) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232EF2E8' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center/20px no-repeat}
 .oc li.g{color:#fff;font-weight:700}
+.os{width:fit-content;max-width:100%;background:#0F1522;border:2px dashed rgba(31,182,255,.55);border-radius:36px;padding:26px 40px;margin-top:34px}.os .osn{font-size:30px;font-weight:800;letter-spacing:4px;color:var(--b1)}.os .pr{font-size:72px;font-weight:900;letter-spacing:-4px;line-height:1.05;margin:8px 0 0}.os .pr small{font-size:28px;letter-spacing:0;color:var(--mut);font-weight:600;margin-left:12px;white-space:nowrap}
 .more{position:absolute;right:110px;bottom:40px;font-size:22px;color:#6B6F78;background:none;border:0;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:6px}
 .more:hover{color:#fff}
 /* next */
@@ -604,7 +605,7 @@ function spark(kind,after){
 }
 
 var LOGO='<div class="logo">Ad<b>Stack</b></div>';
-var slides=[],annexIdx=-1;
+var slides=[],annexMap={};
 function add(cls,html,o){slides.push({cls:cls||"",html:html,annex:o&&o.annex,sec:o&&o.sec})}
 function head(k,t){return '<div class="kick a" style="--d:0">'+k+'</div><h2 class="a" style="--d:1">'+t+'</h2>'}
 function split(l,r,cls){return '<div class="split '+(cls||'')+'"><div class="L">'+l+'</div><div class="R">'+r+'</div></div>'}
@@ -833,7 +834,7 @@ add("",split(head('L’offre','L’offre pour démarrer : <span class="grad">'+e
  '<p class="lead a" style="--d:2">'+(O.nom==="TEST"?'Pour lancer vos premières créatives et voir ce qui fonctionne, en vous détachant de la production.':'Pour faire tourner vos créatives en continu, et scaler sur ce qui fonctionne.')+'</p>'+
  pts(['Un premier lot de <b>créatives prêtes à performer</b>, en vidéos et en images.','Sur plusieurs angles, pour voir <b>ce qui fonctionne</b>.','<b>Aucune équipe</b> à gérer : vous donnez les infos, vous demandez, vous recevez.'],3),
  '<div class="oc a pop" style="--d:3"><div class="on2">'+esc(O.nom)+'</div><div class="pr">'+esc(O.prix)+'<small>FCFA / mois</small></div><ul>'+O.pts.slice(0,3).map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(O.garantie?'<li class="g">'+esc(O.garantie)+'</li>':'')+'</ul></div>')+
- bridge('Voyons ce qui est inclus')+'<button class="more" data-annex="1">Comparer les offres</button>',{sec:'of'});
+ bridge('Voyons ce qui est inclus')+'<button class="more" data-annex="cmp">Comparer les offres</button>',{sec:'of'});
 
 /* ═════ 21 · Ce qui est inclus ═════ */
 add("",split(head('Inclus','Bien plus que <span class="grad">des créatives.</span>'),
@@ -843,16 +844,34 @@ add("",split(head('Inclus','Bien plus que <span class="grad">des créatives.</sp
 /* ═════ 22 · La suite ═════ */
 add("",split(head('Pour finir','Tout est prêt. <span class="grad">On commence ?</span>')+
  pts(['Abonnement <b>mensuel</b>, vos créatives disponibles <b>dès le paiement</b>.','Vous démarrez <b>simplement</b>, et vous voyez ce qui fonctionne.']),
- timeline([['Je vous envoie le lien de paiement','Directement ici, par WhatsApp.'],['Vous recevez la facture','Par mail, automatiquement, dès le paiement.'],['On connecte AdBoard ensemble','Vous connectez votre compte Google.'],['Vous me donnez les infos de votre produit','Je vous accompagne jusqu’à votre première demande de production.']])),{sec:'of'});
+ timeline([['Je vous envoie le lien de paiement','Directement ici, par WhatsApp.'],['Vous recevez la facture','Par mail, automatiquement, dès le paiement.'],['On connecte AdBoard ensemble','Vous connectez votre compte Google.'],['Vous me donnez les infos de votre produit','Je vous accompagne jusqu’à votre première demande de production.']]))+'<button class="more" data-annex="down">Le budget ne correspond pas ?</button>',{sec:'of'});
 
 /* ═════ Annexe · Comparatif ═════ */
 (function(){
  var cols=["TEST","PERF+","GROWTH","SCALE"].map(function(k){var o=OFFRES[k];
   return '<div class="cc'+(k===O.nom?' me':'')+'"><div class="nm2">'+o.nom+'</div><div class="pr">'+o.prix+'<small>FCFA / mois</small></div><ul>'+o.pts.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(o.garantie?'<li style="color:#fff;font-weight:700">'+esc(o.garantie)+'</li>':'')+'</ul></div>'}).join('');
- add("",head('Les offres','Comparer les <span class="grad">offres.</span>')+'<div class="cmp a" style="--d:2">'+cols+'</div><button class="back" data-back="1">Retour</button>',{annex:true});
+ add("",head('Les offres','Comparer les <span class="grad">offres.</span>')+'<div class="cmp a" style="--d:2">'+cols+'</div><button class="back" data-back="1">Retour</button>',{annex:'cmp'});
+})();
+
+/* ═════ Annexe · Downsell (8 nov. 2026) — débloqué par le petit lien du dernier slide, quand le budget ne correspond pas.
+   Présentation PERF+ → on redescend sur TEST (avec sa carte) ; présentation TEST → on redescend sur ONE SHOT (juste des lignes, 50.000 FCFA, CTA direct). ═════ */
+(function(){
+ var back='<button class="back" data-back="1">Retour</button>';
+ if(O.nom==="TEST"){
+  add("",split(head('Autre façon de démarrer','Testez notre travail <span class="grad">avant de vous engager.</span>')+
+   pts(['Avant la production : <b>recherche et stratégie marketing</b> sur votre produit.','<b>6 créatives stratégiques</b> : 2 vidéos et 4 images, optimisées conversion.','Vous les recevez dans <b>AdBoard, sous 48h maximum</b>.'],2)+
+   '<div class="os a pop" style="--d:5"><div class="osn">ONE SHOT</div><div class="pr">50.000<small>FCFA, une seule fois</small></div></div>',
+   timeline([['On peut démarrer maintenant','Je vous envoie le lien de paiement.'],['Vous vous connectez à AdBoard','Avec l’email utilisé pour le paiement.'],['Vous faites votre première demande','Notre équipe s’occupe du reste.']]))+back,{annex:'down'});
+ } else {
+  var T=OFFRES["TEST"];
+  add("",split(head('Autre façon de démarrer','Démarrons plus <span class="grad">simplement.</span>')+
+   '<p class="lead a" style="--d:2">Même méthode, un volume adapté à votre budget d’aujourd’hui. Vous voyez ce qui fonctionne, puis on monte quand vous êtes prêt.</p>'+
+   pts(['Une <b>stratégie marketing</b> avant chaque lot.','Des créatives <b>prêtes à performer</b>, livrées en 48h.','Je vous envoie le <b>lien de paiement</b> dès que vous êtes d’accord.'],3),
+   '<div class="oc a pop" style="--d:3"><div class="on2">'+esc(T.nom)+'</div><div class="pr">'+esc(T.prix)+'<small>FCFA / mois</small></div><ul>'+T.pts.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+'</ul></div>')+back,{annex:'down'});
+ }
 })();
 var stage=document.getElementById('stage'),cur=0,prevIdx=0,main=[];
-slides.forEach(function(s,i){if(s.annex)annexIdx=i;else main.push(i)});
+slides.forEach(function(s,i){if(s.annex)annexMap[s.annex===true?'cmp':s.annex]=i;else main.push(i)});
 stage.innerHTML=DEFS+slides.map(function(s,i){var mi=main.indexOf(i);return '<section class="s '+s.cls+'" data-i="'+i+'"'+(s.sec?' data-sec="'+s.sec+'"':'')+'>'+LOGO+(s.sec?trk(s.sec):'')+(s.annex||s.cls==="cover"?'':'<div class="num">'+String(mi+1).padStart(2,"0")+' / '+String(main.length).padStart(2,"0")+'</div>')+s.html+'</section>'}).join('');
 var els=[].slice.call(stage.children).filter(function(e){return e.tagName==='SECTION'});
 function go(i,fromJump){
@@ -869,7 +888,7 @@ addEventListener('resize',fit);fit();
 document.getElementById('next').addEventListener('click',next);
 document.getElementById('prev').addEventListener('click',prev);
 stage.addEventListener('click',function(e){
- var t=e.target.closest('[data-annex]'); if(t){prevIdx=cur;go(annexIdx,true);e.stopPropagation();return}
+ var t=e.target.closest('[data-annex]'); if(t){var ai=annexMap[t.getAttribute('data-annex')];if(ai!=null){prevIdx=cur;go(ai,true)}e.stopPropagation();return}
  t=e.target.closest('[data-back]'); if(t){go(prevIdx,true);e.stopPropagation();}
 });
 addEventListener('keydown',function(e){
