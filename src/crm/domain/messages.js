@@ -180,6 +180,7 @@ export const CAMPAGNES_LIENS = {
 const V_MINIATURES = 5
 export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
   const o = OFFRES[offreKey]; if (!o) return ''
+  if (offreKey === 'oneshot') return `${o.url}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}` // pas de page d'offre : lien de paiement direct, toujours suivi et raccourci
   return `https://www.adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}&v=${V_MINIATURES}`
 }
 

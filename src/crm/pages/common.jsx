@@ -12,8 +12,8 @@ export function Meta({ p }) {
   const n = N(p)
   return <div className="cx-meta">{p.produit && <span>{p.produit}</span>}{p.pays && <span>{p.pays}</span>}{n.form_nom && <span>{n.form_nom}</span>}{n.form_objectif && <span>🎯 {n.form_objectif}</span>}{n.form_budget && <span>💰 {n.form_budget}</span>}</div>
 }
-export function OffrePick({ value, onChange }) {
-  return <div className="cx-offres">{OFFRE_KEYS.map((k) => <button type="button" key={k} className={'cx-opt' + (value === k ? ' on' : '')} style={value === k ? { borderColor: OFFRES[k].couleur, color: OFFRES[k].couleur } : null} onClick={() => onChange(value === k ? '' : k)}>{OFFRES[k].label}</button>)}</div>
+export function OffrePick({ value, onChange, sans = [] }) {
+  return <div className="cx-offres">{OFFRE_KEYS.filter((k) => !sans.includes(k)).map((k) => <button type="button" key={k} className={'cx-opt' + (value === k ? ' on' : '')} style={value === k ? { borderColor: OFFRES[k].couleur, color: OFFRES[k].couleur } : null} onClick={() => onChange(value === k ? '' : k)}>{OFFRES[k].label}</button>)}</div>
 }
 export function InfosAppel({ p, onClose }) {
   const { A } = useCrm(); const n = N(p)
@@ -38,7 +38,7 @@ export function EcritInfos({ p, onClose }) {
   return (
     <Modal title={'Écrit · ' + (p.nom_marque || '')} onClose={onClose}>
       <div className="cx-form">
-        <div className="cx-grp">Offre à lui proposer<OffrePick value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></div>
+        <div className="cx-grp">Offre à lui proposer<OffrePick sans={['oneshot']} value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></div>
         <label>Remarque personnelle (facultatif, apparaît en haut du bloc 2)<textarea value={v.remarque} onChange={(e) => setV({ ...v, remarque: e.target.value })} /></label>
       </div>
       <div className="cx-act"><button className="cx-btn" onClick={onClose}>Annuler</button><button className="cx-btn primary" onClick={async () => { if (await A.ecritInfos(p.id, v)) { toast('Enregistré'); onClose() } }}>Enregistrer</button></div>
