@@ -4,7 +4,7 @@ import { WS, wsOwner, can, isMember, resolveWorkspace, captureInviteFromUrl, swi
 import TeamPage from "./TeamPage.jsx";
 import { TP_CHAMPS, nettoyerStats, aDesChiffres, scoresTopPerformer, classerTopPerformer, multiplicateurTP } from "./topPerformer.js";
 captureInviteFromUrl();
-// ADBOARD_VERSION v8.2-4offres (4 offres TEST / PERF+ / GROWTH / SCALE, créatives accordées au mois sans logique hebdomadaire, fin du One Shot) | v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
+// ADBOARD_VERSION v8.3-oneshot (offre ONE SHOT : achat unique, 6 créatives pour 1 produit, 48h, non vendue dans AdBoard) | v8.2-4offres (4 offres TEST / PERF+ / GROWTH / SCALE, créatives accordées au mois sans logique hebdomadaire, fin du One Shot) | v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
 // Attribution email/push — capture utm_campaign dès l'arrivée sur AdBoard, avant toute
 // interaction. Reprise à l'identique de vente.html : c'est là que pointent les liens des
@@ -837,7 +837,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       {!showCollapsed && !(isMobile && !mobileOpen) && !isMember() && subscription?.plan !== 'scale' && (() => {
         // Progression normale : Starter → Pro → Scale. Un visiteur sans abonnement actif — ou un
         // ancien compte Discovery (offre retirée de la vente) — est orienté vers Starter.
-        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery') ? 'test'
+        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery' || subscription.plan === 'oneshot') ? 'test'
                           : subscription.plan === 'test' ? 'starter' : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
@@ -1506,7 +1506,7 @@ const sbSubs = {
   }
 };
 
-const PLAN_LABELS = { test: 'TEST', starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
+const PLAN_LABELS = { oneshot: 'ONE SHOT', test: 'TEST', starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE' };
 const PLAN_COLORS = { test: '#6B7280', starter: '#8A90B2', pro: '#5B8DEF', scale: '#22C55E' };
 
 // ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
@@ -3659,6 +3659,9 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
                 <div style={{height:'100%',borderRadius:2,background:credits.available>0?`linear-gradient(90deg,${C.accent},#5B8DEF)`:'rgba(255,255,255,0.12)',width:!credits.total?'0%':`${Math.min(100,(credits.available/credits.total)*100)}%`,transition:'width .4s ease'}}/>
               </div>
               <div style={{fontSize:10.5,color:C.muted,marginTop:6}}>{credits.used} déjà utilisées</div>
+              {subscription?.plan === 'oneshot' && (
+                <div style={{fontSize:10.5,color:C.sec,marginTop:8,lineHeight:1.5}}>ONE SHOT · 6 créatives (2 vidéos + 4 images) pour 1 produit · livrées sous 48h maximum</div>
+              )}
             </div>
             {credits.available === 0 && (
               subscription?.type === 'pack' ? (
@@ -6390,7 +6393,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           const isCurrent = subscription?.active && sameTier && (currentCycle === selectedCycle);
           const isCycleUpsell = sameTier && currentCycle !== selectedCycle && selectedCycle === 'quarterly';   // même palier, passer au trimestriel
           const isCycleDowngradeCycle = sameTier && currentCycle !== selectedCycle && selectedCycle === 'monthly'; // même palier, repasser au mensuel
-          const PLAN_ORDER = { discovery:0, test:1, starter:2, pro:3, scale:4 };
+          const PLAN_ORDER = { oneshot:0, discovery:0, test:1, starter:2, pro:3, scale:4 };
           const isDowngrade = userPlan && !sameTier && PLAN_ORDER[p.id] < PLAN_ORDER[userPlan];
           const isUpgrade = userPlan && !sameTier && PLAN_ORDER[p.id] > PLAN_ORDER[userPlan];
           const cycleData = quarterly ? p.quarterly : p.monthly;

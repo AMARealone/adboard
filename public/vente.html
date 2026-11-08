@@ -1706,6 +1706,30 @@ a[href*="systeme.io"]{display:none!important;opacity:0!important;pointer-events:
   <section class="offers-section-lp">
     <div class="offers-grid-lp" id="lp-offers-grid"></div>
 
+    <!-- ONE SHOT (8 nov. 2026) : achat unique, 6 créatives, 1 produit, 48h. Prix : ONESHOT_PRIX ci-dessous (50 000 FCFA, à confirmer). -->
+    <div class="oneshot-lp" id="lp-oneshot">
+      <div class="oneshot-txt">
+        <div class="oneshot-tag">Pas prêt pour un abonnement ?</div>
+        <div class="oneshot-name">ONE SHOT</div>
+        <p class="oneshot-desc">6 créatives optimisées conversion (2 vidéos + 4 images), à partir d'une stratégie marketing, reçues en 48 heures maximum sur AdBoard, pour tester la qualité.</p>
+      </div>
+      <div class="oneshot-buy">
+        <div class="oneshot-price"><span id="lp-oneshot-amount">50 000</span> <small>FCFA · une seule fois</small></div>
+        <button type="button" class="lp-cta-btn" onclick="lpOpenCheckout('prd_y6lv33mv','ONE SHOT',50000)">Commander le ONE SHOT →</button>
+      </div>
+    </div>
+    <style>
+    .oneshot-lp{max-width:1100px;margin:22px auto 0;padding:22px 26px;border-radius:18px;background:#0E1016;border:1px dashed rgba(31,182,255,.35);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+    .oneshot-txt{flex:1 1 360px;min-width:0}
+    .oneshot-tag{font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#5A5D65;margin-bottom:6px}
+    .oneshot-name{font-size:22px;font-weight:900;letter-spacing:.5px;color:#1FB6FF;margin-bottom:6px}
+    .oneshot-desc{font-size:13px;line-height:1.55;color:#B8BAC0;margin:0;max-width:560px}
+    .oneshot-buy{display:flex;flex-direction:column;align-items:flex-start;gap:12px;flex:0 0 auto}
+    .oneshot-price{font-size:30px;font-weight:900;color:#fff;line-height:1}
+    .oneshot-price small{font-size:12px;font-weight:600;color:#B8BAC0}
+    @media(max-width:640px){.oneshot-lp{padding:20px 16px}.oneshot-buy{width:100%}.oneshot-buy .lp-cta-btn{width:100%}}
+    </style>
+
   </section>
 </div>
 
