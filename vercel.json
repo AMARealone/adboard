@@ -78,6 +78,10 @@
       "dest": "/presentation.html"
     },
     {
+      "src": "/presentation-test",
+      "dest": "/presentation.html"
+    },
+    {
       "src": "/blog",
       "dest": "/blog/index.html"
     },

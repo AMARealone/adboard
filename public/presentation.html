@@ -441,7 +441,7 @@ var OFFRES={
  "GROWTH":{nom:"GROWTH",prix:"260.000",pts:["48 créatives par mois en tout, vidéos et images","À répartir sur 1 à 8 produits","Chaque lot livré en 24h maximum","5 membres d’équipe dans AdBoard"],garantie:"Garantie Croissance en 60 jours"},
  "SCALE":{nom:"SCALE",prix:"480.000",pts:["96 créatives par mois en tout, vidéos et images","À répartir sur 1 à 16 produits, plusieurs marchés","Chaque lot livré en 24h maximum, file prioritaire","Plus de 10 membres d’équipe dans AdBoard"],garantie:"Garantie Scaling en 60 jours"}
 };
-var O=OFFRES["PERF+"];
+var O=OFFRES[/presentation-test|offre=test/i.test(location.pathname+location.search)?"TEST":"PERF+"];   /* deux liens : /presentation recommande PERF+, /presentation-test recommande TEST */
 /* ───────── PERSONNALISATION (null = présentation pour tout le monde) ───────── */
 var PERSO=null;
 
@@ -848,7 +848,7 @@ add("",split(head('Pour finir','Tout est prêt. <span class="grad">On commence ?
 /* ═════ Annexe · Comparatif ═════ */
 (function(){
  var cols=["TEST","PERF+","GROWTH","SCALE"].map(function(k){var o=OFFRES[k];
-  return '<div class="cc'+(k==="TEST"?' me':'')+'"><div class="nm2">'+o.nom+'</div><div class="pr">'+o.prix+'<small>FCFA / mois</small></div><ul>'+o.pts.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(o.garantie?'<li style="color:#fff;font-weight:700">'+esc(o.garantie)+'</li>':'')+'</ul></div>'}).join('');
+  return '<div class="cc'+(k===O.nom?' me':'')+'"><div class="nm2">'+o.nom+'</div><div class="pr">'+o.prix+'<small>FCFA / mois</small></div><ul>'+o.pts.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(o.garantie?'<li style="color:#fff;font-weight:700">'+esc(o.garantie)+'</li>':'')+'</ul></div>'}).join('');
  add("",head('Les offres','Comparer les <span class="grad">offres.</span>')+'<div class="cmp a" style="--d:2">'+cols+'</div><button class="back" data-back="1">Retour</button>',{annex:true});
 })();
 var stage=document.getElementById('stage'),cur=0,prevIdx=0,main=[];
