@@ -76,7 +76,7 @@ h2{font-size:clamp(24px,3.6vw,34px);line-height:1.2;letter-spacing:-.5px;margin:
 .gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;align-items:center}
 .gal img{width:100%;height:auto;border-radius:14px;border:1px solid var(--line);display:block}
 .gal video{width:100%;height:100%;object-fit:cover;border-radius:14px;border:1px solid var(--line);display:block;background:#0e1118;pointer-events:none}
-.gal .galv{position:relative;aspect-ratio:9/16;grid-row:span 1}
+.gal .galv{position:relative;aspect-ratio:9/16;grid-row:span 1}.as-snd{position:absolute;right:8px;bottom:8px;width:34px;height:34px;border-radius:50%;border:0;padding:0;background:rgba(10,10,14,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5;box-shadow:0 0 0 1px rgba(255,255,255,.2);-webkit-tap-highlight-color:transparent}.as-snd svg{width:18px;height:18px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}.as-snd[aria-pressed=true]{background:#0B5CFF}
 .cta{text-align:center;padding:64px 0 90px}
 .cta h2{margin-bottom:12px}
 .cta p{color:var(--mut);margin:0 0 26px}
@@ -430,7 +430,23 @@ var io='IntersectionObserver' in window?new IntersectionObserver(function(es){es
 document.querySelectorAll('.rv').forEach(function(el){io?io.observe(el):el.classList.add('in')});
 setTimeout(function(){document.querySelectorAll('.rv:not(.in)').forEach(function(el){el.classList.add('in')})},2500);
 var gv=document.querySelectorAll('.galv video');gv.forEach(function(v){v.muted=true;v.setAttribute('muted','');v.disablePictureInPicture=true;});
-if('IntersectionObserver' in window){var iv=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.src)v.src=v.getAttribute('data-src');var p=v.play();if(p&&p.catch)p.catch(function(){})}else v.pause()})},{threshold:.15,rootMargin:'150px'});gv.forEach(function(v){iv.observe(v)})}else{gv.forEach(function(v){v.src=v.getAttribute('data-src');v.play()})}
+var IC_OFF='<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>',IC_ON='<svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>';
+function setSound(v,on){v.muted=!on;v.playbackRate=1;if(v._snd){v._snd.innerHTML=on?IC_ON:IC_OFF;v._snd.setAttribute('aria-pressed',on?'true':'false');v._snd.setAttribute('aria-label',on?'Couper le son':'Activer le son');}}
+gv.forEach(function(v){
+  v.removeAttribute('controls');v.controls=false;v.setAttribute('controlsList','nodownload noremoteplayback nofullscreen');
+  var b=document.createElement('button');b.type='button';b.className='as-snd';b.innerHTML=IC_OFF;
+  b.setAttribute('aria-label','Activer le son');b.setAttribute('aria-pressed','false');
+  b.addEventListener('click',function(e){
+    e.preventDefault();e.stopPropagation();
+    if(v.muted){gv.forEach(function(o){if(o!==v&&!o.muted)setSound(o,false);});setSound(v,true);var p=v.play();if(p&&p.catch)p.catch(function(){});}
+    else setSound(v,false);
+  });
+  v.parentElement.appendChild(b);v._snd=b;
+  v.addEventListener('dblclick',function(e){e.preventDefault();});
+  v.addEventListener('webkitbeginfullscreen',function(){if(v.webkitExitFullscreen)v.webkitExitFullscreen();});
+});
+document.addEventListener('fullscreenchange',function(){var f=document.fullscreenElement;if(f&&f.tagName==='VIDEO'&&document.exitFullscreen)document.exitFullscreen();});
+if('IntersectionObserver' in window){var iv=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.src)v.src=v.getAttribute('data-src');var p=v.play();if(p&&p.catch)p.catch(function(){})}else{v.pause();if(!v.muted)setSound(v,false)}})},{threshold:.15,rootMargin:'150px'});gv.forEach(function(v){iv.observe(v)})}else{gv.forEach(function(v){v.src=v.getAttribute('data-src');v.play()})}
 document.querySelectorAll('[data-cta]').forEach(function(a){a.addEventListener('click',function(){try{if(window.fbq)fbq('trackCustom','EtudeDeCasCTA',{emplacement:a.getAttribute('data-cta')})}catch(x){}})});
 try{if(window.fbq)fbq('track','ViewContent',{content_name:'Etude de cas '+D.marque})}catch(x){}
 })();
