@@ -59,18 +59,24 @@ export function resoudrePays(paysRaw) {
 // ── Closing après appel (J+1 / J+4 / J+11)
 export function closingTemplates(cfg) {
   let t = cfg && cfg.tpl_closing
+  // Ancien format (12 textes : 3 par situation) : on garde la série « réfléchir » (ses 3 premiers textes) ; sa phrase de raison devient [Raison].
+  if (Array.isArray(t) && t.length === 12) {
+    const phrase = D.CLOSING_SITUATIONS[0].phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/'/g, "['’]")
+    t = t.slice(0, 3).map((x, i) => (i === 0 ? String(x || '').replace(new RegExp(phrase), '[Raison]') : x))
+  }
   if (!Array.isArray(t) || t.length !== D.CLOSING_SLOTS.length) t = D.DEFAULT_CLOSING
   // un modèle jamais modifié (= ancien défaut) prend le nouveau défaut (mis en gras)
   return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i]) || (i === 0 && estAncien(t[i], PREV4_CLOSING0))) ? D.DEFAULT_CLOSING[i] : t[i])
 }
-// Situation du prospect (réfléchit, en parle à son équipe, budget, stock) : choisit la série de trois relances ; « réfléchir » par défaut.
+// Situation du prospect (réfléchit, en parle à son équipe, budget, stock) : elle ne change que la phrase [Raison] du J+1 ; « réfléchir » par défaut.
 export const closingSituation = (n) => (D.CLOSING_SITUATIONS.some((s) => s.k === n.closing_situation) ? n.closing_situation : 'reflechir')
-export const closingSlot = (n, i) => D.CLOSING_SITUATIONS.findIndex((s) => s.k === closingSituation(n)) * D.CLOSING_JOURS.length + i
+// Un seul jeu de trois textes (J+1, J+4, J+11) pour toutes les situations
+export const closingSlot = (n, i) => i
 export function closingMessage(p, i, cfg, lienPerso) {
   const n = N(p), tpl = (closingTemplates(cfg)[closingSlot(n, i)] || '').trim(), offre = OFFRES[n.closing_offre]
-  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Problème: (n.closing_mots || '').trim(), Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Objectif: (n.closing_objectif || '').trim(), Lien: offre ? (lienPerso || offre.url) : '', Facture: offre ? offre.facture : '' }
+  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Problème: (n.closing_mots || '').trim(), Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Raison: (D.CLOSING_SITUATIONS.find((x) => x.k === closingSituation(n)) || D.CLOSING_SITUATIONS[0]).phrase, Objectif: (n.closing_objectif || '').trim(), Lien: offre ? (lienPerso || offre.url) : '', Facture: offre ? offre.facture : '' }
   const manque = []
-  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Probl[èe]me|Mots|Objection|Objectif|Lien|Facture)\]/gi, (m, k) => {
+  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Probl[èe]me|Mots|Objection|Raison|Objectif|Lien|Facture)\]/gi, (m, k) => {
     const key = Object.keys(vals).find((x) => x.toLowerCase() === k.toLowerCase().replace('probleme', 'problème').replace('prenom', 'prénom')), v = vals[key]
     if (!v) { const nom = key === 'Lien' || key === 'Facture' ? 'offre' : key; if (!manque.includes(nom)) manque.push(nom) }
     return v

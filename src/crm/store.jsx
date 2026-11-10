@@ -81,7 +81,8 @@ export function CrmProvider({ children }) {
     // — Closing
     infosAppel: (id, v) => mutate(id, { notes: { closing_prenom: v.prenom.trim() || undefined, closing_mots: v.mots.trim() || undefined, closing_objectif: v.objectif.trim() || undefined, closing_situation: v.situation && v.situation !== 'reflechir' ? v.situation : undefined, closing_offre: v.offre || undefined } }),
     closingVersion: (id, jour, v) => mutate(id, { notes: { ['closing_ab' + jour]: v === 'B' ? 'B' : undefined } }),
-    marquer: (id, cle, val) => mutate(id, { notes: { [cle]: val ? true : undefined, [cle + '_at']: val ? now() : undefined } }),
+    // Cocher garde la date du PREMIER envoi (jamais écrasée) ; décocher l'efface (les écrans demandent d'abord une confirmation).
+    marquer: (id, cle, val) => { const p = ref.current.find((x) => x.id === id), n = N(p); return mutate(id, { notes: { [cle]: val ? true : undefined, [cle + '_at']: val ? (n[cle + '_at'] || now()) : undefined } }) },
     // — Écrit
     passerEcrit: (id) => mutate(id, { notes: { ecrit_etat: 'actif', ecrit_at: now() } }),
     ecritCas: (id, cas) => mutate(id, { notes: { ecrit_cas: cas } }),

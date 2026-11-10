@@ -25,7 +25,7 @@ export function InfosAppel({ p, onClose }) {
         <label>Prénom<input value={v.prenom} onChange={set('prenom')} /></label>
         <label>Son problème (groupe nominal, suit « l'enjeu, c'est… »)<textarea value={v.mots} onChange={set('mots')} placeholder="plus de créatives, sans y passer votre temps" /></label>
         <label>Son objectif (verbe à l'infinitif, suit « pour… »)<input value={v.objectif} onChange={set('objectif')} placeholder="atteindre 1 000 000 FCFA par semaine" /></label>
-        <div className="cx-grp">Où il en est (choisit les relances)<div className="cx-offres">{CLOSING_SITUATIONS.map((s) => <button type="button" key={s.k} className={'cx-opt' + (v.situation === s.k ? ' on' : '')} onClick={() => setV({ ...v, situation: s.k })}>{s.label}</button>)}</div></div>
+        <div className="cx-grp">Où il en est (change la phrase du message J+1)<div className="cx-offres">{CLOSING_SITUATIONS.map((s) => <button type="button" key={s.k} className={'cx-opt' + (v.situation === s.k ? ' on' : '')} onClick={() => setV({ ...v, situation: s.k })}>{s.label}</button>)}</div></div>
         <div className="cx-grp">Offre discutée<OffrePick value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></div>
       </div>
       <div className="cx-act"><button className="cx-btn" onClick={onClose}>Annuler</button><button className="cx-btn primary" onClick={async () => { if (await A.infosAppel(p.id, v)) { toast('Infos enregistrées'); onClose() } }}>Enregistrer</button></div>

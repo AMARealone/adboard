@@ -7,7 +7,7 @@ import { BoutonMajAds, BoutonMajAdsProspect, texteAds } from './MajAds'
 import { ecritMessage, lienOffreSuivi, pitchVariante } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { useFiltre } from '../filtre'
-import { Chip, Empty, Stat, toast } from '../ui'
+import { Chip, Empty, Stat, toast, confirmDlg } from '../ui'
 import { Marque, Meta, EcritInfos, BtnNotes, BtnSupprimer, BtnCopierInfos, CaseEnvoye } from './common'
 
 export function EcritCard({ p }) {
@@ -41,7 +41,7 @@ export function EcritCard({ p }) {
           const cle = e.key, label = e.label
           const skip = cle === 'b1' && ecritB1Saute(n), sent = ecritEnvoye(n, cle), due = !sent && !skip && prochaine === cle
           return <div key={cle} className={'cx-step' + (sent || skip ? ' done' : due ? ' due' : '')}><b>{String(label).split('·')[0]}</b>
-            {skip ? <span>sauté</span> : sent && <button className="cx-lnk" title="Cliquer pour décocher « envoyé »" onClick={() => A.marquer(p.id, 'ecrit_sent_' + cle, false)}>✓ {quand(n['ecrit_sent_' + cle + '_at'] || n.ecrit_sent_b3_at)}</button>}<button className={'cx-btn sm' + (due ? ' primary' : sent || skip ? ' ghost' : '')} onClick={() => envoyer(cle)}>{sent ? 'Renvoyer' : 'Envoyer'}</button>{!skip && !sent && <CaseEnvoye onCheck={() => A.marquer(p.id, 'ecrit_sent_' + cle, true)} />}</div>
+            {skip ? <span>sauté</span> : sent && <button className="cx-lnk" title="Envoyé. Cliquer pour annuler l'envoi enregistré (confirmation demandée) ; « Renvoyer » rouvre le message sans rien changer" onClick={async () => { if (await confirmDlg('Annuler l\'envoi enregistré de « ' + String(label).split('·')[0].trim() + ' » ?\nSa date sera effacée.', 'Annuler l\'envoi')) A.marquer(p.id, 'ecrit_sent_' + cle, false) }}>✓ {quand(n['ecrit_sent_' + cle + '_at'] || n.ecrit_sent_b3_at)}</button>}<button className={'cx-btn sm' + (due ? ' primary' : sent || skip ? ' ghost' : '')} onClick={() => envoyer(cle)}>{sent ? 'Renvoyer' : 'Envoyer'}</button>{!skip && !sent && <CaseEnvoye onCheck={() => A.marquer(p.id, 'ecrit_sent_' + cle, true)} />}</div>
         })}</div>
       </div>
       <div className="cx-acts">

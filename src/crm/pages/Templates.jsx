@@ -27,7 +27,7 @@ function Editeur({ titre, aide, valeur, defaut, onSave, rows = 9, ouvertDefaut =
   )
 }
 const VARS_RELANCE = 'Variables : [Marque] [Produit] [Pays]. Le site d\'Adstack dans le message est remplacé par un lien suivi et raccourci. Sans lien dans le message, rien n\'est ajouté.'
-const VARS_CLOSING = 'Variables : [Prénom] [Marque] [Objectif] [Problème] et [Lien] (page de l\'offre discutée, raccourcie et suivie à l\'envoi). J+4 se compte 3 jours après l\'envoi du J+1, J+11 sept jours après l\'envoi du J+4.'
+const VARS_CLOSING = 'Variables : [Prénom] [Marque] [Objectif] [Problème] [Raison] et [Lien] (page de l\'offre discutée, raccourcie et suivie à l\'envoi). [Raison] = phrase automatique selon la situation choisie dans « Infos de l\'appel » (réfléchir, équipe, budget, stock) : elle ne sert que dans le J+1. J+4 se compte 3 jours après l\'envoi du J+1, J+11 sept jours après l\'envoi du J+4.'
 const VARS_ECRIT = 'Variables : [marque] [produit] [pays] [remarque] [facture] [delai] [n] et [lien] (page de l\'offre, suivie à l\'envoi pour « Bloc 4 » et « suite »).'
 
 const SIT_COURT = { reflechir: 'Il réfléchit', equipe: 'Équipe / associés', budget: 'Budget pas complet', stock: 'Attend du stock' }
@@ -49,11 +49,11 @@ export default function Templates() {
     <div className="cx-tools">
       <div className="cx-bar2"><Seg value={onglet} onChange={setOnglet} options={ongs.map(([k, l, c]) => [k, l, c])} />
         {onglet !== 'pitch' && <input className="cx-search" style={{ flex: 1, minWidth: 160, maxWidth: 320 }} type="search" placeholder="Chercher dans les messages…" value={q} onChange={(e) => setQ(e.target.value)} />}</div>
-      {onglet === 'closing' && !rech && <Pills value={sit} onChange={setSit} options={D.CLOSING_SITUATIONS.map((x) => [x.k, SIT_COURT[x.k] || x.label])} />}
       {onglet === 'ecrit' && !rech && <Pills value={bloc} onChange={setBloc} options={BLOCS_ECRIT.map(([k, l]) => [k, l, Object.keys(D.DEFAULT_ECRIT).filter((x) => blocDe(x) === k).length])} />}
     </div>
     {onglet === 'relances' && D.RELANCE_LABELS.map((l, i) => vu(l, relances[i]) && <Editeur key={i} titre={'J+' + D.RELANCE_JOURS[i] + ' · ' + l} aide={VARS_RELANCE + (i === 0 ? ' Peut contenir [ads] [jours] [bonne_nouvelle] [mauvaise_nouvelle] [mauvaise_nouvelle_en_2_mots] [solution] (audit des ads).' : i === 1 ? ' Peut contenir [cas_histoire] [cas_solution] [cas_resultat] [cas_slug] (étude de cas choisie d\'après le cas du J+3).' : '')} valeur={relances[i] || ''} defaut={D.DEFAULT_RELANCES[i]} onSave={(v) => { const t = [...relances]; t[i] = v; return sauve({ tpl_relances: t }) }} />)}
-    {onglet === 'closing' && D.CLOSING_SLOTS.map((x, i) => (rech ? vu(x.label, closing[i]) : x.v === sit) && <Editeur key={i} titre={rech ? x.label : 'J+' + x.j} aide={VARS_CLOSING} valeur={closing[i] || ''} defaut={D.DEFAULT_CLOSING[i]} ouvertDefaut={!rech && x.j === 1} onSave={(v) => { const t = [...closing]; t[i] = v; return sauve({ tpl_closing: t }) }} />)}
+    {onglet === 'closing' && D.CLOSING_SLOTS.map((x, i) => vu(x.label, closing[i]) && <Editeur key={i} titre={x.label} aide={VARS_CLOSING} valeur={closing[i] || ''} defaut={D.DEFAULT_CLOSING[i]} ouvertDefaut={!rech && x.j === 1} onSave={(v) => { const t = [...closing]; t[i] = v; return sauve({ tpl_closing: t }) }} />)}
+    {onglet === 'closing' && !rech && <p className="cx-help" style={{ marginTop: 10 }}>Phrase [Raison] du J+1 selon la situation : {D.CLOSING_SITUATIONS.map((x) => '« ' + x.phrase + ' » (' + (SIT_COURT[x.k] || x.label).toLowerCase() + ')').join(' · ')}</p>}
     {onglet === 'ecrit' && Object.keys(D.DEFAULT_ECRIT).map((k) => (rech ? vu(D.ECRIT_TPL_LABELS[k] || k, ecrit[k]) : blocDe(k) === bloc) && <Editeur key={k} titre={D.ECRIT_TPL_LABELS[k] || k} aide={VARS_ECRIT} rows={k.startsWith('b1') || k.startsWith('b2') || k === 'suite' ? 11 : 8} valeur={ecrit[k]} defaut={D.DEFAULT_ECRIT[k]} onSave={(v) => sauve({ tpl_ecrit3: { ...(cfg.tpl_ecrit3 || {}), [k]: v } })} />)}
     {onglet === 'intros' && <>
       {intros.map((t, i) => vu(t) && <Editeur key={i} titre={'Accroche ' + (i + 1)} valeur={t} defaut={D.DEFAULT_INTROS[i] || ''} rows={5} onSave={(v) => { const n = [...intros]; n[i] = v; return sauve({ tpl_intros: n }) }} />)}

@@ -6,7 +6,7 @@ import { CLOSING_JOURS, CLOSING_LABELS } from '../domain/defaults'
 import { closingMessage, lienOffreSuivi } from '../domain/messages'
 import { OFFRES } from '../domain/offres'
 import { useFiltre } from '../filtre'
-import { Chip, Empty, Pills, Stat, toast } from '../ui'
+import { Chip, Empty, Pills, Stat, toast, confirmDlg } from '../ui'
 import { usePref } from '../prefs'
 import { Marque, Meta, InfosAppel, BtnNotes, BtnSupprimer, BtnCopierInfos, CaseEnvoye } from './common'
 
@@ -36,7 +36,8 @@ export function ClosingCard({ p }) {
           const sent = closingEnvoye(n, j), due = !sent && pj === j && !!ech && ech.reste <= 0
           return <div key={j} className={'cx-step' + (sent ? ' done' : due ? ' due' : '')}>
             <b>J+{j}</b><span>{CLOSING_LABELS[i]}</span>
-            {sent ? <button className="cx-lnk" onClick={() => A.marquer(p.id, 'closing_sent_j' + j, false)}>✓ {quand(n['closing_sent_j' + j + '_at'])}</button>
+            {sent ? <><button className="cx-btn sm ghost" title="Déjà envoyé : rouvre le message pour tester. L'envoi enregistré et sa date ne changent pas." onClick={() => envoyer(i)}>✓ {quand(n['closing_sent_j' + j + '_at'])}</button>
+                <button className="cx-lnk" title="Annuler l'envoi enregistré" onClick={async () => { if (await confirmDlg('Annuler l\'envoi enregistré de J+' + j + ' ?\nSa date sera effacée et les relances suivantes se recalculeront.', 'Annuler l\'envoi')) A.marquer(p.id, 'closing_sent_j' + j, false) }}>↺</button></>
               : <><button className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>
                 <CaseEnvoye onCheck={() => A.marquer(p.id, 'closing_sent_j' + j, true)} />
                 {!due && pj === j && ech && ech.reste > 0 && <span className="cx-dim">dans {ech.reste} j</span>}</>}

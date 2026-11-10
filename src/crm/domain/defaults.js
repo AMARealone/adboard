@@ -32,43 +32,26 @@ export const CLOSING_DELAIS = [1, 3, 7];
 
 export const CLOSING_LABELS = ['Relance 1', 'Relance 2', 'Relance 3'];
 
-// Situation du prospect après l'appel (ce qui l'empêche de payer tout de suite) : chaque situation a ses trois relances.
+// Situation du prospect après l'appel (ce qui l'empêche de payer tout de suite).
+// Elle ne change QUE la phrase [Raison] du message J+1 ; le J+4 et le J+11 sont identiques pour toutes les situations.
 export const CLOSING_SITUATIONS = [
-  { k: 'reflechir', label: "Il veut y réfléchir" },
-  { k: 'equipe', label: "Il en parle à son équipe ou ses associés" },
-  { k: 'budget', label: "Son budget n'est pas complet" },
-  { k: 'stock', label: "Il attend d'avoir du stock" }
+  { k: 'reflechir', label: "Il veut y réfléchir", phrase: "Prenez le temps qu'il vous faut pour y réfléchir." },
+  { k: 'equipe', label: "Il en parle à son équipe ou ses associés", phrase: "Prenez le temps d'en parler à votre équipe." },
+  { k: 'budget', label: "Son budget n'est pas complet", phrase: "Prenez le temps de compléter votre budget." },
+  { k: 'stock', label: "Il attend d'avoir du stock", phrase: "Prenez le temps de recevoir votre stock." }
 ];
 
-// Ordre : situation par situation, avec J+1, J+4, J+11 pour chacune.
+// Trois textes seulement : J+1, J+4, J+11 (les mêmes pour toutes les situations).
 export const CLOSING_SLOTS = [
-  { j: 1, v: 'reflechir', label: "Il veut y réfléchir · J+1" },
-  { j: 4, v: 'reflechir', label: "Il veut y réfléchir · J+4" },
-  { j: 11, v: 'reflechir', label: "Il veut y réfléchir · J+11" },
-  { j: 1, v: 'equipe', label: "Il en parle à son équipe ou ses associés · J+1" },
-  { j: 4, v: 'equipe', label: "Il en parle à son équipe ou ses associés · J+4" },
-  { j: 11, v: 'equipe', label: "Il en parle à son équipe ou ses associés · J+11" },
-  { j: 1, v: 'budget', label: "Son budget n'est pas complet · J+1" },
-  { j: 4, v: 'budget', label: "Son budget n'est pas complet · J+4" },
-  { j: 11, v: 'budget', label: "Son budget n'est pas complet · J+11" },
-  { j: 1, v: 'stock', label: "Il attend d'avoir du stock · J+1" },
-  { j: 4, v: 'stock', label: "Il attend d'avoir du stock · J+4" },
-  { j: 11, v: 'stock', label: "Il attend d'avoir du stock · J+11" }
+  { j: 1, label: "J+1 · seule la phrase [Raison] change selon la situation" },
+  { j: 4, label: "J+4 · identique pour toutes les situations" },
+  { j: 11, label: "J+11 · identique pour toutes les situations" }
 ];
 
 export const DEFAULT_CLOSING = [
-  "Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. En tout cas, ce que vous m'avez confirmé sur *[Marque]* était vraiment pertinent : pour [Objectif], l'enjeu, c'est [Problème].\n\nEt c'est pour ce genre de défi que l'équipe d'*AdStack* est construite.\n\nPrenez le temps qu'il vous faut pour y réfléchir. Au moment où vous voudrez passer à l'action, voici la page pour démarrer : [Lien]",
+  "Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. En tout cas, ce que vous m'avez confirmé sur *[Marque]* était vraiment pertinent : pour [Objectif], l'enjeu, c'est [Problème].\n\nEt c'est pour ce genre de défi que l'équipe d'*AdStack* est construite.\n\n[Raison] Au moment où vous voudrez passer à l'action, voici la page pour démarrer : [Lien]",
   "Bonjour [Prénom] 🙂\n\nJe pensais à *[Marque]*. Imaginez dans deux semaines : vos premières créatives sont en ligne, vous savez enfin lesquelles marchent, et [Objectif] n'est plus une idée, c'est un chiffre qui bouge.\n\nChaque jour compte : plus tôt vous démarrez, plus tôt vous savez ce qui marche pour vendre.\n\nLe premier pas pour [Objectif], c'est ici : [Lien]",
-  "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nSi vous décidez de démarrer pour [Objectif], voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot.\n\nLe lien : [Lien]\n\nJe ne vous relance plus. Écrivez-moi *« go »* quand vous êtes prêt(e), et on démarre ensemble.",
-  "Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. Vous deviez en parler à votre équipe avant de décider : c'est normal, [Objectif] est une vraie décision pour *[Marque]*.\n\nSi vos associés ont des questions, je peux leur répondre directement, ici ou en appel avec eux.\n\nQuand c'est validé, le paiement se fait ici : [Lien]\n\nEst-ce qu'ils ont déjà pu en parler ?",
-  "Bonjour [Prénom] 🙂\n\nJe pensais à *[Marque]*. Imaginez dans deux semaines : vos premières créatives sont en ligne, vous savez enfin lesquelles marchent, et [Objectif] n'est plus une idée, c'est un chiffre qui bouge.\n\nChaque jour compte : plus tôt votre équipe valide, plus tôt vous savez ce qui marche pour vendre. Dès que c'est validé, vous payez et on démarre ensemble.\n\nLe premier pas pour [Objectif], c'est ici : [Lien]",
-  "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nQuand votre équipe aura validé, voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot pour [Objectif].\n\nLe lien : [Lien]\n\nJe ne vous relance plus. Si vos associés ont des questions, écrivez-moi, je leur réponds directement.",
-  "Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. Vous m'avez dit que votre budget n'était pas encore complet : c'est tout à fait normal, ce n'est pas une décision qu'on prend à la légère.\n\nJe ne vous mets aucune pression. Je voulais juste que vous ayez le lien sous la main pour quand ce sera prêt : [Lien]\n\nVous pensez l'avoir d'ici combien de temps, à peu près ?",
-  "Bonjour [Prénom] 🙂\n\nJe pensais à *[Marque]*. Quand votre budget sera prêt, voici ce qui vous attend : vos premières créatives en ligne, vous savez enfin lesquelles marchent, et [Objectif] n'est plus une idée, c'est un chiffre qui bouge.\n\nVos créatives sont disponibles dès le paiement : vous payez le jour où vous êtes prêt(e), et vous pouvez faire votre première demande le jour même.\n\nLe lien : [Lien]",
-  "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nQuand votre budget sera prêt, voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot pour [Objectif].\n\nLe lien reste actif : [Lien]\n\nJe ne vous relance plus. Écrivez-moi *« go »* à ce moment-là, et on démarre ensemble.",
-  "Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. Vous m'avez dit que vous deviez d'abord avoir du stock : c'est logique, inutile de lancer des pubs sans produit à livrer.\n\nJe ne vous mets aucune pression. Dès que votre stock est là, le paiement se fait ici : [Lien]\n\nVous attendez votre réapprovisionnement pour quand, à peu près ?",
-  "Bonjour [Prénom] 🙂\n\nJe pensais à *[Marque]*. Le jour où votre stock est de retour, vous voulez que vos pubs soient prêtes à vendre dès le premier jour. Autant démarrer la production quelques jours avant l'arrivée du stock : vos créatives sont alors prêtes à sa réception, pour [Objectif].\n\nVous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot.\n\nLe lien : [Lien]",
-  "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nDès que votre stock est de retour, voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot pour [Objectif].\n\nLe lien : [Lien]\n\nJe ne vous relance plus. Écrivez-moi *« go »* quand vous êtes prêt(e), et on démarre ensemble."
+  "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nSi vous décidez de démarrer pour [Objectif], voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot.\n\nLe lien : [Lien]\n\nJe ne vous relance plus. Écrivez-moi *« go »* quand vous êtes prêt(e), et on démarre ensemble."
 ];
 
 export const CLOSING_OBJECTIONS = ['le prix', 'la peur que ça ne donne pas de résultats', 'le besoin d\'en parler à votre associé(e)', 'le besoin de réfléchir', 'la crainte de perdre du temps', 'le fait d\'avoir déjà essayé autre chose'];

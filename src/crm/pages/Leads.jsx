@@ -27,7 +27,7 @@ export function LeadCard({ p }) {
       if (tab && num) tab.location.href = 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg)
       else if (!(await A.ouvrirCanal(p, msg))) { if (tab) tab.close(); return }
       // On n'auto-confirme PAS l'envoi : c'est toi qui coches « déjà envoyé ». On garde seulement la variante utilisée.
-      if (i === 0 && g.trace) await mutate(p.id, { notes: { j3_variante: g.trace, j3_cas: g.v && Number.isInteger(g.v.cas) ? g.v.cas : undefined } }) // le J+10 reprend ce cas
+      if (i === 0 && g.trace && !relanceEnvoyee(n, RELANCES[0])) await mutate(p.id, { notes: { j3_variante: g.trace, j3_cas: g.v && Number.isInteger(g.v.cas) ? g.v.cas : undefined } }) // le J+10 reprend ce cas
     } finally { setBusy(false) }
   }
   const retard = pj !== null && er.retard > 0, aujourdhui = pj !== null && er.reste === 0
@@ -40,7 +40,8 @@ export function LeadCard({ p }) {
         <div className="cx-steps">{RELANCES.map((d, i) => {
           const sent = relanceEnvoyee(n, d), due = !sent && pj === d && er.reste <= 0
           return <div key={d} className={'cx-step' + (sent ? ' done' : due ? ' due' : '')}><b>J+{d}</b><span>{RELANCE_LABELS[i]}</span>
-            {sent ? <button className="cx-lnk" onClick={() => mutate(p.id, { notes: { ['sent_j' + d]: undefined, ['j' + d + '_envoye']: undefined, ['j' + d + '_envoye_at']: undefined } })}>✓ {quand(n['j' + d + '_envoye_at']) || 'fait'}</button> : <button disabled={busy} className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>}
+            {sent ? <><button disabled={busy} className="cx-btn sm ghost" title="Déjà envoyé : rouvre le message pour tester. L'envoi enregistré et sa date ne changent pas." onClick={() => envoyer(i)}>✓ {quand(n['j' + d + '_envoye_at']) || 'fait'}</button>
+              <button className="cx-lnk" title="Annuler l'envoi enregistré" onClick={async () => { if (await confirmDlg('Annuler l\'envoi enregistré de J+' + d + ' ?\nSa date sera effacée et les relances suivantes se recalculeront.', 'Annuler l\'envoi')) mutate(p.id, { notes: { ['sent_j' + d]: undefined, ['j' + d + '_envoye']: undefined, ['j' + d + '_envoye_at']: undefined } }) }}>↺</button></> : <button disabled={busy} className={'cx-btn sm' + (due ? ' primary' : '')} onClick={() => envoyer(i)}>Envoyer</button>}
             {!sent && <CaseEnvoye disabled={busy} onCheck={() => mutate(p.id, { notes: { ['j' + d + '_envoye']: true, ['j' + d + '_envoye_at']: new Date().toISOString() } })} />}</div>
         })}</div>
       </div>
