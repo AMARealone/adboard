@@ -870,7 +870,7 @@ const EMPTY_PRODUCT = {
   couleur1:'', couleur2:'', couleur3:'', photo:null, logo:null, marque:'', deliveries:[], marche:null,
   documents:[], documents_modifies:false,
   galerie_images:[], galerie_aspects:{}, avis_captures:[], avis_textes:[],
-  garantie:'', livraison_paiement:'', prix_par_pays:{},
+  garantie:'', livraison_paiement:'', prix_par_pays:{}, langue_locale:false,
 };
 
 // Field extrait hors du composant Produits pour éviter la perte de focus (re-mount à chaque keystroke)
@@ -974,6 +974,27 @@ const MARCHES_INFOS = {
 const MARCHES_ALIAS = { 'senegal':'senegal','sn':'senegal','cote divoire':'cote d ivoire','ci':'cote d ivoire','ivory coast':'cote d ivoire','cotedivoire':'cote d ivoire','burkina':'burkina faso','bf':'burkina faso','guinee conakry':'guinee','guinea':'guinee','congo brazzaville':'congo','republique du congo':'congo','congo kinshasa':'rdc','republique democratique du congo':'rdc','drc':'rdc','cameroon':'cameroun','mauritania':'mauritanie','morocco':'maroc','algeria':'algerie','tunisia':'tunisie','tanzania':'tanzanie','uganda':'ouganda','zambia':'zambie','south africa':'afrique du sud','togo':'togo','benin':'benin','mali':'mali','niger':'niger','ml':'mali','tg':'togo','bj':'benin','ng':'nigeria','gh':'ghana','ke':'kenya','cm':'cameroun','ga':'gabon','ma':'maroc','dz':'algerie','tn':'tunisie','mg':'madagascar','fr':'france','be':'belgique' };
 const _cleMarche = (s) => { const k = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); return MARCHES_INFOS[k] ? k : (MARCHES_ALIAS[k] || k); };
 const infoMarche = (nom) => MARCHES_INFOS[_cleMarche(nom)] || null;
+
+// ── Langue locale (voix des vidéos) ─────────────────────────────────────────────────────
+// Option FACULTATIVE : le client peut demander que la voix de ses vidéos soit dite dans la langue locale la plus
+// parlée de son marché (UNE seule langue par marché). Sans cette demande, la voix reste dans la langue du marché
+// (MARCHES_INFOS[..].l) ; les sous-titres restent TOUJOURS dans la langue du marché.
+// c = code ISO 639 (2 lettres si elles existent, sinon 3) · n = nom en français. Un marché absent = pas d'option
+// (Cameroun : aucune langue dominante ; France, Belgique et Madagascar : la langue locale est déjà la langue du marché).
+// NB : cette table existe aussi côté serveur — toute modification se fait aux deux endroits.
+const MARCHES_LANGUE_LOCALE = {
+  'senegal':{c:'wo',n:'wolof'}, 'mali':{c:'bm',n:'bambara'}, 'cote d ivoire':{c:'dyu',n:'dioula'}, 'burkina faso':{c:'mos',n:'mooré'},
+  'benin':{c:'fon',n:'fon'}, 'togo':{c:'ee',n:'éwé'}, 'niger':{c:'ha',n:'haoussa'}, 'guinee':{c:'ff',n:'pular'},
+  'gabon':{c:'fan',n:'fang'}, 'congo':{c:'ln',n:'lingala'}, 'tchad':{c:'shu',n:'arabe tchadien'}, 'rdc':{c:'ln',n:'lingala'},
+  'burundi':{c:'rn',n:'kirundi'}, 'rwanda':{c:'rw',n:'kinyarwanda'}, 'nigeria':{c:'ha',n:'haoussa'}, 'ghana':{c:'ak',n:'akan (twi)'},
+  'kenya':{c:'sw',n:'swahili'}, 'tanzanie':{c:'sw',n:'swahili'}, 'ouganda':{c:'lg',n:'luganda'}, 'zambie':{c:'bem',n:'bemba'},
+  'afrique du sud':{c:'zu',n:'zoulou'}, 'maroc':{c:'ary',n:'darija marocaine'}, 'algerie':{c:'arq',n:'darija algérienne'},
+  'tunisie':{c:'aeb',n:'arabe tunisien'}, 'mauritanie':{c:'mey',n:'hassanya'},
+};
+const langueLocaleMarche = (nom) => MARCHES_LANGUE_LOCALE[_cleMarche(nom)] || null;
+// L'option n'existe que pour un produit à UN SEUL marché (plusieurs marchés = plusieurs langues : voix dans la langue du marché).
+const langueLocaleDuProduit = (product) => { const m = parseMarches(product && product.pays); return m.length === 1 ? langueLocaleMarche(m[0]) : null; };
+const langueLocaleActive = (product) => !!(product && product.langue_locale && langueLocaleDuProduit(product));
 // Classe de compatibilité : deux marchés de même classe peuvent partager une demande.
 const classeMarche = (nom) => { const i = infoMarche(nom); if (!i) return 'inconnu'; return i.mixte ? 'mixte:' + _cleMarche(nom) : i.l + '|' + i.a; };
 // Raison (en français, pour le client) pour laquelle `nom` ne peut pas être produit avec `ref`.
@@ -1085,6 +1106,22 @@ const MarchesField = ({ form, setForm, errors, C }) => {
           )}
         </div>
       )}
+      {(() => {
+        const lg = marchesActifs.length === 1 ? langueLocaleMarche(marchesActifs[0]) : null;
+        if (!lg) return null;
+        const info = infoMarche(marchesActifs[0]);
+        const officielle = (info && MARCHES_LANGUES[info.l]) || 'la langue du marché';
+        return (
+          <label style={{marginTop:12,display:'flex',gap:10,alignItems:'flex-start',padding:'10px 12px',borderRadius:9,background:'rgba(255,255,255,0.035)',border:`1px solid ${form.langue_locale ? C.accent : C.border}`,cursor:'pointer'}}>
+            <input type="checkbox" checked={!!form.langue_locale} onChange={e => setForm(f => ({ ...f, langue_locale: e.target.checked }))}
+              style={{marginTop:2,accentColor:C.accent,flexShrink:0,cursor:'pointer'}}/>
+            <span>
+              <span style={{display:'block',fontSize:12,color:C.text,fontWeight:600}}>Voix en {lg.n} dans mes vidéos</span>
+              <span style={{display:'block',fontSize:10.5,color:C.muted,lineHeight:1.4,marginTop:2}}>Facultatif. Activée, la voix de vos vidéos est dite en {lg.n}, la langue locale la plus parlée de ce marché ; les sous-titres restent en {officielle}. Désactivée, la voix est en {officielle}.</span>
+            </span>
+          </label>
+        );
+      })()}
     </div>
   );
 };
@@ -1166,6 +1203,7 @@ const depuisLigneProduit = (p) => {
     garantie: perso.garantie || '',
     livraison_paiement: perso.livraison_paiement || '',
     prix_par_pays: (perso.prix_par_pays && typeof perso.prix_par_pays === 'object') ? perso.prix_par_pays : {},
+    langue_locale: !!perso.langue_locale,
     cible_auto: !!perso.cible_auto,
     marque: perso.marque || '',
   };
@@ -1263,11 +1301,12 @@ const sbProducts = {
           galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [],
           garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '',
           prix_par_pays: prixParPaysNettoye(product),
+          langue_locale: langueLocaleActive(product),
           cible_auto: !!(product.cible && product.cible_auto),
           marque: (product.marque || '').trim(),
         },
       },
-      locaux: { marque: (product.marque || '').trim(), logo: logoUrl, notes: product.notes || '', galerie_images: galerie, galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '', prix_par_pays: prixParPaysNettoye(product) },
+      locaux: { marque: (product.marque || '').trim(), logo: logoUrl, notes: product.notes || '', galerie_images: galerie, galerie_aspects: aspects, avis_captures: avis, avis_textes: product.avis_textes || [], garantie: product.garantie || '', livraison_paiement: product.livraison_paiement || '', prix_par_pays: prixParPaysNettoye(product), langue_locale: langueLocaleActive(product) },
     };
   },
   // Écrit en base. Si une colonne récente n'existe pas encore (migration SQL non faite), retente sans elle plutôt que
@@ -2747,7 +2786,7 @@ const ProductCard = ({p, briefs, subscription, allBriefs, creditsDataReady, user
 // ═══════════════════════════════════════════════════════════════════════════
 const BROUILLON_PREFIX = 'adstack_brouillon_produit_';
 const cleBrouillon = (userId, produitId) => `${BROUILLON_PREFIX}${userId || 'anon'}_${produitId || 'new'}`;
-const CHAMPS_FICHE = ['marque','nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','galerie_aspects','avis_captures','avis_textes','prix_par_pays','documents'];
+const CHAMPS_FICHE = ['marque','nom','pricing','promo','lien','utilite','cible','pays','notes','couleur1','couleur2','couleur3','photo','logo','garantie','livraison_paiement','galerie_images','galerie_aspects','avis_captures','avis_textes','prix_par_pays','langue_locale','documents'];
 // Empreinte du contenu utile de la fiche : sert à savoir si le client a vraiment saisi / modifié quelque chose
 // (pas de brouillon enregistré pour une page ouverte puis refermée sans toucher à rien).
 const signatureFiche = (f) => {
@@ -6919,6 +6958,8 @@ export default function Platform() {
         marches: marchesChoisis?.length ? marchesChoisis : parseMarches(product.pays),
         // Prix propres à certains pays (facultatif) : vide = même prix partout.
         prix_par_pays: prixParPaysNettoye(product),
+        // Voix en langue locale (option du client, un seul marché) : le serveur re-vérifie et résout la langue.
+        langue_locale: langueLocaleActive({ ...product, pays: (marchesChoisis?.length ? marchesChoisis.join(', ') : product.pays) }),
         documents: (product.documents || []).map(d => ({ name: d.name, url: d.url })),
         // Offre saisie dans le pop-up pour CETTE demande seulement (la fiche produit n'est pas modifiée).
         promo: offreDuMoment || product.promo || '', promo_ponctuelle: !!offreDuMoment, cible: product.cible || '', utilite: product.utilite || '',
