@@ -211,3 +211,11 @@ export const DEFAULT_RELANCES = [
 
 
 export const DEFAULT_PITCH = "Je posais la question car notre *AGENCE*\n\naide des *Marques E-commerce* à accroître leurs *revenus* 📈 grâce à un système complet de *publicités pensées pour vendre* :\n\nNous analysons votre marché, concevons vos publicités *(vidéos et images)* et améliorons les prochaines à partir de ce qui a le mieux performé pour vous.\n\nÊtes-vous ouvert à un *Google Meet* pour identifier ensemble comment améliorer vos performances publicitaires afin de soutenir une croissance continue pour *[Marque]* ?\n\nEt si vous voulez voir nos *réalisations et offres* en premier, voici notre site web : adstackofficial.com\n\nPassez une excellente semaine !";
+
+// Parcours acheteur : messages de départ (modifiables dans Templates › Acheteurs), un par étape de PARCOURS (domain/acheteurs.js).
+export const DEFAULT_ACHETEUR = [
+  "Bonjour [Prénom] 😊\n\nMerci pour votre confiance ! Votre abonnement *[Offre]* est bien enregistré.\n\nPour que l'équipe démarre vite, il reste une étape : ajouter les infos de *[Marque]* et de votre produit dans AdBoard. Dès que c'est fait, vos premières créatives arrivent sous [Délai].\n\nSi vous bloquez quelque part, répondez-moi ici, je vous aide tout de suite.",
+  "Bonjour [Prénom] 😊\n\nQuelques jours après le démarrage : avez-vous bien reçu vos premières créatives pour *[Marque]* ? Et les avez-vous déjà lancées en publicité ?\n\nSi vous voulez, je regarde avec vous comment les tester pour apprendre vite ce qui marche.",
+  "Bonjour [Prénom],\n\nÇa fait deux semaines que vos créatives tournent. Comment ça se passe côté résultats pour *[Marque]* ? Les ventes, le coût par achat, ce qui vous a surpris ?\n\nVotre retour nous sert à ajuster les prochains angles. Et si vous êtes satisfait(e), un petit avis de votre part nous aiderait beaucoup 🙏",
+  "Bonjour [Prénom] 😊\n\nVotre abonnement *[Offre]* approche de son renouvellement. Si les résultats sont là, la suite logique pour *[Marque]* est de produire plus et de tester plus d'angles à la fois : c'est le rôle de l'offre *[Offre_suivante]* ([Volume_suivant] créatives par mois, livrées en [Délai_suivant]).\n\nSi ça vous intéresse, voici la page : [Lien]"
+];

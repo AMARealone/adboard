@@ -9,6 +9,8 @@ import Aujourdhui from './pages/Aujourdhui'
 import Appels from './pages/Appels'
 import Closing from './pages/Closing'
 import Ecrit from './pages/Ecrit'
+import Acheteurs from './pages/Acheteurs'
+import { estAcheteur } from './domain/acheteurs'
 import Leads from './pages/Leads'
 import Prospects from './pages/Prospects'
 import Dashboard from './pages/Dashboard'
@@ -36,7 +38,7 @@ function Shell({ user, onLogout }) {
   useEffect(() => setMenu(false), [loc.pathname])
   const nContacter = prospects.filter((p) => p.statut === 'a_contacter').length
   const NAV = [
-    { to: '/', label: 'Aujourd\'hui', ic: 'today', n: t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length, end: true },
+    { to: '/', label: 'Aujourd\'hui', ic: 'today', n: t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length + t.acheteurs.length, end: true },
     { g: 'Vendre' },
     { to: '/a-contacter', label: 'Contacter', ic: 'send', n: nContacter },
     { to: '/suivi', label: 'Suivi', ic: 'eye', n: prospects.filter((p) => p.statut === 'en_suivi').length },
@@ -44,6 +46,7 @@ function Shell({ user, onLogout }) {
     { to: '/appels', label: 'Appels', ic: 'phone', n: prospects.filter(appelAffiche).length },
     { to: '/closing', label: 'Closing', ic: 'check', n: prospects.filter(closingDansListe).length },
     { to: '/ecrit', label: 'Closing écrit', ic: 'pen', n: prospects.filter(ecritActif).length },
+    { to: '/acheteurs', label: 'Acheteurs', ic: 'star', n: prospects.filter(estAcheteur).length },
     { g: 'Piloter' },
     { to: '/dashboard', label: 'Dashboard', ic: 'chart' },
     { to: '/transactions', label: 'Ventes & clients', ic: 'receipt' },
@@ -110,6 +113,7 @@ export default function CrmApp() {
             <Route path="appels" element={<Titre t="Appels"><Appels /></Titre>} />
             <Route path="closing" element={<Titre t="Closing"><Closing /></Titre>} />
             <Route path="ecrit" element={<Titre t="Closing écrit"><Ecrit /></Titre>} />
+            <Route path="acheteurs" element={<Titre t="Acheteurs"><Acheteurs /></Titre>} />
             <Route path="dashboard" element={<Titre t="Dashboard"><Dashboard /></Titre>} />
             <Route path="transactions" element={<Titre t="Ventes & clients"><Transactions /></Titre>} />
             <Route path="comptabilite" element={<Titre t="Comptabilité"><Comptabilite /></Titre>} />

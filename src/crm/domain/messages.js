@@ -1,6 +1,7 @@
 // Construction des messages (reprise de l'ancien CRM). Toutes les fonctions reçoivent la config (templates enregistrés).
 import { N } from './notes'
 import { OFFRES } from './offres'
+import { PARCOURS, offreAchetee, offreSuivante } from './acheteurs'
 import * as D from './defaults'
 import * as PV from './defaults_prev'
 import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
@@ -205,4 +206,25 @@ export function pitchMessage(p, cfg, lien) {
 export function introMessages(p, cfg) {
   const t = cfg && Array.isArray(cfg.tpl_intros) && cfg.tpl_intros.length ? cfg.tpl_intros : D.DEFAULT_INTROS
   return t.map((tpl, i) => ({ label: 'V' + (i + 1), texte: tpl.replace(/\[Marque\]/g, p.nom_marque || '').replace(/\[Produit\]/g, p.produit || '').replace(/\[Pays\]/g, p.pays || '') }))
+}
+
+// ── Acheteurs : un message par étape du parcours (PARCOURS), modifiable dans Templates › Acheteurs.
+export function acheteurTemplates(cfg) {
+  const t = cfg && cfg.tpl_acheteur
+  return PARCOURS.map((e, i) => (Array.isArray(t) && typeof t[i] === 'string' && t[i].trim() ? t[i] : D.DEFAULT_ACHETEUR[i]))
+}
+export function acheteurMessage(p, cle, cfg, lien) {
+  const n = N(p), i = PARCOURS.findIndex((e) => e.cle === cle), tpl = acheteurTemplates(cfg)[i] || ''
+  const k = offreAchetee(p), o = OFFRES[k], s = OFFRES[offreSuivante(k)]
+  const prenom = (n.closing_prenom || '').trim() || ('*' + (p.nom_marque || 'vous') + '*')
+  const vals = { 'Prénom': prenom, Marque: p.nom_marque || '', Offre: o ? o.label : '', 'Délai': o ? o.delai : '', Offre_suivante: s ? s.label : '', Volume_suivant: s ? String(s.n) : '', 'Délai_suivant': s ? s.delai : '', Lien: lien || (s ? s.url : '') }
+  const sansAccent = (x) => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  const manque = []
+  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Offre_suivante|Volume_suivant|D[ée]lai_suivant|D[ée]lai|Offre|Lien)\]/gi, (m, key) => {
+    const found = Object.keys(vals).find((x) => sansAccent(x) === sansAccent(key))
+    const v = found ? vals[found] : ''
+    if (!v) { const nom = found === 'Lien' ? 'offre suivante' : (found || key); if (!manque.includes(nom)) manque.push(nom) }
+    return v || m
+  })
+  return { msg, manque }
 }

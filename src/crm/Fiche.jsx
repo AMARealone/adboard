@@ -3,6 +3,7 @@ import { useCrm } from './store'
 import { N, quand } from './domain/notes'
 import { OFFRES } from './domain/offres'
 import { appelAffiche, closingDansListe, ecritActif, horsLeads } from './domain/rules'
+import { estAcheteur } from './domain/acheteurs'
 import { pitchVariante } from './domain/messages'
 import { Chip, Modal } from './ui'
 import { InfosAppel, EcritInfos, Decision, BtnCopierInfos, BtnReserverAppel } from './pages/common'
@@ -32,7 +33,7 @@ export default function Fiche() {
   const [sub, setSub] = useState('')
   if (!p) return null
   const n = N(p), v = pitchVariante(p, cfg), L = parcours(p, cfg)
-  const etat = p.statut === 'acheteur' ? 'Client' : appelAffiche(p) ? 'Appel' : closingDansListe(p) ? 'Closing' : ecritActif(p) ? 'Écrit' : p.statut === 'lead' ? 'Lead' : p.statut
+  const etat = estAcheteur(p) ? 'Acheteur' : appelAffiche(p) ? 'Appel' : closingDansListe(p) ? 'Closing' : ecritActif(p) ? 'Écrit' : p.statut === 'lead' ? 'Lead' : p.statut
   return (<>
     <Modal wide title={p.nom_marque || '—'} onClose={() => ouvrirFiche(null)}>
       <div className="cx-line"><Chip c="bl">{etat}</Chip>{p.produit && <Chip c="mu">{p.produit}</Chip>}{p.pays && <Chip c="mu">{p.pays}</Chip>}{n.pas_interesse && <Chip c="red">Pas intéressé</Chip>}</div>
@@ -51,7 +52,8 @@ export default function Fiche() {
       <h4>Parcours</h4>
       <div className="cx-tl">{L.length ? L.map((x, i) => <div key={i} className={'cx-tli ' + (x.c || '')}><i />{<span>{quand(new Date(x.at).toISOString())}</span>}<b>{x.txt}</b></div>) : <div className="cx-dim">Pas encore d'historique.</div>}</div>
       <div className="cx-act wrap">
-        {!appelAffiche(p) && !closingDansListe(p) && p.statut !== 'acheteur' && <BtnReserverAppel p={p} />}
+        {!appelAffiche(p) && !closingDansListe(p) && !estAcheteur(p) && <BtnReserverAppel p={p} />}
+        {!estAcheteur(p) && <button className="cx-btn ok sm" onClick={() => A.decision(p.id, 'paye')}>✅ A payé</button>}
         <BtnCopierInfos p={p} />
         {!ecritActif(p) && (p.statut === 'lead' || p.statut === 'en_suivi') && <button className="cx-btn sm" onClick={() => A.passerEcrit(p.id)}>💬 Passer en Écrit</button>}
         {(closingDansListe(p) || appelAffiche(p)) && <button className="cx-btn sm" onClick={() => setSub('infos')}>Infos de l'appel</button>}

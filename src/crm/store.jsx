@@ -76,7 +76,16 @@ export function CrmProvider({ children }) {
         if (p.statut === 'lead') body = { statut: 'en_suivi', date_lead: null }
       } else if (choix === 'relances') notes = { ecrit_etat: undefined, ecrit_at: undefined }
       const ok = await mutate(id, { notes, body })
-      if (ok) toast(choix === 'relance' ? 'Dans Closing : première relance à J+1' : choix === 'paye' ? 'Marqué payé ✓ : passé en Acheteur' : choix === 'perdu' ? 'Pas intéressé : retourné dans Suivi' : 'Remis dans les relances'); return ok
+      if (ok) toast(choix === 'relance' ? 'Dans Closing : première relance à J+1' : choix === 'paye' ? 'Marqué payé ✓ : il est maintenant dans Acheteurs' : choix === 'perdu' ? 'Pas intéressé : retourné dans Suivi' : 'Remis dans les relances'); return ok
+    },
+    // — Acheteurs
+    acheteurOffre: (id, cle) => mutate(id, { notes: { acheteur_offre: cle || undefined } }),
+    retirerAcheteur: async (id) => {
+      const p = ref.current.find((x) => x.id === id); if (!p) return false
+      if (!(await confirmDlg((p.nom_marque || 'Ce client') + ' n\'a finalement pas acheté ?\nIl retourne dans Leads (son historique reste).', 'Retirer des acheteurs'))) return false
+      const n = N(p)
+      const ok = await mutate(id, { notes: { closing_etat: n.closing_etat === 'paye' ? undefined : n.closing_etat, closing_paye_at: undefined, ecrit_etat: n.ecrit_etat === 'paye' ? 'actif' : n.ecrit_etat, ecrit_paye_at: undefined }, body: { statut: 'lead', date_achat: null } })
+      if (ok) toast((p.nom_marque || 'Le client') + ' : retiré des acheteurs, retour dans Leads'); return ok
     },
     // — Closing
     infosAppel: (id, v) => mutate(id, { notes: { closing_prenom: v.prenom.trim() || undefined, closing_mots: v.mots.trim() || undefined, closing_objectif: v.objectif.trim() || undefined, closing_situation: v.situation && v.situation !== 'reflechir' ? v.situation : undefined, closing_offre: v.offre || undefined } }),

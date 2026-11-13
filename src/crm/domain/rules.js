@@ -1,14 +1,16 @@
 // Règles métier (reprises de l'ancien CRM) : qui est dans Appels, Closing, Écrit, Leads, et ce qui est dû.
 import { N, jours } from './notes'
 import { CLOSING_JOURS, CLOSING_DELAIS, APPEL_DELAI_MS } from './defaults'
+import { estAcheteur, etapeDue } from './acheteurs'
 
 export const closingEtat = (p) => (N(p).closing_etat || '')
 export const ecritEtat = (p) => (N(p).ecrit_etat || '')
-export const ecritActif = (p) => ecritEtat(p) === 'actif'
+// Un acheteur est un état final : il n'apparaît plus dans Appels, Closing, Écrit ni Leads (il est dans Acheteurs).
+export const ecritActif = (p) => ecritEtat(p) === 'actif' && !estAcheteur(p)
 export const actif = (p) => p && p.statut !== 'a_contacter' && p.statut !== 'archive'
 export const appelDansListe = (p) => actif(p) && !!N(p).appel_reserve
-export const appelAffiche = (p) => appelDansListe(p) && !closingEtat(p)
-export const closingDansListe = (p) => actif(p) && closingEtat(p) === 'relance' && !N(p).pas_interesse
+export const appelAffiche = (p) => appelDansListe(p) && !closingEtat(p) && !estAcheteur(p)
+export const closingDansListe = (p) => actif(p) && closingEtat(p) === 'relance' && !N(p).pas_interesse && !estAcheteur(p)
 export const horsLeads = (p) => appelDansListe(p) || ecritActif(p)
 export const estInstagram = (p) => (p.canal_contact ? p.canal_contact === 'instagram' : !!p.lien_instagram)
 export const numeroWa = (p) => (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '')
@@ -56,7 +58,7 @@ export function etatRelances(p, now = Date.now()) {
   const ecoule = Math.floor((now - ref) / 86400000)
   return { pj, ecoule, delai, reste: delai - ecoule, retard: Math.max(0, ecoule - delai) }
 }
-export function leadsARelancer(prospects) { return prospects.filter((p) => p.statut === 'lead' && !horsLeads(p) && !N(p).pas_interesse) }
+export function leadsARelancer(prospects) { return prospects.filter((p) => p.statut === 'lead' && !horsLeads(p) && !N(p).pas_interesse && !estAcheteur(p)) }
 
 // Écrit : étape suivante à envoyer
 export const ECRIT_ORDRE = ['b1', 'b2', 'b3', 'b4', 'suite']
@@ -72,11 +74,12 @@ export function ecritDerniereAt(n) { let best = null; ECRIT_ORDRE.forEach((e) =>
 
 // « À faire aujourd'hui » : tout ce qui est dû, trié par urgence
 export function aFaire(prospects, cfg, now = Date.now()) {
-  const out = { appels: [], noshow: [], closing: [], ecrit: [], relances: [], ads: 0 }
+  const out = { appels: [], noshow: [], closing: [], ecrit: [], relances: [], acheteurs: [], ads: 0 }
   const noshowDelaiH = typeof cfg.noshow_delai_h === 'number' ? cfg.noshow_delai_h : 2
   const finJour = new Date(now); finJour.setHours(23, 59, 59, 999)
   for (const p of prospects) {
     const n = N(p)
+    if (estAcheteur(p)) { const e = etapeDue(p, now); if (e) out.acheteurs.push({ p, etape: e }); continue }
     if (appelAffiche(p)) {
       const e = appelEcheance(n)
       const pr = appelProgrammeTs(n)

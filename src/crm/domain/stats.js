@@ -7,7 +7,7 @@ export const CORE_PLANS = ['discovery', 'test', 'starter', 'pro', 'scale']
 export const CAMPAGNES = [
   { cle: 'pitch', label: 'Pitch', groupe: 'Prospection' },
   { cle: 'demo', label: 'Démo (ancien)', groupe: 'Prospection', historique: true },
-  { cle: 'j3', label: 'Relance J+3', groupe: 'Relances', lien: false },
+  { cle: 'j3', label: 'Relance J+3', groupe: 'Relances' },
   { cle: 'j10', label: 'Relance J+10', groupe: 'Relances' },
   { cle: 'j21', label: 'Relance J+21', groupe: 'Relances' },
   { cle: 'closing_j1', label: 'Closing J+1', groupe: 'Closing' },
@@ -17,6 +17,10 @@ export const CAMPAGNES = [
   { cle: 'closing_j7', label: 'Closing J+7 (ancien)', groupe: 'Closing', historique: true },
   { cle: 'ecrit_b4', label: 'Écrit · offre', groupe: 'Écrit' },
   { cle: 'ecrit_suite', label: 'Écrit · suite', groupe: 'Écrit' },
+  { cle: 'acheteur_bienvenue', label: 'Acheteur · bienvenue', groupe: 'Acheteurs', lien: false },
+  { cle: 'acheteur_demarrage', label: 'Acheteur · démarrage', groupe: 'Acheteurs', lien: false },
+  { cle: 'acheteur_resultats', label: 'Acheteur · résultats', groupe: 'Acheteurs', lien: false },
+  { cle: 'acheteur_upsell', label: 'Acheteur · montée en gamme', groupe: 'Acheteurs' },
   { cle: 'statut_whatsapp', label: 'Statut WhatsApp', groupe: 'Autres', sansEnvoi: true },
 ]
 
@@ -68,6 +72,7 @@ export function calculer({ prospects, liens, funnel, tx, w }) {
     ;[3, 10, 21].forEach((j) => compte('j' + j, n['sent_j' + j] || n['j' + j + '_envoye'], n['sent_j' + j + '_at'] || n['j' + j + '_envoye_at']))
     ;[1, 3, 4, 7, 11].forEach((j) => compte('closing_j' + j, n['closing_sent_j' + j], n['closing_sent_j' + j + '_at']))
     ;['b4', 'suite'].forEach((e) => compte('ecrit_' + e, n['ecrit_sent_' + e], n['ecrit_sent_' + e + '_at']))
+    ;['bienvenue', 'demarrage', 'resultats', 'upsell'].forEach((e) => compte('acheteur_' + e, n['acheteur_sent_' + e], n['acheteur_sent_' + e + '_at']))
   })
   // — Clics, panier, paiement, achats par campagne
   const clics = {}; (liens || []).forEach((x) => { if (dans(x.created_at, w)) clics[x.campagne] = (clics[x.campagne] || 0) + (x.clicks || 0) })
