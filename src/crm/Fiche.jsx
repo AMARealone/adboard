@@ -46,7 +46,7 @@ export default function Fiche() {
         </div>
         <div><h4>Ads (relevé du PC)</h4>
           <div className="cx-dim">{v.cas === 0 ? '0 ad active · cas 0 · relevé il y a ' + v.age + ' j' : v.cas ? v.ads + ' ads · ' + v.jours + ' j · cas ' + v.cas + ' · relevé il y a ' + v.age + ' j' : v.raison}</div>
-          {n.closing_prenom && <><h4>Infos de l'appel</h4><div className="cx-dim">{n.closing_prenom} · « {n.closing_mots || '—'} » · {n.closing_objectif || '—'}</div></>}
+          {n.closing_prenom && <><h4>Infos de l'appel</h4><div className="cx-dim">{n.closing_prenom} · {OFFRES[n.closing_offre] ? OFFRES[n.closing_offre].label : 'offre à choisir'}{n.closing_vars ? ' · ' + Object.keys(n.closing_vars).length + ' variable(s) renseignée(s)' : ''}</div></>}
         </div>
       </div>
       <h4>Parcours</h4>

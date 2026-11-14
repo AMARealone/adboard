@@ -12,3 +12,6 @@ export function N(p) {
 export const jours = (iso, now = Date.now()) => { const t = Date.parse(iso || ''); return isNaN(t) ? null : Math.max(0, Math.floor((now - t) / 86400000)) }
 export const quand = (iso) => { const t = Date.parse(iso || ''); return isNaN(t) ? '' : new Date(t).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) }
 export const duree = (ms) => { if (ms < 0) ms = 0; const m = Math.floor(ms / 60000); if (m < 60) return Math.max(m, 1) + ' min'; const h = Math.floor(m / 60); if (h < 24) return h + 'h' + (m % 60 ? String(m % 60).padStart(2, '0') : ''); const j = Math.floor(h / 24); return j + 'j' + (h % 24 ? ' ' + (h % 24) + 'h' : '') }
+// Variables libres des messages de closing (« [Problème prioritaire] ») : clé = libellé sans accents ni majuscules ; valeurs saisies dans « Infos de l'appel » (notes.closing_vars).
+export const cleVar = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+export const valeurVar = (n, k) => { const v = n && n.closing_vars && n.closing_vars[k]; return (typeof v === 'string' ? v : '').trim() }

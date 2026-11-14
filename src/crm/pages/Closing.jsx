@@ -29,9 +29,9 @@ export function ClosingCard({ p }) {
   return (
     <div className={'cx-row' + (closingEnRetard(n, now) ? ' alert' : '')}>
       <div className="cx-main">
-        <div className="cx-line"><Marque p={p} />{o && <Chip c="off" title="Offre discutée">{o.label}</Chip>}{closingInfosIncompletes(n) && <Chip c="wa">Infos de l'appel à compléter</Chip>}</div>
+        <div className="cx-line"><Marque p={p} />{o && <Chip c="off" title="Offre discutée">{o.label}</Chip>}{closingInfosIncompletes(n, closingVariables(cfg)) && <Chip c="wa">Infos de l'appel à compléter</Chip>}</div>
         <Meta p={p} />
-        <div className="cx-when">Appel il y a {age} j{n.closing_mots ? <> · « {n.closing_mots} »</> : null}</div>
+        <div className="cx-when">Appel il y a {age} j{Object.values(n.closing_vars || {})[0] ? <> · « {Object.values(n.closing_vars)[0]} »</> : null}</div>
         <div className="cx-steps">{CLOSING_JOURS.map((j, i) => {
           const sent = closingEnvoye(n, j), due = !sent && pj === j && !!ech && ech.reste <= 0
           return <div key={j} className={'cx-step' + (sent ? ' done' : due ? ' due' : '')}>

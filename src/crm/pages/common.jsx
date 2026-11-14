@@ -2,9 +2,8 @@ import React, { useState } from 'react'
 import { Modal, toast } from '../ui'
 import { useCrm } from '../store'
 import { OFFRES, OFFRE_KEYS } from '../domain/offres'
-import { CLOSING_SITUATIONS } from '../domain/defaults'
-import { N } from '../domain/notes'
-import { pitchVariante } from '../domain/messages'
+import { N, valeurVar } from '../domain/notes'
+import { pitchVariante, closingVariables } from '../domain/messages'
 import { appelProgrammeTs } from '../domain/rules'
 
 export function Marque({ p }) { const { ouvrirFiche } = useCrm(); return <button className="cx-name" onClick={() => ouvrirFiche(p.id)}>{p.nom_marque || '—'}</button> }
@@ -16,17 +15,15 @@ export function OffrePick({ value, onChange, sans = [] }) {
   return <div className="cx-offres">{OFFRE_KEYS.filter((k) => !sans.includes(k)).map((k) => <button type="button" key={k} className={'cx-opt' + (value === k ? ' on' : '')} style={value === k ? { borderColor: OFFRES[k].couleur, color: OFFRES[k].couleur } : null} onClick={() => onChange(value === k ? '' : k)}>{OFFRES[k].label}</button>)}</div>
 }
 export function InfosAppel({ p, onClose }) {
-  const { A } = useCrm(); const n = N(p)
-  const [v, setV] = useState({ prenom: n.closing_prenom || (n.form_nom || '').split(/\s+/)[0] || '', mots: n.closing_mots || '', objectif: n.closing_objectif || n.form_objectif || '', situation: n.closing_situation || 'reflechir', offre: n.closing_offre || '' })
-  const set = (k) => (e) => setV({ ...v, [k]: e.target.value })
+  const { A, cfg } = useCrm(); const n = N(p), vars = closingVariables(cfg)
+  const [v, setV] = useState(() => ({ prenom: n.closing_prenom || (n.form_nom || '').split(/\s+/)[0] || '', offre: n.closing_offre || '', vars: Object.fromEntries(vars.map((x) => [x.k, valeurVar(n, x.k)])) }))
+  const setVar = (k) => (e) => { const val = e.target.value; setV((s) => ({ ...s, vars: { ...s.vars, [k]: val } })) }
   return (
     <Modal title={'Infos de l\'appel · ' + (p.nom_marque || '')} onClose={onClose}>
       <div className="cx-form">
-        <label>Prénom<input value={v.prenom} onChange={set('prenom')} /></label>
-        <label>Son problème (groupe nominal, suit « l'enjeu, c'est… »)<textarea value={v.mots} onChange={set('mots')} placeholder="plus de créatives, sans y passer votre temps" /></label>
-        <label>Son objectif (verbe à l'infinitif, suit « pour… »)<input value={v.objectif} onChange={set('objectif')} placeholder="atteindre 1 000 000 FCFA par semaine" /></label>
-        <div className="cx-grp">Où il en est (change la phrase du message J+1)<div className="cx-offres">{CLOSING_SITUATIONS.map((s) => <button type="button" key={s.k} className={'cx-opt' + (v.situation === s.k ? ' on' : '')} onClick={() => setV({ ...v, situation: s.k })}>{s.label}</button>)}</div></div>
-        <div className="cx-grp">Offre discutée<OffrePick value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></div>
+        <label>Prénom<input value={v.prenom} onChange={(e) => setV({ ...v, prenom: e.target.value })} /></label>
+        <div className="cx-grp">Offre que je lui recommande<OffrePick value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></div>
+        {vars.map((x) => <label key={x.k}>{x.label} <span className="cx-dim">· {x.jours.map((j) => 'J+' + j).join(', ')}</span><textarea rows={2} value={v.vars[x.k] || ''} onChange={setVar(x.k)} placeholder={'…' + x.indice + '…'} /></label>)}
       </div>
       <div className="cx-act"><button className="cx-btn" onClick={onClose}>Annuler</button><button className="cx-btn primary" onClick={async () => { if (await A.infosAppel(p.id, v)) { toast('Infos enregistrées'); onClose() } }}>Enregistrer</button></div>
     </Modal>
@@ -91,7 +88,7 @@ export function infosProspect(p, cfg) {
     add('Ads actives', a.nb); add('Durée moyenne des ads (jours)', a.moy); add('Durée médiane des ads (jours)', a.med); add('Cas ads', v.cas != null ? 'cas ' + v.cas : ''); add('Relevé ads du', fd(a.maj_at))
   }
   L.push('')
-  add('Objectif', n.form_objectif || n.closing_objectif); add('Budget', n.form_budget); add('Son problème', n.closing_mots); add('Où il en est', (CLOSING_SITUATIONS.find((s) => s.k === n.closing_situation) || {}).label); add('Offre discutée', n.closing_offre || n.ecrit_offre)
+  add('Objectif', n.form_objectif || n.closing_objectif); add('Budget', n.form_budget); closingVariables(cfg).forEach((x) => add(x.label, valeurVar(n, x.k))); add('Offre recommandée', n.closing_offre || n.ecrit_offre)
   add('Statut', p.statut); add('Premier contact', fd(p.date_contact)); add('Lead depuis', fd(p.date_lead))
   add('A répondu', p.a_repondu ? 'oui' : ''); add('Intéressé', p.interesse ? 'oui' : ''); add('Pitch envoyé', fd(n.pitch_envoye_at))
   const pr = appelProgrammeTs(n)

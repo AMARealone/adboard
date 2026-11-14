@@ -32,29 +32,20 @@ export const CLOSING_DELAIS = [1, 3, 7];
 
 export const CLOSING_LABELS = ['Relance 1', 'Relance 2', 'Relance 3'];
 
-// Situation du prospect après l'appel (ce qui l'empêche de payer tout de suite).
-// Elle ne change QUE la phrase [Raison] du message J+1 ; le J+4 et le J+11 sont identiques pour toutes les situations.
-export const CLOSING_SITUATIONS = [
-  { k: 'reflechir', label: "Il veut y réfléchir", phrase: "Prenez le temps qu'il vous faut pour y réfléchir." },
-  { k: 'equipe', label: "Il en parle à son équipe ou ses associés", phrase: "Prenez le temps d'en parler à votre équipe." },
-  { k: 'budget', label: "Son budget n'est pas complet", phrase: "Prenez le temps de compléter votre budget." },
-  { k: 'stock', label: "Il attend d'avoir du stock", phrase: "Prenez le temps de recevoir votre stock." }
-];
-
-// Trois textes seulement : J+1, J+4, J+11 (les mêmes pour toutes les situations).
+// Trois relances après l'appel : J+1, J+4, J+11 (CLOSING_JOURS). Les mêmes pour tous les prospects.
+// Variables intégrées : [Prénom] [Marque] [Lien] [Facture]. TOUTE autre variable entre crochets, par exemple [Problème prioritaire],
+// devient automatiquement un champ de la fenêtre « Infos de l'appel » (à remplir après l'appel) : on peut donc réécrire les textes librement.
 export const CLOSING_SLOTS = [
-  { j: 1, label: "J+1 · seule la phrase [Raison] change selon la situation" },
-  { j: 4, label: "J+4 · identique pour toutes les situations" },
-  { j: 11, label: "J+11 · identique pour toutes les situations" }
+  { j: 1, label: "J+1 · lendemain de l'appel" },
+  { j: 4, label: 'J+4 · relance' },
+  { j: 11, label: 'J+11 · dernier message' }
 ];
 
 export const DEFAULT_CLOSING = [
-  "Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. En tout cas, ce que vous m'avez confirmé sur *[Marque]* était vraiment pertinent : pour [Objectif], l'enjeu, c'est [Problème].\n\nEt c'est pour ce genre de défi que l'équipe d'*AdStack* est construite.\n\n[Raison] Au moment où vous voudrez passer à l'action, voici la page pour démarrer : [Lien]",
-  "Bonjour [Prénom] 🙂\n\nJe pensais à *[Marque]*. Imaginez dans deux semaines : vos premières créatives sont en ligne, vous savez enfin lesquelles marchent, et [Objectif] n'est plus une idée, c'est un chiffre qui bouge.\n\nChaque jour compte : plus tôt vous démarrez, plus tôt vous savez ce qui marche pour vendre.\n\nLe premier pas pour [Objectif], c'est ici : [Lien]",
-  "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nSi vous décidez de démarrer pour [Objectif], voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot.\n\nLe lien : [Lien]\n\nJe ne vous relance plus. Écrivez-moi *« go »* quand vous êtes prêt(e), et on démarre ensemble."
+  "Bonjour [Prénom] 😊\n\nJe repensais à notre échange d'hier concernant [Marque].\n\nCe que je retiens surtout, c'est que [Problème prioritaire identifié] vous empêche aujourd'hui de [Conséquence concrète sur son activité].\n\nEt justement, l'enjeu n'est pas simplement de [Solution superficielle], mais de mettre en place [Levier stratégique identifié] pour vous permettre de [Objectif recherché].\n\nC'est exactement sur ce point que nous pouvons vous aider chez AdStack.\n\nSi vous êtes prêt à avancer, voici le lien pour démarrer : [Lien]\n\nEt si un point vous fait encore hésiter, dites-le-moi franchement. On peut en discuter 🙂",
+  "Bonjour [Prénom] 🙂\n\nJe voulais revenir vers vous concernant *[Marque]*.\n\nJe sais qu'au quotidien, il y a beaucoup de choses à gérer quand on développe son activité. Mais justement, [Problème prioritaire] ne devrait pas être quelque chose que vous devez continuer à gérer seul.\n\nL'objectif, c'est de vous permettre de [Résultat recherché] sans devoir [Contrainte ou effort que le prospect souhaite éviter].\n\nDe notre côté, nous sommes prêts à vous accompagner là-dessus.\n\nOn avance ensemble ? 🙂\n\n[Lien]",
+  "Bonjour [Prénom] 😊\n\nUne dernière chose que je voulais partager avec vous concernant *[Marque]*.\n\nDans [Domaine/problématique identifiée], les résultats que vous souhaitez atteindre ne viennent généralement pas en faisant toujours la même chose, mais en améliorant progressivement ce qui freine votre croissance.\n\nEt c'est justement ce que nous souhaitons vous aider à mettre en place : [Résultat stratégique recherché].\n\nCe serait dommage de laisser [Problème identifié] continuer à freiner votre progression alors qu'il existe une façon d'y remédier.\n\nSi vous souhaitez qu'on avance ensemble, voici le lien pour démarrer : [Lien]\n\nJe reste disponible si besoin ! 🙂"
 ];
-
-export const CLOSING_OBJECTIONS = ['le prix', 'la peur que ça ne donne pas de résultats', 'le besoin d\'en parler à votre associé(e)', 'le besoin de réfléchir', 'la crainte de perdre du temps', 'le fait d\'avoir déjà essayé autre chose'];
 
 export const ECRIT_FAILLES = {
   rythme:    'Peu de nouvelles pubs / rythme lent',

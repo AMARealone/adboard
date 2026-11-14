@@ -1,5 +1,5 @@
 // Règles métier (reprises de l'ancien CRM) : qui est dans Appels, Closing, Écrit, Leads, et ce qui est dû.
-import { N, jours } from './notes'
+import { N, jours, valeurVar } from './notes'
 import { CLOSING_JOURS, CLOSING_DELAIS, APPEL_DELAI_MS } from './defaults'
 import { estAcheteur, etapeDue } from './acheteurs'
 
@@ -38,7 +38,8 @@ export function closingEcheance(n, now = Date.now()) {
   return { pj, ecoule, delai, reste: delai - ecoule }
 }
 export const closingEnRetard = (n, now) => { const e = closingEcheance(n, now); return !!e && e.reste <= 0 }
-export const closingInfosIncompletes = (n) => !n.closing_prenom || !n.closing_mots || !n.closing_objectif || !n.closing_offre
+// vars = closingVariables(cfg) : toutes les variables des textes doivent être remplies, avec le prénom et l'offre recommandée.
+export const closingInfosIncompletes = (n, vars = []) => !n.closing_prenom || !n.closing_offre || vars.some((x) => !valeurVar(n, x.k))
 
 // Relances Leads J+3 / J+10 / J+21 : « envoyée » = case cochée à la main OU envoi depuis le CRM
 export const RELANCES = [3, 10, 21]

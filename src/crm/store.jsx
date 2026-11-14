@@ -88,7 +88,11 @@ export function CrmProvider({ children }) {
       if (ok) toast((p.nom_marque || 'Le client') + ' : retiré des acheteurs, retour dans Leads'); return ok
     },
     // — Closing
-    infosAppel: (id, v) => mutate(id, { notes: { closing_prenom: v.prenom.trim() || undefined, closing_mots: v.mots.trim() || undefined, closing_objectif: v.objectif.trim() || undefined, closing_situation: v.situation && v.situation !== 'reflechir' ? v.situation : undefined, closing_offre: v.offre || undefined } }),
+    // Infos de l'appel : prénom, offre recommandée et les variables libres des textes de relance (closing_vars : { clé: valeur }).
+    infosAppel: (id, v) => {
+      const vars = {}; Object.entries(v.vars || {}).forEach(([k, x]) => { const t = String(x || '').trim(); if (t) vars[k] = t })
+      return mutate(id, { notes: { closing_prenom: (v.prenom || '').trim() || undefined, closing_vars: Object.keys(vars).length ? vars : undefined, closing_offre: v.offre || undefined } })
+    },
     closingVersion: (id, jour, v) => mutate(id, { notes: { ['closing_ab' + jour]: v === 'B' ? 'B' : undefined } }),
     // Cocher garde la date du PREMIER envoi (jamais écrasée) ; décocher l'efface (les écrans demandent d'abord une confirmation).
     marquer: (id, cle, val) => { const p = ref.current.find((x) => x.id === id), n = N(p); return mutate(id, { notes: { [cle]: val ? true : undefined, [cle + '_at']: val ? (n[cle + '_at'] || now()) : undefined } }) },

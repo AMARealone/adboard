@@ -1,5 +1,5 @@
 // Construction des messages (reprise de l'ancien CRM). Toutes les fonctions reçoivent la config (templates enregistrés).
-import { N } from './notes'
+import { N, cleVar, valeurVar } from './notes'
 import { OFFRES } from './offres'
 import { PARCOURS, offreAchetee, offreSuivante } from './acheteurs'
 import * as D from './defaults'
@@ -57,29 +57,37 @@ export function resoudrePays(paysRaw) {
   return { code, adj, phrase: D.PAYS_PHRASE[code] || adj || brut }
 }
 
-// ── Closing après appel (J+1 / J+4 / J+11)
+// ── Closing après appel (J+1 / J+4 / J+11) : trois textes, les mêmes pour tous les prospects.
+const PREV5_CLOSING = ["Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. En tout cas, ce que vous m'avez confirmé sur *[Marque]* était vraiment pertinent : pour [Objectif], l'enjeu, c'est [Problème].\n\nEt c'est pour ce genre de défi que l'équipe d'*AdStack* est construite.\n\n[Raison] Au moment où vous voudrez passer à l'action, voici la page pour démarrer : [Lien]", "Bonjour [Prénom] 🙂\n\nJe pensais à *[Marque]*. Imaginez dans deux semaines : vos premières créatives sont en ligne, vous savez enfin lesquelles marchent, et [Objectif] n'est plus une idée, c'est un chiffre qui bouge.\n\nChaque jour compte : plus tôt vous démarrez, plus tôt vous savez ce qui marche pour vendre.\n\nLe premier pas pour [Objectif], c'est ici : [Lien]", "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nSi vous décidez de démarrer pour [Objectif], voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot.\n\nLe lien : [Lien]\n\nJe ne vous relance plus. Écrivez-moi *« go »* quand vous êtes prêt(e), et on démarre ensemble."]
 export function closingTemplates(cfg) {
   let t = cfg && cfg.tpl_closing
-  // Ancien format (12 textes : 3 par situation) : on garde la série « réfléchir » (ses 3 premiers textes) ; sa phrase de raison devient [Raison].
-  if (Array.isArray(t) && t.length === 12) {
-    const phrase = D.CLOSING_SITUATIONS[0].phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/'/g, "['’]")
-    t = t.slice(0, 3).map((x, i) => (i === 0 ? String(x || '').replace(new RegExp(phrase), '[Raison]') : x))
-  }
+  // Ancien format (12 ou 5 textes, avec raisons/versions) : on repart des nouveaux textes par défaut.
   if (!Array.isArray(t) || t.length !== D.CLOSING_SLOTS.length) t = D.DEFAULT_CLOSING
-  // un modèle jamais modifié (= ancien défaut) prend le nouveau défaut (mis en gras)
-  return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i]) || (i === 0 && estAncien(t[i], PREV4_CLOSING0))) ? D.DEFAULT_CLOSING[i] : t[i])
+  // un modèle jamais modifié (= un ancien défaut) prend le nouveau défaut
+  return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i], PREV5_CLOSING[i]) || (i === 0 && estAncien(t[i], PREV4_CLOSING0))) ? D.DEFAULT_CLOSING[i] : t[i])
 }
-// Situation du prospect (réfléchit, en parle à son équipe, budget, stock) : elle ne change que la phrase [Raison] du J+1 ; « réfléchir » par défaut.
-export const closingSituation = (n) => (D.CLOSING_SITUATIONS.some((s) => s.k === n.closing_situation) ? n.closing_situation : 'reflechir')
-// Un seul jeu de trois textes (J+1, J+4, J+11) pour toutes les situations
-export const closingSlot = (n, i) => i
+// Variables : [Prénom] [Marque] [Lien] [Facture] sont intégrées ; toute autre variable entre crochets devient un champ de « Infos de l'appel ».
+const TOKEN = /\[([^\[\]\n]{2,80})\]/g
+const INTEGREES = ['prenom', 'marque', 'lien', 'facture']
+export function closingVariables(cfg) {
+  const vus = new Map()
+  closingTemplates(cfg).forEach((t, i) => {
+    for (const m of String(t).matchAll(TOKEN)) {
+      const label = m[1].trim().replace(/\s+/g, ' '), k = cleVar(label)
+      if (!k || INTEGREES.includes(k)) continue
+      if (!vus.has(k)) vus.set(k, { k, label, jours: [], indice: (t.slice(Math.max(0, m.index - 45), m.index) + '[…]' + t.slice(m.index + m[0].length, m.index + m[0].length + 45)).replace(/\s+/g, ' ').trim() })
+      const j = D.CLOSING_JOURS[i]; if (!vus.get(k).jours.includes(j)) vus.get(k).jours.push(j)
+    }
+  })
+  return [...vus.values()]
+}
 export function closingMessage(p, i, cfg, lienPerso) {
-  const n = N(p), tpl = (closingTemplates(cfg)[closingSlot(n, i)] || '').trim(), offre = OFFRES[n.closing_offre]
-  const vals = { Prénom: (n.closing_prenom || '').trim(), Marque: p.nom_marque || '', Problème: (n.closing_mots || '').trim(), Mots: (n.closing_mots || '').trim(), Objection: (n.closing_objection || '').trim(), Raison: (D.CLOSING_SITUATIONS.find((x) => x.k === closingSituation(n)) || D.CLOSING_SITUATIONS[0]).phrase, Objectif: (n.closing_objectif || '').trim(), Lien: offre ? (lienPerso || offre.url) : '', Facture: offre ? offre.facture : '' }
+  const n = N(p), tpl = (closingTemplates(cfg)[i] || '').trim(), offre = OFFRES[n.closing_offre]
   const manque = []
-  const msg = tpl.replace(/\[(Pr[ée]nom|Marque|Probl[èe]me|Mots|Objection|Raison|Objectif|Lien|Facture)\]/gi, (m, k) => {
-    const key = Object.keys(vals).find((x) => x.toLowerCase() === k.toLowerCase().replace('probleme', 'problème').replace('prenom', 'prénom')), v = vals[key]
-    if (!v) { const nom = key === 'Lien' || key === 'Facture' ? 'offre' : key; if (!manque.includes(nom)) manque.push(nom) }
+  const msg = tpl.replace(TOKEN, (m, brut) => {
+    const label = brut.trim().replace(/\s+/g, ' '), k = cleVar(label)
+    const v = k === 'prenom' ? (n.closing_prenom || '').trim() : k === 'marque' ? (p.nom_marque || '') : k === 'lien' ? (offre ? (lienPerso || offre.url) : '') : k === 'facture' ? (offre ? offre.facture : '') : valeurVar(n, k)
+    if (!v) { const nom = k === 'lien' || k === 'facture' ? 'offre recommandée' : label; if (!manque.includes(nom)) manque.push(nom); return m }
     return v
   })
   return { msg: lienPerso ? unifierLiens(msg, lienPerso) : msg, manque }
