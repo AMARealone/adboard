@@ -3,7 +3,7 @@ import { usePersist } from '../agentStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useData } from '../data'
 import { etat, SERVER, prio, estPrioritaire, delaiClientH } from '../api'
-import { openCommande, marquerLivre, supprimerTicket } from '../prod/engine'
+import { openCommande, marquerLivre, supprimerTicket, commandeToBrief } from '../prod/engine'
 import { alertDlg } from '../ui'
 
 function useNow(ms = 1000) { const [n, setN] = useState(Date.now()); useEffect(() => { const t = setInterval(() => setN(Date.now()), ms); return () => clearInterval(t) }, [ms]); return n }
@@ -59,11 +59,17 @@ export function BriefPanel({ id, onClose }) {
   const R = ({ l, children }) => (children ? <div className="fx-bf"><label>{l}</label><div>{children}</div></div> : null)
   const Thumbs = ({ urls, lib }) => <div className="fx-thumbs">{urls.map((u, i) => <a key={i} href={u} target="_blank" rel="noopener noreferrer"><img src={u} alt="" loading="lazy" /><span>{lib(u, i)}</span></a>)}</div>
   const photo = b && (b.photo_nobg || p.photo_base64 || p.photo_url)
+  const telechargerBrief = () => {
+    const blob = new Blob([JSON.stringify(commandeToBrief(b), null, 2)], { type: 'application/json' })
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob)
+    a.download = 'brief_' + String(p.nom || 'client').replace(/[^a-z0-9]+/gi, '_').slice(0, 40) + '.json'
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000)
+  }
   const gal = (p.galerie_images || []).filter(Boolean), caps = (p.avis_captures || []).filter(Boolean), asp = p.galerie_aspects || {}
   return (
     <div className="fx-modal-back right" onClick={onClose}>
       <aside className="fx-drawer" onClick={(e) => e.stopPropagation()}>
-        <div className="fx-drawer-h"><h3>Brief client</h3><button className="fx-btn" onClick={onClose}>Fermer</button></div>
+        <div className="fx-drawer-h"><h3>Brief client</h3><span>{b && <button className="fx-btn" style={{ marginRight: 8 }} onClick={telechargerBrief}>Télécharger brief.json</button>}<button className="fx-btn" onClick={onClose}>Fermer</button></span></div>
         {!b && !err && <div className="fx-empty">Chargement du brief…</div>}
         {err && <div className="fx-err">{err}</div>}
         {b && <div className="fx-bfs">
