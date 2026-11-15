@@ -26,6 +26,8 @@ const resetAgents = () => {
   U.agents[3] = { state: 'pending', text: 'En attente — 5 hooks + 1 description par angle', pct: 0 }
 }
 const done = (c) => !!c && (c.imgB64 || c.url)
+export const CTF = (() => { try { return JSON.parse(localStorage.getItem('adstack_ct_forces') || '{}') } catch (_) { return {} } })()
+export function setCTF(idx, v) { if (v) CTF[idx] = v; else delete CTF[idx]; try { localStorage.setItem('adstack_ct_forces', JSON.stringify(CTF)) } catch (_) {} emit() }
 export const nbCrea = () => S.creatives.filter(done).length
 export const nbCopy = () => S.copies.filter(Boolean).length
 export const angleCount = () => V.prodv2GetAngleCount()
@@ -295,7 +297,8 @@ export async function launch() {
           U.crea[idx] = { state: 'running', text: 'Choix du CT par l\'agent' }; emit()
           const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
           let ctId, ctRaison = ''
-          try { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison }
+          if (CTF[idx] === 'skip') { U.crea[idx] = { state: 'err', text: 'Ignoree', err: 'Ignoree (remplacee par la video)' }; emit(); creativesDone++; continue }
+          try { if (CTF[idx] && CT_IMAGES[CTF[idx] + '_name'] !== undefined) { ctId = CTF[idx]; ctRaison = 'CT choisi manuellement' } else { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison } }
           catch (errCT) {
             if (errCT.name === 'AbortError' && signal.aborted) throw errCT
             const sec = V.ctSecours(c, deja)

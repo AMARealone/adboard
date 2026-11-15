@@ -4,6 +4,7 @@ import { useProd, CT_IMAGES } from '../prod/state'
 import * as E from '../prod/engine'
 import { useData } from '../data'
 import { toast } from '../ui'
+import { loadCTImages } from '../ctApi'
 
 const esc = (s) => (s == null ? '' : String(s))
 const AGENTS = [
@@ -133,11 +134,33 @@ function Brief({ S, U }) {
           ) : <div className="fx-s" style={{ padding: '30px 0' }}>Aucun brief chargé</div>}
         </div>
       </div>
+      <CTPicker />
       <div className="fx-launch">
         <button className="fx-btn primary big" disabled={!b || !S.productB64 || U.running} onClick={E.launch}>{U.launchLabel}</button>
         {U.running && <button className="fx-btn big" onClick={E.cancel}>Annuler la production</button>}
       </div>
     </section>
+  )
+}
+
+function CTPicker() {
+  const [open, setOpen] = useState(false)
+  useEffect(() => { if (open) loadCTImages().then(() => E.refresh()).catch(() => {}) }, [open])
+  const ids = Object.keys(CT_IMAGES).filter((k) => k.endsWith('_name')).map((k) => k.slice(0, -5))
+  const nbSet = Object.keys(E.CTF).length
+  return (
+    <div style={{ margin: '12px 0' }}>
+      <button className="fx-btn sm" onClick={() => setOpen(!open)}>{open ? 'Masquer' : 'Choisir les CT des images'}{nbSet ? ` (${nbSet} imposes)` : ''}</button>
+      {open && <div className="fx-s" style={{ whiteSpace: 'normal', margin: '8px 0' }}>Laisse « Auto » pour que l'agent choisisse. « Ignorer » = pas d'image a cet emplacement (la video la remplace).</div>}
+      {open && [0, 1, 2, 3, 4, 5].map((idx) => (
+        <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '4px 0' }}>
+          <span className="fx-s" style={{ width: 150 }}>Angle {Math.floor(idx / 3) + 1} · {['Solution', 'Product', 'Most'][idx % 3]}</span>
+          <select className="fx-in" value={E.CTF[idx] || ''} onChange={(e) => E.setCTF(idx, e.target.value)}>
+            <option value="">Auto</option><option value="skip">Ignorer (video a la place)</option>
+            {ids.map((id) => <option key={id} value={id}>{CT_IMAGES[id + '_name'] || id}{(CT_IMAGES[id + '_awareness'] || []).length ? ' · ' + CT_IMAGES[id + '_awareness'].join('/') : ''}</option>)}
+          </select>
+        </div>))}
+    </div>
   )
 }
 
