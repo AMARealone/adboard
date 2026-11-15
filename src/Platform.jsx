@@ -6939,6 +6939,16 @@ export default function Platform() {
   const creerDemandeEtNotifierFactory = async (product, qty, marchesChoisis = null, offreDuMoment = null) => {
     const session = await sbAuth.refreshSession();
     const brief = await sbBriefs.create(session, product.id, qty, marchesChoisis);
+    if (!brief || brief.error) {
+      const MSG = {
+        credits_insuffisants: "Vos crédits sont insuffisants pour cette demande.",
+        plafond_production: "Trop de créatives sont déjà en production. Réessayez dans quelques heures.",
+        abonnement_inactif: "Votre abonnement n'apparaît pas comme actif. Contactez-nous, nous réglons cela tout de suite.",
+        reseau: "Connexion impossible pour le moment. Réessayez dans un instant.",
+      };
+      notify((brief && MSG[brief.error]) || "Votre demande n'a pas pu être créée. Réessayez ou contactez-nous.", 'warning');
+      return null;
+    }
     if (!brief) return null;
     setAllBriefs(prev => [...prev, brief]);
     setBriefs(prev => ({...prev, [product.id]: brief}));
