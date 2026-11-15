@@ -7,7 +7,7 @@ import * as V from '../prod/verbatim'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
 import { prodv2State } from '../prod/state'
 import { getCommandes } from '../api'
-import { ctGetAll, ctGetBase64, loadCTImages, ctGalerieComplete, NIVEAUX_CLE } from '../ctApi'
+import { ctGetAll, ctGetBase64, loadCTImages, ctGalerieComplete, NIVEAUX_CLE, ctMemoriser } from '../ctApi'
 import VideoPanel from './VideoPanel'
 import { alertDlg, confirmDlg, toast } from '../ui'
 import { writeSkills, getBackupDir } from '../backup'
@@ -154,18 +154,20 @@ function StdTest({ a }) {
         // ── Étape 1 : l'agent regarde TOUTE la galerie et choisit lui-même UN CT (aucune sélection manuelle) ──
         await loadCTImages()
         // Le niveau de conscience de la créative RESTREINT la galerie : Most Aware → seulement les CT balisés Most Aware, etc.
-        const gal = await ctGalerieComplete((n, t) => S({ prog: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }), { niveau: NIVEAUX_CLE[m.pos] })
+        const cleTest = String(m.cles || m.briefName || (m.brief && (m.brief.produit || m.brief.marque)) || '')
+        const gal = await ctGalerieComplete((n, t) => S({ prog: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }), { niveau: NIVEAUX_CLE[m.pos], diversifier: true, cle: cleTest })
         if (!gal.cts.length) throw new Error('La galerie CT est vide : ajoute des CT (page Galerie).')
         const libNiv = NIVEAUX[m.pos][0]
         S({ prog: gal.repli
           ? `⚠ Aucun CT de la galerie n'est balisé « ${libNiv} » : l'agent examine ${gal.envoyes} CT et prend la structure la plus proche. Ajoutez ou balisez des CT ${libNiv} dans la galerie.`
-          : `Niveau imposé : ${libNiv}. L'agent examine les ${gal.envoyes} CT balisés ${libNiv}${gal.nbBalises > gal.envoyes ? ' (les ' + gal.envoyes + ' plus récents sur ' + gal.nbBalises + ')' : ''} (galerie : ${gal.total} CT) et choisit le meilleur pour cette créative…`, ct: null, ctRaison: '' })
+          : `Niveau imposé : ${libNiv}. L'agent examine les ${gal.envoyes} CT balisés ${libNiv}${gal.nbBalises > gal.envoyes ? ' (les ' + gal.envoyes + ' tirés au hasard sur ' + gal.nbBalises + ')' : ''} (galerie : ${gal.total} CT${gal.ecartesHist ? ', ' + gal.ecartesHist + ' CT déjà utilisés récemment écartés pour varier' : ''}) et choisit le meilleur pour cette créative…`, ct: null, ctRaison: '' })
         const rs = await fetch(SERVER + '/select-ct-agent', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ briefTexte, synthese: m.synthese, angleInstruction, assets, productBase64: productB64, productMime: 'image/jpeg', cts: gal.cts, niveau: NIVEAUX_CLE[m.pos], isTest: true }) })
         const dsTxt = await rs.text(); let ds = null; try { ds = JSON.parse(dsTxt) } catch (_) {}
         if (!ds) throw new Error(rs.status === 404 ? "Choix du CT : le serveur Render n'a pas encore la nouvelle version (route /select-ct-agent introuvable, HTTP 404). Redéployez serveur.js." : 'Choix du CT : réponse inattendue du serveur (HTTP ' + rs.status + ') ' + dsTxt.slice(0, 120))
         if (!rs.ok || ds.error) throw new Error('Choix du CT : ' + (ds.error || 'HTTP ' + rs.status))
         if (!CT_IMAGES[ds.id]) throw new Error('Le CT choisi (' + ds.id + ') est introuvable dans la galerie.')
+        ctMemoriser(ds.id, NIVEAUX_CLE[m.pos], cleTest)
         S({ ct: ds.id, ctRaison: ds.raison || '', prog: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
         const ctB64 = await V.compressImg(await ctGetBase64(ds.id), CT_IMAGES[ds.id + '_mime'] || 'image/jpeg')
         const res = await fetch(SERVER + '/creative-prod', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },

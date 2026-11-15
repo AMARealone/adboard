@@ -115,6 +115,15 @@ export function niveauCT(v) {
   return ''
 }
 // opts : { niveau, exclure: [ids], max, echantillon } — le niveau de conscience RESTREINT la galerie aux seuls CT balisés à ce niveau
+// v8 — DIVERSITÉ DES CT. Sans mémoire, l'agent reprenait toujours le même CT pour le même niveau et le même contexte
+// (« régénérer » redonnait le même concept alors que la galerie en compte près de 200). Chaque CT choisi est noté ici ;
+// les plus récents du même niveau (et tous ceux déjà utilisés pour le même produit) sont retirés des candidats suivants.
+const HIST_KEY = 'adstack_ct_hist'
+export function ctHistorique() { try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]') } catch (_) { return [] } }
+export function ctMemoriser(id, niveau, cle) {
+  if (!id) return
+  try { const h = ctHistorique(); h.unshift({ id, niveau: niveau || null, cle: cle || null, at: Date.now() }); localStorage.setItem(HIST_KEY, JSON.stringify(h.slice(0, 500))) } catch (_) {}
+}
 export async function ctGalerieComplete(onProgress, opts = {}) {
   const tous = await ctGetAll()
   let pool = tous, nbBalises = 0, repli = false
@@ -125,8 +134,19 @@ export async function ctGalerieComplete(onProgress, opts = {}) {
   }
   const exclus = new Set(opts.exclure || [])
   if (exclus.size) { const r = pool.filter((x) => !exclus.has(x.id)); if (r.length) pool = r }
+  let ecartesHist = 0
+  if (opts.diversifier) {
+    const h = ctHistorique().filter((x) => !opts.niveau || !x.niveau || x.niveau === opts.niveau)
+    const ordre = []; const pousser = (id) => { if (id && !ordre.includes(id)) ordre.push(id) }
+    if (opts.cle) h.filter((x) => x.cle === opts.cle).forEach((x) => pousser(x.id))   // d'abord : déjà utilisés pour CE produit
+    h.forEach((x) => pousser(x.id))                                                     // puis : les plus récents de ce niveau
+    const maxEx = Math.max(0, pool.length - Math.max(4, Math.ceil(pool.length * 0.3)))  // on garde toujours au moins 30 % du choix (4 CT minimum)
+    const ex = new Set(ordre.filter((id) => pool.some((x) => x.id === id)).slice(0, maxEx))
+    if (ex.size) { pool = pool.filter((x) => !ex.has(x.id)); ecartesHist = ex.size }
+  }
   const max = opts.max || CT_MAX_AGENT
   let liste = pool.slice(0, max)
+  if (opts.diversifier) liste = pool.slice().sort(() => Math.random() - 0.5).slice(0, max)   // l'ordre ne favorise plus les mêmes CT
   if (opts.echantillon && pool.length > max) liste = pool.slice().sort(() => Math.random() - 0.5).slice(0, max)
   const sortie = new Array(liste.length); let fait = 0, i = 0
   const worker = async () => {
@@ -138,5 +158,5 @@ export async function ctGalerieComplete(onProgress, opts = {}) {
     }
   }
   await Promise.all(Array.from({ length: 8 }, worker))
-  return { cts: sortie, total: tous.length, envoyes: liste.length, sansImage: sortie.filter((c) => !c.b64).length, niveau: opts.niveau || null, nbBalises, repli }
+  return { cts: sortie, total: tous.length, envoyes: liste.length, sansImage: sortie.filter((c) => !c.b64).length, niveau: opts.niveau || null, nbBalises, repli, ecartesHist }
 }

@@ -4,7 +4,6 @@ import { useProd, CT_IMAGES } from '../prod/state'
 import * as E from '../prod/engine'
 import { useData } from '../data'
 import { toast } from '../ui'
-import { loadCTImages } from '../ctApi'
 
 const esc = (s) => (s == null ? '' : String(s))
 const AGENTS = [
@@ -12,6 +11,7 @@ const AGENTS = [
   { n: 2, name: 'Creative Image', model: 'gemini-2.5-pro + gemini-3-pro-image' },
   { n: 3, name: 'Copywriter', model: 'gemini-2.5-pro' },
 ]
+const AGENT_VIDEO = { name: 'Créative Vidéo', model: 'désactivé en automatique — vidéos produites dans le Video Lab puis importées ici' }
 
 function SendMenu({ children, onClient, onOther, busy, title }) {
   const [open, setOpen] = useState(false)
@@ -134,33 +134,11 @@ function Brief({ S, U }) {
           ) : <div className="fx-s" style={{ padding: '30px 0' }}>Aucun brief chargé</div>}
         </div>
       </div>
-      <CTPicker />
       <div className="fx-launch">
         <button className="fx-btn primary big" disabled={!b || !S.productB64 || U.running} onClick={E.launch}>{U.launchLabel}</button>
         {U.running && <button className="fx-btn big" onClick={E.cancel}>Annuler la production</button>}
       </div>
     </section>
-  )
-}
-
-function CTPicker() {
-  const [open, setOpen] = useState(false)
-  useEffect(() => { if (open) loadCTImages().then(() => E.refresh()).catch(() => {}) }, [open])
-  const ids = Object.keys(CT_IMAGES).filter((k) => k.endsWith('_name')).map((k) => k.slice(0, -5))
-  const nbSet = Object.keys(E.CTF).length
-  return (
-    <div style={{ margin: '12px 0' }}>
-      <button className="fx-btn sm" onClick={() => setOpen(!open)}>{open ? 'Masquer' : 'Choisir les CT des images'}{nbSet ? ` (${nbSet} imposes)` : ''}</button>
-      {open && <div className="fx-s" style={{ whiteSpace: 'normal', margin: '8px 0' }}>Laisse « Auto » pour que l'agent choisisse. « Ignorer » = pas d'image a cet emplacement (la video la remplace).</div>}
-      {open && [0, 1, 2, 3, 4, 5].map((idx) => (
-        <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '4px 0' }}>
-          <span className="fx-s" style={{ width: 150 }}>Angle {Math.floor(idx / 3) + 1} · {['Solution', 'Product', 'Most'][idx % 3]}</span>
-          <select className="fx-in" value={E.CTF[idx] || ''} onChange={(e) => E.setCTF(idx, e.target.value)}>
-            <option value="">Auto</option><option value="skip">Ignorer (video a la place)</option>
-            {ids.map((id) => <option key={id} value={id}>{CT_IMAGES[id + '_name'] || id}{(CT_IMAGES[id + '_awareness'] || []).length ? ' · ' + CT_IMAGES[id + '_awareness'].join('/') : ''}</option>)}
-          </select>
-        </div>))}
-    </div>
   )
 }
 
@@ -174,13 +152,48 @@ function Pipeline({ U }) {
           <div className="fx-s">{a.model}</div>
           <div className="fx-prog"><div style={{ width: s.pct + '%' }} /></div>
           <div className="fx-agent-s">{s.text}</div>
-        </div>) })}</div>
+        </div>) })}
+        <div className="fx-agent pending" style={{ opacity: 0.75 }}>
+          <div className="fx-agent-h"><span className="fx-badge-n">4</span><b>{AGENT_VIDEO.name}</b></div>
+          <div className="fx-s" style={{ whiteSpace: 'normal' }}>{AGENT_VIDEO.model}</div>
+          <div className="fx-agent-s">Import manuel : 1 vidéo par angle</div>
+        </div></div>
     </section>
+  )
+}
+
+function VideoSlot({ S, U, idx, onOther }) {
+  const c = S.creatives[idx], ui = U.crea[idx] || { state: 'video', text: 'Vidéo à importer' }
+  const ref = useRef(null)
+  const [over, setOver] = useState(false)
+  const pret = !!c?.videoUrl && ui.state !== 'running'
+  const onDrop = (e) => { e.preventDefault(); setOver(false); const f = e.dataTransfer.files?.[0]; if (f) E.importerVideo(idx, f) }
+  return (
+    <div className={'fx-crea ' + (pret ? 'done' : ui.state === 'running' ? 'running' : 'pending')}>
+      <input ref={ref} type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" hidden onChange={(e) => { E.importerVideo(idx, e.target.files[0]); e.target.value = '' }} />
+      <div className="fx-crea-img" onDragOver={(e) => { e.preventDefault(); setOver(true) }} onDragLeave={() => setOver(false)} onDrop={onDrop}
+        style={pret ? undefined : { display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', cursor: 'pointer', border: '2px dashed ' + (over ? 'var(--ac)' : 'rgba(255,255,255,0.18)'), borderRadius: 10, padding: 14 }}
+        onClick={() => { if (!pret && ui.state !== 'running') ref.current.click() }}>
+        {pret ? <video src={c.videoUrl} poster={c.thumbUrl || undefined} controls playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }} />
+          : ui.state === 'running' ? <div><div className="fx-spin" /><div className="fx-s" style={{ marginTop: 8 }}>{ui.text}</div></div>
+          : <div><div style={{ fontSize: 28, lineHeight: 1 }}>▶</div><div style={{ fontWeight: 700, marginTop: 8 }}>Vidéo de l'angle {c.angleIdx + 1}</div><div className="fx-s" style={{ whiteSpace: 'normal', marginTop: 4 }}>Glisse ici la vidéo finale du Video Lab, ou clique pour la choisir (mp4)</div></div>}
+      </div>
+      <div className="fx-crea-b">
+        <div className="fx-crea-m"><span className="fx-ct-n">Vidéo · import manuel</span><span className={'fx-st ' + (pret ? 'done' : 'pending')}>{pret ? 'Vidéo prête' : ui.text}</span></div>
+        <div className="fx-crea-d">{pret ? (c.desc || 'Vidéo importée') : 'La vidéo de cet angle se produit dans le Video Lab, puis s\'importe ici avant l\'envoi.'}</div>
+        <div className="fx-crea-a">
+          <button className="fx-btn sm" disabled={ui.state === 'running'} onClick={() => ref.current.click()}>{pret ? 'Remplacer' : 'Importer'}</button>
+          {pret && <button className="fx-btn sm" onClick={() => E.retirerVideo(idx)}>Retirer</button>}
+          {pret && <SendMenu title="Envoyer cette vidéo" busy={U.sending['c' + idx]} onClient={() => E.sendOneCreative(idx)} onOther={() => onOther({ type: 'creative', index: idx })}>Envoyer</SendMenu>}
+        </div>
+      </div>
+    </div>
   )
 }
 
 function CreaCard({ S, U, idx, onOther }) {
   const c = S.creatives[idx], ui = U.crea[idx] || { state: 'pending', text: 'En attente' }
+  if (E.estSlotVideo(c)) return <VideoSlot S={S} U={U} idx={idx} onOther={onOther} />
   const src = c?.url || (c?.imgB64 ? `data:${c.imageMime || 'image/png'};base64,${c.imgB64}` : null)
   const ready = ui.state === 'done' && src
   const ctName = c?.ct ? (CT_IMAGES[c.ct + '_name'] || c.ct) : '?'
@@ -192,7 +205,8 @@ function CreaCard({ S, U, idx, onOther }) {
         <div className={'fx-crea-d' + (ui.state === 'err' ? ' err' : '')}>{ui.state === 'err' ? ui.err : ready ? (c.desc || '') : 'Génération à venir…'}</div>
         <div className="fx-crea-a">
           <button className="fx-btn sm" disabled={!ready} onClick={() => E.downloadCrea(idx)}>Télécharger</button>
-          <button className="fx-btn sm" title="Régénérer" disabled={ui.state === 'running' || (ui.state === 'pending' && !c?.imgB64 && !c?.url)} onClick={() => E.regenerateCrea(idx)}>↻</button>
+          <button className="fx-btn sm" title="Régénérer avec le même CT" disabled={ui.state === 'running' || (ui.state === 'pending' && !c?.imgB64 && !c?.url)} onClick={() => E.regenerateCrea(idx)}>↻</button>
+          <button className="fx-btn sm" title="Régénérer avec un AUTRE CT (nouveau concept)" disabled={ui.state === 'running' || !S.synthesis} onClick={() => E.regenerateCreaAutreCT(idx)}>⇄ Autre CT</button>
           <SendMenu title="Envoyer cette créative" busy={U.sending['c' + idx]} onClient={() => E.sendOneCreative(idx)} onOther={() => onOther({ type: 'creative', index: idx })}>Envoyer</SendMenu>
         </div>
       </div>
@@ -210,7 +224,7 @@ function CopyPane({ S, U, a, onOther }) {
     <div className="fx-copy">
       <div className="fx-copy-s">
         <div className="fx-copy-l"><b>5 Hooks · variantes Meta Ads</b>
-          <span><button className="fx-link-btn" onClick={() => cp(d.hooks.join('\n\n'))}>copier tout</button>
+          <span><button className="fx-link-btn" disabled={ui.state === 'run'} onClick={() => E.regenerateCopy(a)}>{ui.state === 'run' ? 'régénération…' : '↻ régénérer'}</button> <button className="fx-link-btn" onClick={() => cp(d.hooks.join('\n\n'))}>copier tout</button>
             <SendMenu title="Envoyer cette ad copy" busy={U.sending['p' + a]} onClient={() => E.sendOneCopy(a)} onOther={() => onOther({ type: 'copy', index: a })}>Envoyer</SendMenu></span></div>
         {d.hooks.map((h, i) => <div className="fx-hook" key={i}><span>{h}</span><button className="fx-link-btn" onClick={() => cp(h)}>copier</button></div>)}
       </div>
@@ -230,12 +244,12 @@ function Deliverables({ S, U, setManual }) {
   const tab = (i) => { const a = S.angles[i] || 'Angle ' + (i + 1); const short = a.length > 50 ? a.slice(0, 47) + '…' : a; return `Angle ${i + 1} · ${short.replace(/^[Aa]ngle\s*\d\s*[:—–-]?\s*/, '')}` }
   return (
     <section className="fx-card prod">
-      <div className="fx-sec-h"><h2>Livrables · Synthèse + {n * 3} créatives + {n} sets ad copy</h2><span className="fx-step">Étape 3/3</span></div>
+      <div className="fx-sec-h"><h2>Livrables · Synthèse + {n * 2} images + {n} vidéo{n > 1 ? 's' : ''} (import) + {n} sets ad copy</h2><span className="fx-step">Étape 3/3</span></div>
       <div className="fx-syn">
         <div className="fx-syn-h" onClick={() => { U.synOpen = !U.synOpen; E.refresh() }}>
           <span className={'fx-arrow' + (U.synOpen ? ' open' : '')}>›</span><b>Données Marché · {n} angles</b>
           <span className="fx-s" style={{ flex: 1 }}>{S.synthesis ? `${Math.round(S.synthesis.length / 1000)}K${S.startTime ? ' · ' + Math.round((Date.now() - S.startTime) / 1000) + 's' : ''}` : '—'}</span>
-          <span onClick={(e) => e.stopPropagation()}><SendMenu title="Envoyer les Données Marché" busy={U.sending.m} onClient={E.sendMarche} onOther={() => setManual({ type: 'marche', index: null })}>Envoyer</SendMenu></span>
+          <span onClick={(e) => e.stopPropagation()}><button className="fx-btn sm" style={{ marginRight: 6 }} disabled={U.running || U.sending.ana === 'busy'} title="Refaire l'analyse de marché (synthèse, hypothèse, Données Marché)" onClick={E.regenerateAnalyse}>{U.sending.ana === 'busy' ? 'Analyse…' : '↻ Refaire'}</button><SendMenu title="Envoyer les Données Marché" busy={U.sending.m} onClient={E.sendMarche} onOther={() => setManual({ type: 'marche', index: null })}>Envoyer</SendMenu></span>
         </div>
         {U.synOpen && <div className="fx-syn-b">{S.synthesis ? <MarcheSummary marche={S.marche} synthesis={S.synthesis} /> : <div className="fx-s">En cours…</div>}</div>}
       </div>

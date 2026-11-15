@@ -1,6 +1,6 @@
 /* GÉNÉRÉ automatiquement depuis l'ancien Factory (code repris tel quel, sans l'affichage). Ne pas modifier à la main. */
 import { prodv2State, SERVER, COMP_FILES, CT_IMAGES } from './state'
-import { ctGalerieComplete, NIVEAUX_CLE, niveauCT } from '../ctApi'
+import { ctGalerieComplete, NIVEAUX_CLE, niveauCT, ctMemoriser } from '../ctApi'
 
 export function fetchAvecTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
@@ -83,7 +83,8 @@ export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal) {
   const niveau = NIVEAUX_CLE[pos]
   const { angleInstruction } = buildCreativeInstruction(angleIdx, pos)
   const exclure = [...dejaChoisis, ...((prodv2State.renewalContext && prodv2State.renewalContext.ctsUtilisesDernierLot) || [])]
-  const gal = await ctGalerieComplete(null, { niveau, exclure, max: CT_MAX_PROD, echantillon: true })
+  const cleProd = String(prodv2State.productId || (prodv2State.brief && (prodv2State.brief.produit || prodv2State.brief.marque)) || '')
+  const gal = await ctGalerieComplete(null, { niveau, exclure, max: CT_MAX_PROD, echantillon: true, diversifier: true, cle: cleProd })
   if (!gal.cts.length) throw new Error('Galerie CT vide')
   const productB64 = await compressImg(prodv2State.productB64, prodv2State.productMime || 'image/jpeg')
   const res = await fetch(SERVER + '/select-ct-agent', {
@@ -94,6 +95,7 @@ export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal) {
   if (!d) throw new Error(res.status === 404 ? 'route /select-ct-agent introuvable (serveur pas à jour)' : 'réponse inattendue (HTTP ' + res.status + ')')
   if (!res.ok || d.error) throw new Error(d.error || 'HTTP ' + res.status)
   if (!CT_IMAGES[d.id]) throw new Error('CT choisi introuvable dans la galerie : ' + d.id)
+  ctMemoriser(d.id, niveau, cleProd)
   return { id: d.id, raison: d.raison || '', repli: !!d.repli, niveau }
 }
 // Secours si l'agent est indisponible : un CT au bon niveau de conscience, pas encore utilisé dans ce lot.

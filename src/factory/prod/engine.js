@@ -3,6 +3,7 @@
 import { prodv2State as S, SERVER, COMP_FILES, CT_IMAGES, emit, loadSkills } from './state'
 import * as V from './verbatim'
 import { ctGetBase64, loadCTImages } from '../ctApi'
+import { r2Put, videoInfos } from '../r2'
 import { confirmDlg, alertDlg, toast } from '../ui'
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
@@ -22,12 +23,15 @@ export function setAgent(i, state, text, pct) {
 }
 const resetAgents = () => {
   U.agents[1] = { state: 'pending', text: 'En attente', pct: 0 }
-  U.agents[2] = { state: 'pending', text: 'En attente — créatives à produire (3 par angle)', pct: 0 }
+  U.agents[2] = { state: 'pending', text: 'En attente — 2 images par angle (la vidéo de chaque angle s\'importe depuis le Video Lab)', pct: 0 }
   U.agents[3] = { state: 'pending', text: 'En attente — 5 hooks + 1 description par angle', pct: 0 }
 }
-const done = (c) => !!c && (c.imgB64 || c.url)
-export const CTF = (() => { try { return JSON.parse(localStorage.getItem('adstack_ct_forces') || '{}') } catch (_) { return {} } })()
-export function setCTF(idx, v) { if (v) CTF[idx] = v; else delete CTF[idx]; try { localStorage.setItem('adstack_ct_forces', JSON.stringify(CTF)) } catch (_) {} emit() }
+const done = (c) => !!c && (c.imgB64 || c.url || c.videoUrl)
+// v8 — VIDÉO EN MANUEL : chaque angle = 1 emplacement vidéo (importée depuis le Video Lab) + 2 images (Solution Aware, Product Aware).
+// La génération vidéo automatique est désactivée tant que l'agent Créative Vidéo n'est pas terminé.
+export const VIDEO_AUTO = false
+export const estSlotVideo = (c) => !!c && c.kind === 'video'
+const POS_IMAGES = [0, 1]   // niveaux de conscience des 2 images d'un angle (0 = Solution Aware, 1 = Product Aware)
 export const nbCrea = () => S.creatives.filter(done).length
 export const nbCopy = () => S.copies.filter(Boolean).length
 export const angleCount = () => V.prodv2GetAngleCount()
@@ -177,7 +181,7 @@ export async function restoreFromCommande(b) {
   const nbTot = nbAngles * 3
   U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}
   resetAgents()
-  U.crea = Array.from({ length: nbTot }, (_, i) => { const it = S.creatives[i]; return it && it.status === 'done' ? { state: 'done', text: 'Prêt' } : { state: 'pending', text: 'En attente' } })
+  U.crea = Array.from({ length: nbTot }, (_, i) => { const it = S.creatives[i]; if (estSlotVideo(it)) return it.videoUrl ? { state: 'done', text: 'Vidéo prête' } : { state: 'video', text: 'Vidéo à importer' }; return it && it.status === 'done' ? { state: 'done', text: 'Prêt' } : { state: 'pending', text: 'En attente' } })
   U.copy = Array.from({ length: nbAngles }, (_, i) => ({ state: S.copies[i] ? 'done' : 'wait' }))
   if (dejaLivre) { try { localStorage.removeItem('adstack_active_production') } catch (_) {} }
   const nom = b.product?.nom || '?'
@@ -281,24 +285,26 @@ export async function launch() {
     setAgent(2, 'active', 'Le CT de chaque créative est choisi par l\'agent, au niveau de conscience voulu…', 5)
     await loadCTImages()
     if (!Object.keys(CT_IMAGES).some((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT image.')
-    for (let a = 0; a < nbAngles; a++) for (let c = 0; c < 3; c++) {
-      const idx = a * 3 + c
-      S.creatives.push({ angleIdx: a, ctIdx: c, ct: null, status: 'pending' })
+    for (let a = 0; a < nbAngles; a++) {
+      S.creatives.push({ angleIdx: a, kind: 'video', ctIdx: 'video', ct: null, status: 'pending' })
+      POS_IMAGES.forEach((pos) => S.creatives.push({ angleIdx: a, ctIdx: pos, ct: null, status: 'pending' }))
     }
-    setAgent(2, 'active', `0 / ${nbTot} créatives générées`, 0)
+    S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = { state: 'video', text: 'Vidéo à importer' } })
+    const nbImg = nbAngles * POS_IMAGES.length
+    setAgent(2, 'active', `0 / ${nbImg} images générées`, 0)
     setAgent(3, 'active', 'Écriture des hooks et descriptions…', 10)
     let creativesDone = 0
     const runCreatives = async () => {
-      for (let a = 0; a < nbAngles; a++) for (let c = 0; c < 3; c++) {
+      for (let idx = 0; idx < S.creatives.length; idx++) {
         if (signal.aborted) throw new DOMException('Annulé', 'AbortError')
-        const idx = a * 3 + c
+        if (estSlotVideo(S.creatives[idx])) continue
+        const a = S.creatives[idx].angleIdx, c = S.creatives[idx].ctIdx
         try {
           // Choix du CT par l'agent : uniquement parmi les CT balisés au niveau de conscience de CETTE créative
           U.crea[idx] = { state: 'running', text: 'Choix du CT par l\'agent' }; emit()
           const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
           let ctId, ctRaison = ''
-          if (CTF[idx] === 'skip') { U.crea[idx] = { state: 'err', text: 'Ignoree', err: 'Ignoree (remplacee par la video)' }; emit(); creativesDone++; continue }
-          try { if (CTF[idx] && CT_IMAGES[CTF[idx] + '_name'] !== undefined) { ctId = CTF[idx]; ctRaison = 'CT choisi manuellement' } else { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison } }
+          try { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison }
           catch (errCT) {
             if (errCT.name === 'AbortError' && signal.aborted) throw errCT
             const sec = V.ctSecours(c, deja)
@@ -316,8 +322,8 @@ export async function launch() {
           markCreativeError(idx, err.message || 'Erreur inconnue')
         }
         creativesDone++
-        setAgent(2, 'active', `${creativesDone} / ${nbTot} créatives générées`, Math.round(creativesDone / nbTot * 100))
-        if (creativesDone % 3 === 0 || creativesDone === nbTot) autosave(creativesDone === nbTot)
+        setAgent(2, 'active', `${creativesDone} / ${nbImg} images générées`, Math.round(creativesDone / nbImg * 100))
+        if (creativesDone % 2 === 0 || creativesDone === nbImg) autosave(creativesDone === nbImg)
       }
     }
     const seqPromise = runCreatives().catch((err) => { if (err.name === 'AbortError') throw err; console.error('Erreur génération créatives :', err); setAgent(2, 'active', `Erreur : ${err.message}`, 0) })
@@ -326,7 +332,7 @@ export async function launch() {
     if (S.productId && !S.marche) console.warn('[Données Marché] Extraction échouée pour ce batch.')
     await Promise.all([seqPromise, ...copyPromises])
     S.couts = { ...(S.couts || {}), images: Math.round(S.creatives.filter(done).length * 0.30 * 100) / 100, copies: Math.round(S.copies.filter(Boolean).length * 0.10 * 100) / 100 }
-    setAgent(2, 'done', `${nbTot} / ${nbTot} créatives générées`, 100)
+    setAgent(2, 'done', `${S.creatives.filter((x) => !estSlotVideo(x) && done(x)).length} / ${nbImg} images générées — vidéos : à importer depuis le Video Lab`, 100)
     setAgent(3, 'done', `${nbAngles} / ${nbAngles} sets ad copy générés`, 100)
     if (S.briefSource === 'commande' && S.commandeId) {
       try {
@@ -429,14 +435,73 @@ async function generateOneCreative(idx, angleIdx, ctPositionInAngle, ctName, sig
 }
 function markCreativeError(idx, msg) { U.crea[idx] = { state: 'err', text: 'Erreur', err: String(msg).slice(0, 200) }; emit() }
 export async function regenerateCrea(idx) {
-  const c = S.creatives[idx]; if (!c) return
+  const c = S.creatives[idx]; if (!c || estSlotVideo(c)) return
   U.crea[idx] = { state: 'running', text: 'En cours' }
   S.creatives[idx] = { ...c, imgB64: null, url: null, status: 'pending' }; emit()
   try { await generateOneCreative(idx, c.angleIdx, c.ctIdx, c.ct, new AbortController().signal); autosave() }
   catch (err) { markCreativeError(idx, err.message) }
 }
+// v8 — « Autre CT » : la même créative, un concept différent (le CT actuel et ceux déjà pris dans ce lot sont exclus).
+export async function regenerateCreaAutreCT(idx) {
+  const c = S.creatives[idx]; if (!c || estSlotVideo(c)) return
+  if (!S.synthesis) { await alertDlg("La synthèse de l'analyste est nécessaire pour choisir un nouveau CT."); return }
+  U.crea[idx] = { state: 'running', text: "Choix d'un autre CT" }; emit()
+  try {
+    await loadCTImages()
+    const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
+    let ctId, ctRaison = ''
+    try { const r = await V.choisirCTProd(c.angleIdx, c.ctIdx, deja, new AbortController().signal); ctId = r.id; ctRaison = r.raison }
+    catch (eCT) { const sec = V.ctSecours(c.ctIdx, deja); if (!sec) throw eCT; ctId = sec.id; ctRaison = 'CT de secours (' + eCT.message + ')' }
+    S.creatives[idx] = { ...c, ct: ctId, ctRaison, imgB64: null, url: null, thumbUrl: null, status: 'pending' }; emit()
+    await generateOneCreative(idx, c.angleIdx, c.ctIdx, ctId, new AbortController().signal); autosave()
+  } catch (err) { markCreativeError(idx, err.message) }
+}
+// v8 — import d'une vidéo produite dans le Video Lab dans l'emplacement vidéo de son angle (Cloudflare R2, affiche capturée)
+export async function importerVideo(idx, file) {
+  const c = S.creatives[idx]; if (!estSlotVideo(c) || !file) return
+  if (!/^video\//.test(file.type || '') && !/\.(mp4|mov|webm)$/i.test(file.name || '')) { await alertDlg('Choisis un fichier vidéo (mp4, mov ou webm).'); return }
+  if (file.size > 300 * 1048576) { await alertDlg('Vidéo trop lourde (plus de 300 Mo) : exporte-la plus légère depuis le Video Lab.'); return }
+  const avant = { ...U.crea[idx] }
+  U.crea[idx] = { state: 'running', text: 'Envoi de la vidéo… 0 %' }; emit()
+  try {
+    const dossier = 'liv-' + String(S.commandeId || 'test').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 60)
+    const ext = (/\.(mp4|mov|webm)$/i.exec(file.name || '') || [, 'mp4'])[1].toLowerCase()
+    const base = `ct-video/${dossier}/angle${c.angleIdx + 1}_${Date.now()}`
+    const videoUrl = await r2Put(file, base + '.' + ext, (p) => { U.crea[idx] = { state: 'running', text: 'Envoi de la vidéo… ' + Math.round(p * 100) + ' %' }; emit() })
+    let thumbUrl = null, duree = 0
+    try { const inf = await videoInfos(file, 0.15); duree = inf.duree || 0; if (inf.poster) thumbUrl = await r2Put(inf.poster, base + '_affiche.jpg') } catch (_) {}
+    S.creatives[idx] = { ...c, type: 'video', videoUrl, thumbUrl, url: null, imgB64: null, status: 'done', desc: 'Vidéo · ' + (file.name || '') + (duree ? ' · ' + duree + ' s' : ''), duree }
+    U.crea[idx] = { state: 'done', text: 'Vidéo prête' }; emit(); autosave(true)
+    toast('Vidéo importée pour l\'angle ' + (c.angleIdx + 1) + '.')
+  } catch (e) { U.crea[idx] = avant; emit(); await alertDlg("Envoi de la vidéo impossible : " + e.message) }
+}
+export async function retirerVideo(idx) {
+  const c = S.creatives[idx]; if (!estSlotVideo(c) || !c.videoUrl) return
+  if (!(await confirmDlg("Retirer cette vidéo de l'emplacement ? (Si elle a déjà été envoyée au client, elle reste chez lui.)", { ok: 'Retirer' }))) return
+  S.creatives[idx] = { angleIdx: c.angleIdx, kind: 'video', ctIdx: 'video', ct: null, status: 'pending' }
+  U.crea[idx] = { state: 'video', text: 'Vidéo à importer' }; emit(); autosave(true)
+}
+// v8 — refaire l'analyse de marché (synthèse, hypothèse, données marché) sans toucher aux créatives ni aux ad copies déjà faites
+export async function regenerateAnalyse() {
+  if (U.running || U.sending.ana === 'busy') return
+  if (!(await confirmDlg("Refaire l'analyse de marché ?\n\nLa synthèse, l'hypothèse et les Données Marché sont recalculées (coût d'un appel analyste). Les angles peuvent changer : les images et ad copies déjà faites restent telles quelles — régénère-les ensuite si besoin.", { ok: "Refaire l'analyse" }))) return
+  U.sending.ana = 'busy'; setAgent(1, 'active', 'Nouvelle analyse de marché…', 20)
+  try {
+    await loadSkills()
+    const nbAngles = U.nbAngles || V.prodv2GetAngleCount()
+    const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbAngles * 3)
+    const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, undefined, false, { productId: S.productId, nbAngles })
+    const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
+    S.synthesis = synthesisText; S.marche = marche; S.angles = V.prodv2ExtractAngles(synthesisText, nbAngles)
+    setAgent(1, 'done', `Synthèse refaite · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles${marche ? '' : ' · ⚠ Données Marché non extraites'}`, 100)
+    autosave(true); toast('Analyse de marché refaite et sauvegardée.')
+  } catch (e) { setAgent(1, 'done', 'Analyse précédente conservée (' + String(e.message || e).slice(0, 80) + ')', 100); await alertDlg("Nouvelle analyse impossible : " + e.message + "\n\nL'analyse précédente est conservée.") }
+  finally { delete U.sending.ana; emit() }
+}
+export const videosManquantes = () => S.creatives.map((c, i) => ({ c, i })).filter((x) => estSlotVideo(x.c) && !x.c.videoUrl).map((x) => x.c.angleIdx + 1)
 export function downloadCrea(idx) {
-  const c = S.creatives[idx]; if (!c || (!c.url && !c.imgB64)) return
+  const c = S.creatives[idx]; if (!c || (!c.url && !c.imgB64 && !c.videoUrl)) return
+  if (c.videoUrl) { window.open(c.videoUrl, '_blank'); return }
   const a = document.createElement('a')
   a.href = c.url || ('data:image/png;base64,' + c.imgB64)
   a.download = `creative_angle${c.angleIdx + 1}_${c.ct}.png`; a.target = '_blank'
@@ -505,6 +570,7 @@ export async function sendMarche() {
 export async function sendClient(reload) {
   if (!(await needCmd())) return
   if (!S.creatives.some(done) && !S.copies.some(Boolean)) { await alertDlg("Aucun livrable généré pour l'instant — rien à envoyer."); return }
+  { const vm = videosManquantes(); if (vm.length && !(await confirmDlg(`La vidéo ${vm.length > 1 ? 'des angles ' + vm.join(', ') + ' n\'est' : 'de l\'angle ' + vm[0] + ' n\'est'} pas encore importée.\n\nEnvoyer quand même au client ce qui est prêt ? (Les vidéos pourront être envoyées une par une ensuite.)`, { ok: 'Envoyer ce qui est prêt' }))) return }
   U.sending.all = 'busy'; U.sendLabel = 'Envoi en cours…'; emit()
   const fin = (label, ok) => { delete U.sending.all; U.sendLabel = label || null; emit() }
   try {
