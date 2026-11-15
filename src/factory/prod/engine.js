@@ -6,6 +6,7 @@ import { ctGetBase64, loadCTImages } from '../ctApi'
 import { r2Put, videoInfos } from '../r2'
 import { confirmDlg, alertDlg, toast } from '../ui'
 import * as VID from './video'
+import * as PL from './plan'
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
@@ -34,12 +35,11 @@ const done = (c) => !!c && (c.imgB64 || c.url || c.videoUrl)
 // La génération vidéo automatique est désactivée tant que l'agent Créative Vidéo n'est pas terminé.
 export const VIDEO_AUTO = true   // v9 : les vidéos se tournent automatiquement sur le moteur Cloud Run (import manuel toujours possible)
 export const estSlotVideo = (c) => !!c && c.kind === 'video'
-const POS_IMAGES = [0, 1]   // niveaux de conscience des 2 images d'un angle (0 = Solution Aware, 1 = Product Aware)
 export const nbCrea = () => S.creatives.filter(done).length
 export const nbCopy = () => S.copies.filter(Boolean).length
 export const angleCount = () => V.prodv2GetAngleCount()
 export const estComplet = () => V.prodv2EstActuellementComplet()
-export const livrablesPayload = () => JSON.stringify({ creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche, couts: S.couts || null })
+export const livrablesPayload = () => JSON.stringify({ creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche, couts: S.couts || null, planNiveaux: S.planNiveaux || null })
 
 // ── Sauvegarde automatique des livrables sur la commande ──
 export function autosave(immediat = false) {
@@ -156,6 +156,13 @@ export async function loadBriefFromCommande(b) {
     } catch (e) { console.warn('[Commande] Récupération photo_url échouée :', e.message); S.productB64 = null; S.productMime = null }
   } else { S.productB64 = null; S.productMime = null }
   S.logoB64 = null; S.logoMime = null; S.renewalContext = null; U.renewal = null
+  // v10 — le logo du client est chargé : il est envoyé tel quel au générateur d'images et au contrôle qualité
+  if (brief.logo_url) {
+    try {
+      const r = await V.fetchAvecTimeout(brief.logo_url, {}, 15000)
+      if (r.ok) { const blob = await r.blob(); const du = await new Promise((ok, ko) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = ko; f.readAsDataURL(blob) }); const m = String(du).match(/^data:(image\/[a-z+]+);base64,(.+)$/); if (m && /png|jpeg|webp/.test(m[1])) { S.logoMime = m[1]; S.logoB64 = m[2] } }
+    } catch (e) { console.warn('[Commande] Logo non chargé :', e.message) }
+  }
   if (S.productId) {
     try {
       const rc = await V.fetchAvecTimeout(`${SERVER}/products/${S.productId}/renewal-context`, { headers: NGROK }, 15000)
@@ -179,8 +186,11 @@ export async function restoreFromCommande(b) {
   const nc = d.creatives ? d.creatives.filter(done).length : 0
   const np = d.copies ? d.copies.filter(Boolean).length : 0
   await loadBriefFromCommande(b)
-  S.synthesis = d.synthesis || null; S.angles = d.angles || []; S.creatives = d.creatives || []; S.copies = d.copies || []; S.marche = d.marche || null
-  const nbAngles = Math.max(V.prodv2GetAngleCount(), S.angles.length, Math.ceil(S.creatives.length / 3), S.copies.length)
+  S.synthesis = d.synthesis || null; S.creatives = d.creatives || []; S.copies = d.copies || []; S.marche = d.marche || null; S.planNiveaux = d.planNiveaux || null
+  // v10 : le nombre d'angles vient de la quantité commandée (6 créatives = 2 angles), jamais du nombre d'angles écrits dans la synthèse
+  const nbAngles = Math.max(V.prodv2GetAngleCount(), Math.ceil(S.creatives.length / 3))
+  S.angles = (d.angles || []).slice(0, nbAngles)
+  if (S.copies.length > nbAngles) S.copies = S.copies.slice(0, nbAngles)
   const nbTot = nbAngles * 3
   U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}
   resetAgents()
@@ -212,6 +222,7 @@ export async function openCommande(id) {
     if (!(await confirmDlg(`"${nomActuel}" est encore en cours de génération (pas encore terminée). La quitter maintenant risque de perdre ce qui n'est pas encore sauvegardé.\n\nContinuer quand même ?`))) return false
   }
   if (U.running && S.commandeId === id) return true
+  if (U.running) { await alertDlg("Une production est en cours sur cet écran. Annule-la ou attends sa fin avant d'ouvrir une autre commande."); return false }
   try {
     await loadSkills(); await loadCTImages()
     await fetch(`${SERVER}/commandes/${id}/start`, { method: 'POST', headers: NGROK })
@@ -240,168 +251,290 @@ export async function checkResume() {
   } catch (e) { console.warn('[Reprise] Échec :', e.message); clearTimeout(t); U.resuming = false; emit() }
 }
 
-// ── Lancer la production complète : hypothèse + données marché + ad copies + images + vidéos, en parallèle ──
-const IMG_PARALLELES = 4
+// ── Lancer la production complète (v10) ──
+// Un seul lancement à la fois (verrou posé AVANT tout await : un double clic ne peut plus lancer deux productions).
+// Chaque lancement a un numéro : tout résultat d'un lancement annulé ou remplacé est ignoré.
+// Ordre : hypothèse → plan des niveaux de conscience + CT vidéo → [vidéos cloud ∥ images (2 à la fois, contrôle qualité) ∥ ad copies].
+const IMG_PARALLELES = 2                 // au-delà, Gemini Image renvoie des 429 (quota du projet)
+const COUT = { choixCT: 0.08, prompt: 0.12, image: 0.14, qa: 0.03, copie: 0.10 }   // estimations prudentes (USD)
+const BUDGET_HORS_VIDEO_6 = 5            // 5 $ pour 6 créatives (hypothèse, ad copies, images, corrections) — proportionnel au volume
+const MAX_CORRECTIONS = 2
+let verrou = false, runCourant = 0
+const annule = () => new DOMException('Annulé', 'AbortError')
+export const budgetHorsVideo = (nbTot) => Math.round(BUDGET_HORS_VIDEO_6 * Math.max(6, nbTot) / 6 * 100) / 100
+function depenser(usd, poste) {
+  if (!S.budget) return
+  S.budget.depense = Math.round((S.budget.depense + usd) * 1000) / 1000
+  S.budget.postes[poste] = Math.round(((S.budget.postes[poste] || 0) + usd) * 1000) / 1000
+}
+const resteBudget = () => (S.budget ? S.budget.total - S.budget.depense : 0)
+
 export async function launch() {
-  if (!S.brief || !S.productB64) { await alertDlg('Charge un brief.json valide avec photo_produit avant de lancer.'); return }
-  const aDejaDuContenu = S.creatives.some(done)
-  if (aDejaDuContenu && !(await confirmDlg("Relancer la production ?\n\nLe batch actuel (déjà généré, éventuellement déjà envoyé) sera ABANDONNÉ définitivement — y compris chez le client si tu l'avais déjà envoyé.\n\nLe nouveau batch qui va être généré sera le SEUL valide à partir de maintenant.", { ok: 'Relancer', danger: true }))) return
-  if ((S.briefSource !== 'commande' || !S.commandeId) && !(await confirmDlg("Cette production N'EST PAS liée à un ticket de commande.\n\nLa sauvegarde automatique des livrables ne sera PAS active, et les vidéos automatiques (qui lisent la commande) ne seront pas lancées.\n\nLance plutôt depuis un ticket pour un vrai client.\n\nContinuer quand même (test) ?"))) return
-  if (S.renewalContext?.commandeActiveAilleurs) { await alertDlg("Une autre commande est déjà en production pour ce produit.\n\nAttends qu'elle se termine (ou soit envoyée au client) avant de lancer celle-ci — sinon l'historique d'angles marketing ne sera plus fiable."); return }
-  await loadSkills(); await loadCTImages()
-  S.startTime = Date.now()
-  if (S.commandeId) {
-    fetch(`${SERVER}/commandes/${S.commandeId}/generation-started`, { method: 'POST' }).catch(() => {})
-    try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: S.commandeId, ts: Date.now() })) } catch (_) {}
-    if (aDejaDuContenu) toast("Ancien batch abandonné — nouvelle génération en cours, c'est elle qui compte désormais.")
-  }
-  S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null
+  if (verrou || U.running) { toast('Une production est déjà en cours sur cet écran.'); return }
+  verrou = true; U.running = true; U.launchLabel = 'Préparation…'; emit()
+  try { await lancerProduction() }
+  finally { verrou = false }
+}
+async function lancerProduction() {
+  const stop = (msg) => { U.running = false; U.launchLabel = 'Générer tous les livrables'; emit(); if (msg) alertDlg(msg) }
+  if (!S.brief || !S.productB64) return stop('Charge une commande avec sa photo produit avant de lancer.')
+  const aDejaDuContenu = S.creatives.some(done) || S.copies.some(Boolean)
+  if (aDejaDuContenu && !(await confirmDlg("Relancer la production ?\n\nLe lot actuel (déjà généré, éventuellement déjà envoyé) sera ABANDONNÉ — y compris chez le client si tu l'avais déjà envoyé.\n\nLe nouveau lot sera le SEUL valide à partir de maintenant.", { ok: 'Relancer', danger: true }))) return stop()
+  if ((S.briefSource !== 'commande' || !S.commandeId) && !(await confirmDlg("Cette production N'EST PAS liée à une commande.\n\nPas de sauvegarde automatique, et pas de vidéo automatique (le moteur vidéo lit la commande).\n\nContinuer quand même (test) ?"))) return stop()
+  if (S.renewalContext?.commandeActiveAilleurs) return stop("Une autre commande est déjà en production pour ce produit.\n\nAttends qu'elle se termine (ou soit envoyée au client) avant de lancer celle-ci.")
+  if (VID.videoSlots().some((x) => VID.jobEnCours(x.c))) return stop("Des vidéos de cette commande tournent encore sur le cloud.\n\nAttends leur fin, ou arrête-les avec « Annuler », avant de relancer.")
+  const monRun = ++runCourant
   abortCtl = new AbortController()
-  const nbAngles = V.prodv2GetAngleCount()
-  const nbTot = nbAngles * 3
-  const videoCloud = VID.peutVideoCloud()
-  U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}
-  U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente' }))
-  U.copy = Array.from({ length: nbAngles }, () => ({ state: 'run' }))
-  resetAgents(); U.launched = true; U.running = true; U.launchLabel = 'Production en cours…'; U.etapeDebut = Date.now(); emit()
-  if (videoCloud) VID.prechargerCTVideo()    // la galerie CT vidéo se charge pendant que l'analyste travaille
-  try {
-    const rb = await V.fetchAvecTimeout(`${SERVER}/lot/budget?taille=${nbTot}&hypotheseExiste=${S.renewalContext?.syntheseExistante ? 1 : 0}`, { headers: NGROK }, 8000)
-    if (rb.ok) { const j = await rb.json(); S.lotBudget = j; U.banner = { kind: 'info', text: `Lot de ${nbTot} créatives : ${j.composition.angles} angles × (1 vidéo + 2 images) — budget tout compris ${j.budget.total} $ (≈ ${j.budget.parVideo} $ par vidéo).` }; emit() }
-  } catch (_) {}
   const signal = abortCtl.signal
+  const actif = () => runCourant === monRun && !signal.aborted
+  const verifier = () => { if (!actif()) throw annule() }
   try {
+    await loadSkills(); await loadCTImages(); verifier()
+    S.startTime = Date.now()
+    if (S.commandeId) {
+      fetch(`${SERVER}/commandes/${S.commandeId}/generation-started`, { method: 'POST' }).catch(() => {})
+      try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: S.commandeId, ts: Date.now() })) } catch (_) {}
+    }
+    const nbAngles = V.prodv2GetAngleCount()
+    const nbTot = nbAngles * 3
+    const videoCloud = VID.peutVideoCloud()
+    S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null
+    S.budget = { total: budgetHorsVideo(nbTot), depense: 0, postes: {} }
+    U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}; U.envoyeMoi = null
+    U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente du plan' }))
+    U.copy = Array.from({ length: nbAngles }, () => ({ state: 'wait' }))
+    resetAgents(); U.launched = true; U.launchLabel = 'Production en cours…'; U.etapeDebut = Date.now(); U.finiLe = null; emit()
+    if (videoCloud) VID.prechargerCTVideo()
+    U.banner = { kind: 'info', text: `Lot de ${nbTot} créatives : ${nbAngles} angles × (1 vidéo + 2 images). Budget : ${S.budget.total.toFixed(2)} $ pour l'hypothèse, les ad copies, les images et leurs corrections, + jusqu'à ${BUDGET_VIDEO_MAX} $ par vidéo (tous les plans en Veo Fast).` }; emit()
+
     // ── 1. hypothèse de marché ──
     setAgent(1, 'active', 'Recherche multi-sources + synthèse S0→S7…', 20)
     const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbTot)
     const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, signal, false, { productId: S.productId, nbAngles })
+    verifier()
     const bal = V.dernierBalayage()
-    S.couts = { ...(S.couts || {}), hypothese: V.dernierCout() ?? 0, images: 0, copies: 0, videos: 0, estime: true }
+    depenser(V.dernierCout() ?? 0.5, 'hypothese')
     try {
       const dg = await V.fetchAvecTimeout(`${SERVER}/lot/diagnostic`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ synthese: raw }) }, 10000)
-      if (dg.ok) {
-        const j = await dg.json(); S.diagnostic = j.diagnostic
-        if (j.diagnostic && j.diagnostic.aMigrer) U.banner = { kind: 'warn', text: `Hypothèse incomplète : ${j.diagnostic.maturite ? '' : 'profil de maturité de la cible absent ; '}${j.diagnostic.anglesSansRaisons.length ? 'raisons d\'acheter absentes sur les angles ' + j.diagnostic.anglesSansRaisons.join(', ') : ''}. La production continue, mais ces angles n'ont pas leurs raisons d'acheter.` }
-        emit()
-      }
+      if (dg.ok) { const j = await dg.json(); S.diagnostic = j.diagnostic; if (j.diagnostic && j.diagnostic.aMigrer) U.banner = { kind: 'warn', text: `Hypothèse incomplète : ${j.diagnostic.maturite ? '' : 'profil de maturité de la cible absent ; '}${j.diagnostic.anglesSansRaisons.length ? 'raisons d\'acheter absentes sur les angles ' + j.diagnostic.anglesSansRaisons.join(', ') : ''}. La production continue.` } }
     } catch (_) {}
+    verifier()
     const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
-    S.synthesis = synthesisText; S.marche = marche; S.angles = V.prodv2ExtractAngles(synthesisText, nbAngles)
-    setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles extraits${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée, pas de nouveau balayage' : ' · nouveau balayage du marché') : ''}`, 100)
-    await loadCTImages()
-    if (!Object.keys(CT_IMAGES).some((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT image.')
-    // 1 angle = 1 vidéo + 2 images
-    for (let a = 0; a < nbAngles; a++) {
-      S.creatives.push({ angleIdx: a, kind: 'video', ctIdx: 'video', ct: null, status: 'pending' })
-      POS_IMAGES.forEach((pos) => S.creatives.push({ angleIdx: a, ctIdx: pos, ct: null, status: 'pending' }))
-    }
-    S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = videoCloud ? { state: 'running', text: 'En file — choix du CT vidéo', pct: 0 } : { state: 'video', text: 'Vidéo à importer' } })
+    S.synthesis = synthesisText; S.marche = marche; S.angles = V.anglesProduction(synthesisText, nbAngles)
+    setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K · ${nbAngles} angles retenus${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée' : ' · nouveau balayage du marché') : ''}${marche ? '' : ' · ⚠ Données Marché non extraites'}`, 100)
+    if (!Object.keys(CT_IMAGES).some((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))) throw new Error('Galerie CT image vide — ajoute des CT dans la Galerie CT image.')
+
+    // ── 2. plan des niveaux de conscience + CT des vidéos ──
+    setAgent(4, 'active', videoCloud ? 'Plan des niveaux de conscience et choix des ' + nbAngles + ' CT vidéo (tous différents)…' : 'Plan des niveaux de conscience…', 4)
+    let plan, choixVideo = []
+    try { const r = await VID.planifier(nbAngles, { avecVideo: videoCloud }); plan = r.plan; choixVideo = r.choix }
+    catch (e) { plan = PL.planParDefaut(nbAngles); U.banner = { kind: 'warn', text: 'Choix des CT vidéo impossible (' + e.message + ') : les vidéos sont à lancer depuis leur carte.' } }
+    verifier()
+    S.planNiveaux = plan
+    const slots = []
+    plan.forEach((p, a) => {
+      slots.push({ angleIdx: a, kind: 'video', ctIdx: 'video', niveau: p.video, rang: p.niveaux.indexOf(p.video), ct: null, status: 'pending' })
+      PL.niveauxImages(p).forEach((niv) => slots.push({ angleIdx: a, ctIdx: niv, niveau: niv, rang: p.niveaux.indexOf(niv), ct: null, status: 'pending' }))
+    })
+    S.creatives = slots
+    U.crea = slots.map((c) => estSlotVideo(c) ? (videoCloud && choixVideo.some((x) => x.angleIdx === c.angleIdx) ? { state: 'running', text: 'En file', pct: 0 } : { state: 'video', text: 'Vidéo à lancer' }) : { state: 'pending', text: 'En attente' })
+    emit()
     // La commande reçoit tout de suite la synthèse et les angles : le moteur vidéo les lit pour fabriquer les vidéos.
     let sauveOk = true
     if (S.briefSource === 'commande' && S.commandeId) {
-      try { const r = await fetch(`${SERVER}/commandes/${S.commandeId}/save-deliverables`, { method: 'POST', headers: JH, body: livrablesPayload() }); sauveOk = r.ok } catch (_) { sauveOk = false }
+      try { const r = await fetch(`${SERVER}/commandes/${S.commandeId}/save-deliverables`, { method: 'POST', headers: JH, body: livrablesPayload(), signal }); sauveOk = r.ok } catch (e) { if (!actif()) throw annule(); sauveOk = false }
     }
-    // ── 2. vidéos (cloud, en parallèle de tout le reste) ──
+    verifier()
+
+    // ── 3. vidéos (cloud, en parallèle de tout le reste) ──
     let videosPromise = Promise.resolve()
-    if (videoCloud && sauveOk) videosPromise = VID.produireVideos().catch((err) => { console.error('Erreur vidéos :', err); U.agents[4] = { state: 'error', text: 'Erreur : ' + err.message, pct: 0 }; emit() })
-    else if (videoCloud) { U.agents[4] = { state: 'error', text: 'Sauvegarde de la commande impossible : les vidéos n\'ont pas été lancées (relance-les depuis la carte vidéo).', pct: 0 }; U.crea.forEach((x, i) => { if (estSlotVideo(S.creatives[i])) U.crea[i] = { state: 'video', text: 'Vidéo à lancer' } }); emit() }
-    else U.agents[4] = { state: 'pending', text: 'Vidéos : import manuel (production non liée à une commande)', pct: 0 }
-    // ── 3. images (4 en parallèle) et ad copies (toutes en parallèle) ──
-    const nbImg = nbAngles * POS_IMAGES.length
-    setAgent(2, 'active', `0 / ${nbImg} images générées`, 0)
+    if (videoCloud && sauveOk && choixVideo.length) videosPromise = VID.produireVideos(choixVideo, actif).catch((err) => { console.error('Erreur vidéos :', err); setAgent(4, 'error', 'Erreur : ' + err.message, 0) })
+    else if (videoCloud) { setAgent(4, 'error', sauveOk ? 'Aucun CT vidéo choisi : lance les vidéos depuis leur carte.' : 'Sauvegarde de la commande impossible : les vidéos n\'ont pas été lancées (relance-les depuis leur carte).', 0); S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = { state: 'video', text: 'Vidéo à lancer' } }); emit() }
+    else setAgent(4, 'pending', 'Vidéos : import manuel (production non liée à une commande)', 0)
+
+    // ── 4. images (2 à la fois, contrôle qualité) et ad copies (toutes en parallèle) ──
+    const aFaire = S.creatives.map((c, i) => i).filter((i) => !estSlotVideo(S.creatives[i]))
+    const nbImg = aFaire.length
+    let faites = 0
+    setAgent(2, 'active', `0 / ${nbImg} images`, 0)
     setAgent(3, 'active', 'Écriture des hooks et descriptions…', 10)
-    let creativesDone = 0
-    let chaineCT = Promise.resolve()   // les choix de CT se font un par un (diversité du lot) ; les générations, elles, tournent en parallèle
+    let chaineCT = Promise.resolve()   // les choix de CT se font un par un (diversité du lot) ; les générations tournent en parallèle
     const choisirCT = (idx) => {
       const p = chaineCT.then(async () => {
-        const a = S.creatives[idx].angleIdx, c = S.creatives[idx].ctIdx
+        verifier()
+        const c = S.creatives[idx]
         U.crea[idx] = { state: 'running', text: 'Choix du CT par l\'agent' }; emit()
         const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
         let ctId, ctRaison = ''
-        try { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison }
+        try { const r = await V.choisirCTProd(c.angleIdx, c.niveau, deja, signal, c.rang); ctId = r.id; ctRaison = r.raison; depenser(COUT.choixCT, 'images') }
         catch (errCT) {
-          if (errCT.name === 'AbortError' && signal.aborted) throw errCT
-          const sec = V.ctSecours(c, deja)
+          if (!actif()) throw annule()
+          const sec = V.ctSecours(c.niveau, deja)
           if (!sec) throw new Error('Aucun CT disponible : ' + errCT.message)
           ctId = sec.id; ctRaison = 'CT de secours (agent indisponible : ' + errCT.message + ')' + (sec.bonNiveau ? '' : ' — aucun CT balisé à ce niveau')
         }
-        S.creatives[idx].ct = ctId; S.creatives[idx].ctRaison = ctRaison
+        verifier()
+        S.creatives[idx] = { ...S.creatives[idx], ct: ctId, ctRaison }
         return ctId
       })
       chaineCT = p.catch(() => {})
       return p
     }
-    const aFaire = S.creatives.map((c, i) => i).filter((i) => !estSlotVideo(S.creatives[i]))
     let suivant = 0
-    const ouvrier = async () => {
+    const ouvrier = async (n) => {
+      if (n) await new Promise((ok) => setTimeout(ok, 4000 * n))   // départs échelonnés
       while (suivant < aFaire.length) {
-        if (signal.aborted) throw new DOMException('Annulé', 'AbortError')
+        verifier()
         const idx = aFaire[suivant++]
         try {
           const ctId = await choisirCT(idx)
-          await generateOneCreativeWithRetry(idx, S.creatives[idx].angleIdx, S.creatives[idx].ctIdx, ctId, signal)
+          await genererAvecReprises(idx, ctId, signal, actif)
         } catch (err) {
-          if (err.name === 'AbortError' && signal.aborted) throw err
+          if (!actif()) throw annule()
           console.error(`Erreur créative ${idx + 1} :`, err); markCreativeError(idx, err.message || 'Erreur inconnue')
         }
-        creativesDone++
-        setAgent(2, 'active', `${creativesDone} / ${nbImg} images générées`, Math.round(creativesDone / nbImg * 100))
-        if (creativesDone % 2 === 0 || creativesDone === nbImg) autosave(creativesDone === nbImg)
+        faites++
+        setAgent(2, 'active', `${faites} / ${nbImg} images`, Math.round(faites / nbImg * 100))
+        autosave(faites === nbImg)
       }
     }
-    const imagesPromise = Promise.all(Array.from({ length: Math.min(IMG_PARALLELES, aFaire.length) }, ouvrier)).catch((err) => { if (err.name === 'AbortError') throw err; console.error('Erreur génération créatives :', err); setAgent(2, 'active', `Erreur : ${err.message}`, 0) })
-    const copyPromises = []
-    for (let a = 0; a < nbAngles; a++) copyPromises.push(generateOneCopy(a, signal).catch((err) => { if (err.name === 'AbortError') throw err; markCopyError(a, err.message) }))
-    if (S.productId && !S.marche) console.warn('[Données Marché] Extraction échouée pour ce batch.')
-    await Promise.all([imagesPromise, ...copyPromises])
+    const imagesPromise = Promise.all(Array.from({ length: Math.min(IMG_PARALLELES, nbImg) }, (_, n) => ouvrier(n)))
+    const copyPromises = Array.from({ length: nbAngles }, (_, a) => generateOneCopy(a, signal, actif).catch((err) => { if (!actif()) throw annule(); markCopyError(a, err.message) }))
+    const surAnnulation = new Promise((_, ko) => signal.addEventListener('abort', () => ko(annule()), { once: true }))
+    await Promise.race([Promise.all([imagesPromise, ...copyPromises]), surAnnulation])
+    verifier()
     const nbImgOk = S.creatives.filter((x) => !estSlotVideo(x) && done(x)).length
-    S.couts = { ...(S.couts || {}), images: Math.round(nbImgOk * 0.30 * 100) / 100, copies: Math.round(S.copies.filter(Boolean).length * 0.10 * 100) / 100 }
-    setAgent(2, nbImgOk === nbImg ? 'done' : 'active', `${nbImgOk} / ${nbImg} images générées`, 100)
-    setAgent(3, 'done', `${S.copies.filter(Boolean).length} / ${nbAngles} sets ad copy générés`, 100)
+    setAgent(2, nbImgOk === nbImg ? 'done' : 'error', `${nbImgOk} / ${nbImg} images${nbImgOk < nbImg ? ' · ' + (nbImg - nbImgOk) + ' à refaire (bouton ↻)' : ''}`, 100)
+    setAgent(3, S.copies.filter(Boolean).length === nbAngles ? 'done' : 'error', `${S.copies.filter(Boolean).length} / ${nbAngles} sets ad copy`, 100)
+    S.couts = { ...(S.couts || {}), hors_video: S.budget.depense, budget_hors_video: S.budget.total, postes: S.budget.postes, estime: true }
     autosave(true)
-    // ── 4. on attend la dernière vidéo ──
-    await videosPromise
+
+    // ── 5. on attend la dernière vidéo ──
+    if (VID.videoSlots().some((x) => VID.jobEnCours(x.c) || (U.crea[x.i] && U.crea[x.i].state === 'running'))) U.launchLabel = 'En attente des vidéos…'
+    emit()
+    await Promise.race([videosPromise.then(() => VID.attendreVideos()), surAnnulation])
+    verifier()
     S.couts = { ...(S.couts || {}), videos: Math.round(VID.videoSlots().reduce((s, x) => s + Number((x.c.job || {}).cout_usd || 0), 0) * 100) / 100 }
     if (S.briefSource === 'commande' && S.commandeId) {
-      try { const r = await fetch(`${SERVER}/commandes/${S.commandeId}/save-deliverables`, { method: 'POST', headers: JH, body: livrablesPayload() }); if (!r.ok) throw new Error('HTTP ' + r.status) }
-      catch (e) {
-        console.warn('[Commande] Sauvegarde livrables échouée :', e.message)
-        await alertDlg(`La sauvegarde automatique des livrables a échoué (${e.message}).\n\nNE FERME PAS CET ONGLET — utilise directement « Envoyer » : il fonctionne avec ce qui est déjà affiché.`)
-      }
+      try { const r = await saveNow(); if (!r.ok) throw new Error('HTTP ' + r.status) }
+      catch (e) { await alertDlg(`La sauvegarde automatique des livrables a échoué (${e.message}).\n\nNE FERME PAS CET ONGLET — « Envoyer » fonctionne avec ce qui est affiché.`) }
     }
     U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; emit()
   } catch (err) {
-    if (err.name === 'AbortError' || (abortCtl && abortCtl.signal.aborted)) { U.launchLabel = 'Relancer la production' }
-    else { console.error(err); await alertDlg('Erreur production : ' + err.message); U.launchLabel = 'Réessayer' }
-    U.running = false; abortCtl = null; emit()
+    const annulation = err.name === 'AbortError' || runCourant !== monRun || signal.aborted
+    if (runCourant !== monRun) return            // un autre lancement a pris la main : on ne touche plus à rien
+    if (!annulation) { console.error(err); await alertDlg('Erreur production : ' + err.message) }
+    S.creatives.forEach((c, i) => { if (!estSlotVideo(c) && U.crea[i] && U.crea[i].state === 'running') U.crea[i] = { state: 'pending', text: 'Arrêtée' } })
+    U.copy.forEach((x, a) => { if (x && x.state === 'run') U.copy[a] = { state: 'wait' } })
+    ;[1, 2, 3].forEach((k) => { if (U.agents[k].state === 'active') U.agents[k] = { ...U.agents[k], state: 'error', text: annulation ? 'Arrêté (Annuler)' : U.agents[k].text } })
+    U.running = false; U.launchLabel = annulation ? 'Relancer la production' : 'Réessayer'; U.finiLe = Date.now(); abortCtl = null; emit()
+    autosave(true)
   }
 }
-export function cancel() { if (abortCtl) abortCtl.abort() }
+export const BUDGET_VIDEO_MAX = 15
 
-// ── Créatives ──
-async function generateOneCreativeWithRetry(idx, angleIdx, ctIdx, ctName, signal) {
-  const RETRY_DELAY_MS = 30000, MAX_RETRIES = 2
-  let lastErr = null
-  for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
-    if (signal && signal.aborted) throw new DOMException('Annulé', 'AbortError')
-    try { return await generateOneCreative(idx, angleIdx, ctIdx, ctName, signal) }
+// Annuler : arrête TOUT de suite les images, les ad copies et l'analyse (rien de nouveau n'est lancé, les réponses
+// en vol sont ignorées). Les vidéos du cloud : arrêtées aussi si le fondateur le confirme.
+export async function cancel() {
+  if (!U.running) return
+  const enCours = VID.videoSlots().filter((x) => VID.jobEnCours(x.c))
+  let arreterVid = false
+  if (enCours.length) arreterVid = await confirmDlg(`Arrêter aussi les ${enCours.length} vidéo(s) qui tournent sur le cloud ?\n\n« Tout arrêter » : les machines sont coupées maintenant (ce qu'elles ont déjà dépensé est perdu).\nFermer cette fenêtre : les vidéos continuent et arrivent ici quand elles sont prêtes ; seuls les images et ad copies sont arrêtés.`, { ok: 'Tout arrêter', danger: true })
+  runCourant++
+  if (abortCtl) abortCtl.abort()
+  if (arreterVid) { const n = await VID.arreterVideos(); toast(n + ' vidéo(s) arrêtée(s).') }
+  S.creatives.forEach((c, i) => { if (!estSlotVideo(c) && U.crea[i] && U.crea[i].state === 'running') U.crea[i] = { state: 'pending', text: 'Arrêtée' } })
+  U.copy.forEach((x, a) => { if (x && x.state === 'run') U.copy[a] = { state: 'wait' } })
+  ;[1, 2, 3].forEach((k) => { if (U.agents[k] && U.agents[k].state === 'active') U.agents[k] = { ...U.agents[k], state: 'error', text: 'Arrêté (Annuler)' } })
+  U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; verrou = false
+  emit(); autosave(true)
+  if (!arreterVid && enCours.length) VID.reprendreVideos()
+}
+
+// ── Une image : génération, contrôle qualité, corrections tant que le budget le permet ──
+const estQuota = (m) => /exhausted|quota|429|rate/i.test(m || '')
+async function avecReessai(fn, signal, idx, quoi) {
+  let dernier = null
+  for (let essai = 1; essai <= 4; essai++) {
+    if (signal && signal.aborted) throw annule()
+    try { return await fn() }
     catch (err) {
-      const vraieAnnulation = err.name === 'AbortError' && signal && signal.aborted
-      if (vraieAnnulation) throw err
-      lastErr = err
-      const msg = (err.message || '').toLowerCase()
-      const isTimeout = err.name === 'AbortError' || err.name === 'TimeoutError' || msg.includes('timeout')
-      const isQuota = msg.includes('exhausted') || msg.includes('quota') || msg.includes('429') || msg.includes('rate')
-      if ((!isQuota && !isTimeout) || attempt > MAX_RETRIES) throw err
-      U.crea[idx] = { state: 'running', text: isTimeout ? `Timeout serveur — retry ${attempt}/${MAX_RETRIES} dans 30s` : `Rate limit Gemini — retry ${attempt}/${MAX_RETRIES} dans 30s` }
-      emit()
-      await new Promise((resolve, reject) => {
-        const t = setTimeout(resolve, RETRY_DELAY_MS)
-        if (signal) signal.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Annulé', 'AbortError')) }, { once: true })
-      })
+      if (signal && signal.aborted) throw annule()
+      dernier = err
+      const m = String(err.message || '')
+      const timeout = err.name === 'TimeoutError' || /timeout/i.test(m)
+      if ((!estQuota(m) && !timeout) || essai === 4) throw err
+      const att = 15000 * essai
+      U.crea[idx] = { state: 'running', text: (timeout ? 'Délai serveur' : 'Quota Gemini atteint') + ` — ${quoi} reprend dans ${att / 1000} s` }; emit()
+      await new Promise((ok, ko) => { const t = setTimeout(ok, att); if (signal) signal.addEventListener('abort', () => { clearTimeout(t); ko(annule()) }, { once: true }) })
     }
   }
-  throw lastErr
+  throw dernier
+}
+async function appelCreative(idx, ctName, signal, reprise) {
+  const c = S.creatives[idx]
+  await loadSkills()
+  const ctMimeRaw = CT_IMAGES[ctName + '_mime'] || 'image/jpeg'
+  const ctB64 = reprise ? null : await V.compressImg(await ctGetBase64(ctName), ctMimeRaw)
+  const productB64 = await V.compressImg(S.productB64, S.productMime || 'image/jpeg')
+  const { creativeSystem, angleInstruction } = V.buildCreativeInstruction(c.angleIdx, c.niveau || c.ctIdx, c.rang)
+  const sig = (typeof AbortSignal.any === 'function') ? AbortSignal.any([signal, AbortSignal.timeout(600000)]) : signal
+  const res = await fetch(SERVER + '/creative-prod-v10', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: sig,
+    body: JSON.stringify({ systemPrompt: creativeSystem, synthese: S.synthesis, brief: S.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, niveau: V.NIVEAU_LIB[c.niveau] || '', reprise: reprise || null }),
+  })
+  const txt = await res.text(); let d = null; try { d = JSON.parse(txt) } catch (_) {}
+  if (!d) throw new Error(res.status === 404 ? 'route /creative-prod-v10 absente (serveur Render pas à jour)' : 'réponse inattendue (HTTP ' + res.status + ')')
+  if (d.error) throw new Error(d.error)
+  return d
+}
+async function controleQualite(idx, gen, signal) {
+  const c = S.creatives[idx]
+  const productB64 = await V.compressImg(S.productB64, S.productMime || 'image/jpeg')
+  const imgC = await V.compressImg(gen.imageData, gen.imageMime || 'image/png')
+  const r = await fetch(SERVER + '/creative-qa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+    body: JSON.stringify({ imageBase64: imgC, imageMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, prompt: gen.prompt, brief: S.brief, niveau: V.NIVEAU_LIB[c.niveau] || '', angle: S.angles[c.angleIdx] || '' }) })
+  const d = await r.json().catch(() => ({}))
+  if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
+  return d
+}
+async function genererAvecReprises(idx, ctName, signal, actif = () => true, { corrections = MAX_CORRECTIONS, budgetLibre = false } = {}) {
+  const verifierLocal = () => { if (!actif() || (signal && signal.aborted)) throw annule() }
+  U.crea[idx] = { state: 'running', text: 'Prompt et image en cours' }; emit()
+  let gen = await avecReessai(() => appelCreative(idx, ctName, signal, null), signal, idx, 'la génération')
+  verifierLocal(); depenser(COUT.prompt + COUT.image, 'images')
+  let meilleur = { gen, qa: null, corr: 0 }, nbCorr = 0
+  for (let k = 0; k <= corrections; k++) {
+    U.crea[idx] = { state: 'running', text: k ? `Contrôle qualité de la correction ${k}` : 'Contrôle qualité' }; emit()
+    let qa = null
+    try { qa = await avecReessai(() => controleQualite(idx, gen, signal), signal, idx, 'le contrôle'); depenser(COUT.qa, 'controle') }
+    catch (e) { verifierLocal(); console.warn('[Contrôle qualité] indisponible :', e.message); qa = { verdict: 'inconnu', score: null, defauts: [], resume: 'contrôle indisponible (' + String(e.message).slice(0, 80) + ')' } }
+    verifierLocal()
+    if (!meilleur.qa || (qa.score || 0) > (meilleur.qa.score || 0) || qa.verdict === 'ok') meilleur = { gen, qa, corr: nbCorr }
+    if (qa.verdict !== 'corriger') break
+    const bloquants = (qa.defauts || []).filter((x) => x.gravite === 'bloquant')
+    if (!bloquants.length) break
+    if (k === corrections) break
+    if (!budgetLibre && resteBudget() < COUT.image + COUT.qa + 0.05) { meilleur.qa = { ...meilleur.qa, budget_atteint: true }; break }
+    U.crea[idx] = { state: 'running', text: `Correction ${k + 1} : ${String(bloquants[0].detail || bloquants[0].type).slice(0, 70)}` }; emit()
+    gen = await avecReessai(() => appelCreative(idx, ctName, signal, { prompt: meilleur.gen.prompt, meta: meilleur.gen.meta, corrections: qa.consignes_correction || bloquants.map((x) => x.detail).join(' ; ') }), signal, idx, 'la correction')
+    verifierLocal(); depenser(COUT.image, 'corrections'); nbCorr++
+  }
+  const g = meilleur.gen, q = meilleur.qa || {}
+  const imgB64 = g.imageData, imageMime = g.imageMime || 'image/png'
+  const desc = (g.meta && g.meta.length > 5) ? g.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${S.creatives[idx].angleIdx + 1}`
+  const qaRes = { verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
+  S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime, qa: qaRes }
+  U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
+  if (S.briefSource === 'commande' && S.commandeId) {
+    try {
+      const thumbB64 = await genThumb(imgB64, imageMime)
+      const rUp = await fetch(`${SERVER}/commandes/${S.commandeId}/upload-creative-now`, { method: 'POST', headers: JH, body: JSON.stringify({ imgB64, mime: imageMime, index: idx, thumbB64 }) })
+      const dUp = await rUp.json()
+      if (dUp.ok && dUp.url && S.creatives[idx] && S.creatives[idx].imgB64 === imgB64) S.creatives[idx] = { ...S.creatives[idx], url: dUp.url, thumbUrl: dUp.thumbUrl || null, imgB64: null }
+    } catch (e) { console.warn(`[Upload immédiat] Créative ${idx} — échoué, conservée en base64 en secours :`, e.message) }
+  }
+  emit()
 }
 
 function genThumb(base64Data, mime) {
@@ -423,63 +556,28 @@ function genThumb(base64Data, mime) {
   })
 }
 
-async function generateOneCreative(idx, angleIdx, ctPositionInAngle, ctName, signal) {
-  U.crea[idx] = { state: 'running', text: 'En cours' }; emit()
-  await loadSkills()
-  const ctMimeRaw = CT_IMAGES[ctName + '_mime'] || 'image/jpeg'
-  const ctB64 = await V.compressImg(await ctGetBase64(ctName), ctMimeRaw)
-  const productB64 = await V.compressImg(S.productB64, S.productMime || 'image/jpeg')
-  const { creativeSystem, angleInstruction } = V.buildCreativeInstruction(angleIdx, ctPositionInAngle)
-  // 600 s : large marge au-dessus du pire cas serveur (voir l'historique des correctifs de l'ancien Factory)
-  const combinedSignal = (typeof AbortSignal.any === 'function') ? AbortSignal.any([signal, AbortSignal.timeout(600000)]) : signal
-  const res = await fetch(SERVER + '/creative-prod', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: combinedSignal,
-    body: JSON.stringify({ systemPrompt: creativeSystem, synthese: S.synthesis, brief: S.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg' }),
-  })
-  const d = await res.json()
-  if (d.error) throw new Error(d.error)
-  const imgB64 = d.imageData
-  const imageMime = d.imageMime || 'image/png'
-  const desc = (d.meta && d.meta.length > 5) ? d.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${angleIdx + 1}`
-  // Affichage immédiat avec le base64
-  S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime }
-  U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
-  // Upload immédiat vers le Storage : seul un lien léger est gardé ensuite (évite les lignes trop lourdes en base)
-  let url = null, thumbUrl = null
-  if (S.briefSource === 'commande' && S.commandeId) {
-    try {
-      const thumbB64 = await genThumb(imgB64, imageMime)
-      const rUp = await fetch(`${SERVER}/commandes/${S.commandeId}/upload-creative-now`, { method: 'POST', headers: JH, body: JSON.stringify({ imgB64, mime: imageMime, index: idx, thumbB64 }) })
-      const dUp = await rUp.json()
-      if (dUp.ok && dUp.url) { url = dUp.url; thumbUrl = dUp.thumbUrl || null }
-    } catch (e) { console.warn(`[Upload immédiat] Créative ${idx} — échoué, conservée en base64 en secours :`, e.message) }
-  }
-  S.creatives[idx] = url
-    ? { ...S.creatives[idx], url, thumbUrl, imgB64: null, desc, status: 'done', imageMime }
-    : { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime }
-  emit()
-}
 function markCreativeError(idx, msg) { U.crea[idx] = { state: 'err', text: 'Erreur', err: String(msg).slice(0, 200) }; emit() }
 export async function regenerateCrea(idx) {
-  const c = S.creatives[idx]; if (!c || estSlotVideo(c)) return
-  U.crea[idx] = { state: 'running', text: 'En cours' }
-  S.creatives[idx] = { ...c, imgB64: null, url: null, status: 'pending' }; emit()
-  try { await generateOneCreative(idx, c.angleIdx, c.ctIdx, c.ct, new AbortController().signal); autosave() }
+  const c = S.creatives[idx]; if (!c || estSlotVideo(c) || !c.ct) return
+  if (U.crea[idx] && U.crea[idx].state === 'running') return
+  try { await genererAvecReprises(idx, c.ct, new AbortController().signal, () => true, { corrections: 1, budgetLibre: true }); autosave() }
   catch (err) { markCreativeError(idx, err.message) }
 }
-// v8 — « Autre CT » : la même créative, un concept différent (le CT actuel et ceux déjà pris dans ce lot sont exclus).
+// « Autre CT » : la même créative, un concept différent (le CT actuel et ceux déjà pris dans ce lot sont exclus).
 export async function regenerateCreaAutreCT(idx) {
   const c = S.creatives[idx]; if (!c || estSlotVideo(c)) return
+  if (U.crea[idx] && U.crea[idx].state === 'running') return
   if (!S.synthesis) { await alertDlg("La synthèse de l'analyste est nécessaire pour choisir un nouveau CT."); return }
   U.crea[idx] = { state: 'running', text: "Choix d'un autre CT" }; emit()
   try {
     await loadCTImages()
     const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
     let ctId, ctRaison = ''
-    try { const r = await V.choisirCTProd(c.angleIdx, c.ctIdx, deja, new AbortController().signal); ctId = r.id; ctRaison = r.raison }
-    catch (eCT) { const sec = V.ctSecours(c.ctIdx, deja); if (!sec) throw eCT; ctId = sec.id; ctRaison = 'CT de secours (' + eCT.message + ')' }
-    S.creatives[idx] = { ...c, ct: ctId, ctRaison, imgB64: null, url: null, thumbUrl: null, status: 'pending' }; emit()
-    await generateOneCreative(idx, c.angleIdx, c.ctIdx, ctId, new AbortController().signal); autosave()
+    const niv = c.niveau || c.ctIdx
+    try { const r = await V.choisirCTProd(c.angleIdx, niv, deja, new AbortController().signal, c.rang); ctId = r.id; ctRaison = r.raison }
+    catch (eCT) { const sec = V.ctSecours(niv, deja); if (!sec) throw eCT; ctId = sec.id; ctRaison = 'CT de secours (' + eCT.message + ')' }
+    S.creatives[idx] = { ...c, ct: ctId, ctRaison }; emit()
+    await genererAvecReprises(idx, ctId, new AbortController().signal, () => true, { corrections: 1, budgetLibre: true }); autosave()
   } catch (err) { markCreativeError(idx, err.message) }
 }
 // v8 — import d'une vidéo produite dans le Video Lab dans l'emplacement vidéo de son angle (Cloudflare R2, affiche capturée)
@@ -504,7 +602,7 @@ export async function importerVideo(idx, file) {
 export async function retirerVideo(idx) {
   const c = S.creatives[idx]; if (!estSlotVideo(c) || !c.videoUrl) return
   if (!(await confirmDlg("Retirer cette vidéo de l'emplacement ? (Si elle a déjà été envoyée au client, elle reste chez lui.)", { ok: 'Retirer' }))) return
-  S.creatives[idx] = { angleIdx: c.angleIdx, kind: 'video', ctIdx: 'video', ct: null, status: 'pending' }
+  S.creatives[idx] = { angleIdx: c.angleIdx, kind: 'video', ctIdx: 'video', niveau: c.niveau, rang: c.rang, ct: null, status: 'pending' }
   U.crea[idx] = { state: 'video', text: 'Vidéo à importer' }; emit(); autosave(true)
 }
 // v8 — refaire l'analyse de marché (synthèse, hypothèse, données marché) sans toucher aux créatives ni aux ad copies déjà faites
@@ -518,7 +616,7 @@ export async function regenerateAnalyse() {
     const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbAngles * 3)
     const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, undefined, false, { productId: S.productId, nbAngles })
     const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
-    S.synthesis = synthesisText; S.marche = marche; S.angles = V.prodv2ExtractAngles(synthesisText, nbAngles)
+    S.synthesis = synthesisText; S.marche = marche; S.angles = V.anglesProduction(synthesisText, nbAngles)
     setAgent(1, 'done', `Synthèse refaite · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles${marche ? '' : ' · ⚠ Données Marché non extraites'}`, 100)
     autosave(true); toast('Analyse de marché refaite et sauvegardée.')
   } catch (e) { setAgent(1, 'done', 'Analyse précédente conservée (' + String(e.message || e).slice(0, 80) + ')', 100); await alertDlg("Nouvelle analyse impossible : " + e.message + "\n\nL'analyse précédente est conservée.") }
@@ -535,20 +633,21 @@ export function downloadCrea(idx) {
 }
 
 // ── Copies ──
-async function generateOneCopy(angleIdx, signal) {
+const copieValide = (h, d) => Array.isArray(h) && h.filter((x) => String(x || '').trim().length > 3).length >= 5 && d && d !== "(description vide — Gemini n'a pas suivi le format)" && String(d).length > 60
+async function generateOneCopy(angleIdx, signal, actif = () => true) {
   U.copy[angleIdx] = { state: 'run' }; emit()
   await loadSkills()
-  for (let t = 1; t <= 2; t++) {
+  let dernier = null
+  for (let t = 1; t <= 3; t++) {   // contrôle : 5 hooks et une vraie description, sinon réécriture (max 2 reprises)
     const { hooks, description } = await V.prodv2GenerateOneCopyAttempt(angleIdx, signal)
-    if (description && description !== "(description vide — Gemini n'a pas suivi le format)") {
-      S.copies[angleIdx] = { hooks, description }; U.copy[angleIdx] = { state: 'done' }; emit()
-      autosave(angleIdx === S.angles.length - 1); return
-    }
-    if (t < 2) console.warn(`[Copywriter] Description vide pour l'angle ${angleIdx + 1}, nouvelle tentative...`)
+    if (!actif()) throw new DOMException('Annulé', 'AbortError')
+    depenser(COUT.copie, 'copies')
+    dernier = { hooks, description }
+    if (copieValide(hooks, description)) break
+    console.warn(`[Copywriter] Ad copy de l'angle ${angleIdx + 1} incomplète (essai ${t}) : réécriture.`)
   }
-  const { hooks, description } = await V.prodv2GenerateOneCopyAttempt(angleIdx, signal)
-  S.copies[angleIdx] = { hooks, description }; U.copy[angleIdx] = { state: 'done' }; emit()
-  autosave(angleIdx === S.angles.length - 1)
+  S.copies[angleIdx] = dernier; U.copy[angleIdx] = { state: 'done' }; emit()
+  autosave()
 }
 function markCopyError(a, msg) { U.copy[a] = { state: 'err', err: msg }; emit() }
 export async function regenerateCopy(angleIdx) {
@@ -556,7 +655,8 @@ export async function regenerateCopy(angleIdx) {
   catch (err) { if (err.name !== 'AbortError') markCopyError(angleIdx, err.message) }
 }
 export const relancerVideo = VID.relancerVideo
-export const lancerVideosManquantes = () => VID.produireVideos()
+export const lancerVideosManquantes = async () => { for (const x of VID.videoSlots()) { if (!x.c.videoUrl && !VID.jobEnCours(x.c)) await VID.relancerVideo(x.i) } }
+export const attacherLienVideo = (idx, url) => VID.attacherLien(idx, url)
 export const copyIsFallback = (c) => !!c && c.description === "(description vide — Gemini n'a pas suivi le format)"
 
 // ── Envois ──

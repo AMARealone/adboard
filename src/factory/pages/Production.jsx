@@ -5,9 +5,10 @@ import * as E from '../prod/engine'
 import { useData } from '../data'
 import { etat } from '../api'
 import { toast, confirmDlg } from '../ui'
+import * as PL from '../prod/plan'
 
 const esc = (s) => (s == null ? '' : String(s))
-const NIVEAUX = ['Solution Aware', 'Product Aware']
+const nivLib = (c) => (c && (PL.LIB[c.niveau] || ['Solution Aware', 'Product Aware', 'Most Aware'][c.ctIdx])) || ''
 const titreAngle = (S, a) => {
   const t = String(S.angles[a] || '').split('*')[0].replace(/^\s*angle\s*\d+\s*[:—–-]?\s*/i, '').trim()
   return t || 'Angle ' + (a + 1)
@@ -195,6 +196,12 @@ function Launch({ S, U }) {
         <div><b>{n * 2}</b><span>images<br />Solution + Product Aware</span></div>
         <div><b>{n}</b><span>vidéos<br />{n > 1 ? n + ' CT différents' : '1 CT'} choisis par l'agent</span></div>
       </div>
+      <div className="fx2-niv">
+        <b>Niveaux de conscience</b>
+        <span>Chaque angle suit un parcours : <em>Problème → Solution → Produit</em> ou <em>Solution → Produit → Most Aware</em>. Le lot contient toujours au moins une créative Solution, une Produit et une Most Aware. L'agent choisit selon le marché, le code vérifie.</span>
+        <b>Budget</b>
+        <span>{E.budgetHorsVideo(n * 3).toFixed(2)} $ pour l'hypothèse, les ad copies, les {n * 2} images et leurs corrections automatiques · jusqu'à {E.BUDGET_VIDEO_MAX} $ par vidéo, tous les plans animés en Veo Fast.</span>
+      </div>
       <ul className="fx2-checks">{checks.map((c, i) => <li key={i} className={c.ok ? 'ok' : c.load ? 'load' : 'ko'}><i>{c.ok ? '✓' : c.load ? '…' : '!'}</i><span>{c.t}{!c.ok && !c.load && c.warn ? <em> — {c.warn}</em> : null}</span></li>)}</ul>
       {diag.s === 'ko' && diag.cmd && <div className="fx2-cmd"><span>À coller une seule fois dans Cloud Shell pour autoriser Render à lancer les vidéos :</span><code>{diag.cmd}</code><button className="fx-btn sm" onClick={() => navigator.clipboard.writeText(diag.cmd).then(() => toast('Commande copiée'))}>Copier</button></div>}
       <div className="fx2-go">
@@ -232,12 +239,12 @@ function Board({ S, U }) {
   const n = U.nbAngles
   const total = 1 + n * 3 + n
   const pretes = (S.synthesis ? 1 : 0) + S.creatives.filter(aLivrable).length + S.copies.filter(Boolean).length
-  const pct = Math.min(100, Math.round(pretes / total * 100))
+  const pct = Math.min(100, Math.round(Math.min(pretes, total) / total * 100))
   const ecoule = U.etapeDebut ? (U.running ? Date.now() : (U.finiLe || Date.now())) - U.etapeDebut : 0
   return (
     <section className="fx2-board">
       <div className="fx2-board-h">
-        <div><b>{U.running ? 'Production en cours' : pretes >= total ? 'Production terminée' : 'Production à compléter'}</b><span>{pretes} / {total} livrables prêts{U.running && U.etapeDebut ? ' · ' + dur(ecoule) : ''}</span></div>
+        <div><b>{U.running ? 'Production en cours' : pretes >= total ? 'Production terminée' : 'Production à compléter'}</b><span>{Math.min(pretes, total)} / {total} livrables prêts{U.running && U.etapeDebut ? ' · ' + dur(ecoule) : ''}{S.budget ? ' · hors vidéo ' + S.budget.depense.toFixed(2) + ' / ' + S.budget.total.toFixed(2) + ' $' : ''}</span></div>
         {U.running ? <button className="fx-btn sm" onClick={E.cancel}>Annuler</button> : <button className="fx-btn sm" onClick={E.launch}>↻ Relancer tous les livrables</button>}
       </div>
       <div className="fx2-bar"><div style={{ width: pct + '%' }} /></div>
@@ -257,10 +264,19 @@ function Ring({ pct }) {
   const r = 26, c = 2 * Math.PI * r
   return <svg width="64" height="64" viewBox="0 0 64 64"><circle cx="32" cy="32" r={r} className="fx2-ring-bg" /><circle cx="32" cy="32" r={r} className="fx2-ring" strokeDasharray={c} strokeDashoffset={c * (1 - Math.min(100, pct || 0) / 100)} transform="rotate(-90 32 32)" /><text x="32" y="36" textAnchor="middle" className="fx2-ring-t">{Math.round(pct || 0)}%</text></svg>
 }
+function Qa({ qa }) {
+  const ok = qa.verdict === 'ok'
+  const titre = (qa.defauts || []).map((d) => (d.gravite === 'bloquant' ? '■ ' : '· ') + d.detail).join('\n') || qa.resume || ''
+  return <div className={'fx2-qa ' + (ok ? 'ok' : qa.verdict === 'corriger' ? 'ko' : 'na')} title={titre}>
+    {ok ? 'Contrôle qualité ✓' : qa.verdict === 'corriger' ? '⚠ ' + String(((qa.defauts || []).find((d) => d.gravite === 'bloquant') || (qa.defauts || [])[0] || {}).detail || 'défaut signalé').slice(0, 90) : 'Contrôle indisponible'}
+    {qa.score != null && <em> · {qa.score}/10</em>}{qa.corrections ? <em> · {qa.corrections} correction{qa.corrections > 1 ? 's' : ''}</em> : null}{qa.budget_atteint ? <em> · budget atteint</em> : null}
+  </div>
+}
 function VideoTile({ S, U, idx, onOther }) {
   const c = S.creatives[idx], ui = U.crea[idx] || { state: 'pending', text: 'En attente de la synthèse' }
   const ref = useRef(null)
   const [log, setLog] = useState(false)
+  const [lien, setLien] = useState(null)
   const job = (c && c.job) || null
   const pret = !!c?.videoUrl && ui.state !== 'running'
   const lignes = (U.vjournal && U.vjournal[idx]) || []
@@ -275,19 +291,22 @@ function VideoTile({ S, U, idx, onOther }) {
           : <div className="fx2-run idle"><div className="fx2-big">▶</div><div className="fx2-run-t">{peut ? 'Vidéo à lancer' : 'Vidéo de l\'angle ' + ((c && c.angleIdx + 1) || '')}</div><div className="fx2-run-s">{peut ? 'Le CT est choisi automatiquement' : 'Démarre après la synthèse'}</div></div>}
       </div>
       <div className="fx2-tile-b">
-        <div className="fx2-tile-m"><b>Vidéo</b><span className={'fx-st ' + (pret ? 'done' : ui.state === 'running' ? 'running' : ui.state === 'err' ? 'err' : 'pending')}>{pret ? 'Prête' : ui.state === 'running' ? 'Cloud' : ui.state === 'err' ? 'Échec' : 'À lancer'}</span></div>
+        <div className="fx2-tile-m"><b>Vidéo{c && c.niveau ? ' · ' + nivLib(c) : ''}</b><span className={'fx-st ' + (pret ? 'done' : ui.state === 'running' ? 'running' : ui.state === 'err' ? 'err' : 'pending')}>{pret ? 'Prête' : ui.state === 'running' ? 'Cloud' : ui.state === 'err' ? 'Échec' : 'À lancer'}</span></div>
         {job && <div className="fx2-ct" title={job.raison || ''}><span>CT</span> {job.ctNom || c.ct}{job.cout_usd != null && job.cout_usd !== '' ? <em> · {Number(job.cout_usd).toFixed(2)} $</em> : null}{job.monteur ? <em> · {job.monteur === 'hyperframes' ? 'HyperFrames' : 'ffmpeg'}</em> : null}</div>}
         {job && job.raison && <div className="fx2-why">{job.raison}</div>}
+        {job && job.direction && <div className="fx2-why" title={Object.values(job.direction).join(' · ')}>Direction : {[job.direction.lieux, job.direction.tenue, job.direction.lumiere].filter(Boolean).join(' · ')}</div>}
         <div className="fx2-links">
           {job && job.historiqueUrl && <a href={job.historiqueUrl} target="_blank" rel="noopener noreferrer">Historique</a>}
           {job && job.dossierUrl && <a href={job.dossierUrl} target="_blank" rel="noopener noreferrer">Dossier complet</a>}
           {lignes.length > 0 && <button className="fx-link-btn" onClick={() => setLog(!log)}>{log ? 'Masquer le journal' : 'Journal'}</button>}
         </div>
         {log && <pre className="fx2-log">{lignes.join('\n')}</pre>}
+        {lien !== null && <div className="fx2-lien"><input className="fx-in" placeholder="https://…/video.mp4" value={lien} onChange={(e) => setLien(e.target.value)} /><button className="fx-btn sm primary" onClick={() => { if (E.attacherLienVideo(idx, lien)) setLien(null); else toast('Lien invalide : il doit commencer par https:// et finir par .mp4, .mov ou .webm') }}>Rattacher</button></div>}
         <div className="fx-crea-a">
           {(pret || ui.state === 'err' || ui.state === 'video' || ui.state === 'pending') && <button className="fx-btn sm" disabled={!peut} onClick={() => E.relancerVideo(idx)}>{pret ? '↻ Refaire' : ui.state === 'err' ? '↻ Relancer' : '▶ Lancer'}</button>}
           {(pret || ui.state === 'err') && <button className="fx-btn sm" disabled={!peut} title="Un autre concept vidéo (CT jamais utilisé dans cette commande)" onClick={() => E.relancerVideo(idx, { autreCT: true })}>⇄ Autre CT</button>}
           {ui.state !== 'running' && <button className="fx-btn sm" disabled={!c} onClick={() => ref.current.click()}>{pret ? 'Remplacer' : 'Importer'}</button>}
+          {ui.state !== 'running' && !pret && <button className="fx-btn sm" disabled={!c} title="Rattacher une vidéo déjà produite (lien .mp4)" onClick={() => setLien(lien === null ? '' : null)}>Lien</button>}
           {pret && <button className="fx-btn sm" onClick={() => E.retirerVideo(idx)}>Retirer</button>}
           {pret && <SendMenu title="Envoyer cette vidéo" busy={U.sending['c' + idx]} onClient={() => E.sendOneCreative(idx)} onOther={() => onOther({ type: 'creative', index: idx })}>Envoyer</SendMenu>}
         </div>
@@ -304,8 +323,9 @@ function ImageTile({ S, U, idx, onOther }) {
     <div className={'fx2-tile ' + ui.state}>
       <div className="fx2-media i">{src ? <img src={src} alt={'Créative ' + (idx + 1)} /> : ui.state === 'running' ? <div className="fx2-run"><div className="fx-spin" /><div className="fx2-run-t">{ui.text}</div></div> : ui.state === 'err' ? <div className="fx2-run err"><div className="fx2-big">!</div><div className="fx2-run-s">{ui.err}</div></div> : <div className="fx2-run idle"><div className="fx2-run-s">En attente</div></div>}</div>
       <div className="fx2-tile-b">
-        <div className="fx2-tile-m"><b>Image · {c ? NIVEAUX[c.ctIdx] : ''}</b><span className={'fx-st ' + ui.state}>{ready ? 'Prête' : ui.state === 'running' ? 'En cours' : ui.state === 'err' ? 'Erreur' : 'Attente'}</span></div>
+        <div className="fx2-tile-m"><b>Image · {nivLib(c)}</b><span className={'fx-st ' + ui.state}>{ready ? 'Prête' : ui.state === 'running' ? 'En cours' : ui.state === 'err' ? 'Erreur' : 'Attente'}</span></div>
         <div className="fx2-ct" title={c?.ctRaison || ''}>{ctName ? <><span>CT</span> {ctName}</> : <span>CT choisi par l'agent</span>}</div>
+        {ready && c?.qa && <Qa qa={c.qa} />}
         <div className="fx-crea-a">
           <button className="fx-btn sm" disabled={!ready} onClick={() => E.downloadCrea(idx)}>Télécharger</button>
           <button className="fx-btn sm" title="Régénérer avec le même CT" disabled={ui.state === 'running' || (ui.state === 'pending' && !c?.imgB64 && !c?.url)} onClick={() => E.regenerateCrea(idx)}>↻</button>
@@ -323,7 +343,7 @@ function AngleRow({ S, U, a, onOther }) {
     <section className="fx2-angle">
       <button className="fx2-angle-h" onClick={() => setOpen(!open)}>
         <span className="fx2-angle-n">{a + 1}</span>
-        <span className="fx2-angle-t"><b>{titreAngle(S, a)}</b><small>{prets} / 4 livrables prêts</small></span>
+        <span className="fx2-angle-t"><b>{titreAngle(S, a)}</b><small>{prets} / 4 livrables prêts{S.planNiveaux && S.planNiveaux[a] ? ' · parcours ' + S.planNiveaux[a].niveaux.map((x) => PL.COURT[x]).join(' → ') : ''}</small></span>
         <span className={'fx-arrow' + (open ? ' open' : '')}>›</span>
       </button>
       {open && <>
@@ -388,7 +408,7 @@ function ActionBar({ S, U, setCompte }) {
   }
   return (
     <div className="fx2-bar-send">
-      <div className="fx2-bar-i"><b>{pretes} / {total} livrables prêts</b><span>{envoyeMoi ? 'Envoyé sur ton compte à ' + heure(U.envoyeMoi) + ' ✓' : moi ? 'Compte de contrôle : ' + moi.user.email : 'Vérifie d\'abord sur ton propre compte'}</span></div>
+      <div className="fx2-bar-i"><b>{Math.min(pretes, total)} / {total} livrables prêts</b><span>{envoyeMoi ? 'Envoyé sur ton compte à ' + heure(U.envoyeMoi) + ' ✓' : moi ? 'Compte de contrôle : ' + moi.user.email : 'Vérifie d\'abord sur ton propre compte'}</span></div>
       <div className="fx2-bar-a">
         {moi && <button className="fx-link-btn" onClick={() => setCompte(true)}>changer de compte</button>}
         <button className={'fx-btn' + (envoyeMoi ? '' : ' primary')} disabled={!pretes || U.sending.moi === 'busy'} onClick={() => { if (!E.monCompte()) setCompte(true); else E.envoyerSurMonCompte() }}>{U.sending.moi === 'busy' ? 'Envoi…' : U.sending.moi === 'ok' ? '✓ Envoyé' : envoyeMoi ? 'Renvoyer sur mon compte' : '1 · Envoyer sur mon compte'}</button>

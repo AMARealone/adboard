@@ -77,11 +77,25 @@ export async function apiCopywriter(system, parts, maxTokens, signal, isTest=fal
   return d.text;
 }
 
+// v10 — niveaux de conscience : une créative porte une clé de niveau ('problem' | 'solution' | 'product' | 'most').
+// Compatibilité : un nombre = ancien index de position (0 Solution, 1 Product, 2 Most).
+export const NIVEAU_LIB = { problem: 'Problem Aware', solution: 'Solution Aware', product: 'Product Aware', most: 'Most Aware' }
+export const cleNiveau = (x) => (typeof x === 'string' && NIVEAU_LIB[x]) ? x : (NIVEAUX_CLE[x] || 'solution')
+// Angles de CETTE production : ceux de la section S2 de la synthèse, dans l'ordre, exactement nbAngles (jamais plus).
+export function anglesProduction(synthesis, nbAngles) {
+  const txt = String(synthesis || '')
+  const lignes = txt.split('\n')
+  let d = lignes.findIndex((l) => /^\s*\**\s*S2\s*[—–:\-]/.test(l)), f = -1
+  if (d >= 0) { f = lignes.findIndex((l, i) => i > d && /^\s*\**\s*S[3-9]\s*[—–:\-]/.test(l)) }
+  const bloc = d >= 0 ? lignes.slice(d, f > d ? f : undefined).join('\n') : txt
+  const tous = prodv2ExtractAngles(bloc, nbAngles)
+  return tous.slice(0, nbAngles)
+}
 // ── PRODUCTION : l'agent choisit le CT de CHAQUE créative, parmi les CT balisés au niveau de conscience de la créative ──
 export const CT_MAX_PROD = 120 // plafond de CT montrés à l'agent par créative (échantillon aléatoire au-delà : coût et délai maîtrisés)
-export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal) {
-  const niveau = NIVEAUX_CLE[pos]
-  const { angleInstruction } = buildCreativeInstruction(angleIdx, pos)
+export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal, rang) {
+  const niveau = cleNiveau(pos)
+  const { angleInstruction } = buildCreativeInstruction(angleIdx, pos, rang)
   const exclure = [...dejaChoisis, ...((prodv2State.renewalContext && prodv2State.renewalContext.ctsUtilisesDernierLot) || [])]
   const cleProd = String(prodv2State.productId || (prodv2State.brief && (prodv2State.brief.produit || prodv2State.brief.marque)) || '')
   const gal = await ctGalerieComplete(null, { niveau, exclure, max: CT_MAX_PROD, echantillon: true, diversifier: true, cle: cleProd })
@@ -100,7 +114,7 @@ export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal) {
 }
 // Secours si l'agent est indisponible : un CT au bon niveau de conscience, pas encore utilisé dans ce lot.
 export function ctSecours(pos, dejaChoisis) {
-  const niveau = NIVEAUX_CLE[pos]
+  const niveau = cleNiveau(pos)
   const ids = Object.keys(CT_IMAGES).filter((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))
   const lib = ids.filter((id) => !dejaChoisis.has(id))
   const bons = lib.filter((id) => (CT_IMAGES[id + '_awareness'] || []).some((a) => niveauCT(a) === niveau))
@@ -509,21 +523,21 @@ export async function buildAnalysteInputs(nbAngles, nbCreativesTotal) {
   return { analysteSystem, analysteParts }
 }
 
-export function buildCreativeInstruction(angleIdx, ctPositionInAngle) {
+export function buildCreativeInstruction(angleIdx, ctPositionInAngle, rangDansAngle) {
   const creativeSystem = COMP_FILES['COMPETENCE_CREATIVE_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
-  const nbAnglesTotal = prodv2State.angles.length || 2;
+  const nbAnglesTotal = Math.max(1, prodv2State.ui && prodv2State.ui.nbAngles ? prodv2State.ui.nbAngles : (prodv2State.angles.length || 2));
   const nbCreativesTotalRun = nbAnglesTotal * 3;
 
-  // ── Routing niveau de conscience par position CT dans l'angle ──
-  // ctPositionInAngle : 0 → Solution Aware, 1 → Product Aware, 2 → Most Aware
-  const niveauxConscience = ['Solution Aware', 'Product Aware', 'Most Aware'];
-  const consciencePos = ctPositionInAngle; // 0, 1 ou 2
-  const niveauConscience = niveauxConscience[consciencePos];
-
-  const angleInstruction = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nANGLE IMPOSÉ POUR CETTE CRÉATIVE (NON-NÉGOCIABLE) :\nAngle ${angleIdx+1} — ${angle}\n\n⛔ INTERDICTION ABSOLUE : tu ne dois PAS choisir un autre angle. L'angle ${angleIdx+1} est déjà sélectionné par l'orchestrateur. La PHASE de choix d'angle est NEUTRALISÉE.\n\n✅ DANS TON BLOC ===META===, tu écris OBLIGATOIREMENT : "ANGLE CHOISI : ${angleIdx+1} · ${angle}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ TAILLE RÉELLE DE CE RUN (prime sur toute mention "3 angles"/"9 créatives" du fichier de compétences, qui décrit le cas le plus courant mais pas systématique) :\nCette commande compte ${nbAnglesTotal} angles au total (pas nécessairement 3) et ${nbCreativesTotalRun} créatives au total (pas nécessairement 9) — 3 niveaux de conscience par angle, comme toujours.\n\nROUTAGE ${nbAnglesTotal} ANGLES × 3 NIVEAUX DE CONSCIENCE (NON-NÉGOCIABLE) :\nCette créative est la créative n°${consciencePos+1} de l'Angle ${angleIdx+1}.\n\nNIVEAU DE CONSCIENCE IMPOSÉ : ${niveauConscience}. Utilise la déclinaison "${niveauConscience}" de l'Angle ${angleIdx+1} telle que définie dans S3 de la synthèse (ton, instructions spécifiques, dosage peur/désir-douleur — voir RÈGLE V4.3).\n\n✅ Dans le bloc ===META===, déclare :\n   NIVEAU DE CONSCIENCE CHOISI : ${niveauConscience}\n   MOTEUR DOMINANT : [peur/désir/douleur de l'Angle ${angleIdx+1}, depuis S2]\n   VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX ${nbCreativesTotalRun-1} AUTRES : Niveau ${niveauConscience} · Angle ${angleIdx+1} · Concept CT [type observé en IMAGE 2]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  // v10 — le niveau de conscience vient du PLAN DE PRODUCTION (parcours de l'angle), plus d'une position fixe.
+  const cle = cleNiveau(ctPositionInAngle);
+  const niveauConscience = NIVEAU_LIB[cle];
+  const consciencePos = typeof rangDansAngle === 'number' ? rangDansAngle : (typeof ctPositionInAngle === 'number' ? ctPositionInAngle : 0);
+  const plan = prodv2State.planNiveaux && prodv2State.planNiveaux[angleIdx];
+  const parcoursTxt = plan ? `\nPARCOURS DE CET ANGLE (décidé par l'orchestrateur) : ${plan.niveaux.map((n) => NIVEAU_LIB[n]).join(' → ')} — la vidéo porte ${NIVEAU_LIB[plan.video]}, cette image porte ${niveauConscience}. Ne refais pas ce que fait une autre créative de l'angle.\n` : '';
+  const angleInstruction = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nANGLE IMPOSÉ POUR CETTE CRÉATIVE (NON-NÉGOCIABLE) :\nAngle ${angleIdx+1} — ${angle}\n\n⛔ INTERDICTION ABSOLUE : tu ne dois PAS choisir un autre angle. L'angle ${angleIdx+1} est déjà sélectionné par l'orchestrateur. La PHASE de choix d'angle est NEUTRALISÉE.\n\n✅ DANS TON BLOC ===META===, tu écris OBLIGATOIREMENT : "ANGLE CHOISI : ${angleIdx+1} · ${angle}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ TAILLE RÉELLE DE CE RUN (prime sur toute mention "3 angles"/"9 créatives" du fichier de compétences, qui décrit le cas le plus courant mais pas systématique) :\nCette commande compte ${nbAnglesTotal} angles au total (pas nécessairement 3) et ${nbCreativesTotalRun} créatives au total (pas nécessairement 9) — 3 niveaux de conscience par angle (1 vidéo + 2 images), répartis par l'orchestrateur sur toute la production.${parcoursTxt}\n\nROUTAGE ${nbAnglesTotal} ANGLES × 3 NIVEAUX DE CONSCIENCE (NON-NÉGOCIABLE) :\nCette créative est la créative n°${consciencePos+1} de l'Angle ${angleIdx+1}.\n\nNIVEAU DE CONSCIENCE IMPOSÉ : ${niveauConscience}. Utilise la déclinaison "${niveauConscience}" de l'Angle ${angleIdx+1} telle que définie dans S3 de la synthèse (ton, instructions spécifiques, dosage peur/désir-douleur — voir RÈGLE V4.3).\n\n✅ Dans le bloc ===META===, déclare :\n   NIVEAU DE CONSCIENCE CHOISI : ${niveauConscience}\n   MOTEUR DOMINANT : [peur/désir/douleur de l'Angle ${angleIdx+1}, depuis S2]\n   VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX ${nbCreativesTotalRun-1} AUTRES : Niveau ${niveauConscience} · Angle ${angleIdx+1} · Concept CT [type observé en IMAGE 2]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   // v5.73 — raison d'acheter imposée : la créative k de l'angle porte la raison k+1 (champ 17 de la carte de l'angle).
-  const raisonLine = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRAISON D'ACHETER IMPOSÉE POUR CETTE CRÉATIVE : Raison ${ctPositionInAngle + 1} du champ 17 de la carte de l'angle ${angleIdx + 1} (si la carte n'a pas de champ 17, ignore cette consigne). Elle ne s'écrit jamais dans l'image.\n`
+  const raisonLine = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRAISON D'ACHETER IMPOSÉE POUR CETTE CRÉATIVE : Raison ${consciencePos + 1} du champ 17 de la carte de l'angle ${angleIdx + 1} (si la carte n'a pas de champ 17, ignore cette consigne). Elle ne s'écrit jamais dans l'image.\n`
   return { creativeSystem, angleInstruction: angleInstruction + raisonLine }
 }
 
