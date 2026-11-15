@@ -24,6 +24,7 @@ export function CrmProvider({ children }) {
   useEffect(() => { reload() }, [reload])
 
   // Écriture optimiste : l'écran se met à jour tout de suite, la base reçoit seulement les clés modifiées.
+  const derniereErreur = useRef('')
   const mutate = useCallback(async (id, { notes, body } = {}) => {
     const before = ref.current.find((p) => p.id === id); if (!before) return false
     const cur = N(before), next = { ...cur }
@@ -36,7 +37,7 @@ export function CrmProvider({ children }) {
       return true
     } catch (e) {
       setProspects((l) => l.map((p) => (p.id === id ? before : p)))
-      toast('Échec, rien n\'a été enregistré : ' + e.message); return false
+      derniereErreur.current = e.message; toast('Échec, rien n\'a été enregistré : ' + e.message); return false
     }
   }, [])
   const saveCfg = useCallback(async (changes) => {
@@ -75,7 +76,13 @@ export function CrmProvider({ children }) {
         if (n.ecrit_etat === 'actif') notes.ecrit_etat = 'perdu'
         if (p.statut === 'lead') body = { statut: 'en_suivi', date_lead: null }
       } else if (choix === 'relances') notes = { ecrit_etat: undefined, ecrit_at: undefined }
-      const ok = await mutate(id, { notes, body })
+      let ok = await mutate(id, { notes, body })
+      if (!ok && choix === 'paye') {
+        // La base a refusé le statut « acheteur » (ou la date) : on enregistre au moins le paiement dans les notes, la section Acheteurs s'appuie dessus.
+        const cause = derniereErreur.current
+        ok = await mutate(id, { notes })
+        if (ok) { toast('Paiement enregistré ✓ dans les notes, mais la base a refusé le statut « acheteur » : ' + cause); return ok }
+      }
       if (ok) toast(choix === 'relance' ? 'Dans Closing : première relance à J+1' : choix === 'paye' ? 'Marqué payé ✓ : il est maintenant dans Acheteurs' : choix === 'perdu' ? 'Pas intéressé : retourné dans Suivi' : 'Remis dans les relances'); return ok
     },
     // — Acheteurs

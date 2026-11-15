@@ -57,10 +57,13 @@ export async function fetchConfig() {
   try { cfg = JSON.parse((rows[0] && rows[0].notes) || '{}') || {} } catch (_) {}
   return { id: rows[0] ? rows[0].id : null, cfg }
 }
+// Détail renvoyé par la base (Supabase) quand elle refuse une requête : colonne inconnue, contrainte, droits…
+const detailErreur = async (r) => { try { const d = await r.clone().json(); const m = [d.message, d.details, d.hint].filter(Boolean).join(' — '); return m ? ' (' + m.slice(0, 240) + ')' : '' } catch (_) { return '' } }
+
 // Écriture « sans écrasement » : on relit la fiche, on fusionne seulement les clés modifiées, puis on écrit.
 export async function mergeNotes(id, changes, body) {
   const r = await sfetch(`${REST}/prospects?id=eq.${id}&select=notes`, { headers: hdr() })
-  if (!r.ok) throw new Error('Lecture : HTTP ' + r.status)
+  if (!r.ok) throw new Error('Lecture : HTTP ' + r.status + await detailErreur(r))
   const rows = await r.json()
   let cur = {}
   try { cur = JSON.parse((rows[0] && rows[0].notes) || '{}') || {} } catch (_) {}
@@ -68,7 +71,7 @@ export async function mergeNotes(id, changes, body) {
   Object.keys(changes || {}).forEach((k) => { if (changes[k] === undefined) delete next[k]; else next[k] = changes[k] })
   const notes = JSON.stringify(next)
   const w = await sfetch(`${REST}/prospects?id=eq.${id}`, { method: 'PATCH', headers: hdr({ Prefer: 'return=minimal' }), body: JSON.stringify({ ...(body || {}), notes }) })
-  if (!w.ok) throw new Error('Écriture : HTTP ' + w.status)
+  if (!w.ok) throw new Error('Écriture : HTTP ' + w.status + await detailErreur(w))
   return notes
 }
 export async function mergeConfig(id, changes) {
@@ -78,7 +81,7 @@ export async function mergeConfig(id, changes) {
   try { cur = JSON.parse((rows[0] && rows[0].notes) || '{}') || {} } catch (_) {}
   const next = { ...cur, ...changes }
   const w = await sfetch(`${REST}/prospects?id=eq.${id}`, { method: 'PATCH', headers: hdr({ Prefer: 'return=minimal' }), body: JSON.stringify({ notes: JSON.stringify(next) }) })
-  if (!w.ok) throw new Error('Config : HTTP ' + w.status)
+  if (!w.ok) throw new Error('Config : HTTP ' + w.status + await detailErreur(w))
   return next
 }
 // Lien court (compte les clics). Sans miniature imposée : la redirection laisse WhatsApp lire l'aperçu de la page elle-même.
