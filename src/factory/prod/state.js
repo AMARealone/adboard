@@ -11,12 +11,13 @@ export const prodv2State = {
   startTime: null, activeAngle: 0, renewalContext: null,
   // ── affichage uniquement (jamais envoyé au serveur) ──
   ui: {
-    agents: { 1: { state: 'pending', text: 'En attente', pct: 0 }, 2: { state: 'pending', text: 'En attente — créatives à produire (3 par angle)', pct: 0 }, 3: { state: 'pending', text: 'En attente — 5 hooks + 1 description par angle', pct: 0 } },
+    agents: { 1: { state: 'pending', text: 'En attente', pct: 0 }, 2: { state: 'pending', text: 'En attente — 2 images par angle', pct: 0 }, 3: { state: 'pending', text: 'En attente — 5 hooks + 1 description par angle', pct: 0 }, 4: { state: 'pending', text: 'En attente — 1 vidéo par angle', pct: 0 } },
     crea: [],        // par créative : { state:'pending'|'running'|'done'|'err', text, err }
     copy: [],        // par angle    : { state:'wait'|'run'|'done'|'err', err }
     nbAngles: 0, running: false, launchLabel: 'Lancer la production', launched: false,
     banner: null,    // { kind:'info'|'warn'|'ok', text }
     renewal: null,   // { kind, text }
+    vjournal: {}, compteV: 0, etapeDebut: null, finiLe: null, envoyeMoi: null,
     resuming: false, resumeError: '', synOpen: false, sending: {}, sendLabel: null,
   },
 }

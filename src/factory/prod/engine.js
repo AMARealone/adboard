@@ -5,12 +5,14 @@ import * as V from './verbatim'
 import { ctGetBase64, loadCTImages } from '../ctApi'
 import { r2Put, videoInfos } from '../r2'
 import { confirmDlg, alertDlg, toast } from '../ui'
+import * as VID from './video'
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
 const U = S.ui
 let abortCtl = null
 let autosaveTimer = null
+VID.brancherSauvegarde((immediat) => autosave(immediat))
 export const isRunning = () => U.running
 export const refresh = () => emit()
 
@@ -23,13 +25,14 @@ export function setAgent(i, state, text, pct) {
 }
 const resetAgents = () => {
   U.agents[1] = { state: 'pending', text: 'En attente', pct: 0 }
-  U.agents[2] = { state: 'pending', text: 'En attente — 2 images par angle (la vidéo de chaque angle s\'importe depuis le Video Lab)', pct: 0 }
+  U.agents[2] = { state: 'pending', text: 'En attente — 2 images par angle', pct: 0 }
   U.agents[3] = { state: 'pending', text: 'En attente — 5 hooks + 1 description par angle', pct: 0 }
+  U.agents[4] = { state: 'pending', text: 'En attente — 1 vidéo par angle, tournée sur le cloud', pct: 0 }
 }
 const done = (c) => !!c && (c.imgB64 || c.url || c.videoUrl)
 // v8 — VIDÉO EN MANUEL : chaque angle = 1 emplacement vidéo (importée depuis le Video Lab) + 2 images (Solution Aware, Product Aware).
 // La génération vidéo automatique est désactivée tant que l'agent Créative Vidéo n'est pas terminé.
-export const VIDEO_AUTO = false
+export const VIDEO_AUTO = true   // v9 : les vidéos se tournent automatiquement sur le moteur Cloud Run (import manuel toujours possible)
 export const estSlotVideo = (c) => !!c && c.kind === 'video'
 const POS_IMAGES = [0, 1]   // niveaux de conscience des 2 images d'un angle (0 = Solution Aware, 1 = Product Aware)
 export const nbCrea = () => S.creatives.filter(done).length
@@ -181,7 +184,7 @@ export async function restoreFromCommande(b) {
   const nbTot = nbAngles * 3
   U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}
   resetAgents()
-  U.crea = Array.from({ length: nbTot }, (_, i) => { const it = S.creatives[i]; if (estSlotVideo(it)) return it.videoUrl ? { state: 'done', text: 'Vidéo prête' } : { state: 'video', text: 'Vidéo à importer' }; return it && it.status === 'done' ? { state: 'done', text: 'Prêt' } : { state: 'pending', text: 'En attente' } })
+  U.crea = Array.from({ length: nbTot }, (_, i) => { const it = S.creatives[i]; if (estSlotVideo(it)) return it.videoUrl ? { state: 'done', text: 'Vidéo prête' } : VID.jobEnCours(it) ? { state: 'running', text: (it.job.etape || 'Reprise du suivi') + ' · ' + (it.job.pct || 0) + ' %', pct: it.job.pct || 0 } : (it.job && it.job.etat === 'echec') ? { state: 'err', text: 'Échec de la vidéo', err: it.job.erreur || '' } : { state: 'video', text: 'Vidéo à lancer' }; return it && it.status === 'done' ? { state: 'done', text: 'Prêt' } : { state: 'pending', text: 'En attente' } })
   U.copy = Array.from({ length: nbAngles }, (_, i) => ({ state: S.copies[i] ? 'done' : 'wait' }))
   if (dejaLivre) { try { localStorage.removeItem('adstack_active_production') } catch (_) {} }
   const nom = b.product?.nom || '?'
@@ -189,15 +192,17 @@ export async function restoreFromCommande(b) {
     ? `Cette commande a déjà été livrée au client — "${nom}" (${nc}/${nbTot} créatives, ${np}/${nbAngles} sets ad copy). Affichage en lecture seule.`
     : nc || np ? `Contenu déjà généré restauré — "${nom}" (${nc}/${nbTot} créatives, ${np}/${nbAngles} sets ad copy déjà sauvegardés). Rien n'a été perdu.`
     : `Brief chargé — "${nom}". Aucune génération n'a encore commencé.` }
-  U.launched = !(nc === 0 && np === 0)
+  U.launched = !(nc === 0 && np === 0) || S.creatives.some((c) => c && c.job)
   if (U.launched) {
     if (S.synthesis) setAgent(1, 'done', `Synthèse · ${Math.round(S.synthesis.length / 1000)}K chars · ${nbAngles} angles extraits`, 100)
     setAgent(2, nc === nbTot ? 'done' : 'active', `${nc} / ${nbTot} créatives générées`, Math.round(nc / nbTot * 100))
     setAgent(3, np === nbAngles ? 'done' : 'active', `${np} / ${nbAngles} sets ad copy générés`, Math.round(np / nbAngles * 100))
+    VID.majAgentVideo()
     U.launchLabel = 'Relancer la production'
   } else U.launchLabel = 'Lancer la production'
   U.running = false
   emit()
+  VID.reprendreVideos(); VID.majAgentVideo()
 }
 
 // Ouvre une commande dans la production (équivalent de « Lancer / Ouvrir » de l'ancien Factory).
@@ -235,12 +240,13 @@ export async function checkResume() {
   } catch (e) { console.warn('[Reprise] Échec :', e.message); clearTimeout(t); U.resuming = false; emit() }
 }
 
-// ── Lancer la production ──
+// ── Lancer la production complète : hypothèse + données marché + ad copies + images + vidéos, en parallèle ──
+const IMG_PARALLELES = 4
 export async function launch() {
   if (!S.brief || !S.productB64) { await alertDlg('Charge un brief.json valide avec photo_produit avant de lancer.'); return }
   const aDejaDuContenu = S.creatives.some(done)
   if (aDejaDuContenu && !(await confirmDlg("Relancer la production ?\n\nLe batch actuel (déjà généré, éventuellement déjà envoyé) sera ABANDONNÉ définitivement — y compris chez le client si tu l'avais déjà envoyé.\n\nLe nouveau batch qui va être généré sera le SEUL valide à partir de maintenant.", { ok: 'Relancer', danger: true }))) return
-  if ((S.briefSource !== 'commande' || !S.commandeId) && !(await confirmDlg("Cette production N'EST PAS liée à un ticket de commande.\n\nLa sauvegarde automatique des livrables ne sera PAS active — si tu fermes l'onglet avant d'avoir cliqué « Envoyer au client », tout sera perdu.\n\nLance plutôt depuis un ticket (« Lancer » / « Relancer ») si c'est pour un vrai client.\n\nContinuer quand même (test) ?"))) return
+  if ((S.briefSource !== 'commande' || !S.commandeId) && !(await confirmDlg("Cette production N'EST PAS liée à un ticket de commande.\n\nLa sauvegarde automatique des livrables ne sera PAS active, et les vidéos automatiques (qui lisent la commande) ne seront pas lancées.\n\nLance plutôt depuis un ticket pour un vrai client.\n\nContinuer quand même (test) ?"))) return
   if (S.renewalContext?.commandeActiveAilleurs) { await alertDlg("Une autre commande est déjà en production pour ce produit.\n\nAttends qu'elle se termine (ou soit envoyée au client) avant de lancer celle-ci — sinon l'historique d'angles marketing ne sera plus fiable."); return }
   await loadSkills(); await loadCTImages()
   S.startTime = Date.now()
@@ -253,23 +259,23 @@ export async function launch() {
   abortCtl = new AbortController()
   const nbAngles = V.prodv2GetAngleCount()
   const nbTot = nbAngles * 3
-  U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null
+  const videoCloud = VID.peutVideoCloud()
+  U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}
   U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente' }))
   U.copy = Array.from({ length: nbAngles }, () => ({ state: 'run' }))
-  resetAgents(); U.launched = true; U.running = true; U.launchLabel = 'Production en cours…'; emit()
-  // v5.73 — composition et budget du lot (1 vidéo + 2 images par angle, budget tout compris). Informatif : n'empêche rien.
+  resetAgents(); U.launched = true; U.running = true; U.launchLabel = 'Production en cours…'; U.etapeDebut = Date.now(); emit()
+  if (videoCloud) VID.prechargerCTVideo()    // la galerie CT vidéo se charge pendant que l'analyste travaille
   try {
-    const q = nbAngles * 3
-    const rb = await V.fetchAvecTimeout(`${SERVER}/lot/budget?taille=${q}&hypotheseExiste=${S.renewalContext?.syntheseExistante ? 1 : 0}`, { headers: NGROK }, 8000)
-    if (rb.ok) { const j = await rb.json(); S.lotBudget = j; U.banner = { kind: 'info', text: `Lot de ${q} créatives : ${j.composition.angles} angles × (1 vidéo + 2 images) — budget tout compris ${j.budget.total} $ (≈ ${j.budget.parVideo} $ par vidéo). Pour l'instant la production automatique ne génère que les images ; les vidéos se lancent depuis le Video Lab.` }; emit() }
+    const rb = await V.fetchAvecTimeout(`${SERVER}/lot/budget?taille=${nbTot}&hypotheseExiste=${S.renewalContext?.syntheseExistante ? 1 : 0}`, { headers: NGROK }, 8000)
+    if (rb.ok) { const j = await rb.json(); S.lotBudget = j; U.banner = { kind: 'info', text: `Lot de ${nbTot} créatives : ${j.composition.angles} angles × (1 vidéo + 2 images) — budget tout compris ${j.budget.total} $ (≈ ${j.budget.parVideo} $ par vidéo).` }; emit() }
   } catch (_) {}
   const signal = abortCtl.signal
   try {
+    // ── 1. hypothèse de marché ──
     setAgent(1, 'active', 'Recherche multi-sources + synthèse S0→S7…', 20)
     const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbTot)
     const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, signal, false, { productId: S.productId, nbAngles })
     const bal = V.dernierBalayage()
-    // v5.73 — registre de coûts (hypothèse réelle côté serveur ; images et copies estimées) + diagnostic de l'hypothèse (raisons d'acheter, maturité).
     S.couts = { ...(S.couts || {}), hypothese: V.dernierCout() ?? 0, images: 0, copies: 0, videos: 0, estime: true }
     try {
       const dg = await V.fetchAvecTimeout(`${SERVER}/lot/diagnostic`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ synthese: raw }) }, 10000)
@@ -282,68 +288,88 @@ export async function launch() {
     const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
     S.synthesis = synthesisText; S.marche = marche; S.angles = V.prodv2ExtractAngles(synthesisText, nbAngles)
     setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K chars · ${nbAngles} angles extraits${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée, pas de nouveau balayage' : ' · nouveau balayage du marché') : ''}`, 100)
-    setAgent(2, 'active', 'Le CT de chaque créative est choisi par l\'agent, au niveau de conscience voulu…', 5)
     await loadCTImages()
     if (!Object.keys(CT_IMAGES).some((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))) throw new Error('Galerie CT vide — ajoute des CTs dans la Galerie CT image.')
+    // 1 angle = 1 vidéo + 2 images
     for (let a = 0; a < nbAngles; a++) {
       S.creatives.push({ angleIdx: a, kind: 'video', ctIdx: 'video', ct: null, status: 'pending' })
       POS_IMAGES.forEach((pos) => S.creatives.push({ angleIdx: a, ctIdx: pos, ct: null, status: 'pending' }))
     }
-    S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = { state: 'video', text: 'Vidéo à importer' } })
+    S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = videoCloud ? { state: 'running', text: 'En file — choix du CT vidéo', pct: 0 } : { state: 'video', text: 'Vidéo à importer' } })
+    // La commande reçoit tout de suite la synthèse et les angles : le moteur vidéo les lit pour fabriquer les vidéos.
+    let sauveOk = true
+    if (S.briefSource === 'commande' && S.commandeId) {
+      try { const r = await fetch(`${SERVER}/commandes/${S.commandeId}/save-deliverables`, { method: 'POST', headers: JH, body: livrablesPayload() }); sauveOk = r.ok } catch (_) { sauveOk = false }
+    }
+    // ── 2. vidéos (cloud, en parallèle de tout le reste) ──
+    let videosPromise = Promise.resolve()
+    if (videoCloud && sauveOk) videosPromise = VID.produireVideos().catch((err) => { console.error('Erreur vidéos :', err); U.agents[4] = { state: 'error', text: 'Erreur : ' + err.message, pct: 0 }; emit() })
+    else if (videoCloud) { U.agents[4] = { state: 'error', text: 'Sauvegarde de la commande impossible : les vidéos n\'ont pas été lancées (relance-les depuis la carte vidéo).', pct: 0 }; U.crea.forEach((x, i) => { if (estSlotVideo(S.creatives[i])) U.crea[i] = { state: 'video', text: 'Vidéo à lancer' } }); emit() }
+    else U.agents[4] = { state: 'pending', text: 'Vidéos : import manuel (production non liée à une commande)', pct: 0 }
+    // ── 3. images (4 en parallèle) et ad copies (toutes en parallèle) ──
     const nbImg = nbAngles * POS_IMAGES.length
     setAgent(2, 'active', `0 / ${nbImg} images générées`, 0)
     setAgent(3, 'active', 'Écriture des hooks et descriptions…', 10)
     let creativesDone = 0
-    const runCreatives = async () => {
-      for (let idx = 0; idx < S.creatives.length; idx++) {
-        if (signal.aborted) throw new DOMException('Annulé', 'AbortError')
-        if (estSlotVideo(S.creatives[idx])) continue
+    let chaineCT = Promise.resolve()   // les choix de CT se font un par un (diversité du lot) ; les générations, elles, tournent en parallèle
+    const choisirCT = (idx) => {
+      const p = chaineCT.then(async () => {
         const a = S.creatives[idx].angleIdx, c = S.creatives[idx].ctIdx
-        try {
-          // Choix du CT par l'agent : uniquement parmi les CT balisés au niveau de conscience de CETTE créative
-          U.crea[idx] = { state: 'running', text: 'Choix du CT par l\'agent' }; emit()
-          const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
-          let ctId, ctRaison = ''
-          try { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison }
-          catch (errCT) {
-            if (errCT.name === 'AbortError' && signal.aborted) throw errCT
-            const sec = V.ctSecours(c, deja)
-            if (!sec) throw new Error('Aucun CT disponible : ' + errCT.message)
-            console.warn('[PROD] choix de CT par l\'agent impossible, CT de secours :', errCT.message)
-            ctId = sec.id; ctRaison = 'CT de secours (agent indisponible : ' + errCT.message + ')' + (sec.bonNiveau ? '' : ' — aucun CT balisé à ce niveau')
-          }
-          S.creatives[idx].ct = ctId; S.creatives[idx].ctRaison = ctRaison
-          console.log(`[PROD] créative ${idx + 1} · niveau ${['Solution', 'Product', 'Most'][c]} · CT ${CT_IMAGES[ctId + '_name'] || ctId} · ${ctRaison.slice(0, 120)}`)
-          await generateOneCreativeWithRetry(idx, a, c, ctId, signal)
+        U.crea[idx] = { state: 'running', text: 'Choix du CT par l\'agent' }; emit()
+        const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
+        let ctId, ctRaison = ''
+        try { const r = await V.choisirCTProd(a, c, deja, signal); ctId = r.id; ctRaison = r.raison }
+        catch (errCT) {
+          if (errCT.name === 'AbortError' && signal.aborted) throw errCT
+          const sec = V.ctSecours(c, deja)
+          if (!sec) throw new Error('Aucun CT disponible : ' + errCT.message)
+          ctId = sec.id; ctRaison = 'CT de secours (agent indisponible : ' + errCT.message + ')' + (sec.bonNiveau ? '' : ' — aucun CT balisé à ce niveau')
         }
-        catch (err) {
+        S.creatives[idx].ct = ctId; S.creatives[idx].ctRaison = ctRaison
+        return ctId
+      })
+      chaineCT = p.catch(() => {})
+      return p
+    }
+    const aFaire = S.creatives.map((c, i) => i).filter((i) => !estSlotVideo(S.creatives[i]))
+    let suivant = 0
+    const ouvrier = async () => {
+      while (suivant < aFaire.length) {
+        if (signal.aborted) throw new DOMException('Annulé', 'AbortError')
+        const idx = aFaire[suivant++]
+        try {
+          const ctId = await choisirCT(idx)
+          await generateOneCreativeWithRetry(idx, S.creatives[idx].angleIdx, S.creatives[idx].ctIdx, ctId, signal)
+        } catch (err) {
           if (err.name === 'AbortError' && signal.aborted) throw err
-          console.error(`Erreur créative ${idx + 1} :`, err)
-          markCreativeError(idx, err.message || 'Erreur inconnue')
+          console.error(`Erreur créative ${idx + 1} :`, err); markCreativeError(idx, err.message || 'Erreur inconnue')
         }
         creativesDone++
         setAgent(2, 'active', `${creativesDone} / ${nbImg} images générées`, Math.round(creativesDone / nbImg * 100))
         if (creativesDone % 2 === 0 || creativesDone === nbImg) autosave(creativesDone === nbImg)
       }
     }
-    const seqPromise = runCreatives().catch((err) => { if (err.name === 'AbortError') throw err; console.error('Erreur génération créatives :', err); setAgent(2, 'active', `Erreur : ${err.message}`, 0) })
+    const imagesPromise = Promise.all(Array.from({ length: Math.min(IMG_PARALLELES, aFaire.length) }, ouvrier)).catch((err) => { if (err.name === 'AbortError') throw err; console.error('Erreur génération créatives :', err); setAgent(2, 'active', `Erreur : ${err.message}`, 0) })
     const copyPromises = []
     for (let a = 0; a < nbAngles; a++) copyPromises.push(generateOneCopy(a, signal).catch((err) => { if (err.name === 'AbortError') throw err; markCopyError(a, err.message) }))
     if (S.productId && !S.marche) console.warn('[Données Marché] Extraction échouée pour ce batch.')
-    await Promise.all([seqPromise, ...copyPromises])
-    S.couts = { ...(S.couts || {}), images: Math.round(S.creatives.filter(done).length * 0.30 * 100) / 100, copies: Math.round(S.copies.filter(Boolean).length * 0.10 * 100) / 100 }
-    setAgent(2, 'done', `${S.creatives.filter((x) => !estSlotVideo(x) && done(x)).length} / ${nbImg} images générées — vidéos : à importer depuis le Video Lab`, 100)
-    setAgent(3, 'done', `${nbAngles} / ${nbAngles} sets ad copy générés`, 100)
+    await Promise.all([imagesPromise, ...copyPromises])
+    const nbImgOk = S.creatives.filter((x) => !estSlotVideo(x) && done(x)).length
+    S.couts = { ...(S.couts || {}), images: Math.round(nbImgOk * 0.30 * 100) / 100, copies: Math.round(S.copies.filter(Boolean).length * 0.10 * 100) / 100 }
+    setAgent(2, nbImgOk === nbImg ? 'done' : 'active', `${nbImgOk} / ${nbImg} images générées`, 100)
+    setAgent(3, 'done', `${S.copies.filter(Boolean).length} / ${nbAngles} sets ad copy générés`, 100)
+    autosave(true)
+    // ── 4. on attend la dernière vidéo ──
+    await videosPromise
+    S.couts = { ...(S.couts || {}), videos: Math.round(VID.videoSlots().reduce((s, x) => s + Number((x.c.job || {}).cout_usd || 0), 0) * 100) / 100 }
     if (S.briefSource === 'commande' && S.commandeId) {
-      try {
-        const r = await fetch(`${SERVER}/commandes/${S.commandeId}/save-deliverables`, { method: 'POST', headers: JH, body: livrablesPayload() })
-        if (!r.ok) throw new Error('HTTP ' + r.status)
-      } catch (e) {
+      try { const r = await fetch(`${SERVER}/commandes/${S.commandeId}/save-deliverables`, { method: 'POST', headers: JH, body: livrablesPayload() }); if (!r.ok) throw new Error('HTTP ' + r.status) }
+      catch (e) {
         console.warn('[Commande] Sauvegarde livrables échouée :', e.message)
-        await alertDlg(`La sauvegarde automatique des livrables a échoué (${e.message}).\n\nNE FERME PAS CET ONGLET — utilise directement le bouton « Envoyer au client » en bas de cette page, il fonctionne avec ce qui est déjà affiché.`)
+        await alertDlg(`La sauvegarde automatique des livrables a échoué (${e.message}).\n\nNE FERME PAS CET ONGLET — utilise directement « Envoyer » : il fonctionne avec ce qui est déjà affiché.`)
       }
     }
-    U.running = false; U.launchLabel = 'Relancer la production'; abortCtl = null; emit()
+    U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; emit()
   } catch (err) {
     if (err.name === 'AbortError' || (abortCtl && abortCtl.signal.aborted)) { U.launchLabel = 'Relancer la production' }
     else { console.error(err); await alertDlg('Erreur production : ' + err.message); U.launchLabel = 'Réessayer' }
@@ -529,6 +555,8 @@ export async function regenerateCopy(angleIdx) {
   try { await generateOneCopy(angleIdx, new AbortController().signal) }
   catch (err) { if (err.name !== 'AbortError') markCopyError(angleIdx, err.message) }
 }
+export const relancerVideo = VID.relancerVideo
+export const lancerVideosManquantes = () => VID.produireVideos()
 export const copyIsFallback = (c) => !!c && c.description === "(description vide — Gemini n'a pas suivi le format)"
 
 // ── Envois ──
@@ -617,6 +645,25 @@ export async function manualDeliver({ scope, user, productId, newName }) {
   else d = { creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche }
   const res = await fetch(`${SERVER}/manual-deliver`, { method: 'POST', headers: JH, body: JSON.stringify({ userId: user.id, productId: productId || undefined, newProductName: productId ? undefined : newName, ticketId: S.commandeId || undefined, deliverables: d }) })
   if (!res.ok) throw new Error('HTTP ' + res.status)
+  const j = await res.json().catch(() => ({}))
+  return j.productId || productId || null
+}
+
+// ── Mon compte (envoi de contrôle avant le client) ──
+const CLE_COMPTE = 'adstack_mon_compte'
+export const monCompte = () => { try { return JSON.parse(localStorage.getItem(CLE_COMPTE) || 'null') } catch (_) { return null } }
+export function setMonCompte(v) { try { if (v) localStorage.setItem(CLE_COMPTE, JSON.stringify(v)); else localStorage.removeItem(CLE_COMPTE) } catch (_) {} U.compteV = (U.compteV || 0) + 1; emit() }
+// Envoie TOUS les livrables sur le compte mémorisé. 1re fois : le produit est créé puis mémorisé (pas de doublon ensuite).
+export async function envoyerSurMonCompte() {
+  const m = monCompte(); if (!m) return false
+  if (!hasAnyDeliverable()) { await alertDlg("Aucun livrable généré pour l'instant — rien à envoyer."); return true }
+  if (S.commandeId) { try { await saveNow() } catch (_) {} }
+  await withBusy('moi', 'Envoi sur ton compte échoué', async () => {
+    const pid = await manualDeliver({ scope: null, user: m.user, productId: m.productId, newName: m.newName })
+    if (pid && !m.productId) setMonCompte({ ...m, productId: pid })
+    U.envoyeMoi = Date.now()
+  })
+  return true
 }
 
 // ── Actions sur les commandes ──

@@ -356,7 +356,7 @@ export function prodv2EstActuellementComplet() {
   if (!prodv2State.commandeId) return true; // rien de chargé, rien à perdre
   const nbAnglesAttendu = prodv2GetAngleCount();
   const nbCreaAttendu = nbAnglesAttendu * 3;
-  const nbCrea = (prodv2State.creatives || []).filter(c => c && (c.imgB64 || c.url)).length;
+  const nbCrea = (prodv2State.creatives || []).filter(c => c && (c.imgB64 || c.url || c.videoUrl)).length;
   const nbCopy = (prodv2State.copies || []).filter(Boolean).length;
   return nbCrea >= nbCreaAttendu && nbCopy >= nbAnglesAttendu;
 }
