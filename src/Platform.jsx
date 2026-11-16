@@ -3980,10 +3980,10 @@ function FormulaireTopPerformer({ form, setForm, onSave, onRemove, busy, isMobil
       <div onClick={e => e.stopPropagation()} style={{width:'100%',maxWidth:440,maxHeight:'92vh',overflowY:'auto',background:C.card,border:`1px solid ${C.borderM}`,borderRadius:isMobile?'16px 16px 0 0':16,padding:'20px 18px 18px'}}>
         <div style={{display:'flex',alignItems:'center',gap:8}}>
           <Icon name="star" size={16} color="#FFC107"/>
-          <div style={{fontSize:16,fontWeight:800,color:C.text}}>{edition ? 'Chiffres de cette créative' : 'Marquer comme Top Performer'}</div>
+          <div style={{fontSize:16,fontWeight:800,color:C.text}}>{/* tp-v2-donnees */}Données de cette créative</div>
         </div>
         <div style={{fontSize:11.5,color:C.sec,marginTop:4}}>{creative.angle} · Lot {String(creative.week || '').replace(/^[SB]/, '')}</div>
-        <div style={{fontSize:12,color:C.sec,lineHeight:1.5,margin:'12px 0 14px'}}>Donnez ce que vous avez : <b style={{color:C.text}}>tout est facultatif</b>.</div>
+        <div style={{fontSize:12,color:C.sec,lineHeight:1.5,margin:'12px 0 14px'}}>Ventes, dépenses, jours de diffusion… donnez ce que vous avez : <b style={{color:C.text}}>plus il y a de chiffres, plus le classement de vos créatives est juste.</b></div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
           {TP_CHAMPS.map(ch => (
             <label key={ch.k} style={{display:'block'}}>
@@ -3999,12 +3999,12 @@ function FormulaireTopPerformer({ form, setForm, onSave, onRemove, busy, isMobil
         <div style={{fontSize:10.5,color:C.muted,marginTop:8}}>CPA et dépenses : de préférence en dollars ou en euros, comme dans votre compte publicitaire.</div>
         <div style={{display:'flex',gap:8,marginTop:16}}>
           <button onClick={() => !busy && setForm(null)} style={{flex:'0 0 auto',padding:'11px 16px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
-          <button data-testid="tp-enregistrer" disabled={busy} onClick={onSave} style={{flex:1,padding:'11px 16px',borderRadius:9,border:'none',background:'#FFC107',color:'#1a1a1a',fontSize:13,fontWeight:800,cursor:busy?'default':'pointer',fontFamily:'inherit',opacity:busy?0.6:1}}>
-            {busy ? 'Enregistrement…' : (edition ? 'Enregistrer' : (aDesValeurs ? 'Marquer avec ces chiffres' : 'Marquer sans chiffres'))}
+          <button data-testid="tp-enregistrer" disabled={busy || !aDesValeurs} onClick={onSave} style={{$1cursor:(busy||!aDesValeurs)?'default':'pointer',fontFamily:'inherit',opacity:(busy||!aDesValeurs)?0.5:1}}>
+            {busy ? 'Enregistrement…' : 'Enregistrer les données'}
           </button>
         </div>
         {edition && (
-          <button data-testid="tp-retirer" disabled={busy} onClick={onRemove} style={{display:'block',width:'100%',marginTop:10,padding:'9px',background:'transparent',border:'none',color:'#F87171',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Retirer du Top Performer</button>
+          <button data-testid="tp-retirer" disabled={busy} onClick={onRemove} style={{display:'block',width:'100%',marginTop:10,padding:'9px',background:'transparent',border:'none',color:'#F87171',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Retirer cette créative du classement</button>
         )}
       </div>
     </div>
@@ -4371,7 +4371,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       if (!r.ok) throw new Error('HTTP ' + r.status);
       majCreativeLocale(creative, edition ? { tpStats: stats || undefined } : { topPerformer: true, tpStats: stats || undefined, tpAt: new Date().toISOString() });
       setTpForm(null);
-      notify && notify(edition ? 'Chiffres enregistrés — classement mis à jour' : (stats ? 'Marquée Top Performer — classée d’après vos chiffres' : 'Marquée Top Performer'), 'success');
+      notify && notify('Données enregistrées — classement mis à jour', 'success');
     } catch(e) {
       console.error('Marquage Top Performer échoué :', e.message);
       notify && notify('Enregistrement impossible — vérifiez votre connexion', 'error');
@@ -4390,7 +4390,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       if (!r.ok) throw new Error('HTTP ' + r.status);
       majCreativeLocale(creative, { topPerformer: false, tpStats: undefined, topPerformerRank: undefined });
       setTpForm(null);
-      notify && notify('Retirée du Top Performer', 'success');
+      notify && notify('Retirée du classement', 'success');
     } catch(e) {
       notify && notify('Impossible de retirer — vérifiez votre connexion', 'error');
     } finally {
@@ -4750,8 +4750,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       {filterMode==='topPerformer' && selectedProduct && cibleSetTP.length === 0 && (
         <div style={{padding:'28px 18px',textAlign:'center',borderRadius:12,border:`1px dashed ${C.border}`,marginBottom:14}} data-testid="tp-vide">
           <Icon name="star" size={22} color="#FFC107"/>
-          <div style={{fontSize:14,fontWeight:700,color:C.text,marginTop:8}}>Aucune créative marquée pour ce produit</div>
-          <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:440,margin:'6px auto 0'}}>Ouvrez une créative dans « Tous » et touchez « Top Performer » dès qu'elle fonctionne.</div>
+          <div style={{fontSize:14,fontWeight:700,color:C.text,marginTop:8}}>Aucune créative classée pour ce produit</div>
+          <div style={{fontSize:12,color:C.sec,lineHeight:1.5,maxWidth:440,margin:'6px auto 0'}}>Ouvrez une créative dans « Tous » et touchez « Ajouter les données » : ventes, dépenses, jours de diffusion. Elle est classée automatiquement avec les autres créatives de la même cible.</div>
         </div>
       )}
 
@@ -4833,7 +4833,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 {aDesChiffres(c)
                   ? <>
                       {c.tpStats.roas != null && <span style={{fontSize:9,fontWeight:800,color:'#1a1a1a',background:'#FFC107',borderRadius:4,padding:'1px 5px'}}>ROAS {fmtTP(c.tpStats.roas)}×</span>}
-                      {c.tpStats.cpa != null && <span style={{fontSize:9,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.65)',borderRadius:4,padding:'1px 5px'}}>CPA {fmtTP(c.tpStats.cpa)}</span>}
+                      $1
+                      {c.tpStats.achats != null && <span style={{fontSize:9,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.65)',borderRadius:4,padding:'1px 5px'}}>{fmtTP(c.tpStats.achats)} vente{c.tpStats.achats > 1 ? 's' : ''}</span>}
                     </>
                   : null}
               </div>
@@ -4912,12 +4913,18 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                   </button>
                 )}
                 <button onClick={() => ouvrirFormTP(selected)} data-testid="btn-top-performer"
-                  style={{...btnAction,flex:1,justifyContent:'center',borderColor:selected.topPerformer?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:selected.topPerformer?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:selected.topPerformer?'#FFC107':'#fff'}}
-                  aria-label="Top Performer">
-                  <Icon name="star" size={15} color={selected.topPerformer?'#FFC107':'#fff'}/>{selected.topPerformer ? (aDesChiffres(selected) ? 'Top Performer · chiffres' : 'Top Performer · ajouter les chiffres') : 'Top Performer'}
+                  style={{...btnAction,flex:1,justifyContent:'center',borderColor:aDesChiffres(selected)?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:aDesChiffres(selected)?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:aDesChiffres(selected)?'#FFC107':'#fff'}}
+                  aria-label="Données de la créative">
+                  <Icon name="chart" size={15} color={aDesChiffres(selected)?'#FFC107':'#fff'}/>{aDesChiffres(selected) ? 'Données · modifier' : 'Ajouter les données'}
                 </button>
               </div>
             </div>
+            {filterMode==='topPerformer' && scoresTP[selected.id] && scoresTP[selected.id].chiffre && groupeTP.length > 1 && (
+              <div data-testid="viewer-rang" style={{fontSize:12,color:C.sec,lineHeight:1.5}}>
+                <b style={{color:'#FFC107'}}>Classée n°{groupeTP.findIndex(x => x.id === selected.id) + 1} sur {groupeTP.length}</b>
+                {scoresTP[selected.id].comparable ? <> · indice {scoresTP[selected.id].indice} <span style={{color:C.muted}}>(100 = moyenne de la cible)</span> · données {scoresTP[selected.id].fiabilite === 'solide' ? 'solides' : scoresTP[selected.id].fiabilite === 'moyenne' ? 'moyennes' : 'encore légères'}</> : null}
+              </div>
+            )}
             {selected.topPerformer && aDesChiffres(selected) && (
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}} data-testid="viewer-chiffres">
                 {TP_CHAMPS.filter(ch => selected.tpStats[ch.k] != null).map(ch => (

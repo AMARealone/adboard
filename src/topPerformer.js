@@ -1,17 +1,29 @@
-// Top Performer — chiffres fournis par le client + classement automatique.
+// Top Performer — chiffres fournis par le client + classement automatique (v2, 16 nov. 2026).
 // CE FICHIER EST AUSSI COPIÉ TEL QUEL DANS serveur.js (bloc « TOP PERFORMER »), pour que le
-// classement vu par le client et l'angle gagnant calculé par le serveur soient toujours identiques.
+// classement vu par le client, l'angle gagnant et l'apprentissage du serveur soient toujours identiques.
 // Ne rien importer ici : fonctions pures uniquement.
+//
+// MÉTHODE (recoupée avec la pratique publicitaire : on compare chaque créative aux autres de SON groupe — même produit, même cible —,
+// jamais à un seuil universel ; un ratio observé sur peu d'achats est du bruit, donc il est ramené vers la moyenne du groupe) :
+//   1. Chaque chiffre est comparé à la MÉDIANE du groupe (robuste : une créative extrême ne fausse pas la référence).
+//      ROAS, achats, dépenses, CTR, jours : plus c'est haut, mieux c'est. CPA : plus c'est bas, mieux c'est.
+//   2. Les rapports sont combinés en moyenne géométrique pondérée (ROAS et CPA pèsent le plus : c'est l'efficacité réelle ;
+//      achats et dépenses disent que la diffusion a confiance dans la créative ; jours et CTR sont des signaux secondaires).
+//   3. FIABILITÉ : le résultat est ramené vers « dans la moyenne » quand il repose sur peu d'achats (achats / (achats + 8)).
+//      Un ROAS 4 sur 2 achats compte donc beaucoup moins qu'un ROAS 3 sur 40 achats. Moins de 3 jours de diffusion : fiabilité × 0,7.
+//   4. score = 1 pour la moyenne du groupe, 1,5 = 50 % mieux. « indice » = score × 100.
 
 // Les chiffres que le client peut donner. Tous facultatifs. `sens` : 'haut' = plus c'est grand, mieux c'est.
 export const TP_CHAMPS = [
   { k: 'roas',     label: 'ROAS',          aide: 'ex. 2,8',            unite: '×',  sens: 'haut', poids: 3,   max: 200 },
   { k: 'cpa',      label: 'CPA',           aide: 'en $ ou €',     unite: '',   sens: 'bas',  poids: 3,   max: 100000000 },
-  { k: 'depenses', label: 'Dépenses',      aide: 'en $ ou €',      unite: '',   sens: 'haut', poids: 1.5, max: 1000000000 },
-  { k: 'jours',    label: 'Jours actifs',  aide: 'ex. 12',             unite: 'j',  sens: 'haut', poids: 1,   max: 365, entier: true },
-  { k: 'achats',   label: 'Achats',        aide: 'nombre de ventes',   unite: '',   sens: 'haut', poids: 1,   max: 10000000, entier: true },
-  { k: 'ctr',      label: 'CTR',           aide: 'ex. 1,9',            unite: '%',  sens: 'haut', poids: 1,   max: 100 },
+  { k: 'depenses', label: 'Dépenses',      aide: 'en $ ou €',      unite: '',   sens: 'haut', poids: 0.8, max: 1000000000 },
+  { k: 'jours',    label: 'Jours actifs',  aide: 'ex. 12',             unite: 'j',  sens: 'haut', poids: 0.4, max: 365, entier: true },
+  { k: 'achats',   label: 'Ventes',        aide: 'nombre de ventes',   unite: '',   sens: 'haut', poids: 1,   max: 10000000, entier: true },
+  { k: 'ctr',      label: 'CTR',           aide: 'ex. 1,9',            unite: '%',  sens: 'haut', poids: 0.7, max: 100 },
 ];
+
+const K_ACHATS = 8; // nombre d'achats à partir duquel les chiffres pèsent « à moitié »
 
 function _nombre(v) {
   if (v === null || v === undefined || v === '') return null;
@@ -38,29 +50,51 @@ export function nettoyerStats(brut) {
 export const aDesChiffres = (c) => !!(c && c.tpStats && TP_CHAMPS.some(ch => Number.isFinite(c.tpStats[ch.k])));
 
 const _borne = (x, lo, hi) => Math.min(hi, Math.max(lo, x));
+const _mediane = (a) => { const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+
+// Complète ce qui se déduit des autres chiffres (jamais l'inverse : on n'invente rien d'inconnu).
+// dépenses ÷ CPA = ventes ; dépenses ÷ ventes = CPA. Renvoie une COPIE.
+export function completerStats(st) {
+  const s = { ...(st || {}) };
+  if (!Number.isFinite(s.achats) && Number.isFinite(s.depenses) && Number.isFinite(s.cpa) && s.cpa > 0) { s.achats = Math.round(s.depenses / s.cpa); s._achatsDeduits = true; }
+  if (!Number.isFinite(s.cpa) && Number.isFinite(s.depenses) && Number.isFinite(s.achats) && s.achats > 0) s.cpa = Math.round(s.depenses / s.achats * 1000) / 1000;
+  return s;
+}
 
 // Score de chaque créative, PAR RAPPORT aux autres créatives du même groupe (même produit, même cible).
-// Pour chaque chiffre : on compare à la moyenne du groupe (1 = dans la moyenne, 2 = deux fois mieux),
-// à l'envers pour le CPA (plus bas = mieux). Puis moyenne pondérée des chiffres que la créative a donnés.
+// Renvoie, par id : { score (1 = moyenne du groupe), indice (100 = moyenne), fiabilite ('solide'|'moyenne'|'faible'), chiffre, nbChiffres }.
 // Une créative sans aucun chiffre n'a pas de score : elle reste au classement manuel (repli).
 export function scoresTopPerformer(creatives) {
   const liste = (creatives || []).filter(Boolean);
-  const moyennes = {};
+  const stats = {};
+  liste.forEach(c => { stats[c.id] = completerStats(c.tpStats); });
+  // Référence du groupe pour chaque chiffre : médiane, et seulement si au moins 2 créatives le donnent (sinon rien à comparer).
+  const ref = {};
   for (const ch of TP_CHAMPS) {
-    const vals = liste.map(c => c.tpStats && c.tpStats[ch.k]).filter(Number.isFinite);
-    if (vals.length) moyennes[ch.k] = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const vals = liste.map(c => stats[c.id][ch.k]).filter(Number.isFinite);
+    if (vals.length >= 2) ref[ch.k] = _mediane(vals);
   }
   const res = {};
   for (const c of liste) {
+    const st = stats[c.id];
     let somme = 0, poids = 0, n = 0;
     for (const ch of TP_CHAMPS) {
-      const v = c.tpStats && c.tpStats[ch.k];
-      if (!Number.isFinite(v) || !moyennes[ch.k]) continue;
-      const ratio = ch.sens === 'haut' ? v / moyennes[ch.k] : moyennes[ch.k] / v;
-      somme += ch.poids * _borne(ratio, 0.25, 3);
-      poids += ch.poids; n++;
+      const v = st[ch.k];
+      if (!Number.isFinite(v)) continue;
+      n++;
+      if (!ref[ch.k]) continue;
+      const ratio = ch.sens === 'haut' ? v / ref[ch.k] : ref[ch.k] / v;
+      somme += ch.poids * Math.log(_borne(ratio, 0.25, 4));
+      poids += ch.poids;
     }
-    res[c.id] = n ? { score: somme / poids, chiffre: true, nbChiffres: n } : { score: null, chiffre: false, nbChiffres: 0 };
+    if (!n) { res[c.id] = { score: null, indice: null, fiabilite: null, chiffre: false, nbChiffres: 0 }; continue; }
+    // Fiabilité : combien d'achats reposent derrière ces chiffres (donnés, déduits, ou estimés avec le CPA médian du groupe).
+    const achats = Number.isFinite(st.achats) ? st.achats : (Number.isFinite(st.depenses) && ref.cpa ? st.depenses / ref.cpa : null);
+    let conf = achats === null ? 0.5 : achats / (achats + K_ACHATS);
+    if (Number.isFinite(st.jours) && st.jours < 3) conf *= 0.7;
+    const log = poids ? somme / poids : 0;
+    const score = Math.exp(conf * log);
+    res[c.id] = { score, indice: Math.round(score * 100), fiabilite: conf >= 0.65 ? 'solide' : conf >= 0.4 ? 'moyenne' : 'faible', chiffre: true, nbChiffres: n, comparable: poids > 0 };
   }
   return res;
 }
