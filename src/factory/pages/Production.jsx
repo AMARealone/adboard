@@ -44,11 +44,11 @@ function ManualSend({ scope, onClose, onPicked }) {
     return () => clearTimeout(t)
   }, [q, user])
   const pick = async (u) => { setUser(u); setQ(u.email); setProds('load'); try { setProds(await E.userProducts(u.id)) } catch (_) { setProds('err') } }
-  const ok = user && (pid || newName.trim())
+  const ok = user && (onPicked || pid || newName.trim())
   const send = async () => {
     setBusy(true)
     try {
-      if (onPicked) { onPicked({ user: { id: user.id, email: user.email }, productId: pid || null, newName: pid ? null : newName.trim() }); onClose(); return }
+      if (onPicked) { onPicked({ user: { id: user.id, email: user.email }, productId: null, newName: null, produits: {} }); onClose(); return }
       await E.manualDeliver({ scope, user, productId: pid, newName: newName.trim() }); toast(`Envoyé à ${user.email}.`); onClose()
     } catch (e) { toast("Erreur lors de l'envoi : " + e.message) } finally { setBusy(false) }
   }
@@ -62,7 +62,8 @@ function ManualSend({ scope, onClose, onPicked }) {
         {users === 'load' && <div className="fx-s">Recherche…</div>}
         {users === 'err' && <div className="fx-s" style={{ color: 'var(--er)' }}>Erreur de recherche.</div>}
         {Array.isArray(users) && (users.length ? <div className="fx-list">{users.map((u) => <button key={u.id} className="fx-li" onClick={() => pick(u)}>{u.email}</button>)}</div> : <div className="fx-s">Aucun compte trouvé.</div>)}
-        {user && <>
+        {user && onPicked && <p className="fx-s" style={{ whiteSpace: 'normal' }}>La fiche produit est créée automatiquement dans ce compte (avec toutes ses variables) ou liée si le produit y existe déjà.</p>}
+        {user && !onPicked && <>
           <label className="fx-lab">Produit</label>
           {prods === 'load' && <div className="fx-s">Chargement des produits…</div>}
           {prods === 'err' && <div className="fx-s" style={{ color: 'var(--er)' }}>Erreur de chargement.</div>}
@@ -410,7 +411,7 @@ function ActionBar({ S, U, setCompte }) {
   }
   return (
     <div className="fx2-bar-send">
-      <div className="fx2-bar-i"><b>{Math.min(pretes, total)} / {total} livrables prêts</b><span>{envoyeMoi ? 'Envoyé sur ton compte à ' + heure(U.envoyeMoi) + ' ✓' : moi ? 'Compte de contrôle : ' + moi.user.email : 'Vérifie d\'abord sur ton propre compte'}</span></div>
+      <div className="fx2-bar-i"><b>{Math.min(pretes, total)} / {total} livrables prêts</b><span>{U.verif && U.verif.texte ? U.verif.texte : envoyeMoi ? 'Envoyé sur ton compte à ' + heure(U.envoyeMoi) + ' ✓' : moi ? 'Compte de contrôle : ' + moi.user.email : 'Vérifie d\'abord sur ton propre compte'}</span></div>
       <div className="fx2-bar-a">
         {pretes > 0 && <button className="fx-btn" disabled={U.dossier && U.dossier.etat === 'busy'} title="Un seul zip avec tout l'historique de cette production, à m'envoyer pour améliorer les agents" onClick={() => E.genererDossier()}>{U.dossier && U.dossier.etat === 'busy' ? 'Dossier en cours…' : 'Dossier complet'}</button>}
         {U.dossier && U.dossier.etat === 'ok' && <a className="fx-link-btn" href={U.dossier.url} target="_blank" rel="noopener noreferrer">⬇ Télécharger le dossier ({U.dossier.mo} Mo)</a>}

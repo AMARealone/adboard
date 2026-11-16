@@ -300,7 +300,7 @@ async function lancerProduction() {
     const videoCloud = VID.peutVideoCloud()
     S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null
     S.budget = { total: budgetHorsVideo(nbTot), depense: 0, postes: {} }
-    U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}; U.envoyeMoi = null
+    U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}; U.envoyeMoi = null; U.verif = null
     U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente du plan' }))
     U.copy = Array.from({ length: nbAngles }, () => ({ state: 'wait' }))
     resetAgents(); U.launched = true; U.launchLabel = 'Production en cours…'; U.etapeDebut = Date.now(); U.finiLe = null; emit()
@@ -627,6 +627,29 @@ export async function regenerateAnalyse() {
   } catch (e) { setAgent(1, 'done', 'Analyse précédente conservée (' + String(e.message || e).slice(0, 80) + ')', 100); await alertDlg("Nouvelle analyse impossible : " + e.message + "\n\nL'analyse précédente est conservée.") }
   finally { delete U.sending.ana; emit() }
 }
+// v10c — contrôle AVANT tout envoi : rien ne doit partir incomplet sans que tu le saches (créative absente, encore en cours, ad copy ou marché manquants)
+export function controleLivraison() {
+  const pb = [], n = U.nbAngles || 0
+  const crea = S.creatives || []
+  const attendu = n * 3
+  if (attendu && crea.length < attendu) pb.push(`${attendu - crea.length} créative(s) jamais créée(s) (${crea.length}/${attendu})`)
+  crea.forEach((c, i) => {
+    const ui = U.crea[i] || {}, v = estSlotVideo(c), lib = (v ? 'Vidéo' : 'Image') + ' de l\'angle ' + (((c && c.angleIdx) || 0) + 1)
+    if (ui.state === 'running') pb.push(lib + ' : encore en cours de génération')
+    else if (!done(c)) pb.push(lib + ' : pas prête' + (ui.state === 'err' ? ' (erreur)' : ''))
+  })
+  for (let a = 0; a < n; a++) {
+    const cp = S.copies[a]
+    if (!cp) pb.push('Ad copy de l\'angle ' + (a + 1) + ' : absente')
+    else if (!Array.isArray(cp.hooks) || cp.hooks.filter((h) => String(h || '').trim().length > 3).length < 5 || String(cp.description || '').trim().length < 60) pb.push('Ad copy de l\'angle ' + (a + 1) + ' : incomplète (5 hooks et une description attendus)')
+  }
+  if (!S.marche) pb.push('Données marché : absentes')
+  return pb
+}
+async function confirmerLivraisonIncomplete(cible) {
+  const pb = controleLivraison(); if (!pb.length) return true
+  return confirmDlg(`Attention : ce lot n'est pas complet.\n\n• ${pb.slice(0, 8).join('\n• ')}${pb.length > 8 ? '\n• … (+' + (pb.length - 8) + ')' : ''}\n\nEnvoyer quand même ${cible} ce qui est prêt ?`, { ok: 'Envoyer quand même' })
+}
 export const videosManquantes = () => S.creatives.map((c, i) => ({ c, i })).filter((x) => estSlotVideo(x.c) && !x.c.videoUrl).map((x) => x.c.angleIdx + 1)
 export function downloadCrea(idx) {
   const c = S.creatives[idx]; if (!c || (!c.url && !c.imgB64 && !c.videoUrl)) return
@@ -703,7 +726,7 @@ export async function sendMarche() {
 export async function sendClient(reload) {
   if (!(await needCmd())) return
   if (!S.creatives.some(done) && !S.copies.some(Boolean)) { await alertDlg("Aucun livrable généré pour l'instant — rien à envoyer."); return }
-  { const vm = videosManquantes(); if (vm.length && !(await confirmDlg(`La vidéo ${vm.length > 1 ? 'des angles ' + vm.join(', ') + ' n\'est' : 'de l\'angle ' + vm[0] + ' n\'est'} pas encore importée.\n\nEnvoyer quand même au client ce qui est prêt ? (Les vidéos pourront être envoyées une par une ensuite.)`, { ok: 'Envoyer ce qui est prêt' }))) return }
+  if (!(await confirmerLivraisonIncomplete('au client'))) return
   U.sending.all = 'busy'; U.sendLabel = 'Envoi en cours…'; emit()
   const fin = (label, ok) => { delete U.sending.all; U.sendLabel = label || null; emit() }
   try {
@@ -729,6 +752,7 @@ export async function sendClient(reload) {
     }
     try { localStorage.removeItem('adstack_active_production') } catch (_) {}
     fin('Envoyé au client')
+    verifierApresEnvoi(null, true)
     await alertDlg(push ? `Envoyé et confirmé au client :\n• ${push.pushedCount}/${push.expectedCount} créatives\n• ${push.adCopiesCount}/${push.adCopiesAttendu} sets ad copy\n• Données marché ✓` : 'Envoyé au client.', { title: 'Livraison' })
     reload && reload()
   } catch (e) { await alertDlg("Erreur lors de l'envoi : " + e.message); fin(null) }
@@ -748,9 +772,18 @@ export async function manualDeliver({ scope, user, productId, newName }) {
   else if (scope?.type === 'copy') { const arr = []; arr[scope.index] = S.copies[scope.index]; d = { creatives: [], copies: arr, synthesis: S.synthesis, angles: S.angles, marche: null } }
   else if (scope?.type === 'marche') d = { creatives: [], copies: [], synthesis: S.synthesis, angles: S.angles, marche: S.marche }
   else d = { creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche }
-  const res = await fetch(`${SERVER}/manual-deliver`, { method: 'POST', headers: JH, body: JSON.stringify({ userId: user.id, productId: productId || undefined, newProductName: productId ? undefined : newName, ticketId: S.commandeId || undefined, deliverables: d }) })
-  if (!res.ok) throw new Error('HTTP ' + res.status)
+  const res = await fetch(`${SERVER}/manual-deliver`, { method: 'POST', headers: JH, body: JSON.stringify({ userId: user.id, productId: productId || undefined, newProductName: productId ? undefined : newName, ticketId: S.commandeId || undefined, remplacer: S.commandeId ? (scope?.type === 'creative' ? 'creative' : scope?.type ? undefined : 'tout') : undefined, deliverables: d }) })
   const j = await res.json().catch(() => ({}))
+  if (!res.ok || j.ok === false) throw new Error((j && j.error) || 'HTTP ' + res.status)
+  // v10c — vérification : tout ce qui devait partir est bien écrit chez le compte
+  const p = j.push
+  if (p && !scope) {
+    const pb = []
+    if (p.pushedCount < p.expectedCount) pb.push(`créatives : ${p.pushedCount}/${p.expectedCount} reçues`)
+    if (!p.adCopiesOk) pb.push(`ad copies : ${p.adCopiesCount}/${p.adCopiesAttendu}`)
+    if (!p.marcheOk) pb.push('données marché non écrites')
+    if (pb.length) throw new Error('Envoi incomplet — ' + pb.join(' · ') + '. Clique à nouveau sur « Renvoyer sur mon compte ».')
+  } else if (!p) toast('Envoi fait, mais le serveur n\'a pas pu confirmer le contenu reçu (serveur pas à jour).')
   return j.productId || productId || null
 }
 
@@ -762,13 +795,58 @@ export function setMonCompte(v) { try { if (v) localStorage.setItem(CLE_COMPTE, 
 export async function envoyerSurMonCompte() {
   const m = monCompte(); if (!m) return false
   if (!hasAnyDeliverable()) { await alertDlg("Aucun livrable généré pour l'instant — rien à envoyer."); return true }
+  if (!(await confirmerLivraisonIncomplete('sur ton compte'))) return true
   if (S.commandeId) { try { await saveNow() } catch (_) {} }
+  let pidFinal = null
   await withBusy('moi', 'Envoi sur ton compte échoué', async () => {
-    const pid = await manualDeliver({ scope: null, user: m.user, productId: m.productId, newName: m.newName })
-    if (pid && !m.productId) setMonCompte({ ...m, productId: pid })
-    U.envoyeMoi = Date.now()
+    // v10c — la fiche produit se crée toute seule dans ce compte (copie de la fiche officielle, toutes les variables), ou se lie si le produit y est déjà
+    let pid = S.commandeId ? (m.produits && m.produits[S.commandeId]) || null : m.productId || null
+    if (!pid) {
+      const r = await fetch(`${SERVER}/production/compte-produit`, { method: 'POST', headers: JH, body: JSON.stringify({ userId: m.user.id, commandeId: S.commandeId || undefined, nom: (S.brief && S.brief.produit) || m.newName || undefined }) })
+      const j = await r.json().catch(() => ({}))
+      if (!r.ok || j.error || !j.productId) throw new Error(j.error || 'création/liaison du produit impossible (HTTP ' + r.status + ') — le serveur est-il à jour ?')
+      pid = j.productId
+      toast(j.created ? `Fiche produit « ${j.nom} » créée dans ton compte, avec toutes ses variables.` : `Produit « ${j.nom} » déjà présent dans ton compte : livrables liés à cette fiche.`)
+      if (S.commandeId) setMonCompte({ ...m, produits: { ...(m.produits || {}), [S.commandeId]: pid } }); else setMonCompte({ ...m, productId: pid })
+    }
+    await manualDeliver({ scope: null, user: m.user, productId: pid })
+    U.envoyeMoi = Date.now(); pidFinal = pid
   })
+  if (pidFinal) verifierApresEnvoi(pidFinal, false)
   return true
+}
+
+// v10c — après un envoi : portrait de la cible garanti, puis relecture d'AdBoard (créatives, vidéos, ad copies, marché, statut du compte à rebours)
+const attendre = (ms) => new Promise((ok) => setTimeout(ok, ms))
+export async function verifierApresEnvoi(productId, client) {
+  const cmd = S.commandeId; if (!cmd) return null
+  const maj = (texte, etat = 'busy') => { U.verif = { etat, texte }; emit() }
+  try {
+    maj('Vérification du portrait de la cible…')
+    let portrait = 'inconnu', raisonP = ''
+    try {
+      const r = await fetch(`${SERVER}/production/portrait-ensure`, { method: 'POST', headers: JH, body: JSON.stringify(client ? { commandeId: cmd } : { productId }) })
+      let j = await r.json().catch(() => ({}))
+      const t0 = Date.now()
+      while (j.etat === 'en_cours' && Date.now() - t0 < 6 * 60000) {
+        maj('Portrait de la cible en cours de génération…')
+        await attendre(8000)
+        const rs = await fetch(`${SERVER}/production/portrait-status?${client ? 'commandeId=' + cmd : 'productId=' + productId}`, { headers: JH })
+        j = await rs.json().catch(() => ({ etat: 'inconnu' }))
+      }
+      portrait = j.etat === 'pret' ? 'ok' : j.etat === 'sans_persona' ? 'sans' : 'ko'; raisonP = j.raison || j.erreur || (j.etat === 'en_cours' ? 'toujours en cours après 6 min' : '')
+    } catch (e) { portrait = 'ko'; raisonP = e.message }
+    maj('Relecture de ce qui est arrivé dans AdBoard…')
+    const rv = await fetch(`${SERVER}/production/verifier-livraison?commande=${cmd}&product=${productId || ''}&client=${client ? 1 : 0}&reparer=${client ? 1 : 0}`, { headers: JH })
+    const v = await rv.json().catch(() => ({}))
+    if (!rv.ok || v.error) throw new Error(v.error || 'HTTP ' + rv.status)
+    const pb = [...(v.probleme || [])]
+    if (portrait === 'ko') pb.push('portrait de la cible non généré (' + String(raisonP).slice(0, 120) + ')')
+    const resume = `${v.creatives}/${v.attendu} créatives (dont ${v.videos} vidéo${v.videos > 1 ? 's' : ''}) · ${v.copies}/${v.copiesAttendues} ad copies · marché ${v.marche ? '✓' : '✗'} · portrait ${portrait === 'ok' ? '✓' : portrait === 'sans' ? 'aucun' : '✗'}${client ? ' · statut ' + (v.statut || '?') : ''}`
+    if (pb.length) { maj('⚠ À vérifier : ' + pb[0], 'err'); await alertDlg(`Vérification ${client ? 'chez le client' : 'sur ton compte'} : des points ne sont pas bons.\n\n• ${pb.join('\n• ')}\n\nCe qui est arrivé : ${resume}\n\nClique à nouveau sur l'envoi pour réessayer.`, { title: 'Vérification de la livraison' }) }
+    else { maj('✓ Vérifié : ' + resume, 'ok'); toast('Livraison vérifiée : ' + resume) }
+    return { ok: !pb.length, v, portrait }
+  } catch (e) { maj('Vérification impossible : ' + e.message, 'err'); return null }
 }
 
 // ── Actions sur les commandes ──
