@@ -7,10 +7,10 @@ import { signOut } from './auth'
 
 const NAV = [
   { g: 'Pilotage', items: [{ to: '/', icon: 'home', label: 'Tableau de bord', end: true }, { to: '/commandes', icon: 'inbox', label: 'Commandes', badge: true }] },
-  { g: 'Production', items: [{ to: '/production', icon: 'play', label: 'Production' }, { to: '/agents', icon: 'bot', label: 'Agents (test)' }] },
+  { g: 'Production', items: [{ to: '/production', icon: 'play', label: 'Production' }, { to: '/agents', icon: 'bot', label: 'Agents (test)' }, { to: '/apprentissage', icon: 'folder', label: 'Apprentissage' }] },
   { g: 'Bibliothèques', items: [{ to: '/galerie', icon: 'image', label: 'Galerie CT image' }, { to: '/galerie-video', icon: 'film', label: 'Galerie CT vidéo' }] },
 ]
-const TITLES = [['/commandes', 'Commandes'], ['/production', 'Production'], ['/agents', 'Agents'], ['/galerie-video', 'Galerie CT vidéo'], ['/galerie', 'Galerie CT image']]
+const TITLES = [['/commandes', 'Commandes'], ['/production', 'Production'], ['/agents', 'Agents'], ['/apprentissage', 'Apprentissage'], ['/galerie-video', 'Galerie CT vidéo'], ['/galerie', 'Galerie CT image']]
 
 export default function Shell({ user, onLogout }) {
   const [open, setOpen] = useState(false)

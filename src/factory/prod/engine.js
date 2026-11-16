@@ -7,6 +7,7 @@ import { r2Put, videoInfos } from '../r2'
 import { confirmDlg, alertDlg, toast } from '../ui'
 import * as VID from './video'
 import * as PL from './plan'
+import * as APP from './apprentissage' // appr-client-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
@@ -39,7 +40,7 @@ export const nbCrea = () => S.creatives.filter(done).length
 export const nbCopy = () => S.copies.filter(Boolean).length
 export const angleCount = () => V.prodv2GetAngleCount()
 export const estComplet = () => V.prodv2EstActuellementComplet()
-export const livrablesPayload = () => JSON.stringify({ creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche, couts: S.couts || null, planNiveaux: S.planNiveaux || null })
+export const livrablesPayload = () => JSON.stringify({ creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche, couts: S.couts || null, planNiveaux: S.planNiveaux || null, planApprentissage: S.planApprentissage || null })
 
 // ── Sauvegarde automatique des livrables sur la commande ──
 export function autosave(immediat = false) {
@@ -165,7 +166,8 @@ export async function loadBriefFromCommande(b) {
   }
   if (S.productId) {
     try {
-      const rc = await V.fetchAvecTimeout(`${SERVER}/products/${S.productId}/renewal-context`, { headers: NGROK }, 15000)
+      const nbA = (() => { try { return V.prodv2GetAngleCount() } catch (_) { return 4 } })()
+      const rc = await V.fetchAvecTimeout(`${SERVER}/products/${S.productId}/renewal-context?nb_angles=${nbA}`, { headers: NGROK }, 25000)
       S.renewalContext = await rc.json()
     } catch (e) { console.warn('[Renouvellement] Récupération du contexte échouée :', e.message) }
   }
@@ -176,6 +178,7 @@ export async function loadBriefFromCommande(b) {
       ? `Renouvellement pour ce produit — dernière cible utilisée : "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante} angles déjà exploités, seuil atteint). Si tu gardes la même cible, une rotation vers une cible élargie sera proposée. Si tu as changé la cible dans la fiche produit, elle sera prise en compte à la place.`
       : `Renouvellement pour ce produit — dernière cible utilisée : "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante}/18 angles déjà exploités sur elle). Si tu as changé la cible dans la fiche produit, la nouvelle sera utilisée à la place — ceci n'est qu'un rappel du dernier lot, pas une décision déjà prise.` }
   }
+  { const ap = rctx && rctx.apprentissage; if (ap && ap.resume && !rctx.commandeActiveAilleurs) U.renewal = { kind: (U.renewal && U.renewal.kind) || 'info', text: (U.renewal ? U.renewal.text + ' ' : '') + 'Apprentissage de ce client : ' + ap.resume + '.' } }
   emit()
 }
 
@@ -186,7 +189,7 @@ export async function restoreFromCommande(b) {
   const nc = d.creatives ? d.creatives.filter(done).length : 0
   const np = d.copies ? d.copies.filter(Boolean).length : 0
   await loadBriefFromCommande(b)
-  S.synthesis = d.synthesis || null; S.creatives = d.creatives || []; S.copies = d.copies || []; S.marche = d.marche || null; S.planNiveaux = d.planNiveaux || null
+  S.synthesis = d.synthesis || null; S.creatives = d.creatives || []; S.copies = d.copies || []; S.marche = d.marche || null; S.planNiveaux = d.planNiveaux || null; S.planApprentissage = d.planApprentissage || null
   // v10 : le nombre d'angles vient de la quantité commandée (6 créatives = 2 angles), jamais du nombre d'angles écrits dans la synthèse
   const nbAngles = Math.max(V.prodv2GetAngleCount(), Math.ceil(S.creatives.length / 3))
   S.angles = (d.angles || []).slice(0, nbAngles)
@@ -298,7 +301,7 @@ async function lancerProduction() {
     const nbAngles = V.prodv2GetAngleCount()
     const nbTot = nbAngles * 3
     const videoCloud = VID.peutVideoCloud()
-    S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null
+    S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null; S.planApprentissage = null
     S.budget = { total: budgetHorsVideo(nbTot), depense: 0, postes: {} }
     U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}; U.envoyeMoi = null; U.verif = null
     U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente du plan' }))
@@ -336,6 +339,7 @@ async function lancerProduction() {
       slots.push({ angleIdx: a, kind: 'video', ctIdx: 'video', niveau: p.video, rang: p.niveaux.indexOf(p.video), ct: null, status: 'pending' })
       PL.niveauxImages(p).forEach((niv) => slots.push({ angleIdx: a, ctIdx: niv, niveau: niv, rang: p.niveaux.indexOf(niv), ct: null, status: 'pending' }))
     })
+    APP.construirePlan(slots); { const m = APP.messagePlan(); if (m) U.banner = { kind: m.kind, text: (U.banner ? U.banner.text + ' ' : '') + m.text } }
     S.creatives = slots
     U.crea = slots.map((c) => estSlotVideo(c) ? (videoCloud && choixVideo.some((x) => x.angleIdx === c.angleIdx) ? { state: 'running', text: 'En file', pct: 0 } : { state: 'video', text: 'Vidéo à lancer' }) : { state: 'pending', text: 'En attente' })
     emit()
@@ -366,7 +370,7 @@ async function lancerProduction() {
         U.crea[idx] = { state: 'running', text: 'Choix du CT par l\'agent' }; emit()
         const deja = new Set(S.creatives.map((x) => x.ct).filter(Boolean))
         let ctId, ctRaison = ''
-        try { const r = await V.choisirCTProd(c.angleIdx, c.niveau, deja, signal, c.rang); ctId = r.id; ctRaison = r.raison; depenser(COUT.choixCT, 'images') }
+        try { const r = await V.choisirCTProd(c.angleIdx, c.niveau, deja, signal, c.rang, c); ctId = r.id; ctRaison = r.raison; depenser(COUT.choixCT, 'images') }
         catch (errCT) {
           if (!actif()) throw annule()
           const sec = V.ctSecours(c.niveau, deja)
@@ -872,7 +876,7 @@ export async function genererDossier({ silencieux = false } = {}) {
     Object.keys(U.vjournal || {}).forEach((i) => { journal.push('── Vidéo, créative ' + (Number(i) + 1) + ' ──'); (U.vjournal[i] || []).forEach((l) => journal.push(typeof l === 'string' ? l : JSON.stringify(l))) })
     const creatives = S.creatives.map((c) => c && { ...c, imgB64: null })
     const r = await fetch(SERVER + '/production/dossier', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, brief: S.brief, journal,
-      deliverables: { synthesis: S.synthesis, marche: S.marche, angles: S.angles, planNiveaux: S.planNiveaux, couts: { ...(S.couts || {}), budget: S.budget || null }, copies: S.copies, creatives } }) })
+      deliverables: { synthesis: S.synthesis, marche: S.marche, angles: S.angles, planNiveaux: S.planNiveaux, planApprentissage: S.planApprentissage || null, couts: { ...(S.couts || {}), budget: S.budget || null }, copies: S.copies, creatives } }) })
     const d = await r.json().catch(() => ({}))
     if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
     U.dossier = { etat: 'ok', url: d.url, fichiers: d.fichiers, mo: d.mo, manques: d.manques || [] }; emit()

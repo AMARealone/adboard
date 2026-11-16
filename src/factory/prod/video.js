@@ -5,6 +5,7 @@ import { prodv2State as S, SERVER, emit } from './state'
 import { vctGetAll } from '../vctApi'
 import { toast } from '../ui'
 import * as PL from './plan'
+import * as APP from './apprentissage' // appr-client-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const U = S.ui
@@ -88,7 +89,7 @@ export async function planifier(nbAngles, { avecVideo = true } = {}) {
     const c = parAngle.get(a), g = parId.get(c.id) || {}
     return { id: c.id, nom: g.name || c.id, poster: g.posterUrl || '', duree_s: g.duree_s || 0, angleIdx: a, raison: c.raison || '', direction: c.direction || null }
   })
-  return { plan, choix: sortie }
+  return { plan, choix: APP.forcerCTVideo(liste, plan, sortie, balises) }
 }
 
 // Un seul CT vidéo pour un angle (relance « Autre CT »), au niveau imposé par le plan.
@@ -120,6 +121,7 @@ function consignesDiversite(idx, direction) {
   const L = []
   if (direction) L.push('DIRECTION IMPOSÉE POUR CETTE VIDÉO (diversité du lot, règle 17) : ' + txtDir(direction) + '.')
   if (autres.length) L.push('DÉJÀ PRIS PAR LES AUTRES VIDÉOS DU LOT — INTERDIT ICI (casting, tenue, lieu principal et lumière différents) : ' + autres.join(' | ') + '.')
+  { const q = APP.bloc('video'); if (q) L.push(q) }   // retours qualité de ce client
   return L.join('\n')
 }
 export async function lancerVideo(idx, ct, { forcer = false } = {}) {

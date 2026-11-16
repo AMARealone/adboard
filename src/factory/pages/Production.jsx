@@ -346,7 +346,7 @@ function AngleRow({ S, U, a, onOther }) {
     <section className="fx2-angle">
       <button className="fx2-angle-h" onClick={() => setOpen(!open)}>
         <span className="fx2-angle-n">{a + 1}</span>
-        <span className="fx2-angle-t"><b>{titreAngle(S, a)}</b><small>{prets} / 4 livrables prêts{S.planNiveaux && S.planNiveaux[a] ? ' · parcours ' + S.planNiveaux[a].niveaux.map((x) => PL.COURT[x]).join(' → ') : ''}</small></span>
+        <span className="fx2-angle-t"><b>{titreAngle(S, a)}</b><small>{prets} / 4 livrables prêts{S.planNiveaux && S.planNiveaux[a] ? ' · parcours ' + S.planNiveaux[a].niveaux.map((x) => PL.COURT[x]).join(' → ') : ''}{S.planApprentissage && S.planApprentissage.roles && S.planApprentissage.roles[a] ? ' · ' + (S.planApprentissage.roles[a].role === 'exploit' ? 'angle gagnant repris' : 'test') : ''}</small></span>
         <span className={'fx-arrow' + (open ? ' open' : '')}>›</span>
       </button>
       {open && <>

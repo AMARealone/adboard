@@ -9,6 +9,7 @@ import Commandes from './pages/Commandes'
 import Agents from './pages/Agents'
 import AgentTest from './pages/AgentTest'
 import Production from './pages/Production'
+import Apprentissage from './pages/Apprentissage'
 import { GalerieImage, GalerieVideo } from './pages/ManageGalleries'
 import { DialogHost } from './ui'
 import { hydrateMem } from './agentStore'
@@ -28,6 +29,7 @@ export default function FactoryApp() {
             <Route index element={<Dashboard />} />
             <Route path="commandes" element={<Commandes />} />
             <Route path="production" element={<Production />} />
+            <Route path="apprentissage" element={<Apprentissage />} />
             <Route path="agents" element={<Agents />} />
             <Route path="agents/:slug" element={<AgentTest />} />
             <Route path="galerie" element={<GalerieImage />} />
