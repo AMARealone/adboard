@@ -1827,7 +1827,20 @@ const PaymentModal = ({ productId, userEmail, onClose }) => {
 // Les créatives image existantes n'ont aucun de ces champs : rien ne change pour elles.
 const estVideo = (c) => !!c && (c.type === 'video' || !!c.videoUrl);
 const urlFichierCreative = (c) => (estVideo(c) ? c.videoUrl : c.imageUrl);
-const nomFichierCreative = (c) => `${c.angle}-${c.week}.${estVideo(c) ? 'mp4' : 'jpg'}`.replace(/[^\w.-]+/g,'_');
+// v11-telechargement — nom lisible et reconnaissable : PRODUIT_Angle_LotN_Video.mp4 / PRODUIT_Angle_LotN_Image-2.jpg
+const nettoyerNomFichier = (t) => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const nomFichierCreative = (c, nomProduit) => {
+  const ext = estVideo(c) ? 'mp4' : 'jpg';
+  const lot = nettoyerNomFichier(String(c.week || '').replace(/^[SB]/, ''));
+  const m = String(c.id || '').match(/_(\d+)$/);
+  const parties = [
+    nettoyerNomFichier(nomProduit).slice(0, 30) || 'Adstack',
+    nettoyerNomFichier(String(c.angle || '').split('*')[0]).slice(0, 40) || 'Angle',
+    lot ? 'Lot' + lot : '',
+    estVideo(c) ? 'Video' : 'Image' + (m ? '-' + (Number(m[1]) + 1) : ''),
+  ].filter(Boolean);
+  return parties.join('_') + '.' + ext;
+};
 
 // Lecteur plein écran : cadre 9:16 qui tient toujours dans l'écran (jamais plus haut que la fenêtre),
 // affiche immédiatement l'affiche déjà en cache, lecture avec son. Si le navigateur refuse la lecture
@@ -1871,7 +1884,7 @@ const LecteurVideo = ({ c }) => {
         </div>
       ) : (
         <>
-          <video ref={ref} key={c.id} src={c.videoUrl} poster={affiche} playsInline preload="auto" loop
+          <video ref={ref} key={c.id} src={c.videoUrl} poster={affiche} playsInline preload="metadata" loop
             onClick={basculer}
             onLoadedMetadata={e=>setDuree(e.currentTarget.duration||0)}
             onProgress={majCharge}
@@ -3871,27 +3884,21 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 // sur un lien cross-origin (Supabase Storage ≠ domaine AdBoard). Récupère l'image en mémoire
 // (blob), puis déclenche le téléchargement depuis cette copie locale (même origine, donc jamais
 // bloqué).
-async function downloadImageDirect(url, filename) {
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = filename || 'creative.jpg';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
-  } catch(e) {
-    window.open(url, '_blank');
-  }
+// v11-telechargement — le serveur relaie le fichier avec « Content-Disposition: attachment » et le nom demandé : le navigateur l'enregistre directement
+// (ordinateur comme mobile), sans ouvrir de lien, sans charger la vidéo en mémoire, sans CORS.
+function downloadImageDirect(url, filename) {
+  const nom = filename || 'creative.jpg';
+  const a = document.createElement('a');
+  a.href = 'https://adstack-server.onrender.com/dl?u=' + encodeURIComponent(url) + '&n=' + encodeURIComponent(nom);
+  a.download = nom; a.rel = 'noopener'; a.style.display = 'none';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { try { document.body.removeChild(a); } catch(e) {} }, 3000);
 }
 
 // Mobile : ouvre le menu de partage natif (inclut "Enregistrer dans Photos" sur iOS/Android)
 // quand le navigateur le supporte. Sinon, retombe sur le téléchargement direct classique.
 async function shareOrDownloadImage(url, filename, isMobile) {
-  if (isMobile && navigator.share && navigator.canShare) {
+  if (isMobile && navigator.share && navigator.canShare && !/\.mp4$/i.test(filename || '')) {   // v11 : une vidéo (12 à 40 Mo) ne passe jamais par la mémoire du téléphone
     try {
       const response = await fetch(url);
       const blob = await response.blob();
@@ -3908,13 +3915,14 @@ async function shareOrDownloadImage(url, filename, isMobile) {
 // Version groupée — sur mobile, tente UN SEUL partage natif avec toutes les images sélectionnées
 // (le menu natif "Enregistrer dans Photos" les prend alors toutes en une fois), au lieu de
 // forcer des téléchargements de fichiers isolés dans le navigateur.
-async function shareOrDownloadMultiple(items, isMobile, onProgress) {
-  if (isMobile && navigator.share && navigator.canShare) {
+async function shareOrDownloadMultiple(items, isMobile, onProgress, nomDe) {
+  const nomDuFichier = (it) => nomFichierCreative(it, nomDe ? nomDe(it) : undefined);
+  if (isMobile && navigator.share && navigator.canShare && !items.some(estVideo)) {   // v11 : partage groupé natif seulement pour des images ; sinon un téléchargement par fichier, jamais de zip
     try {
       const files = await Promise.all(items.map(async (item) => {
         const response = await fetch(urlFichierCreative(item));
         const blob = await response.blob();
-        return new File([blob], nomFichierCreative(item), { type: blob.type || (estVideo(item) ? 'video/mp4' : 'image/jpeg') });
+        return new File([blob], nomDuFichier(item), { type: blob.type || (estVideo(item) ? 'video/mp4' : 'image/jpeg') });
       }));
       if (navigator.canShare({ files })) {
         await navigator.share({ files });
@@ -3926,9 +3934,9 @@ async function shareOrDownloadMultiple(items, isMobile, onProgress) {
   // téléchargement direct sur desktop)
   let fait = 0;
   for (const item of items) {
-    await shareOrDownloadImage(urlFichierCreative(item), nomFichierCreative(item), isMobile);
+    await shareOrDownloadImage(urlFichierCreative(item), nomDuFichier(item), isMobile);
     fait += 1; if (onProgress) onProgress(fait, items.length);
-    await new Promise(r => setTimeout(r, 350));
+    await new Promise(r => setTimeout(r, 900));   // v11 : les navigateurs refusent des téléchargements trop rapprochés
   }
 }
 
@@ -4584,7 +4592,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                   const items = filtered.filter(c => selectedIds.includes(c.id));
                   const nb = items.length;
                   setProgressionDl({ fait: 0, total: nb });
-                  await shareOrDownloadMultiple(items, isMobile, (fait, total) => setProgressionDl({ fait, total }));
+                  await shareOrDownloadMultiple(items, isMobile, (fait, total) => setProgressionDl({ fait, total }), (cr) => (products.find(p => p.id === cr.productId) || {}).nom);
                   setProgressionDl(null);
                   setBulkDownloading(false);
                   // Retour visible demandé : sans ça, aucun moyen de savoir si le téléchargement
@@ -4899,7 +4907,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
               </div>
               <div style={{display:'flex',gap:8}}>
                 {can('download') && (
-                  <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected), isMobile)} style={{...btnAction,flex:1,justifyContent:'center'}} aria-label="Télécharger">
+                  <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected, (products.find(p => p.id === selected.productId) || {}).nom), isMobile)} style={{...btnAction,flex:1,justifyContent:'center'}} aria-label="Télécharger">
                     <Icon name="download" size={15} color="#fff"/>Télécharger
                   </button>
                 )}
