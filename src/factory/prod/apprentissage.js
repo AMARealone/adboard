@@ -65,7 +65,7 @@ export function consigneCT(slot) {
   const mode = slot && slot.modeCT
   return [d.blocs.ct_base, mode === 'famille' ? d.blocs.ct_famille + " Si aucun CT proposé ne correspond, choisis librement." : mode === 'explore' ? d.blocs.ct_explore + " Si aucun ne convient, prends le plus éloigné de ceux-ci." : ''].filter(Boolean).join('\n\n')
 }
-export const ctSatures = () => { const d = directives(); return (d && d.ctSatures) || [] }
+export const ctSatures = () => { const d = directives(); return d ? (d.ctSatures || []).concat((d.ctMalRecus || []).filter((x) => !(d.ctSatures || []).includes(x))) : [] }   // saturés + CT mal reçus par le client (avis « à retravailler »)
 // Message d'état affiché sous le bandeau de la production.
 export function messagePlan() {
   const p = S.planApprentissage; if (!p) return null

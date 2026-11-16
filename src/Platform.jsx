@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { WS, wsOwner, can, isMember, resolveWorkspace, captureInviteFromUrl, switchWorkspace, clearWorkspaceMemory, teamFetch, SERVER as TEAM_SERVER } from "./team.js";
 import TeamPage from "./TeamPage.jsx";
 import { TP_CHAMPS, nettoyerStats, aDesChiffres, scoresTopPerformer, classerTopPerformer, multiplicateurTP } from "./topPerformer.js";
+import { useAvis, VotreRegard, AvisCreativeModal, BoutonAvis, PastilleAvis } from "./AvisClient.jsx"; // avis-client-v1
 captureInviteFromUrl();
 // ADBOARD_VERSION v8.3-oneshot (offre ONE SHOT : achat unique, 6 créatives pour 1 produit, 48h, non vendue dans AdBoard) | v8.2-4offres (4 offres TEST / PERF+ / GROWTH / SCALE, créatives accordées au mois sans logique hebdomadaire, fin du One Shot) | v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
@@ -342,6 +343,7 @@ const NAV = [
   {id:'copies',icon:'document',label:'Ad Copies', group:'Ressources'},
   {id:'marche',icon:'chart',label:'Données Marché', group:'Ressources'},
   {id:'suivi',icon:'clock',label:'Suivi Demande', group:'Suivi'},
+  {id:'avis',icon:'sparkle',label:'Votre regard', group:'Suivi'},
   {id:'notifications',icon:'bell',label:'Notifications', group:'Suivi'},
   {id:'equipe',icon:'person',label:'Équipe', group:'Compte'},
   {id:'tarifs',icon:'tag',label:'Forfait', group:'Compte'},
@@ -4096,7 +4098,7 @@ const TeaserMarche = ({setSection}) => {
   );
 };
 
-const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user}) => {
+const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user, avisStore}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null); // reste utilisé tel quel pour Top Performer (cible unique — un classement mélangeant plusieurs cibles n'a pas de sens)
@@ -4136,6 +4138,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   const [dateFin, setDateFin] = useState('');
   const [selected, setSelected] = useState(null);
   const [filtreFormat, setFiltreFormat] = useState('tous'); // 'tous' | 'video' | 'image'
+  const [avisOuvert, setAvisOuvert] = useState(null); // créative dont le client donne l'avis
   const [selectedProduct, setSelectedProduct] = useState(null);
   // Arrivée depuis Suivi Demande (« Voir les créatives ») : on filtre directement sur le produit.
   useEffect(() => { const f = window.__galerieFocus; if (f) { window.__galerieFocus = null; setSelectedProduct(f.productId); } }, []);
@@ -4814,6 +4817,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 {selectedIds.includes(c.id) && <Icon name="check" size={12} color="#fff"/>}
               </div>
             )}
+            {avisStore && !isDemo && avisStore.parCreative[c.id] && <PastilleAvis avis={avisStore.parCreative[c.id]}/>}
             {!selectMode && !isTpMode && c.topPerformer && (
               <div style={{position:'absolute',top:6,right:6,width:20,height:20,borderRadius:6,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.5)',backdropFilter:'blur(2px)',zIndex:2}}>
                 <Icon name="star" size={11} color="#FFC107"/>
@@ -4925,6 +4929,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 {scoresTP[selected.id].comparable ? <> · indice {scoresTP[selected.id].indice} <span style={{color:C.muted}}>(100 = moyenne de la cible)</span> · données {scoresTP[selected.id].fiabilite === 'solide' ? 'solides' : scoresTP[selected.id].fiabilite === 'moyenne' ? 'moyennes' : 'encore légères'}</> : null}
               </div>
             )}
+            {avisStore && !isDemo && <BoutonAvis existing={avisStore.parCreative[selected.id]} onClick={() => setAvisOuvert(selected)}/>}
             {selected.topPerformer && aDesChiffres(selected) && (
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}} data-testid="viewer-chiffres">
                 {TP_CHAMPS.filter(ch => selected.tpStats[ch.k] != null).map(ch => (
@@ -4943,6 +4948,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         );
       })()}
       {tpForm && <FormulaireTopPerformer form={tpForm} setForm={setTpForm} onSave={enregistrerTP} onRemove={retirerTP} busy={togglingTopPerformer} isMobile={isMobile}/>}
+      {avisOuvert && avisStore && <AvisCreativeModal creative={avisOuvert} produitNom={nomProduitParId[avisOuvert.productId] || ''} existing={avisStore.parCreative[avisOuvert.id]} isMobile={isMobile} onSave={avisStore.enregistrer} onRetirer={avisStore.retirer} onClose={() => setAvisOuvert(null)}/>}
       {deleteConfirm && (
         <ConfirmModal
           title="Supprimer ces créatives ?"
@@ -6588,7 +6594,7 @@ const DemoPreview = ({slug}) => {
 };
 
 export default function Platform() {
-  const SECTION_PATHS = { equipe:'team', facturation:'billing', tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback' };
+  const SECTION_PATHS = { equipe:'team', facturation:'billing', tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback', avis:'voice' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
 
   const [section, _setSection] = useState(() => {
@@ -7506,6 +7512,7 @@ export default function Platform() {
   );
 };
 
+const avisStore = useAvis({ user, getToken: async () => { const ss = await sbAuth.refreshSession(); return ss?.access_token || null; }, owner: wsOwner(user && user.id) });
 PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.active;
   const views = {
     demo: <DemoPreview slug={demoSlug}/>,
@@ -7545,11 +7552,12 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
               return;
             }
             setCreativesTarget(p); }}/>,
-    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
+    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user} avisStore={avisStore}/>,
     copies: !accesGrowth() ? <LockedFeature apercu="copies" C={C} icon="document" titre="Ad Copies" texte="Pour chaque angle, des titres et des textes publicitaires prêts à coller dans votre gestionnaire de publicités, optimisés pour convertir." points={['Titres et textes classés par angle','Prêts à copier-coller dans Meta Ads','Livrés avec chaque lot de créatives']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Copies products={products} setSection={setSection}/>,
     marche: !accesGrowth() ? <LockedFeature apercu="marche" C={C} icon="chart" titre="Données Marché" texte="La vue détaillée de votre marché, de vos concurrents et de votre cible, avec nos recommandations et les opportunités à saisir." points={['Analyse du marché, des concurrents et de la cible','Recommandations claires pour vos prochaines campagnes','Opportunités repérées pour chaque produit']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
     equipe: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <TeamPage C={C} isMobile={isMobile} notify={notify} onUpgrade={()=>setSection('tarifs')} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}}/>,
+    avis: <VotreRegard products={products} user={user} isMobile={isMobile} avisStore={avisStore} notify={notify} onNeedLogin={()=>setShowLogin(true)}/>,
     faq: <Faq/>,
     facturation: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <BillingPage C={C} isMobile={isMobile} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}} onOpenPlans={()=>setSection('tarifs')}/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData} setSection={setSection}/>,
