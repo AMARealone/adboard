@@ -127,11 +127,13 @@ export async function lancerVideo(idx, ct, { forcer = false } = {}) {
   if (!estSlotVideo(c)) return
   if (!peutVideoCloud()) throw new Error('La vidéo automatique demande une commande AdBoard (pas un brief importé à la main).')
   const slot = c.angleIdx + 1
+  let ctVideoUrl = ''
+  try { const g = await (galerie || prechargerCTVideo()); const f = g.find((x) => x.id === ct.id); ctVideoUrl = (f && f.videoUrl) || '' } catch (_) { }
   const r = await fetch(SERVER + '/video-jobs/start', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, ct_id: ct.id, angle: String(slot), slot, niveau: PL.LIB[c.niveau] || '', consignes: consignesDiversite(idx, ct.direction), forcer }) })
   const j = await r.json().catch(() => ({}))
   if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status)
   S.creatives[idx] = { ...c, ct: ct.id, ctRaison: ct.raison || '', videoUrl: null, status: 'pending',
-    job: { execution: j.execution, slot, ct: ct.id, ctNom: ct.nom || ct.id, raison: ct.raison || '', poster: ct.poster || '', direction: ct.direction || null, debut: Date.now(), etat: 'demarrage', pct: 1, etape: 'La machine démarre' } }
+    job: { execution: j.execution, slot, ct: ct.id, ctNom: ct.nom || ct.id, raison: ct.raison || '', poster: ct.poster || '', direction: ct.direction || null, ctVideoUrl, debut: Date.now(), etat: 'demarrage', pct: 1, etape: 'La machine démarre' } }
   U.vjournal = U.vjournal || {}; U.vjournal[idx] = []
   U.crea[idx] = { state: 'running', text: 'La machine démarre', pct: 1 }; emit()
   _save(true)   // la commande garde l'identifiant de la machine : on peut fermer l'onglet et reprendre plus tard
@@ -176,7 +178,7 @@ function finOk(idx, e) {
   const duree = e.duree_video_s || c.duree || 0
   S.creatives[idx] = { ...c, type: 'video', videoUrl: e.video_url, thumbUrl: e.affiche_url || c.thumbUrl || null, url: null, imgB64: null, status: 'done', duree,
     desc: 'Vidéo · ' + (c.job.ctNom || c.ct) + (duree ? ' · ' + duree + ' s' : ''),
-    job: { ...c.job, etat: 'termine', pct: 100, etape: 'Vidéo prête', cout_usd: e.cout_usd, monteur: e.monteur, historiqueUrl: e.historique_url, dossierUrl: e.dossier_url, fin: Date.now() } }
+    job: { ...c.job, etat: 'termine', pct: 100, etape: 'Vidéo prête', cout_usd: e.cout_usd, monteur: e.monteur, historiqueUrl: e.historique_url, dossierUrl: e.dossier_url, journal: ((U.vjournal || {})[idx] || []).slice(-400), fin: Date.now() } }
   U.crea[idx] = { state: 'done', text: 'Vidéo prête', pct: 100 }; emit(); _save(true)
   majAgentVideo()
   toast('Vidéo de l\'angle ' + (c.angleIdx + 1) + ' prête.')
@@ -249,6 +251,13 @@ export async function arreterVideos() {
     finEchec(i, 'Arrêtée à ta demande (bouton Annuler).', 'annule')
   }))
   return en.length
+}
+
+// Annuler UNE vidéo (carte) : arrête sa machine cloud et la marque arrêtée, prête pour « Relancer ».
+export async function annulerVideo(idx) {
+  const c = S.creatives[idx]; if (!estSlotVideo(c)) return
+  if (c.job && c.job.execution) { try { await fetch(SERVER + '/video-jobs/cancel', { method: 'POST', headers: JH, body: JSON.stringify({ execution: c.job.execution }) }) } catch (_) { } }
+  finEchec(idx, 'Arrêtée à ta demande (bouton Annuler de la carte).', 'annule')
 }
 
 // Rattacher une vidéo déjà produite (lien R2 ou autre adresse publique .mp4).

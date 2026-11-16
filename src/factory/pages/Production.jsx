@@ -307,6 +307,7 @@ function VideoTile({ S, U, idx, onOther }) {
           {(pret || ui.state === 'err') && <button className="fx-btn sm" disabled={!peut} title="Un autre concept vidéo (CT jamais utilisé dans cette commande)" onClick={() => E.relancerVideo(idx, { autreCT: true })}>⇄ Autre CT</button>}
           {ui.state !== 'running' && <button className="fx-btn sm" disabled={!c} onClick={() => ref.current.click()}>{pret ? 'Remplacer' : 'Importer'}</button>}
           {ui.state !== 'running' && !pret && <button className="fx-btn sm" disabled={!c} title="Rattacher une vidéo déjà produite (lien .mp4)" onClick={() => setLien(lien === null ? '' : null)}>Lien</button>}
+          {ui.state === 'running' && <button className="fx-btn sm danger" title="Arrête cette vidéo seule (la machine cloud est stoppée)" onClick={() => E.annulerCrea(idx)}>✕ Annuler cette vidéo</button>}
           {pret && <button className="fx-btn sm" onClick={() => E.retirerVideo(idx)}>Retirer</button>}
           {pret && <SendMenu title="Envoyer cette vidéo" busy={U.sending['c' + idx]} onClient={() => E.sendOneCreative(idx)} onOther={() => onOther({ type: 'creative', index: idx })}>Envoyer</SendMenu>}
         </div>
@@ -328,6 +329,7 @@ function ImageTile({ S, U, idx, onOther }) {
         {ready && c?.qa && <Qa qa={c.qa} />}
         <div className="fx-crea-a">
           <button className="fx-btn sm" disabled={!ready} onClick={() => E.downloadCrea(idx)}>Télécharger</button>
+          {ui.state === 'running' && <button className="fx-btn sm danger" title="Arrête cette image seule" onClick={() => E.annulerCrea(idx)}>✕ Annuler</button>}
           <button className="fx-btn sm" title="Régénérer avec le même CT" disabled={ui.state === 'running' || (ui.state === 'pending' && !c?.imgB64 && !c?.url)} onClick={() => E.regenerateCrea(idx)}>↻</button>
           <button className="fx-btn sm" title="Régénérer avec un AUTRE CT" disabled={ui.state === 'running' || !S.synthesis} onClick={() => E.regenerateCreaAutreCT(idx)}>⇄ Autre CT</button>
           <SendMenu title="Envoyer cette créative" busy={U.sending['c' + idx]} onClient={() => E.sendOneCreative(idx)} onOther={() => onOther({ type: 'creative', index: idx })}>Envoyer</SendMenu>
@@ -410,6 +412,8 @@ function ActionBar({ S, U, setCompte }) {
     <div className="fx2-bar-send">
       <div className="fx2-bar-i"><b>{Math.min(pretes, total)} / {total} livrables prêts</b><span>{envoyeMoi ? 'Envoyé sur ton compte à ' + heure(U.envoyeMoi) + ' ✓' : moi ? 'Compte de contrôle : ' + moi.user.email : 'Vérifie d\'abord sur ton propre compte'}</span></div>
       <div className="fx2-bar-a">
+        {pretes > 0 && <button className="fx-btn" disabled={U.dossier && U.dossier.etat === 'busy'} title="Un seul zip avec tout l'historique de cette production, à m'envoyer pour améliorer les agents" onClick={() => E.genererDossier()}>{U.dossier && U.dossier.etat === 'busy' ? 'Dossier en cours…' : 'Dossier complet'}</button>}
+        {U.dossier && U.dossier.etat === 'ok' && <a className="fx-link-btn" href={U.dossier.url} target="_blank" rel="noopener noreferrer">⬇ Télécharger le dossier ({U.dossier.mo} Mo)</a>}
         {moi && <button className="fx-link-btn" onClick={() => setCompte(true)}>changer de compte</button>}
         <button className={'fx-btn' + (envoyeMoi ? '' : ' primary')} disabled={!pretes || U.sending.moi === 'busy'} onClick={() => { if (!E.monCompte()) setCompte(true); else E.envoyerSurMonCompte() }}>{U.sending.moi === 'busy' ? 'Envoi…' : U.sending.moi === 'ok' ? '✓ Envoyé' : envoyeMoi ? 'Renvoyer sur mon compte' : '1 · Envoyer sur mon compte'}</button>
         <button className={'fx-btn' + (envoyeMoi ? ' primary' : '')} disabled={!pretes || !clientOk || U.sending.all === 'busy'} title={clientOk ? '' : 'Production non liée à une commande'} onClick={versClient}>{U.sendLabel || '2 · Envoyer au client'}</button>

@@ -498,18 +498,22 @@ async function controleQualite(idx, gen, signal) {
   if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
   return d
 }
+const genId = {}   // v10c — jeton par créative : « Annuler » sur une carte invalide la génération en cours sans toucher aux autres
 async function genererAvecReprises(idx, ctName, signal, actif = () => true, { corrections = MAX_CORRECTIONS, budgetLibre = false } = {}) {
-  const verifierLocal = () => { if (!actif() || (signal && signal.aborted)) throw annule() }
+  const mon = (genId[idx] = (genId[idx] || 0) + 1)
+  const verifierLocal = () => { if (!actif() || (signal && signal.aborted) || genId[idx] !== mon) throw annule() }
   U.crea[idx] = { state: 'running', text: 'Prompt et image en cours' }; emit()
   let gen = await avecReessai(() => appelCreative(idx, ctName, signal, null), signal, idx, 'la génération')
   verifierLocal(); depenser(COUT.prompt + COUT.image, 'images')
   let meilleur = { gen, qa: null, corr: 0 }, nbCorr = 0
+  const qaHist = []   // v10c — chaque tentative : prompt, verdict, défauts (pour le dossier complet)
   for (let k = 0; k <= corrections; k++) {
     U.crea[idx] = { state: 'running', text: k ? `Contrôle qualité de la correction ${k}` : 'Contrôle qualité' }; emit()
     let qa = null
     try { qa = await avecReessai(() => controleQualite(idx, gen, signal), signal, idx, 'le contrôle'); depenser(COUT.qa, 'controle') }
     catch (e) { verifierLocal(); console.warn('[Contrôle qualité] indisponible :', e.message); qa = { verdict: 'inconnu', score: null, defauts: [], resume: 'contrôle indisponible (' + String(e.message).slice(0, 80) + ')' } }
     verifierLocal()
+    qaHist.push({ tentative: k, prompt: gen.prompt, meta: gen.meta, verdict: qa.verdict, score: qa.score, defauts: qa.defauts, resume: qa.resume, consignes_correction: qa.consignes_correction || null })
     if (!meilleur.qa || (qa.score || 0) > (meilleur.qa.score || 0) || qa.verdict === 'ok') meilleur = { gen, qa, corr: nbCorr }
     if (qa.verdict !== 'corriger') break
     const bloquants = (qa.defauts || []).filter((x) => x.gravite === 'bloquant')
@@ -520,11 +524,12 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
     gen = await avecReessai(() => appelCreative(idx, ctName, signal, { prompt: meilleur.gen.prompt, meta: meilleur.gen.meta, corrections: qa.consignes_correction || bloquants.map((x) => x.detail).join(' ; ') }), signal, idx, 'la correction')
     verifierLocal(); depenser(COUT.image, 'corrections'); nbCorr++
   }
+  verifierLocal()
   const g = meilleur.gen, q = meilleur.qa || {}
   const imgB64 = g.imageData, imageMime = g.imageMime || 'image/png'
   const desc = (g.meta && g.meta.length > 5) ? g.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${S.creatives[idx].angleIdx + 1}`
   const qaRes = { verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
-  S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime, qa: qaRes }
+  S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime, qa: qaRes, prompt: g.prompt || '', meta: g.meta || '', qaHist: qaHist.map((h) => ({ ...h, prompt: String(h.prompt || '').slice(0, 6000), meta: String(h.meta || '').slice(0, 3000) })), ctUrl: CT_IMAGES[ctName] || '' }
   U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
   if (S.briefSource === 'commande' && S.commandeId) {
     try {
@@ -556,7 +561,7 @@ function genThumb(base64Data, mime) {
   })
 }
 
-function markCreativeError(idx, msg) { U.crea[idx] = { state: 'err', text: 'Erreur', err: String(msg).slice(0, 200) }; emit() }
+function markCreativeError(idx, msg) { if (msg === 'Annulé') return; U.crea[idx] = { state: 'err', text: 'Erreur', err: String(msg).slice(0, 200) }; emit() }
 export async function regenerateCrea(idx) {
   const c = S.creatives[idx]; if (!c || estSlotVideo(c) || !c.ct) return
   if (U.crea[idx] && U.crea[idx].state === 'running') return
@@ -642,7 +647,7 @@ async function generateOneCopy(angleIdx, signal, actif = () => true) {
     const { hooks, description } = await V.prodv2GenerateOneCopyAttempt(angleIdx, signal)
     if (!actif()) throw new DOMException('Annulé', 'AbortError')
     depenser(COUT.copie, 'copies')
-    dernier = { hooks, description }
+    dernier = { hooks, description, essais: t }
     if (copieValide(hooks, description)) break
     console.warn(`[Copywriter] Ad copy de l'angle ${angleIdx + 1} incomplète (essai ${t}) : réécriture.`)
   }
@@ -778,4 +783,30 @@ export async function supprimerTicket(id, reload) {
   if (!(await confirmDlg('Supprimer définitivement cette commande client ? Cette action est irréversible.', { ok: 'Supprimer', danger: true }))) return
   await fetch(`${SERVER}/commandes/${id}/delete`, { method: 'POST', headers: NGROK })
   reload && reload()
+}
+
+// v10c — DOSSIER COMPLET : un seul zip (brief, marché, plan, copies, images + prompts + contrôle qualité, vidéos + historique + CT source)
+export async function genererDossier({ silencieux = false } = {}) {
+  if (!S.brief) return null
+  U.dossier = { etat: 'busy', url: U.dossier && U.dossier.url }; emit()
+  try {
+    const journal = []
+    Object.keys(U.vjournal || {}).forEach((i) => { journal.push('── Vidéo, créative ' + (Number(i) + 1) + ' ──'); (U.vjournal[i] || []).forEach((l) => journal.push(typeof l === 'string' ? l : JSON.stringify(l))) })
+    const creatives = S.creatives.map((c) => c && { ...c, imgB64: null })
+    const r = await fetch(SERVER + '/production/dossier', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, brief: S.brief, journal,
+      deliverables: { synthesis: S.synthesis, marche: S.marche, angles: S.angles, planNiveaux: S.planNiveaux, couts: { ...(S.couts || {}), budget: S.budget || null }, copies: S.copies, creatives } }) })
+    const d = await r.json().catch(() => ({}))
+    if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
+    U.dossier = { etat: 'ok', url: d.url, fichiers: d.fichiers, mo: d.mo, manques: d.manques || [] }; emit()
+    if (!silencieux) toast('Dossier complet prêt (' + d.fichiers + ' fichiers, ' + d.mo + ' Mo).')
+    return d
+  } catch (e) { U.dossier = { etat: 'err', erreur: e.message }; emit(); if (!silencieux) await alertDlg('Dossier complet impossible : ' + e.message); return null }
+}
+
+// v10c — bouton « Annuler » sur chaque carte : arrête cette créative seule, puis « Relancer » repart proprement
+export async function annulerCrea(idx) {
+  const c = S.creatives[idx]; if (!c) return
+  if (estSlotVideo(c)) { await VID.annulerVideo(idx); return }
+  genId[idx] = (genId[idx] || 0) + 1
+  U.crea[idx] = { state: 'err', text: 'Annulée', err: 'Annulée à ta demande — clique sur ↻ pour relancer.' }; emit()
 }
