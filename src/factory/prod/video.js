@@ -31,6 +31,26 @@ const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-
 const titreCourt = (a) => String(a || '').split('*')[0].replace(/^\s*angle\s*\d+\s*[:—–-]?\s*/i, '').trim()
 const balises = (c) => (Array.isArray(c.awareness) ? c.awareness : String(c.awareness || '').split(',')).map(PL.cle).filter(Boolean)
 
+// zero-redondance-video-v1 — ZÉRO REDONDANCE DES CT VIDÉO. Un CT vidéo utilisé au dernier lot de ce produit n'est JAMAIS reproposé tant qu'il en reste assez d'autres.
+// Paliers (le premier qui laisse au moins n CT est retenu) : 1) ni le dernier lot, ni les lots plus anciens, ni les CT saturés / mal reçus du client ;
+// 2) ni le dernier lot, ni les CT saturés / mal reçus ; 3) pas le dernier lot. Si même le palier 3 est trop court, on garde tous les CT hors dernier lot
+// et on complète avec le strict minimum du dernier lot (insuffisant > 0 : la galerie CT vidéo manque de CT, il faut en ajouter).
+export function ctVideoDispo(liste, n, ctx, ecartesEnPlus) {
+  const rc = ctx || {}
+  const dernier = new Set(rc.ctsUtilisesDernierLot || [])
+  const anciens = new Set((rc.historiqueCreatives || []).map((x) => x && x.ctId).filter(Boolean))
+  const mal = new Set(ecartesEnPlus || [])
+  const besoin = Math.max(1, n || 1)
+  const paliers = [new Set([...dernier, ...anciens, ...mal]), new Set([...dernier, ...mal]), dernier]
+  for (const ex of paliers) {
+    const l = liste.filter((c) => !ex.has(c.id))
+    if (l.length >= besoin) return { liste: l, ecartes: liste.length - l.length, insuffisant: 0 }
+  }
+  const hors = liste.filter((c) => !dernier.has(c.id)), reste = liste.filter((c) => dernier.has(c.id))
+  const l = hors.concat(reste.slice(0, Math.max(0, besoin - hors.length)))
+  return { liste: l.length ? l : liste, ecartes: liste.length - (l.length ? l.length : liste.length), insuffisant: Math.max(0, besoin - hors.length) }
+}
+
 // secours sans IA : CT balisé au bon niveau, durée raisonnable, style différent des autres vidéos
 function secours(dispo, besoins, deja = []) {
   const styles = new Set(), niches = new Set(), pris = new Set(deja.map((c) => c.id))
@@ -58,8 +78,12 @@ const briefCourt = () => { const b = S.brief || {}; return ['Marque : ' + (b.mar
 export async function planifier(nbAngles, { avecVideo = true } = {}) {
   const angleIdxs = Array.from({ length: nbAngles }, (_, a) => a)
   if (!avecVideo) return { plan: PL.planParDefaut(nbAngles), choix: [] }
-  const liste = await (galerie || prechargerCTVideo())
-  if (!liste.length) throw new Error('Aucun CT vidéo avec sa vidéo source dans la galerie (Galerie CT vidéo)')
+  const toute = await (galerie || prechargerCTVideo())
+  if (!toute.length) throw new Error('Aucun CT vidéo avec sa vidéo source dans la galerie (Galerie CT vidéo)')
+  const sel = ctVideoDispo(toute, nbAngles, S.renewalContext, APP.ctSatures())   // zero-redondance-video-v1
+  const liste = sel.liste
+  if (sel.ecartes) console.log('[Vidéo] zéro redondance : ' + sel.ecartes + ' CT vidéo écartés (déjà utilisés au dernier lot ou mal reçus), ' + liste.length + ' proposés')
+  if (sel.insuffisant) toast('Galerie CT vidéo trop courte : ' + sel.insuffisant + ' CT du dernier lot sont repris faute de choix. Ajoutez des CT vidéo.')
   const parId = new Map(liste.map((c) => [c.id, c]))
   let props = [], choix = []
   try {
@@ -89,13 +113,14 @@ export async function planifier(nbAngles, { avecVideo = true } = {}) {
     const c = parAngle.get(a), g = parId.get(c.id) || {}
     return { id: c.id, nom: g.name || c.id, poster: g.posterUrl || '', duree_s: g.duree_s || 0, angleIdx: a, raison: c.raison || '', direction: c.direction || null }
   })
-  return { plan, choix: APP.forcerCTVideo(liste, plan, sortie, balises) }
+  return { plan, choix: APP.forcerCTVideo(toute, plan, sortie, balises) }   // un CT gagnant (indice ≥ 120) reste rejouable exprès, sur un nouvel angle
 }
 
 // Un seul CT vidéo pour un angle (relance « Autre CT »), au niveau imposé par le plan.
 async function unCT(angleIdx, niveau, exclure) {
   const liste = await (galerie || prechargerCTVideo())
-  const dispo = liste.filter((c) => !exclure.has(c.id))
+  const libres = liste.filter((c) => !exclure.has(c.id))
+  const dispo = libres.length ? ctVideoDispo(libres, 1, S.renewalContext, APP.ctSatures()).liste : libres   // zero-redondance-video-v1
   if (!dispo.length) throw new Error('Plus aucun CT vidéo disponible dans la galerie')
   const parId = new Map(dispo.map((c) => [c.id, c]))
   try {
