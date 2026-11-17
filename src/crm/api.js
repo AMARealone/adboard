@@ -139,6 +139,18 @@ export async function serveurAdmin(path, method = 'GET', ms = 15000) {
   } finally { clearTimeout(t) }
 }
 
+// finance-phase1-v1 — appel serveur administrateur avec corps JSON (GET ou POST), toujours avec la session de l'administrateur
+export async function serveurAdminJson(path, method = 'GET', body, ms = 60000) {
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms)
+  try {
+    const r = await sfetch(SERVER + path, { method, headers: { Authorization: 'Bearer ' + accessToken(), ...(body === undefined ? {} : { 'Content-Type': 'application/json' }) }, body: body === undefined ? undefined : JSON.stringify(body), cache: 'no-store', signal: c.signal })
+    if (r.status === 401 || r.status === 403) throw new Error('Session expirée ou non autorisée — reconnectez-vous.')
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status)
+    return j
+  } finally { clearTimeout(t) }
+}
+
 // Suppression définitive d'un prospect (réservée à l'administrateur : règle Supabase « admin »)
 export async function supprimerProspect(id) {
   const r = await sfetch(SB + '/rest/v1/prospects?id=eq.' + encodeURIComponent(id), { method: 'DELETE', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + accessToken(), Prefer: 'return=minimal' } })

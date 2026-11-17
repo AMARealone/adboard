@@ -17,6 +17,7 @@ import Dashboard from './pages/Dashboard'
 import Templates from './pages/Templates'
 import Transactions from './pages/Transactions'
 import Comptabilite from './pages/Comptabilite'
+import Finance from './pages/Finance'
 import Emails from './pages/Emails'
 import Suivi from './pages/Suivi'
 import AContacter from './pages/AContacter'
@@ -51,6 +52,7 @@ function Shell({ user, onLogout }) {
     { to: '/dashboard', label: 'Dashboard', ic: 'chart' },
     { to: '/transactions', label: 'Ventes & clients', ic: 'receipt' },
     { to: '/comptabilite', label: 'Comptabilité', ic: 'wallet' },
+    { to: '/finance', label: 'Finance ($)', ic: 'chart' },
     { g: 'Messages' },
     { to: '/templates', label: 'Templates', ic: 'doc' },
     { to: '/emails', label: 'Emails', ic: 'mail' },
@@ -117,6 +119,7 @@ export default function CrmApp() {
             <Route path="dashboard" element={<Titre t="Dashboard"><Dashboard /></Titre>} />
             <Route path="transactions" element={<Titre t="Ventes & clients"><Transactions /></Titre>} />
             <Route path="comptabilite" element={<Titre t="Comptabilité"><Comptabilite /></Titre>} />
+            <Route path="finance" element={<Titre t="Finance ($)"><Finance /></Titre>} />
             <Route path="emails" element={<Titre t="Emails"><Emails /></Titre>} />
             <Route path="templates" element={<Titre t="Templates"><Templates /></Titre>} />
             <Route path="comportement" element={<Titre t="Comportement site"><Comportement /></Titre>} />
