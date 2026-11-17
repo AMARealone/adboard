@@ -6,6 +6,7 @@ import { vctGetAll } from '../vctApi'
 import { toast } from '../ui'
 import * as PL from './plan'
 import * as APP from './apprentissage' // appr-client-v1
+import * as CDC from './cdc' // cdc-franchise-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const U = S.ui
@@ -147,6 +148,8 @@ function consignesDiversite(idx, direction) {
   if (direction) L.push('DIRECTION IMPOSÉE POUR CETTE VIDÉO (diversité du lot, règle 17) : ' + txtDir(direction) + '.')
   if (autres.length) L.push('DÉJÀ PRIS PAR LES AUTRES VIDÉOS DU LOT — INTERDIT ICI (casting, tenue, lieu principal et lumière différents) : ' + autres.join(' | ') + '.')
   { const q = APP.bloc('video'); if (q) L.push(q) }   // retours qualité de ce client
+  L.push(CDC.regleVideo())   // cdc-franchise-v1 : franchise du sujet, toujours
+  { const c = CDC.bloc('video').trim(); if (c) L.push(c) }   // cahier des charges de la marque
   return L.join('\n')
 }
 export async function lancerVideo(idx, ct, { forcer = false } = {}) {

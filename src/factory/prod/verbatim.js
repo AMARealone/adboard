@@ -2,6 +2,7 @@
 import { prodv2State, SERVER, COMP_FILES, CT_IMAGES } from './state'
 import { ctGalerieComplete, NIVEAUX_CLE, niveauCT, ctMemoriser } from '../ctApi'
 import * as APP from './apprentissage' // appr-client-v1
+import * as CDC from './cdc' // cdc-franchise-v1
 
 export function fetchAvecTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
@@ -238,6 +239,11 @@ export function prodv2BriefTextOnly() {
 }
 
 export function prodv2SplitSynthesisAndMarche(raw) {
+  const r = _splitSynthMarche(raw)
+  CDC.noterSynthese(r.synthesisText)   // cdc-franchise-v1 : affiche le motif d'achat dominant retenu (ou l'alerte)
+  return r
+}
+function _splitSynthMarche(raw) {
   const delimiter = '===DONNEES_MARCHE===';
   const idx = raw.indexOf(delimiter);
   if (idx === -1) {
@@ -300,7 +306,7 @@ export async function prodv2GenerateOneCopyAttempt(angleIdx, signal) {
   const copywriterSystem = COMP_FILES['COMPETENCE_COPYWRITER_PROD.md'] || '';
   const angle = prodv2State.angles[angleIdx] || ('Angle ' + (angleIdx+1));
   // Consigne durcie : pas de markdown gras autour des labels, pas de labels AIDA visibles
-  const userPrompt = `SYNTHÈSE COMPLÈTE :\n${prodv2State.synthesis}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGÉNÈRE LE COPY POUR L'ANGLE ${angleIdx+1} UNIQUEMENT :\n${angle}\n\n${APP.bloc('copy')}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFORMAT STRICT (RESPECTE-LE EXACTEMENT, sinon le parsing échoue) :\n\nHOOK 1: <texte du hook>\nHOOK 2: <texte du hook>\nHOOK 3: <texte du hook>\nHOOK 4: <texte du hook>\nHOOK 5: <texte du hook>\nDESCRIPTION:\n[BLOC1] <ATTENTION — 1 phrase d'accroche qui nomme la douleur exacte du persona>\n[BLOC2] <INTÉRÊT — 1-2 phrases qui expliquent le problème et introduisent le mécanisme produit>\n[BLOC3] <DÉSIR — OBLIGATOIRE : 3 à 4 bullet points, un par ligne, chacun commençant par "• " suivi d'un emoji pertinent puis du bénéfice concret (avec une donnée chiffrée si disponible dans la synthèse) — jamais un paragraphe de phrases suivies, jamais moins de 3 bullet points, jamais zéro emoji>\n[BLOC4] <ACTION — 1 phrase de CTA — si une offre/promo est active dans le brief (ex: "2 achetés = 1 offert"), mentionne-la explicitement ici pour environ 1 génération sur 5 (pas systématiquement, pour garder de la variété) ; sinon CTA avec le prix/livraison, ou un slogan fort>\n\nEXEMPLE DE BLOC [BLOC3] ATTENDU (structure à respecter, pas le contenu) :\n[BLOC3]\n• 🌿 Une formule 100% naturelle qui nourrit la fibre en profondeur\n• ⚡ Des résultats visibles dès les premières semaines d'utilisation\n• 💧 Une texture non grasse qui pénètre instantanément\n\nINTERDIT ABSOLU :\n- N'utilise PAS de markdown autour des labels (PAS de **HOOK 1:**, PAS de **DESCRIPTION:**)\n- N'utilise PAS de titre/intro avant la liste (PAS de "### ANGLE 1", PAS de "Voici les hooks")\n- Garde les labels [BLOC1] [BLOC2] [BLOC3] [BLOC4] EXACTEMENT comme indiqués, MOT POUR MOT, quelle que soit la langue du marché (S0) — ils servent UNIQUEMENT au parsing technique, ne les traduis JAMAIS, ne les remplace JAMAIS par ATTENTION/INTEREST/DESIRE/ACTION ou toute autre langue. Seul le CONTENU à l'intérieur des blocs est dans la langue du marché.\n- BLOC1/BLOC2/BLOC4 restent en 1-2 phrases courantes (pas de bullet points) — SEUL BLOC3 est en bullet points, ne mélange pas les styles\n- Démarre TA RÉPONSE directement par "HOOK 1:" — aucun préambule\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+  const userPrompt = `SYNTHÈSE COMPLÈTE :\n${prodv2State.synthesis}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nGÉNÈRE LE COPY POUR L'ANGLE ${angleIdx+1} UNIQUEMENT :\n${angle}\n\n${CDC.bloc('copy')}${APP.bloc('copy')}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nFORMAT STRICT (RESPECTE-LE EXACTEMENT, sinon le parsing échoue) :\n\nHOOK 1: <texte du hook>\nHOOK 2: <texte du hook>\nHOOK 3: <texte du hook>\nHOOK 4: <texte du hook>\nHOOK 5: <texte du hook>\nDESCRIPTION:\n[BLOC1] <ATTENTION — 1 phrase d'accroche qui nomme le sujet de l'angle (son motif d'achat) avec les mots du marché, dès les premiers mots>\n[BLOC2] <INTÉRÊT — 1-2 phrases qui expliquent le problème et introduisent le mécanisme produit>\n[BLOC3] <DÉSIR — OBLIGATOIRE : 3 à 4 bullet points, un par ligne, chacun commençant par "• " suivi d'un emoji pertinent puis du bénéfice concret (avec une donnée chiffrée si disponible dans la synthèse) — jamais un paragraphe de phrases suivies, jamais moins de 3 bullet points, jamais zéro emoji>\n[BLOC4] <ACTION — 1 phrase de CTA — si une offre/promo est active dans le brief (ex: "2 achetés = 1 offert"), mentionne-la explicitement ici pour environ 1 génération sur 5 (pas systématiquement, pour garder de la variété) ; sinon CTA avec le prix/livraison, ou un slogan fort>\n\nEXEMPLE DE BLOC [BLOC3] ATTENDU (structure à respecter, pas le contenu) :\n[BLOC3]\n• 🌿 Une formule 100% naturelle qui nourrit la fibre en profondeur\n• ⚡ Des résultats visibles dès les premières semaines d'utilisation\n• 💧 Une texture non grasse qui pénètre instantanément\n\nINTERDIT ABSOLU :\n- N'utilise PAS de markdown autour des labels (PAS de **HOOK 1:**, PAS de **DESCRIPTION:**)\n- N'utilise PAS de titre/intro avant la liste (PAS de "### ANGLE 1", PAS de "Voici les hooks")\n- Garde les labels [BLOC1] [BLOC2] [BLOC3] [BLOC4] EXACTEMENT comme indiqués, MOT POUR MOT, quelle que soit la langue du marché (S0) — ils servent UNIQUEMENT au parsing technique, ne les traduis JAMAIS, ne les remplace JAMAIS par ATTENTION/INTEREST/DESIRE/ACTION ou toute autre langue. Seul le CONTENU à l'intérieur des blocs est dans la langue du marché.\n- BLOC1/BLOC2/BLOC4 restent en 1-2 phrases courantes (pas de bullet points) — SEUL BLOC3 est en bullet points, ne mélange pas les styles\n- Démarre TA RÉPONSE directement par "HOOK 1:" — aucun préambule\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
   // 12 000 tokens — Gemini 2.5 Pro utilise ~3-4k tokens pour "thinking" avant de générer,
   // avec 4000 max il ne lui reste que ~1000 pour le texte → description tronquée
@@ -485,7 +491,7 @@ export async function buildAnalysteInputs(nbAngles, nbCreativesTotal) {
     }
 
     const analysteParts = [
-      { type: 'text', text: _dateHeader + _renewalHeader + (APP.bloc('analyste_nombre') || _nbAnglesHeader) + (APP.bloc('analyste_gagnants') || _angleGagnantHeader) + APP.bloc('analyste_apprentissage') + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
+      { type: 'text', text: _dateHeader + CDC.bloc('analyste') + _renewalHeader + (APP.bloc('analyste_nombre') || _nbAnglesHeader) + (APP.bloc('analyste_gagnants') || _angleGagnantHeader) + APP.bloc('analyste_apprentissage') + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
       { type: 'image', source: { type:'base64', media_type: prodv2State.productMime, data: prodv2State.productB64 } }
     ];
     if(prodv2State.logoB64) {
@@ -547,7 +553,7 @@ export function buildCreativeInstruction(angleIdx, ctPositionInAngle, rangDansAn
   const angleInstruction = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nANGLE IMPOSÉ POUR CETTE CRÉATIVE (NON-NÉGOCIABLE) :\nAngle ${angleIdx+1} — ${angle}\n\n⛔ INTERDICTION ABSOLUE : tu ne dois PAS choisir un autre angle. L'angle ${angleIdx+1} est déjà sélectionné par l'orchestrateur. La PHASE de choix d'angle est NEUTRALISÉE.\n\n✅ DANS TON BLOC ===META===, tu écris OBLIGATOIREMENT : "ANGLE CHOISI : ${angleIdx+1} · ${angle}"\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n⚠️ TAILLE RÉELLE DE CE RUN (prime sur toute mention "3 angles"/"9 créatives" du fichier de compétences, qui décrit le cas le plus courant mais pas systématique) :\nCette commande compte ${nbAnglesTotal} angles au total (pas nécessairement 3) et ${nbCreativesTotalRun} créatives au total (pas nécessairement 9) — 3 niveaux de conscience par angle (1 vidéo + 2 images), répartis par l'orchestrateur sur toute la production.${parcoursTxt}\n\nROUTAGE ${nbAnglesTotal} ANGLES × 3 NIVEAUX DE CONSCIENCE (NON-NÉGOCIABLE) :\nCette créative est la créative n°${consciencePos+1} de l'Angle ${angleIdx+1}.\n\nNIVEAU DE CONSCIENCE IMPOSÉ : ${niveauConscience}. Utilise la déclinaison "${niveauConscience}" de l'Angle ${angleIdx+1} telle que définie dans S3 de la synthèse (ton, instructions spécifiques, dosage peur/désir-douleur — voir RÈGLE V4.3).\n\n✅ Dans le bloc ===META===, déclare :\n   NIVEAU DE CONSCIENCE CHOISI : ${niveauConscience}\n   MOTEUR DOMINANT : [peur/désir/douleur de l'Angle ${angleIdx+1}, depuis S2]\n   VARIABLE UNIQUE DE CETTE CRÉATIVE PAR RAPPORT AUX ${nbCreativesTotalRun-1} AUTRES : Niveau ${niveauConscience} · Angle ${angleIdx+1} · Concept CT [type observé en IMAGE 2]\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
   // v5.73 — raison d'acheter imposée : la créative k de l'angle porte la raison k+1 (champ 17 de la carte de l'angle).
   const raisonLine = `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\nRAISON D'ACHETER IMPOSÉE POUR CETTE CRÉATIVE : Raison ${consciencePos + 1} du champ 17 de la carte de l'angle ${angleIdx + 1} (si la carte n'a pas de champ 17, ignore cette consigne). Elle ne s'écrit jamais dans l'image.\n`
-  return { creativeSystem, angleInstruction: angleInstruction + raisonLine + (APP.bloc('image') ? '\n\n' + APP.bloc('image') : '') }
+  return { creativeSystem, angleInstruction: angleInstruction + raisonLine + (CDC.bloc('image') ? '\n\n' + CDC.bloc('image') : '') + (APP.bloc('image') ? '\n\n' + APP.bloc('image') : '') }
 }
 
 export function buildCopyPromptUnused(){}

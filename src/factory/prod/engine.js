@@ -8,6 +8,7 @@ import { confirmDlg, alertDlg, toast } from '../ui'
 import * as VID from './video'
 import * as PL from './plan'
 import * as APP from './apprentissage' // appr-client-v1
+import * as CDC from './cdc' // cdc-franchise-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
@@ -361,7 +362,7 @@ async function lancerProduction(reprise = false) {
     }
     const nbAngles = V.prodv2GetAngleCount()
     const nbTot = nbAngles * 3
-    const videoCloud = VID.peutVideoCloud()
+    const videoCloud = VID.peutVideoCloud() && !CDC.videosManuelles()   // cdc-franchise-v1
     const garde = !!reprise   // reprise : on garde l'hypothèse, le plan, les images, les ad copies et les vidéos déjà là
     if (!garde) { S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null; S.planApprentissage = null }
     { const cp0 = S.couts || {}; S.budget = { total: budgetHorsVideo(nbTot), depense: garde ? Number(cp0.hors_video || 0) : 0, postes: garde ? { ...(cp0.postes || {}) } : {} } }
@@ -430,7 +431,7 @@ async function lancerProduction(reprise = false) {
     if (planDeja) { VID.reprendreVideos(); VID.majAgentVideo() }   // reprise : on reprend le suivi des vidéos déjà lancées ; les vidéos manquantes se lancent depuis leur carte (jamais toutes seules)
     else if (videoCloud && sauveOk && choixVideo.length) videosPromise = VID.produireVideos(choixVideo, actif).catch((err) => { console.error('Erreur vidéos :', err); setAgent(4, 'error', 'Erreur : ' + err.message, 0) })
     else if (videoCloud) { setAgent(4, 'error', sauveOk ? 'Aucun CT vidéo choisi : lance les vidéos depuis leur carte.' : 'Sauvegarde de la commande impossible : les vidéos n\'ont pas été lancées (relance-les depuis leur carte).', 0); S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = { state: 'video', text: 'Vidéo à lancer' } }); emit() }
-    else setAgent(4, 'pending', 'Vidéos : import manuel (production non liée à une commande)', 0)
+    else setAgent(4, 'pending', CDC.videosManuelles() ? 'Vidéos : à lancer à la main depuis leur carte, après validation des ad copies par le propriétaire' : 'Vidéos : import manuel (production non liée à une commande)', 0)
 
     // ── 4. images (2 à la fois, contrôle qualité) et ad copies (toutes en parallèle) ──
     const toutesImg = S.creatives.map((c, i) => i).filter((i) => !estSlotVideo(S.creatives[i]))

@@ -6,6 +6,7 @@ import { useData } from '../data'
 import { etat } from '../api'
 import { toast, confirmDlg } from '../ui'
 import * as PL from '../prod/plan'
+import * as CDC from '../prod/cdc'   // cdc-franchise-v1
 
 const esc = (s) => (s == null ? '' : String(s))
 const nivLib = (c) => (c && (PL.LIB[c.niveau] || ['Solution Aware', 'Product Aware', 'Most Aware'][c.ctIdx])) || ''
@@ -209,6 +210,33 @@ function Launch({ S, U }) {
         <button className="fx2-cta" disabled={!prets || U.running} onClick={E.launch}>{U.running ? 'Production en cours…' : fait ? 'Relancer tous les livrables' : 'Générer tous les livrables'}</button>
         <span className="fx-s" style={{ whiteSpace: 'normal' }}>Durée habituelle : 30 à 45 minutes, dominée par les vidéos. Garde cet onglet ouvert pendant la production. Si la page se recharge (Chrome met parfois les onglets inactifs en veille), rien n'est perdu : l'hypothèse est gardée par le serveur et « Reprendre la production » continue sans rien repayer.</span>
       </div>
+    </section>
+  )
+}
+
+// cdc-franchise-v1 — cahier des charges de la marque : ce que le propriétaire demande, transmis tel quel à tous les agents.
+function CahierMarque({ S, U }) {
+  const notes = CDC.notesClient()
+  const [txt, setTxt] = useState(CDC.lire())
+  const [man, setMan] = useState(CDC.videosManuelles())
+  const [ouvert, setOuvert] = useState(!!(CDC.texte()))
+  const actif = !!(notes || txt.trim())
+  return (
+    <section className="fx2-card slim">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <b>Cahier des charges de la marque</b>
+        <span className={'fx-pillstat ' + (actif ? 'ok' : 'warn')}>{actif ? 'Transmis à tous les agents' : 'Vide'}</span>
+        <button className="fx-link-btn" onClick={() => setOuvert(!ouvert)}>{ouvert ? 'Masquer' : actif ? 'Voir / modifier' : 'Ajouter ce que le propriétaire demande'}</button>
+      </div>
+      {ouvert && <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
+        <div className="fx-s" style={{ whiteSpace: 'normal' }}>Colle ici ce que le propriétaire a demandé, avec ses mots : sujet à traiter, ton, niveau d'audace, mots à employer. L'analyste, les ad copies, les images et les vidéos le lisent avant tout le reste et le respectent. Pris en compte au prochain lancement. Gardé dans ce navigateur, produit par produit.</div>
+        {notes && <div className="fx-s" style={{ whiteSpace: 'pre-wrap' }}><b>Notes du client sur la commande (déjà transmises) :</b>{'\n'}{notes}</div>}
+        <textarea className="fx-ta" style={{ color: 'var(--tx)' }} rows={5} maxLength={2500} placeholder="Ex. : ce que le propriétaire a écrit dans son dernier message…" value={txt} onChange={(e) => { setTxt(e.target.value); CDC.ecrire(e.target.value) }} />
+        <label className="fx-s" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', whiteSpace: 'normal', cursor: 'pointer' }}>
+          <input type="checkbox" checked={man} onChange={(e) => { setMan(e.target.checked); CDC.poserVideosManuelles(e.target.checked) }} />
+          <span>Ne pas lancer les vidéos toute seule : je les lance depuis leur carte, une fois les ad copies validées par le propriétaire (évite de payer des vidéos sur un texte qu'il refuserait).</span>
+        </label>
+      </div>}
     </section>
   )
 }
@@ -442,8 +470,10 @@ export default function Production() {
         <div style={{ display: 'flex', gap: 8 }}>{charge && !U.running && <button className="fx-btn" onClick={changer}>Changer de commande</button>}<button className="fx-btn" onClick={() => nav('/commandes')}>Commandes</button></div></div>
       {U.resumeError && <div className="fx-banner err">{U.resumeError}</div>}
       {U.renewal && <div className={'fx-banner ' + U.renewal.kind}>{U.renewal.text}</div>}
+      {U.cdcNote && U.cdcNote.commandeId === S.commandeId && <div className={'fx-banner ' + U.cdcNote.kind}>{U.cdcNote.text}</div>}
       {!charge && <Picker S={S} U={U} />}
       {charge && <BriefCard S={S} />}
+      {charge && <CahierMarque key={S.commandeId || 'x'} S={S} U={U} />}
       {charge && !U.launched && U.banner && <div className={'fx-banner ' + U.banner.kind}>{U.banner.text}</div>}
       {charge && !U.launched && <Launch S={S} U={U} />}
       {charge && U.launched && <Board S={S} U={U} />}
