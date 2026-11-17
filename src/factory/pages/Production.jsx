@@ -207,7 +207,7 @@ function Launch({ S, U }) {
       {diag.s === 'ko' && diag.cmd && <div className="fx2-cmd"><span>À coller une seule fois dans Cloud Shell pour autoriser Render à lancer les vidéos :</span><code>{diag.cmd}</code><button className="fx-btn sm" onClick={() => navigator.clipboard.writeText(diag.cmd).then(() => toast('Commande copiée'))}>Copier</button></div>}
       <div className="fx2-go">
         <button className="fx2-cta" disabled={!prets || U.running} onClick={E.launch}>{U.running ? 'Production en cours…' : fait ? 'Relancer tous les livrables' : 'Générer tous les livrables'}</button>
-        <span className="fx-s" style={{ whiteSpace: 'normal' }}>Durée habituelle : 30 à 45 minutes, dominée par les vidéos. Tu peux fermer l'onglet : tout est sauvegardé et le suivi reprend à la réouverture.</span>
+        <span className="fx-s" style={{ whiteSpace: 'normal' }}>Durée habituelle : 30 à 45 minutes, dominée par les vidéos. Garde cet onglet ouvert pendant la production. Si la page se recharge (Chrome met parfois les onglets inactifs en veille), rien n'est perdu : l'hypothèse est gardée par le serveur et « Reprendre la production » continue sans rien repayer.</span>
       </div>
     </section>
   )
@@ -246,7 +246,7 @@ function Board({ S, U }) {
     <section className="fx2-board">
       <div className="fx2-board-h">
         <div><b>{U.running ? 'Production en cours' : pretes >= total ? 'Production terminée' : 'Production à compléter'}</b><span>{Math.min(pretes, total)} / {total} livrables prêts{U.running && U.etapeDebut ? ' · ' + dur(ecoule) : ''}{S.budget ? ' · hors vidéo ' + S.budget.depense.toFixed(2) + ' / ' + S.budget.total.toFixed(2) + ' $' : ''}</span></div>
-        {U.running ? <button className="fx-btn sm" onClick={E.cancel}>Annuler</button> : <button className="fx-btn sm" onClick={E.launch}>↻ Relancer tous les livrables</button>}
+        {U.running ? <button className="fx-btn sm" onClick={E.cancel}>Annuler</button> : <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>{E.peutReprendre() && <button className="fx-btn sm primary" onClick={() => E.reprendre()}>▶ Reprendre la production</button>}<button className="fx-btn sm" onClick={() => E.launch()}>↻ Relancer tous les livrables</button></div>}
       </div>
       <div className="fx2-bar"><div style={{ width: pct + '%' }} /></div>
       <div className="fx2-lanes">{LANES.map((l) => { const a = U.agents[l.n] || { state: 'pending', text: '', pct: 0 }; return (
@@ -431,6 +431,7 @@ export default function Production() {
   const [compte, setCompte] = useState(false)
   const cmd = sp.get('cmd')
   useEffect(() => E.installUnloadSave(), [])
+  useEffect(() => E.installGardeFermeture(), [])
   useEffect(() => { if (cmd) { E.openCommande(cmd).then(() => setSp({}, { replace: true })) } else E.checkResume() }, [cmd])
   const charge = !!S.brief
   const nAng = U.nbAngles

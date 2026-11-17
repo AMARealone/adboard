@@ -12,6 +12,16 @@ import * as APP from './apprentissage' // appr-client-v1
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
 const U = S.ui
+// ── reprise-production-v1 — reprise après rechargement de la page (onglet mis en veille par Chrome, F5, plantage) ──
+// Le serveur garde l'hypothèse payée (clé = commande + numéro de lot) ; ici on garde de quoi retrouver la production en cours.
+const CLE_MARQUEUR = 'adstack_active_production'
+const PHASES_ACTIVES = ['hypothese', 'plan', 'production']
+const lireMarqueur = () => { try { const m = JSON.parse(localStorage.getItem(CLE_MARQUEUR) || 'null'); return m && m.commandeId ? m : null } catch (_) { return null } }
+const poserMarqueur = (commandeId, lotId, phase) => { try { localStorage.setItem(CLE_MARQUEUR, JSON.stringify({ commandeId, lotId, phase, ts: Date.now() })) } catch (_) {} }
+const phaseMarqueur = (phase) => { const m = lireMarqueur(); if (m && m.commandeId === S.commandeId) poserMarqueur(m.commandeId, m.lotId, phase) }
+const marqueurInterrompu = (commandeId) => { const m = lireMarqueur(); return m && m.commandeId === commandeId && PHASES_ACTIVES.includes(m.phase) && Date.now() - (m.ts || 0) < 12 * 3600 * 1000 ? m : null }
+const nouveauLotId = () => 'lot-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8)
+let lotCourant = null
 let abortCtl = null
 let autosaveTimer = null
 VID.brancherSauvegarde((immediat) => autosave(immediat))
@@ -141,7 +151,7 @@ export async function loadBriefFromCommande(b) {
   const p = b.product || {}
   const brief = commandeToBrief(b)
   S.brief = brief; S.briefRaw = JSON.stringify(brief, null, 2); S.briefSource = 'commande'; S.commandeId = b.id; S.productId = p.id || null
-  try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: b.id, ts: Date.now() })) } catch (_) {}
+  try { const m = lireMarqueur(); if (!m || m.commandeId !== b.id) localStorage.setItem(CLE_MARQUEUR, JSON.stringify({ commandeId: b.id, ts: Date.now() })) } catch (_) {}   // reprise-production-v1 : ne jamais écraser le marqueur (phase, numéro de lot) d'une production à reprendre
   const photoData = b.photo_nobg || p.photo_base64 || ''
   if (photoData) {
     const m = photoData.match(/^data:(image\/[a-z]+);base64,(.+)$/)
@@ -182,6 +192,48 @@ export async function loadBriefFromCommande(b) {
   emit()
 }
 
+// ── Retour sur une production interrompue (page rechargée) : l'écran dit où elle en était, l'hypothèse est récupérée sur le serveur ──
+const texteInterruption = (hypo, nc, np, nbTot, nbAngles) =>
+  (document.wasDiscarded ? "Chrome avait mis cet onglet en veille, puis l'a rechargé. " : 'La page a été rechargée pendant la production. ') +
+  "Rien n'est perdu : " + (hypo ? "l'hypothèse est sauvegardée" : "l'hypothèse est en cours de récupération sur le serveur") +
+  (nc || np ? ` · ${nc}/${nbTot} créatives et ${np}/${nbAngles} sets ad copy déjà faits` : '') +
+  ". Clique « Reprendre la production » : seul ce qui manque est produit, rien n'est repayé."
+async function recupererHypotheseServeur(mq) {
+  const cmd0 = S.commandeId
+  if (!mq || !mq.lotId || !cmd0 || U.running || S.synthesis) return
+  setAgent(1, 'active', "Récupération de l'hypothèse déjà payée sur le serveur…", 40)
+  try {
+    const r = await V.fetchAvecTimeout(`${SERVER}/analyste-reprise`, { method: 'POST', headers: JH, body: JSON.stringify({ commandeId: cmd0, lotId: mq.lotId }) }, 480000)
+    const d = r.ok ? await r.json().catch(() => ({})) : {}
+    if (S.commandeId !== cmd0 || U.running || S.synthesis) return
+    if (!d || !d.text) { setAgent(1, 'pending', "Hypothèse introuvable sur le serveur : « Reprendre la production » la refera (coût d'une hypothèse).", 0); return }
+    const nbAngles = U.nbAngles || V.prodv2GetAngleCount()
+    const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(d.text)
+    S.synthesis = synthesisText; S.marche = marche; S.angles = V.anglesProduction(synthesisText, nbAngles)
+    setAgent(1, 'done', `Synthèse récupérée sur le serveur · ${Math.round(synthesisText.length / 1000)}K · ${nbAngles} angles · déjà payée, rien à repayer`, 100)
+    U.banner = { kind: 'warn', text: texteInterruption(true, S.creatives.filter(done).length, S.copies.filter(Boolean).length, nbAngles * 3, nbAngles) }
+    autosave(true); emit()
+  } catch (e) {
+    if (S.commandeId === cmd0 && !U.running && !S.synthesis) setAgent(1, 'pending', 'Récupération impossible (' + String(e.message || e).slice(0, 80) + ') : « Reprendre la production » refera l\'hypothèse si besoin.', 0)
+  }
+}
+// Y a-t-il quelque chose à reprendre ? (production interrompue, arrêtée ou incomplète — jamais une commande déjà livrée)
+export function lotIncomplet() {
+  const n = U.nbAngles || 0
+  if (!n) return false
+  if (!S.synthesis) return true
+  if (S.creatives.length < n * 3) return true
+  if (S.creatives.some((c) => !estSlotVideo(c) && !done(c))) return true
+  return S.copies.filter(Boolean).length < n
+}
+export const peutReprendre = () => !U.running && !U.dejaLivre && S.briefSource === 'commande' && !!S.commandeId && !!S.brief && !!S.productB64 && (!!U.interrompu || lotIncomplet())
+// Fermer ou recharger la page pendant une production : le navigateur demande confirmation.
+export function installGardeFermeture() {
+  const h = (e) => { if (!U.running) return; e.preventDefault(); e.returnValue = '' }
+  window.addEventListener('beforeunload', h)
+  return () => window.removeEventListener('beforeunload', h)
+}
+
 // ── Reprendre l'affichage d'une commande (livrables déjà générés) ──
 export async function restoreFromCommande(b) {
   const dejaLivre = b.status === 'done'
@@ -201,21 +253,25 @@ export async function restoreFromCommande(b) {
   U.copy = Array.from({ length: nbAngles }, (_, i) => ({ state: S.copies[i] ? 'done' : 'wait' }))
   if (dejaLivre) { try { localStorage.removeItem('adstack_active_production') } catch (_) {} }
   const nom = b.product?.nom || '?'
+  const mq = dejaLivre ? null : marqueurInterrompu(b.id)   // une production tournait quand la page a été perdue
+  U.interrompu = !!mq; U.dejaLivre = dejaLivre
   U.banner = { kind: dejaLivre || nc || np ? 'info' : 'info', text: dejaLivre
     ? `Cette commande a déjà été livrée au client — "${nom}" (${nc}/${nbTot} créatives, ${np}/${nbAngles} sets ad copy). Affichage en lecture seule.`
     : nc || np ? `Contenu déjà généré restauré — "${nom}" (${nc}/${nbTot} créatives, ${np}/${nbAngles} sets ad copy déjà sauvegardés). Rien n'a été perdu.`
     : `Brief chargé — "${nom}". Aucune génération n'a encore commencé.` }
-  U.launched = !(nc === 0 && np === 0) || S.creatives.some((c) => c && c.job)
+  if (mq) U.banner = { kind: 'warn', text: texteInterruption(!!S.synthesis, nc, np, nbTot, nbAngles) }
+  U.launched = !(nc === 0 && np === 0) || S.creatives.some((c) => c && c.job) || !!mq
   if (U.launched) {
     if (S.synthesis) setAgent(1, 'done', `Synthèse · ${Math.round(S.synthesis.length / 1000)}K chars · ${nbAngles} angles extraits`, 100)
-    setAgent(2, nc === nbTot ? 'done' : 'active', `${nc} / ${nbTot} créatives générées`, Math.round(nc / nbTot * 100))
-    setAgent(3, np === nbAngles ? 'done' : 'active', `${np} / ${nbAngles} sets ad copy générés`, Math.round(np / nbAngles * 100))
+    setAgent(2, nc === nbTot ? 'done' : 'pending', `${nc} / ${nbTot} créatives générées${nc === nbTot ? '' : ' · à compléter'}`, Math.round(nc / nbTot * 100))
+    setAgent(3, np === nbAngles ? 'done' : 'pending', `${np} / ${nbAngles} sets ad copy générés${np === nbAngles ? '' : ' · à compléter'}`, Math.round(np / nbAngles * 100))
     VID.majAgentVideo()
     U.launchLabel = 'Relancer la production'
   } else U.launchLabel = 'Lancer la production'
   U.running = false
   emit()
   VID.reprendreVideos(); VID.majAgentVideo()
+  if (mq && !S.synthesis) recupererHypotheseServeur(mq)   // gratuit : le serveur rend l'hypothèse déjà payée, ou répond « absente » sans rien calculer
 }
 
 // Ouvre une commande dans la production (équivalent de « Lancer / Ouvrir » de l'ancien Factory).
@@ -272,20 +328,23 @@ function depenser(usd, poste) {
 }
 const resteBudget = () => (S.budget ? S.budget.total - S.budget.depense : 0)
 
-export async function launch() {
+export async function launch() { return lancer(false) }
+// Reprise : même lot, même génération — seul ce qui manque est produit (jamais de nouvelle hypothèse payée si elle existe déjà).
+export async function reprendre() { return lancer(true) }
+async function lancer(reprise) {
   if (verrou || U.running) { toast('Une production est déjà en cours sur cet écran.'); return }
-  verrou = true; U.running = true; U.launchLabel = 'Préparation…'; emit()
-  try { await lancerProduction() }
+  verrou = true; U.running = true; U.launchLabel = reprise ? 'Reprise…' : 'Préparation…'; emit()
+  try { await lancerProduction(reprise) }
   finally { verrou = false }
 }
-async function lancerProduction() {
+async function lancerProduction(reprise = false) {
   const stop = (msg) => { U.running = false; U.launchLabel = 'Générer tous les livrables'; emit(); if (msg) alertDlg(msg) }
   if (!S.brief || !S.productB64) return stop('Charge une commande avec sa photo produit avant de lancer.')
   const aDejaDuContenu = S.creatives.some(done) || S.copies.some(Boolean)
-  if (aDejaDuContenu && !(await confirmDlg("Relancer la production ?\n\nLe lot actuel (déjà généré, éventuellement déjà envoyé) sera ABANDONNÉ — y compris chez le client si tu l'avais déjà envoyé.\n\nLe nouveau lot sera le SEUL valide à partir de maintenant.", { ok: 'Relancer', danger: true }))) return stop()
+  if (aDejaDuContenu && !reprise && !(await confirmDlg("Relancer la production ?\n\nLe lot actuel (déjà généré, éventuellement déjà envoyé) sera ABANDONNÉ — y compris chez le client si tu l'avais déjà envoyé.\n\nLe nouveau lot sera le SEUL valide à partir de maintenant.", { ok: 'Relancer', danger: true }))) return stop()
   if ((S.briefSource !== 'commande' || !S.commandeId) && !(await confirmDlg("Cette production N'EST PAS liée à une commande.\n\nPas de sauvegarde automatique, et pas de vidéo automatique (le moteur vidéo lit la commande).\n\nContinuer quand même (test) ?"))) return stop()
   if (S.renewalContext?.commandeActiveAilleurs) return stop("Une autre commande est déjà en production pour ce produit.\n\nAttends qu'elle se termine (ou soit envoyée au client) avant de lancer celle-ci.")
-  if (VID.videoSlots().some((x) => VID.jobEnCours(x.c))) return stop("Des vidéos de cette commande tournent encore sur le cloud.\n\nAttends leur fin, ou arrête-les avec « Annuler », avant de relancer.")
+  if (!reprise && VID.videoSlots().some((x) => VID.jobEnCours(x.c))) return stop("Des vidéos de cette commande tournent encore sur le cloud.\n\nAttends leur fin, ou arrête-les avec « Annuler », avant de relancer.")
   const monRun = ++runCourant
   abortCtl = new AbortController()
   const signal = abortCtl.signal
@@ -294,42 +353,56 @@ async function lancerProduction() {
   try {
     await loadSkills(); await loadCTImages(); verifier()
     S.startTime = Date.now()
+    { const m0 = reprise ? lireMarqueur() : null; lotCourant = (m0 && m0.commandeId === S.commandeId && m0.lotId) || nouveauLotId() }
     if (S.commandeId) {
-      fetch(`${SERVER}/commandes/${S.commandeId}/generation-started`, { method: 'POST' }).catch(() => {})
-      try { localStorage.setItem('adstack_active_production', JSON.stringify({ commandeId: S.commandeId, ts: Date.now() })) } catch (_) {}
+      // generation-started = VRAI départ d'une génération (le serveur change la version du lot et remet le suivi d'envoi à zéro) : jamais en reprise.
+      if (!reprise) fetch(`${SERVER}/commandes/${S.commandeId}/generation-started`, { method: 'POST' }).catch(() => {})
+      poserMarqueur(S.commandeId, lotCourant, 'hypothese')
     }
     const nbAngles = V.prodv2GetAngleCount()
     const nbTot = nbAngles * 3
     const videoCloud = VID.peutVideoCloud()
-    S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null; S.planApprentissage = null
-    S.budget = { total: budgetHorsVideo(nbTot), depense: 0, postes: {} }
-    U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}; U.envoyeMoi = null; U.verif = null
-    U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente du plan' }))
-    U.copy = Array.from({ length: nbAngles }, () => ({ state: 'wait' }))
-    resetAgents(); U.launched = true; U.launchLabel = 'Production en cours…'; U.etapeDebut = Date.now(); U.finiLe = null; emit()
+    const garde = !!reprise   // reprise : on garde l'hypothèse, le plan, les images, les ad copies et les vidéos déjà là
+    if (!garde) { S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null; S.planApprentissage = null }
+    { const cp0 = S.couts || {}; S.budget = { total: budgetHorsVideo(nbTot), depense: garde ? Number(cp0.hors_video || 0) : 0, postes: garde ? { ...(cp0.postes || {}) } : {} } }
+    U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}; U.envoyeMoi = null; U.verif = null; U.interrompu = false; U.dejaLivre = false
+    if (!garde || U.crea.length !== nbTot) U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente du plan' }))
+    if (!garde || U.copy.length !== nbAngles) U.copy = Array.from({ length: nbAngles }, () => ({ state: 'wait' }))
+    resetAgents(); U.launched = true; U.launchLabel = reprise ? 'Reprise en cours…' : 'Production en cours…'; U.etapeDebut = Date.now(); U.finiLe = null; emit()
     if (videoCloud) VID.prechargerCTVideo()
-    U.banner = { kind: 'info', text: `Lot de ${nbTot} créatives : ${nbAngles} angles × (1 vidéo + 2 images). Budget : ${S.budget.total.toFixed(2)} $ pour l'hypothèse, les ad copies, les images et leurs corrections, + jusqu'à ${BUDGET_VIDEO_MAX} $ par vidéo (tous les plans en Veo Fast).` }; emit()
+    U.banner = reprise ? { kind: 'info', text: 'Reprise de la production : seul ce qui manque est produit — hypothèse, images, ad copies et vidéos déjà faites ne sont pas refaites, donc pas repayées.' } : { kind: 'info', text: `Lot de ${nbTot} créatives : ${nbAngles} angles × (1 vidéo + 2 images). Budget : ${S.budget.total.toFixed(2)} $ pour l'hypothèse, les ad copies, les images et leurs corrections, + jusqu'à ${BUDGET_VIDEO_MAX} $ par vidéo (tous les plans en Veo Fast).` }; emit()
 
     // ── 1. hypothèse de marché ──
-    setAgent(1, 'active', 'Recherche multi-sources + synthèse S0→S7…', 20)
-    const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbTot)
-    const raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, signal, false, { productId: S.productId, nbAngles })
-    verifier()
-    const bal = V.dernierBalayage()
-    depenser(V.dernierCout() ?? 0.5, 'hypothese')
-    try {
+    const hypoDejaLa = garde && !!S.synthesis
+    let raw = null, bal = null
+    if (!hypoDejaLa) {
+      setAgent(1, 'active', 'Recherche multi-sources + synthèse S0→S7…', 20)
+      const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbTot)
+      // commandeId + lotId : le serveur garde la réponse payée ; si la page est perdue, elle est retrouvée sans rien repayer.
+      raw = await V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, S.brief, signal, false, { productId: S.productId, nbAngles, commandeId: S.commandeId || null, lotId: S.commandeId ? lotCourant : null })
+      verifier()
+      bal = V.dernierBalayage()
+      depenser(V.dernierCout() ?? 0.5, 'hypothese')
+    }
+    if (!hypoDejaLa) try {
       const dg = await V.fetchAvecTimeout(`${SERVER}/lot/diagnostic`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ synthese: raw }) }, 10000)
       if (dg.ok) { const j = await dg.json(); S.diagnostic = j.diagnostic; if (j.diagnostic && j.diagnostic.aMigrer) U.banner = { kind: 'warn', text: `Hypothèse incomplète : ${j.diagnostic.maturite ? '' : 'profil de maturité de la cible absent ; '}${j.diagnostic.anglesSansRaisons.length ? 'raisons d\'acheter absentes sur les angles ' + j.diagnostic.anglesSansRaisons.join(', ') : ''}. La production continue.` } }
     } catch (_) {}
     verifier()
-    const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
-    S.synthesis = synthesisText; S.marche = marche; S.angles = V.anglesProduction(synthesisText, nbAngles)
-    setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K · ${nbAngles} angles retenus${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée' : ' · nouveau balayage du marché') : ''}${marche ? '' : ' · ⚠ Données Marché non extraites'}`, 100)
+    if (!hypoDejaLa) {
+      const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
+      S.synthesis = synthesisText; S.marche = marche; S.angles = V.anglesProduction(synthesisText, nbAngles)
+      setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K · ${nbAngles} angles retenus${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée' : ' · nouveau balayage du marché') : ''}${marche ? '' : ' · ⚠ Données Marché non extraites'}`, 100)
+    } else setAgent(1, 'done', `Synthèse déjà faite · ${Math.round(S.synthesis.length / 1000)}K · ${S.angles.length || nbAngles} angles · rien à repayer`, 100)
+    phaseMarqueur('plan'); autosave(true)   // point de sauvegarde : l'hypothèse payée est dans la commande dès maintenant
     if (!Object.keys(CT_IMAGES).some((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))) throw new Error('Galerie CT image vide — ajoute des CT dans la Galerie CT image.')
 
     // ── 2. plan des niveaux de conscience + CT des vidéos ──
+    const planDeja = garde && !!S.planNiveaux && S.creatives.length === nbTot   // reprise : le plan, les CT choisis et les images déjà faites sont gardés
+    let choixVideo = []
+    if (!planDeja) {
     setAgent(4, 'active', videoCloud ? 'Plan des niveaux de conscience et choix des ' + nbAngles + ' CT vidéo (tous différents)…' : 'Plan des niveaux de conscience…', 4)
-    let plan, choixVideo = []
+    let plan
     try { const r = await VID.planifier(nbAngles, { avecVideo: videoCloud }); plan = r.plan; choixVideo = r.choix }
     catch (e) { plan = PL.planParDefaut(nbAngles); U.banner = { kind: 'warn', text: 'Choix des CT vidéo impossible (' + e.message + ') : les vidéos sont à lancer depuis leur carte.' } }
     verifier()
@@ -343,6 +416,8 @@ async function lancerProduction() {
     S.creatives = slots
     U.crea = slots.map((c) => estSlotVideo(c) ? (videoCloud && choixVideo.some((x) => x.angleIdx === c.angleIdx) ? { state: 'running', text: 'En file', pct: 0 } : { state: 'video', text: 'Vidéo à lancer' }) : { state: 'pending', text: 'En attente' })
     emit()
+    }
+    phaseMarqueur('production')
     // La commande reçoit tout de suite la synthèse et les angles : le moteur vidéo les lit pour fabriquer les vidéos.
     let sauveOk = true
     if (S.briefSource === 'commande' && S.commandeId) {
@@ -352,15 +427,17 @@ async function lancerProduction() {
 
     // ── 3. vidéos (cloud, en parallèle de tout le reste) ──
     let videosPromise = Promise.resolve()
-    if (videoCloud && sauveOk && choixVideo.length) videosPromise = VID.produireVideos(choixVideo, actif).catch((err) => { console.error('Erreur vidéos :', err); setAgent(4, 'error', 'Erreur : ' + err.message, 0) })
+    if (planDeja) { VID.reprendreVideos(); VID.majAgentVideo() }   // reprise : on reprend le suivi des vidéos déjà lancées ; les vidéos manquantes se lancent depuis leur carte (jamais toutes seules)
+    else if (videoCloud && sauveOk && choixVideo.length) videosPromise = VID.produireVideos(choixVideo, actif).catch((err) => { console.error('Erreur vidéos :', err); setAgent(4, 'error', 'Erreur : ' + err.message, 0) })
     else if (videoCloud) { setAgent(4, 'error', sauveOk ? 'Aucun CT vidéo choisi : lance les vidéos depuis leur carte.' : 'Sauvegarde de la commande impossible : les vidéos n\'ont pas été lancées (relance-les depuis leur carte).', 0); S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = { state: 'video', text: 'Vidéo à lancer' } }); emit() }
     else setAgent(4, 'pending', 'Vidéos : import manuel (production non liée à une commande)', 0)
 
     // ── 4. images (2 à la fois, contrôle qualité) et ad copies (toutes en parallèle) ──
-    const aFaire = S.creatives.map((c, i) => i).filter((i) => !estSlotVideo(S.creatives[i]))
-    const nbImg = aFaire.length
-    let faites = 0
-    setAgent(2, 'active', `0 / ${nbImg} images`, 0)
+    const toutesImg = S.creatives.map((c, i) => i).filter((i) => !estSlotVideo(S.creatives[i]))
+    const aFaire = toutesImg.filter((i) => !done(S.creatives[i]))   // reprise : les images déjà faites ne sont pas refaites
+    const nbImg = toutesImg.length
+    let faites = nbImg - aFaire.length
+    setAgent(2, 'active', `${faites} / ${nbImg} images`, Math.round(faites / Math.max(1, nbImg) * 100))
     setAgent(3, 'active', 'Écriture des hooks et descriptions…', 10)
     let chaineCT = Promise.resolve()   // les choix de CT se font un par un (diversité du lot) ; les générations tournent en parallèle
     const choisirCT = (idx) => {
@@ -391,7 +468,7 @@ async function lancerProduction() {
         verifier()
         const idx = aFaire[suivant++]
         try {
-          const ctId = await choisirCT(idx)
+          const ctId = S.creatives[idx].ct || await choisirCT(idx)   // reprise : un CT déjà choisi pour cet emplacement est gardé
           await genererAvecReprises(idx, ctId, signal, actif)
         } catch (err) {
           if (!actif()) throw annule()
@@ -402,8 +479,8 @@ async function lancerProduction() {
         autosave(faites === nbImg)
       }
     }
-    const imagesPromise = Promise.all(Array.from({ length: Math.min(IMG_PARALLELES, nbImg) }, (_, n) => ouvrier(n)))
-    const copyPromises = Array.from({ length: nbAngles }, (_, a) => generateOneCopy(a, signal, actif).catch((err) => { if (!actif()) throw annule(); markCopyError(a, err.message) }))
+    const imagesPromise = Promise.all(Array.from({ length: Math.min(IMG_PARALLELES, aFaire.length) }, (_, n) => ouvrier(n)))
+    const copyPromises = Array.from({ length: nbAngles }, (_, a) => (garde && S.copies[a]) ? Promise.resolve() : generateOneCopy(a, signal, actif).catch((err) => { if (!actif()) throw annule(); markCopyError(a, err.message) }))
     const surAnnulation = new Promise((_, ko) => signal.addEventListener('abort', () => ko(annule()), { once: true }))
     await Promise.race([Promise.all([imagesPromise, ...copyPromises]), surAnnulation])
     verifier()
@@ -423,7 +500,7 @@ async function lancerProduction() {
       try { const r = await saveNow(); if (!r.ok) throw new Error('HTTP ' + r.status) }
       catch (e) { await alertDlg(`La sauvegarde automatique des livrables a échoué (${e.message}).\n\nNE FERME PAS CET ONGLET — « Envoyer » fonctionne avec ce qui est affiché.`) }
     }
-    U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; emit()
+    U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; phaseMarqueur('termine'); emit()
   } catch (err) {
     const annulation = err.name === 'AbortError' || runCourant !== monRun || signal.aborted
     if (runCourant !== monRun) return            // un autre lancement a pris la main : on ne touche plus à rien
@@ -431,7 +508,7 @@ async function lancerProduction() {
     S.creatives.forEach((c, i) => { if (!estSlotVideo(c) && U.crea[i] && U.crea[i].state === 'running') U.crea[i] = { state: 'pending', text: 'Arrêtée' } })
     U.copy.forEach((x, a) => { if (x && x.state === 'run') U.copy[a] = { state: 'wait' } })
     ;[1, 2, 3].forEach((k) => { if (U.agents[k].state === 'active') U.agents[k] = { ...U.agents[k], state: 'error', text: annulation ? 'Arrêté (Annuler)' : U.agents[k].text } })
-    U.running = false; U.launchLabel = annulation ? 'Relancer la production' : 'Réessayer'; U.finiLe = Date.now(); abortCtl = null; emit()
+    U.running = false; U.launchLabel = annulation ? 'Relancer la production' : 'Réessayer'; U.finiLe = Date.now(); abortCtl = null; phaseMarqueur('arret'); emit()
     autosave(true)
   }
 }
@@ -450,7 +527,7 @@ export async function cancel() {
   S.creatives.forEach((c, i) => { if (!estSlotVideo(c) && U.crea[i] && U.crea[i].state === 'running') U.crea[i] = { state: 'pending', text: 'Arrêtée' } })
   U.copy.forEach((x, a) => { if (x && x.state === 'run') U.copy[a] = { state: 'wait' } })
   ;[1, 2, 3].forEach((k) => { if (U.agents[k] && U.agents[k].state === 'active') U.agents[k] = { ...U.agents[k], state: 'error', text: 'Arrêté (Annuler)' } })
-  U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; verrou = false
+  U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; verrou = false; phaseMarqueur('arret')
   emit(); autosave(true)
   if (!arreterVid && enCours.length) VID.reprendreVideos()
 }
