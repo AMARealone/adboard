@@ -7,6 +7,7 @@ import { toast } from '../ui'
 import * as PL from './plan'
 import * as APP from './apprentissage' // appr-client-v1
 import * as CDC from './cdc' // cdc-franchise-v1
+import * as MAN from './ctmanuel' // ct-fidelite-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const U = S.ui
@@ -76,7 +77,7 @@ const briefCourt = () => { const b = S.brief || {}; return ['Marque : ' + (b.mar
 
 // PLAN DE LA PRODUCTION : pour chaque angle, le parcours de conscience, le niveau porté par la vidéo et son CT.
 // Retourne { plan: [{parcours, niveaux, video}], choix: [{ id, nom, poster, angleIdx, raison }] }
-export async function planifier(nbAngles, { avecVideo = true } = {}) {
+async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
   const angleIdxs = Array.from({ length: nbAngles }, (_, a) => a)
   if (!avecVideo) return { plan: PL.planParDefaut(nbAngles), choix: [] }
   const toute = await (galerie || prechargerCTVideo())
@@ -257,7 +258,7 @@ export function majAgentVideo(fin = false) {
 }
 
 // « Refaire cette vidéo » (même CT) ou « Autre CT » (un autre concept, jamais un CT déjà pris dans la commande)
-export async function relancerVideo(idx, { autreCT = false } = {}) {
+async function relancerVideoBrut(idx, { autreCT = false } = {}) {
   const c = S.creatives[idx]; if (!estSlotVideo(c)) return
   if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return }
   U.crea[idx] = { state: 'running', text: autreCT ? 'Choix d\'un autre CT vidéo…' : 'Relance de la vidéo…', pct: 0 }; emit()
@@ -298,4 +299,33 @@ export function attacherLien(idx, url) {
   S.creatives[idx] = { ...c, type: 'video', videoUrl: u, url: null, imgB64: null, status: 'done', desc: 'Vidéo · ' + ((c.job && c.job.ctNom) || 'importée par lien'), job: c.job ? { ...c.job, etat: 'termine' } : null }
   U.crea[idx] = { state: 'done', text: 'Vidéo prête', pct: 100 }; emit(); _save(true); majAgentVideo()
   return true
+}
+
+// ───────── ct-fidelite-v1 : CT choisi à la main ─────────
+// planifier : le CT choisi à la main (panneau « CT des vidéos ») prime sur celui de l'agent, une seule fois.
+export async function planifier(...args) {
+  const r = await planifierBrut(...args)
+  const o = args[1] || {}
+  if (o.avecVideo === false || !MAN.nbChoisis()) return r
+  if (!r || !Array.isArray(r.choix)) { toast('Le CT choisi à la main n\'a pas pu être appliqué (format du plan inattendu) : l\'agent choisit.'); return r }
+  const liste = await MAN.chargerListe()
+  return { ...r, choix: MAN.appliquer(r.choix, liste, args[0]) }
+}
+// relancerVideo : un CT posé sur la carte (liste « CT : automatique ») sert au « Lancer / Refaire » de cette carte, puis s'efface.
+// « Autre CT » garde son sens (l'agent choisit) et efface le choix posé.
+export async function relancerVideo(idx, opts = {}) {
+  const o = { ...(opts || {}) }
+  if (o.autreCT) MAN.consommerCarte(idx)
+  else if (!o.ctId) { const v = MAN.consommerCarte(idx); if (v) o.ctId = v }
+  if (!o.ctId) return relancerVideoBrut(idx, o)
+  const c = S.creatives[idx]; if (!estSlotVideo(c)) return
+  if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return }
+  U.crea[idx] = { state: 'running', text: 'Relance de la vidéo avec le CT choisi…', pct: 0 }; emit()
+  try {
+    const g = (await MAN.chargerListe()).find((x) => x.id === o.ctId)
+    const ct = { id: o.ctId, nom: g ? g.nom : o.ctId, raison: 'CT choisi à la main.', poster: g ? g.poster : '', direction: (c.job && c.job.direction) || null }
+    S.creatives[idx] = { ...c, videoUrl: null, thumbUrl: null, job: null }
+    await lancerVideo(idx, ct, { forcer: true })
+  } catch (e) { finEchec(idx, e.message) }
+  majAgentVideo()
 }

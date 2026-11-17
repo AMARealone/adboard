@@ -7,6 +7,7 @@ import { etat } from '../api'
 import { toast, confirmDlg } from '../ui'
 import * as PL from '../prod/plan'
 import * as CDC from '../prod/cdc'   // cdc-franchise-v1
+import * as MAN from '../prod/ctmanuel'   // ct-fidelite-v1
 
 const esc = (s) => (s == null ? '' : String(s))
 const nivLib = (c) => (c && (PL.LIB[c.niveau] || ['Solution Aware', 'Product Aware', 'Most Aware'][c.ctIdx])) || ''
@@ -241,6 +242,86 @@ function CahierMarque({ S, U }) {
   )
 }
 
+// ct-fidelite-v1 — choix manuel du CT vidéo et lecture à blanc d'un CT (rien n'est payé pour lire).
+function useListeCT() {
+  const [l, setL] = useState([])
+  useEffect(() => { let vivant = true; MAN.chargerListe().then((x) => { if (vivant) setL(x) }); return () => { vivant = false } }, [])
+  return l
+}
+function SelectCT({ liste, valeur, onChange, vide = 'Automatique (l\'agent choisit)', sm }) {
+  return (
+    <select className={'fx-in' + (sm ? ' sm' : '')} value={valeur || ''} onChange={(e) => onChange(e.target.value)} title="Le CT que la vidéo doit reprendre">
+      <option value="">{vide}</option>
+      {liste.map((c) => <option key={c.id} value={c.id}>{c.nom}{c.duree_s ? ' · ' + Math.round(c.duree_s) + ' s' : ''}</option>)}
+    </select>
+  )
+}
+// Avant le lancement : un CT par angle, ou « Automatique » (l'agent choisit). Sert au prochain lancement seulement.
+function ChoixCTVideo({ S, U }) {
+  const liste = useListeCT()
+  const [ouvert, setOuvert] = useState(false)
+  const n = (E.angleCount && E.angleCount()) || U.nbAngles || 0
+  if (S.briefSource !== 'commande' || !n || CDC.videosManuelles()) return null
+  const nb = MAN.nbChoisis()
+  return (
+    <section className="fx2-card slim">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <b>CT des vidéos</b>
+        <span className={'fx-pillstat ' + (nb ? 'warn' : 'ok')}>{nb ? nb + ' choisi' + (nb > 1 ? 's' : '') + ' à la main' : 'Automatique'}</span>
+        <button className="fx-link-btn" onClick={() => setOuvert(!ouvert)}>{ouvert ? 'Masquer' : 'Choisir le CT à la main'}</button>
+        {nb > 0 && <button className="fx-link-btn" onClick={() => MAN.effacer()}>Tout remettre en automatique</button>}
+      </div>
+      {ouvert && <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+        <div className="fx-s" style={{ whiteSpace: 'normal' }}>« Automatique » : l'agent choisit un CT par angle. Sinon, choisis ici le CT de chaque angle : il sert au prochain lancement seulement, puis tout revient en automatique. Pour voir ce que l'agent comprend d'un CT avant de payer une vidéo, utilise « Lire ce CT » sur la carte vidéo (quelques cents, aucun clip produit).</div>
+        {Array.from({ length: n }, (_, a) => (
+          <div key={a} style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <span className="fx-s" style={{ minWidth: 64, marginTop: 0 }}>Angle {a + 1}</span>
+            <SelectCT liste={liste} valeur={MAN.choisi(a)} onChange={(v) => MAN.poser(a, v)} />
+          </div>
+        ))}
+      </div>}
+    </section>
+  )
+}
+// Sur la carte d'une vidéo : le CT à utiliser au prochain « Lancer / Refaire » de cette carte, et la lecture à blanc.
+function CtCarte({ S, idx }) {
+  const U = S.ui
+  const liste = useListeCT()
+  const c = S.creatives[idx], ui = U.crea[idx] || {}
+  if (!c || ui.state === 'running') return null
+  const job = c.job || null
+  const peut = !!S.synthesis && S.briefSource === 'commande'
+  const choisi = MAN.carte(idx)
+  const actuel = (job && job.ct) || c.ct || ''
+  return (
+    <div className="fx-crea-a" style={{ marginBottom: 6 }}>
+      <SelectCT sm liste={liste} valeur={choisi} onChange={(v) => MAN.poserCarte(idx, v)} vide={job && job.ctNom ? 'CT actuel : ' + job.ctNom : 'CT : automatique'} />
+      <button className="fx-btn sm" disabled={!peut} title="Voir ce que l'agent comprend de ce CT (voix, image, fin, intention de chaque plan) sans produire de vidéo : quelques cents, aucun clip payé" onClick={() => MAN.lire(choisi || actuel, idx)}>Lire ce CT (sans produire)</button>
+      {choisi && <span className="fx-s" style={{ marginTop: 0, whiteSpace: 'normal' }}>Ce CT sera utilisé au prochain « Lancer » ou « Refaire » de cette carte.</span>}
+    </div>
+  )
+}
+function LectureCT({ L }) {
+  const enCours = L.etat === 'demarrage' || L.etat === 'en_cours'
+  return (
+    <div className="fx-modal-back" onClick={() => MAN.fermer()}>
+      <div className="fx-modal wide" onClick={(e) => e.stopPropagation()}>
+        <h3>Lecture du CT · {L.nom}</h3>
+        <div className="fx-s" style={{ whiteSpace: 'normal' }}>Ce que l'agent a compris de ce CT, sans produire de vidéo : aucun clip Veo, aucune voix ni image payés. Vérifie surtout la voix (chantée ou parlée), le médium de l'image, la fin et l'intention de chaque plan. Si une ligne est fausse, ne lance pas la vidéo et dis-moi laquelle.</div>
+        {enCours && <div className="fx-s" style={{ marginTop: 10 }}>{L.etape} · {L.pct} %</div>}
+        {L.etat === 'echec' && <div className="fx-banner err" style={{ whiteSpace: 'pre-wrap', marginTop: 10 }}>{L.erreur}</div>}
+        {L.lignes && <pre className="fx-pre">{L.lignes.join('\n')}</pre>}
+        <div className="fx-modal-act spread"><span className="fx-s">{L.cout != null && L.cout !== '' ? 'Coût de la lecture : ' + Number(L.cout).toFixed(2) + ' $' : ''}</span><button className="fx-btn" onClick={() => MAN.fermer()}>Fermer</button></div>
+      </div>
+    </div>
+  )
+}
+function LectureHost({ S, U }) {
+  const L = U.lecture
+  if (!L || L.commandeId !== S.commandeId || !L.ouvert) return null
+  return <LectureCT L={L} />
+}
+
 function BriefCard({ S }) {
   const b = S.brief
   const photoRef = useRef(null)
@@ -331,6 +412,7 @@ function VideoTile({ S, U, idx, onOther }) {
         </div>
         {log && <pre className="fx2-log">{lignes.join('\n')}</pre>}
         {lien !== null && <div className="fx2-lien"><input className="fx-in" placeholder="https://…/video.mp4" value={lien} onChange={(e) => setLien(e.target.value)} /><button className="fx-btn sm primary" onClick={() => { if (E.attacherLienVideo(idx, lien)) setLien(null); else toast('Lien invalide : il doit commencer par https:// et finir par .mp4, .mov ou .webm') }}>Rattacher</button></div>}
+        <CtCarte S={S} idx={idx} />
         <div className="fx-crea-a">
           {(pret || ui.state === 'err' || ui.state === 'video' || ui.state === 'pending') && <button className="fx-btn sm" disabled={!peut} onClick={() => E.relancerVideo(idx)}>{pret ? '↻ Refaire' : ui.state === 'err' ? '↻ Relancer' : '▶ Lancer'}</button>}
           {(pret || ui.state === 'err') && <button className="fx-btn sm" disabled={!peut} title="Un autre concept vidéo (CT jamais utilisé dans cette commande)" onClick={() => E.relancerVideo(idx, { autreCT: true })}>⇄ Autre CT</button>}
@@ -474,6 +556,8 @@ export default function Production() {
       {!charge && <Picker S={S} U={U} />}
       {charge && <BriefCard S={S} />}
       {charge && <CahierMarque key={S.commandeId || 'x'} S={S} U={U} />}
+      {charge && !U.launched && <ChoixCTVideo S={S} U={U} />}
+      {charge && <LectureHost S={S} U={U} />}
       {charge && !U.launched && U.banner && <div className={'fx-banner ' + U.banner.kind}>{U.banner.text}</div>}
       {charge && !U.launched && <Launch S={S} U={U} />}
       {charge && U.launched && <Board S={S} U={U} />}
