@@ -11,6 +11,7 @@ import * as APP from './apprentissage' // appr-client-v1
 import * as CDC from './cdc' // cdc-franchise-v1
 import * as VER from './verite' // verite-v1
 import * as REP from './reprise' // reprise-angle-v1
+import * as SEN from './sensible' // meta-sensible-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
@@ -434,6 +435,7 @@ async function lancerProduction(reprise = false) {
     emit()
     }
     await veritePromise; verifier()
+    { const a = SEN.analyser(); if (a.niveau) U.banner = { kind: 'info', text: (U.banner ? U.banner.text + ' ' : '') + 'Produit sensible sur Meta (' + a.libelle + ') : formulations adaptées sans perdre le ton, CT avec mention préférés, mention légale posée sur chaque image et chaque vidéo.' } }   // meta-sensible-v1
     phaseMarqueur('production')
     // La commande reçoit tout de suite la synthèse et les angles : le moteur vidéo les lit pour fabriquer les vidéos.
     let sauveOk = true
@@ -592,7 +594,7 @@ async function controleQualite(idx, gen, signal) {
   const productB64 = await V.compressImg(S.productB64, S.productMime || 'image/jpeg')
   const imgC = await V.compressImg(gen.imageData, gen.imageMime || 'image/png')
   const r = await fetch(SERVER + '/creative-qa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
-    body: JSON.stringify({ imageBase64: imgC, imageMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, prompt: gen.prompt, brief: VER.briefAgents(), niveau: V.NIVEAU_LIB[c.niveau] || '', angle: S.angles[c.angleIdx] || '', verite: VER.bloc(c.angleIdx, 'image') || '' }) })
+    body: JSON.stringify({ imageBase64: imgC, imageMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, prompt: gen.prompt, brief: VER.briefAgents(), niveau: V.NIVEAU_LIB[c.niveau] || '', angle: S.angles[c.angleIdx] || '', verite: VER.bloc(c.angleIdx, 'image') || '', meta: SEN.blocControle() || '' }) })
   const d = await r.json().catch(() => ({}))
   if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
   return d
@@ -625,9 +627,15 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
   }
   verifierLocal()
   const g = meilleur.gen, q = meilleur.qa || {}
-  const imgB64 = g.imageData, imageMime = g.imageMime || 'image/png'
+  let imgB64 = g.imageData, imageMime = g.imageMime || 'image/png'
+  // meta-sensible-v1 : produit sensible et mention absente ou illisible (ou contrôle indisponible) → mention propre apposée par le code
+  let mentionAjoutee = false
+  if (SEN.estSensible() && q.mention !== 'ok') {
+    try { const r = await SEN.apposerMention(imgB64, imageMime, SEN.claim()); if (r) { imgB64 = r.b64; imageMime = r.mime; mentionAjoutee = true } }
+    catch (e) { console.warn('[Meta] mention non apposée :', e.message) }
+  }
   const desc = (g.meta && g.meta.length > 5) ? g.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${S.creatives[idx].angleIdx + 1}`
-  const qaRes = { verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
+  const qaRes = { mention: SEN.estSensible() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
   S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime, qa: qaRes, prompt: g.prompt || '', meta: g.meta || '', qaHist: qaHist.map((h) => ({ ...h, prompt: String(h.prompt || '').slice(0, 6000), meta: String(h.meta || '').slice(0, 3000) })), ctUrl: CT_IMAGES[ctName] || '' }
   U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
   if (S.briefSource === 'commande' && S.commandeId) {

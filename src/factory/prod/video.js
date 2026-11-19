@@ -9,6 +9,7 @@ import * as APP from './apprentissage' // appr-client-v1
 import * as CDC from './cdc' // cdc-franchise-v1
 import * as VER from './verite' // verite-v1
 import * as MAN from './ctmanuel' // ct-fidelite-v1
+import * as SEN from './sensible' // meta-sensible-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const U = S.ui
@@ -147,6 +148,7 @@ function consignesDiversite(idx, direction) {
   videoSlots().forEach((x) => { if (x.i !== idx && x.c.job && x.c.job.direction) vus.set(x.c.angleIdx, x.c.job.direction) })
   const autres = [...vus.entries()].map(([a, d]) => 'angle ' + (a + 1) + ' — ' + txtDir(d))
   const L = []
+  { const m = SEN.blocVideo(); if (m) L.push(m) }   // meta-sensible-v1 : en tête (les consignes sont coupées à 7000 caractères)
   if (direction) L.push('DIRECTION IMPOSÉE POUR CETTE VIDÉO (diversité du lot, règle 17) : ' + txtDir(direction) + '.')
   if (autres.length) L.push('DÉJÀ PRIS PAR LES AUTRES VIDÉOS DU LOT — INTERDIT ICI (casting, tenue, lieu principal et lumière différents) : ' + autres.join(' | ') + '.')
   { const q = APP.bloc('video'); if (q) L.push(q) }   // retours qualité de ce client
