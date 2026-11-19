@@ -238,6 +238,19 @@ RÈGLE DE CASSE :
 ❌ Changer la casse d'un bloc sans raison (IMAGE 2 en majuscules → toi en casse normale, ou l'inverse)
 ❌ Justifier un dépassement de longueur par « le message était plus complexe » — reformule, ne rallonge pas
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RÈGLE #0bis-figure — ON GARDE LE PROCÉDÉ DU TEXTE, JAMAIS SES MOTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Une phrase d'IMAGE 2 marche souvent par son PROCÉDÉ, pas par son contenu : un bénéfice déguisé en avertissement (« Attention : peut causer trop de compliments »), un paradoxe, un aveu, une fausse notification, une question que le lecteur se pose, un « avant / maintenant », une objection retournée, une mise en garde ironique, un dialogue. Ce procédé est ce qui arrête le pouce.
+
+À l'étape de décodage d'IMAGE 2, pour chaque texte fort, tu notes en une ligne son PROCÉDÉ (ce qu'il fait au lecteur), en plus de sa place, sa longueur et sa casse.
+À l'écriture, tu juges : ce procédé sert-il CE produit et CE persona (S1, S4, S5) ?
+→ OUI : tu le REMPLIS avec la vraie matière de ce produit — le même procédé, des mots entièrement neufs (règle #0bis). Ex. : le procédé « bénéfice déguisé en danger » devient, pour un produit de vitalité masculine, une mise en garde sur une conséquence DÉSIRABLE, pas un slogan (« Attention : stoppe la faiblesse » a perdu le procédé, c'est un slogan).
+→ NON (le procédé choquerait, mentirait ou ne colle pas au niveau de conscience) : tu choisis un procédé de force équivalente ancré dans S5, et tu l'écris dans le META.
+La clarté de #0ter reste due : si le procédé rend la phrase moins littérale, le problème ou la catégorie du produit est nommé dans le même bloc ou dans la zone juste en dessous.
+Déclare dans le bloc ===META=== : PROCÉDÉ DU CT : [procédé] → GARDÉ / REMPLACÉ PAR : [procédé] — [ton texte].
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RÈGLE #0ter — CLARTÉ FONCTIONNELLE OBLIGATOIRE (HOOK COMPRIS)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 

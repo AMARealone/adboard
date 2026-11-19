@@ -9,6 +9,7 @@ import * as VID from './video'
 import * as PL from './plan'
 import * as APP from './apprentissage' // appr-client-v1
 import * as CDC from './cdc' // cdc-franchise-v1
+import * as VER from './verite' // verite-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
@@ -51,7 +52,7 @@ export const nbCrea = () => S.creatives.filter(done).length
 export const nbCopy = () => S.copies.filter(Boolean).length
 export const angleCount = () => V.prodv2GetAngleCount()
 export const estComplet = () => V.prodv2EstActuellementComplet()
-export const livrablesPayload = () => JSON.stringify({ creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche, couts: S.couts || null, planNiveaux: S.planNiveaux || null, planApprentissage: S.planApprentissage || null })
+export const livrablesPayload = () => JSON.stringify({ verites: S.verites || null, marque_affichee: typeof S.marqueAffichee === 'string' ? S.marqueAffichee : null, creatives: S.creatives, copies: S.copies, synthesis: S.synthesis, angles: S.angles, marche: S.marche, couts: S.couts || null, planNiveaux: S.planNiveaux || null, planApprentissage: S.planApprentissage || null })
 
 // ── Sauvegarde automatique des livrables sur la commande ──
 export function autosave(immediat = false) {
@@ -152,6 +153,7 @@ export async function loadBriefFromCommande(b) {
   const p = b.product || {}
   const brief = commandeToBrief(b)
   S.brief = brief; S.briefRaw = JSON.stringify(brief, null, 2); S.briefSource = 'commande'; S.commandeId = b.id; S.productId = p.id || null
+  S.verites = null; S.marqueAffichee = undefined   // verite-v1 : jamais la fiche d'une autre commande
   try { const m = lireMarqueur(); if (!m || m.commandeId !== b.id) localStorage.setItem(CLE_MARQUEUR, JSON.stringify({ commandeId: b.id, ts: Date.now() })) } catch (_) {}   // reprise-production-v1 : ne jamais écraser le marqueur (phase, numéro de lot) d'une production à reprendre
   const photoData = b.photo_nobg || p.photo_base64 || ''
   if (photoData) {
@@ -243,6 +245,7 @@ export async function restoreFromCommande(b) {
   const np = d.copies ? d.copies.filter(Boolean).length : 0
   await loadBriefFromCommande(b)
   S.synthesis = d.synthesis || null; S.creatives = d.creatives || []; S.copies = d.copies || []; S.marche = d.marche || null; S.planNiveaux = d.planNiveaux || null; S.planApprentissage = d.planApprentissage || null
+  S.verites = Array.isArray(d.verites) ? d.verites : null; S.marqueAffichee = typeof d.marque_affichee === 'string' ? d.marque_affichee : undefined   // verite-v1
   // v10 : le nombre d'angles vient de la quantité commandée (6 créatives = 2 angles), jamais du nombre d'angles écrits dans la synthèse
   const nbAngles = Math.max(V.prodv2GetAngleCount(), Math.ceil(S.creatives.length / 3))
   S.angles = (d.angles || []).slice(0, nbAngles)
@@ -364,7 +367,7 @@ async function lancerProduction(reprise = false) {
     const nbTot = nbAngles * 3
     const videoCloud = VID.peutVideoCloud() && !CDC.videosManuelles()   // cdc-franchise-v1
     const garde = !!reprise   // reprise : on garde l'hypothèse, le plan, les images, les ad copies et les vidéos déjà là
-    if (!garde) { S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null; S.planApprentissage = null }
+    if (!garde) { S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null; S.planApprentissage = null; S.verites = null; S.marqueAffichee = undefined }
     { const cp0 = S.couts || {}; S.budget = { total: budgetHorsVideo(nbTot), depense: garde ? Number(cp0.hors_video || 0) : 0, postes: garde ? { ...(cp0.postes || {}) } : {} } }
     U.nbAngles = nbAngles; S.activeAngle = 0; U.synOpen = false; U.sending = {}; U.banner = null; U.vjournal = {}; U.envoyeMoi = null; U.verif = null; U.interrompu = false; U.dejaLivre = false
     if (!garde || U.crea.length !== nbTot) U.crea = Array.from({ length: nbTot }, () => ({ state: 'pending', text: 'En attente du plan' }))
@@ -401,6 +404,12 @@ async function lancerProduction(reprise = false) {
     // ── 2. plan des niveaux de conscience + CT des vidéos ──
     const planDeja = garde && !!S.planNiveaux && S.creatives.length === nbTot   // reprise : le plan, les CT choisis et les images déjà faites sont gardés
     let choixVideo = []
+    // verite-v1 — en parallèle du plan (aucune attente ajoutée) : le nom de marque affichable et la fiche de vérité de chaque angle,
+    // partagés ensuite par les images, les ad copies et les vidéos. Un échec ne bloque rien : chaque agent travaille alors comme avant.
+    const veritePromise = (async () => {
+      try { if (typeof S.marqueAffichee !== 'string') S.marqueAffichee = await VER.resoudreMarque(signal) } catch (_) { }
+      try { if (!Array.isArray(S.verites) || !S.verites.some(Boolean)) { S.verites = await VER.fichesVerite(nbAngles, signal); depenser(0.05, 'hypothese') } } catch (e) { if (!actif()) throw annule(); console.warn('[Vérité] fiches non faites :', e.message); S.verites = null }
+    })()
     if (!planDeja) {
     setAgent(4, 'active', videoCloud ? 'Plan des niveaux de conscience et choix des ' + nbAngles + ' CT vidéo (tous différents)…' : 'Plan des niveaux de conscience…', 4)
     let plan
@@ -418,6 +427,7 @@ async function lancerProduction(reprise = false) {
     U.crea = slots.map((c) => estSlotVideo(c) ? (videoCloud && choixVideo.some((x) => x.angleIdx === c.angleIdx) ? { state: 'running', text: 'En file', pct: 0 } : { state: 'video', text: 'Vidéo à lancer' }) : { state: 'pending', text: 'En attente' })
     emit()
     }
+    await veritePromise; verifier()
     phaseMarqueur('production')
     // La commande reçoit tout de suite la synthèse et les angles : le moteur vidéo les lit pour fabriquer les vidéos.
     let sauveOk = true
@@ -559,11 +569,12 @@ async function appelCreative(idx, ctName, signal, reprise) {
   const ctMimeRaw = CT_IMAGES[ctName + '_mime'] || 'image/jpeg'
   const ctB64 = reprise ? null : await V.compressImg(await ctGetBase64(ctName), ctMimeRaw)
   const productB64 = await V.compressImg(S.productB64, S.productMime || 'image/jpeg')
-  const { creativeSystem, angleInstruction } = V.buildCreativeInstruction(c.angleIdx, c.niveau || c.ctIdx, c.rang)
+  const { creativeSystem, angleInstruction: ai0 } = V.buildCreativeInstruction(c.angleIdx, c.niveau || c.ctIdx, c.rang)
+  const angleInstruction = ai0 + (VER.bloc(c.angleIdx, 'image') ? '\n\n' + VER.bloc(c.angleIdx, 'image') : '')
   const sig = (typeof AbortSignal.any === 'function') ? AbortSignal.any([signal, AbortSignal.timeout(600000)]) : signal
   const res = await fetch(SERVER + '/creative-prod-v10', {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: sig,
-    body: JSON.stringify({ systemPrompt: creativeSystem, synthese: S.synthesis, brief: S.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, niveau: V.NIVEAU_LIB[c.niveau] || '', reprise: reprise || null }),
+    body: JSON.stringify({ systemPrompt: creativeSystem, synthese: S.synthesis, brief: VER.briefAgents(), angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, niveau: V.NIVEAU_LIB[c.niveau] || '', reprise: reprise || null }),
   })
   const txt = await res.text(); let d = null; try { d = JSON.parse(txt) } catch (_) {}
   if (!d) throw new Error(res.status === 404 ? 'route /creative-prod-v10 absente (serveur Render pas à jour)' : 'réponse inattendue (HTTP ' + res.status + ')')
@@ -575,7 +586,7 @@ async function controleQualite(idx, gen, signal) {
   const productB64 = await V.compressImg(S.productB64, S.productMime || 'image/jpeg')
   const imgC = await V.compressImg(gen.imageData, gen.imageMime || 'image/png')
   const r = await fetch(SERVER + '/creative-qa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
-    body: JSON.stringify({ imageBase64: imgC, imageMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, prompt: gen.prompt, brief: S.brief, niveau: V.NIVEAU_LIB[c.niveau] || '', angle: S.angles[c.angleIdx] || '' }) })
+    body: JSON.stringify({ imageBase64: imgC, imageMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, prompt: gen.prompt, brief: VER.briefAgents(), niveau: V.NIVEAU_LIB[c.niveau] || '', angle: S.angles[c.angleIdx] || '', verite: VER.bloc(c.angleIdx, 'image') || '' }) })
   const d = await r.json().catch(() => ({}))
   if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
   return d
@@ -747,14 +758,21 @@ const copieValide = (h, d) => Array.isArray(h) && h.filter((x) => String(x || ''
 async function generateOneCopy(angleIdx, signal, actif = () => true) {
   U.copy[angleIdx] = { state: 'run' }; emit()
   await loadSkills()
-  let dernier = null
-  for (let t = 1; t <= 3; t++) {   // contrôle : 5 hooks et une vraie description, sinon réécriture (max 2 reprises)
-    const { hooks, description } = await V.prodv2GenerateOneCopyAttempt(angleIdx, signal)
+  let dernier = null, correction = ''
+  for (let t = 1; t <= 3; t++) {   // contrôle : 5 hooks, une vraie description et un closer honnête, sinon réécriture (max 2 reprises)
+    const { hooks, description } = await V.prodv2GenerateOneCopyAttempt(angleIdx, signal, correction)
     if (!actif()) throw new DOMException('Annulé', 'AbortError')
     depenser(COUT.copie, 'copies')
-    dernier = { hooks, description, essais: t }
-    if (copieValide(hooks, description)) break
-    console.warn(`[Copywriter] Ad copy de l'angle ${angleIdx + 1} incomplète (essai ${t}) : réécriture.`)
+    const valide = copieValide(hooks, description)
+    // verite-v1 — le closer est relu : raison vraie, une seule action, aucune rareté ni offre absente du brief
+    const cl = valide ? await VER.closerOk(angleIdx, description, signal) : { ok: true }
+    if (!actif()) throw new DOMException('Annulé', 'AbortError')
+    if (valide) depenser(0.01, 'copies')
+    if (valide && cl.ok) { dernier = { hooks, description, essais: t }; break }
+    if (valide && (!dernier || !dernier.closerOk)) dernier = { hooks, description, essais: t, closerOk: false, closer: cl.probleme || '' }
+    else if (!dernier) dernier = { hooks, description, essais: t }
+    correction = valide ? 'FIN À RÉÉCRIRE — la version précédente avait ce défaut dans son closer : ' + (cl.probleme || '') + ' Réécris l\'ensemble en gardant ce qui marchait, et corrige ce point.' : ''
+    console.warn(`[Copywriter] Ad copy de l'angle ${angleIdx + 1} ${valide ? 'closer à corriger : ' + cl.probleme : 'incomplète'} (essai ${t}) : réécriture.`)
   }
   S.copies[angleIdx] = dernier; U.copy[angleIdx] = { state: 'done' }; emit()
   autosave()

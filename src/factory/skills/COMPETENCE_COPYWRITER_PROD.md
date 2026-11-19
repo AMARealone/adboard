@@ -27,7 +27,7 @@ Tu écris pour un persona MOST AWARE (framework Schwartz, dernier niveau) : il c
 Conséquences directes sur ton écriture :
 → Tu n'éduques plus. Pas de pédagogie longue sur "qu'est-ce que le Morosil / la caféine / l'EGCG…" — c'est déjà acquis.
 → Le mécanisme S4 (USP/UMS) est cité comme RAPPEL/PREUVE, pas comme RÉVÉLATION.
-→ Tu actives les leviers de déclenchement : urgence, preuves chiffrées si la synthèse en contient, offre/promotion si elle existe dans le brief intégré à S0, rareté/disponibilité, validation sociale ("d'autres comme toi l'ont déjà fait"), CTA direct.
+→ Tu actives les leviers de déclenchement : une VRAIE raison d'agir maintenant (offre ou promo du brief, saison, moment de vie, coût de l'attente), preuves chiffrées si la synthèse en contient, inversion du risque (paiement à la livraison, garantie du brief), validation sociale ("d'autres comme toi l'ont déjà fait"), CTA direct. Une rareté ou un délai ne s'écrit que si le BRIEF CLIENT le donne : un stock, un nombre de pièces ou une échéance inventés se voient, cassent la confiance et coûtent la vente.
 → Ton registre est CONFIANT et DIRECT — pas explicatif. Le persona est mûr ; tu le pousses, tu ne le convaincs pas depuis zéro.
 → La créative-image, en amont, a déjà fait le travail visuel d'identification. Ton texte CONVERTIT.
 → Va droit au but : n'édulcore jamais un mot fort trouvé dans les vrais verbatims du marché (S5/S6) en le remplaçant par un synonyme plus "propre" ou plus générique — un mot édulcoré perd sa force de conversion.
@@ -156,11 +156,12 @@ Trois preuves/avantages distinctifs depuis S4 (USP / UMS / preuves de la pricing
 **[BLOC4] — ACTION (1 phrase + 1 ligne CTA) :**
 ⛔ RÈGLE OFFRE/PRIX : si le brief contient un pricing ou une offre promo, elle apparaît UNIQUEMENT dans ce bloc 4 — jamais dans les blocs 1, 2 ou 3. La logique est : construire d'abord la valeur perçue (blocs 1/2/3), puis activer l'offre avec FOMO quand la valeur est à son maximum. Mettre l'offre avant la valeur = brûler l'attention sur le prix avant que le persona soit convaincu.
 
-La phrase finale mobilise un levier de conversion adapté à la synthèse :
-→ Si une offre promo existe (S0 / S4 / pricing map) → la nommer précisément ici (et nulle part avant)
-→ Si une rareté/quantité limitée est mentionnée → la nommer
-→ Si une garantie / livraison locale rassure une objection S1 → la mentionner
-→ Sinon → urgence liée au déclencheur d'achat du persona (saison, événement, état du corps)
+LE CLOSER — c'est la phrase qui transforme l'envie en commande. Elle fait trois choses, dans l'ordre que tu juges le plus naturel :
+1. une RAISON VRAIE d'agir maintenant, prise dans ce qui est réellement donné : l'offre ou la promo du brief (nommée précisément ici, et nulle part avant), le déclencheur d'achat du persona (saison, événement, état du corps), ou ce que lui coûte d'attendre encore (la douleur qui continue) ;
+2. l'INVERSION DU RISQUE quand le brief la donne (paiement à la livraison, garantie, livraison locale) : elle répond à la dernière objection de S1 ;
+3. une SEULE action, avec un seul verbe (commander, cliquer, écrire) : deux actions proposées = aucune.
+Une rareté, un stock, un nombre de pièces ou une échéance ne s'écrivent QUE s'ils figurent tels quels dans le brief client (« il reste 9 pièces » sans source est une fausse rareté : le lecteur la reconnaît et n'y croit plus). Le nombre de créatives commandées n'est jamais un stock.
+Si une FICHE DE VÉRITÉ DE L'ANGLE t'est donnée, ta raison d'agir, ta promesse et ta cause du problème viennent d'elle : l'image et la vidéo de cet angle disent la même chose.
 Puis 1 ligne CTA finale — courte, directe, impérative, avec emoji.
 
 PARAGRAPHATION OBLIGATOIRE — chaque bloc séparé par une ligne vide. Le texte doit RESPIRER pour qu'un pouce qui scroll le lise sans effort.
@@ -253,7 +254,8 @@ GATE FINAL (silencieux — si un point échoue, réécris)
 □ Le registre est Most Aware — pas de pédagogie longue, mécanisme cité comme rappel, levier de conversion explicite à la fin ?
 □ Au moins UNE description, sur l'ensemble de la campagne, neutralise chacune des objections principales du persona ?
 □ Aucun mot interdit S6 utilisé ? Tutoiement/vouvoiement respecté ?
-□ Si une offre promo / rareté / chiffre clé existe dans la synthèse, elle est mobilisée explicitement dans au moins une description Action de la campagne ?
+□ Si une offre promo / rareté / chiffre clé existe dans le brief ou la synthèse, elle est mobilisée explicitement dans au moins une description Action de la campagne ?
+□ Le closer donne une raison VRAIE d'agir maintenant, l'inversion du risque si le brief la donne, et UNE seule action ? Aucune rareté, aucun stock, aucune échéance qui ne soit dans le brief ?
 □ Le nom exact du produit apparaît au moins une fois dans CHAQUE description ?
 □ Emojis intentionnels partout, jamais décoratifs vides, pas de strings d'emojis collés ?
 □ Aucune description ne dépasse 130 mots — coupe le gras si oui ?

@@ -7,6 +7,7 @@ import { toast } from '../ui'
 import * as PL from './plan'
 import * as APP from './apprentissage' // appr-client-v1
 import * as CDC from './cdc' // cdc-franchise-v1
+import * as VER from './verite' // verite-v1
 import * as MAN from './ctmanuel' // ct-fidelite-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
@@ -151,6 +152,7 @@ function consignesDiversite(idx, direction) {
   { const q = APP.bloc('video'); if (q) L.push(q) }   // retours qualité de ce client
   L.push(CDC.regleVideo())   // cdc-franchise-v1 : franchise du sujet, toujours
   { const c = CDC.bloc('video').trim(); if (c) L.push(c) }   // cahier des charges de la marque
+  { const v = ang >= 0 ? VER.bloc(ang, 'video').trim() : ''; if (v) L.push(v) }   // verite-v1 : les mêmes faits que l'image et l'ad copy de cet angle
   return L.join('\n')
 }
 export async function lancerVideo(idx, ct, { forcer = false } = {}) {
