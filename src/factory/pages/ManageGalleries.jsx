@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePersist } from '../agentStore'
 import { ctGetAll, ctPut, ctDel, ctGetBase64, ctCompress, ctNameAI, loadCTImages } from '../ctApi'
-import { vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll, vctMettreVideo, vctNouveauVideo, vctChangerMiniature, vctSupprimerVideo } from '../vctApi'
+import { vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll, vctMettreVideo, vctNouveauVideo, vctChangerMiniature, vctSupprimerVideo, vctAnalyser, vctSuivreAnalyse } from '../vctApi'
 import { captureFrame } from '../r2'
 import { labFetch, labUrl } from '../lab'
 import { confirmDlg, alertDlg, toast } from '../ui'
@@ -149,6 +149,22 @@ export function GalerieVideo() {
   const st = (t, e = false) => setStatus({ t, err: e })
   const load = useCallback(async () => { setLoading(true); try { const l = await vctGetAll(); setList(l); setErr(''); return l } catch (e) { setErr(e.message); return [] } finally { setLoading(false) } }, [])
   useEffect(() => { load() }, [load])
+  // analyse-ct-v1 : les analyses en cours sont suivies en arrière-plan ; une analyse finie pendant que la page était fermée est rangée ici
+  const [suivi, setSuivi] = useState({})
+  const suivis = useRef(new Set())
+  const suivre = useCallback((rec) => {
+    if (suivis.current.has(rec.id)) return
+    suivis.current.add(rec.id)
+    vctSuivreAnalyse(rec, (t) => setSuivi((x) => ({ ...x, [rec.id]: t })))
+      .then((r) => { if (r) { toast('Analyse rangée : ' + r.name); load() } })
+      .catch((e) => { setSuivi((x) => ({ ...x, [rec.id]: 'Échec : ' + e.message })); load() })
+      .finally(() => { suivis.current.delete(rec.id) })
+  }, [load])
+  useEffect(() => { list.filter((x) => x.analyse_auto && x.analyse_auto.etat === 'en_cours').forEach(suivre) }, [list, suivre])
+  const analyser = async (rec, forcer = false) => {
+    try { await vctAnalyser(rec, { forcer }); setSuivi((x) => ({ ...x, [rec.id]: 'La machine démarre…' })); suivre(rec); load() }
+    catch (e) { await alertDlg('Analyse impossible : ' + e.message) }
+  }
 
   const addFiles = async (files) => {
     const fl = Array.from(files || []).filter((f) => /\.(md|txt)$/i.test(f.name))
@@ -167,10 +183,10 @@ export function GalerieVideo() {
     if (!fl.length) { st('Aucune vidéo reconnue (mp4, mov ou webm).', true); return }
     setBusy(true); let ok = 0, ko = 0
     for (let i = 0; i < fl.length; i++) {
-      try { await vctNouveauVideo(fl[i], (t) => st(`Vidéo ${i + 1}/${fl.length} · ${fl[i].name} · ${t}`)); ok++ }
+      try { const rec = await vctNouveauVideo(fl[i], (t) => st(`Vidéo ${i + 1}/${fl.length} · ${fl[i].name} · ${t}`)); ok++; try { await vctAnalyser(rec); suivre(rec) } catch (e) { console.warn('[CT vidéo] analyse non lancée', e) } }
       catch (e) { ko++; console.error('[CT vidéo]', fl[i].name, e); st(`Échec pour ${fl[i].name} : ${e.message}`, true); await new Promise((r) => setTimeout(r, 2500)) }
     }
-    st(`${ok} vidéo(s) ajoutée(s) sur Cloudflare` + (ko ? ` · ${ko} en échec` : '') + '. Complète ensuite leurs balises avec « Modifier ».', ko > 0)
+    st(`${ok} vidéo(s) ajoutée(s)` + (ko ? ` · ${ko} en échec` : '') + '. Leur analyse complète a démarré (5 à 10 min chacune) : texte du CT, découpage, intentions, métadonnées et bilan de reproduction se rangent tout seuls.', ko > 0)
     setBusy(false); load()
   }
   const importLab = async () => {
@@ -221,8 +237,13 @@ export function GalerieVideo() {
               {x.blocs ? <span className="fx-chip">{x.blocs} blocs</span> : null}
             </div>
             <Chips r={x} />
+            {(() => { const a = x.analyse_auto; if (!a) return null
+              if (a.etat === 'en_cours') return <div className="fx-s" style={{ color: '#5B8DEF' }}>🔎 Analyse en cours · {suivi[x.id] || 'en attente de la machine'}</div>
+              if (a.etat === 'echec') return <div className="fx-s" style={{ color: '#E55050' }}>Analyse en échec{a.erreur ? ' : ' + a.erreur.slice(0, 120) : ''}</div>
+              return <div className="fx-s">Analysé · {a.coupes ?? '?'} coupes{a.duree_source_s ? ' en ' + a.duree_source_s + ' s' : ''}{a.langue ? ' · ' + a.langue : ''}{a.repro_usd ? ' · reproduction ≈ ' + Number(a.repro_usd).toFixed(1) + ' $' : ''}{/dépasse/i.test(a.verdict || '') ? ' ⚠ dépasse 15 $' : ''}</div> })()}
             <div className="fx-s">{x.source}{x.taille ? ' · ' + Math.round(x.taille / 1000) + ' Ko' : ''}</div>
-            <div className="fx-ct-a"><button className="fx-btn sm" onClick={() => setEdit(x)}>Modifier</button></div>
+            <div className="fx-ct-a"><button className="fx-btn sm" onClick={() => setEdit(x)}>Modifier</button>
+              {x.videoUrl && !(x.analyse_auto && x.analyse_auto.etat === 'en_cours') && <button className="fx-btn sm" title="Lecture complète de la vidéo source : découpage à l'image près, voix mot par mot, intentions, texte du CT, métadonnées et bilan de reproduction" onClick={async () => { if (x.analyse_auto && x.analyse_auto.etat === 'faite' && !(await confirmDlg('Relancer l\'analyse ? Le texte actuel du CT sera remplacé par la nouvelle analyse.'))) return; analyser(x, true) }}>{x.analyse_auto && x.analyse_auto.etat === 'faite' ? 'Réanalyser' : 'Analyser la vidéo'}</button>}</div>
           </div>))}</div>
           : <div className="fx-empty">{list.length ? 'Aucun CT ne correspond.' : 'Aucun CT vidéo — ajoute des fichiers .md ou importe ceux de ton labo.'}</div>}
       {edit && <EditVideo rec={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load() }} />}

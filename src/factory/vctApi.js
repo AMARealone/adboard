@@ -117,3 +117,48 @@ export async function vctChangerMiniature(rec, blob) {
   return rec
 }
 export async function vctSupprimerVideo(rec) { if (rec.videoKey) await r2Delete(rec.videoKey); if (rec.posterKey) await r2Delete(rec.posterKey) }
+
+// ── analyse-ct-v1 (19 nov. 2026) : ANALYSE AUTOMATIQUE D'UN CT VIDÉO À L'IMPORT ──
+// La machine du moteur vidéo lit la source (découpage à l'image près, voix mot par mot, lecture dense par Gemini) et écrit le texte du CT
+// au format de la galerie + le bilan de reproduction (plafond 15 $). Le résultat est relu sur R2 et rangé dans la galerie.
+const R2PUB = 'https://images.adstackofficial.com'
+const urlAnalyse = (id) => `${R2PUB}/ct-video/analyses-import/${id}.json`
+export async function vctAnalyser(rec, { forcer = false } = {}) {
+  if (!rec.videoUrl) throw new Error('Ce CT n\'a pas de vidéo source à analyser.')
+  const r = await fetch(SERVER + '/video-jobs/analyse-ct', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ct_id: rec.id, video_url: rec.videoUrl, nom: rec.name, forcer }) })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status + (r.status === 404 ? ' (le serveur n\'est pas à jour)' : ''))
+  rec.analyse_auto = { etat: 'en_cours', debut: Date.now(), execution: j.execution || '' }
+  await vctPutMeta(rec)
+  return rec
+}
+export async function vctLireAnalyse(id) {
+  try { const r = await fetch(urlAnalyse(id) + '?t=' + Date.now()); if (!r.ok) return null; return await r.json() } catch (_) { return null }
+}
+// Range le résultat dans la galerie : texte du CT, métadonnées (nom, méta, niveau, niches, durée produite…), résumé de l'analyse.
+export async function vctAppliquerAnalyse(rec, A) {
+  const R = A.resultat || {}, texte = String(R.texte || '')
+  if (texte.length < 800) throw new Error('document du CT absent ou trop court')
+  await vctPutTexte(rec.id, texte)
+  const f = _vctFicheDuTexte(texte)
+  if (f) _vctAppliquerFiche(rec, f, true)
+  const rp = R.reproduction || {}, m = R.mesures || {}
+  rec.taille = texte.length
+  rec.analyse_auto = { etat: 'faite', date: Date.now(), cout_usd: A.cout_usd || 0, coupes: m.coupes, plans: m.plans, duree_source_s: m.duree_source_s, langue: m.langue || '',
+    repro_usd: rp.total_usd || null, verdict: rp.verdict || '', simplifications: String(rp.simplifications || '').slice(0, 400) }
+  await vctPutMeta(rec)
+  return rec
+}
+// Suit une analyse jusqu'au bout (25 min au plus) ; la page peut être fermée : le résultat attend sur R2 et sera rangé au prochain passage.
+export async function vctSuivreAnalyse(rec, onStatus = () => {}, signal) {
+  const fin = Date.now() + 25 * 60000
+  while (Date.now() < fin) {
+    if (signal && signal.aborted) return null
+    const A = await vctLireAnalyse(rec.id)
+    if (A && A.etat === 'termine' && A.resultat && new Date(A.maj || 0).getTime() >= (rec.analyse_auto && rec.analyse_auto.debut || 0) - 60000) { onStatus('Rangement de l\'analyse…'); return vctAppliquerAnalyse(rec, A) }
+    if (A && A.etat === 'echec' && new Date(A.maj || 0).getTime() >= (rec.analyse_auto && rec.analyse_auto.debut || 0) - 60000) { rec.analyse_auto = { ...(rec.analyse_auto || {}), etat: 'echec', erreur: String(A.erreur || '').slice(0, 300) }; await vctPutMeta(rec); throw new Error(A.erreur || 'analyse en échec') }
+    onStatus(A && A.etape ? A.etape + (A.pct ? ' · ' + A.pct + ' %' : '') : 'La machine démarre…')
+    await new Promise((ok) => setTimeout(ok, 15000))
+  }
+  throw new Error('analyse trop longue (plus de 25 min) : relance-la')
+}
