@@ -176,7 +176,7 @@ const sbAuth = {
         return await sbAuth.signUp(email, password);
       } catch (signUpErr) {
         if (signUpErr.message === 'NO_SESSION') {
-          throw new Error('Compte créé — vérifie ta boîte mail pour confirmer ton adresse avant de te connecter.');
+          throw new Error('Compte créé — vérifiez votre boîte mail pour confirmer votre adresse avant de vous connecter.');
         }
         const msg = (signUpErr.message || '').toLowerCase();
         if (msg.includes('already registered') || msg.includes('already exists') || msg.includes('user already')) {
@@ -407,6 +407,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
   const paths = {
     grid: <><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></>,
     document: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></>,
+    copy: <><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></>,
     chart: <><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></>,
     sparkle: <path d="M12 2l1.8 5.6L19.5 9.5l-5.7 1.9L12 17l-1.8-5.6L4.5 9.5l5.7-1.9z"/>,
     compass: <><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></>,
@@ -543,43 +544,61 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
   };
   useEffect(() => { load(); }, []);
   const card = {background:C.card,border:`1px solid ${C.border}`,borderRadius:14};
-  const PL = { test:'TEST', starter:'PERF+', pro:'GROWTH', scale:'SCALE', discovery:'Découverte' };
-  const CY = { monthly:'Mensuel', quarterly:'Trimestriel' };
+  const PL = { test:'TEST', starter:'PERF+', pro:'GROWTH', scale:'SCALE', discovery:'Découverte', oneshot:'ONE SHOT', pack:'ONE SHOT' };
+  const CY = { monthly:'Abonnement mensuel', quarterly:'Abonnement trimestriel' };
   const fmtD = (x) => { try { return new Date(x).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch(e) { return ''; } };
   const fcfa = (n) => Math.round(n||0).toLocaleString('fr-FR') + ' FCFA';
   if (err) return <div style={{...card,padding:20,color:C.sec,fontSize:13,maxWidth:640}}>Impossible de charger la facturation. <button onClick={load} style={{marginLeft:8,padding:'6px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,cursor:'pointer',fontFamily:'inherit'}}>Réessayer</button></div>;
   if (!d) return <div style={{color:C.sec,fontSize:13,padding:20}}>Chargement de votre facturation…</div>;
   const sub = d.subscription;
+  const total = d.transactions.reduce((x, t) => x + (t.montant_fcfa || 0), 0);
+  const joursRestants = sub && sub.active && sub.expires_at ? Math.max(0, Math.ceil((new Date(sub.expires_at) - Date.now()) / 864e5)) : null;
+  // ux-v4 — facturation : forfait en carte « héros », résumé des dépenses, reçus lisibles avec icône et statut
   return (
     <div style={{maxWidth:760,paddingBottom:90}} data-testid="billing-page">
       <h2 style={{fontSize:20,margin:'0 0 8px',color:C.text,display:'flex',alignItems:'center',gap:10}}><TuileTitre icon="card"/>Facturation</h2>
-      <div style={{fontSize:12.5,color:C.sec,marginBottom:16}}>Tous vos paiements sur AdBoard, du plus récent au plus ancien.</div>
-      <div style={{...card,padding:16,marginBottom:14}}>
+      <div style={{fontSize:12.5,color:C.sec,marginBottom:16}}>Votre forfait et tous vos paiements sur AdBoard.</div>
+      <div style={{...card,padding:isMobile?18:22,marginBottom:12,position:'relative',overflow:'hidden',background:'linear-gradient(140deg, rgba(91,141,239,0.22), rgba(31,182,255,0.06) 55%, rgba(255,255,255,0.02))',borderColor:'rgba(91,141,239,0.35)'}}>
+        <div aria-hidden="true" style={{position:'absolute',right:-40,top:-40,width:180,height:180,borderRadius:'50%',background:'radial-gradient(circle, rgba(91,141,239,0.35), transparent 70%)'}}/>
         {sub ? (
-          <div style={{display:'flex',justifyContent:'space-between',gap:12,flexWrap:'wrap',alignItems:'center'}}>
-            <div>
-              <div style={{fontSize:11,color:C.sec,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>Forfait actuel</div>
-              <div style={{fontSize:18,fontWeight:800,color:C.text,marginTop:2}}>{PL[sub.plan]||sub.plan}</div>
-              <div style={{fontSize:12,color:sub.active?'#22C55E':'#E55050',marginTop:2}}>
+          <div style={{position:'relative',display:'flex',justifyContent:'space-between',gap:14,flexWrap:'wrap',alignItems:'flex-end'}}>
+            <div style={{minWidth:0}}>
+              <div style={{fontSize:10.5,color:'rgba(255,255,255,0.65)',fontWeight:700,letterSpacing:'1.4px',textTransform:'uppercase'}}>Forfait actuel</div>
+              <div style={{fontSize:26,fontWeight:800,color:'#fff',marginTop:4,letterSpacing:-0.4}}>{PL[sub.plan]||sub.plan}</div>
+              <div style={{display:'inline-flex',alignItems:'center',gap:6,marginTop:8,padding:'4px 10px',borderRadius:20,fontSize:11.5,fontWeight:700,background:sub.active?'rgba(34,197,94,0.14)':'rgba(229,80,80,0.14)',color:sub.active?'#22C55E':'#F87171',border:`1px solid ${sub.active?'rgba(34,197,94,0.35)':'rgba(229,80,80,0.35)'}`}}>
+                <span style={{width:6,height:6,borderRadius:'50%',background:'currentColor'}}/>
                 {sub.active ? (sub.expires_at ? `Actif jusqu'au ${fmtD(sub.expires_at)}` : 'Actif') : (sub.expires_at ? `Expiré le ${fmtD(sub.expires_at)}` : 'Inactif')}
               </div>
+              {joursRestants !== null && <div style={{fontSize:11.5,color:'rgba(255,255,255,0.6)',marginTop:8}}>{joursRestants} jour{joursRestants>1?'s':''} avant le renouvellement</div>}
             </div>
-            <button onClick={onOpenPlans} style={{padding:'9px 14px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',width:isMobile?'100%':undefined}}>{sub.active ? 'Changer de forfait' : 'Renouveler'}</button>
+            <button onClick={onOpenPlans} style={{padding:'11px 16px',borderRadius:10,border:'none',background:'#fff',color:'#0B0D12',fontWeight:800,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',width:isMobile?'100%':undefined}}>{sub.active ? 'Changer de forfait' : 'Renouveler mon forfait'}</button>
           </div>
-        ) : <div style={{fontSize:13,color:C.sec}}>Aucun forfait pour le moment. <button onClick={onOpenPlans} style={{background:'none',border:'none',color:C.accent,cursor:'pointer',fontWeight:700,fontFamily:'inherit',padding:0}}>Voir les forfaits</button></div>}
+        ) : <div style={{position:'relative',fontSize:13,color:C.sec}}>Aucun forfait pour le moment. <button onClick={onOpenPlans} style={{background:'none',border:'none',color:C.accent,cursor:'pointer',fontWeight:700,fontFamily:'inherit',padding:0}}>Voir les forfaits</button></div>}
       </div>
-      <div style={{display:'flex',flexDirection:'column',gap:8}}>
-        {d.transactions.length === 0 && <div style={{...card,padding:20,color:C.sec,fontSize:13,textAlign:'center'}}>Aucun paiement enregistré pour l'instant.</div>}
+      {d.transactions.length > 0 && (
+        <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10,marginBottom:18}}>
+          <div style={{...card,padding:'12px 14px'}}><div style={{fontSize:10.5,color:C.sec,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>Total investi</div><div style={{fontSize:17,fontWeight:800,color:C.text,marginTop:4,fontFamily:"'DM Mono',monospace"}}>{fcfa(total)}</div></div>
+          <div style={{...card,padding:'12px 14px'}}><div style={{fontSize:10.5,color:C.sec,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>Paiements</div><div style={{fontSize:17,fontWeight:800,color:C.text,marginTop:4,fontFamily:"'DM Mono',monospace"}}>{d.transactions.length}</div></div>
+        </div>
+      )}
+      <div style={{fontSize:10.5,color:C.sec,fontWeight:700,letterSpacing:'1.4px',textTransform:'uppercase',margin:'0 0 8px'}}>Historique</div>
+      <div style={{...card,overflow:'hidden'}}>
+        {d.transactions.length === 0 && <div style={{padding:20,color:C.sec,fontSize:13,textAlign:'center'}}>Aucun paiement enregistré pour l'instant.</div>}
         {d.transactions.map((t,i) => (
-          <div key={i} style={{...card,padding:'12px 14px',display:'flex',justifyContent:'space-between',gap:10,alignItems:'center',flexWrap:'wrap'}}>
-            <div>
-              <div style={{fontSize:13.5,fontWeight:700,color:C.text}}>{PL[t.plan]||t.plan||'Paiement'} · {CY[t.cycle]||t.cycle||''}</div>
-              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>{fmtD(t.date)}</div>
+          <div key={i} style={{padding:'13px 14px',display:'flex',gap:12,alignItems:'center',borderTop:i?`1px solid ${C.border}`:'none'}}>
+            <div style={{width:38,height:38,borderRadius:11,flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(91,141,239,0.12)',border:'1px solid rgba(91,141,239,0.28)'}}><Icon name="card" size={16} color="#8FB3FF"/></div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13.5,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{PL[t.plan]||t.plan||'Paiement'}</div>
+              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>{fmtD(t.date)}{(t.plan === 'oneshot' || t.plan === 'pack') ? ' · Achat unique' : (CY[t.cycle] ? ' · ' + CY[t.cycle] : '')}</div>
             </div>
-            <div style={{fontSize:14,fontWeight:800,color:C.text}}>{fcfa(t.montant_fcfa)}</div>
+            <div style={{textAlign:'right',flexShrink:0}}>
+              <div style={{fontSize:14,fontWeight:800,color:C.text,fontFamily:"'DM Mono',monospace"}}>{fcfa(t.montant_fcfa)}</div>
+              <div style={{fontSize:10.5,color:'#22C55E',fontWeight:700,marginTop:2}}>Payé</div>
+            </div>
           </div>
         ))}
       </div>
+      <div style={{fontSize:11.5,color:C.muted,marginTop:12,lineHeight:1.6}}>Chaque facture vous est envoyée par email au moment du paiement.</div>
     </div>
   );
 };
@@ -759,7 +778,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       {showLogoutConfirm && (
         <ConfirmModal
           title="Se déconnecter ?"
-          message="Tu devras te reconnecter pour retrouver tes produits et tes créatives."
+          message="Vous devrez vous reconnecter pour retrouver vos produits et vos créatives."
           confirmLabel="Se déconnecter" cancelLabel="Rester connecté" danger={true}
           onCancel={()=>setShowLogoutConfirm(false)}
           onConfirm={()=>{ clearWorkspaceMemory(); sbAuth.signOut(); setUser(null); setShowLogoutConfirm(false); }}
@@ -987,6 +1006,22 @@ const MARCHES_INFOS = {
 const MARCHES_ALIAS = { 'senegal':'senegal','sn':'senegal','cote divoire':'cote d ivoire','ci':'cote d ivoire','ivory coast':'cote d ivoire','cotedivoire':'cote d ivoire','burkina':'burkina faso','bf':'burkina faso','guinee conakry':'guinee','guinea':'guinee','congo brazzaville':'congo','republique du congo':'congo','congo kinshasa':'rdc','republique democratique du congo':'rdc','drc':'rdc','cameroon':'cameroun','mauritania':'mauritanie','morocco':'maroc','algeria':'algerie','tunisia':'tunisie','tanzania':'tanzanie','uganda':'ouganda','zambia':'zambie','south africa':'afrique du sud','togo':'togo','benin':'benin','mali':'mali','niger':'niger','ml':'mali','tg':'togo','bj':'benin','ng':'nigeria','gh':'ghana','ke':'kenya','cm':'cameroun','ga':'gabon','ma':'maroc','dz':'algerie','tn':'tunisie','mg':'madagascar','fr':'france','be':'belgique' };
 const _cleMarche = (s) => { const k = String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); return MARCHES_INFOS[k] ? k : (MARCHES_ALIAS[k] || k); };
 const infoMarche = (nom) => MARCHES_INFOS[_cleMarche(nom)] || null;
+
+// devise-v1 (19 nov. 2026) — LA VRAIE DEVISE DU PRODUIT. Le prix de la marque fait foi (« 100 000 GNF » reste en GNF) ;
+// à défaut, la devise déclarée par l'analyste, puis celle du pays. Jamais « FCFA » par défaut sur un produit vendu ailleurs.
+const DEVISE_LIBELLE = { XOF:'FCFA', XAF:'FCFA', GNF:'GNF', CDF:'FC', EUR:'€', USD:'$', NGN:'₦', GHS:'GH₵', KES:'KSh', MAD:'MAD', DZD:'DA', TND:'DT', MGA:'Ar', RWF:'RWF', BIF:'FBu', MRU:'MRU', TZS:'TSh', UGX:'USh', ZMW:'ZK', ZAR:'R' };
+const DEVISE_MOTIFS = [[/\bgnf\b|francs?\s*guin|\bfg\b/i,'GNF'],[/\bxaf\b/i,'XAF'],[/\bxof\b/i,'XOF'],[/f\s?cfa|\bcfa\b/i,'CFA'],[/€|\beur(o|os)?\b/i,'EUR'],[/₦|\bngn\b|naira/i,'NGN'],[/₵|\bghs\b|cedi/i,'GHS'],[/\bmad\b|dirham|\bdhs?\b/i,'MAD'],[/\bdzd\b|dinars?\s*alg|\bda\b/i,'DZD'],[/\btnd\b|dinars?\s*tun/i,'TND'],[/\bkes\b|\bksh\b/i,'KES'],[/\bcdf\b|francs?\s*congol/i,'CDF'],[/\bmga\b|ariary/i,'MGA'],[/\brwf\b/i,'RWF'],[/\bbif\b|fbu/i,'BIF'],[/\bmru\b|ouguiya/i,'MRU'],[/\busd\b|\$/i,'USD']];
+const deviseDuTexte = (t) => { const s = String(t || ''); for (const [re, d] of DEVISE_MOTIFS) if (re.test(s)) return d; return null; };
+const deviseProduit = (p, m) => {
+  const pays = parseMarches(p && p.pays);
+  const dPays = pays.length ? (infoMarche(pays[0]) || {}).d : null;
+  let d = deviseDuTexte(p && p.pricing);
+  if (d === 'CFA') d = dPays === 'XAF' ? 'XAF' : 'XOF';
+  if (!d) { const dm = m && ((m.positionnement && m.positionnement.prix_recommande && m.positionnement.prix_recommande.devise) || m.devise); if (dm) d = String(dm).toUpperCase(); }
+  return d || dPays || 'XOF';
+};
+const libelleDevise = (code) => DEVISE_LIBELLE[code] || code || '';
+const formaterMontant = (n, code) => (typeof n === 'number' && isFinite(n)) ? Math.round(n).toLocaleString('fr-FR') + ' ' + libelleDevise(code) : (n || '—');
 
 // Option « voix en langue locale » RETIRÉE d'AdBoard (17 nov. 2026, langue-locale-retiree-v1) : elle reviendra quand l'agent vidéo aura été testé en back-end.
 // Les voix restent dans la langue du marché (MARCHES_INFOS[..].l). La table des langues locales est conservée côté serveur (coupée par défaut).
@@ -1527,16 +1562,16 @@ const PLAN_COLORS = { test: '#6B7280', starter: '#8A90B2', pro: '#5B8DEF', scale
 
 // ── Modal de paiement — widget Chariow Snap intégré, sans quitter la plateforme ──
 const PREPURCHASE_QUESTIONS = [
-  "Aujourd'hui, qu'est-ce qui te frustre le plus avec tes pubs ou tes créatives ?",
-  "Si tout se passait bien pour ton business dans 6 mois, à quoi ça ressemblerait ?",
-  "Qu'est-ce que t'as déjà essayé pour améliorer tes ventes, et qu'est-ce qui n'a pas marché ?",
-  "D'après toi, qu'est-ce qui ferait vraiment la différence pour toi en ce moment ?",
-  "Si une solution te faisait gagner plusieurs heures chaque semaine, ça changerait quoi pour toi concrètement ?",
-  "Qu'est-ce qui te ferait hésiter à essayer une nouvelle solution pour tes créatives ?",
-  "Comment tu décrirais, avec tes mots, ce qui bloque vraiment tes ventes ?",
+  "Aujourd'hui, qu'est-ce qui vous frustre le plus avec vos pubs ou vos créatives ?",
+  "Si tout se passait bien pour votre business dans 6 mois, à quoi ça ressemblerait ?",
+  "Qu'avez-vous déjà essayé pour améliorer vos ventes, et qu'est-ce qui n'a pas marché ?",
+  "D'après vous, qu'est-ce qui ferait vraiment la différence pour vous en ce moment ?",
+  "Si une solution vous faisait gagner plusieurs heures chaque semaine, qu'est-ce que ça changerait pour vous concrètement ?",
+  "Qu'est-ce qui vous ferait hésiter à essayer une nouvelle solution pour vos créatives ?",
+  "Comment décririez-vous, avec vos mots, ce qui bloque vraiment vos ventes ?",
   "T'as déjà entendu parler d'autres solutions ou agences pour ce genre de besoin ? T'en penses quoi ?",
-  "Qu'est-ce que tu serais prêt à changer pour vraiment débloquer tes ventes ?",
-  "Pourquoi c'est important pour toi de régler ça maintenant ?",
+  "Qu'est-ce que vous seriez prêt à changer pour vraiment débloquer vos ventes ?",
+  "Pourquoi est-ce important pour vous de régler ça maintenant ?",
 ];
 
 // Exemples de réponses "voix ICP" affichés en placeholder gris — jamais annoncés comme
@@ -1556,16 +1591,16 @@ const PREPURCHASE_PLACEHOLDERS = [
 ];
 
 const POSTPURCHASE_QUESTIONS = [
-  "Avant qu'on te contacte, tu connaissais déjà des solutions comme la nôtre ?",
-  "Qu'est-ce qui a fait la différence pour toi, ce qui t'a décidé à te lancer ?",
+  "Avant qu'on vous contacte, connaissiez-vous déjà des solutions comme la nôtre ?",
+  "Qu'est-ce qui a fait la différence pour vous, ce qui vous a décidé à vous lancer ?",
   "Y a-t-il eu un moment où t'as failli ne pas continuer ?",
   "Qu'est-ce qui t'a rassuré si jamais t'avais un doute avant de valider ?",
   "Qu'est-ce que t'aimerais voir en plus sur la plateforme, même si ça n'existe pas encore ?",
-  "Où t'en es avec ton business — tu débutes, ou ça fait un moment que tu vends ?",
-  "Qu'est-ce qui a fait que tu passes à l'action maintenant plutôt que dans un mois ?",
-  "Qu'est-ce qui te ferait dire, dans quelques semaines, que c'était le bon choix ?",
+  "Où en êtes-vous avec votre business : vous débutez, ou vous vendez depuis un moment ?",
+  "Qu'est-ce qui vous a fait passer à l'action maintenant plutôt que dans un mois ?",
+  "Qu'est-ce qui vous ferait dire, dans quelques semaines, que c'était le bon choix ?",
   "Le prix, ça t'a semblé juste, cher, ou une bonne affaire vu ce que t'en attends ?",
-  "Tu connais d'autres vendeurs qui galèrent avec le même souci que toi ?",
+  "Connaissez-vous d'autres vendeurs qui ont le même souci que vous ?",
 ];
 
 // Formulaire partagé — pré-achat (obligatoire, code promo) et post-achat (facultatif, dismissible)
@@ -1642,15 +1677,15 @@ const InsightForm = ({ mode, user, onClose, C }) => {
               <>
                 <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.85)',letterSpacing:'1px',textTransform:'uppercase',margin:'0 0 8px'}}>Offre exclusive</p>
                 <p style={{fontSize:52,fontWeight:900,color:'#fff',margin:'0 0 8px',lineHeight:1}}>-10%</p>
-                <p style={{fontSize:14,color:'rgba(255,255,255,0.9)',margin:'0 0 26px',lineHeight:1.5}}>sur ton premier abonnement, en répondant à un rapide formulaire qui nous aide à améliorer AdStack.</p>
+                <p style={{fontSize:14,color:'rgba(255,255,255,0.9)',margin:'0 0 26px',lineHeight:1.5}}>sur votre premier abonnement, en répondant à un rapide formulaire qui nous aide à améliorer AdStack.</p>
                 <button onClick={() => setStep('form')} style={{padding:'13px 28px',borderRadius:9,border:'none',background:'#fff',color:'#0B1E3D',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'inherit'}}>
                   Obtenir mon code -10%
                 </button>
               </>
             ) : (
               <>
-                <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.85)',letterSpacing:'1px',textTransform:'uppercase',margin:'0 0 8px'}}>Aide-nous à mieux te servir</p>
-                <p style={{fontSize:22,fontWeight:800,color:'#fff',margin:'0 0 10px',lineHeight:1.3}}>2 minutes pour améliorer tes prochains livrables</p>
+                <p style={{fontSize:13,fontWeight:700,color:'rgba(255,255,255,0.85)',letterSpacing:'1px',textTransform:'uppercase',margin:'0 0 8px'}}>Aidez-nous à mieux vous servir</p>
+                <p style={{fontSize:22,fontWeight:800,color:'#fff',margin:'0 0 10px',lineHeight:1.3}}>2 minutes pour améliorer vos prochaines créatives</p>
                 <p style={{fontSize:14,color:'rgba(255,255,255,0.9)',margin:'0 0 26px',lineHeight:1.5}}>Quelques questions rapides, entièrement facultatives.</p>
                 <button onClick={() => setStep('form')} style={{padding:'13px 28px',borderRadius:9,border:'none',background:'#fff',color:'#0B1E3D',fontWeight:800,fontSize:14,cursor:'pointer',fontFamily:'inherit'}}>
                   Répondre au formulaire
@@ -1668,13 +1703,13 @@ const InsightForm = ({ mode, user, onClose, C }) => {
             <div style={{width:52,height:52,borderRadius:14,background:'rgba(34,197,94,0.14)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}}>
               <Icon name="check" size={24} color="#22C55E"/>
             </div>
-            <h2 style={{fontSize:17,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Merci pour tes réponses !</h2>
-            <p style={{fontSize:13,color:C.sec,marginBottom:20}}>Voici ton code pour -10% sur ton premier abonnement :</p>
+            <h2 style={{fontSize:17,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Merci pour vos réponses !</h2>
+            <p style={{fontSize:13,color:C.sec,marginBottom:20}}>Voici votre code pour -10 % sur votre premier abonnement :</p>
             <div onClick={copyCode} style={{display:'inline-flex',alignItems:'center',gap:10,padding:'12px 20px',borderRadius:10,border:`1.5px dashed ${C.accent}`,background:C.accentS,cursor:'pointer'}}>
               <span style={{fontSize:18,fontWeight:800,letterSpacing:'1px',color:C.accent,fontFamily:"'DM Mono',monospace"}}>{promoCode}</span>
               <Icon name={copied ? 'check' : 'document'} size={15} color={C.accent}/>
             </div>
-            <p style={{fontSize:11,color:C.muted,marginTop:10}}>{copied ? 'Copié !' : 'Clique pour copier'} — à saisir au moment du paiement.</p>
+            <p style={{fontSize:11,color:C.muted,marginTop:10}}>{copied ? 'Copié !' : 'Touchez pour copier'} — à saisir au moment du paiement.</p>
             <button onClick={onClose} style={{marginTop:20,padding:'10px 24px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>
               Continuer
             </button>
@@ -1684,12 +1719,12 @@ const InsightForm = ({ mode, user, onClose, C }) => {
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:6}}>
               <div>
                 <h2 style={{fontSize:17,fontWeight:700,color:C.text,margin:0}}>
-                  {isPre ? 'Réponds à 10 questions, obtiens -10%' : 'Aide-nous à mieux te servir'}
+                  {isPre ? 'Répondez à 10 questions, obtenez -10 %' : 'Aidez-nous à mieux vous servir'}
                 </h2>
                 <p style={{fontSize:12.5,color:C.sec,marginTop:6,lineHeight:1.5}}>
                   {isPre
-                    ? "Termine de répondre à ces 10 questions pour obtenir ton code de réduction."
-                    : "10 questions facultatives — réponds à celles que tu veux, ça nous aide à mieux te servir. Tu peux fermer à tout moment."}
+                    ? "Terminez ces 10 questions pour obtenir votre code de réduction."
+                    : "10 questions facultatives : répondez à celles que vous voulez, cela nous aide à mieux vous servir. Vous pouvez fermer à tout moment."}
                 </p>
               </div>
               {closeBtn}
@@ -1704,7 +1739,7 @@ const InsightForm = ({ mode, user, onClose, C }) => {
                     <div style={{position:'absolute',left:0,top:0,bottom:0,width:pct+'%',borderRadius:99,background:`linear-gradient(90deg, ${C.accent}, #7B4AE0)`,transition:'width .3s ease'}}/>
                     <div style={{position:'absolute',right:-2,top:'50%',transform:'translate(50%,-50%)',width:26,height:26,borderRadius:'50%',background: pct>=100 ? 'linear-gradient(135deg,#F5C518,#F59E0B)' : C.card,border:`2px solid ${pct>=100?'#F5C518':C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,transition:'all .3s ease',boxShadow: pct>=100 ? '0 0 12px rgba(245,197,24,0.6)' : 'none'}}>🎁</div>
                   </div>
-                  <div style={{fontSize:10.5,color:C.muted,marginTop:8,textAlign:'right'}}>{answered}/{questions.length} — plus que {questions.length-answered} pour débloquer ton code</div>
+                  <div style={{fontSize:10.5,color:C.muted,marginTop:8,textAlign:'right'}}>{answered}/{questions.length} — plus que {questions.length-answered} pour débloquer votre code</div>
                 </div>
               );
             })()}
@@ -2320,10 +2355,10 @@ const Notifications = ({notifications, onMarkRead, onDeleteAll=()=>{}, onDeleteO
             <div>
               <div style={{fontSize:12.5,fontWeight:700,color:C.text}}>Notifications push</div>
               <div style={{fontSize:10.5,color:C.muted,marginTop:1}}>
-                {pushStatus==='denied' ? 'Bloquées dans les réglages de ton navigateur' :
+                {pushStatus==='denied' ? 'Bloquées dans les réglages de votre navigateur' :
                  pushStatus==='enabled' ? 'Activées sur cet appareil' :
                  pushStatus==='checking' ? 'Vérification...' :
-                 'Reçois un signal quand tes créatives sont prêtes'}
+                 'Soyez prévenu dès que vos créatives sont prêtes'}
               </div>
             </div>
           </div>
@@ -2624,7 +2659,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
       {cancelConfirm && (
         <ConfirmModal
           title="Annuler cette commande ?"
-          message={`Ta demande pour "${cancelConfirm.nom}" sera annulée. Cette action est définitive.`}
+          message={`Votre demande pour "${cancelConfirm.nom}" sera annulée. Cette action est définitive.`}
           confirmLabel="Annuler la commande" cancelLabel="Garder ma commande" danger={true}
           onCancel={()=>setCancelConfirm(null)}
           onConfirm={()=>{ cancelCreatives(cancelConfirm); setCancelConfirm(null); }}
@@ -2652,7 +2687,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     return (
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11}}>
         <div style={{width:12,height:12,borderRadius:'50%',border:`2px solid ${C.border}`,borderTopColor:C.muted,animation:'spin 0.7s linear infinite'}}/>
-        Vérification de tes créatives...
+        Vérification de vos créatives...
       </div>
     );
   }
@@ -3754,7 +3789,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             </div>
             <div>
               <div style={{fontSize:14,fontWeight:800,color:C.text}}>Créatives publicitaires</div>
-              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonne-toi pour recevoir tes créatives chaque mois</div>
+              <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Abonnez-vous pour recevoir vos créatives chaque mois</div>
             </div>
           </div>
           <button onClick={()=>setSection && setSection('tarifs')} style={{position:'relative',padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap',boxShadow:'0 4px 16px rgba(45,127,249,0.35)'}}>
@@ -3804,11 +3839,11 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             <Icon name="box" size={20}/>
           </div>
           <div style={{position:'relative',fontSize:17,fontWeight:700,color:C.text}}>
-            {subscription?.active ? 'Plus qu\'une étape avant tes premières créatives' : 'Aucun produit pour l\'instant'}
+            {subscription?.active ? 'Plus qu\'une étape avant vos premières créatives' : 'Aucun produit pour l\'instant'}
           </div>
           <div style={{position:'relative',fontSize:13.5,color:C.sec,maxWidth:340,lineHeight:1.6}}>
             {subscription?.active
-              ? 'Ajoute les infos de ton produit — 5 minutes suffisent — et demande tes créatives juste après. Livraison sous ' + delaiH() + 'h max.'
+              ? 'Ajoutez les infos de votre produit (5 minutes suffisent), puis demandez vos créatives. Livraison sous ' + delaiH() + 'h max.'
               : 'Ajoutez votre premier produit — nom, prix, pays et une photo suffisent pour démarrer. Vous pourrez ensuite demander vos créatives publicitaires, livrées sous ' + delaiH() + 'h.'}
           </div>
           <button onClick={openNew} style={{position:'relative',marginTop:6,padding:'10px 20px',borderRadius:9,border:'none',background:`linear-gradient(135deg, ${C.accent}, #2D6FE0)`,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',gap:7,boxShadow:'0 4px 14px rgba(45,127,249,0.3)'}}>
@@ -4891,76 +4926,80 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
         const aller = (d) => { if (idx >= 0 && filtered[idx + d]) setSelected(filtered[idx + d]); };
         const video = estVideo(selected);
         const ratio = video ? 9 / 16 : 4 / 5;
-        const flecheStyle = (actif, cote) => ({position:'absolute',[cote]:24,top:'50%',transform:'translateY(-50%)',width:48,height:48,borderRadius:'50%',border:`1px solid rgba(255,255,255,${actif?0.22:0.08})`,background:'rgba(255,255,255,0.07)',backdropFilter:'blur(8px)',color:'#fff',cursor:actif?'pointer':'default',opacity:actif?1:0.3,display:isMobile?'none':'flex',alignItems:'center',justifyContent:'center'});
-        const btnAction = {height:42,padding:'0 14px',borderRadius:11,border:'1px solid rgba(255,255,255,0.16)',background:'rgba(255,255,255,0.07)',color:'#fff',fontSize:12.5,fontWeight:600,cursor:'pointer',display:'flex',alignItems:'center',gap:7,fontFamily:'inherit'};
+        const aChiffres = aDesChiffres(selected);
+        const nomProd = nomProduitParId[selected.productId] || '';
+        // ux-v4 — visionneuse : en-tête et barre d'actions TOUJOURS visibles (aucun bouton sous la ligne de flottaison), média dimensionné par l'espace restant.
+        const tuile = (actif, teinte) => ({minHeight:56,padding:'8px 6px',borderRadius:14,border:`1px solid ${actif?(teinte||'rgba(255,255,255,0.3)'):'rgba(255,255,255,0.12)'}`,background:actif?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.05)',color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:5,fontFamily:'inherit',lineHeight:1.15,textAlign:'center'});
+        const rond = {width:44,height:44,borderRadius:'50%',border:'1px solid rgba(255,255,255,0.16)',background:'rgba(255,255,255,0.09)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,backdropFilter:'blur(8px)',fontFamily:'inherit'};
         let x0 = null;
         return (
         <div data-testid="visionneuse" onClick={() => setSelected(null)}
+          onKeyDown={e => { if (e.key === 'Escape') setSelected(null); if (e.key === 'ArrowRight') aller(1); if (e.key === 'ArrowLeft') aller(-1); }} tabIndex={-1} ref={el => { if (el && document.activeElement !== el && !el.contains(document.activeElement)) el.focus({preventScroll:true}); }}
           onTouchStart={e => { x0 = e.touches[0].clientX; }}
           onTouchEnd={e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) aller(dx < 0 ? 1 : -1); }}
-          style={{position:'fixed',inset:0,zIndex:100000,background:'radial-gradient(ellipse at 50% 30%, rgba(30,38,60,0.97), rgba(4,5,8,0.99) 70%)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'safe center',overflowY:'auto',padding:isMobile?'64px 12px 16px':'28px 90px',overflow:'hidden'}}>
-          <div style={{position:'absolute',top:isMobile?14:22,left:isMobile?14:28,display:'flex',alignItems:'center',gap:10}} onClick={e=>e.stopPropagation()}>
-            <span style={{fontSize:12,fontWeight:700,color:'#fff',padding:'6px 12px',borderRadius:20,background:'rgba(255,255,255,0.09)',border:'1px solid rgba(255,255,255,0.12)',fontFamily:"'DM Mono',monospace"}}>{idx >= 0 ? idx + 1 : '–'} / {total}</span>
-          </div>
-          <button onClick={() => setSelected(null)} aria-label="Fermer" style={{position:'absolute',top:isMobile?10:18,right:isMobile?12:24,width:42,height:42,borderRadius:'50%',border:'1px solid rgba(255,255,255,0.14)',background:'rgba(255,255,255,0.08)',color:'#fff',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}}>
-            <Icon name="x" size={16} color="#fff"/>
-          </button>
-          <button onClick={e => { e.stopPropagation(); aller(-1); }} aria-label="Précédente" disabled={idx <= 0} style={flecheStyle(idx > 0, 'left')}><span style={{fontSize:22,lineHeight:1,transform:'translateX(-1px)'}}>‹</span></button>
-          <button onClick={e => { e.stopPropagation(); aller(1); }} aria-label="Suivante" disabled={idx < 0 || idx >= total - 1} style={flecheStyle(idx >= 0 && idx < total - 1, 'right')}><span style={{fontSize:22,lineHeight:1,transform:'translateX(1px)'}}>›</span></button>
-
-          <div onClick={e => e.stopPropagation()} style={{flexShrink:0,width:`min(100%, calc((100vh - ${isMobile?250:300}px) * ${ratio}))`,borderRadius:18,overflow:'hidden',background:'#0B0D12',boxShadow:'0 30px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08)'}}>
-            {video
-              ? <LecteurVideo c={selected}/>
-              : <div key={selected.id} style={{aspectRatio:'4/5',position:'relative',background:`linear-gradient(160deg,${selected.g1||'#222'},${selected.g2||'#0B0D12'})`}}>
-                  {(selected.imageUrl || selected.thumbUrl) && <ImageGalerie src={selected.imageUrl || selected.thumbUrl} alt={selected.angle} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
-                </div>}
-          </div>
-
-          <div onClick={e => e.stopPropagation()} style={{flexShrink:0,width:`min(100%, max(320px, calc((100vh - ${isMobile?250:300}px) * ${ratio})))`,marginTop:14,display:'flex',flexDirection:'column',gap:10}}>
-            <div style={{display:'flex',flexDirection:'column',gap:10}}>
-              <div style={{minWidth:0}}>
-                <div style={{fontSize:16,fontWeight:800,color:'#fff',letterSpacing:-0.2}}>{selected.angle}</div>
-                <div style={{fontSize:11.5,color:'rgba(255,255,255,0.6)',marginTop:2}}>{video ? 'Vidéo' : 'Image'} · Lot {selected.week.replace(/^[SB]/,'')}{nomProduitParId[selected.productId] ? ` · ${nomProduitParId[selected.productId]}` : ''}</div>
-                {selected.cible && <div style={{fontSize:11,color:'rgba(255,255,255,0.42)',marginTop:2,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selected.cible}</div>}
-              </div>
-              <div style={{display:'flex',gap:8}}>
-                {can('download') && (
-                  <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected, (products.find(p => p.id === selected.productId) || {}).nom), isMobile)} style={{...btnAction,flex:1,justifyContent:'center'}} aria-label="Télécharger">
-                    <Icon name="download" size={15} color="#fff"/>Télécharger
-                  </button>
-                )}
-                <button onClick={() => ouvrirFormTP(selected)} data-testid="btn-top-performer"
-                  style={{...btnAction,flex:1,justifyContent:'center',borderColor:aDesChiffres(selected)?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:aDesChiffres(selected)?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:aDesChiffres(selected)?'#FFC107':'#fff'}}
-                  aria-label="Données de la créative">
-                  <Icon name="chart" size={15} color={aDesChiffres(selected)?'#FFC107':'#fff'}/>{aDesChiffres(selected) ? 'Mes résultats · modifier' : 'Ajouter mes résultats'}
-                </button>
-              </div>
+          style={{position:'fixed',inset:0,zIndex:100000,outline:'none',background:'radial-gradient(ellipse at 50% 20%, #1D2640, #040508 72%)',display:'flex',flexDirection:'column',height:'100dvh',maxHeight:'100dvh',overflow:'hidden'}}>
+          {/* En-tête : position, titre, FERMER (toujours à portée du pouce) */}
+          <div onClick={e => e.stopPropagation()} style={{flexShrink:0,display:'flex',alignItems:'center',gap:10,padding:`calc(10px + env(safe-area-inset-top, 0px)) ${isMobile?12:24}px 8px`}}>
+            <span style={{fontSize:12,fontWeight:700,color:'#fff',padding:'7px 12px',borderRadius:20,background:'rgba(255,255,255,0.09)',border:'1px solid rgba(255,255,255,0.12)',fontFamily:"'DM Mono',monospace",flexShrink:0}}>{idx >= 0 ? idx + 1 : '–'} / {total}</span>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontSize:13.5,fontWeight:800,color:'#fff',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis',letterSpacing:-0.1}}>{selected.angle}</div>
+              <div style={{fontSize:11,color:'rgba(255,255,255,0.55)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{video ? 'Vidéo' : 'Image'} · Lot {selected.week.replace(/^[SB]/,'')}{nomProd ? ` · ${nomProd}` : ''}</div>
             </div>
+            <button onClick={() => setSelected(null)} aria-label="Fermer" data-testid="visionneuse-fermer" style={{...rond,width:46,height:46,background:'rgba(255,255,255,0.16)'}}>
+              <Icon name="x" size={18} color="#fff"/>
+            </button>
+          </div>
+
+          {/* Média : prend tout l'espace restant, toujours entier (jamais coupé, jamais plus grand que l'écran) */}
+          <div style={{flex:'1 1 0',minHeight:0,position:'relative',containerType:'size',display:'flex',alignItems:'center',justifyContent:'center',padding:isMobile?'0 12px':'0 90px'}}>
+            <button onClick={e => { e.stopPropagation(); aller(-1); }} aria-label="Précédente" disabled={idx <= 0} style={{...rond,position:'absolute',left:isMobile?6:24,top:'50%',transform:'translateY(-50%)',zIndex:2,opacity:idx>0?1:0.25,width:isMobile?38:48,height:isMobile?38:48}}><span style={{fontSize:22,lineHeight:1,transform:'translateX(-1px)'}}>‹</span></button>
+            <button onClick={e => { e.stopPropagation(); aller(1); }} aria-label="Suivante" disabled={idx < 0 || idx >= total - 1} style={{...rond,position:'absolute',right:isMobile?6:24,top:'50%',transform:'translateY(-50%)',zIndex:2,opacity:(idx>=0&&idx<total-1)?1:0.25,width:isMobile?38:48,height:isMobile?38:48}}><span style={{fontSize:22,lineHeight:1,transform:'translateX(1px)'}}>›</span></button>
+            <div onClick={e => e.stopPropagation()} style={{width:`min(100cqw, calc(100cqh * ${ratio}))`,borderRadius:16,overflow:'hidden',background:'#0B0D12',boxShadow:'0 30px 90px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.08)'}}>
+              {video
+                ? <LecteurVideo c={selected}/>
+                : <div key={selected.id} style={{aspectRatio:'4/5',position:'relative',background:`linear-gradient(160deg,${selected.g1||'#222'},${selected.g2||'#0B0D12'})`}}>
+                    {(selected.imageUrl || selected.thumbUrl) && <ImageGalerie src={selected.imageUrl || selected.thumbUrl} alt={selected.angle} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>}
+                  </div>}
+            </div>
+          </div>
+
+          {/* Barre d'actions : icônes d'abord, texte court dessous ; défile si besoin, jamais coupée */}
+          <div onClick={e => e.stopPropagation()} style={{flexShrink:0,maxHeight:isMobile?'38dvh':'34dvh',overflowY:'auto',padding:`10px ${isMobile?12:24}px calc(12px + env(safe-area-inset-bottom, 0px))`,display:'flex',flexDirection:'column',gap:8,width:'100%',maxWidth:560,margin:'0 auto',boxSizing:'border-box'}}>
             {filterMode==='topPerformer' && scoresTP[selected.id] && scoresTP[selected.id].chiffre && groupeTP.length > 1 && (
               <div data-testid="viewer-rang" style={{fontSize:12,color:C.sec,lineHeight:1.5}}>
                 <b style={{color:'#FFC107'}}>Classée n°{groupeTP.findIndex(x => x.id === selected.id) + 1} sur {groupeTP.length}</b>
-                {scoresTP[selected.id].comparable ? <> · indice {scoresTP[selected.id].indice} <span style={{color:C.muted}}>(100 = moyenne de la cible)</span> · données {scoresTP[selected.id].fiabilite === 'solide' ? 'solides' : scoresTP[selected.id].fiabilite === 'moyenne' ? 'moyennes' : 'encore légères'}</> : null}
+                {scoresTP[selected.id].comparable ? <> · indice {scoresTP[selected.id].indice} <span style={{color:C.muted}}>(100 = moyenne de la cible)</span></> : null}
               </div>
             )}
-            {/* reprise-angle-v1 — refaire cette créative : même angle, même style, textes et scènes nouveaux (ouvre la demande de production) */}
-            {onRefaire && !isDemo && selected.ct && products.some(p => p.id === selected.productId) && (
-              <button onClick={() => { const pr = products.find(p => p.id === selected.productId); setSelected(null); onRefaire(pr, selected); }} data-testid="btn-refaire"
-                style={{...btnAction,width:'100%',justifyContent:'center',borderColor:'rgba(91,141,239,0.55)',background:'rgba(91,141,239,0.14)'}} aria-label="Nouvelle production sur cet angle">
-                <Icon name="sparkle" size={15} color="#8FB3FF"/>Nouvelle production sur cet angle
-              </button>
-            )}
-            {avisStore && !isDemo && <BoutonAvis existing={avisStore.parCreative[selected.id]} onClick={() => setAvisOuvert(selected)}/>}
-            {selected.topPerformer && aDesChiffres(selected) && (
+            {selected.topPerformer && aChiffres && (
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}} data-testid="viewer-chiffres">
                 {TP_CHAMPS.filter(ch => selected.tpStats[ch.k] != null).map(ch => (
                   <span key={ch.k} style={{fontSize:11,fontWeight:700,color:'#FFC107',background:'rgba(255,193,7,0.12)',border:'1px solid rgba(255,193,7,0.3)',borderRadius:8,padding:'3px 9px'}}>{ch.label} {fmtTP(selected.tpStats[ch.k])}{ch.unite ? (ch.unite==='j' ? ' j' : ch.unite) : ''}</span>
                 ))}
               </div>
             )}
-            {accesGrowth() && (
-              <button onClick={() => { window.__copiesFocus = { productId: selected.productId, angle: selected.angle, week: selected.week, ticket: ticketDeCreative(selected) }; setSelected(null); setSection && setSection('copies'); }}
-                style={{...btnAction,width:'100%',justifyContent:'center',height:40,background:'rgba(91,141,239,0.14)',borderColor:'rgba(91,141,239,0.4)'}}>
-                <Icon name="file" size={14} color="#9DBBFF"/> Voir le texte de cet angle
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(84px, 1fr))',gap:8}}>
+              {can('download') && (
+                <button onClick={() => shareOrDownloadImage(urlFichierCreative(selected), nomFichierCreative(selected, (products.find(p => p.id === selected.productId) || {}).nom), isMobile)} style={{...tuile(true,'rgba(91,141,239,0.7)'),background:'linear-gradient(160deg,rgba(91,141,239,0.38),rgba(31,182,255,0.18))'}} aria-label="Télécharger">
+                  <Icon name="download" size={19} color="#fff"/>Télécharger
+                </button>
+              )}
+              <button onClick={() => ouvrirFormTP(selected)} data-testid="btn-top-performer" aria-label="Données de la créative"
+                style={{...tuile(aChiffres,'rgba(255,193,7,0.55)'),color:aChiffres?'#FFC107':'#fff'}}>
+                <Icon name="chart" size={19} color={aChiffres?'#FFC107':'#fff'}/>{aChiffres ? 'Mes résultats' : 'Ajouter résultats'}
+              </button>
+              {avisStore && !isDemo && <BoutonAvis compact existing={avisStore.parCreative[selected.id]} onClick={() => setAvisOuvert(selected)}/>}
+              {accesGrowth() && (
+                <button onClick={() => { window.__copiesFocus = { productId: selected.productId, angle: selected.angle, week: selected.week, ticket: ticketDeCreative(selected) }; setSelected(null); setSection && setSection('copies'); }} style={tuile(false)} aria-label="Voir le texte de cet angle">
+                  <Icon name="document" size={19} color="#9DBBFF"/>Texte de l'angle
+                </button>
+              )}
+            </div>
+            {/* reprise-angle-v1 — refaire dans ce style : même angle, textes et scènes nouveaux (ouvre la demande de production) */}
+            {onRefaire && !isDemo && selected.ct && products.some(p => p.id === selected.productId) && (
+              <button onClick={() => { const pr = products.find(p => p.id === selected.productId); setSelected(null); onRefaire(pr, selected); }} data-testid="btn-refaire"
+                style={{height:46,borderRadius:13,border:'1px solid rgba(91,141,239,0.55)',background:'linear-gradient(135deg,rgba(91,141,239,0.3),rgba(31,182,255,0.14))',color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,fontFamily:'inherit',flexShrink:0}} aria-label="Nouvelle production sur cet angle">
+                <Icon name="sparkle" size={16} color="#8FB3FF"/>Nouvelle production sur cet angle
               </button>
             )}
           </div>
@@ -4972,7 +5011,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       {deleteConfirm && (
         <ConfirmModal
           title="Supprimer ces créatives ?"
-          message={`${selectedIds.length} créative${selectedIds.length>1?'s':''} ${selectedIds.length>1?'seront supprimées':'sera supprimée'} définitivement de ta galerie. Cette action est irréversible.`}
+          message={`${selectedIds.length} créative${selectedIds.length>1?'s':''} ${selectedIds.length>1?'seront supprimées':'sera supprimée'} définitivement de votre galerie. Cette action est irréversible.`}
           confirmLabel={deleting ? 'Suppression…' : 'Supprimer'} cancelLabel="Annuler" danger={true}
           onCancel={()=>!deleting && setDeleteConfirm(false)}
           onConfirm={confirmDeleteSelected}
@@ -5119,8 +5158,8 @@ const CarteAngleCopies = ({ angle, delivery, produit, estGagnant, repriseDe, cop
                 <span style={{fontSize:10,color:i===iTitre?C.accent:C.muted,fontFamily:"'DM Mono',monospace",flexShrink:0,width:14}}>{i+1}</span>
                 <span style={{flex:1,fontSize:12.5,color:C.text,lineHeight:1.5}}>{t}</span>
                 {dejaCopie.has(cleTitre(i)) && copied!==cleTitre(i) && <span title="Déjà copié" style={{fontSize:9.5,color:C.muted,flexShrink:0}}>déjà copié</span>}
-                <button onClick={e=>{e.stopPropagation(); copy(t, cleTitre(i));}} style={bouton(copied===cleTitre(i))} aria-label="Copier ce titre">
-                  <Icon name={copied===cleTitre(i)?'check':'document'} size={12}/>{copied===cleTitre(i)?'Copié':'Copier'}
+                <button onClick={e=>{e.stopPropagation(); copy(t, cleTitre(i));}} style={{...bouton(copied===cleTitre(i)),...(isMobile?{width:38,height:36,padding:0,justifyContent:'center',borderRadius:10}:{})}} aria-label="Copier ce titre">
+                  <Icon name={copied===cleTitre(i)?'check':'copy'} size={isMobile?15:12}/>{!isMobile && (copied===cleTitre(i)?'Copié':'Copier')}
                 </button>
               </div>
             ))}
@@ -5596,7 +5635,8 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
   const [activeCible, setActiveCible] = useState(0);
   const [batchFiltre, setBatchFiltre] = useState(null); // null = tous les batchs de la cible active
 
-  const fmtFcfa = (n) => (typeof n === 'number' ? n.toLocaleString('fr-FR') + ' FCFA' : (n || '—'));
+  const devise = deviseProduit(selected, m);
+  const fmtFcfa = (n) => formaterMontant(n, devise);
 
   // ── Graphique en barres — taille du marché datée ──
   const hist = p.taille_marche_historique || [];
@@ -5610,7 +5650,7 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
     const valeurCourte = (txt) => (txt || '').match(/^[\d.,]+/)?.[0] || txt;
     return (
       <>
-        <div style={{fontSize:9,color:C.muted,marginBottom:4}}>en Mds FCFA</div>
+        <div style={{fontSize:9,color:C.muted,marginBottom:4}}>en {(String(hist[0]?.valeur_texte || '').replace(/^[\s~≈]*[\d.,\s]+/, '').trim()) || ('Mds ' + libelleDevise(devise))}</div>
         <svg viewBox={`0 0 ${w} 100`} width="100%" height={100}>
           {hist.map((h, i) => {
             const x = 6 + i * (bw + gap);
@@ -5713,10 +5753,33 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
         }
       `}</style>
 
+      {/* ux-v4 — LE MARCHÉ EN UN COUP D'ŒIL : 4 chiffres lisibles avant de lire quoi que ce soit */}
+      {(() => {
+        const t = [
+          p.taille_marche_personnes && { ic:'layers', c:'#5B8DEF', lib:'Clients potentiels', v:p.taille_marche_personnes },
+          p.taux_croissance && { ic:'mechanism', c:'#22C55E', lib:'Croissance', v:p.taux_croissance },
+          p.concurrence && { ic:'shield', c:'#EAB308', lib:'Concurrence', v:p.concurrence },
+          p.prix_recommande && p.prix_recommande.prix_conseille_fcfa && { ic:'gift', c:'#A78BFA', lib:'Prix conseillé', v:fmtFcfa(p.prix_recommande.prix_conseille_fcfa) },
+          !(p.prix_recommande && p.prix_recommande.prix_conseille_fcfa) && saison.periode_texte && { ic:'clock', c:'#A78BFA', lib:'Meilleure période', v:saison.periode_texte },
+        ].filter(Boolean).slice(0, 4);
+        if (!t.length) return null;
+        return (
+          <div style={{display:'grid',gridTemplateColumns:isMobile?'repeat(2,minmax(0,1fr))':`repeat(${t.length},minmax(0,1fr))`,gap:10,marginBottom:18}} data-testid="marche-chiffres">
+            {t.map((x, i) => (
+              <div key={i} style={{position:'relative',overflow:'hidden',padding:'14px 14px 13px',borderRadius:14,border:`1px solid ${C.border}`,background:`linear-gradient(160deg, ${x.c}1F, rgba(255,255,255,0.02) 60%)`}}>
+                <div style={{width:28,height:28,borderRadius:8,display:'flex',alignItems:'center',justifyContent:'center',background:`${x.c}24`,color:x.c,marginBottom:10}}><Mdv4Ic name={x.ic} size={14} color={x.c}/></div>
+                <div style={{fontSize:10,color:C.muted,fontWeight:700,letterSpacing:'0.8px',textTransform:'uppercase'}}>{x.lib}</div>
+                <div style={{fontSize:isMobile?15:17,fontWeight:800,color:C.text,marginTop:3,lineHeight:1.25,overflowWrap:'anywhere'}}>{String(x.v).slice(0, 40)}</div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* ═══ PERSONA HERO ═══ */}
       {persona.nom && (
         <div className="mdv4-hero">
-          <div style={{position:'relative',aspectRatio:isMobile?'4/3':'auto',overflow:'hidden',background: persona.portrait_url ? '#0d0d10' : 'radial-gradient(circle at 30% 20%, rgba(255,200,140,0.22), transparent 55%), radial-gradient(circle at 75% 70%, rgba(91,141,239,0.28), transparent 55%), linear-gradient(160deg,#2b2118 0%,#181414 60%,#0d0d10 100%)',display:'flex',alignItems:'flex-end',padding:20,minHeight:isMobile?undefined:260}}>
+          <div style={{position:'relative',aspectRatio:isMobile&&persona.portrait_url?'4/3':'auto',overflow:'hidden',background: persona.portrait_url ? '#0d0d10' : 'radial-gradient(circle at 30% 20%, rgba(255,200,140,0.22), transparent 55%), radial-gradient(circle at 75% 70%, rgba(91,141,239,0.28), transparent 55%), linear-gradient(160deg,#2b2118 0%,#181414 60%,#0d0d10 100%)',display:'flex',alignItems:'flex-end',padding:20,minHeight:isMobile?(persona.portrait_url?undefined:150):260}}>
             {persona.portrait_url && (
               <>
                 <img src={persona.portrait_url} alt={persona.nom} style={{position:'absolute',inset:0,width:'100%',height:'100%',objectFit:'cover'}}/>
@@ -5733,7 +5796,7 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
             <div className="mdv4-info-grid">
               {persona.objectifs?.length > 0 && <PersonaList color={C.accent} titre="Objectifs" items={persona.objectifs}/>}
               {persona.style_de_vie?.length > 0 && <PersonaList color="#A78BFA" titre="Style de vie" items={persona.style_de_vie}/>}
-              {persona.freins?.length > 0 && <PersonaList color="#EF4444" titre="Ce qui la freine" items={persona.freins}/>}
+              {persona.freins?.length > 0 && <PersonaList color="#EF4444" titre="Ses freins" items={persona.freins}/>}
               {persona.comportement_achat?.length > 0 && <PersonaList color="#22D3EE" titre="Comportement d'achat" items={persona.comportement_achat}/>}
               {persona.journee_type?.length > 0 && <PersonaList color="#EAB308" titre="Sa journée" items={persona.journee_type.map(j=>`${j.heure} — ${j.texte}`)}/>}
               {persona.platforms?.length > 0 && (
@@ -5778,9 +5841,9 @@ const MarcheDossier = ({m, selected, isMobile, isDemo, subscription, onOpenPayme
         <div style={{marginBottom:24}}>
           <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>Notre recommandation sur votre prix</div>
           <div style={{display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',marginBottom:14}}>
-            <div><div style={{fontSize:10,color:C.muted,fontWeight:700,textTransform:'uppercase'}}>Prix actuel</div><div style={{fontFamily:"'DM Mono',monospace",fontSize:20,color:C.sec,textDecoration:'line-through'}}>{fmtFcfa(p.prix_recommande.prix_actuel_fcfa)}</div></div>
-            <Mdv4Ic name="layers" size={16} color={C.muted}/>
-            <div><div style={{fontSize:10,color:'#22C55E',fontWeight:700,textTransform:'uppercase'}}>Prix conseillé</div><div style={{fontFamily:"'DM Mono',monospace",fontSize:26,fontWeight:700,color:'#22C55E'}}>{fmtFcfa(p.prix_recommande.prix_conseille_fcfa)} {p.prix_recommande.prix_barre_fcfa && <span style={{fontSize:13,color:C.muted,textDecoration:'line-through',fontWeight:400,marginLeft:6}}>{fmtFcfa(p.prix_recommande.prix_barre_fcfa)}</span>}</div></div>
+            <div><div style={{fontSize:10,color:C.muted,fontWeight:700,textTransform:'uppercase'}}>Prix actuel</div><div style={{fontSize:isMobile?16:20,fontWeight:700,color:C.sec,textDecoration:'line-through'}}>{fmtFcfa(p.prix_recommande.prix_actuel_fcfa)}</div></div>
+            <span aria-hidden="true" style={{fontSize:18,color:C.muted}}>→</span>
+            <div><div style={{fontSize:10,color:'#22C55E',fontWeight:700,textTransform:'uppercase'}}>Prix conseillé</div><div style={{fontSize:isMobile?22:26,fontWeight:800,color:'#22C55E',letterSpacing:-0.3}}>{fmtFcfa(p.prix_recommande.prix_conseille_fcfa)} {p.prix_recommande.prix_barre_fcfa && <span style={{fontSize:13,color:C.muted,textDecoration:'line-through',fontWeight:400,marginLeft:6}}>{fmtFcfa(p.prix_recommande.prix_barre_fcfa)}</span>}</div></div>
           </div>
           {p.prix_recommande.justification && <p style={{fontSize:12.5,color:C.sec,lineHeight:1.65,maxWidth:640,marginBottom:16}}>{p.prix_recommande.justification}</p>}
           {(p.prix_recommande.offres||[]).map((o,i) => (
@@ -5943,7 +6006,8 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       const timeoutId = setTimeout(() => controller.abort(), 30000);
       const r = await fetch('https://adstack-server.onrender.com/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        // ava-v2 : la connexion du client permet à Ava de relire SES avis (jamais ceux d'un autre compte)
+        headers: (() => { const h = { 'Content-Type': 'application/json' }; try { const t = JSON.parse(localStorage.getItem('sb_session') || 'null')?.access_token; if (t) h.Authorization = 'Bearer ' + t; } catch (_) {} return h; })(),
         signal: controller.signal,
         body: JSON.stringify({
           message: text,
@@ -5964,7 +6028,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       const data = await r.json();
       setMessages(prev => [...prev, { role: 'model', content: data.reply }]);
     } catch(e) {
-      setMessages(prev => [...prev, { role: 'model', content: language==='fr' ? "Désolée, je suis temporairement indisponible. Réessaie dans un instant." : "Sorry, I'm temporarily unavailable. Please try again." }]);
+      setMessages(prev => [...prev, { role: 'model', content: language==='fr' ? "Désolée, je suis temporairement indisponible. Réessayez dans un instant." : "Sorry, I'm temporarily unavailable. Please try again." }]);
     }
     setLoading(false);
   };
@@ -6108,7 +6172,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       {/* Floating button */}
       <button onClick={()=>{setOpen(o=>!o); setShowNudge(false);}} style={{
         position:'fixed', bottom:isMobile?'var(--ava-bas, 16px)':20, right:isMobile?16:20,   // ux-v3 : la bulle remonte quand une page a un bouton collé en bas
-        width:60, height:60, borderRadius:'50%', border:'none',
+        width:isMobile?52:60, height:isMobile?52:60, borderRadius:'50%', border:'none',   // ux-v4 : bulle plus discrète sur téléphone
         background:'linear-gradient(135deg,#1FB6FF 0%,#0B5CFF 100%)',
         color:'#fff', cursor:'pointer', zIndex:9999,
         display:open?'none':'flex', alignItems:'center', justifyContent:'center',
@@ -6118,7 +6182,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
       onMouseEnter={e=>{e.currentTarget.style.transform='scale(1.07)';e.currentTarget.style.boxShadow='0 6px 28px rgba(31,182,255,0.75)';}}
       onMouseLeave={e=>{e.currentTarget.style.transform='scale(1)';e.currentTarget.style.boxShadow='0 4px 20px rgba(31,182,255,0.55)';}}>
         <span className="ava-launcher-ring"/>
-        <AvaMark size={34}/>
+        <AvaMark size={isMobile?29:34}/>
         {showNudge && (
           <span style={{position:'absolute',top:-2,right:-2,width:20,height:20,borderRadius:'50%',background:'#E55050',color:'#fff',fontSize:11,fontWeight:800,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #0A0C11',boxShadow:'0 0 8px rgba(229,80,80,0.6)'}}>
             1
@@ -6306,7 +6370,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "En combien de temps mes créatives sont-elles livrées ?",
-    a: "Jusqu'à 48h après votre demande. Vous suivez l'avancement dans l'onglet Suivi Demande et vous êtes notifié dès que vos créatives sont prêtes."
+    a: "48 h maximum avec ONE SHOT et PERF+, 24 h avec GROWTH et SCALE (SCALE passe en priorité). Vous suivez l'avancement dans l'onglet Suivi, et vous recevez une notification et un email dès que vos créatives sont prêtes."
   },
   {
     q: "Comment télécharger mes créatives ?",
@@ -6318,7 +6382,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Que contient la section Données Marché ? (à partir de PERF+)",
-    a: "Pour chaque produit, notre équipe analyse votre marché cible (pays, concurrence, persona) et vous fournit une vue détaillée, des recommandations et des opportunités pour orienter vos campagnes."
+    a: "Pour chaque produit : votre client idéal, la taille de votre marché, la concurrence, le meilleur moment de l'année pour pousser vos pubs, un prix conseillé (dans la devise de votre produit) et des recommandations concrètes pour vos prochaines campagnes."
   },
   {
     q: "Puis-je donner accès à mon équipe ?",
@@ -6337,8 +6401,20 @@ const FAQ_ITEMS = [
     a: "Vous publiez les créatives livrées et investissez en publicité avec elles pendant 60 jours. Si vous ne constatez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire (vos dépenses du mois et vos résultats : ROAS, coût par achat…). Nous vérifions, puis nous vous remboursons l'intégralité de votre paiement."
   },
   {
-    q: "Que faire si une créative ne me convient pas ?",
-    a: "Contactez-nous directement — nous ajustons en fonction de vos retours pour que vos prochains lots correspondent mieux à vos attentes."
+    q: "Une créative m'a plu : comment continuer dans cette direction ?",
+    a: "Ouvrez-la dans la Galerie et touchez « Nouvelle production sur cet angle ». Votre prochain lot reprend le même angle et le même style, avec de nouveaux textes et de nouvelles scènes, pour ne pas lasser votre audience. Les autres angles du lot restent nouveaux."
+  },
+  {
+    q: "Une créative me plaît moins : que se passe-t-il ?",
+    a: "Dites-le avec « Mon avis » sur la créative : ce que vous adorez, ce que vous voudriez voir évoluer. Chaque créative livrée est définitive, mais vos avis sont relus avant chacune de vos prochaines productions : plus vous en donnez, plus vos lots suivants vous ressemblent."
+  },
+  {
+    q: "À quoi sert « Ajouter mes résultats » ?",
+    a: "Indiquez les ventes, les dépenses ou le ROAS d'une créative (tout est facultatif). Elle est classée automatiquement parmi vos Top Performers, et vos prochaines productions s'appuient sur ce qui vend vraiment."
+  },
+  {
+    q: "Qu'est-ce que l'offre ONE SHOT ?",
+    a: "Un achat unique pour tester AdStack sur un produit : 6 créatives (2 vidéos et 4 images), livrées sous 48 h. Pour recevoir des créatives chaque mois et profiter de la garantie de 60 jours, choisissez PERF+, GROWTH ou SCALE."
   },
   {
     q: "Mes données sont-elles en sécurité ?",
@@ -6350,11 +6426,11 @@ const FAQ_ITEMS = [
   },
   {
     q: "Puis-je annuler une demande en cours ?",
-    a: "Oui, depuis l'onglet Suivi Demande, tant que la production n'est pas terminée. L'annulation est immédiate et les créatives correspondantes redeviennent disponibles. Vos demandes terminées restent consultables dans l'onglet Historique du Suivi Demande."
+    a: "Oui, depuis l'onglet Suivi, tant que la production n'a pas démarré. L'annulation est immédiate et les créatives correspondantes redeviennent disponibles. Vos demandes terminées restent consultables dans l'historique du Suivi."
   },
   {
     q: "Qui est Ava, l'assistante dans le coin de l'écran ?",
-    a: "Ava est notre assistante intégrée à AdBoard — elle connaît votre compte, vos produits, vos créatives déjà livrées et vos données marché. Posez-lui vos questions directement, elle répond en tenant compte de votre situation réelle plutôt que de réponses génériques."
+    a: "Ava est notre assistante intégrée à AdBoard : elle connaît votre compte, vos produits, vos créatives livrées, vos données marché et les avis que vous nous avez donnés. Posez-lui vos questions directement, elle répond en tenant compte de votre situation réelle plutôt que de réponses génériques."
   },
 ];
 
@@ -6448,7 +6524,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           Votre forfait
         </div>
         <h1 style={{fontSize:isMobile?28:34,fontWeight:900,margin:'0 0 12px',lineHeight:1.15,letterSpacing:'-0.5px'}}>
-          Choisissez Le <span className="headline-gradient">Système Créatif</span> Adapté À Votre <span className="headline-gradient">Croissance</span>
+          Choisissez le <span className="headline-gradient">système créatif</span> adapté à votre <span className="headline-gradient">croissance</span>
         </h1>
         <p style={{fontSize:14,color:C.sec,margin:0,lineHeight:1.5,maxWidth:520}}>
           Nous gérons la stratégie, la production et l'amélioration de vos publicités pour vous faire gagner du temps et vous aider à développer vos ventes, semaine après semaine.
@@ -6813,7 +6889,7 @@ export default function Platform() {
   const [impersonating, setImpersonating] = useState(() => !!localStorage.getItem('sb_admin_original_session'));
   const startImpersonation = async (targetEmail) => {
     const session = sbAuth.getSession();
-    if (!session?.access_token) { alert('Reconnecte-toi d\'abord.'); return; }
+    if (!session?.access_token) { alert('Reconnectez-vous d\'abord.'); return; }
     try {
       const r = await fetch('https://adstack-server.onrender.com/admin/impersonate', {
         method: 'POST',
@@ -7490,7 +7566,7 @@ export default function Platform() {
   const [envoye, setEnvoye] = useState(false);
 
   const envoyer = async () => {
-    if (!texte.trim()) { setError('Écris quelque chose avant d\'envoyer.'); return; }
+    if (!texte.trim()) { setError('Écrivez quelque chose avant d\'envoyer.'); return; }
     setSubmitting(true);
     setError('');
     try {
@@ -7501,7 +7577,7 @@ export default function Platform() {
       });
       const data = await r.json();
       if (!r.ok) {
-        if (data.error === 'contenu_inapproprie') { setError("Merci de reformuler ton message de façon constructive."); setSubmitting(false); return; }
+        if (data.error === 'contenu_inapproprie') { setError("Merci de reformuler votre message de façon constructive."); setSubmitting(false); return; }
         throw new Error(data.error || 'unknown');
       }
       setEnvoye(true);
@@ -7516,7 +7592,7 @@ export default function Platform() {
     <div style={{maxWidth:640}}>
       <h1 style={{fontSize:20,fontWeight:800,color:C.text,margin:'0 0 6px'}}>Commentaires</h1>
       <p style={{fontSize:13.5,color:C.sec,lineHeight:1.6,marginBottom:24}}>
-        Une remarque sur nos tarifs, une idée d'amélioration, un résultat que tu aimerais avoir ?
+        Une remarque sur nos tarifs, une idée d'amélioration, un résultat que vous aimeriez avoir ?
         Dis-nous tout ici — on lit chaque message pour améliorer AdStack.
       </p>
 
@@ -7526,7 +7602,7 @@ export default function Platform() {
           <div style={{position:'relative',width:48,height:48,borderRadius:12,background:'rgba(34,197,94,0.14)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 14px'}}>
             <Icon name="check" size={22} color="#22C55E"/>
           </div>
-          <p style={{position:'relative',fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Merci pour ton message !</p>
+          <p style={{position:'relative',fontSize:14,fontWeight:700,color:C.text,marginBottom:6}}>Merci pour votre message !</p>
           <p style={{position:'relative',fontSize:12.5,color:C.sec,marginBottom:18}}>C'est bien pris en compte.</p>
           <button onClick={()=>setEnvoye(false)} style={{position:'relative',padding:'9px 20px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>
             Envoyer un autre commentaire
@@ -7538,7 +7614,7 @@ export default function Platform() {
           <textarea
             value={texte}
             onChange={e => setTexte(e.target.value)}
-            placeholder="Écris ton commentaire ici..."
+            placeholder="Écrivez votre commentaire ici..."
             rows={6}
             maxLength={2000}
             style={{position:'relative',width:'100%',padding:'12px 14px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.03)',color:C.text,fontSize:16,fontFamily:'inherit',resize:'vertical',outline:'none',boxSizing:'border-box'}}
@@ -7707,7 +7783,7 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
           <Icon name="bell" size={17} color="#5B8DEF"/>
         </div>
         <div style={{flex:1,fontSize:12,color:'#E8EAF0',lineHeight:1.5}}>
-          Ajoute AdBoard à ton écran d'accueil pour recevoir tes notifications (créatives prêtes, suivi de commande...).
+          Ajoutez AdBoard à votre écran d'accueil pour recevoir vos notifications (créatives prêtes, suivi de commande...).
           {!canAutoInstall && (
             <div style={{marginTop:4,color:'#8891A0',fontSize:11}}>
               Appuie sur <strong>Partager</strong> <span style={{fontSize:13}}>⎋</span> puis <strong>"Sur l'écran d'accueil"</strong>.
@@ -7731,7 +7807,7 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
           <Icon name="bell" size={17} color="#5B8DEF"/>
         </div>
         <div style={{flex:1,fontSize:12,color:'#E8EAF0',lineHeight:1.5}}>
-          Sois prévenu dès que tes créatives sont prêtes, sans avoir à revenir vérifier.
+          Soyez prévenu dès que vos créatives sont prêtes, sans avoir à revenir vérifier.
         </div>
         <button onClick={activerNotifications} style={{padding:'8px 14px',borderRadius:8,border:'none',background:'#5B8DEF',color:'#fff',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',flexShrink:0,whiteSpace:'nowrap'}}>
           Activer

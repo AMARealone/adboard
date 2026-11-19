@@ -606,7 +606,7 @@ FORMAT — après avoir terminé toutes les sections internes (la dernière éta
   "positionnement": {
     "taille_marche_personnes": "UNIQUEMENT un chiffre ou une fourchette courte depuis S8 (ex: '~50 000 personnes', '1,2M de foyers') — jamais de phrase explicative ni de raisonnement ici, ce champ s'affiche comme un gros chiffre isolé dans l'interface. Si estimation (voir règle CHIFFRES MANQUANTS plus haut), l'étiqueter clairement (ex: '~50 000 (estimation)') — le raisonnement détaillé va dans 'concurrence_explication', jamais ici. 'Donnée non disponible' seulement en tout dernier recours.",
     "taille_marche_historique": [
-      {"annee": 2024, "valeur_texte": "1,4Mds FCFA", "estimation": false},
+      {"annee": 2024, "valeur_texte": "1,4Mds FCFA (dans la devise du produit : ex. '14 000 Mds GNF' en Guinée)", "estimation": false},
       {"annee": 2025, "valeur_texte": "1,7Mds FCFA", "estimation": false},
       {"annee": 2026, "valeur_texte": "2,1Mds FCFA", "estimation": false},
       {"annee": 2027, "valeur_texte": "2,5Mds FCFA", "estimation": true}
@@ -631,6 +631,7 @@ FORMAT — après avoir terminé toutes les sections internes (la dernière éta
       "explication": "1 phrase : pourquoi ce trimestre précisément pour CE produit (fêtes, rentrée réelle, saison chaude/froide, Ramadan, résolutions nouvelle année...) — jamais une saisonnalité générique copiée d'un autre produit. Cherche en priorité un signal réel dans DONNÉES BRUTES (recherches saisonnières, mentions de période). Si aucun signal saisonnier clair n'existe pour cette catégorie, indique trimestre_pic: null plutôt que d'inventer un pic."
     },
     "prix_recommande": {
+      "devise": "Code ISO de la devise de TOUS les montants de ce bloc et de taille_marche_historique : celle du PRIX DE LA MARQUE (ex : produit vendu 100 000 GNF → 'GNF' ; 15 000 FCFA au Sénégal → 'XOF' ; au Cameroun → 'XAF'). Les champs *_fcfa gardent leur nom mais contiennent des montants DANS CETTE DEVISE, jamais convertis en FCFA. Ne jamais écrire FCFA pour un produit vendu en GNF, NGN, MAD, etc.",
       "prix_actuel_fcfa": 14900,
       "prix_conseille_fcfa": "Nombre — ton prix conseillé, cohérent avec positionnement_prix et ce que le produit apporte réellement vs concurrents_directs. Si le prix actuel est déjà bien positionné, mets la même valeur que prix_actuel_fcfa plutôt que de changer arbitrairement.",
       "prix_barre_fcfa": "Nombre légèrement au-dessus de prix_conseille_fcfa (10-25%), pour affichage barré — cohérent avec les usages du marché local, jamais un écart absurde",

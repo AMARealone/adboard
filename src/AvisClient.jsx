@@ -192,8 +192,15 @@ function useVerrou() {
 }
 
 // ── bouton et pastille utilisés dans la galerie ──
-export const BoutonAvis = ({ existing, onClick }) => {
+export const BoutonAvis = ({ existing, onClick, compact }) => {
   const v = existing && verdictDe(existing.verdict)
+  if (compact) return (
+    <button type="button" onClick={onClick} className="vr-btn" data-testid="btn-avis" aria-label={existing ? 'Modifier mon avis' : 'Donner mon avis'}
+      style={{ minHeight: 56, padding: '8px 6px', borderRadius: 14, border: `1px solid ${v ? v.m : T.warmM}`, background: `linear-gradient(160deg, ${v ? v.s : T.warmS}, rgba(255,255,255,0.04))`, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, lineHeight: 1.15, textAlign: 'center' }}>
+      <Ic n={v ? v.icone : 'heart'} s={19} c={v ? v.c : T.warm} fill={!v || v.icone === 'heart'} />
+      {existing ? (v ? v.titre : 'Mon avis') : 'Mon avis'}
+    </button>
+  )
   return (
     <button type="button" onClick={onClick} className="vr-btn" data-testid="btn-avis"
       style={{ width: '100%', minHeight: 46, padding: '0 16px', borderRadius: 13, border: `1px solid ${v ? v.m : T.warmM}`, background: `linear-gradient(135deg, ${v ? v.s : T.warmS}, rgba(255,255,255,0.04))`, color: '#fff', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>

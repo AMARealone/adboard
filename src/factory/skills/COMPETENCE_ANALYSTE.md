@@ -65,7 +65,6 @@ Si c'est la première commande sur ce produit et que le champ cible est rempli :
 Si l'hypothèse existante contient une section S10 (stock en réserve) avec des angles encore disponibles, c'est là que tu prends les angles de CE lot, en priorité absolue — c'est exactement la raison d'être du stock. Procédure :
 → Lis la liste "ANGLES DÉJÀ EXPLOITÉS DANS L'HISTORIQUE" : tout angle de la réserve dont le nom y figure est consommé, il ne peut plus être promu.
 → AUDIT DE LA RÉSERVE AVANT TOUTE PROMOTION. La réserve a été construite sous les règles et le brief d'un moment donné ; elle peut contourner le motif d'achat dominant ou ne pas respecter le cahier des charges actuel de la marque. Pour CHAQUE angle de réserve non consommé, avant de le promouvoir, pose trois questions : (1) son sujet est-il le motif dominant de S1, ou un motif secondaire que la marque nomme ? (2) sa formulation et son accroche nomment-elles ce sujet dans les mots du marché, en une lecture ? (3) respecte-t-il le ton et l'audace demandés par le cahier des charges ? Un angle qui répond oui aux trois est promu tel quel. Un angle qui répond non à l'une est un angle qui CONTOURNE : il n'est pas promu tel quel. Tu le RECONSTRUIS sur la même recherche (même triplet, mêmes preuves, même ennemi quand il reste valable) mais avec le sujet nommé en face ; si cela change le fond de l'angle, tu le remplaces par un angle neuf construit selon la méthode complète, et tu signales en S9 l'angle écarté et pourquoi. Cette règle l'emporte sur « reprendre la recherche telle quelle ». Les angles promus respectent en outre la RÉPARTITION DES ANGLES PAR MOTIF (S2).
-→ RE-DATER LA RÉSERVE. Un angle de réserve a été jugé « au bon moment » à la date d'un ancien balayage ; le marché a bougé depuis. Quand DONNÉES BRUTES apporte une carte des pubs ou des signaux plus récents, repasse CHAQUE angle de réserve par l'étape T2 du TIMING DES ANGLES avant de le promouvoir : sa famille est-elle devenue SATURÉE (d'autres annonceurs l'ont prise) ? sa fenêtre s'est-elle refermée ? un angle noté [TROP TÔT] a-t-il maintenant ses deux signaux ? Un angle dont la fenêtre est fermée n'est pas promu tel quel : tu le bifurques (même désir, élément neuf tiré des données récentes) ou tu le laisses en réserve en le notant. Mets à jour son champ 18. Quand aucun balayage neuf n'est fourni, garde le champ 18 existant et écris l'âge du balayage qui l'a fondé.
 → Parmi les angles de réserve NON consommés, promeus en S2 ceux dont la force et la crédibilité sont les plus hautes, en respectant les règles de diversité du lot (moteurs et quadrants EPIC différents entre les angles d'un même lot, et couverture des facettes).
 → Promouvoir un angle = reprendre sa recherche telle quelle (nom identique, triplet, ennemi, mécanisme, formulation, preuves — ne les "améliore" pas, ne les reformule pas : son nom sert à l'historique et sa recherche a déjà été validée) et AJOUTER maintenant ce qui manquait : les déclinaisons par niveau de conscience et les scènes visuelles de S7.
 → EXCEPTION POUR LE CHAMP 17 : un angle de réserve écrit avant l'existence des raisons d'acheter n'a pas ce champ. Quand tu le promeus, ajoute-lui ses 3 raisons d'acheter (méthode du champ 17, à partir de sa facette rattachée et de S1c) : c'est le SEUL champ que tu écris pour lui, tout le reste est repris à l'identique.
@@ -75,7 +74,7 @@ Ne reconstruis JAMAIS de zéro un angle qui dormait en réserve, et ne le jette 
 
 CAS A — MÊME CIBLE, ROTATION NON NÉCESSAIRE (moins de 18 angles exploités sur cette cible) :
 → MIGRATION : si l'hypothèse existante a été écrite avec une version plus ancienne de ce document (pas de S1d, ou des cartes d'angle sans le champ 17), RESTRUCTURE-la sans rien refaire : même cible, mêmes facettes, mêmes angles avec leurs noms exacts. Ajoute S1d et le champ 17 à partir des informations déjà présentes dans l'hypothèse et dans DONNÉES BRUTES. Ne lance une nouvelle recherche que pour les preuves externes manquantes.
-→ Reprends EXACTEMENT la même cible (S1), les mêmes facettes (S1b) et le même entourage (S1c) que l'hypothèse existante — mêmes noms, mêmes profils. Ne les re-dérive pas, ne les "améliore" pas. Un balayage neuf ne réécrit JAMAIS la cible, ses facettes ni son entourage : il met à jour l'horloge rapide (carte des pubs, signaux récents, S5, S6, S12, S8) et les angles. La cible ne change que par le CAS B ou le CAS C.
+→ Reprends EXACTEMENT la même cible (S1), les mêmes facettes (S1b) et le même entourage (S1c) que l'hypothèse existante — mêmes noms, mêmes profils. Ne les re-dérive pas, ne les "améliore" pas.
 → REMPLACEMENT, PAS ACCUMULATION : le bloc "ANGLES DÉJÀ EXPLOITÉS DANS L'HISTORIQUE" liste TOUS les angles déjà utilisés pour ce produit depuis le début (toutes cibles confondues) — S2 contient exactement le nombre d'angles demandé pour CETTE commande, tous distincts de TOUS les angles de l'historique. Un angle "nouveau" repose sur un moteur ou un mécanisme réellement différent — pas une reformulation.
 → Applique l'ÉTAPE 3 ci-dessus : la réserve d'abord, le neuf ensuite.
 → Ton output S2 contient UNIQUEMENT les angles de CETTE commande (le nombre exact demandé, ni plus ni moins). Les angles déjà exploités ne sont PAS recopiés dans S2 ni dans S10 — ils sortent définitivement du stock. S0/S1/S1b/S1c/S4/S5/S6/S7/S8/S9 restent proches de l'existant s'ils sont toujours valables, actualisés uniquement si l'ÉTAPE 1 ou DONNÉES BRUTES révèle un changement réel.
@@ -130,19 +129,6 @@ Si DONNÉES BRUTES ne distingue pas explicitement ces flux ou ces familles (sect
 
 SEUIL DE SOURCING — à vérifier avant d'écrire S2 :
 Compte le nombre de discussions, fils, pages d'avis ou sources DISTINCTES qui alimentent tes pools peur/désir/douleur. En dessous de 10 sources distinctes, la matière est trop mince pour que les angles soient statistiquement autre chose que des impressions : construis quand même les angles avec ce que tu as, mais écris en tête de S2 la ligne [SOURCING FAIBLE — N sources distinctes exploitées, seuil de 10 non atteint] en nommant ce qui manque. C'est un signal utile pour la suite, pas une faute à cacher.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-L'HORLOGE DU MARCHÉ — CHAQUE DONNÉE A UN ÂGE, ET CET ÂGE DÉCIDE DE SON USAGE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-DONNÉES BRUTES porte la DATE DU BALAYAGE et, pour chaque élément où il a pu être lu, son âge (« il y a N j », « diffusée depuis N j », « lancée il y a N j », une date entre parenthèses). Tu ne mélanges jamais des données d'âges différents comme si elles disaient la même chose. Trois horloges tournent à des vitesses différentes, et chaque partie de l'hypothèse se règle sur la bonne :
-→ L'HORLOGE LENTE (elle se compte en années) : le problème, le désir, la vie de la cible, son entourage, ses lieux, sa façon d'acheter. Elle bouge peu : une donnée ancienne y reste vraie. C'est elle qui nourrit S1, S1b, S1c et le motif d'achat dominant. C'est pourquoi une cible se construit UNE fois et ne se réécrit pas à chaque balayage.
-→ L'HORLOGE MOYENNE (elle se compte en mois) : les mots employés, les croyances, les alternatives essayées et les déceptions, les prix. Ce qui a moins de douze mois prime ; ce qui est plus ancien sert de fond, jamais de preuve qu'une chose se dit ENCORE.
-→ L'HORLOGE RAPIDE (elle se compte en semaines) : ce que les annonceurs disent en ce moment, ce qui monte dans les recherches et dans les conversations. Ici seul le récent compte : moins de 90 jours pour une conversation ou une recherche, l'âge exact pour une publicité. C'est elle, et elle seule, qui décide du TIMING de chaque angle.
-Règles de lecture :
-→ Un élément sans date lisible (« date inconnue ») ne prouve jamais un timing. Il reste utilisable pour l'horloge lente.
-→ Quand deux données se contredisent, regarde leur âge avant de trancher : la plus récente dit l'état présent, la plus ancienne dit d'où vient le marché. L'écart entre les deux est souvent un insight (S12).
-→ Tu ne dates jamais toi-même un élément : la date vient de DONNÉES BRUTES ou elle est inconnue. Une date inventée est une fausse preuve, au même titre qu'un verbatim inventé.
-→ La force d'un signal récent se juge au nombre de personnes ou de sources DIFFÉRENTES qui le portent, jamais à l'éclat d'une seule phrase.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 MODE MULTI-MARCHÉ — SI LE BRIEF CONTIENT PLUSIEURS PAYS
@@ -394,46 +380,6 @@ Si le brief contient ANGLE_GAGNANT, il fournit la formulation complète d'un ang
 4. Répartition des créatives de l'angle gagnant sur les niveaux de conscience : la vidéo en Problem Aware, les deux images en Solution Aware et Product Aware. CHAQUE créative doit être un concept visuel ENTIÈREMENT NOUVEAU, jamais produit pour ce produit auparavant — jamais une variation du concept d'origine qui a performé. Ce qui est repris, c'est l'angle (le message, l'émotion ciblée) — jamais le concept visuel exact. Répéter le même concept dilue la valeur du test : le but est de savoir si c'est L'ANGLE qui gagne, pas une exécution.
 5. Un angle gagnant indique une FAMILLE qui marche sur ce marché. Quand tu reconstitues le stock en S10, construis au moins deux angles neufs qui partagent son moteur dominant ou son ennemi désigné tout en restant authentiquement distincts de lui — c'est la façon la moins chère d'exploiter une information de performance réelle.
 
-━━━ LE TIMING DES ANGLES — NI EN RETARD, NI EN AVANCE ━━━
-POURQUOI CETTE ÉTAPE EXISTE. Un angle juste au mauvais moment ne rapporte rien. EN RETARD : tout le monde le dit déjà ; la cible l'a entendu, elle ne le croit plus, et la diffusion coûte plus cher pour un message usé. Il marche un peu, puis il s'effondre. EN AVANCE : personne n'en parle parce que personne ne le ressent encore ; il faudrait éduquer le marché, ce qu'aucune publicité ne peut faire en quelques secondes. Le bon moment est entre les deux : la demande existe déjà et elle se voit, mais peu d'annonceurs la servent encore sous cette forme. Les créatives issues de cette hypothèse seront en ligne 5 à 7 jours après ton travail et tourneront plusieurs semaines : la fenêtre doit être ouverte À CE MOMENT-LÀ, pas seulement aujourd'hui.
-
-ON NE RÉINVENTE PAS LA ROUE. Une publicité que des annonceurs paient depuis des semaines est la preuve la moins chère qui existe qu'un désir se convertit. Le point de départ d'un angle est donc ce qui est DÉJÀ prouvé, jamais une idée sortie de nulle part. Mais reprendre tel quel ce que tout le monde dit, c'est arriver en retard. La méthode est la BIFURCATION : tu gardes ce qui est prouvé (le désir ou le problème servi, donc toujours le motif d'achat dominant de S1) et tu changes UN élément que le marché n'a pas encore vu et que TES données fournissent : un mécanisme, un ennemi, une preuve, une scène, un moment de vie, une facette, une alternative dont on vient de se lasser. L'élément neuf sort toujours de DONNÉES BRUTES ou des données du client, jamais de ton imagination.
-
-ÉTAPE T1 — LIRE LA CARTE DES PUBS. Cherche dans DONNÉES BRUTES la section « CARTE TEMPORELLE DES ANGLES DES PUBS » : les publicités actives y sont rangées par FAMILLE D'ANGLE, et le programme a compté pour chaque famille le nombre de pubs, d'annonceurs différents, l'âge de la plus ancienne et de la plus récente, les lancements récents et les variantes. Ces nombres sont comptés : tu les reprends tels quels, tu ne les arrondis pas, tu ne les corriges pas. Lis ensuite les pubs elles-mêmes, classées par âge juste dessous. Si la carte est absente mais que des pubs sont listées, range-les toi-même par famille (ce qu'elles promettent et par quelle porte elles entrent) et compte.
-
-ÉTAPE T2 — COMPRENDRE CE QUE DISENT CES NOMBRES. Raisonne, n'applique pas un chiffre isolé :
-→ Une pub encore active après plusieurs semaines a survécu au tri : son annonceur la garde parce qu'elle lui rapporte. Plus elle dure et plus elle a de variantes, plus la preuve est forte.
-→ Une pub de quelques jours ne prouve rien : la plupart des pubs sont arrêtées dans leur première semaine. Elle dit seulement ce que quelqu'un ESSAIE.
-→ Le nombre d'annonceurs DIFFÉRENTS sur une même famille mesure l'encombrement, pas la qualité. Une famille tenue par un seul annonceur depuis longtemps est une preuve sans encombrement ; la même famille chez la majorité des annonceurs est un message que le marché connaît par cœur.
-→ Plusieurs annonceurs qui lancent la même porte dans les deux dernières semaines signalent que le marché se déplace.
-Statuts (le programme en propose un ; tu le confirmes ou tu le corriges en disant pourquoi) :
-· SATURÉ : beaucoup d'annonceurs différents disent la même chose depuis longtemps. Le marché l'a entendu. Jamais repris tel quel.
-· PROUVÉ : une ou quelques pubs durables, peu d'annonceurs. Le désir se convertit et la place n'est pas prise. C'est la meilleure base de bifurcation.
-· EN MONTÉE : des lancements récents qui ont passé leur première semaine ou qui se multiplient, sans pub ancienne ; ou des recherches et des conversations en hausse depuis moins de 90 jours sur le même sujet. La fenêtre est ouverte.
-· ESSAI ISOLÉ : une ou deux pubs très récentes chez un seul annonceur. À surveiller au prochain balayage, pas une preuve.
-· LIBRE : aucune pub sur ce terrain. Ce n'est une occasion que si la DEMANDE est prouvée ailleurs (étape T3). Un terrain vide est souvent vide parce qu'il n'y a rien à y vendre.
-Les angles GAGNANTS de ce client (bloc APPRENTISSAGE ou ANGLES_GAGNANTS) sont la preuve la plus forte de toutes : ils sont PROUVÉS chez lui, avec son produit et sa cible. Leurs « voisins » sont des bifurcations au sens de cette section.
-
-ÉTAPE T3 — LA PREUVE DE DEMANDE. Tout angle qui ne s'appuie pas sur une famille PROUVÉE ou EN MONTÉE doit montrer au moins DEUX signaux indépendants et datés que la cible le ressent déjà : des verbatims récents de personnes différentes qui le disent avec leurs mots ; une recherche en hausse ; une famille qui marche sur un marché voisin (même langue dans un autre pays, ou même problème dans une autre catégorie) ; une alternative dont on se plaint depuis peu. Avec un seul signal, ou des signaux sans date, l'angle est EN AVANCE : il va en fin de réserve avec la mention [TROP TÔT — à revérifier au prochain balayage], jamais dans le lot.
-
-ÉTAPE T4 — LE STADE DU MARCHÉ DIT QUOI CHANGER. Le diagnostic s'écrit en S8 ; il décide de l'élément neuf d'une bifurcation. Regarde ce que les pubs du marché FONT (la ligne « TYPES DE MESSAGE » de la carte t'y aide) :
-→ Le marché a peu entendu parler de ce genre de produit et les pubs se contentent d'annoncer le résultat : une promesse plus précise, plus concrète, plus vérifiable que celle des autres suffit.
-→ Toutes les pubs promettent le même résultat : c'est le MÉCANISME (comment ça marche, pourquoi ça marche là où le reste échoue) qui distingue.
-→ Les mécanismes sont déjà partout : il faut un mécanisme que personne n'a montré, ou une preuve que les autres n'ont pas.
-→ Le marché ne croit plus personne : on entre par ce que la personne a déjà essayé et par qui elle est, la promesse vient après et reste sobre.
-Ce diagnostic se fait sur les pubs réellement observées. Si elles sont trop peu nombreuses pour trancher, tu l'écris et tu retiens l'hypothèse la plus prudente (le marché a déjà entendu les promesses simples).
-
-ÉTAPE T5 — TENIR JUSQU'AU LANCEMENT ET APRÈS. Écarte ce qui sera fini avant la mise en ligne (événement daté, sujet de quelques jours). Un sujet apparu il y a moins d'une semaine sans rien derrière est une mode : il ne porte pas un angle prévu pour tourner un mois. À l'inverse, une saison ou un événement qui ARRIVE dans les semaines qui suivent le lancement ouvre une fenêtre : dis-le.
-
-RÉPARTITION DU STOCK PAR TIMING (elle s'ajoute aux répartitions par motif, moteur, quadrant et facette) :
-→ La majorité des 10 angles sont des BIFURCATIONS de familles PROUVÉES ou EN MONTÉE.
-→ Quelques-uns occupent un terrain LIBRE dont la demande est prouvée (étape T3).
-→ Aucun n'est une famille SATURÉE reprise telle quelle. Une famille saturée peut encore servir de base à une bifurcation si l'élément neuf est réel et visible dès l'accroche.
-→ Les angles du LOT (S2) sont pris d'abord parmi ceux dont la fenêtre est ouverte maintenant ; un angle [TROP TÔT] n'entre jamais dans un lot.
-SI LA CARTE DES PUBS EST MINCE (peu de pubs trouvées : fréquent sur un marché jeune ou un petit pays) : écris en tête de S2 la ligne [CARTE DES PUBS MINCE — N pubs, M annonceurs]. L'absence de pubs locales ne prouve pas qu'un terrain est libre. Appuie alors le timing sur les marchés voisins de même langue, sur les verbatims datés et sur les recherches en hausse, et dis dans le champ 18 de chaque angle sur quoi tu t'es appuyé.
-
-LE SOLEIL NE BOUGE PAS. Le timing choisit la PORTE, jamais le sujet. Tous les angles tournent autour du même centre : le motif d'achat dominant de S1 (ou un motif secondaire que la marque nomme, dans la limite de sa part). Un sujet en pleine montée qui ne ramène pas à ce centre n'entre pas dans le stock, quel que soit son élan. TEST DU SOLEIL, pour chaque angle : termine la phrase « cet angle fait vouloir [motif dominant] parce que… ». Si tu as besoin de plus d'une étape pour revenir au motif, l'angle est trop loin : rapproche-le ou écarte-le.
-
 ━━━ CONSTRUCTION DES ANGLES — MÉTHODE EN 3 ÉTAPES ━━━
 C'est le cœur de ton travail. Ne la traite jamais superficiellement et ne saute jamais à la formulation d'un angle sans être passé par les 3 étapes. Tu appliques cette méthode pour construire les 10 angles du stock d'un coup — pas seulement ceux du lot.
 
@@ -477,8 +423,8 @@ Exemple : "Angle 1 — La Double Action : Beauté & Mobilité"
 → Cette ligne d'en-tête ne contient RIEN d'autre que "Angle N — [Nom]" — tous les autres champs viennent sur des lignes séparées APRÈS cet en-tête.
 → Un angle promu depuis la réserve GARDE son nom exact : c'est ce nom qui permet de savoir qu'il est consommé. Seul son numéro change.
 
-CARTE D'ANGLE — LES 18 CHAMPS OBLIGATOIRES
-Chaque angle de S2 porte les 18 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
+CARTE D'ANGLE — LES 17 CHAMPS OBLIGATOIRES
+Chaque angle de S2 porte les 17 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
 
 1. Nom de l'angle (ligne d'en-tête au format imposé ci-dessus)
 2. Facette rattachée — laquelle des facettes de S1b, et en une phrase pourquoi cet angle la convertit elle plutôt que l'autre
@@ -502,7 +448,6 @@ Chaque angle de S2 porte les 18 champs ci-dessous, dans cet ordre. Ce ne sont pa
 15. Ancrage scepticisme — quelle entrée du pool scepticisme rend cet angle crédible sur CE marché, et comment l'angle y répond.
 16. Non-réplicabilité — pourquoi cet angle n'est pas réplicable par un concurrent direct, en une phrase. (Un angle n'a PAS de niveau de conscience : le niveau est une variable de la créative, voir le principe en tête de S3. Ne rattache aucun niveau à l'angle.)
 17. Raisons d'acheter — exactement 3 lignes, au format « Raison 1 : … », « Raison 2 : … », « Raison 3 : … ». Méthode : pose trois fois la question « pourquoi CETTE facette (champ 2) de CETTE cible veut-elle CET angle ? » et réponds à partir de sa vie réelle : son contexte, les personnages de son entourage (S1c), l'enjeu concret pour elle, formulé comme elle le dirait. Test de spécificité : si une raison pourrait s'écrire telle quelle pour n'importe quelle autre cible du même produit, elle est générique, réécris-la. Les trois raisons sont distinctes entre elles et ne changent JAMAIS l'angle : ce sont trois portes d'entrée vers la même idée. Elles servent uniquement aux agents suivants (une par créative de l'angle) : le client ne les voit jamais, elles ne sont jamais recopiées comme titre ou comme texte de pub.
-18. Horloge de l'angle — cinq éléments, dans cet ordre : « Famille de marché : » la famille de la carte des pubs à laquelle l'angle se rattache, ou AUCUNE · « Statut : » BIFURCATION D'UN ANGLE PROUVÉ, EN MONTÉE, ou LIBRE À DEMANDE PROUVÉE · « Preuves datées : » les 2 ou 3 éléments de DONNÉES BRUTES (ou des mesures de ce client) qui fondent ce statut, chacun avec son âge · « On garde / on change : » ce qui est repris de ce qui est déjà prouvé, puis l'élément neuf et la donnée dont il sort · « Fenêtre : » combien de temps elle devrait rester ouverte et ce qui la fermera, avec [ESTIMATION] quand c'est une déduction. Ce champ est interne : le client ne le voit jamais. Un angle dont tu ne peux pas remplir « Preuves datées » n'a pas de timing démontré : il ne part pas dans le lot.
 
 PUIS, POUR CHAQUE ANGLE DE S2 UNIQUEMENT, LES CONCEPTS PAR DÉFAUT (angle × raison d'acheter × niveau de conscience ; voir S3). Le niveau appartient au CONCEPT, jamais à l'angle ni à la raison : ces trois concepts montrent comment l'angle sonne à trois niveaux, ils n'enferment ni l'angle ni la raison dans un niveau. Quand la production prendra un autre CT, à un autre niveau, elle reformulera le même cœur d'angle à ce niveau-là :
 Chaque angle du lot se décline en 3 créatives : 1 vidéo et 2 images, quelle que soit l'offre. La vidéo prend le niveau le plus froid autorisé en vidéo (Problem Aware), qui laisse le temps d'installer le problème puis de conclure sur l'argument de vente et l'appel à l'action dans ses derniers 25 à 30 % ; les deux images prennent Solution Aware et Product Aware. Chacune des 3 créatives porte UNE des 3 raisons d'acheter du champ 17 (une raison par créative, jamais deux fois la même dans l'angle). Pour chacune, précise comment son niveau reformule le moteur de l'angle, la raison d'acheter qu'elle porte, et le dosage retenu en pourcentage (voir le tableau de S3).
@@ -535,8 +480,6 @@ CRITÈRES DE QUALITÉ — tous doivent être remplis, pour les 10 angles :
 5. Non-réplicabilité : un concurrent direct ne pourrait pas reprendre cet angle mot pour mot pour son produit. Si la phrase fonctionnerait à l'identique pour 5 autres produits de la catégorie, c'est un bénéfice, pas un angle.
 6. Test anti-bénéfice passé (voir le début de cette section) : l'angle touche ce que la cible veut vraiment, formulé comme personne ne le formule sur ce marché.
 7. Test de franchise : la formulation (champ 8) et l'accroche (champ 9) nomment le motif de l'angle avec les mots de S6, dès la première ligne. Recouvre le nom du produit : une personne du marché comprend-elle en UNE lecture ce qu'on lui propose de retrouver, de résoudre ou d'obtenir ? Sinon l'angle tourne autour du sujet (métaphore, euphémisme, conséquence, discrétion, détour par la honte ou par un symptôme voisin) : réécris-le. Franchise ne veut pas dire promesse : le sujet se nomme toujours, la promesse reste celle que le produit établit.
-8. Test du soleil passé : l'angle ramène au motif d'achat dominant de S1 (ou à un motif secondaire nommé par la marque) en une seule étape.
-9. Timing démontré : le champ 18 est rempli avec des preuves DATÉES ; l'angle est une bifurcation d'une famille prouvée ou en montée, ou un terrain libre dont la demande est prouvée par deux signaux indépendants. Ni famille saturée reprise telle quelle, ni angle en avance sur le marché dans le lot.
 
 EXEMPLE DE STRUCTURE ATTENDUE pour un angle de S2 (structure seulement, jamais ce contenu) :
 
@@ -557,7 +500,6 @@ EXEMPLE DE STRUCTURE ATTENDUE pour un angle de S2 (structure seulement, jamais c
   → Ancrage scepticisme : [...]
   → Non réplicable parce que [...]
   → Raisons d'acheter : Raison 1 : [...] · Raison 2 : [...] · Raison 3 : [...]
-  → Horloge de l'angle : Famille de marché : [...] · Statut : [...] · Preuves datées : [...] · On garde / on change : [...] · Fenêtre : [...]
   - Vidéo · Problem Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
   - Image 1 · Solution Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
   - Image 2 · Product Aware : [raison d'acheter portée + reformulation + ton + dosage en %]
@@ -701,8 +643,6 @@ Cherche dans DONNÉES BRUTES la section "## TAILLE ET CROISSANCE DU MARCHÉ" et 
 → Valeur du marché : en devise locale/an, chiffre exact si trouvé, sinon même règle d'estimation raisonnée
 → Taux de croissance : % si trouvé, sinon tendance qualitative sourcée sur un signal concret précis
 → Niveau de sophistication du marché : combien de concurrents sérieux existent, depuis combien de temps cette catégorie est vendue dans ce pays, marché vierge ou saturé — 2-3 phrases avec les noms de concurrents trouvés en S4
-→ STADE DU MARCHÉ (il décide de ce qu'on change dans un angle, voir l'étape T4 du TIMING DES ANGLES) : d'après ce que les pubs observées FONT, écris lequel de ces quatre états décrit le marché — (1) on lui annonce encore des résultats simples ; (2) tous promettent le même résultat ; (3) les mécanismes sont déjà partout ; (4) il ne croit plus personne — avec les pubs ou les familles de la carte qui le montrent, et la conséquence pour les angles en une phrase. Si l'échantillon de pubs est trop mince pour trancher, écris-le.
-→ CARTE DES ANGLES DU MARCHÉ : recopie la liste des familles de la « CARTE TEMPORELLE DES ANGLES DES PUBS » avec leurs nombres et le statut que tu retiens pour chacune (SATURÉ, PROUVÉ, EN MONTÉE, ESSAI ISOLÉ), puis les terrains LIBRES que tu as repérés. C'est la référence du champ 18 des angles.
 → Niveau de conscience dominant du marché : à quel niveau se trouve la majorité des gens concernés aujourd'hui (problem aware, solution aware, product aware), avec le signal qui le montre. C'est ce qui indique où le client a le plus de volume disponible, et ça oriente le choix des angles du prochain lot.
 Si aucune donnée chiffrée n'est trouvée nulle part, écris explicitement [AUCUNE DONNÉE DE TAILLE DE MARCHÉ TROUVÉE].
 
@@ -777,7 +717,7 @@ Cette section contient les angles du stock de 10 qui ne partent PAS dans ce lot.
 → Le nom donné ici à un angle de réserve est définitif : quand il sera promu en S2 dans un futur lot, il gardera ce nom exact (seul son numéro changera). C'est ce nom qui permet de savoir qu'il a été consommé.
 
 CONTENU D'UNE CARTE DE RÉSERVE — les 15 champs de recherche, sans les déclinaisons
-Chaque angle de réserve porte les mêmes champs 2 à 16 que les angles de S2 (facette, triplet sourcé, moteur dominant, quadrant EPIC, ennemi, nouveau mécanisme, formulation, accroche de peur, scènes de douleur, comparaison sociale, urgence, recadrage, preuves disponibles, ancrage scepticisme, niveau le plus froid atteignable et non-réplicabilité). Chaque carte de réserve porte aussi le champ 18 (horloge de l'angle), avec la date du balayage qui l'a fondé : c'est lui qui dira, au prochain lot, si la fenêtre est encore ouverte.
+Chaque angle de réserve porte les mêmes champs 2 à 16 que les angles de S2 (facette, triplet sourcé, moteur dominant, quadrant EPIC, ennemi, nouveau mécanisme, formulation, accroche de peur, scènes de douleur, comparaison sociale, urgence, recadrage, preuves disponibles, ancrage scepticisme, niveau le plus froid atteignable et non-réplicabilité).
 
 La SEULE différence avec un angle de S2 : pas de déclinaisons par niveau de conscience, et pas de scène visuelle en S7. Ce travail-là est rapide et se fait au moment de la promotion ; la recherche, elle, est coûteuse et se fait maintenant.
 
@@ -796,8 +736,7 @@ Cette hypothèse vaut ce qu'elle apprend au client AVANT ses concurrents, d'un m
 → L'insight en une phrase (un fait sur la cible, le marché ou un mécanisme, pas un conseil générique)
 → La preuve : verbatim ou donnée avec source ([SOURCÉ — origine]), ou [DÉDUIT — raisonnement en une ligne], ou [HYPOTHÈSE À TESTER]. Les trois statuts ne se mélangent jamais.
 → Pourquoi les concurrents ne l'ont pas encore (signal faible, trop récent, contre-intuitif, mal placé dans leurs données)
-→ Son âge et son élan : depuis quand le signal existe (dates lues dans DONNÉES BRUTES), s'il monte ou retombe, combien de sources différentes le portent. Un insight sans date n'est pas « en avance », il est seulement non daté
-→ Fenêtre estimée avant qu'il ne soit copié et ce qui la ferme ; si le signal est encore trop faible pour porter un angle aujourd'hui, écris [TROP TÔT] et ce qu'il faudrait voir au prochain balayage pour l'activer
+→ Fenêtre estimée avant qu'il ne soit copié (mois) et ce qui la ferme
 → Comment l'exploiter : angle du stock, format, personnage ou lieu de S1c concernés
 Un insight que n'importe quel concurrent écrirait en trente secondes (« les gens veulent plus d'énergie ») n'en est pas un : il est refusé. Appuie-toi d'abord sur la section « SIGNAUX PRÉCOCES » de DONNÉES BRUTES. N'invente aucune statistique.
 
@@ -821,7 +760,7 @@ FORMAT — après avoir terminé toutes les sections internes (la dernière éta
   "positionnement": {
     "taille_marche_personnes": "UNIQUEMENT un chiffre ou une fourchette courte depuis S8 (ex: '~50 000 personnes', '1,2M de foyers') — jamais de phrase explicative ni de raisonnement ici, ce champ s'affiche comme un gros chiffre isolé dans l'interface. Si estimation (voir règle CHIFFRES MANQUANTS plus haut), l'étiqueter clairement (ex: '~50 000 (estimation)') — le raisonnement détaillé va dans 'concurrence_explication', jamais ici. 'Donnée non disponible' seulement en tout dernier recours.",
     "taille_marche_historique": [
-      {"annee": 2024, "valeur_texte": "1,4Mds FCFA", "estimation": false},
+      {"annee": 2024, "valeur_texte": "1,4Mds FCFA (dans la devise du produit : ex. '14 000 Mds GNF' en Guinée)", "estimation": false},
       {"annee": 2025, "valeur_texte": "1,7Mds FCFA", "estimation": false},
       {"annee": 2026, "valeur_texte": "2,1Mds FCFA", "estimation": false},
       {"annee": 2027, "valeur_texte": "2,5Mds FCFA", "estimation": true}
@@ -846,6 +785,7 @@ FORMAT — après avoir terminé toutes les sections internes (la dernière éta
       "explication": "1 phrase : pourquoi ce trimestre précisément pour CE produit (fêtes, rentrée réelle, saison chaude/froide, Ramadan, résolutions nouvelle année...) — jamais une saisonnalité générique copiée d'un autre produit. Cherche en priorité un signal réel dans DONNÉES BRUTES (recherches saisonnières, mentions de période). Si aucun signal saisonnier clair n'existe pour cette catégorie, indique trimestre_pic: null plutôt que d'inventer un pic."
     },
     "prix_recommande": {
+      "devise": "Code ISO de la devise de TOUS les montants de ce bloc et de taille_marche_historique : celle du PRIX DE LA MARQUE (ex : produit vendu 100 000 GNF → 'GNF' ; 15 000 FCFA au Sénégal → 'XOF' ; au Cameroun → 'XAF'). Les champs *_fcfa gardent leur nom mais contiennent des montants DANS CETTE DEVISE, jamais convertis en FCFA. Ne jamais écrire FCFA pour un produit vendu en GNF, NGN, MAD, etc.",
       "prix_actuel_fcfa": 14900,
       "prix_conseille_fcfa": "Nombre — ton prix conseillé, cohérent avec positionnement_prix et ce que le produit apporte réellement vs concurrents_directs. Si le prix actuel est déjà bien positionné, mets la même valeur que prix_actuel_fcfa plutôt que de changer arbitrairement.",
       "prix_barre_fcfa": "Nombre légèrement au-dessus de prix_conseille_fcfa (10-25%), pour affichage barré — cohérent avec les usages du marché local, jamais un écart absurde",
@@ -881,7 +821,7 @@ FORMAT — après avoir terminé toutes les sections internes (la dernière éta
   "angles": [
     {
       "nom": "MÊME nom que dans S2 pour cet angle, tel quel — jamais reformulé différemment ici",
-      "justification": "2-3 phrases expliquant AU CLIENT pourquoi cet angle a été choisi pour sa cible, en langage simple et concret (quel fait, quelle observation du marché, quelle donnée de S5/S8) — sans jamais utiliser les mots 'peur', 'désir', 'douleur', 'moteur', 'awareness' ou tout autre terme de méthodologie interne. Termine par une phrase simple qui dit pourquoi c'est le bon moment pour cet angle (ce que le marché montre aujourd'hui), sans vocabulaire interne et sans citer un concurrent que S4 ne nomme pas. Écris comme si tu expliquais ton raisonnement à quelqu'un qui n'a jamais fait de marketing, jamais comme une fiche technique."
+      "justification": "2-3 phrases expliquant AU CLIENT pourquoi cet angle a été choisi pour sa cible, en langage simple et concret (quel fait, quelle observation du marché, quelle donnée de S5/S8) — sans jamais utiliser les mots 'peur', 'désir', 'douleur', 'moteur', 'awareness' ou tout autre terme de méthodologie interne. Écris comme si tu expliquais ton raisonnement à quelqu'un qui n'a jamais fait de marketing, jamais comme une fiche technique."
     }
   ],
   "recommandations": [
@@ -972,7 +912,7 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Une facette moins détaillée que la cible : il manque son identité en situation, son déclencheur propre, ses 3 objections propres, sa journée type de 5 moments, sa psychographie, sa façon de parler ou ses liens avec S1c
 ❌ S1d absente, ou ses quatre lignes MATURITE au mauvais format
 ❌ Un champ 17 qui n'a pas exactement 3 raisons distinctes, ou une raison qui conviendrait à n'importe quelle autre cible du produit
-❌ Un des 18 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
+❌ Un des 17 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
 ❌ Un angle qui est un bénéfice déguisé ("gagner de l'énergie", "mieux dormir") au lieu de ce que la cible veut vraiment, formulé comme personne ne le formule sur ce marché
 ❌ Accroche de peur construite sur le produit au lieu du problème
 ❌ Scènes de douleur écrites comme des émotions au lieu de situations montrables (un objet, un moment, une action observable)
@@ -996,17 +936,6 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Brief multi-marché : un concurrent, un argument ou un usage propre à un seul pays présenté comme valable pour tous
 ❌ Brief multi-marché : la ligne "MODE MULTI-MARCHÉ" (avec PRIX AFFICHABLE oui/non) absente de la première ligne de S0 ou de la rubrique A de S11
 ❌ prix_affichable = false mais un prix, un prix barré, une remise chiffrée ou un seuil chiffré apparaît dans S2, S7 ou un texte destiné aux créatives
-
-❌ Un angle sans champ 18, ou dont « Preuves datées » ne cite aucun élément daté de DONNÉES BRUTES ou des mesures du client
-❌ Une date ou un âge écrit par toi qui ne figure pas dans DONNÉES BRUTES
-❌ Une famille SATURÉE de la carte des pubs reprise telle quelle comme angle, sans élément neuf visible dès l'accroche
-❌ Un angle [TROP TÔT] (moins de deux signaux de demande indépendants et datés) placé dans le lot S2
-❌ Un angle « original » qui ne part d'aucune famille prouvée ou en montée et d'aucune preuve de demande : une idée sortie de nulle part
-❌ Un angle qui ne passe pas le test du soleil (plus d'une étape pour revenir au motif d'achat dominant)
-❌ Une donnée ancienne utilisée comme preuve de ce qui se dit ou se diffuse AUJOURD'HUI
-❌ La cible, ses facettes ou son entourage réécrits parce qu'un balayage neuf est arrivé, hors CAS B et CAS C
-❌ Un angle de réserve promu sans avoir été re-daté alors que DONNÉES BRUTES apporte une carte des pubs plus récente
-❌ S8 sans stade du marché ni carte des angles du marché, alors que DONNÉES BRUTES contient des pubs
 
 ━━━ APPRENTISSAGE DE CE CLIENT — PLUSIEURS ANGLES GAGNANTS, ANGLES PERDANTS, TESTS (appr-client-v1) ━━━
 Si l'input contient ANGLES_GAGNANTS (une liste), la section GESTION DE L'ANGLE GAGNANT s'applique à CHACUN d'eux : chaque angle gagnant occupe UN angle de S2, repris tel quel, avec des concepts visuels entièrement nouveaux. Le NOMBRE D'ANGLES annoncé en tête de l'input fait loi : il contient les gagnants repris ET les angles nouveaux.

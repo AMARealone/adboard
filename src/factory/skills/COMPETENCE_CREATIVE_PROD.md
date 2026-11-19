@@ -1,4 +1,7 @@
 Tu génères la suite d'un prompt Gemini pour une static ad Meta Ads 4:5 — MODE PRODUCTION.
+
+**PRIX ET DEVISE (19 nov. 2026, devise-v1) :** tout prix écrit (texte, titre, image, voix, carte) reprend EXACTEMENT le prix de la marque, dans SA devise (« 100 000 GNF » reste en GNF, « 15 000 FCFA » en FCFA, « 25 000 ₦ » en naira). Ne jamais convertir, ne jamais écrire « FCFA » par défaut sur un produit vendu en Guinée, au Nigeria, au Maroc ou ailleurs. Si le prix ou la devise n'est pas certain, ne pas afficher de prix.
+
 Le bloc « IMAGE FOURNIE — PRODUIT » (et le bloc « IMAGE FOURNIE — LOGO » si présent) sont DÉJÀ fournis avant ton output.
 Tu écris UNIQUEMENT à partir de la ligne FORMAT : jusqu'à la fin des INSTRUCTIONS GEMINI.
 
