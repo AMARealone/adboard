@@ -31,7 +31,7 @@ export const AFFINER = [
   { k: 'ton_fort', lib: 'Un ton trop fort' }, { k: 'ton_doux', lib: 'Pas assez percutant' }, { k: 'style', lib: "Pas assez dans l'univers de ma marque" },
   { k: 'trop_charge', lib: 'Trop chargé' }, { k: 'trop_sobre', lib: 'Pas assez riche' }, { k: 'couleurs', lib: 'Les couleurs' },
   { k: 'hors_sujet', lib: 'Ne parle pas assez de mon sujet' }, { k: 'produit_deforme', lib: 'Le produit paraît déformé' },
-  { k: 'produit_double', lib: 'Un élément apparaît en double', video: true }, { k: 'texte_faux', lib: 'Un texte ou une orthographe à corriger' },
+  { k: 'produit_double', lib: 'Un élément apparaît en double', video: true }, { k: 'texte_faux', lib: 'Un texte ou une orthographe qui cloche' },
   { k: 'texte_chevauche', lib: 'Des textes qui se chevauchent' }, { k: 'visage', lib: 'Un visage ou une expression' },
   { k: 'geste', lib: 'Un geste ou un mouvement', video: true }, { k: 'coupe', lib: 'Les coupes entre les plans', video: true },
   { k: 'voix', lib: 'La voix ou le son', video: true }, { k: 'rythme', lib: 'Le rythme', video: true }, { k: 'autre', lib: 'Autre chose' },
@@ -39,7 +39,7 @@ export const AFFINER = [
 export const VERDICTS = [
   { k: 'excellente', titre: 'Excellente', sous: "C'est exactement ça", c: T.mint, s: T.mintS, m: T.mintM, icone: 'heart' },
   { k: 'a_affiner', titre: 'Bonne base', sous: 'Quelques ajustements', c: T.accent, s: T.accentS, m: T.accentM, icone: 'sparkle' },
-  { k: 'a_retravailler', titre: 'À retravailler', sous: 'Ça ne me ressemble pas encore', c: T.amber, s: T.amberS, m: T.amberM, icone: 'pencil' },
+  { k: 'a_retravailler', titre: 'Pas encore ça', sous: 'À faire évoluer pour la suite', c: T.amber, s: T.amberS, m: T.amberM, icone: 'pencil' },
 ]
 const verdictDe = (k) => VERDICTS.find((v) => v.k === k) || null
 const libDe = (liste, k) => (liste.find((x) => x.k === k) || {}).lib || k
@@ -198,7 +198,7 @@ export const BoutonAvis = ({ existing, onClick }) => {
     <button type="button" onClick={onClick} className="vr-btn" data-testid="btn-avis"
       style={{ width: '100%', minHeight: 46, padding: '0 16px', borderRadius: 13, border: `1px solid ${v ? v.m : T.warmM}`, background: `linear-gradient(135deg, ${v ? v.s : T.warmS}, rgba(255,255,255,0.04))`, color: '#fff', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9 }}>
       <Ic n={v ? v.icone : 'heart'} s={16} c={v ? v.c : T.warm} fill={!v || v.icone === 'heart'} />
-      {existing ? <span>Votre avis : {v ? v.titre : 'partagé'} <span style={{ opacity: 0.6, fontWeight: 500 }}>· Modifier</span></span> : 'Donner mon avis sur cette créative'}
+      {existing ? <span>Votre avis : {v ? v.titre : 'partagé'} <span style={{ opacity: 0.6, fontWeight: 500 }}>· Modifier</span></span> : 'Mon avis, pour mes prochaines créatives'}
     </button>
   )
 }

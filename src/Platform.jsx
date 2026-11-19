@@ -338,17 +338,17 @@ const INITIAL_PRODUCTS = [];
 
 
 const NAV = [
-  {id:'produits',icon:'box',label:'Mes Produits', group:'Ressources'},
-  {id:'galerie',icon:'grid',label:'Galerie Créatives', group:'Ressources'},
-  {id:'copies',icon:'document',label:'Ad Copies', group:'Ressources'},
-  {id:'marche',icon:'chart',label:'Données Marché', group:'Ressources'},
-  {id:'suivi',icon:'clock',label:'Suivi Demande', group:'Suivi'},
-  {id:'avis',icon:'sparkle',label:'Votre regard', group:'Suivi'},
-  {id:'notifications',icon:'bell',label:'Notifications', group:'Suivi'},
-  {id:'equipe',icon:'person',label:'Équipe', group:'Compte'},
-  {id:'tarifs',icon:'tag',label:'Forfait', group:'Compte'},
-  {id:'facturation',icon:'card',label:'Facturation', group:'Compte'},
-  {id:'faq',icon:'help',label:'FAQ & Aide', group:'Aide'},
+  {id:'produits',icon:'box',label:'Mes Produits', court:'Produits', group:'Ressources'},
+  {id:'galerie',icon:'grid',label:'Galerie Créatives', court:'Galerie', group:'Ressources'},
+  {id:'copies',icon:'document',label:'Ad Copies', court:'Copies', group:'Ressources'},
+  {id:'marche',icon:'chart',label:'Données Marché', court:'Marché', group:'Ressources'},
+  {id:'suivi',icon:'clock',label:'Suivi Demande', court:'Suivi', group:'Suivi'},
+  {id:'avis',icon:'sparkle',label:'Votre regard', court:'Regard', group:'Suivi'},
+  {id:'notifications',icon:'bell',label:'Notifications', court:'Alertes', group:'Suivi'},
+  {id:'equipe',icon:'person',label:'Équipe', court:'Équipe', group:'Compte'},
+  {id:'tarifs',icon:'tag',label:'Forfait', court:'Forfait', group:'Compte'},
+  {id:'facturation',icon:'card',label:'Facturation', court:'Factures', group:'Compte'},
+  {id:'faq',icon:'help',label:'FAQ & Aide', court:'Aide', group:'Aide'},
 ];
 
 const cs = (extra={}) => ({background:C.card, border:`1px solid ${C.border}`, borderRadius:14, boxShadow:'0 1px 2px rgba(0,0,0,0.25)', ...extra});
@@ -672,7 +672,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
   const asideStyle = isMobile
     ? {
         position:'fixed',top:0,left:0,height:'100%',zIndex:500,
-        width: mobileOpen ? 'min(80vw,272px)' : 52,
+        width: mobileOpen ? 'min(80vw,272px)' : 60,   // ux-v3 : rail de 60 px, chaque icône a son mot dessous
         background:'linear-gradient(180deg, #10131c 0%, #0a0c12 100%)',
         borderRight:`1px solid ${C.border}`,
         display:'flex',flexDirection:'column',overflow:'hidden',
@@ -759,7 +759,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       )}
     </div>
 
-    <nav style={{flex:1,padding:'10px',overflow:'auto'}}>
+    <nav style={{flex:1,padding:(showCollapsed || (isMobile && !mobileOpen))?'8px 3px':'10px',overflow:'auto'}}>
       {NAV.filter(n => !(isMember() && (n.id === 'tarifs' || n.id === 'equipe' || n.id === 'facturation'))).map((n, i, arr) => {
         const isTarifs = n.id === 'tarifs';
         const showGroupHeader = (i === 0 || arr[i-1].group !== n.group) && !(showCollapsed || (isMobile && !mobileOpen));
@@ -779,13 +779,15 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
         {!groupIsCollapsed && (
         <button onClick={() => navClick(n.id)} title={(showCollapsed || (isMobile && !mobileOpen)) ? n.label : undefined} style={{
           width:'100%',display:'flex',alignItems:'center',justifyContent:(showCollapsed || (isMobile && !mobileOpen))?'center':'flex-start',
-          gap:(showCollapsed || (isMobile && !mobileOpen))?0:10,padding:(showCollapsed || (isMobile && !mobileOpen))?'10px 0':'9px 10px',
+          flexDirection:(showCollapsed || (isMobile && !mobileOpen))?'column':'row',
+          gap:(showCollapsed || (isMobile && !mobileOpen))?4:10,padding:(showCollapsed || (isMobile && !mobileOpen))?'8px 0 7px':'9px 10px',
           borderRadius:7,border:'none',cursor:'pointer',
-          background: isTarifs
+          // ux-v3 : en rail (téléphone, menu réduit) seule la page OUVERTE est en surbrillance ; le dégradé du Forfait reste réservé au menu ouvert
+          background: isTarifs && !(showCollapsed || (isMobile && !mobileOpen))
             ? (active===n.id ? C.accentS : 'linear-gradient(90deg, rgba(45,127,249,0.06), rgba(91,143,255,0.14), rgba(45,127,249,0.06))')
             : (active===n.id?C.accentS:'transparent'),
-          backgroundSize: isTarifs && active!==n.id ? '250% auto' : undefined,
-          animation: isTarifs && active!==n.id ? 'navGradientFlow 3.5s ease infinite' : undefined,
+          backgroundSize: isTarifs && active!==n.id && !(showCollapsed || (isMobile && !mobileOpen)) ? '250% auto' : undefined,
+          animation: isTarifs && active!==n.id && !(showCollapsed || (isMobile && !mobileOpen)) ? 'navGradientFlow 3.5s ease infinite' : undefined,
           color:active===n.id?C.accent:(isTarifs?'#5B8DEF':C.sec),
           fontSize:12,fontWeight:isTarifs?700:600,fontFamily:'inherit',
           borderLeft:active===n.id?`2px solid ${C.accent}`:'2px solid transparent',
@@ -812,6 +814,7 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
             )}
           </div>
           {!(showCollapsed || (isMobile && !mobileOpen)) && <span style={{flex:1}}>{n.label}</span>}
+          {(showCollapsed || (isMobile && !mobileOpen)) && <span style={{fontSize:8.5,fontWeight:700,letterSpacing:'-0.1px',lineHeight:1,color:active===n.id?C.accent:C.sec}}>{n.court || n.label}</span>}
           {!(showCollapsed || (isMobile && !mobileOpen)) && (n.id==='copies'||n.id==='marche') && !accesGrowth() && <Icon name="lock" size={11} color={C.muted}/>}
           {!(showCollapsed || (isMobile && !mobileOpen)) && n.id==='notifications' && unreadCount>0 && (
             <span style={{background:'#E55050',color:'#fff',borderRadius:10,padding:'1px 6px',fontSize:9,fontWeight:900,minWidth:16,textAlign:'center',marginLeft:'auto'}}>
@@ -2020,7 +2023,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
             <button onClick={()=>canIncrease&&setQty(q=>q+6)} style={{width:42,height:42,borderRadius:'50%',border:'none',background:canIncrease?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.02)',color:canIncrease?'#fff':C.muted,fontSize:20,cursor:canIncrease?'pointer':'not-allowed',display:'flex',alignItems:'center',justifyContent:'center',boxShadow:canIncrease?'0 4px 14px rgba(45,127,249,0.3)':'none',transition:'all 0.15s'}}>+</button>
           </div>
           <div style={{textAlign:'center',fontSize:11,color:C.muted,marginTop:10,lineHeight:1.5}}>
-            {angles} angles différents × 3 variantes · livraison sous {delaiH()}h
+            {angles} angles · {angles} vidéo{angles>1?'s':''} + {angles*2} images · livrées sous {delaiH()}h
           </div>
         </div>
 
@@ -2059,11 +2062,11 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
           <div style={{position:'relative',marginBottom:16}}>
             {!repriseOuverte ? (
               <button type="button" onClick={()=>setRepriseOuverte(true)} style={{background:'none',border:'none',color:C.sec,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',padding:0,display:'inline-flex',alignItems:'center',gap:5}}>
-                <Icon name="plus" size={11} color={C.sec}/> Refaire une créative que vous avez aimée ? <span style={{color:C.muted}}>(facultatif)</span>
+                <Icon name="plus" size={11} color={C.sec}/> Un angle vous a plu ? Continuez dessus <span style={{color:C.muted}}>(facultatif)</span>
               </button>
             ) : (
               <div>
-                <div style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:8}}>Refaire dans le style de :</div>
+                <div style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:8}}>Continuer sur l'angle de :</div>
                 <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:6,WebkitOverflowScrolling:'touch'}}>
                   {livrees.map(c => {
                     const on = reprise && reprise.id === c.id;
@@ -2078,7 +2081,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
                   })}
                 </div>
                 <div style={{fontSize:10.5,color:C.muted,marginTop:4,lineHeight:1.5}}>
-                  {reprise ? <>On reprend <strong style={{color:C.text}}>son angle{reprise.angle ? ` « ${String(reprise.angle).slice(0, 60)} »` : ''}</strong> et son style, avec des textes et des scènes nouveaux. Les autres angles de la demande restent nouveaux.</> : 'Touchez une créative pour la choisir.'}
+                  {reprise ? <>Dans cette demande, de <strong style={{color:C.text}}>nouvelles créatives</strong> reprennent <strong style={{color:C.text}}>l'angle{reprise.angle ? ` « ${String(reprise.angle).slice(0, 60)} »` : ''}</strong> et son style. Les autres angles restent nouveaux.</> : 'Touchez la créative dont vous aimez l\'angle.'}
                 </div>
               </div>
             )}
@@ -2568,7 +2571,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
                       <div style={{fontSize:13.5,fontWeight:700,color:C.text}}>{et.titre}</div>
                       <div style={{fontSize:11.5,color:C.sec,marginTop:1}}>{et.detail}</div>
                     </div>
-                    <span style={{marginLeft:'auto',fontSize:10,color:C.muted,fontFamily:"'DM Mono',monospace",flexShrink:0}}>{e+1}/{ETAPES_SUIVI.length}</span>
+                    <span style={{marginLeft:'auto',fontSize:10,color:C.muted,fontFamily:"'DM Mono',monospace",flexShrink:0}}>Étape {e+1}/{ETAPES_SUIVI.length}</span>
                   </div>
                 );
               })()}
@@ -4523,7 +4526,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
     <div>
       <div style={{marginBottom:14}}>
         <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Galerie Créatives</h1>
-        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Vos créatives produits · {filtered.length} créative{filtered.length!==1?'s':''}</p>
+        <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{filtered.length} créative{filtered.length!==1?'s':''} livrée{filtered.length!==1?'s':''}, prête{filtered.length!==1?'s':''} à lancer</p>
       </div>
 
       {/* ═══ Barre d'action STICKY — reste visible en scrollant, bascule selon le mode ═══
@@ -4633,12 +4636,13 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
       {/* Cible/Batch/Angle/Date sont combinables entre eux (comme demandé), mais chacun garde
           ses puces cachées tant qu'on n'a pas cliqué sur son bouton — reclic = referme. */}
       <div style={{display:'flex',gap:6,marginBottom:14,flexWrap:'wrap',alignItems:'center'}}>
-        {[['tous','Tous','grid'],['topPerformer','Top Performer','star']].map(([id,label,icon]) => (
+        {[['tous','Toutes','grid'],['topPerformer','Top Performer','star']].map(([id,label,icon]) => (
           <button key={id} onClick={() => handleFilterModeClick(id)}
             style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:7,border:'none',cursor:'pointer',background:filterMode===id?C.accent:'rgba(255,255,255,0.05)',color:filterMode===id?'#fff':C.sec,fontSize:12,fontWeight:600,fontFamily:'inherit',transition:'all 0.15s'}}>
             <Icon name={icon} size={13}/> {label}
           </button>
         ))}
+        {filterMode==='tous' && <span style={{fontSize:10.5,fontWeight:700,letterSpacing:'0.6px',textTransform:'uppercase',color:C.muted,marginLeft:6}}>Filtrer</span>}
         {filterMode==='tous' && [
           ['Cible', 'cible', cibleSet.length, filtreCibles.size],
           ['Lot', 'batch', batchSet.length, filtreBatches.size],
@@ -4759,7 +4763,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
 
       {aDesVideos && (
         <div style={{display:'flex',gap:6,marginBottom:10}}>
-          {[['tous','Tout'],['video','Vidéos'],['image','Images']].map(([k,l]) => (
+          {[['tous','Vidéos + images'],['video','Vidéos'],['image','Images']].map(([k,l]) => (
             <button key={k} onClick={()=>setFiltreFormat(k)}
               style={{padding:'6px 12px',borderRadius:20,border:`1px solid ${formatActif===k?C.accent:C.border}`,background:formatActif===k?'rgba(91,141,239,0.12)':'transparent',color:formatActif===k?C.text:C.sec,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>
               {l}
@@ -4918,7 +4922,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 <button onClick={() => ouvrirFormTP(selected)} data-testid="btn-top-performer"
                   style={{...btnAction,flex:1,justifyContent:'center',borderColor:aDesChiffres(selected)?'rgba(255,193,7,0.5)':'rgba(255,255,255,0.16)',background:aDesChiffres(selected)?'rgba(255,193,7,0.14)':'rgba(255,255,255,0.07)',color:aDesChiffres(selected)?'#FFC107':'#fff'}}
                   aria-label="Données de la créative">
-                  <Icon name="chart" size={15} color={aDesChiffres(selected)?'#FFC107':'#fff'}/>{aDesChiffres(selected) ? 'Données · modifier' : 'Ajouter les données'}
+                  <Icon name="chart" size={15} color={aDesChiffres(selected)?'#FFC107':'#fff'}/>{aDesChiffres(selected) ? 'Mes résultats · modifier' : 'Ajouter mes résultats'}
                 </button>
               </div>
             </div>
@@ -4931,8 +4935,8 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
             {/* reprise-angle-v1 — refaire cette créative : même angle, même style, textes et scènes nouveaux (ouvre la demande de production) */}
             {onRefaire && !isDemo && selected.ct && products.some(p => p.id === selected.productId) && (
               <button onClick={() => { const pr = products.find(p => p.id === selected.productId); setSelected(null); onRefaire(pr, selected); }} data-testid="btn-refaire"
-                style={{...btnAction,width:'100%',justifyContent:'center',background:C.accent,borderColor:C.accent}} aria-label="Refaire dans ce style">
-                <Icon name="sparkle" size={15} color="#fff"/>Refaire dans ce style
+                style={{...btnAction,width:'100%',justifyContent:'center',borderColor:'rgba(91,141,239,0.55)',background:'rgba(91,141,239,0.14)'}} aria-label="Nouvelle production sur cet angle">
+                <Icon name="sparkle" size={15} color="#8FB3FF"/>Nouvelle production sur cet angle
               </button>
             )}
             {avisStore && !isDemo && <BoutonAvis existing={avisStore.parCreative[selected.id]} onClick={() => setAvisOuvert(selected)}/>}
@@ -7629,7 +7633,7 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
           padding: section==='demo' ? 0 : isMobile
             ? 'calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px))'
             : '28px 30px',
-          marginLeft:isMobile?52:0,
+          marginLeft:isMobile?60:0,
           overscrollBehaviorY:'contain',
           // Pas de transition PENDANT le glissement du doigt (suivi direct, 1:1) — mais une
           // vraie transition douce dès qu'on relâche, que ce soit pour se caler sur la position
