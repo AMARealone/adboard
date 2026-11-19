@@ -75,7 +75,8 @@ export default function TeamPage({ C, getToken, notify, onUpgrade, isMobile }) {
     );
   }
 
-  const { seats, plan, members } = data;
+  // ux-v3 : une réponse incomplète du serveur n'affiche plus un écran blanc
+  const seats = (data.seats && typeof data.seats === 'object') ? data.seats : { used: 0, max: 0 }, plan = data.plan, members = Array.isArray(data.members) ? data.members : [];
   const visibles = members.filter((m) => m.status !== 'removed');
   const pct = Math.min(100, Math.round((seats.used / Math.max(1, seats.max)) * 100));
   const full = seats.used >= seats.max;
@@ -85,7 +86,7 @@ export default function TeamPage({ C, getToken, notify, onUpgrade, isMobile }) {
     <div style={{ maxWidth: 760, paddingBottom: 90 }} data-testid="team-page">
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h2 style={{ fontSize: 20, margin: '0 0 4px', color: C.text }}>Équipe</h2>
+          <h2 style={{ fontSize: 20, margin: '0 0 8px', color: C.text, display: 'flex', alignItems: 'center', gap: 10 }}><span style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: 'rgba(45,127,249,0.08)', border: '1px solid rgba(45,127,249,0.2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8"/><path d="M18 14.2a6.500 6.500 0 0 1 3.5 5.8"/></svg></span>Équipe</h2>
           <div style={{ fontSize: 12.5, color: C.sec }}>Vous êtes le propriétaire. Vos membres travaillent dans votre espace, avec les droits que vous leur donnez.</div>
         </div>
         <button style={{ ...btn(true), opacity: full ? 0.5 : 1, width: isMobile ? '100%' : undefined }} disabled={full}

@@ -6,6 +6,9 @@ import { Modal, toast } from '../ui'
 import { norm } from '../filtre'
 
 const ADBOARD = 'https://www.adstackofficial.com/adboard'
+// cycle-client-v1 — santé de la relation (calculée par le serveur : usage, activité récente, emails, relation, paiement)
+const SANTE = { vert: ['ok', 'Relation saine'], orange: ['wa', 'À surveiller'], rouge: ['red', 'À risque'] }
+const Sante = ({ s }) => { if (!s || !SANTE[s.couleur]) return null; const [cl, lib] = SANTE[s.couleur]; return <span className={'cx-chip ' + cl} title={(s.raisons || []).join(' · ')}>{lib} · {s.score}</span> }
 const wa = (t) => String(t || '').replace(/\D/g, '')
 export default function Clients() {
   const [c, setC] = useState(null), [err, setErr] = useState(''), [q, setQ] = usePref('cl_q', ''), [taux, setTaux] = useState(1 / 600), [det, setDet] = useState(null)
@@ -24,8 +27,8 @@ export default function Clients() {
     {!liste.length ? <div className="cx-empty"><b>{c.length ? 'Aucun résultat' : 'Aucun client pour l\'instant'}</b>{!c.length && <div>Ils apparaissent ici dès qu'un abonnement est activé.</div>}</div> : liste.map((x) => { const pct = x.credits_total > 0 ? Math.min(100, Math.round((100 * x.credits_used) / x.credits_total)) : 0; return (
       <div key={x.user_id || x.email} className="cx-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
-          <div style={{ minWidth: 0 }}><b>{x.nom || x.email || 'Sans nom'}{!x.active && <span className="cx-chip rd" style={{ marginLeft: 8 }}>Inactif</span>}</b><div className="cx-sub" style={{ wordBreak: 'break-all' }}>{x.email}</div></div>
-          <span className="cx-chip bl">{nomPlan(x.plan)}</span>
+          <div style={{ minWidth: 0 }}><b>{x.nom || x.email || 'Sans nom'}{!x.active && <span className="cx-chip red" style={{ marginLeft: 8 }}>Inactif</span>}</b><div className="cx-sub" style={{ wordBreak: 'break-all' }}>{x.email}</div></div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}><Sante s={x.sante} /><span className="cx-chip bl">{nomPlan(x.plan)}</span></div>
         </div>
         <div className="cx-minis" style={{ margin: '10px 0' }}>
           <div className="cx-mini"><b>{x.credits_used} / {x.credits_total}</b><span>Crédits</span><div className="cx-bar"><div><i style={{ width: pct + '%' }} /></div></div></div>
@@ -42,7 +45,7 @@ export default function Clients() {
       </div>) })}
     {det && <Modal title={det.nom || det.email} onClose={() => setDet(null)}><div style={{ fontSize: 13, lineHeight: 1.9 }}>
       <div><b>Email :</b> {det.email || '—'}</div><div><b>WhatsApp :</b> {det.telephone_whatsapp || '—'}</div><div><b>Plan :</b> {nomPlan(det.plan)} {det.cycle ? '(' + det.cycle + ')' : ''}</div>
-      <div><b>Statut :</b> {det.active ? '✅ Actif' : '❌ Inactif'}</div><div><b>Client depuis :</b> {det.started_at ? new Date(det.started_at).toLocaleString('fr-FR') : '—'}</div><div><b>Expire le :</b> {det.expires_at ? new Date(det.expires_at).toLocaleString('fr-FR') : '—'}</div>
+      <div><b>Statut :</b> {det.active ? '✅ Actif' : '❌ Inactif'}</div>{det.sante && <div><b>Santé de la relation :</b> <Sante s={det.sante} />{(det.sante.raisons || []).length > 0 && <ul style={{ margin: '4px 0 0 18px', padding: 0, lineHeight: 1.6 }}>{det.sante.raisons.map((r, i) => <li key={i}>{r}</li>)}</ul>}</div>}<div><b>Client depuis :</b> {det.started_at ? new Date(det.started_at).toLocaleString('fr-FR') : '—'}</div><div><b>Expire le :</b> {det.expires_at ? new Date(det.expires_at).toLocaleString('fr-FR') : '—'}</div>
       <div><b>Crédits :</b> {det.credits_used} / {det.credits_total}</div><div><b>Total dépensé :</b> {usd(det.total_depense_fcfa)} ({det.nb_achats} achat{det.nb_achats > 1 ? 's' : ''})</div><div><b>Premier achat :</b> {date(det.premier_achat)}</div><div><b>ID compte :</b> <code style={{ fontSize: 11 }}>{det.user_id}</code></div></div></Modal>}
   </>)
 }

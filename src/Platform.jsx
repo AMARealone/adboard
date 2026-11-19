@@ -343,7 +343,7 @@ const NAV = [
   {id:'copies',icon:'document',label:'Ad Copies', court:'Copies', group:'Ressources'},
   {id:'marche',icon:'chart',label:'Données Marché', court:'Marché', group:'Ressources'},
   {id:'suivi',icon:'clock',label:'Suivi Demande', court:'Suivi', group:'Suivi'},
-  {id:'avis',icon:'sparkle',label:'Votre regard', court:'Regard', group:'Suivi'},
+  {id:'avis',icon:'compass',label:'Votre regard', court:'Regard', group:'Suivi'},
   {id:'notifications',icon:'bell',label:'Notifications', court:'Alertes', group:'Suivi'},
   {id:'equipe',icon:'person',label:'Équipe', court:'Équipe', group:'Compte'},
   {id:'tarifs',icon:'tag',label:'Forfait', court:'Forfait', group:'Compte'},
@@ -351,6 +351,12 @@ const NAV = [
   {id:'faq',icon:'help',label:'FAQ & Aide', court:'Aide', group:'Aide'},
 ];
 
+// ux-v3 — TUILE D'ICÔNE des titres de page (la même que dans le menu) : la page se reconnaît avant d'être lue.
+const TuileTitre = ({icon}) => (
+  <span style={{width:38,height:38,borderRadius:10,flexShrink:0,background:'rgba(45,127,249,0.08)',border:'1px solid rgba(45,127,249,0.2)',display:'inline-flex',alignItems:'center',justifyContent:'center'}}>
+    <Icon name={icon} size={18} color={C.accent}/>
+  </span>
+);
 const cs = (extra={}) => ({background:C.card, border:`1px solid ${C.border}`, borderRadius:14, boxShadow:'0 1px 2px rgba(0,0,0,0.25)', ...extra});
 
 const MOBILE_BREAKPOINT = 768;
@@ -403,6 +409,7 @@ const Icon = ({name, size=16, color='currentColor', strokeWidth=1.8}) => {
     document: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></>,
     chart: <><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></>,
     sparkle: <path d="M12 2l1.8 5.6L19.5 9.5l-5.7 1.9L12 17l-1.8-5.6L4.5 9.5l5.7-1.9z"/>,
+    compass: <><circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.1 5.1-5.1 2.1 2.1-5.1z"/></>,
     tag: <><path d="M20.59 13.41L13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="6.5" cy="6.5" r="1"/></>,
     lock: <><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></>,
     search: <><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></>,
@@ -531,7 +538,8 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
     setErr(false); setD(null);
     const t = await getToken();
     const r = await teamFetch('/billing/history', { token: t, timeoutMs: 25000 });
-    if (r.error) setErr(true); else setD(r);
+    // ux-v3 : une réponse incomplète du serveur n'affiche plus un écran blanc
+    if (r.error || !r || typeof r !== 'object') setErr(true); else setD({ ...r, transactions: Array.isArray(r.transactions) ? r.transactions : [] });
   };
   useEffect(() => { load(); }, []);
   const card = {background:C.card,border:`1px solid ${C.border}`,borderRadius:14};
@@ -544,7 +552,7 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
   const sub = d.subscription;
   return (
     <div style={{maxWidth:760,paddingBottom:90}} data-testid="billing-page">
-      <h2 style={{fontSize:20,margin:'0 0 4px',color:C.text}}>Facturation</h2>
+      <h2 style={{fontSize:20,margin:'0 0 8px',color:C.text,display:'flex',alignItems:'center',gap:10}}><TuileTitre icon="card"/>Facturation</h2>
       <div style={{fontSize:12.5,color:C.sec,marginBottom:16}}>Tous vos paiements sur AdBoard, du plus récent au plus ancien.</div>
       <div style={{...card,padding:16,marginBottom:14}}>
         {sub ? (
@@ -2485,7 +2493,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
                 <div style={{width:44,height:44,borderRadius:10,overflow:'hidden',flexShrink:0,background:'rgba(255,255,255,0.06)'}}>
                   {prod?.photo && <img src={prod.photo} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}
                 </div>
-                <div style={{flex:1,minWidth:0}}>
+                <div style={{flex:1,minWidth:isMobile?'calc(100% - 60px)':0}}>
                   <div style={{fontSize:13.5,fontWeight:700,color:C.text,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{prod?.nom||'Produit supprimé'}</div>
                   <div style={{fontSize:11,color:C.muted,marginTop:2}}>
                     <span style={{color:livre?C.accent:C.muted,fontWeight:700}}>{b.quantity||9} créatives</span>
@@ -2495,7 +2503,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
                 <span style={{padding:'3px 10px',borderRadius:20,fontSize:10,fontWeight:700,flexShrink:0,background:livre?'rgba(34,197,94,0.12)':'rgba(255,255,255,0.06)',color:livre?'#22C55E':C.sec,border:`1px solid ${livre?'rgba(34,197,94,0.3)':C.border}`}}>{livre?'Livrée':'Annulée'}</span>
                 {livre && prod && setSection && (
                   <button onClick={()=>{ window.__galerieFocus = { productId: prod.id }; setSection('galerie'); }}
-                    style={{flexShrink:0,padding:'8px 13px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit'}}>Voir les créatives</button>
+                    style={{flexShrink:0,flex:isMobile?1:undefined,padding:'8px 13px',borderRadius:9,border:`1px solid ${C.border}`,background:'rgba(255,255,255,0.06)',color:C.text,fontSize:11.5,fontWeight:600,cursor:'pointer',fontFamily:'inherit',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:6}}><Icon name="grid" size={12} color={C.text}/>Voir les créatives</button>
                 )}
               </div>
             );
@@ -2982,6 +2990,8 @@ const LogoField = ({ logo, onSet, onRemove, enCours, logoAuto }) => {
 };
 
 const ProduitPage = ({ produit, user, isMobile, onClose, onSubmit, C }) => {
+  // ux-v3 : sur téléphone, la bulle de l'assistant ne recouvre plus le bouton « Créer le produit » collé en bas de cette page
+  useEffect(() => { try { document.documentElement.style.setProperty('--ava-bas', '92px'); } catch (_) {} return () => { try { document.documentElement.style.removeProperty('--ava-bas'); } catch (_) {} }; }, []);
   const editingId = produit?.id || null;
   const draftKey = cleBrouillon(user?.id, editingId);
 
@@ -3755,7 +3765,7 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
 
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18,flexWrap:'wrap',gap:10}}>
         <div>
-          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Mes Produits</h1>
+          <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0,display:'flex',alignItems:'center',gap:10}}><TuileTitre icon="box"/>Mes Produits</h1>
           <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{products.length} produit{products.length>1?'s':''} dans votre catalogue</p>
           <p style={{fontSize:11.5,color:C.muted,marginTop:6,marginBottom:0}}>Créez votre produit, puis demandez vos créatives — livrées en {delaiH()}h.</p>
         </div>
@@ -4525,7 +4535,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
   return (
     <div>
       <div style={{marginBottom:14}}>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Galerie Créatives</h1>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0,display:'flex',alignItems:'center',gap:10}}><TuileTitre icon="grid"/>Galerie Créatives</h1>
         <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>{filtered.length} créative{filtered.length!==1?'s':''} livrée{filtered.length!==1?'s':''}, prête{filtered.length!==1?'s':''} à lancer</p>
       </div>
 
@@ -5196,7 +5206,7 @@ const Copies = ({products, setSection}) => {
         .tp-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(234,179,8,0.14);border:1px solid rgba(234,179,8,0.4);color:#EAB308;font-size:9.5px;font-weight:800;letter-spacing:.3px;white-space:nowrap;animation:tpGlow 2.4s ease-in-out infinite;flex-shrink:0;}
       `}</style>
       <div style={{marginBottom:18}}>
-        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Ad Copies</h1>
+        <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0,display:'flex',alignItems:'center',gap:10}}><TuileTitre icon="document"/>Ad Copies</h1>
         <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Titres et textes classés par angle · Copiez directement dans Meta Ads Manager</p>
       </div>
 
@@ -5348,7 +5358,7 @@ const Copies = ({products, setSection}) => {
                     </div>
                   </div>
                 ) : (
-                  <div style={{fontSize:11,color:C.muted,fontStyle:'italic'}}>Choisis un lot ci-dessus pour voir ses angles</div>
+                  <div style={{fontSize:11,color:C.muted,fontStyle:'italic'}}>Choisissez un lot ci-dessus pour voir ses angles</div>
                 )}
               </div>
 
@@ -5421,7 +5431,7 @@ const Marche = ({products, isDemo, setSection, subscription, onOpenPayment}) => 
   return (
   <div>
     <div style={{marginBottom:18}}>
-      <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0}}>Données Marché</h1>
+      <h1 style={{fontSize:20,fontWeight:700,color:C.text,margin:0,display:'flex',alignItems:'center',gap:10}}><TuileTitre icon="chart"/>Données Marché</h1>
       <p style={{fontSize:13,color:C.sec,marginTop:3,marginBottom:0}}>Data collectée et applicable à vos campagnes</p>
     </div>
 
@@ -6097,7 +6107,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
 
       {/* Floating button */}
       <button onClick={()=>{setOpen(o=>!o); setShowNudge(false);}} style={{
-        position:'fixed', bottom:isMobile?16:20, right:isMobile?16:20,
+        position:'fixed', bottom:isMobile?'var(--ava-bas, 16px)':20, right:isMobile?16:20,   // ux-v3 : la bulle remonte quand une page a un bouton collé en bas
         width:60, height:60, borderRadius:'50%', border:'none',
         background:'linear-gradient(135deg,#1FB6FF 0%,#0B5CFF 100%)',
         color:'#fff', cursor:'pointer', zIndex:9999,
@@ -6353,7 +6363,7 @@ const Faq = () => {
   const [openIdx, setOpenIdx] = useState(0);
   return (
     <div style={{maxWidth:720, margin:'0 auto', padding: isMobile ? '20px 16px 60px' : '32px 24px 80px'}}>
-      <h1 style={{fontSize:isMobile?20:24, fontWeight:800, color:C.text, margin:'0 0 6px'}}>FAQ & Aide</h1>
+      <h1 style={{fontSize:isMobile?20:24, fontWeight:800, color:C.text, margin:'0 0 8px',display:'flex',alignItems:'center',gap:10}}><TuileTitre icon="help"/>FAQ & Aide</h1>
       <p style={{fontSize:13, color:C.sec, margin:'0 0 24px', lineHeight:1.6}}>Les réponses aux questions les plus fréquentes sur AdBoard.</p>
 
       {FAQ_ITEMS.map((item, i) => (
