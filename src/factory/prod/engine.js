@@ -353,6 +353,7 @@ async function lancerProduction(reprise = false) {
   if (S.renewalContext?.commandeActiveAilleurs) return stop("Une autre commande est déjà en production pour ce produit.\n\nAttends qu'elle se termine (ou soit envoyée au client) avant de lancer celle-ci.")
   if (!reprise && VID.videoSlots().some((x) => VID.jobEnCours(x.c))) return stop("Des vidéos de cette commande tournent encore sur le cloud.\n\nAttends leur fin, ou arrête-les avec « Annuler », avant de relancer.")
   const monRun = ++runCourant
+  dernierDossier = null
   abortCtl = new AbortController()
   const signal = abortCtl.signal
   const actif = () => runCourant === monRun && !signal.aborted
@@ -520,6 +521,8 @@ async function lancerProduction(reprise = false) {
       catch (e) { await alertDlg(`La sauvegarde automatique des livrables a échoué (${e.message}).\n\nNE FERME PAS CET ONGLET — « Envoyer » fonctionne avec ce qui est affiché.`) }
     }
     U.running = false; U.launchLabel = 'Relancer la production'; U.finiLe = Date.now(); abortCtl = null; phaseMarqueur('termine'); emit()
+    // auto-prod-v1 : le dossier complet de CHAQUE production est fait et conservé (liste « Dossiers » de Factory), sans rien bloquer
+    if (S.briefSource === 'commande' && S.commandeId) dernierDossier = genererDossier({ silencieux: true }).catch(() => null)
   } catch (err) {
     const annulation = err.name === 'AbortError' || runCourant !== monRun || signal.aborted
     if (runCourant !== monRun) return            // un autre lancement a pris la main : on ne touche plus à rien
@@ -978,6 +981,17 @@ export async function supprimerTicket(id, reload) {
 }
 
 // v10c — DOSSIER COMPLET : un seul zip (brief, marché, plan, copies, images + prompts + contrôle qualité, vidéos + historique + CT source)
+// auto-prod-v1 — dossiers conservés : chaque dossier complet fait est enregistré dans la commande (serveur), visible dans « Dossiers ».
+let dernierDossier = null
+export const attendreDossier = async () => (dernierDossier ? await dernierDossier : await genererDossier({ silencieux: true }))
+function conserverDossier(d) {
+  try {
+    if (!d || !d.url || !S.commandeId) return
+    let t = ''; try { t = (JSON.parse(localStorage.getItem('factory_admin_sb_session') || 'null') || {}).access_token || '' } catch (_) {}
+    const jeton = (typeof window !== 'undefined' && window.__AUTO && window.__AUTO.jeton) || undefined
+    fetch(SERVER + '/auto/etat', { method: 'POST', headers: { 'Content-Type': 'application/json', ...(t ? { Authorization: 'Bearer ' + t } : {}) }, body: JSON.stringify({ commande_id: S.commandeId, jeton, dossier_url: d.url, dossier_fichiers: d.fichiers, dossier_mo: d.mo }) }).catch(() => {})
+  } catch (_) {}
+}
 export async function genererDossier({ silencieux = false } = {}) {
   if (!S.brief) return null
   U.dossier = { etat: 'busy', url: U.dossier && U.dossier.url }; emit()
@@ -990,6 +1004,7 @@ export async function genererDossier({ silencieux = false } = {}) {
     const d = await r.json().catch(() => ({}))
     if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
     U.dossier = { etat: 'ok', url: d.url, fichiers: d.fichiers, mo: d.mo, manques: d.manques || [] }; emit()
+    conserverDossier(d)   // auto-prod-v1 : le lien est rangé dans la commande, il ne se perd plus
     if (!silencieux) toast('Dossier complet prêt (' + d.fichiers + ' fichiers, ' + d.mo + ' Mo).')
     return d
   } catch (e) { U.dossier = { etat: 'err', erreur: e.message }; emit(); if (!silencieux) await alertDlg('Dossier complet impossible : ' + e.message); return null }

@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react'
 let subs = new Set(), queue = [], toasts = []
 const push = () => subs.forEach((f) => f())
-export function confirmDlg(message, o = {}) { return new Promise((res) => { queue.push({ kind: 'confirm', message, ok: o.ok || 'Continuer', danger: o.danger, res }); push() }) }
-export function alertDlg(message, o = {}) { return new Promise((res) => { queue.push({ kind: 'alert', message, title: o.title, res }); push() }) }
+// auto-prod-v1 : quand l'ouvrier du cloud pilote Factory, personne ne peut cliquer — les fenêtres se valident seules et leur message est gardé pour le rapport
+const autoMsg = (m) => { try { if (typeof window !== 'undefined' && window.__AUTO) { window.__AUTO.messages.push(String(m).slice(0, 300)); return true } } catch (_) {} return false }
+export function confirmDlg(message, o = {}) { if (autoMsg(message)) return Promise.resolve(true); return new Promise((res) => { queue.push({ kind: 'confirm', message, ok: o.ok || 'Continuer', danger: o.danger, res }); push() }) }
+export function alertDlg(message, o = {}) { if (autoMsg(message)) return Promise.resolve(); return new Promise((res) => { queue.push({ kind: 'alert', message, title: o.title, res }); push() }) }
 export function toast(text, ms = 4200) { const t = { id: Math.random(), text }; toasts.push(t); push(); setTimeout(() => { toasts = toasts.filter((x) => x !== t); push() }, ms) }
 
 export function DialogHost() {

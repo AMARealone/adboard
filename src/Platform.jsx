@@ -533,6 +533,7 @@ const WorkspaceBar = ({C, isMobile, user, getToken, notify}) => {
 // Page Facturation (propriétaire) : historique des paiements faits sur AdBoard. Les montants viennent du serveur
 // (jamais de commission interne) ; un membre d'équipe n'y a pas accès.
 const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
+  const tarifP = useTarifProtege();   // tarif-protege-v1
   const [d, setD] = useState(null);
   const [err, setErr] = useState(false);
   const load = async () => {
@@ -575,6 +576,7 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
           </div>
         ) : <div style={{position:'relative',fontSize:13,color:C.sec}}>Aucun forfait pour le moment. <button onClick={onOpenPlans} style={{background:'none',border:'none',color:C.accent,cursor:'pointer',fontWeight:700,fontFamily:'inherit',padding:0}}>Voir les forfaits</button></div>}
       </div>
+      <AnnonceTarif tp={tarifP} isMobile={isMobile} onRenouveler={tarifP && tarifP.protege ? (tarifP.checkout_id ? onOpenPlans : () => renouvelerParWhatsApp(tarifP)) : null}/>
       {d.transactions.length > 0 && (
         <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10,marginBottom:18}}>
           <div style={{...card,padding:'12px 14px'}}><div style={{fontSize:10.5,color:C.sec,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>Total investi</div><div style={{fontSize:17,fontWeight:800,color:C.text,marginTop:4,fontFamily:"'DM Mono',monospace"}}>{fcfa(total)}</div></div>
@@ -6317,7 +6319,61 @@ const PLAN_CHECKOUT_IDS = {
   'pro-monthly':     'prd_34w031',
   'scale-monthly':   'prd_9fi79y',
 };
-const checkoutIdFor = (planId, cycle) => PLAN_CHECKOUT_IDS[`${planId}-${cycle}`];
+// tarif-protege-v1 (19 nov. 2026) — le prix d'entrée d'un client est garanti 2 mois (voir /tarif/protege côté serveur).
+let TARIF_PROTEGE = null;
+const chargerTarifProtege = async () => {
+  try {
+    const t = JSON.parse(localStorage.getItem('sb_session') || 'null')?.access_token; if (!t) return;
+    const r = await fetch('https://adstack-server.onrender.com/tarif/protege', { headers: { Authorization: 'Bearer ' + t }, signal: AbortSignal.timeout(20000) });
+    const d = await r.json(); TARIF_PROTEGE = d && d.concerne ? d : null;
+    window.dispatchEvent(new Event('adstack-tarif'));
+  } catch (_) { }
+};
+const useTarifProtege = () => {
+  const [, set] = useState(0);
+  useEffect(() => { const f = () => set(v => v + 1); window.addEventListener('adstack-tarif', f); if (TARIF_PROTEGE === null) chargerTarifProtege(); return () => window.removeEventListener('adstack-tarif', f); }, []);
+  return TARIF_PROTEGE;
+};
+// Renouvellement de SON offre pendant la garantie : le produit « tarif d'origine » ; sinon l'offre au prix en vigueur.
+const checkoutIdFor = (planId, cycle) => (TARIF_PROTEGE && TARIF_PROTEGE.protege && TARIF_PROTEGE.plan === planId && cycle === 'monthly' && TARIF_PROTEGE.checkout_id) || PLAN_CHECKOUT_IDS[`${planId}-${cycle}`];
+const renouvelerParWhatsApp = (tp) => { const msg = encodeURIComponent(`Bonjour AdStack, je souhaite renouveler mon offre ${tp.nom} à mon tarif garanti de ${tp.prix_entree.toLocaleString('fr-FR')} FCFA.`); window.open(`https://wa.me/221766332693?text=${msg}`, '_blank'); };
+
+// L'annonce : jamais une hausse découverte du jour au lendemain. Le client voit son prix garanti, la date, le nouveau prix et la raison.
+const AnnonceTarif = ({ tp, convertPrice = (f => f.toLocaleString('fr-FR') + ' FCFA'), isMobile, onRenouveler }) => {
+  if (!tp || !tp.concerne) return null;
+  const date = new Date(tp.date_hausse).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+  const or = '#EAB308';
+  return (
+    <div data-testid="annonce-tarif" style={{position:'relative',overflow:'hidden',borderRadius:16,border:'1px solid rgba(234,179,8,0.32)',background:'linear-gradient(140deg, rgba(234,179,8,0.13), rgba(255,255,255,0.02) 60%)',padding:isMobile?'16px':'20px 22px',marginBottom:18}}>
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+        <span style={{width:34,height:34,borderRadius:10,background:'rgba(234,179,8,0.16)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="lock" size={16} color={or}/></span>
+        <div style={{minWidth:0}}>
+          <div style={{fontSize:14.5,fontWeight:800,color:C.text,lineHeight:1.25}}>Votre tarif est garanti jusqu'au {date}</div>
+          <div style={{fontSize:11.5,color:C.sec,marginTop:2}}>Encore {tp.jours_avant_hausse} jour{tp.jours_avant_hausse > 1 ? 's' : ''} au prix auquel vous nous avez rejoints.</div>
+        </div>
+      </div>
+      <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto minmax(0,1fr)',alignItems:'center',gap:10,marginBottom:14}}>
+        <div style={{padding:'10px 12px',borderRadius:11,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+          <div style={{fontSize:9.5,color:or,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>Votre tarif garanti</div>
+          <div style={{fontSize:isMobile?15:18,fontWeight:800,color:C.text,marginTop:3}}>{convertPrice(tp.prix_entree)}</div>
+        </div>
+        <span aria-hidden="true" style={{color:C.muted,fontSize:18}}>→</span>
+        <div style={{padding:'10px 12px',borderRadius:11,background:'rgba(255,255,255,0.04)',border:`1px solid ${C.border}`}}>
+          <div style={{fontSize:9.5,color:C.muted,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>À partir du {new Date(tp.date_hausse).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}</div>
+          <div style={{fontSize:isMobile?15:18,fontWeight:800,color:C.text,marginTop:3}}>{convertPrice(tp.prix_actuel)}</div>
+        </div>
+      </div>
+      <div style={{fontSize:12.5,color:C.sec,lineHeight:1.65}}>
+        <b style={{color:C.text}}>Pourquoi nos prix évoluent.</b> Nous relevons nos standards : des créatives plus abouties, un suivi plus proche, et plus de puissance de frappe pour chaque marque. Pour tenir ce niveau, nous travaillons avec moins de marques, mieux. Vous étiez là avant : votre tarif d'entrée reste donc garanti pendant vos {tp.mois_garantis} premiers mois.
+      </div>
+      {tp.protege && onRenouveler && (
+        <button onClick={onRenouveler} data-testid="btn-renouveler-garanti" style={{marginTop:14,height:42,padding:'0 16px',borderRadius:11,border:'1px solid rgba(234,179,8,0.5)',background:'rgba(234,179,8,0.16)',color:'#fff',fontSize:12.5,fontWeight:700,cursor:'pointer',fontFamily:'inherit',display:'inline-flex',alignItems:'center',gap:8,width:isMobile?'100%':undefined,justifyContent:'center'}}>
+          <Icon name="lock" size={14} color={or}/>Renouveler à mon tarif garanti
+        </button>
+      )}
+    </div>
+  );
+};
 
 // Point d'entrée UNIQUE pour "payer" — utilisé par Nos Tarifs, le bloc upsell sidebar, et le chatbot.
 // Vérifie la connexion Google, mémorise l'intention si pas connecté, reprend automatiquement après connexion.
@@ -6342,7 +6398,7 @@ const triggerChariowCheckout = async (plan, cycle, user, popup) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        product_id: PLAN_CHECKOUT_IDS[`${plan.id}-${cycle}`],
+        product_id: checkoutIdFor(plan.id, cycle),
         email: user.email,
         user_id: user.id,
         plan: plan.id,
@@ -6485,6 +6541,8 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
     triggerChariowCheckout(plan, cycle, user, popup);
   };
   const userPlan = subscription?.active ? subscription?.plan : null;
+  const tarifP = useTarifProtege();   // tarif-protege-v1
+  const renouvelerGaranti = () => { const pl = PLANS.find(x => x.id === tarifP.plan); if (tarifP.checkout_id && pl) onCta(pl); else renouvelerParWhatsApp(tarifP); };
 
   // Inject gradient animation CSS
   useEffect(() => {
@@ -6545,6 +6603,8 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
           </div>
         );
       })()}
+
+      {subscription?.active && <AnnonceTarif tp={tarifP} convertPrice={convertPrice} isMobile={isMobile} onRenouveler={renouvelerGaranti}/>}
 
       {/* ── Garantie — visible sur PC ; sur mobile, trop encombrante ici, déplacée sous chaque CTA ── */}
       {!isMobile && (
@@ -6614,8 +6674,11 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
                   (geo-détection + taux de change) — Chariow reste la source de vérité au
                   moment du checkout, cet affichage n'est qu'indicatif. */}
               <div style={{display:'flex',alignItems:'baseline',gap:4,marginBottom:6,flexWrap:'wrap'}}>
-                <span style={{fontSize:taillePrix(convertPrice(cycleData.price),30),fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(cycleData.price)}</span>
+                {(() => { const garanti = isCurrent && tarifP && tarifP.concerne && tarifP.plan === p.id; const prix = garanti ? tarifP.prix_entree : cycleData.price; return <>
+                <span style={{fontSize:taillePrix(convertPrice(prix),30),fontWeight:900,fontFamily:"'DM Mono',monospace",color:C.text,lineHeight:1}}>{convertPrice(prix)}</span>
                 <span style={{fontSize:11,color:C.sec}}>/ mois</span>
+                {garanti && <div style={{flexBasis:'100%',fontSize:11,color:'#EAB308',fontWeight:600,marginTop:5}}>Tarif garanti · {convertPrice(cycleData.price)} à partir du {new Date(tarifP.date_hausse).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })}</div>}
+                </>; })()}
               </div>
 
               <div style={{height:1,background:C.border,marginBottom:16}}/>

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import * as AUTO from '../prod/auto' // auto-prod-v1
 import { useProd, CT_IMAGES, SERVER } from '../prod/state'
 import * as E from '../prod/engine'
 import { useData } from '../data'
@@ -533,6 +534,57 @@ function ActionBar({ S, U, setCompte }) {
   )
 }
 
+
+// auto-prod-v1 — PRODUCTION AUTOMATIQUE ET DOSSIERS CONSERVÉS : ce que fait l'ouvrier, « Produire sans moi », et tous les dossiers complets.
+function PanneauAuto({ S }) {
+  const [d, setD] = useState(null)
+  const [ouvert, setOuvert] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const tok = () => { try { return (JSON.parse(localStorage.getItem('factory_admin_sb_session') || 'null') || {}).access_token || '' } catch (_) { return '' } }
+  const charger = () => fetch(SERVER + '/auto/dossiers', { headers: { Authorization: 'Bearer ' + tok() } }).then((r) => r.json()).then((j) => setD(j && Array.isArray(j.dossiers) ? j : { dossiers: [], reglages: {} })).catch(() => setD({ dossiers: [], reglages: {}, erreur: true }))
+  useEffect(() => { charger() }, [S.commandeId])
+  const sansMoi = async () => {
+    if (!S.commandeId || busy) return
+    setBusy(true)
+    try {
+      const r = await fetch(SERVER + '/auto/lancer', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok() }, body: JSON.stringify({ commande_id: S.commandeId }) })
+      const j = await r.json().catch(() => ({}))
+      toast(r.ok ? 'L\'ouvrier démarre : tu peux fermer cet onglet, tu seras prévenu par email quand le lot sera prêt.' : 'Lancement impossible : ' + (j.error || 'HTTP ' + r.status), 7000)
+    } finally { setBusy(false) }
+  }
+  if (!d) return null
+  const R = d.reglages || {}
+  const pastille = (on, oui, non) => <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 10px', borderRadius: 20, fontSize: 11.5, fontWeight: 700, border: '1px solid ' + (on ? 'rgba(34,197,94,.4)' : 'rgba(255,255,255,.14)'), color: on ? '#22C55E' : '#9AA0AB', background: on ? 'rgba(34,197,94,.1)' : 'rgba(255,255,255,.04)' }}><span style={{ width: 6, height: 6, borderRadius: '50%', background: 'currentColor' }} />{on ? oui : non}</span>
+  const date = (x) => { try { return new Date(x).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) } catch (_) { return '' } }
+  return (
+    <div className="fx-card" style={{ marginTop: 18, padding: 16 }} data-testid="panneau-auto">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <b style={{ fontSize: 13.5 }}>Production automatique</b>
+        {pastille(R.production_auto, 'Production auto allumée', 'Production auto éteinte')}
+        {pastille(R.envoi_auto, 'Envoi auto allumé', 'Envoi : c\'est toi')}
+        <span style={{ flex: 1 }} />
+        {S.commandeId && S.briefSource === 'commande' && R.production_auto && <button className="fx-btn" disabled={busy} title="L'ouvrier du cloud produit cette commande à ta place : tu peux fermer l'onglet" onClick={sansMoi}>{busy ? 'Lancement…' : 'Produire sans moi'}</button>}
+        <button className="fx-btn" onClick={() => { setOuvert((o) => !o); if (!ouvert) charger() }}>{ouvert ? 'Masquer les dossiers' : `Dossiers conservés (${d.dossiers.length})`}</button>
+      </div>
+      <div style={{ fontSize: 11.5, color: '#8A8F9A', marginTop: 8, lineHeight: 1.55 }}>Offre 48 h : 12 h d'attente, production, envoi 36 h après la demande. Offre 24 h : 6 h d'attente, production, envoi 18 h après. Tu es prévenu par email dès qu'un lot est prêt ; rien ne part chez le client sans toi tant que l'envoi automatique est éteint.</div>
+      {ouvert && (
+        <div style={{ marginTop: 12, borderTop: '1px solid rgba(255,255,255,.08)' }}>
+          {d.dossiers.length === 0 && <div style={{ padding: '14px 0', fontSize: 12.5, color: '#8A8F9A' }}>Aucun dossier pour l'instant. Chaque production terminée range ici son dossier complet.</div>}
+          {d.dossiers.map((x, i) => (
+            <div key={x.url + i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,.06)', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 180 }}>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>{x.produit}{x.client ? <span style={{ fontWeight: 400, color: '#8A8F9A' }}> · {x.client}</span> : null}</div>
+                <div style={{ fontSize: 11.5, color: '#8A8F9A' }}>{date(x.date)}{x.fichiers ? ' · ' + x.fichiers + ' fichiers' : ''}{x.mo ? ' · ' + x.mo + ' Mo' : ''}{x.auto ? ' · produit par l\'ouvrier' : ''}</div>
+              </div>
+              <a className="fx-link-btn" href={x.url} target="_blank" rel="noopener noreferrer">⬇ Télécharger</a>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Production() {
   const S = useProd(), U = S.ui
   const [sp, setSp] = useSearchParams()
@@ -542,7 +594,8 @@ export default function Production() {
   const cmd = sp.get('cmd')
   useEffect(() => E.installUnloadSave(), [])
   useEffect(() => E.installGardeFermeture(), [])
-  useEffect(() => { if (cmd) { E.openCommande(cmd).then(() => setSp({}, { replace: true })) } else E.checkResume() }, [cmd])
+  // auto-prod-v1 : ouvert par l'ouvrier du cloud (?cmd=…&auto=1&jeton=…) → la production se lance et se termine seule, rien n'est envoyé au client
+  useEffect(() => { if (cmd && sp.get('auto') === '1') { const j = sp.get('jeton') || ''; setSp({}, { replace: true }); AUTO.demarrer(cmd, j) } else if (cmd) { E.openCommande(cmd).then(() => setSp({}, { replace: true })) } else E.checkResume() }, [cmd])
   const charge = !!S.brief
   const nAng = U.nbAngles
   const changer = () => { S.brief = null; S.commandeId = null; S.briefSource = null; S.creatives = []; S.copies = []; S.synthesis = null; S.angles = []; S.marche = null; U.launched = false; U.banner = null; E.refresh() }
@@ -567,6 +620,7 @@ export default function Production() {
         <HistoriqueVideos S={S} />
         <ActionBar S={S} U={U} setCompte={setCompte} />
       </>}
+      <PanneauAuto S={S} />
       {manual !== undefined && <ManualSend scope={manual} onClose={() => setManual(undefined)} />}
       {compte && <ManualSend scope={null} onClose={() => setCompte(false)} onPicked={(m) => { E.setMonCompte(m); setTimeout(() => E.envoyerSurMonCompte(), 50) }} />}
     </div>

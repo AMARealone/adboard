@@ -59,5 +59,18 @@
       "tagline": "Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.",
       "checkout": "https://shop.adstackofficial.com/prd_9fi79y/checkout"
     }
-  ]
+  ],
+  "tarifs_proteges": {
+    "note": "PRIX GARANTI 2 MOIS pour les clients entrés à un ancien prix. Pour chaque ancien prix, créer dans Chariow un produit « tarif d'origine » (non listé) à ce prix, puis coller ici son lien de paiement. Tant que le lien est vide, le client garanti renouvelle en vous écrivant sur WhatsApp.",
+    "duree_jours": 60,
+    "starter": {
+      "140000": ""
+    },
+    "pro": {
+      "260000": ""
+    },
+    "scale": {
+      "480000": ""
+    }
+  }
 }
