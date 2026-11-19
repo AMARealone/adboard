@@ -9,6 +9,7 @@ import { prodv2State } from '../prod/state'
 import { getCommandes } from '../api'
 import { ctGetAll, ctGetBase64, loadCTImages, ctGalerieComplete, NIVEAUX_CLE, ctMemoriser } from '../ctApi'
 import VideoPanel from './VideoPanel'
+import { AgentArt } from '../Art'
 import { alertDlg, confirmDlg, toast } from '../ui'
 import { writeSkills, getBackupDir } from '../backup'
 
@@ -27,7 +28,7 @@ function Competence({ a }) {
   const dl = () => { const x = document.createElement('a'); x.href = URL.createObjectURL(new Blob([text || ''], { type: 'text/markdown' })); x.download = a.file; x.click() }
   return (
     <div className="fx-comp">
-      <div className="fx-comp-bar"><span className="mono">{a.name.toUpperCase().replace(/ /g, '_')}.md</span>
+      <div className="fx-comp-bar"><span className="mono">{a.file}</span>
         <span><button className="fx-btn sm" onClick={dl}>Télécharger</button> <button className="fx-btn sm primary" onClick={save}>{saved ? '✓' : 'Sauvegarder'}</button></span></div>
       <textarea className="fx-ta mono comp" value={text == null ? 'Chargement…' : text} disabled={text == null} onChange={(e) => setText(e.target.value)} />
       <p className="fx-s wrap">Les modifications s'appliquent à cette session du navigateur. Si un dossier de secours est choisi (page Agents), le fichier y est aussi mis à jour. Pour qu'elles deviennent permanentes dans Factory, il faut une mise à jour du code.</p>
@@ -101,7 +102,7 @@ function CTAuto({ m }) {
   useEffect(() => { ctGetAll().then((l) => setN(l.length)).catch(() => setN(0)) }, [])
   return (
     <div className="fx-fld"><div className="fx-lab-row"><Lab>CT : CHOISI AUTOMATIQUEMENT PAR L'AGENT</Lab><button className="fx-link-btn" onClick={() => nav('/galerie')}>Gérer la galerie</button></div>
-      <div className="fx-s">{n === null ? 'Chargement…' : n === 0 ? 'Galerie vide : ajoutez des CT avant de tester.' : 'L\'agent reçoit toute la galerie (' + n + ' CT : image, nom, description, balises) avec le brief, la synthèse et la consigne d\'angle, puis choisit un seul CT.'}</div>
+      <div className="fx-s">{n === null ? 'Chargement…' : n === 0 ? 'Galerie vide : ajoute des CT avant de tester.' : 'L\'agent reçoit toute la galerie (' + n + ' CT : image, nom, description, balises) avec le brief, la synthèse et la consigne d\'angle, puis choisit un seul CT.'}</div>
       {m.ct && CT_IMAGES[m.ct] && <div className="fx-ctchoice"><img className="fx-minithumb" src={CT_IMAGES[m.ct]} alt="" /><div><b>{CT_IMAGES[m.ct + '_name'] || m.ct}</b>{m.ctRaison && <div className="fx-s wrap">{m.ctRaison}</div>}</div></div>}
     </div>
   )
@@ -168,7 +169,7 @@ function StdTest({ a }) {
         if (!rs.ok || ds.error) throw new Error('Choix du CT : ' + (ds.error || 'HTTP ' + rs.status))
         if (!CT_IMAGES[ds.id]) throw new Error('Le CT choisi (' + ds.id + ') est introuvable dans la galerie.')
         ctMemoriser(ds.id, NIVEAUX_CLE[m.pos], cleTest)
-        S({ ct: ds.id, ctRaison: ds.raison || '', prog: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 2.5 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
+        S({ ct: ds.id, ctRaison: ds.raison || '', prog: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 3.1 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
         const ctB64 = await V.compressImg(await ctGetBase64(ds.id), CT_IMAGES[ds.id + '_mime'] || 'image/jpeg')
         const res = await fetch(SERVER + '/creative-prod', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ systemPrompt: creativeSystem, synthese: m.synthese, brief: m.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', isTest: true }) })
@@ -222,12 +223,21 @@ function StdTest({ a }) {
 
 export default function AgentTest() {
   const { slug } = useParams()
+  const nav = useNavigate()
   const a = AGENTS.find((x) => x.slug === slug)
   const [tab, setTab] = usePersist('agenttab.' + slug, 'test')
   if (!a) return <Navigate to="/agents" replace />
   return (
     <div className="fx-wrap">
-      <div className="fx-h"><div className="fx-agh"><span className="fx-badge-n lg" style={{ background: a.color + '28', color: a.color }}>{a.n}</span><div><h1>{a.name}</h1><p>{a.sub}</p></div></div><span className="fx-tag prod">En cours</span></div>
+      <div className="fx-agh" style={{ '--c': a.color }}>
+        <AgentArt slug={a.slug} color={a.color} />
+        <div className="fx-agh-b">
+          <button className="fx-back" onClick={() => nav('/agents')}>← Agents</button>
+          <div className="fx-kicker" style={{ color: a.color }}>Agent {String(a.n).padStart(2, '0')}</div>
+          <h1>{a.name}</h1><p>{a.role}</p>
+          <div className="fx-agh-m"><div className="fx-flow"><span>{a.entree}</span><i>→</i><span className="o">{a.sortie}</span></div><span className="fx-model">{a.model}</span></div>
+        </div>
+      </div>
       <div className="fx-tabs"><button className={'fx-tab' + (tab === 'test' ? ' on' : '')} onClick={() => setTab('test')}>Tester</button>
         <button className={'fx-tab' + (tab === 'comp' ? ' on' : '')} onClick={() => setTab('comp')}>Compétence</button></div>
       <div className="fx-card">

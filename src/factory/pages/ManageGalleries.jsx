@@ -209,7 +209,7 @@ export function GalerieVideo() {
     setBusy(true)
     const r = await vctEnrichAll(list, (t) => st(t))
     if (!r.cibles) st(r.relus ? `${r.relus} CT complété(s) depuis leur fiche de sélection.` : 'Tous les CT sont déjà complets.')
-    else st(`${r.ok} enrichi(s)` + (r.ko ? ` · ${r.ko} en échec (le serveur v5.67 est-il déployé ?)` : '') + '.', r.ko > 0)
+    else st(`${r.ok} enrichi(s)` + (r.ko ? ` · ${r.ko} en échec (serveur injoignable ? réessaie dans une minute)` : '') + '.', r.ko > 0)
     setBusy(false); load()
   }
   const sansMeta = list.filter((r) => !r.meta).length

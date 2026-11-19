@@ -1,4 +1,4 @@
-// Accès données Factory (mêmes sources que l'ancien Factory : serveur Render + Supabase)
+// Accès données Factory (serveur Render + Supabase)
 export const SERVER = 'https://adstack-server.onrender.com'
 export const SB = 'https://mifljhsusidgzelnswma.supabase.co'
 export const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1pZmxqaHN1c2lkZ3plbG5zd21hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MjI2MzQsImV4cCI6MjA5MzQ5ODYzNH0.AX4Xu0sP2tgjLhZSbCKhtw4Q3sd7GRMJ2aMKK3GfzUc'
@@ -19,11 +19,11 @@ export async function getCommandes() {
   return Array.isArray(l) ? l : []
 }
 
-// « Prêt à envoyer » = tout est généré (même règle que l'ancien Factory)
+// « Prêt à envoyer » = toutes les créatives et ad copies du lot sont générées
 export function pretAEnvoyer(b) {
   if (b.status !== 'in_production') return false
   const d = b.deliverables || {}
-  const nb = b.quantity || 9
+  const nb = b.quantity || 6
   const crea = (d.creatives || []).filter((c) => c && (c.imgB64 || c.url)).length
   const copies = (d.copies || []).filter(Boolean).length
   return crea >= nb && copies >= Math.ceil(nb / 3)
@@ -80,7 +80,27 @@ export async function getCtVideos() {
   return recs.filter(Boolean).sort((a, b) => b.addedAt - a.addedAt)
 }
 
-// Offres : SCALE passe en file prioritaire ; PERF+ a 48 h de délai de production, les autres 24 h.
+// Offres (source : public/offres.json) — identifiants internes → noms vendus
+const NOMS_OFFRES = { starter: 'PERF+', pro: 'GROWTH', scale: 'SCALE', oneshot: 'ONE SHOT', one_shot: 'ONE SHOT', test: 'ONE SHOT' }
+export const nomOffre = (plan) => NOMS_OFFRES[String(plan || '').toLowerCase()] || String(plan || '').toUpperCase() || '—'
+// SCALE passe en file prioritaire ; PERF+ et ONE SHOT ont 48 h de délai, GROWTH et SCALE 24 h.
 export const estPrioritaire = (b) => (b.client?.plan || '') === 'scale'
 export const prio = (b) => (estPrioritaire(b) ? 0 : 1)
-export const delaiClientH = (b) => (['starter', 'test'].includes(b.client?.plan || '') ? 48 : 24)
+export const delaiClientH = (b) => (b.auto && b.auto.delai_h) || (['starter', 'test', 'oneshot', 'one_shot'].includes(b.client?.plan || '') ? 48 : 24)
+// Calendrier de la production automatique (même règle que le serveur, auto_prod.js) : attente = ¼ du délai, envoi = ¾ du délai, comptés depuis la demande
+export function calendrierCommande(b) {
+  const d = delaiClientH(b), t0 = new Date(b.created_at).getTime()
+  const a = b.auto || {}
+  return { delai: d, finAttente: t0 + (a.attente_h || d / 4) * 3600e3, envoi: t0 + (a.envoi_h || d * 3 / 4) * 3600e3, echeance: t0 + d * 3600e3 }
+}
+// État de la production automatique d'une commande, en une étiquette
+export function etatAuto(b) {
+  const a = b.auto || {}
+  if (b.status === 'done') return a.envoyee_auto_le ? { k: 'ok', t: 'Envoyée automatiquement' } : null
+  if (a.etat === 'echec') return { k: 'er', t: 'Production auto en échec' }
+  if (a.prete_le) return a.complet ? { k: 'ok', t: 'Prête à vérifier' } : { k: 'wa', t: 'Lot incomplet' }
+  if (a.lancee_le) return { k: 'ac', t: 'Agents au travail' + (a.etape ? ' · ' + a.etape : '') }
+  if (a.alerte_attente) return { k: 'wa', t: 'À lancer à la main' }
+  if (b.status === 'pending') return { k: 'mu', t: 'Démarrage automatique' }
+  return null
+}

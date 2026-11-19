@@ -4,7 +4,7 @@ import * as AUTO from '../prod/auto' // auto-prod-v1
 import { useProd, CT_IMAGES, SERVER } from '../prod/state'
 import * as E from '../prod/engine'
 import { useData } from '../data'
-import { etat } from '../api'
+import { etat, nomOffre } from '../api'
 import { toast, confirmDlg } from '../ui'
 import * as PL from '../prod/plan'
 import * as CDC from '../prod/cdc'   // cdc-franchise-v1
@@ -83,7 +83,7 @@ function ManualSend({ scope, onClose, onPicked }) {
 function MarcheSummary({ marche, synthesis }) {
   const [raw, setRaw] = useState(false)
   const debug = <div className="fx-debug"><button className="fx-link-btn" onClick={() => setRaw(!raw)}>Voir la synthèse brute (debug)</button>{raw && <pre>{synthesis}</pre>}</div>
-  if (!marche) return <><div className="fx-err">Extraction Données Marché échouée pour ce batch (voir console) — synthèse brute ci-dessous en repli.</div><pre className="fx-rawsyn">{synthesis}</pre></>
+  if (!marche) return <><div className="fx-err">Extraction des données marché échouée pour ce lot (voir console) — synthèse brute ci-dessous en repli.</div><pre className="fx-rawsyn">{synthesis}</pre></>
   const p = marche.positionnement || {}, persona = marche.persona || {}, angles = marche.angles || [], insights = marche.insights || []
   const direct = (p.concurrents_directs || []).map((c) => (typeof c === 'string' ? c : c?.nom || '')).filter(Boolean).join(', ') || '—'
   const indirect = (p.concurrents_indirects || []).length ? p.concurrents_indirects.join(', ') : null
@@ -152,7 +152,7 @@ function Picker({ S, U }) {
             <button key={b.id} className={'fx2-pick' + (sel ? ' on' : '')} disabled={!!busy} onClick={() => ouvrir(b.id)}>
               {photo ? <img src={photo} alt="" onError={(x) => (x.currentTarget.style.visibility = 'hidden')} /> : <span className="fx2-pick-ph">—</span>}
               <span className="fx2-pick-b"><b>{b.product?.nom || 'Produit'}</b><small>{b.product?.marque || ''}{b.product?.marque ? ' · ' : ''}{b.client?.email || ''}</small>
-                <small>{(b.client?.plan || '').toUpperCase()} · {b.quantity || 6} créatives</small></span>
+                <small>{nomOffre(b.client?.plan)} · {b.quantity || 6} créatives</small></span>
               <span className={'fx-tag ' + e.key}>{busy === b.id ? '…' : e.label}</span>
             </button>)
         })}

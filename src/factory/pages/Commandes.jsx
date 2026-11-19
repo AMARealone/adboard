@@ -2,24 +2,27 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { usePersist } from '../agentStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useData } from '../data'
-import { etat, SERVER, prio, estPrioritaire, delaiClientH } from '../api'
+import { etat, SERVER, prio, estPrioritaire, nomOffre, calendrierCommande, etatAuto } from '../api'
+import Icon from '../Icon'
 import { openCommande, marquerLivre, supprimerTicket, commandeToBrief } from '../prod/engine'
 import { alertDlg } from '../ui'
 
 function useNow(ms = 1000) { const [n, setN] = useState(Date.now()); useEffect(() => { const t = setInterval(() => setN(Date.now()), ms); return () => clearInterval(t) }, [ms]); return n }
 const pad = (n) => String(n).padStart(2, '0')
 
-// Compte à rebours : 12 h pour lancer une commande en attente ; échéance interne en production = délai client moins 6 h (18 h, ou 42 h pour PERF+)
+// Compte à rebours, calé sur la production automatique (même calendrier que le serveur) :
+// offre 48 h → démarrage à 12 h, envoi à 36 h ; offre 24 h → démarrage à 6 h, envoi à 18 h (comptés depuis la demande)
+const duree = (r) => Math.floor(r / 3600e3) + 'h' + pad(Math.floor((r % 3600e3) / 60e3))
 function Timer({ b, now }) {
+  const c = calendrierCommande(b)
   if (b.status === 'pending') {
-    const r = 12 * 3600e3 - (now - new Date(b.created_at).getTime())
-    if (r <= 0) return <span className="fx-time off">Attente expirée</span>
-    return <span className="fx-time">{Math.floor(r / 3600e3)}h{pad(Math.floor((r % 3600e3) / 60e3))}m{pad(Math.floor((r % 60e3) / 1e3))}s restantes</span>
+    const r = c.finAttente - now
+    return r > 0 ? <span className="fx-time"><Icon n="clock" s={12} /> démarrage dans {duree(r)}</span> : <span className="fx-time off">Attente terminée</span>
   }
-  if (b.status === 'in_production' && b.started_at) {
-    const r = (delaiClientH(b) - 6) * 3600e3 - (now - new Date(b.started_at).getTime())
-    if (r <= 0) return <span className="fx-time urgent">Urgent — envoie les livrables</span>
-    return <span className="fx-time">{Math.floor(r / 3600e3)}h{pad(Math.floor((r % 3600e3) / 60e3))}m avant l’échéance interne</span>
+  if (b.status === 'in_production') {
+    const r = c.envoi - now, e = c.echeance - now
+    if (r > 0) return <span className="fx-time"><Icon n="clock" s={12} /> envoi dans {duree(r)}</span>
+    return e > 0 ? <span className="fx-time urgent">À envoyer · échéance dans {duree(e)}</span> : <span className="fx-time urgent">Échéance dépassée — envoie le lot</span>
   }
   return null
 }
@@ -28,7 +31,7 @@ export function OrderRow({ b, compact, now, onBrief }) {
   const nav = useNavigate()
   const { reload } = useData()
   const [busy, setBusy] = useState(false)
-  const e = etat(b)
+  const e = etat(b), au = etatAuto(b)
   const photo = b.photo_nobg || b.product?.photo_base64 || b.product?.photo_url
   const open = async () => {
     setBusy(true)
@@ -39,14 +42,17 @@ export function OrderRow({ b, compact, now, onBrief }) {
     <div className={'fx-row' + (e.key === 'ready' ? ' ready' : '')}>
       {photo ? <img className="fx-thumb" src={photo} alt="" onError={(x) => (x.currentTarget.style.visibility = 'hidden')} /> : <div className="fx-thumb">—</div>}
       <div className="fx-grow">
-        <div className="fx-t">{b.product?.nom || 'Produit'} <span className={'fx-tag ' + e.key}>{e.label}</span>{estPrioritaire(b) && <span className="fx-tag ready" title="Offre SCALE : file prioritaire"> ★ Prioritaire</span>}</div>
-        <div className="fx-s">{b.client?.email || (b.client?.user_id || '').slice(0, 8)} · {(b.client?.plan || '').toUpperCase()} · {b.quantity} images {now && <> · <Timer b={b} now={now} /></>}</div>
+        <div className="fx-t"><span className="fx-nom">{b.product?.nom || 'Produit'}</span> <span className={'fx-tag ' + e.key}>{e.label}</span>{estPrioritaire(b) && <span className="fx-tag star" title="Offre SCALE : file prioritaire">★ Prioritaire</span>}{au && <span className={'fx-tag auto ' + au.k} title="Production automatique">{au.t}</span>}</div>
+        <div className="fx-s"><span className="fx-offre">{nomOffre(b.client?.plan)}</span> {b.quantity || 6} créatives · {b.client?.email || (b.client?.user_id || '').slice(0, 8)}</div>
+        {now && (b.status === 'pending' || b.status === 'in_production') && <div className="fx-s2"><Timer b={b} now={now} /></div>}
       </div>
-      {e.key !== 'off' && <button className={'fx-btn' + (e.key === 'wait' || e.key === 'ready' ? ' primary' : '')} disabled={busy} onClick={open}>{busy ? '…' : '▶ ' + label}</button>}
-      {!compact && b.status === 'in_production' && <button className={'fx-btn' + (e.key === 'ready' ? ' purple' : ' primary')} onClick={() => marquerLivre(b.id, reload)}>Envoyer au client</button>}
-      {!compact && b.status === 'done' && <button className="fx-btn" title="Renvoyer si le client signale un manque" onClick={() => marquerLivre(b.id, reload)}>↻ Renvoyer</button>}
-      {!compact && <button className="fx-btn icon" title="Voir le brief" onClick={() => onBrief(b.id)}>Brief</button>}
-      {!compact && <button className="fx-btn icon danger-o" title="Supprimer" onClick={() => supprimerTicket(b.id, reload)}>✕</button>}
+      <div className="fx-row-act">
+        {e.key !== 'off' && <button className={'fx-btn' + (e.key === 'wait' || e.key === 'ready' ? ' primary' : '')} disabled={busy} onClick={open}>{busy ? '…' : '▶ ' + label}</button>}
+        {!compact && b.status === 'in_production' && <button className={'fx-btn' + (e.key === 'ready' ? ' purple' : ' primary')} onClick={() => marquerLivre(b.id, reload)}>Envoyer au client</button>}
+        {!compact && b.status === 'done' && <button className="fx-btn" title="Renvoyer si le client signale un manque" onClick={() => marquerLivre(b.id, reload)}>↻ Renvoyer</button>}
+        {!compact && <button className="fx-btn icon" title="Voir le brief" onClick={() => onBrief(b.id)}>Brief</button>}
+        {!compact && <button className="fx-btn icon danger-o" title="Supprimer" onClick={() => supprimerTicket(b.id, reload)}>✕</button>}
+      </div>
     </div>
   )
 }
@@ -75,7 +81,7 @@ export function BriefPanel({ id, onClose }) {
         {b && <div className="fx-bfs">
           {photo && <div className="fx-bphoto"><img src={photo} alt="" /></div>}
           <R l="Produit"><b>{p.nom}</b></R>
-          <R l="Quantité commandée"><b style={{ color: 'var(--ac)' }}>{b.quantity} visuels</b></R>
+          <R l="Quantité commandée"><b style={{ color: 'var(--ac)' }}>{b.quantity} créatives</b></R>
           <R l="Prix · Pays">{p.pricing || '—'} · {p.pays || '—'}</R>
           {(p.marches || []).length > 1 && <R l="Mode multi-marché">{p.marches.join(', ')} — {p.prix_affichable === false ? 'prix NON affiché sur les visuels (il diffère selon les pays)' : 'prix affichable (identique partout)'}</R>}
           {Object.keys(p.prix_par_pays || {}).length > 0 && <R l="Prix par pays">{Object.entries(p.prix_par_pays).map(([k, v]) => <div key={k}>{String(k)} : {String(v)}</div>)}</R>}
@@ -91,9 +97,9 @@ export function BriefPanel({ id, onClose }) {
           <R l="Notes du client">{p.notes ? String(p.notes) : ''}</R>
           <R l="Utilité">{p.utilite}</R>
           {(p.couleurs || []).filter(Boolean).length > 0 && <R l="Couleurs"><div className="fx-sw">{p.couleurs.filter(Boolean).map((c, i) => <i key={i} style={{ background: c }} title={c} />)}</div></R>}
-          <R l="Client">{b.client?.email || b.client?.user_id} · {(b.client?.plan || '').toUpperCase()}</R>
+          <R l="Client">{b.client?.email || b.client?.user_id} · {nomOffre(b.client?.plan)}</R>
           <R l="Commandé le">{new Date(b.created_at).toLocaleString('fr-FR')}</R>
-          {b.history?.batches_count > 0 ? <R l="Historique">{b.history.batches_count} batch(es) précédent(s) · {b.history.total_creatives_done} créatives déjà livrées</R> : <div className="fx-note">Premier batch pour ce produit — pas d'historique à considérer.</div>}
+          {b.history?.batches_count > 0 ? <R l="Historique">{b.history.batches_count} lot(s) précédent(s) · {b.history.total_creatives_done} créatives déjà livrées</R> : <div className="fx-note">Premier lot pour ce produit — pas d'historique à considérer.</div>}
         </div>}
       </aside>
     </div>

@@ -70,7 +70,7 @@ function fin(L, etat, erreur, lignes) {
   if (lignes) L.lignes = lignes.map((x) => String(x))
   if (erreur) {
     L.erreur = String(erreur).slice(0, 400)
-    if (/--lecture/.test(L.erreur) || /CT introuvable/i.test(L.erreur)) L.erreur += '\n\nLe moteur vidéo installé ne connaît probablement pas encore la lecture à blanc (version antérieure à v9.8). Rien n\'a été dépensé : installe le moteur v9.8 dans Cloud Shell, puis relance la lecture.'
+    if (/--lecture/.test(L.erreur) || /CT introuvable/i.test(L.erreur)) L.erreur += '\n\nLe moteur vidéo installé ne connaît probablement pas encore la lecture à blanc (version trop ancienne). Rien n\'a été dépensé : réinstalle le moteur vidéo à jour dans Cloud Shell, puis relance la lecture.'
   }
   emit()
 }
@@ -90,7 +90,7 @@ async function suivre(L) {
       L.etape = e.etape || L.etape; L.pct = e.pct || L.pct; if (e.cout_usd != null && e.cout_usd !== '') L.cout = e.cout_usd
       if (e.etat === 'termine') {
         if (e.lecture_seule && Array.isArray(e.lecture)) return fin(L, 'termine', '', e.lecture)
-        return fin(L, 'echec', 'La machine a rendu une vidéo au lieu de la lecture seule : le moteur installé est antérieur à la v9.8. Vérifie le coût de ce run, puis installe le moteur v9.8 (Cloud Shell).')
+        return fin(L, 'echec', 'La machine a rendu une vidéo au lieu de la lecture seule : le moteur installé est trop ancien. Vérifie le coût de ce run, puis réinstalle le moteur vidéo à jour (Cloud Shell).')
       }
       if (e.etat === 'echec') return fin(L, 'echec', e.erreur || 'Échec de la lecture.')
       emit()
