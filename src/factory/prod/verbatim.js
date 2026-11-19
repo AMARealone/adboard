@@ -4,6 +4,7 @@ import { ctGalerieComplete, NIVEAUX_CLE, niveauCT, ctMemoriser } from '../ctApi'
 import * as APP from './apprentissage' // appr-client-v1
 import * as CDC from './cdc' // cdc-franchise-v1
 import * as VER from './verite' // verite-v1
+import * as REP from './reprise' // reprise-angle-v1
 
 export function fetchAvecTimeout(url, options = {}, timeoutMs = 15000) {
   const controller = new AbortController();
@@ -101,7 +102,7 @@ export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal, rang, sl
   // CT GAGNANT imposé par le plan d'apprentissage : repris tel quel sur ce nouvel angle, sans appel à l'agent
   if (slot && slot.ctForce && CT_IMAGES[slot.ctForce]) {
     ctMemoriser(slot.ctForce, niveau, String(prodv2State.productId || (prodv2State.brief && (prodv2State.brief.produit || prodv2State.brief.marque)) || ''))
-    return { id: slot.ctForce, raison: 'CT GAGNANT de ce client rejoué sur un nouvel angle : on garde le concept qui a marché, on change l\'angle.', repli: false, niveau }
+    return { id: slot.ctForce, raison: slot.ctForceRaison || 'CT GAGNANT de ce client rejoué sur un nouvel angle : on garde le concept qui a marché, on change l\'angle.', repli: false, niveau }
   }
   const { angleInstruction } = buildCreativeInstruction(angleIdx, pos, rang)
   const exclure0 = [...dejaChoisis, ...((prodv2State.renewalContext && prodv2State.renewalContext.ctsUtilisesDernierLot) || [])]
@@ -492,7 +493,7 @@ export async function buildAnalysteInputs(nbAngles, nbCreativesTotal) {
     }
 
     const analysteParts = [
-      { type: 'text', text: _dateHeader + CDC.bloc('analyste') + _renewalHeader + (APP.bloc('analyste_nombre') || _nbAnglesHeader) + (APP.bloc('analyste_gagnants') || _angleGagnantHeader) + APP.bloc('analyste_apprentissage') + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
+      { type: 'text', text: _dateHeader + CDC.bloc('analyste') + _renewalHeader + (APP.bloc('analyste_nombre') || _nbAnglesHeader) + (APP.bloc('analyste_gagnants') || _angleGagnantHeader) + REP.blocAnalyste() + APP.bloc('analyste_apprentissage') + _urlHeader + 'BRIEF (JSON) :\n' + prodv2BriefTextOnly() },
       { type: 'image', source: { type:'base64', media_type: prodv2State.productMime, data: prodv2State.productB64 } }
     ];
     if(prodv2State.logoB64) {

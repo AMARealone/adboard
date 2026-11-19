@@ -1,0 +1,63 @@
+{
+  "maj": "2026-11-19",
+  "note": "SOURCE UNIQUE DES OFFRES. Le serveur (emails, factures, credits des paiements, assistant Ava) et AdBoard (page Offres) relisent ce fichier. Pour changer un prix ou une offre : modifier ici, puis envoyer sur GitHub.",
+  "oneshot": {
+    "nom": "ONE SHOT",
+    "prix": 75000,
+    "creatives": 6,
+    "videos": 2,
+    "images": 4,
+    "delai": "48h",
+    "description": "6 créatives optimisées conversion (2 vidéos + 4 images), à partir d'une stratégie marketing, reçues en 48 heures maximum sur AdBoard, pour tester et trouver vos premières créatives gagnantes sur votre produit.",
+    "page": "https://www.adstackofficial.com/test",
+    "checkout": "https://shop.adstackofficial.com/prd_yslvdsuz/checkout"
+  },
+  "offres": [
+    {
+      "id": "starter",
+      "nom": "PERF+",
+      "prix": 250000,
+      "badge": "24 Créatives / Mois",
+      "creatives_mois": 24,
+      "lots_mois": 4,
+      "produits": 4,
+      "membres": "2",
+      "delai": "48h",
+      "prioritaire": false,
+      "garantie": "Performance en 60 jours",
+      "tagline": "Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.",
+      "page": "https://www.adstackofficial.com/perf",
+      "checkout": "https://shop.adstackofficial.com/prd_ljowq8/checkout"
+    },
+    {
+      "id": "pro",
+      "nom": "GROWTH",
+      "prix": 480000,
+      "badge": "48 Créatives / Mois",
+      "creatives_mois": 48,
+      "lots_mois": 8,
+      "produits": 8,
+      "membres": "5",
+      "delai": "24h",
+      "prioritaire": false,
+      "garantie": "Croissance en 60 jours",
+      "tagline": "Accélérer la production créative et la croissance de votre marque, sans la prise de tête de gérer une équipe.",
+      "checkout": "https://shop.adstackofficial.com/prd_34w031/checkout"
+    },
+    {
+      "id": "scale",
+      "nom": "SCALE",
+      "prix": 920000,
+      "badge": "96 Créatives / Mois",
+      "creatives_mois": 96,
+      "lots_mois": 16,
+      "produits": 16,
+      "membres": "+10",
+      "delai": "24h",
+      "prioritaire": true,
+      "garantie": "Scaling en 60 jours",
+      "tagline": "Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.",
+      "checkout": "https://shop.adstackofficial.com/prd_9fi79y/checkout"
+    }
+  ]
+}

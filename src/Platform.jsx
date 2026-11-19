@@ -839,8 +839,8 @@ const Sidebar = ({active, set, isDemo, setDemo, collapsed, setCollapsed, isMobil
       {!showCollapsed && !(isMobile && !mobileOpen) && !isMember() && subscription?.plan !== 'scale' && (() => {
         // Progression normale : Starter → Pro → Scale. Un visiteur sans abonnement actif — ou un
         // ancien compte Discovery (offre retirée de la vente) — est orienté vers Starter.
-        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery' || subscription.plan === 'oneshot') ? 'test'
-                          : subscription.plan === 'test' ? 'starter' : subscription.plan === 'starter' ? 'pro' : 'scale';
+        const nextPlanId = (!subscription?.active || subscription.plan === 'discovery' || subscription.plan === 'oneshot' || subscription.plan === 'test') ? 'starter'
+                          : subscription.plan === 'starter' ? 'pro' : 'scale';
         const nextPlan = PLANS.find(pl => pl.id === nextPlanId);
         if (!nextPlan) return null;
         const nextCycle = 'monthly';
@@ -1930,7 +1930,11 @@ const pointsFicheProduit = (p) => [
   { k:'avis', label:'avis clients', ok:(p.avis_captures||[]).length > 0 || (p.avis_textes||[]).length > 0 },
 ];
 
-const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, onEditProduct, verifierPlafond, C}) => {
+const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfirm, onClose, onEditProduct, verifierPlafond, C, repriseInitiale = null}) => {
+  // reprise-angle-v1 — le client peut demander de refaire une créative qu'il a aimée : même angle, même CT, avec des textes et des scènes nouveaux.
+  const livrees = (Array.isArray(product.creatives) ? product.creatives : []).filter(c => c && c.id && c.ct && (c.thumbUrl || c.imageUrl)).slice().reverse().slice(0, 18);
+  const [reprise, setReprise] = useState(() => (repriseInitiale && repriseInitiale.id) ? repriseInitiale : null);
+  const [repriseOuverte, setRepriseOuverte] = useState(!!(repriseInitiale && repriseInitiale.id));
   // Palier de commande = 6 visuels (2 angles × 3) : les forfaits donnent 12 / 24 / 48 / 96 créatives par mois, disponibles dès le paiement.
   const [qty, setQty] = useState(6);
   // Marchés du produit : le client choisit pour quels marchés cette demande est produite. Par défaut, le plus gros
@@ -1996,10 +2000,10 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
         {/* Ancien pack (Discovery, offre retirée de la vente) épuisé : on oriente vers un abonnement TEST. */}
         {isPack && (
           <button onClick={() => {
-            const productId = checkoutIdFor('test','monthly');
+            const productId = checkoutIdFor('starter','monthly');
             if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
           }} style={{position:'relative',display:'flex',alignItems:'center',gap:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',padding:0,marginBottom:20}}>
-            <Icon name="plus" size={12} color={C.accent}/> Continuez avec TEST
+            <Icon name="plus" size={12} color={C.accent}/> Continuez avec PERF+
           </button>
         )}
 
@@ -2050,6 +2054,37 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
           </div>
         )}
 
+        {/* Reprendre une créative aimée — facultatif, replié par défaut sauf si on vient de « Refaire dans ce style » */}
+        {livrees.length > 0 && (
+          <div style={{position:'relative',marginBottom:16}}>
+            {!repriseOuverte ? (
+              <button type="button" onClick={()=>setRepriseOuverte(true)} style={{background:'none',border:'none',color:C.sec,fontSize:11.5,cursor:'pointer',fontFamily:'inherit',padding:0,display:'inline-flex',alignItems:'center',gap:5}}>
+                <Icon name="plus" size={11} color={C.sec}/> Refaire une créative que vous avez aimée ? <span style={{color:C.muted}}>(facultatif)</span>
+              </button>
+            ) : (
+              <div>
+                <div style={{fontSize:11,color:C.sec,fontWeight:600,marginBottom:8}}>Refaire dans le style de :</div>
+                <div style={{display:'flex',gap:8,overflowX:'auto',paddingBottom:6,WebkitOverflowScrolling:'touch'}}>
+                  {livrees.map(c => {
+                    const on = reprise && reprise.id === c.id;
+                    return (
+                      <button key={c.id} type="button" onClick={()=>setReprise(on ? null : c)} title={c.angle || ''}
+                        style={{position:'relative',flex:'0 0 auto',width:64,height:80,padding:0,borderRadius:9,overflow:'hidden',cursor:'pointer',border:`2px solid ${on?C.accent:'transparent'}`,background:'#0f1120',outline:'none',boxShadow:on?'0 0 0 3px rgba(45,127,249,0.25)':'none'}}>
+                        <img src={c.thumbUrl || c.imageUrl} alt="" loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block',opacity:reprise && !on ? 0.55 : 1}}/>
+                        {c.type === 'video' && <span style={{position:'absolute',left:4,bottom:4,fontSize:9,fontWeight:700,color:'#fff',background:'rgba(0,0,0,0.6)',borderRadius:4,padding:'1px 4px'}}>Vidéo</span>}
+                        {on && <span style={{position:'absolute',top:4,right:4,width:18,height:18,borderRadius:9,background:C.accent,display:'flex',alignItems:'center',justifyContent:'center'}}><Icon name="check" size={11} color="#fff"/></span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{fontSize:10.5,color:C.muted,marginTop:4,lineHeight:1.5}}>
+                  {reprise ? <>On reprend <strong style={{color:C.text}}>son angle{reprise.angle ? ` « ${String(reprise.angle).slice(0, 60)} »` : ''}</strong> et son style, avec des textes et des scènes nouveaux. Les autres angles de la demande restent nouveaux.</> : 'Touchez une créative pour la choisir.'}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Offre du moment — repliée par défaut, aucune saisie obligatoire */}
         <div style={{position:'relative',marginBottom:16}}>
           {!offreOuverte ? (
@@ -2090,7 +2125,7 @@ const CreativesModal = ({product, credits, subscription, onOpenPayment, onConfir
         {/* Boutons */}
         <div style={{position:'relative',display:'flex',gap:10}}>
           <button onClick={onClose} style={{flex:1,padding:'12px',borderRadius:9,border:`1px solid ${C.border}`,background:'transparent',color:C.sec,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>Annuler</button>
-          <button onClick={()=>peutConfirmer&&onConfirm(qty, plusieursMarches ? marchesCoches : null, (offreOuverte && offre.trim() && offre.trim() !== (product.promo||'').trim()) ? offre.trim() : null)} disabled={!peutConfirmer} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:peutConfirmer?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.06)',color:peutConfirmer?'#fff':C.muted,fontWeight:700,fontSize:13,cursor:peutConfirmer?'pointer':'not-allowed',fontFamily:'inherit',boxShadow:peutConfirmer?'0 4px 16px rgba(45,127,249,0.3)':'none'}}>
+          <button onClick={()=>peutConfirmer&&onConfirm(qty, plusieursMarches ? marchesCoches : null, (offreOuverte && offre.trim() && offre.trim() !== (product.promo||'').trim()) ? offre.trim() : null, reprise)} disabled={!peutConfirmer} style={{flex:2,padding:'12px',borderRadius:9,border:'none',background:peutConfirmer?`linear-gradient(135deg, ${C.accent}, #2D6FE0)`:'rgba(255,255,255,0.06)',color:peutConfirmer?'#fff':C.muted,fontWeight:700,fontSize:13,cursor:peutConfirmer?'pointer':'not-allowed',fontFamily:'inherit',boxShadow:peutConfirmer?'0 4px 16px rgba(45,127,249,0.3)':'none'}}>
             {max===0 ? 'Aucune créative disponible' : `Confirmer · ${qty} créatives`}
           </button>
         </div>
@@ -2615,10 +2650,10 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
     if (subscription?.type === 'pack') {
       return (
         <button onClick={() => {
-          const productId = checkoutIdFor('test','monthly');
+          const productId = checkoutIdFor('starter','monthly');
           if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
         }} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,width:'100%',padding:"10px",borderRadius:7,border:'none',background:C.accent,color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
-          <Icon name="plus" size={13} color="#fff"/> Continuez avec TEST
+          <Icon name="plus" size={13} color="#fff"/> Continuez avec PERF+
         </button>
       );
     }
@@ -2626,7 +2661,7 @@ const BriefButton = ({p, briefs, subscription, allBriefs, creditsDataReady, user
       <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:7,padding:"10px",borderRadius:7,border:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",color:C.muted,fontSize:11,textAlign:"center"}}>
         <Icon name="clock" size={13} color={C.muted}/> {nextCreditDate ? `Renouvellement le ${nextCreditDate}` : 'Plus de créatives disponibles ce mois-ci'}
         {subscription?.plan && subscription.plan !== 'scale' && onOpenPayment && (() => {
-          const suivant = PLANS[Math.max(0, PLANS.findIndex(pl => pl.id === subscription.plan)) + 1];
+          const iPl = PLANS.findIndex(pl => pl.id === subscription.plan), suivant = PLANS[iPl < 0 ? 0 : iPl + 1];
           const idSuivant = suivant && checkoutIdFor(suivant.id, 'monthly');
           return idSuivant ? <button onClick={() => startCheckout(idSuivant, onOpenPayment)} style={{marginLeft:6,background:'none',border:'none',color:C.accent,fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'inherit',padding:0,textDecoration:'underline'}}>Passer à {suivant.name}</button> : null;
         })()}
@@ -3684,10 +3719,10 @@ const Produits = ({products, setProducts, user, onNeedLogin, briefs={}, setBrief
             {credits.available === 0 && (
               subscription?.type === 'pack' ? (
                 <button onClick={() => {
-                  const productId = checkoutIdFor('test','monthly');
+                  const productId = checkoutIdFor('starter','monthly');
                   if (onOpenPayment && productId) startCheckout(productId, onOpenPayment);
                 }} style={{display:'flex',alignItems:'center',gap:6,fontSize:11,fontWeight:700,color:'#fff',padding:'8px 14px',borderRadius:8,background:C.accent,border:'none',cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}>
-                  <Icon name="plus" size={12} color="#fff"/> Continuez avec TEST
+                  <Icon name="plus" size={12} color="#fff"/> Continuez avec PERF+
                 </button>
               ) : (
                 <div style={{fontSize:11,color:C.sec,padding:'8px 14px',borderRadius:8,background:'rgba(255,255,255,0.05)',border:`1px solid ${C.border}`,whiteSpace:'nowrap'}}>
@@ -4062,7 +4097,7 @@ const TeaserMarche = ({setSection}) => {
   );
 };
 
-const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user, avisStore}) => {
+const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, subscription, onOpenPayment, user, avisStore, onRefaire}) => {
   const [query, setQuery] = useState('');
   const [filterMode, setFilterMode] = useState('tous');
   const [activeChip, setActiveChip] = useState(null); // reste utilisé tel quel pour Top Performer (cible unique — un classement mélangeant plusieurs cibles n'a pas de sens)
@@ -4892,6 +4927,13 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 <b style={{color:'#FFC107'}}>Classée n°{groupeTP.findIndex(x => x.id === selected.id) + 1} sur {groupeTP.length}</b>
                 {scoresTP[selected.id].comparable ? <> · indice {scoresTP[selected.id].indice} <span style={{color:C.muted}}>(100 = moyenne de la cible)</span> · données {scoresTP[selected.id].fiabilite === 'solide' ? 'solides' : scoresTP[selected.id].fiabilite === 'moyenne' ? 'moyennes' : 'encore légères'}</> : null}
               </div>
+            )}
+            {/* reprise-angle-v1 — refaire cette créative : même angle, même style, textes et scènes nouveaux (ouvre la demande de production) */}
+            {onRefaire && !isDemo && selected.ct && products.some(p => p.id === selected.productId) && (
+              <button onClick={() => { const pr = products.find(p => p.id === selected.productId); setSelected(null); onRefaire(pr, selected); }} data-testid="btn-refaire"
+                style={{...btnAction,width:'100%',justifyContent:'center',background:C.accent,borderColor:C.accent}} aria-label="Refaire dans ce style">
+                <Icon name="sparkle" size={15} color="#fff"/>Refaire dans ce style
+              </button>
             )}
             {avisStore && !isDemo && <BoutonAvis existing={avisStore.parCreative[selected.id]} onClick={() => setAvisOuvert(selected)}/>}
             {selected.topPerformer && aDesChiffres(selected) && (
@@ -5948,7 +5990,7 @@ const Chatbot = ({user, subscription, products=[], credits={}, allBriefs=[], bri
     'navigate:galerie': '→ Galerie créatives',
     'openProductForm': '+ Créer mon produit maintenant',
     'login': '→ Connecter mon compte Google',
-    'checkout:test': 'Commencer avec TEST →',
+    'checkout:test': 'Passer en PERF+ →',
     'checkout:starter': 'Passer en PERF+ →',
     'checkout:pro': 'Passer en GROWTH →',
     'checkout:scale': 'Passer en SCALE →',
@@ -6096,7 +6138,8 @@ const taillePrix = (texte, base, limite = 9) => {
   return n <= limite ? base : Math.max(Math.round(base * 0.5), Math.round(base * limite / n * 10) / 10);
 };
 
-// MAJ pricing (29 oct. 2026 — 4 offres mensuelles : TEST 75 000 / PERF+ 140 000 / GROWTH 260 000 / SCALE 480 000 FCFA par mois,
+// MAJ pricing (19 nov. 2026 — PERF+ 250 000 / GROWTH 480 000 / SCALE 920 000 FCFA par mois ; TEST n'est plus vendue, le ONE SHOT reste hors AdBoard).
+// Source unique : /offres.json — chargerOffresLive() (plus bas) relit ce fichier et met ces cartes à jour. Ancienne note :
 // 12 / 24 / 48 / 96 créatives par mois, un lot = 2 vidéos + 4 images). Les créatives du mois sont toutes disponibles dès le paiement,
 // le client demande lot après lot, dans la limite de 6 lots (36 créatives) par 24 h. Plus de One Shot.
 // Miroir à garder identique : OFFERS (server) et LP_OFFERS (vente.html).
@@ -6104,37 +6147,21 @@ const taillePrix = (texte, base, limite = 9) => {
 // convertPrice() (plus bas) n'est qu'un affichage indicatif : Chariow gère la devise réelle au moment du checkout.
 const PLANS = [
   {
-    id:'test', name:'TEST', color:C.gray, best:false,
-    tagline:'Tester et trouver vos premières créatives gagnantes sur votre produit.',
-    ctaText:"S'abonner à Cette Offre",
-    lotsPerMonth: 2, produitsLabel:"jusqu'à 2 produits", creativesPerMonth: 12, videosPerMonth: 4, imagesPerMonth: 8, equipe: '0',
-    badge:'12 Créatives / Mois', garantie:null,
-    features: [
-      { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
-      { icon:'image', bold:"Jusqu'à 2 lots / mois", rest:': 2 vidéos et 4 images par lot' },
-      { icon:'box', bold:'Couverture', rest:": jusqu'à 2 produits" },
-      { icon:'sparkle', bold:'Apprentissage', rest:': itération + amélioration des prochains lots' },
-      { icon:'grid', bold:'AdBoard', rest:': gestion des créatives, données et produits' },
-      { icon:'bolt', bold:'Délai Production', rest:': 48h' },
-    ],
-    monthly: { price:75000, prixImg:6250, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_yslvdsuz/checkout' },
-  },
-  {
     id:'starter', name:'PERF+', color:C.gray, best:false,
     tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
     ctaText:"S'abonner à Cette Offre",
     lotsPerMonth: 4, produitsLabel:"jusqu'à 4 produits", creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16, equipe: '2',
     badge:'24 Créatives / Mois', garantie:'Performance en 60 jours',
-    lead:'Tout dans TEST et :',
     features: [
-      { icon:'image', bold:"Jusqu'à 4 lots de créatives / mois", rest:'' },
+      { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
+      { icon:'image', bold:"Jusqu'à 4 lots / mois", rest:': 2 vidéos et 4 images par lot' },
       { icon:'document', bold:'Ad Copies', rest:': titres et textes optimisés conversion' },
       { icon:'chart', bold:'Données Marché', rest:': vue détaillées, recommandation et opportunités' },
       { icon:'box', bold:'Couverture', rest:": jusqu'à 4 produits" },
       { icon:'person', bold:'Compte Employé', rest:': Ajoutez 2 Membres à AdBoard' },
       { icon:'check', bold:'Garantie', rest:': Performance en 60 jours' },
     ],
-    monthly: { price:140000, prixImg:5833, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
+    monthly: { price:250000, prixImg:10417, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
   },
   {
     id:'pro', name:'GROWTH', color:C.accent, best:true,
@@ -6150,7 +6177,7 @@ const PLANS = [
       { icon:'bolt', bold:'Délai Production', rest:': 24h' },
       { icon:'check', bold:'Garantie', rest:': Croissance en 60 jours' },
     ],
-    monthly: { price:260000, prixImg:5417, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
+    monthly: { price:480000, prixImg:10000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
   },
   {
     id:'scale', name:'SCALE', color:C.white, best:false,
@@ -6166,13 +6193,48 @@ const PLANS = [
       { icon:'bolt', bold:'Délai Production', rest:': 24h + file prioritaire' },
       { icon:'check', bold:'Garantie', rest:': Scaling en 60 jours' },
     ],
-    monthly: { price:480000, prixImg:5000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
+    monthly: { price:920000, prixImg:9583, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
   },
 ];
 
+// offres-v1 — /offres.json est la source unique des offres (prix, créatives, lots, produits, membres, délai, garantie, accroche).
+// Lu une fois au chargement d'AdBoard ; une valeur absente ou douteuse garde celle écrite ci-dessus.
+let offresLiveFaites = false;
+const chargerOffresLive = async () => {
+  if (offresLiveFaites) return; offresLiveFaites = true;
+  try {
+    const r = await fetch('/offres.json', { cache: 'no-store' }); if (!r.ok) return;
+    const j = await r.json();
+    const n = (x, a, b) => { x = Number(x); return Number.isFinite(x) && x >= a && x <= b ? Math.round(x) : null; };
+    (Array.isArray(j.offres) ? j.offres : []).forEach(o => {
+      const p = PLANS.find(x => x.id === o.id); if (!p) return;
+      const prix = n(o.prix, 10000, 5e7), cm = n(o.creatives_mois, 1, 2000), lots = n(o.lots_mois, 1, 400), prod = n(o.produits, 1, 1000);
+      if (prix) p.monthly.price = prix;
+      if (cm) { p.creativesPerMonth = cm; p.badge = cm + ' Créatives / Mois'; }
+      if (p.creativesPerMonth && p.monthly.price) p.monthly.prixImg = Math.round(p.monthly.price / p.creativesPerMonth);
+      if (typeof o.badge === 'string' && o.badge) p.badge = o.badge;
+      if (typeof o.tagline === 'string' && o.tagline) p.tagline = o.tagline;
+      if (typeof o.delai === 'string' && o.delai) p.monthly.delivery = o.delai;
+      if (typeof o.membres === 'string' && o.membres) p.equipe = o.membres;
+      if (lots) p.lotsPerMonth = lots;
+      if (prod) { p.produitsLabel = "jusqu'à " + prod + ' produits'; }
+      if (typeof o.garantie === 'string' && o.garantie) p.garantie = o.garantie;
+      p.features = p.features.map(f => {
+        if (f.bold === 'Couverture' && prod) return { ...f, rest: ": jusqu'à " + prod + ' produits' };
+        if (f.bold === 'Garantie' && o.garantie) return { ...f, rest: ': ' + o.garantie };
+        if (f.bold === 'Compte Employé' && o.membres) return { ...f, rest: ': Ajoutez ' + o.membres + ' Membres à AdBoard' };
+        if (/^Jusqu'à \d+ lots/.test(f.bold) && lots) return { ...f, bold: f.bold.replace(/\d+/, String(lots)) };
+        if (f.bold === 'Délai Production' && o.delai) return { ...f, rest: ': ' + o.delai + (o.prioritaire ? ' + file prioritaire' : '') };
+        return f;
+      });
+    });
+    window.dispatchEvent(new Event('adstack-offres'));
+  } catch (_) { }
+};
 // Les ids trimestriels restent pour les abonnés existants ; l'offre trimestrielle n'est plus vendue.
+// 'test' : l'offre TEST n'est plus vendue (son produit Chariow est devenu le ONE SHOT, vendu hors AdBoard) → un ancien client TEST ou pack est orienté vers PERF+.
 const PLAN_CHECKOUT_IDS = {
-  'test-monthly':    'prd_yslvdsuz',
+  'test-monthly':    'prd_ljowq8',
   'starter-monthly': 'prd_ljowq8',   'starter-quarterly': 'prd_wdya3v9h',
   'pro-monthly':     'prd_34w031',
   'scale-monthly':   'prd_9fi79y',
@@ -6226,7 +6288,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Quelle est la différence entre les formules ?",
-    a: "Chaque lot = 2 vidéos et 4 images. TEST : 12 créatives par mois (jusqu'à 2 lots), 2 produits, production en 48h. PERF+ : 24 créatives par mois (jusqu'à 4 lots), 4 produits, Ad Copies et Données Marché, 2 membres d'équipe, production en 48h. GROWTH : 48 créatives par mois (jusqu'à 8 lots), 8 produits, 5 membres, production en 24h. SCALE : 96 créatives par mois (jusqu'à 16 lots), 16 produits, plus de 10 membres, production en 24h avec file prioritaire. Vos créatives du mois sont disponibles dès le paiement : vous les demandez lot après lot, quand vous voulez (jusqu'à 6 lots par jour). Une garantie de 60 jours accompagne PERF+, GROWTH et SCALE."
+    a: "Chaque lot = 2 vidéos et 4 images. PERF+ : 24 créatives par mois (jusqu'à 4 lots), 4 produits, Ad Copies et Données Marché, 2 membres d'équipe, production en 48h. GROWTH : 48 créatives par mois (jusqu'à 8 lots), 8 produits, 5 membres, production en 24h. SCALE : 96 créatives par mois (jusqu'à 16 lots), 16 produits, plus de 10 membres, production en 24h avec file prioritaire. Vos créatives du mois sont disponibles dès le paiement : vous les demandez lot après lot, quand vous voulez (jusqu'à 6 lots par jour). Une garantie de 60 jours accompagne PERF+, GROWTH et SCALE."
   },
   {
     q: "En combien de temps mes créatives sont-elles livrées ?",
@@ -6560,6 +6622,9 @@ const DemoPreview = ({slug}) => {
 export default function Platform() {
   const SECTION_PATHS = { equipe:'team', facturation:'billing', tarifs:'offers', produits:'products', galerie:'gallery', copies:'copies', marche:'market', suivi:'tracking', notifications:'notifications', demo:'demo', faq:'faq', commentaires:'feedback', avis:'voice' };
   const PATH_TO_SECTION = Object.fromEntries(Object.entries(SECTION_PATHS).map(([k,v])=>[v,k]));
+  // offres-v1 : les offres affichées sont relues dans /offres.json au chargement ; l'écran se redessine quand elles arrivent.
+  const [, setOffresV] = useState(0);
+  useEffect(() => { const f = () => setOffresV(v => v + 1); window.addEventListener('adstack-offres', f); chargerOffresLive(); return () => window.removeEventListener('adstack-offres', f); }, []);
 
   const [section, _setSection] = useState(() => {
     try {
@@ -6921,7 +6986,7 @@ export default function Platform() {
   // le popup de plafond appelait sbBriefs.create() en direct, sans jamais reproduire l'envoi du
   // webhook vers Factory qui suit — Factory ne recevait donc jamais ces demandes-là, exactement
   // comme cancelCreatives() existe déjà pour éviter la même erreur côté annulation.
-  const creerDemandeEtNotifierFactory = async (product, qty, marchesChoisis = null, offreDuMoment = null) => {
+  const creerDemandeEtNotifierFactory = async (product, qty, marchesChoisis = null, offreDuMoment = null, reprise = null) => {
     const session = await sbAuth.refreshSession();
     const brief = await sbBriefs.create(session, product.id, qty, marchesChoisis);
     if (!brief || brief.error) {
@@ -6976,6 +7041,8 @@ export default function Platform() {
         lien_page_produit: product.lien || null,
         marque: product.marque || null,
       },
+      // reprise-angle-v1 — créative livrée que le client veut voir refaite : même angle, même CT, textes et scènes nouveaux.
+      ...(reprise && reprise.id ? { reprise: { creative_id: reprise.id, angle: reprise.angle || '', ct: reprise.ct || '', format: reprise.type === 'video' ? 'video' : 'image', apercu: reprise.thumbUrl || reprise.imageUrl || '' } } : {}),
       history: {
         batches_count: pastBriefs.length,
         total_creatives_done: pastBriefs.reduce((s,b) => s+(b.credits_used||9), 0),
@@ -7015,6 +7082,7 @@ export default function Platform() {
   const [creditsDataReady, setCreditsDataReady] = useState(false);
   const [subscription, setSubscription] = useState(null);
   const [creativesTarget, setCreativesTarget] = useState(null);
+  const [repriseCible, setRepriseCible] = useState(null);   // reprise-angle-v1
   const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
   const [plafondModal, setPlafondModal] = useState(null); // {product, qty, totalActuel, actifs, prochaineDateLibre} — plafond 36 images/24h dépassé
   // Garde synchrone (ref, pas state) contre le double-clic sur "Annuler" dans le popup de
@@ -7236,14 +7304,14 @@ export default function Platform() {
           try {
             window.fbq && window.fbq('track', 'Purchase', {
               currency: 'XOF',
-              value: boughtPlan?.price || 0,
+              value: boughtPlan?.monthly?.price || 0,
               content_name: boughtPlan?.name || sub.plan,
             });
           } catch(e) {}
           const conversionId = `${user?.id || 'anon'}-${sub.plan}-${Date.now()}`;
           try {
             window.twq && window.twq('event', 'tw-rf8c2-rf8cp', {
-              value: boughtPlan?.price || 0,
+              value: boughtPlan?.monthly?.price || 0,
               currency: 'XOF',
               email_address: user?.email || undefined,
               conversion_id: conversionId,
@@ -7257,7 +7325,7 @@ export default function Platform() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   email: user.email,
-                  value: boughtPlan?.price || 0,
+                  value: boughtPlan?.monthly?.price || 0,
                   plan_name: boughtPlan?.name || sub.plan,
                   conversion_id: conversionId,
                 })
@@ -7476,9 +7544,9 @@ export default function Platform() {
 
 const avisStore = useAvis({ user, getToken: async () => { const ss = await sbAuth.refreshSession(); return ss?.access_token || null; }, owner: wsOwner(user && user.id) });
 PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.active;
-  const views = {
-    demo: <DemoPreview slug={demoSlug}/>,
-    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} creditsDataReady={creditsDataReady} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={async (p)=>{ 
+  // reprise-angle-v1 — UN seul chemin pour demander une production : bouton du produit OU « Refaire dans ce style » de la galerie.
+  // `reprise` (facultatif) = la créative livrée que le client veut voir refaite (même angle, même CT).
+  const demanderProduction = async (p, reprise = null) => { 
             if(!user){setShowLogin(true);return;} 
             // Cause profonde corrigée (client déjà payant redirigé à tort vers "Nos offres") :
             // `subscription` est un état React chargé une seule fois au démarrage de la page —
@@ -7513,8 +7581,11 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
               setReAskConfirm({ product: p, canCancel });
               return;
             }
-            setCreativesTarget(p); }}/>,
-    galerie: <Galerie products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user} avisStore={avisStore}/>,
+            setRepriseCible(reprise); setCreativesTarget(p); };
+  const views = {
+    demo: <DemoPreview slug={demoSlug}/>,
+    produits: <Produits products={products} setProducts={setProducts} user={user} onNeedLogin={()=>setShowLogin(true)} briefs={briefs} setBriefs={setBriefs} allBriefs={allBriefs} setAllBriefs={setAllBriefs} creditsDataReady={creditsDataReady} subscription={subscription} credits={computeCredits(subscription,allBriefs)} notify={notify} cancelCreatives={cancelCreatives} setSection={setSection} onOpenPayment={(productId)=>setPaymentProductId(productId)} onAskCreatives={(p)=>demanderProduction(p)}/>,
+    galerie: <Galerie onRefaire={(pr, c) => demanderProduction(pr, c)} products={products} setProducts={setProducts} isDemo={isDemo} setSection={setSection} isMobile={isMobile} notify={notify} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user} avisStore={avisStore}/>,
     copies: !accesGrowth() ? <LockedFeature apercu="copies" C={C} icon="document" titre="Ad Copies" texte="Pour chaque angle, des titres et des textes publicitaires prêts à coller dans votre gestionnaire de publicités, optimisés pour convertir." points={['Titres et textes classés par angle','Prêts à copier-coller dans Meta Ads','Livrés avec chaque lot de créatives']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Copies products={products} setSection={setSection}/>,
     marche: !accesGrowth() ? <LockedFeature apercu="marche" C={C} icon="chart" titre="Données Marché" texte="La vue détaillée de votre marché, de vos concurrents et de votre cible, avec nos recommandations et les opportunités à saisir." points={['Analyse du marché, des concurrents et de la cible','Recommandations claires pour vos prochaines campagnes','Opportunités repérées pour chaque produit']} owner={!isMember()} onUpgrade={()=>setSection('tarifs')}/> : <Marche products={products} isDemo={isDemo} setSection={setSection} subscription={subscription} onOpenPayment={(productId)=>setPaymentProductId(productId)}/>,
     tarifs: <Tarifs convertPrice={convertPrice} subscription={subscription} credits={computeCredits(subscription,allBriefs)} onOpenPayment={(productId)=>setPaymentProductId(productId)} user={user}/>,
@@ -7739,11 +7810,11 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
                             // Assez de place libérée — on crée directement la demande initialement
                             // bloquée, en notifiant Factory correctement cette fois (même chemin que
                             // le flux normal de création, voir creerDemandeEtNotifierFactory).
-                            await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty, plafondModal.marches, plafondModal.offre);
+                            await creerDemandeEtNotifierFactory(plafondModal.product, plafondModal.qty, plafondModal.marches, plafondModal.offre, plafondModal.reprise);
                             setPlafondModal(null);
                           } else {
                             // Toujours au-dessus du plafond — on met juste la modale à jour
-                            setPlafondModal({product: plafondModal.product, qty: plafondModal.qty, marches: plafondModal.marches, offre: plafondModal.offre, ...reverif});
+                            setPlafondModal({product: plafondModal.product, qty: plafondModal.qty, marches: plafondModal.marches, offre: plafondModal.offre, reprise: plafondModal.reprise, ...reverif});
                           }
                         } finally {
                           plafondActionEnCoursRef.current = false;
@@ -7766,11 +7837,12 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
     {creativesTarget && (
       <CreativesModal
         product={creativesTarget}
+        repriseInitiale={repriseCible}
         credits={computeCredits(subscription, allBriefs)}
         subscription={subscription}
         onOpenPayment={(productId)=>setPaymentProductId(productId)}
         C={C}
-        onClose={()=>setCreativesTarget(null)}
+        onClose={()=>{ setCreativesTarget(null); setRepriseCible(null); }}
         verifierPlafond={(q) => verifierPlafondProduction(allBriefs, q)}
         onEditProduct={(p) => {
           // Ferme le pop-up, ouvre la section Produits puis la fiche du produit (même écran que le bouton Modifier).
@@ -7779,18 +7851,18 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
           setSection('produits');
           setTimeout(() => { try { window.dispatchEvent(new CustomEvent('adboard:ouvrir-fiche', { detail: p.id })); } catch(e) {} }, 60);
         }}
-        onConfirm={async (qty, marches, offre) => {
+        onConfirm={async (qty, marches, offre, reprise) => {
           // Plafond de charge — 36 images max en production simultanée, tous produits
           // confondus, sur une fenêtre glissante de 24h. Vérifié AVANT toute création,
           // indépendant des crédits d'abonnement (qui suivent une autre logique de rechargement).
           const verif = verifierPlafondProduction(allBriefs, qty);
           if (!verif.autorise) {
-            setPlafondModal({ product: creativesTarget, qty, marches, offre, ...verif });
-            setCreativesTarget(null);
+            setPlafondModal({ product: creativesTarget, qty, marches, offre, reprise, ...verif });
+            setCreativesTarget(null); setRepriseCible(null);
             return;
           }
-          await creerDemandeEtNotifierFactory(creativesTarget, qty, marches, offre);
-          setCreativesTarget(null);
+          await creerDemandeEtNotifierFactory(creativesTarget, qty, marches, offre, reprise);
+          setCreativesTarget(null); setRepriseCible(null);
         }}
       />
     )}

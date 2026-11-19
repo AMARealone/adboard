@@ -195,8 +195,9 @@ export const CAMPAGNES_LIENS = {
 const V_MINIATURES = 5
 export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
   const o = OFFRES[offreKey]; if (!o) return ''
-  if (offreKey === 'oneshot') return `${o.url}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}` // pas de page d'offre : lien de paiement direct, toujours suivi et raccourci
-  return `https://www.adstackofficial.com/${offreKey}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}&v=${V_MINIATURES}`
+  // 19 nov. 2026 : le ONE SHOT a sa page (/test) ; TEST n'est plus vendue, une ancienne fiche TEST pointe vers PERF+
+  const page = offreKey === 'oneshot' ? 'test' : offreKey === 'test' ? 'perf' : offreKey
+  return `https://www.adstackofficial.com/${page}?utm_source=crm&utm_medium=${medium}&utm_campaign=${campagne}&utm_content=${id}&v=${V_MINIATURES}`
 }
 
 // ── Pitch (envoyé quand le prospect a répondu) : lien suivi, campagne « pitch »

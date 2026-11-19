@@ -437,12 +437,11 @@ h2{font-size:70px;margin-top:26px}
 /* PRÉSENTATION UNIVERSELLE · 25 slides, aucune donnée client. Mêmes slides pour tout le monde. */
 var G=function(n){return '/assets/teaser/g'+n+'.jpg'};
 var OFFRES={
- "TEST":{nom:"TEST",prix:"75.000",pts:["12 créatives par mois en tout, vidéos et images","À répartir sur 1 à 2 produits","Chaque lot livré en 48h maximum","Stratégie marketing et espace AdBoard inclus"],garantie:""},
- "PERF+":{nom:"PERF+",prix:"140.000",pts:["24 créatives par mois en tout, vidéos et images","À répartir sur 1 à 4 produits","Chaque lot livré en 48h maximum","Stratégie, Ad Copies, Données Marché et AdBoard","2 membres d’équipe dans AdBoard"],garantie:"Garantie Performance en 60 jours"},
- "GROWTH":{nom:"GROWTH",prix:"260.000",pts:["48 créatives par mois en tout, vidéos et images","À répartir sur 1 à 8 produits","Chaque lot livré en 24h maximum","5 membres d’équipe dans AdBoard"],garantie:"Garantie Croissance en 60 jours"},
- "SCALE":{nom:"SCALE",prix:"480.000",pts:["96 créatives par mois en tout, vidéos et images","À répartir sur 1 à 16 produits, plusieurs marchés","Chaque lot livré en 24h maximum, file prioritaire","Plus de 10 membres d’équipe dans AdBoard"],garantie:"Garantie Scaling en 60 jours"}
+ "PERF+":{nom:"PERF+",prix:"250.000",pts:["24 créatives par mois en tout, vidéos et images","À répartir sur 1 à 4 produits","Chaque lot livré en 48h maximum","Stratégie, Ad Copies, Données Marché et AdBoard","2 membres d’équipe dans AdBoard"],garantie:"Garantie Performance en 60 jours"},
+ "GROWTH":{nom:"GROWTH",prix:"480.000",pts:["48 créatives par mois en tout, vidéos et images","À répartir sur 1 à 8 produits","Chaque lot livré en 24h maximum","5 membres d’équipe dans AdBoard"],garantie:"Garantie Croissance en 60 jours"},
+ "SCALE":{nom:"SCALE",prix:"920.000",pts:["96 créatives par mois en tout, vidéos et images","À répartir sur 1 à 16 produits, plusieurs marchés","Chaque lot livré en 24h maximum, file prioritaire","Plus de 10 membres d’équipe dans AdBoard"],garantie:"Garantie Scaling en 60 jours"}
 };
-var O=OFFRES[/presentation-test|offre=test/i.test(location.pathname+location.search)?"TEST":"PERF+"];   /* deux liens : /presentation recommande PERF+, /presentation-test recommande TEST */
+var O=OFFRES["PERF+"];   /* 19 nov. 2026 : l'offre TEST n'existe plus, la présentation recommande PERF+ ; le budget trop juste redescend sur le ONE SHOT */
 /* ───────── PERSONNALISATION (null = présentation pour tout le monde) ───────── */
 var PERSO=null;
 
@@ -848,19 +847,19 @@ add("",split(head('Pour finir','Tout est prêt. <span class="grad">On commence ?
 
 /* ═════ Annexe · Comparatif ═════ */
 (function(){
- var cols=["TEST","PERF+","GROWTH","SCALE"].map(function(k){var o=OFFRES[k];
+ var cols=["PERF+","GROWTH","SCALE"].map(function(k){var o=OFFRES[k];
   return '<div class="cc'+(k===O.nom?' me':'')+'"><div class="nm2">'+o.nom+'</div><div class="pr">'+o.prix+'<small>FCFA / mois</small></div><ul>'+o.pts.map(function(p){return '<li>'+esc(p)+'</li>'}).join('')+(o.garantie?'<li style="color:#fff;font-weight:700">'+esc(o.garantie)+'</li>':'')+'</ul></div>'}).join('');
  add("",head('Les offres','Comparer les <span class="grad">offres.</span>')+'<div class="cmp a" style="--d:2">'+cols+'</div><button class="back" data-back="1">Retour</button>',{annex:'cmp'});
 })();
 
 /* ═════ Annexe · Downsell (8 nov. 2026) — débloqué par le petit lien du dernier slide, quand le budget ne correspond pas.
-   Présentation PERF+ → on redescend sur TEST (avec sa carte) ; présentation TEST → on redescend sur ONE SHOT (juste des lignes, 50.000 FCFA, CTA direct). ═════ */
+   Depuis le 19 nov. 2026 : on redescend toujours sur le ONE SHOT (juste des lignes, 75.000 FCFA, CTA direct). ═════ */
 (function(){
  var back='<button class="back" data-back="1">Retour</button>';
- if(O.nom==="TEST"){
+ if(true){   /* 19 nov. 2026 : la redescente se fait toujours sur le ONE SHOT */
   add("",split(head('Autre façon de démarrer','Testez notre travail <span class="grad">avant de vous engager.</span>')+
    pts(['Avant la production : <b>recherche et stratégie marketing</b> sur votre produit.','<b>6 créatives stratégiques</b> : 2 vidéos et 4 images, optimisées conversion.','Vous les recevez dans <b>AdBoard, sous 48h maximum</b>.'],2)+
-   '<div class="os a pop" style="--d:5"><div class="osn">ONE SHOT</div><div class="pr">50.000<small>FCFA, une seule fois</small></div></div>',
+   '<div class="os a pop" style="--d:5"><div class="osn">ONE SHOT</div><div class="pr">75.000<small>FCFA, une seule fois</small></div></div>',
    timeline([['On peut démarrer maintenant','Je vous envoie le lien de paiement.'],['Vous vous connectez à AdBoard','Avec l’email utilisé pour le paiement.'],['Vous faites votre première demande','Notre équipe s’occupe du reste.']]))+back,{annex:'down'});
  } else {
   var T=OFFRES["TEST"];

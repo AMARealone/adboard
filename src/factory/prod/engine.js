@@ -10,6 +10,7 @@ import * as PL from './plan'
 import * as APP from './apprentissage' // appr-client-v1
 import * as CDC from './cdc' // cdc-franchise-v1
 import * as VER from './verite' // verite-v1
+import * as REP from './reprise' // reprise-angle-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const NGROK = { 'ngrok-skip-browser-warning': '1' }
@@ -154,6 +155,7 @@ export async function loadBriefFromCommande(b) {
   const brief = commandeToBrief(b)
   S.brief = brief; S.briefRaw = JSON.stringify(brief, null, 2); S.briefSource = 'commande'; S.commandeId = b.id; S.productId = p.id || null
   S.verites = null; S.marqueAffichee = undefined   // verite-v1 : jamais la fiche d'une autre commande
+  S.reprise = (b.reprise && b.reprise.creative_id) ? b.reprise : null   // reprise-angle-v1 : la créative que le client veut voir refaite
   try { const m = lireMarqueur(); if (!m || m.commandeId !== b.id) localStorage.setItem(CLE_MARQUEUR, JSON.stringify({ commandeId: b.id, ts: Date.now() })) } catch (_) {}   // reprise-production-v1 : ne jamais écraser le marqueur (phase, numéro de lot) d'une production à reprendre
   const photoData = b.photo_nobg || p.photo_base64 || ''
   if (photoData) {
@@ -396,6 +398,7 @@ async function lancerProduction(reprise = false) {
     if (!hypoDejaLa) {
       const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
       S.synthesis = synthesisText; S.marche = marche; S.angles = V.anglesProduction(synthesisText, nbAngles)
+      { const pr = REP.placerAngle(); if (pr && !pr.trouve) console.warn('[Reprise] l\'analyste n\'a pas écrit l\'angle demandé : il est remis tel quel en angle 1.') }   // reprise-angle-v1
       setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K · ${nbAngles} angles retenus${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée' : ' · nouveau balayage du marché') : ''}${marche ? '' : ' · ⚠ Données Marché non extraites'}`, 100)
     } else setAgent(1, 'done', `Synthèse déjà faite · ${Math.round(S.synthesis.length / 1000)}K · ${S.angles.length || nbAngles} angles · rien à repayer`, 100)
     phaseMarqueur('plan'); autosave(true)   // point de sauvegarde : l'hypothèse payée est dans la commande dès maintenant
@@ -413,7 +416,9 @@ async function lancerProduction(reprise = false) {
     if (!planDeja) {
     setAgent(4, 'active', videoCloud ? 'Plan des niveaux de conscience et choix des ' + nbAngles + ' CT vidéo (tous différents)…' : 'Plan des niveaux de conscience…', 4)
     let plan
-    try { const r = await VID.planifier(nbAngles, { avecVideo: videoCloud }); plan = r.plan; choixVideo = r.choix }
+    try { const r = await VID.planifier(nbAngles, { avecVideo: videoCloud }); plan = r.plan; choixVideo = r.choix
+      // reprise-angle-v1 : la vidéo à refaire garde son CT (et le niveau de conscience de ce CT quand le parcours de l'angle le contient)
+      if (videoCloud && REP.active() && REP.active().format === 'video') { choixVideo = REP.forcerVideo(choixVideo, await VID.prechargerCTVideo()); const nv = PL.cle(REP.active().niveau || ''); if (nv && plan[0] && Array.isArray(plan[0].niveaux) && plan[0].niveaux.includes(nv)) plan[0] = { ...plan[0], video: nv } } }
     catch (e) { plan = PL.planParDefaut(nbAngles); U.banner = { kind: 'warn', text: 'Choix des CT vidéo impossible (' + e.message + ') : les vidéos sont à lancer depuis leur carte.' } }
     verifier()
     S.planNiveaux = plan
@@ -423,6 +428,7 @@ async function lancerProduction(reprise = false) {
       PL.niveauxImages(p).forEach((niv) => slots.push({ angleIdx: a, ctIdx: niv, niveau: niv, rang: p.niveaux.indexOf(niv), ct: null, status: 'pending' }))
     })
     APP.construirePlan(slots); { const m = APP.messagePlan(); if (m) U.banner = { kind: m.kind, text: (U.banner ? U.banner.text + ' ' : '') + m.text } }
+    REP.forcerImage(slots); { const m = REP.message(); if (m) U.banner = { kind: 'info', text: (U.banner ? U.banner.text + ' ' : '') + m } }   // reprise-angle-v1
     S.creatives = slots
     U.crea = slots.map((c) => estSlotVideo(c) ? (videoCloud && choixVideo.some((x) => x.angleIdx === c.angleIdx) ? { state: 'running', text: 'En file', pct: 0 } : { state: 'video', text: 'Vidéo à lancer' }) : { state: 'pending', text: 'En attente' })
     emit()
