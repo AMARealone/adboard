@@ -249,6 +249,7 @@ body{background:#0A0A0E;overflow-x:hidden}
 <style id="overscroll-fix">html{background:#0A0A0E;overscroll-behavior:none}body{overscroll-behavior:none}.ads-footer{background:#0A0A0E!important}</style>
 <script src="/suivi.js"></script>
 <script src="/protect-media.js"></script>
+<script src="/devise.js" defer></script>
 </head>
 <body>
 <div class="qz-bg" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -394,12 +395,12 @@ if(a.length===Q.questions.length&&a.every(function(i){return i>=0})){
 }
 var h='<span class="rs-eye">'+(direct?'Votre offre':'🎉 Votre résultat')+'</span><h1>'+t+'</h1><p class="rs-sub">'+esc(r.sous)+'</p>'+said;
 h+='<article class="of"><span class="of-tag">'+(direct?'Offre '+of.name:'Faite pour vous')+'</span><h2 class="of-name">'+of.name+'</h2><p class="of-tl">'+esc(of.tagline)+'</p>';
-h+=of.unique?'<div class="of-pr"><b>'+fmt(of.price)+'</b><span>FCFA · une seule fois</span></div><p class="of-sub">'+of.creas+' créatives pour 1 produit · achat unique, sans abonnement</p><hr>':'<div class="of-pr"><b>'+fmt(of.price)+'</b><span>FCFA / mois</span></div><p class="of-sub">'+of.creas+' créatives par mois · abonnement mensuel</p><hr>';
+h+=of.unique?'<div class="of-pr"><b data-fcfa="'+of.price+'">'+fmt(of.price)+'</b><span data-suffixe="· une seule fois">FCFA · une seule fois</span></div><p class="of-sub">'+of.creas+' créatives pour 1 produit · achat unique, sans abonnement</p><hr>':'<div class="of-pr"><b data-fcfa="'+of.price+'">'+fmt(of.price)+'</b><span data-suffixe="/ mois">FCFA / mois</span></div><p class="of-sub">'+of.creas+' créatives par mois · abonnement mensuel</p><hr>';
 if(of.lead)h+='<p class="of-lead">'+esc(of.lead)+'</p>';
 h+='<ul>'+of.items.map(function(f){return '<li><span><strong>'+esc(f[0])+'</strong>'+esc(f[1])+'</span></li>'}).join('')+'</ul>';
 h+='<button class="of-cta" id="ofCta">'+(of.unique?'Commander le '+esc(of.name):'S’abonner à cette offre')+' <span aria-hidden="true">→</span></button><p class="of-proof">Paiement sécurisé · vos créatives arrivent dans AdBoard</p></article>';
 h+='<div class="rs-links"><a href="/pdv#nos-offres">Voir toutes les offres</a><a href="/pdv">Retour à la page principale</a><a href="/quiz?recommencer=1">Refaire le quiz</a></div>';
-document.getElementById('rs').innerHTML=h;
+document.getElementById('rs').innerHTML=h;if(window.adsDevise)window.adsDevise();
 document.title=of.name+' : votre offre AdStack';
 try{if(window.fbq)fbq('trackCustom','QuizResult',{offre:o})}catch(e){}
 window.payClose=function(){document.getElementById('pay').style.display='none';document.querySelectorAll('script[src*="chariowcdn"]').forEach(function(s){s.remove()})};

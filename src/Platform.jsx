@@ -532,7 +532,7 @@ const WorkspaceBar = ({C, isMobile, user, getToken, notify}) => {
 
 // Page Facturation (propriétaire) : historique des paiements faits sur AdBoard. Les montants viennent du serveur
 // (jamais de commission interne) ; un membre d'équipe n'y a pas accès.
-const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
+const BillingPage = ({C, isMobile, getToken, onOpenPlans, convertPrice=null}) => {
   const tarifP = useTarifProtege();   // tarif-protege-v1
   const [d, setD] = useState(null);
   const [err, setErr] = useState(false);
@@ -548,7 +548,10 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
   const PL = { test:'TEST', starter:'PERF+', pro:'GROWTH', scale:'SCALE', discovery:'Découverte', oneshot:'ONE SHOT', pack:'ONE SHOT' };
   const CY = { monthly:'Abonnement mensuel', quarterly:'Abonnement trimestriel' };
   const fmtD = (x) => { try { return new Date(x).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}); } catch(e) { return ''; } };
-  const fcfa = (n) => Math.round(n||0).toLocaleString('fr-FR') + ' FCFA';
+  const fcfaBrut = (n) => Math.round(n||0).toLocaleString('fr-FR') + ' FCFA';
+  // devise-v1 : montants affichés dans la devise du visiteur (indicatif) ; le montant réellement payé en FCFA reste écrit en dessous
+  const fcfa = (n) => convertPrice ? convertPrice(Math.round(n||0)) : fcfaBrut(n);
+  const converti = !!convertPrice && convertPrice(100000) !== fcfaBrut(100000);
   if (err) return <div style={{...card,padding:20,color:C.sec,fontSize:13,maxWidth:640}}>Impossible de charger la facturation. <button onClick={load} style={{marginLeft:8,padding:'6px 12px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,cursor:'pointer',fontFamily:'inherit'}}>Réessayer</button></div>;
   if (!d) return <div style={{color:C.sec,fontSize:13,padding:20}}>Chargement de votre facturation…</div>;
   const sub = d.subscription;
@@ -576,7 +579,7 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
           </div>
         ) : <div style={{position:'relative',fontSize:13,color:C.sec}}>Aucun forfait pour le moment. <button onClick={onOpenPlans} style={{background:'none',border:'none',color:C.accent,cursor:'pointer',fontWeight:700,fontFamily:'inherit',padding:0}}>Voir les forfaits</button></div>}
       </div>
-      <AnnonceTarif tp={tarifP} isMobile={isMobile} onRenouveler={tarifP && tarifP.protege ? (tarifP.checkout_id ? onOpenPlans : () => renouvelerParWhatsApp(tarifP)) : null}/>
+      <AnnonceTarif tp={tarifP} convertPrice={convertPrice || undefined} isMobile={isMobile} onRenouveler={tarifP && tarifP.protege ? (tarifP.checkout_id ? onOpenPlans : () => renouvelerParWhatsApp(tarifP)) : null}/>
       {d.transactions.length > 0 && (
         <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:10,marginBottom:18}}>
           <div style={{...card,padding:'12px 14px'}}><div style={{fontSize:10.5,color:C.sec,fontWeight:700,letterSpacing:'1px',textTransform:'uppercase'}}>Total investi</div><div style={{fontSize:17,fontWeight:800,color:C.text,marginTop:4,fontFamily:"'DM Mono',monospace"}}>{fcfa(total)}</div></div>
@@ -595,7 +598,7 @@ const BillingPage = ({C, isMobile, getToken, onOpenPlans}) => {
             </div>
             <div style={{textAlign:'right',flexShrink:0}}>
               <div style={{fontSize:14,fontWeight:800,color:C.text,fontFamily:"'DM Mono',monospace"}}>{fcfa(t.montant_fcfa)}</div>
-              <div style={{fontSize:10.5,color:'#22C55E',fontWeight:700,marginTop:2}}>Payé</div>
+              <div style={{fontSize:10.5,color:'#22C55E',fontWeight:700,marginTop:2}}>Payé{converti ? <span style={{color:C.muted,fontWeight:500}}> · {fcfaBrut(t.montant_fcfa)}</span> : null}</div>
             </div>
           </div>
         ))}
@@ -7745,7 +7748,7 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
     equipe: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <TeamPage C={C} isMobile={isMobile} notify={notify} onUpgrade={()=>setSection('tarifs')} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}}/>,
     avis: <VotreRegard products={products} user={user} isMobile={isMobile} avisStore={avisStore} notify={notify} onNeedLogin={()=>setShowLogin(true)}/>,
     faq: <Faq/>,
-    facturation: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <BillingPage C={C} isMobile={isMobile} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}} onOpenPlans={()=>setSection('tarifs')}/>,
+    facturation: isMember() ? <div style={{color:C.sec,fontSize:13}}>Cette page est réservée au propriétaire de l'espace.</div> : <BillingPage C={C} isMobile={isMobile} convertPrice={convertPrice} getToken={async()=>{const ss=await sbAuth.refreshSession();return ss?.access_token||null;}} onOpenPlans={()=>setSection('tarifs')}/>,
     suivi: <SuiviDemande allBriefs={allBriefs} products={products} briefs={briefs} cancelCreatives={cancelCreatives} C={C} onRefresh={refreshUserData} setSection={setSection}/>,
     notifications: <Notifications
         notifications={notifications}

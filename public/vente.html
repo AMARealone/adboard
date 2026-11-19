@@ -2213,7 +2213,7 @@ function lpCloseCheckout() {
     }).join('');
     var q=vol(n), fois=Math.round(freelance(n)/plan.price*10)/10;
     document.getElementById('cstCap').innerHTML='Pour la même valeur que '+plan.name+' : '+q.v+' vidéos, '+q.i+' images, les textes de '+q.a+' angles et '+q.e+' étude'+(q.e>1?'s':'')+' de marché. Avec des freelances, c\'est <b style="color:#fff">'+String(fois).replace('.',',')+' fois plus cher</b>.';
-    document.getElementById('cstFoot').textContent='Prix moyens observés en 2026 au Sénégal et en Côte d\'Ivoire : vidéo pub UGC 50 000 à 90 000 FCFA, image pub 15 000 FCFA et plus, étude de marché rapide jusqu\'à 150 000 FCFA, monteur vidéo 450 000 à 800 000 FCFA et graphiste 450 000 à 750 000 FCFA par mois. Sans compter le temps passé à briefer, relancer et coordonner.';
+    document.getElementById('cstFoot').innerHTML='Prix moyens observés en 2026 au Sénégal et en Côte d\'Ivoire : vidéo pub UGC '+m(50000)+' à '+m(90000)+', image pub '+m(15000)+' et plus, étude de marché rapide jusqu\'à '+m(150000)+', monteur vidéo '+m(450000)+' à '+m(800000)+' et graphiste '+m(450000)+' à '+m(750000)+' par mois. Sans compter le temps passé à briefer, relancer et coordonner.';
     if(window.lpApplyCurrency)window.lpApplyCurrency();
   }
   range.addEventListener('input',render);
@@ -2569,7 +2569,7 @@ window.lpFitNumber = function(el){
   }catch(e){}
 };
 window.lpApplyCurrency = function(){};
-(async function(){try{const geo=await fetch('https://ipapi.co/json/').then(r=>r.json());const currency=(geo.currency||'XOF').toUpperCase();if(currency==='XOF')return;const ratesData=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json').then(r=>r.json());const rate=ratesData.xof[currency.toLowerCase()];if(!rate)return;const NO_DECIMALS=['XOF','XAF','GNF','KMF','DJF','RWF','BIF','UGX','TZS','MGA','JPY','KRW','VND','CLP','PYG','IDR','MMK'];const hasDecimals=!NO_DECIMALS.includes(currency);const decimals=hasDecimals?2:0;const minDec=0;const CHARIOW_COEFF=1.0245;function smartRound(value){
+(async function(){try{const geo=await fetch('https://ipapi.co/json/').then(r=>r.json());const currency=(geo.currency||'XOF').toUpperCase();if(currency==='XOF')return;const ratesData=await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json').then(r=>r.json());const rate=ratesData.xof[currency.toLowerCase()];if(!rate)return;const NO_DECIMALS=['XOF','XAF','GNF','KMF','DJF','RWF','BIF','UGX','TZS','MGA','JPY','KRW','VND','CLP','PYG','IDR','MMK'];const hasDecimals=!NO_DECIMALS.includes(currency);const decimals=hasDecimals?2:0;const minDec=0;const CHARIOW_COEFF=1.035;function smartRound(value){
         // Arrondi COMMERCIAL à la hausse : le chiffre le plus rond possible, avec la plus petite hausse possible (3 % maximum).
         // On essaie des pas de plus en plus fins (1, 0,5, 0,25, 0,1, 0,05... fois la puissance de 10 du montant) et on garde le premier
         // dont la hausse reste sous 3 %. Au pire, le pas le plus fin ajoute moins de 1 %.
