@@ -6234,7 +6234,7 @@ const PLANS = [
     tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.',
     ctaText:"S'abonner à Cette Offre",
     lotsPerMonth: 4, produitsLabel:"jusqu'à 4 produits", creativesPerMonth: 24, videosPerMonth: 8, imagesPerMonth: 16, equipe: '2',
-    badge:'24 Créatives / Mois', garantie:'Performance en 60 jours',
+    badge:'24 Créatives / Mois',
     features: [
       { icon:'search', bold:'Stratégie Marketing', rest:': recherche sur marché, concurrents, cible' },
       { icon:'image', bold:"Jusqu'à 4 lots / mois", rest:': 2 vidéos et 4 images par lot' },
@@ -6242,7 +6242,6 @@ const PLANS = [
       { icon:'chart', bold:'Données Marché', rest:': vue détaillées, recommandation et opportunités' },
       { icon:'box', bold:'Couverture', rest:": jusqu'à 4 produits" },
       { icon:'person', bold:'Compte Employé', rest:': Ajoutez 2 Membres à AdBoard' },
-      { icon:'check', bold:'Garantie', rest:': Performance en 60 jours' },
     ],
     monthly: { price:250000, prixImg:10417, delivery:'48h', checkout:'https://shop.adstackofficial.com/prd_ljowq8/checkout' },
   },
@@ -6251,14 +6250,13 @@ const PLANS = [
     tagline:'Accélérer la production créative et la croissance de votre marque, sans la prise de tête de gérer une équipe.',
     ctaText:"S'abonner à Cette Offre",
     lotsPerMonth: 8, produitsLabel:"jusqu'à 8 produits", creativesPerMonth: 48, videosPerMonth: 16, imagesPerMonth: 32, equipe: '5',
-    badge:'48 Créatives / Mois', garantie:'Croissance en 60 jours',
+    badge:'48 Créatives / Mois',
     lead:'Tout dans PERF+ et :',
     features: [
       { icon:'image', bold:"Jusqu'à 8 lots de créatives / mois", rest:'' },
       { icon:'box', bold:'Couverture', rest:": jusqu'à 8 produits" },
       { icon:'person', bold:'Compte Employé', rest:': Ajoutez 5 Membres à AdBoard' },
       { icon:'bolt', bold:'Délai Production', rest:': 24h' },
-      { icon:'check', bold:'Garantie', rest:': Croissance en 60 jours' },
     ],
     monthly: { price:480000, prixImg:10000, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_34w031/checkout' },
   },
@@ -6267,14 +6265,13 @@ const PLANS = [
     tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.',
     ctaText:"S'abonner à Cette Offre",
     lotsPerMonth: 16, produitsLabel:"jusqu'à 16 produits", creativesPerMonth: 96, videosPerMonth: 32, imagesPerMonth: 64, equipe: '+10',
-    badge:'96 Créatives / Mois', garantie:'Scaling en 60 jours',
+    badge:'96 Créatives / Mois',
     lead:'Tout dans GROWTH et :',
     features: [
       { icon:'image', bold:"Jusqu'à 16 lots de créatives / mois", rest:'' },
       { icon:'box', bold:'Couverture', rest:": jusqu'à 16 produits" },
       { icon:'person', bold:'Compte Employé', rest:': Ajoutez +10 Membres à AdBoard' },
       { icon:'bolt', bold:'Délai Production', rest:': 24h + file prioritaire' },
-      { icon:'check', bold:'Garantie', rest:': Scaling en 60 jours' },
     ],
     monthly: { price:920000, prixImg:9583, delivery:'24h', checkout:'https://shop.adstackofficial.com/prd_9fi79y/checkout' },
   },
@@ -6301,7 +6298,6 @@ const chargerOffresLive = async () => {
       if (typeof o.membres === 'string' && o.membres) p.equipe = o.membres;
       if (lots) p.lotsPerMonth = lots;
       if (prod) { p.produitsLabel = "jusqu'à " + prod + ' produits'; }
-      if (typeof o.garantie === 'string' && o.garantie) p.garantie = o.garantie;
       p.features = p.features.map(f => {
         if (f.bold === 'Couverture' && prod) return { ...f, rest: ": jusqu'à " + prod + ' produits' };
         if (f.bold === 'Garantie' && o.garantie) return { ...f, rest: ': ' + o.garantie };
@@ -6456,10 +6452,6 @@ const FAQ_ITEMS = [
     a: "Le paiement est traité de façon sécurisée par notre partenaire Chariow. Nous ne stockons jamais vos informations bancaires directement. Votre historique de paiements est dans l'onglet Facturation."
   },
   {
-    q: "Comment fonctionne la garantie de 60 jours ?",
-    a: "Vous publiez les créatives livrées et investissez en publicité avec elles pendant 60 jours. Si vous ne constatez aucune amélioration de vos performances, écrivez-nous sur WhatsApp avec les captures de votre compte publicitaire (vos dépenses du mois et vos résultats : ROAS, coût par achat…). Nous vérifions, puis nous vous remboursons l'intégralité de votre paiement."
-  },
-  {
     q: "Une créative m'a plu : comment continuer dans cette direction ?",
     a: "Ouvrez-la dans la Galerie et touchez « Nouvelle production sur cet angle ». Votre prochain lot reprend le même angle et le même style, avec de nouveaux textes et de nouvelles scènes, pour ne pas lasser votre audience. Les autres angles du lot restent nouveaux."
   },
@@ -6473,7 +6465,7 @@ const FAQ_ITEMS = [
   },
   {
     q: "Qu'est-ce que l'offre ONE SHOT ?",
-    a: "Un achat unique pour tester AdStack sur un produit : 6 créatives (2 vidéos et 4 images), livrées sous 48 h. Pour recevoir des créatives chaque mois et profiter de la garantie de 60 jours, choisissez PERF+, GROWTH ou SCALE."
+    a: "Un achat unique pour tester AdStack sur un produit : 6 créatives (2 vidéos et 4 images), livrées sous 48 h. Pour recevoir des créatives chaque mois, choisissez PERF+, GROWTH ou SCALE."
   },
   {
     q: "Mes données sont-elles en sécurité ?",
@@ -6609,12 +6601,12 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
 
       {subscription?.active && <AnnonceTarif tp={tarifP} convertPrice={convertPrice} isMobile={isMobile} onRenouveler={renouvelerGaranti}/>}
 
-      {/* ── Garantie — visible sur PC ; sur mobile, trop encombrante ici, déplacée sous chaque CTA ── */}
+      {/* ── Paiement sécurisé — visible sur PC ── */}
       {!isMobile && (
         <div style={{display:'flex',alignItems:'center',gap:10,padding:'12px 16px',borderRadius:11,background:'rgba(45,127,249,0.07)',border:`1px solid rgba(45,127,249,0.22)`,marginBottom:20,flexWrap:'wrap'}}>
           <span style={{width:30,height:30,borderRadius:9,background:'rgba(45,127,249,0.15)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="lock" size={15} color={C.accent}/></span>
           <div style={{fontSize:12.5,color:C.text,lineHeight:1.4}}>
-            <strong style={{color:C.accent}}>Garantie résultats en 60 jours à partir de PERF+.</strong> <span style={{color:C.sec}}>Paiement sécurisé, sans engagement caché.</span>
+            <strong style={{color:C.accent}}>Paiement sécurisé.</strong> <span style={{color:C.sec}}>Sans engagement caché, résiliable à tout moment.</span>
           </div>
         </div>
       )}
@@ -6741,7 +6733,7 @@ const Tarifs = ({convertPrice=(f=>f.toLocaleString('fr-FR')+' FCFA'), subscripti
               {!isCurrent && (
                 <div style={{marginTop:10,textAlign:'center',fontSize:10,color:C.muted}}>
                   <span style={{display:'inline-flex',alignItems:'center',gap:4}}><Icon name="lock" size={10} color={C.muted}/> Paiement sécurisé</span>
-                  {isMobile && p.garantie && <><br/><span style={{color:C.accent,fontWeight:700}}>Garantie résultats en 60 jours</span></>}
+                  
                 </div>
               )}
             </div>

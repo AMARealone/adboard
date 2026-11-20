@@ -24,7 +24,6 @@
       "membres": "2",
       "delai": "48h",
       "prioritaire": false,
-      "garantie": "Performance en 60 jours",
       "tagline": "Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.",
       "page": "https://www.adstackofficial.com/perf",
       "checkout": "https://shop.adstackofficial.com/prd_ljowq8/checkout"
@@ -40,7 +39,6 @@
       "membres": "5",
       "delai": "24h",
       "prioritaire": false,
-      "garantie": "Croissance en 60 jours",
       "tagline": "Accélérer la production créative et la croissance de votre marque, sans la prise de tête de gérer une équipe.",
       "checkout": "https://shop.adstackofficial.com/prd_34w031/checkout"
     },
@@ -55,7 +53,6 @@
       "membres": "+10",
       "delai": "24h",
       "prioritaire": true,
-      "garantie": "Scaling en 60 jours",
       "tagline": "Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.",
       "checkout": "https://shop.adstackofficial.com/prd_9fi79y/checkout"
     }

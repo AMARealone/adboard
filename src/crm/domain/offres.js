@@ -4,9 +4,9 @@ const BASE = 'https://www.adstackofficial.com/'
 export const OFFRES = {
   // TEST n'est plus vendue depuis le 19 nov. 2026 (son produit Chariow est devenu le ONE SHOT) : gardée pour lire les anciennes fiches, jamais proposée.
   test:   { key: 'test',   label: 'TEST (ancienne)', prix: 75000,  n: 12, delai: '48 h', plan: 'test',    couleur: '#2EF2E8', url: BASE + 'perf',   facture: 'vous recevez la facture par mail', retiree: true },
-  perf:   { key: 'perf',   label: 'PERF+',  prix: 250000, n: 24, delai: '48 h', plan: 'starter', couleur: '#1FB6FF', url: BASE + 'perf',   facture: 'vous recevez la facture et votre garantie par mail' },
-  growth: { key: 'growth', label: 'GROWTH', prix: 480000, n: 48, delai: '24 h', plan: 'pro',     couleur: '#9b7bff', url: BASE + 'growth', facture: 'vous recevez la facture et votre garantie par mail' },
-  scale:  { key: 'scale',  label: 'SCALE',  prix: 920000, n: 96, delai: '24 h', plan: 'scale',   couleur: '#ffb547', url: BASE + 'scale',  facture: 'vous recevez la facture et votre garantie par mail' },
+  perf:   { key: 'perf',   label: 'PERF+',  prix: 250000, n: 24, delai: '48 h', plan: 'starter', couleur: '#1FB6FF', url: BASE + 'perf',   facture: 'vous recevez la facture par mail' },
+  growth: { key: 'growth', label: 'GROWTH', prix: 480000, n: 48, delai: '24 h', plan: 'pro',     couleur: '#9b7bff', url: BASE + 'growth', facture: 'vous recevez la facture par mail' },
+  scale:  { key: 'scale',  label: 'SCALE',  prix: 920000, n: 96, delai: '24 h', plan: 'scale',   couleur: '#ffb547', url: BASE + 'scale',  facture: 'vous recevez la facture par mail' },
   // ONE SHOT (19 nov. 2026) : offre d'entrée, achat unique à 75 000 FCFA, 6 créatives (2 vidéos + 4 images) pour 1 produit. Sa page : /test (paiement prd_yslvdsuz).
   oneshot:{ key: 'oneshot', label: 'ONE SHOT', prix: 75000, n: 6, delai: '48 h', plan: 'oneshot', couleur: '#2EF2E8', url: BASE + 'test', facture: 'vous recevez la facture par mail' },
 }

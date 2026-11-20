@@ -47,11 +47,11 @@ window.QUIZ = {
     test:   { name:'ONE SHOT', price:75000,  productId:'prd_yslvdsuz', unique:true, tagline:'Tester et trouver vos premières créatives gagnantes sur votre produit.', creas:6, lead:'', items:[
       ['6 créatives optimisées conversion',': 2 vidéos + 4 images'],STRAT,['Couverture',': 1 produit'],BOARD,['Délai Production',': 48h maximum']] },
     starter:{ name:'PERF+',  price:250000, productId:'prd_ljowq8',   tagline:'Automatiser la production de vos créatives, tout en améliorant vos performances publicitaires.', creas:24, lead:'', items:[
-      STRAT,['Jusqu’à 4 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 4 produits'],LEARN,BOARD,['Compte Employé',': ajoutez 2 membres à AdBoard'],['Délai Production',': 48h'],['Garantie',': Performance en 60 jours']] },
+      STRAT,['Jusqu’à 4 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 4 produits'],LEARN,BOARD,['Compte Employé',': ajoutez 2 membres à AdBoard'],['Délai Production',': 48h']] },
     pro:    { name:'GROWTH', price:480000, productId:'prd_34w031',   tagline:'Accélérer la production créative et la croissance de votre marque, sans la prise de tête de gérer une équipe.', creas:48, lead:'', items:[
-      STRAT,['Jusqu’à 8 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 8 produits'],LEARN,BOARD,['Compte Employé',': ajoutez 5 membres à AdBoard'],['Délai Production',': 24h'],['Garantie',': Croissance en 60 jours']] },
+      STRAT,['Jusqu’à 8 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 8 produits'],LEARN,BOARD,['Compte Employé',': ajoutez 5 membres à AdBoard'],['Délai Production',': 24h']] },
     scale:  { name:'SCALE',  price:920000, productId:'prd_9fi79y',   tagline:'Exploiter plusieurs marchés avec des langues et cultures différentes, sans exploser vos coûts ni augmenter la complexité.', creas:96, lead:'', items:[
-      STRAT,['Jusqu’à 16 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 16 produits'],LEARN,BOARD,['Compte Employé',': ajoutez +10 membres à AdBoard'],['Délai Production',': 24h + file prioritaire'],['Garantie',': Scaling en 60 jours']] }
+      STRAT,['Jusqu’à 16 lots de créatives / mois',''],COPY,DATA,['Couverture',': jusqu’à 16 produits'],LEARN,BOARD,['Compte Employé',': ajoutez +10 membres à AdBoard'],['Délai Production',': 24h + file prioritaire']] }
     };
   })(),
   /* offres-v1 — les prix et créatives viennent aussi de /offres.json (source unique) : appliquerOffres(json) met à jour ces valeurs. */
