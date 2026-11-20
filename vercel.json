@@ -82,6 +82,10 @@
       "dest": "/presentation.html"
     },
     {
+      "src": "/presentation-growth",
+      "dest": "/presentation.html"
+    },
+    {
       "src": "/blog",
       "dest": "/blog/index.html"
     },
