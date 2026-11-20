@@ -96,7 +96,7 @@ export function blocImage(mention) {
 }
 export function blocCT() {
   if (!estSensible()) return ''
-  return '⚠️ PRODUIT SENSIBLE SUR META (' + analyser().libelle + ') : à qualité égale pour cet angle et ce niveau de conscience, PRÉFÈRE un CT qui porte déjà une petite mention légale visible (ligne en tout petit en bas, astérisque, texte de responsabilité). Évite les CT construits sur un avant/après côte à côte ou un gros plan sur une partie du corps.\n\n'
+  return '⚠️ PRODUIT SENSIBLE SUR META (' + analyser().libelle + ') : la mention légale est AJOUTÉE automatiquement si le CT n\'en porte pas : ne choisis donc JAMAIS un CT pour sa mention (c\'est ce qui faisait revenir toujours les mêmes). Choisis d\'abord pour l\'intention psychologique et la variété de mise en page du lot. Évite les CT construits sur un avant/après côte à côte ou un gros plan sur une partie du corps.\n\n'
 }
 export function blocVideo() {
   if (!estSensible()) return ''

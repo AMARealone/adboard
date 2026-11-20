@@ -596,8 +596,10 @@ async function controleQualite(idx, gen, signal) {
   const c = S.creatives[idx]
   const productB64 = await V.compressImg(S.productB64, S.productMime || 'image/jpeg')
   const imgC = await V.compressImg(gen.imageData, gen.imageMime || 'image/png')
+  let ctC = null   // qa-vs-ct-v1 : le contrôle voit le CT d'origine pour juger si la créative fait au moins aussi bien
+  try { if (c.ct) ctC = await V.compressImg(await ctGetBase64(c.ct), CT_IMAGES[c.ct + '_mime'] || 'image/jpeg') } catch (_) { ctC = null }
   const r = await fetch(SERVER + '/creative-qa', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
-    body: JSON.stringify({ imageBase64: imgC, imageMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, prompt: gen.prompt, brief: VER.briefAgents(), niveau: V.NIVEAU_LIB[c.niveau] || '', angle: S.angles[c.angleIdx] || '', verite: VER.bloc(c.angleIdx, 'image') || '', meta: SEN.blocControle() || '' }) })
+    body: JSON.stringify({ imageBase64: imgC, imageMime: 'image/jpeg', ctBase64: ctC, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, prompt: gen.prompt, brief: VER.briefAgents(), niveau: V.NIVEAU_LIB[c.niveau] || '', angle: S.angles[c.angleIdx] || '', verite: VER.bloc(c.angleIdx, 'image') || '', meta: SEN.blocControle() || '' }) })
   const d = await r.json().catch(() => ({}))
   if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status)
   return d
@@ -617,7 +619,7 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
     try { qa = await avecReessai(() => controleQualite(idx, gen, signal), signal, idx, 'le contrôle'); depenser(COUT.qa, 'controle') }
     catch (e) { verifierLocal(); console.warn('[Contrôle qualité] indisponible :', e.message); qa = { verdict: 'inconnu', score: null, defauts: [], resume: 'contrôle indisponible (' + String(e.message).slice(0, 80) + ')' } }
     verifierLocal()
-    qaHist.push({ tentative: k, prompt: gen.prompt, meta: gen.meta, verdict: qa.verdict, score: qa.score, defauts: qa.defauts, resume: qa.resume, consignes_correction: qa.consignes_correction || null })
+    qaHist.push({ tentative: k, prompt: gen.prompt, meta: gen.meta, verdict: qa.verdict, score: qa.score, defauts: qa.defauts, resume: qa.resume, ecart_ct: qa.ecart_ct || '', consignes_correction: qa.consignes_correction || null })
     if (!meilleur.qa || (qa.score || 0) > (meilleur.qa.score || 0) || qa.verdict === 'ok') meilleur = { gen, qa, corr: nbCorr }
     if (qa.verdict !== 'corriger') break
     const bloquants = (qa.defauts || []).filter((x) => x.gravite === 'bloquant')
@@ -638,7 +640,7 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
     catch (e) { console.warn('[Meta] mention non apposée :', e.message) }
   }
   const desc = (g.meta && g.meta.length > 5) ? g.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${S.creatives[idx].angleIdx + 1}`
-  const qaRes = { mention: SEN.estSensible() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
+  const qaRes = { mention: SEN.estSensible() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', ecart_ct: q.ecart_ct || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
   S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime, qa: qaRes, prompt: g.prompt || '', meta: g.meta || '', qaHist: qaHist.map((h) => ({ ...h, prompt: String(h.prompt || '').slice(0, 6000), meta: String(h.meta || '').slice(0, 3000) })), ctUrl: CT_IMAGES[ctName] || '' }
   U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
   if (S.briefSource === 'commande' && S.commandeId) {

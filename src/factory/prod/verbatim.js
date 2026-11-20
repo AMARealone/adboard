@@ -110,8 +110,9 @@ export async function choisirCTProd(angleIdx, pos, dejaChoisis, signal, rang, sl
   const exclure0 = [...dejaChoisis, ...((prodv2State.renewalContext && prodv2State.renewalContext.ctsUtilisesDernierLot) || [])]
   const cleProd = String(prodv2State.productId || (prodv2State.brief && (prodv2State.brief.produit || prodv2State.brief.marque)) || '')
   const satures = APP.ctSatures()   // CT déjà utilisés 2 fois ou plus pour ce produit : écartés tant qu'il reste assez de choix
-  let gal = await ctGalerieComplete(null, { niveau, exclure: [...exclure0, ...satures], max: CT_MAX_PROD, echantillon: true, diversifier: true, cle: cleProd })
-  if (gal.cts.length < 15 && satures.length) gal = await ctGalerieComplete(null, { niveau, exclure: exclure0, max: CT_MAX_PROD, echantillon: true, diversifier: true, cle: cleProd })
+  const famLot = [...dejaChoisis].map((id) => { const t = (CT_IMAGES[id + '_styleTags'] || [])[0] || String(CT_IMAGES[id + '_name'] || '').split(/[-–—:·]/)[0]; return String(t || '').toLowerCase().trim().slice(0, 28) }).filter(Boolean)
+  let gal = await ctGalerieComplete(null, { niveau, exclure: [...exclure0, ...satures], max: CT_MAX_PROD, echantillon: true, diversifier: true, cle: cleProd, court: 30, familleExclue: famLot })
+  if (gal.cts.length < 15 && satures.length) gal = await ctGalerieComplete(null, { niveau, exclure: exclure0, max: CT_MAX_PROD, echantillon: true, diversifier: true, cle: cleProd, court: 30, familleExclue: famLot })
   if (!gal.cts.length) throw new Error('Galerie CT vide')
   const productB64 = await compressImg(prodv2State.productB64, prodv2State.productMime || 'image/jpeg')
   const res = await fetch(SERVER + '/select-ct-agent', {

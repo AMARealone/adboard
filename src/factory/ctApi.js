@@ -148,6 +148,22 @@ export async function ctGalerieComplete(onProgress, opts = {}) {
   let liste = pool.slice(0, max)
   if (opts.diversifier) liste = pool.slice().sort(() => Math.random() - 0.5).slice(0, max)   // l'ordre ne favorise plus les mêmes CT
   if (opts.echantillon && pool.length > max) liste = pool.slice().sort(() => Math.random() - 0.5).slice(0, max)
+  // ct-selecteur-v2 (20 nov. 2026) — présélection VARIÉE : peu de CT montrés à l'agent, mais de familles de mise en page différentes,
+  // en favorisant ceux qui ont le moins servi (tous produits confondus), et en évitant les familles déjà prises dans le lot.
+  if (opts.court && pool.length > opts.court) {
+    const hist = ctHistorique(), nbUse = {}
+    hist.forEach((x) => { nbUse[x.id] = (nbUse[x.id] || 0) + (opts.cle && x.cle === opts.cle ? 3 : 1) })
+    const famille = (r) => String((r.styleTags && r.styleTags[0]) || String(r.name || '').split(/[-–—:·]/)[0] || '?').toLowerCase().trim().slice(0, 28)
+    const prises = new Set((opts.familleExclue || []).map((x) => String(x).toLowerCase()))
+    const poids = (r) => Math.random() * (1 / (1 + (nbUse[r.id] || 0) * 2))
+    const groupes = {}
+    pool.forEach((r) => { const f = famille(r); (groupes[f] = groupes[f] || []).push(r) })
+    Object.values(groupes).forEach((g) => g.sort((a, b) => poids(b) - poids(a)))
+    const noms = Object.keys(groupes).sort((a, b) => (prises.has(a) ? 1 : 0) - (prises.has(b) ? 1 : 0) || Math.random() - 0.5)
+    const sel = []
+    for (let tour = 0; sel.length < opts.court && tour < 8; tour++) for (const f of noms) { const r = groupes[f][tour]; if (r && sel.length < opts.court) sel.push(r) }
+    if (sel.length >= Math.min(12, pool.length)) liste = sel
+  }
   const sortie = new Array(liste.length); let fait = 0, i = 0
   const worker = async () => {
     while (i < liste.length) {
@@ -158,5 +174,5 @@ export async function ctGalerieComplete(onProgress, opts = {}) {
     }
   }
   await Promise.all(Array.from({ length: 8 }, worker))
-  return { cts: sortie, total: tous.length, envoyes: liste.length, sansImage: sortie.filter((c) => !c.b64).length, niveau: opts.niveau || null, nbBalises, repli, ecartesHist }
+  return { cts: sortie, familles: liste.map((r) => String((r.styleTags && r.styleTags[0]) || String(r.name || '').split(/[-–—:·]/)[0] || '?').toLowerCase().trim().slice(0, 28)), total: tous.length, envoyes: liste.length, sansImage: sortie.filter((c) => !c.b64).length, niveau: opts.niveau || null, nbBalises, repli, ecartesHist }
 }
