@@ -212,11 +212,14 @@ function finOk(idx, e) {
   const c = S.creatives[idx]
   const duree = e.duree_video_s || c.duree || 0
   S.creatives[idx] = { ...c, type: 'video', videoUrl: e.video_url, thumbUrl: e.affiche_url || c.thumbUrl || null, url: null, imgB64: null, status: 'done', duree,
-    desc: 'Vidéo · ' + (c.job.ctNom || c.ct) + (duree ? ' · ' + duree + ' s' : ''),
-    job: { ...c.job, etat: 'termine', pct: 100, etape: 'Vidéo prête', cout_usd: e.cout_usd, monteur: e.monteur, historiqueUrl: e.historique_url, dossierUrl: e.dossier_url, journal: ((U.vjournal || {})[idx] || []).slice(-400), fin: Date.now() } }
+    desc: 'Vidéo · ' + (c.job.ctNom || c.ct) + (duree ? ' · ' + duree + ' s' : '') + (e.qualite && (e.qualite.plans_fixes > 0 || e.qualite.livrable === false) ? ' · ⚠ à revoir' + (e.qualite.plans_fixes ? ' (' + e.qualite.plans_fixes + ' plan(s) fixe(s))' : '') : '') + (e.qualite && e.qualite.note_juge != null ? ' · juge ' + e.qualite.note_juge + '/10' : ''),
+    aRevoir: !!(e.qualite && (e.qualite.plans_fixes > 0 || e.qualite.livrable === false)),
+    job: { ...c.job, etat: 'termine', pct: 100, etape: 'Vidéo prête', qualite: e.qualite || null, cout_usd: e.cout_usd, monteur: e.monteur, historiqueUrl: e.historique_url, dossierUrl: e.dossier_url, journal: ((U.vjournal || {})[idx] || []).slice(-400), fin: Date.now() } }
   U.crea[idx] = { state: 'done', text: 'Vidéo prête', pct: 100 }; emit(); _save(true)
   majAgentVideo()
-  toast('Vidéo de l\'angle ' + (c.angleIdx + 1) + ' prête.')
+  const q = e.qualite
+  if (q && (q.plans_fixes > 0 || q.livrable === false)) toast('⚠ Vidéo de l\'angle ' + (c.angleIdx + 1) + ' à revoir avant envoi' + (q.plans_fixes ? ' : ' + q.plans_fixes + ' plan(s) non animé(s)' : '') + (q.note_juge != null ? ' · juge ' + q.note_juge + '/10' : '') + '.', 12000)
+  else toast('Vidéo de l\'angle ' + (c.angleIdx + 1) + ' prête.' + (q && q.note_juge != null ? ' Juge ' + q.note_juge + '/10.' : ''))
 }
 function finEchec(idx, msg, etat = 'echec') {
   const c = S.creatives[idx]

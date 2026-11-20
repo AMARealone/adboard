@@ -15,9 +15,10 @@ export function resume() {
   const nbAngles = (S.angles || []).length || (S.ui && S.ui.nbAngles) || 0
   const r = { images: imgs.filter((c) => c.status === 'done' && (c.url || c.imgB64)).length, images_attendues: imgs.length,
     videos: vids.filter((c) => c.videoUrl).length, videos_attendues: vids.length,
-    copies: (S.copies || []).filter(Boolean).length, copies_attendues: nbAngles }
+    copies: (S.copies || []).filter(Boolean).length, copies_attendues: nbAngles,
+    videos_a_revoir: vids.filter((c) => c.videoUrl && c.aRevoir).length }   // qualite-v1 : plan fixe ou vidéo jugée non livrable par le moteur
   r.contenu = r.images + r.videos + r.copies > 0
-  r.complet = cr.length > 0 && r.images === r.images_attendues && r.videos === r.videos_attendues && r.copies >= r.copies_attendues && r.copies_attendues > 0
+  r.complet = cr.length > 0 && r.videos_a_revoir === 0 && r.images === r.images_attendues && r.videos === r.videos_attendues && r.copies >= r.copies_attendues && r.copies_attendues > 0
   return r
 }
 export async function rapporter(payload) {
