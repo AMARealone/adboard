@@ -533,12 +533,13 @@ h2{font-size:70px;margin-top:26px}
 .rs-pi{position:relative}.rs-pi img{display:block;width:100%}
 .rs-pi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:80px;background:linear-gradient(90deg,#fff 20%,rgba(255,255,255,0));z-index:1}
 /* démarrer */
-.go3{display:flex;justify-content:center;margin-top:40px}
+.go3{display:flex;justify-content:center;margin-top:32px}
 .go3-c{width:500px;background:var(--card);border:1.5px solid var(--line);border-radius:34px;padding:24px 26px 30px;box-sizing:border-box}
-.go3-v{height:300px;display:flex;align-items:center;justify-content:center;border-radius:22px;background:radial-gradient(circle at 50% 30%,#141c2c,#0b0e15);overflow:hidden;margin-bottom:24px}
+.go3-v{height:250px;display:flex;align-items:center;justify-content:center;border-radius:22px;background:radial-gradient(circle at 50% 30%,#141c2c,#0b0e15);overflow:hidden;margin-bottom:24px}
 .go3-v img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 20px 40px rgba(0,0,0,.5))}
 .go3-c h3{font-size:34px;margin:0 0 10px}.go3-c p{font-size:23px;line-height:1.45;color:#C4C7CE;margin:0}
 .go3-ar{width:60px;display:flex;align-items:center;justify-content:center;font-size:40px;color:var(--ac)}
+.go3-z{align-self:center;margin-top:24px;font-size:28px;font-weight:700;color:#BFE6FF;background:rgba(31,182,255,.1);border:1px solid rgba(31,182,255,.4);padding:12px 30px;border-radius:999px}
 /* inclus */
 .inc{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:44px}
 .inc-c{display:flex;flex-direction:column;gap:14px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:32px;padding:28px 32px}
@@ -881,7 +882,18 @@ if(PERSO)VOTRE_SITUATION();
    centre+
    carte(I3('lowbat'),'Trop peu de créatives en jeu','Avec 2 ou 3 créatives, impossible de savoir ce qui marche.',4,'c3')+
    carte(I3('restart'),'Repartir de zéro à chaque fois','Une créative gagne, s’essouffle, et rien n’est construit dessus.',5,'c4')+conn+
-  '</div>'+bridge('Voici le système qu’on met en place pour lever ces quatre blocages'),{sec:'pb'});
+  '</div>'+bridge('Comment les marques essaient de les lever'),{sec:'pb'});
+})();
+
+/* ═════ 10 · Les autres options ═════ */
+(function(){
+ var list=[
+  [I3('freelance'),'Un freelance','Un visuel ou une vidéo propre, à petit prix','Pas de stratégie derrière : personne ne pense à la croissance de votre marque'],
+  [I3('robot'),'Les outils d’IA, en solo','Rapide et très peu coûteux, utilisé par presque tout le monde','Les mêmes angles et les mêmes visuels que tout le monde, et des journées à tout corriger'],
+  [I3('office'),'Une agence classique','Une bonne qualité de créatives','Peu de volume, des délais longs, un coût élevé, et pas de vraie stratégie e-commerce pour grandir']];
+ add("",head('Les autres options','Les chemins habituels. <span class="grad">Aucun ne va jusqu’au bout.</span>')+
+  '<div class="alt">'+list.map(function(x,i){return '<div class="ac a pop" style="--d:'+(i+2)+'"><div class="aci a3">'+x[0]+'</div><h3>'+x[1]+'</h3><div class="al g"><span>Ce que ça apporte</span>'+x[2]+'</div><div class="al r"><span>Là où ça s’arrête</span>'+x[3]+'</div></div>'}).join('')+'</div>'+
+  bridge('Nous, on va jusqu’au bout : voici notre système'),{sec:'pb'});
 })();
 
 /* ═════ 5 · Le système, vue d’ensemble ═════ */
@@ -914,18 +926,7 @@ etape(4,'On repère ce qui marche, <span class="grad">on construit dessus.</span
  ['Vous marquez <b>vos meilleures créatives</b> dans AdBoard, avec vos résultats si vous le souhaitez.','Notre équipe s’appuie sur ces <b>Top Performers</b> pour composer <b>le lot suivant</b>.','Et on continue de <b>tester de nouveaux angles</b>, pour trouver vos prochains gagnants.'],
  '<div class="et4 a pop" style="--d:2"><div class="et4-l">Lot 1 · vos créatives lancées</div><div class="et4-r">'+crea(V('vitalina-creative-1.jpg'),'dim')+crea('/assets/vente/adboard/vit-video.jpg','top','★ Top Performer')+crea(V('vitalina-creative-2.jpg'),'dim')+'</div>'+
   '<div class="et4-ar"><i></i><span>On construit dessus</span></div>'+
-  '<div class="et4-l">Lot suivant</div><div class="et4-r">'+crea(V('proc-step3-vitalina2.jpg'),'nx','Sur l’angle gagnant')+crea(V('proc-step3-vitalina3.jpg'),'nx','Sur l’angle gagnant')+'<div class="cr4 nw"><b>+</b><span>Nouvel angle à tester</span></div></div></div>','Vous pourriez aussi vous y prendre autrement');
-
-/* ═════ 10 · Les autres options ═════ */
-(function(){
- var list=[
-  [I3('freelance'),'Un freelance','Un visuel ou une vidéo propre, à petit prix','Pas de stratégie derrière : personne ne pense à la croissance de votre marque'],
-  [I3('robot'),'Les outils d’IA, en solo','Rapide et très peu coûteux, utilisé par presque tout le monde','Les mêmes angles et les mêmes visuels que tout le monde, et des journées à tout corriger'],
-  [I3('office'),'Une agence classique','Une bonne qualité de créatives','Peu de volume, des délais longs, un coût élevé, et pas de vraie stratégie e-commerce pour grandir']];
- add("",head('Les autres options','Pour lever ces blocages, il existe d’autres chemins. <span class="grad">Aucun ne va jusqu’au bout.</span>')+
-  '<div class="alt">'+list.map(function(x,i){return '<div class="ac a pop" style="--d:'+(i+2)+'"><div class="aci a3">'+x[0]+'</div><h3>'+x[1]+'</h3><div class="al g"><span>Ce que ça apporte</span>'+x[2]+'</div><div class="al r"><span>Là où ça s’arrête</span>'+x[3]+'</div></div>'}).join('')+'</div>'+
-  bridge('Voyons ce que ça donne chez nos clients'),{sec:'sy'});
-})();
+  '<div class="et4-l">Lot suivant</div><div class="et4-r">'+crea(V('proc-step3-vitalina2.jpg'),'nx','Sur l’angle gagnant')+crea(V('proc-step3-vitalina3.jpg'),'nx','Sur l’angle gagnant')+'<div class="cr4 nw"><b>+</b><span>Nouvel angle à tester</span></div></div></div>','Voyons ce que ça donne chez nos clients');
 
 /* ═════ 11 à 13 · Résultats ═════ */
 function resultat2(n,marque,secteur,big,lab,tuiles,media,next,proof){
@@ -946,13 +947,14 @@ resultat2(3,'Saelia','Cosmétiques · RDC','+10 000 $','dépensés sur nos créa
  [['3,6','ROAS'],['+8','créatives top performer']],
  phone(vfile('saelia'),'sm')+crea(V('saelia-creative-1.jpg')),'Voyons comment on démarre',V('saelia-ads-manager.jpg'));
 
-/* ═════ 14 · Démarrer ═════ */
-add("",head('Pour démarrer','Trois gestes, et <span class="grad">c’est lancé.</span>')+
+/* ═════ 14 · Votre rôle : trois gestes ═════ */
+add("",head('Votre rôle','Trois gestes, <span class="grad">c’est tout.</span>')+
  '<div class="go3">'+[
-  ['<img src="/assets/slides/adboard-connexion.webp" alt="" style="width:92%">','1. Vous vous connectez','Avec votre compte Google, sur AdBoard. Aucun mot de passe à retenir.'],
-  ['<img src="/assets/vente/adboard/carte-produit.webp" alt="" style="height:100%">','2. Vous ajoutez votre produit','Collez le lien de votre page : la fiche se remplit toute seule. Rien à nous envoyer physiquement, même pour les vidéos.'],
-  ['<img src="/assets/vente/adboard/carte-suivi.webp" alt="" style="width:96%">','3. Vous demandez un lot','Vous suivez sa production en direct et le recevez en '+O.delai+' maximum, dans AdBoard.']
+  ['<img src="/assets/vente/adboard/carte-produit.webp" alt="" style="height:100%">','1. Vous ajoutez votre produit','Vous vous connectez à AdBoard avec Google, et vous collez le lien de votre page : la fiche se remplit toute seule.'],
+  ['<img src="/assets/vente/adboard/carte-suivi.webp" alt="" style="width:96%">','2. Vous faites une demande','En un clic. Vous suivez la production en direct, depuis AdBoard.'],
+  ['<img src="/assets/slides/adboard-creatives.webp" alt="" style="width:100%;height:100%;object-fit:cover">','3. Vous recevez vos créatives','Prêtes à publier, en '+O.delai+' maximum, directement dans AdBoard.']
  ].map(function(x,i){return (i?'<div class="go3-ar a" style="--d:'+(i+2)+'">→</div>':'')+'<div class="go3-c a pop" style="--d:'+(i+2)+'"><div class="go3-v">'+x[0]+'</div><h3>'+x[1]+'</h3><p>'+x[2]+'</p></div>'}).join('')+'</div>'+
+ '<div class="go3-z a" style="--d:6">Zéro retouche, zéro aller-retour sur WhatsApp.</div>'+
  bridge('Avant de voir l’offre, une question'),{sec:'go'});
 
 /* ═════ 15 · Questions ═════ */
