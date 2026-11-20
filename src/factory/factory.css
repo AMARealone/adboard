@@ -546,3 +546,27 @@ a.fx-lib:hover{background:rgba(160,175,210,.05);border-color:var(--bd)}
 .fx-cand img{width:100%;max-height:420px;object-fit:contain;background:#0B0E14}
 .fx-cand .fx-ct-a{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .fx-cand .fx-ct-a a.fx-btn{text-decoration:none}
+
+/* livrables-v1 — visualiseur des livrables d'une commande */
+.fx-drawer.fx-liv{width:min(1100px,100vw)}
+.fx-liv-sum{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:12.5px;color:var(--sec,#8891A0);margin-bottom:12px}
+.fx-liv-sum b{color:var(--text,#F2F4F8);font-weight:700}
+.fx-liv-act{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.fx-liv-act a.fx-btn{text-decoration:none;display:inline-flex;align-items:center}
+.fx-liv-ang{margin-top:18px;padding-top:14px;border-top:1px solid var(--bd2,rgba(255,255,255,.08))}
+.fx-liv-ang h4{margin:0 0 10px;font-size:14px;display:flex;gap:10px;align-items:center}
+.fx-liv-ang h4 span{font-size:10.5px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:#5B9BFF;background:rgba(91,155,255,.12);padding:3px 8px;border-radius:999px}
+.fx-liv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.fx-liv-t{background:rgba(255,255,255,.03);border:1px solid var(--bd2,rgba(255,255,255,.08));border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px}
+.fx-liv-m{aspect-ratio:4/5;border-radius:9px;overflow:hidden;background:#000;display:flex;align-items:center;justify-content:center}
+.fx-liv-m.v{aspect-ratio:9/16}
+.fx-liv-m img,.fx-liv-m video{width:100%;height:100%;object-fit:contain;display:block}
+.fx-liv-vide{font-size:12px;color:#8891A0}
+.fx-liv-c{display:flex;justify-content:space-between;gap:6px;font-size:11.5px;color:#8891A0}.fx-liv-c b{color:#F2F4F8}
+.fx-liv-b{display:flex;flex-wrap:wrap;gap:6px}
+.fx-btn.sm{padding:5px 9px;font-size:11.5px}
+.fx-liv-b a.fx-btn{text-decoration:none}
+.fx-liv-cp{margin-top:10px;font-size:12.5px;background:rgba(255,255,255,.03);border:1px solid var(--bd2,rgba(255,255,255,.08));border-radius:10px;padding:10px 12px}
+.fx-liv-cp summary{cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:700}
+.fx-liv-cp ol{margin:10px 0 6px 18px;padding:0}.fx-liv-cp p{margin:6px 0 0;white-space:pre-wrap;color:#C9CDD6}
+.fx-liv-dos{margin-top:18px;display:flex;flex-direction:column;gap:4px;font-size:12px}.fx-liv-dos label{color:#8891A0;font-weight:700}

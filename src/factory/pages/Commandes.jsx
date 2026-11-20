@@ -4,7 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useData } from '../data'
 import { etat, SERVER, prio, estPrioritaire, nomOffre, calendrierCommande, etatAuto } from '../api'
 import Icon from '../Icon'
-import { openCommande, marquerLivre, supprimerTicket, commandeToBrief } from '../prod/engine'
+import { openCommande, supprimerTicket, commandeToBrief } from '../prod/engine'
+import * as E from '../prod/engine'
+import { ManualSend } from './Production'
 import { alertDlg } from '../ui'
 
 function useNow(ms = 1000) { const [n, setN] = useState(Date.now()); useEffect(() => { const t = setInterval(() => setN(Date.now()), ms); return () => clearInterval(t) }, [ms]); return n }
@@ -27,7 +29,7 @@ function Timer({ b, now }) {
   return null
 }
 
-export function OrderRow({ b, compact, now, onBrief }) {
+export function OrderRow({ b, compact, now, onBrief, onLivrables }) {
   const nav = useNavigate()
   const { reload } = useData()
   const [busy, setBusy] = useState(false)
@@ -38,6 +40,9 @@ export function OrderRow({ b, compact, now, onBrief }) {
     try { if (await openCommande(b.id)) nav('/production') } finally { setBusy(false) }
   }
   const label = b.status === 'pending' ? 'Lancer' : b.status === 'done' ? 'Nouveau lot' : 'Reprendre'
+  const rl = E.resumeLivrables(b)
+  const [envoi, setEnvoi] = useState(false)
+  const envoyer = async () => { setEnvoi(true); try { await E.envoyerCommande(b, reload) } finally { setEnvoi(false) } }
   return (
     <div className={'fx-row' + (e.key === 'ready' ? ' ready' : '')}>
       {photo ? <img className="fx-thumb" src={photo} alt="" onError={(x) => (x.currentTarget.style.visibility = 'hidden')} /> : <div className="fx-thumb">—</div>}
@@ -48,8 +53,9 @@ export function OrderRow({ b, compact, now, onBrief }) {
       </div>
       <div className="fx-row-act">
         {e.key !== 'off' && <button className={'fx-btn' + (e.key === 'wait' || e.key === 'ready' ? ' primary' : '')} disabled={busy} onClick={open}>{busy ? '…' : '▶ ' + label}</button>}
-        {!compact && b.status === 'in_production' && <button className={'fx-btn' + (e.key === 'ready' ? ' purple' : ' primary')} onClick={() => marquerLivre(b.id, reload)}>Envoyer au client</button>}
-        {!compact && b.status === 'done' && <button className="fx-btn" title="Renvoyer si le client signale un manque" onClick={() => marquerLivre(b.id, reload)}>↻ Renvoyer</button>}
+        {!compact && !rl.rien && onLivrables && <button className="fx-btn" title="Voir, régénérer, envoyer sur ton compte, dossier complet" onClick={() => onLivrables(b.id)}>Livrables ({rl.creatives}/{rl.attendu})</button>}
+        {!compact && b.status === 'in_production' && <button className={'fx-btn' + (e.key === 'ready' ? ' purple' : ' primary')} disabled={envoi} onClick={envoyer}>{envoi ? 'Envoi…' : 'Envoyer au client'}</button>}
+        {!compact && b.status === 'done' && <button className="fx-btn" disabled={envoi} title="Renvoyer si le client signale un manque" onClick={envoyer}>{envoi ? 'Envoi…' : '↻ Renvoyer'}</button>}
         {!compact && <button className="fx-btn icon" title="Voir le brief" onClick={() => onBrief(b.id)}>Brief</button>}
         {!compact && <button className="fx-btn icon danger-o" title="Supprimer" onClick={() => supprimerTicket(b.id, reload)}>✕</button>}
       </div>
@@ -106,6 +112,84 @@ export function BriefPanel({ id, onClose }) {
   )
 }
 
+// livrables-v1 — tout ce qui a été produit pour cette commande, rangé dans sa carte (stockage AdStack, rien n'expire)
+const nomAngle = (a, i) => { if (!a) return 'Angle ' + (i + 1); if (typeof a === 'string') return a.split('\n')[0].slice(0, 90); return String(a.nom || a.titre || a.title || a.angle || a.name || ('Angle ' + (i + 1))).slice(0, 90) }
+const estVid = (c) => !!c && (c.type === 'video' || c.kind === 'video' || c.ctIdx === 'video' || !!c.videoUrl)
+export function LivrablesPanel({ id, onClose }) {
+  const nav = useNavigate()
+  const { reload } = useData()
+  const [b, setB] = useState(null), [err, setErr] = useState(''), [pick, setPick] = useState(false), [busy, setBusy] = useState('')
+  const charger = () => fetch(`${SERVER}/commandes`, { headers: { 'ngrok-skip-browser-warning': '1' } }).then((r) => r.json()).then((l) => { const x = l.find((y) => y.id === id); x ? setB(x) : setErr('Commande introuvable.') }).catch((e) => setErr(e.message))
+  useEffect(() => { charger() }, [id])
+  const d = (b && b.deliverables) || {}, r = b ? E.resumeLivrables(b) : null
+  const crea = (d.creatives || []).map((c, i) => ({ c, i })).filter((x) => x.c)
+  const nbA = r ? r.copiesAttendues : 0
+  const dossiers = (b && Array.isArray(b.dossiers) ? b.dossiers : []).slice().reverse()
+  const tache = async (cle, fn) => { setBusy(cle); try { await fn() } finally { setBusy(''); charger() } }
+  // Ouvre la commande dans la production (sans la repasser « en cours ») puis lance l'action : on la suit en direct là-bas.
+  const dansProd = (action) => tache('prod', async () => { if (await E.chargerCommande(id)) { nav('/production'); if (action) setTimeout(action, 400) } })
+  const surMonCompte = () => { if (!E.monCompte()) { setPick(true); return } tache('moi', async () => { if (await E.chargerCommande(id)) await E.envoyerSurMonCompte() }) }
+  return (
+    <div className="fx-modal-back right" onClick={onClose}>
+      <aside className="fx-drawer fx-liv" onClick={(e) => e.stopPropagation()}>
+        <div className="fx-drawer-h"><h3>Livrables{b ? ' · ' + (b.product?.nom || 'Produit') : ''}</h3><button className="fx-btn" onClick={onClose}>Fermer</button></div>
+        {!b && !err && <div className="fx-empty">Chargement des livrables…</div>}
+        {err && <div className="fx-err">{err}</div>}
+        {b && <>
+          <div className="fx-liv-sum">
+            <span>{b.client?.email || '—'} · {nomOffre(b.client?.plan)}</span>
+            <span className={'fx-tag ' + etat(b).key}>{etat(b).label}</span>
+            <b>{r.creatives}/{r.attendu} créatives</b><b>{r.videos} vidéo{r.videos > 1 ? 's' : ''}</b><b>{r.copies}/{r.copiesAttendues} ad copies</b><b>Marché {r.marche ? '✓' : '✗'}</b>
+          </div>
+          <div className="fx-liv-act">
+            <button className="fx-btn purple" disabled={!!busy || r.rien} onClick={() => tache('client', () => E.envoyerCommande(b, reload))}>{busy === 'client' ? 'Envoi…' : b.status === 'done' ? '↻ Renvoyer au client' : 'Envoyer au client'}</button>
+            <button className="fx-btn primary" disabled={!!busy || r.rien} onClick={surMonCompte}>{busy === 'moi' ? 'Envoi…' : E.monCompte() ? 'Envoyer sur mon compte' : 'Envoyer sur mon compte (choisir)'}</button>
+            {dossiers[0] && <a className="fx-btn" href={dossiers[0].url} target="_blank" rel="noopener noreferrer">Télécharger le dossier complet</a>}
+            <button className="fx-btn" disabled={!!busy || r.rien} onClick={() => tache('dossier', async () => { if (await E.chargerCommande(id)) await E.genererDossier() })}>{busy === 'dossier' ? 'Dossier en cours…' : dossiers[0] ? 'Refaire le dossier' : 'Faire le dossier complet'}</button>
+            <button className="fx-btn" disabled={!!busy} onClick={() => dansProd(null)}>Ouvrir dans la production</button>
+          </div>
+          <div className="fx-note">Tout est rangé dans la carte de cette commande (stockage AdStack) : rien n'expire. Régénérer ou changer de CT ouvre la production pour suivre la génération en direct.</div>
+          {r.rien && <div className="fx-empty">Aucun livrable rangé pour l'instant.</div>}
+          {Array.from({ length: nbA }, (_, a) => {
+            const items = crea.filter((x) => (x.c.angleIdx || 0) === a), cp = (d.copies || [])[a]
+            if (!items.length && !cp) return null
+            return (
+              <section key={a} className="fx-liv-ang">
+                <h4><span>Angle {a + 1}</span>{nomAngle((d.angles || [])[a], a)}</h4>
+                <div className="fx-liv-grid">
+                  {items.map(({ c, i }) => {
+                    const v = estVid(c), pret = c.status === 'done' && (c.url || c.videoUrl || c.imgB64)
+                    const src = c.url || (c.imgB64 ? 'data:image/png;base64,' + c.imgB64 : '')
+                    return (
+                      <div key={i} className="fx-liv-t">
+                        <div className={'fx-liv-m' + (v ? ' v' : '')}>
+                          {pret ? (v ? <video src={c.videoUrl} poster={c.thumbUrl || undefined} controls playsInline preload="none" /> : <img src={src} alt="" loading="lazy" />) : <div className="fx-liv-vide">{v ? 'Vidéo pas prête' : 'Image pas prête'}</div>}
+                        </div>
+                        <div className="fx-liv-c"><b>{v ? 'Vidéo' : 'Image'}</b><span>{c.ct ? 'CT ' + c.ct : ''}{c.aRevoir ? ' · à revoir' : ''}</span></div>
+                        <div className="fx-liv-b">
+                          {v ? <button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.relancerVideo(i))}>↻ Refaire la vidéo</button>
+                             : <><button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.regenerateCrea(i))}>↻ Régénérer</button><button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.regenerateCreaAutreCT(i))}>Autre CT</button></>}
+                          {pret && <a className="fx-btn sm" href={v ? c.videoUrl : src} target="_blank" rel="noopener noreferrer" download>Télécharger</a>}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {cp && <details className="fx-liv-cp"><summary>Ad copy · {(cp.hooks || []).filter(Boolean).length} titres <button className="fx-btn sm" disabled={!!busy} onClick={(e) => { e.preventDefault(); dansProd(() => E.regenerateCopy(a)) }}>↻ Réécrire</button></summary>
+                  <ol>{(cp.hooks || []).filter(Boolean).map((h, k) => <li key={k}>{String(h)}</li>)}</ol>
+                  <p>{String(cp.description || '')}</p>
+                </details>}
+              </section>
+            )
+          })}
+          {dossiers.length > 1 && <div className="fx-liv-dos"><label>Dossiers précédents</label>{dossiers.slice(1).map((x, k) => <a key={k} href={x.url} target="_blank" rel="noopener noreferrer">{new Date(x.date).toLocaleString('fr-FR')}{x.fichiers ? ' · ' + x.fichiers + ' fichiers' : ''}</a>)}</div>}
+        </>}
+        {pick && <ManualSend scope={null} onClose={() => setPick(false)} onPicked={(m) => { E.setMonCompte(m); setPick(false); setTimeout(() => surMonCompte(), 50) }} />}
+      </aside>
+    </div>
+  )
+}
+
 const F = [['all', 'Toutes'], ['ready', 'Prêtes'], ['prod', 'En cours'], ['wait', 'En attente'], ['done', 'Livrées']]
 export default function Commandes() {
   const { cmd, reload } = useData()
@@ -113,6 +197,7 @@ export default function Commandes() {
   const f = sp.get('f') || 'all'
   const [q, setQ] = usePersist('commandes.q', '')
   const [brief, setBrief] = usePersist('commandes.brief', null)
+  const [liv, setLiv] = useState(null)
   const now = useNow()
   const list = useMemo(() => cmd.list
     .filter((b) => f === 'all' || etat(b).key === f)
@@ -126,8 +211,9 @@ export default function Commandes() {
         <div className="fx-pills">{F.map(([k, l]) => <button key={k} className={'fx-pill' + (f === k ? ' on' : '')} onClick={() => setSp(k === 'all' ? {} : { f: k })}>{l}</button>)}</div>
       </div>
       {cmd.error && <div className="fx-err" style={{ marginBottom: 12 }}>{cmd.error}</div>}
-      {cmd.loading ? <><div className="fx-skel" /><div className="fx-skel" /><div className="fx-skel" /></> : list.length ? list.map((b) => <OrderRow key={b.id} b={b} now={now} onBrief={setBrief} />) : <div className="fx-empty">Aucune commande dans cette vue.</div>}
+      {cmd.loading ? <><div className="fx-skel" /><div className="fx-skel" /><div className="fx-skel" /></> : list.length ? list.map((b) => <OrderRow key={b.id} b={b} now={now} onBrief={setBrief} onLivrables={setLiv} />) : <div className="fx-empty">Aucune commande dans cette vue.</div>}
       {brief && <BriefPanel id={brief} onClose={() => setBrief(null)} />}
+      {liv && <LivrablesPanel id={liv} onClose={() => setLiv(null)} />}
     </div>
   )
 }

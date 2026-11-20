@@ -38,7 +38,7 @@ function SendMenu({ children, onClient, onOther, busy, title }) {
 }
 
 // Choix d'un compte : sert à « envoyer à un autre compte » et à mémoriser MON compte (onPicked)
-function ManualSend({ scope, onClose, onPicked }) {
+export function ManualSend({ scope, onClose, onPicked }) {
   const [q, setQ] = useState(''), [users, setUsers] = useState(null), [user, setUser] = useState(null)
   const [prods, setProds] = useState(null), [pid, setPid] = useState(null), [newName, setNewName] = useState(''), [busy, setBusy] = useState(false)
   useEffect(() => {

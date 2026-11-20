@@ -968,6 +968,65 @@ export async function verifierApresEnvoi(productId, client) {
   } catch (e) { maj('Vérification impossible : ' + e.message, 'err'); return null }
 }
 
+// ── livrables-v1 (20 nov. 2026) — visualiseur des livrables d'une commande + vrai envoi depuis la liste ──
+// Charge une commande dans le moteur SANS la repasser « en production » (pas de /start) : sert à revoir,
+// régénérer, envoyer sur mon compte ou refaire le dossier d'une commande déjà produite (même livrée).
+export async function chargerCommande(id) {
+  if (S.commandeId === id && S.brief) return true
+  if (U.running) { await alertDlg("Une production tourne en ce moment dans la vue Production. Attends sa fin (ou annule-la) avant d'ouvrir les livrables d'une autre commande."); return false }
+  if (S.commandeId && S.commandeId !== id && !V.prodv2EstActuellementComplet()) {
+    if (!(await confirmDlg(`« ${S.brief?.produit || 'la production en cours'} » n'est pas terminée dans la vue Production. L'écran va passer sur cette commande (tout ce qui est déjà généré reste sauvegardé dans sa carte).\n\nContinuer ?`))) return false
+  }
+  try {
+    await loadSkills(); await loadCTImages()
+    const briefs = await fetch(`${SERVER}/commandes`, { headers: NGROK }).then((r) => r.json()).catch(() => [])
+    const b = briefs.find((x) => x.id === id)
+    if (!b) { await alertDlg('Commande introuvable.'); return false }
+    await restoreFromCommande(b)
+    return true
+  } catch (e) { await alertDlg('Erreur : ' + e.message); return false }
+}
+// Résumé des livrables rangés dans une commande (lu depuis la carte, rien n'est recalculé)
+export function resumeLivrables(b) {
+  const d = (b && b.deliverables) || {}, q = (b && b.quantity) || 6, nbA = Math.max(1, Math.ceil(q / 3))
+  const cr = (d.creatives || []).filter(Boolean)
+  const vid = (c) => !!c && (c.type === 'video' || c.kind === 'video' || c.ctIdx === 'video' || !!c.videoUrl)
+  const ok = (c) => c && c.status === 'done' && (c.url || c.videoUrl || c.imgB64)
+  const r = { attendu: q, creatives: cr.filter(ok).length, videos: cr.filter((c) => ok(c) && vid(c)).length, copies: (d.copies || []).filter(Boolean).length, copiesAttendues: nbA, marche: !!(d.marche || d.synthesis) }
+  r.rien = r.creatives + r.copies === 0
+  r.complet = r.creatives >= q && r.copies >= nbA && r.marche
+  return r
+}
+// « Envoyer au client » depuis la liste des commandes : envoie VRAIMENT les livrables rangés dans la carte, avec un compte rendu.
+export async function envoyerCommande(b, reload) {
+  const id = b.id, r = resumeLivrables(b)
+  const qui = (b.client && b.client.email) || 'le client'
+  if (r.rien) { await alertDlg("Aucun livrable n'est encore rangé dans cette commande : rien à envoyer. Ouvre-la dans la production (« Reprendre ») pour produire d'abord."); return }
+  const manques = []
+  if (r.creatives < r.attendu) manques.push(`${r.attendu - r.creatives} créative(s) manquante(s) (${r.creatives}/${r.attendu})`)
+  if (r.copies < r.copiesAttendues) manques.push(`ad copies : ${r.copies}/${r.copiesAttendues}`)
+  if (!r.marche) manques.push('données marché absentes')
+  const txt = `Envoyer à ${qui} :\n• ${r.creatives}/${r.attendu} créatives (dont ${r.videos} vidéo${r.videos > 1 ? 's' : ''})\n• ${r.copies}/${r.copiesAttendues} sets d'ad copy\n• Données marché ${r.marche ? '✓' : '✗'}\n\nIl les verra tout de suite dans son AdBoard.` + (manques.length ? `\n\n⚠ Lot incomplet : ${manques.join(' · ')}.` : '')
+  if (!(await confirmDlg(txt, { ok: manques.length ? 'Envoyer quand même' : 'Envoyer au client', title: b.status === 'done' ? 'Renvoyer au client' : 'Envoyer au client' }))) return
+  if (S.commandeId === id) { try { await saveNow() } catch (e) { console.warn('[Envoi] Sauvegarde de sécurité pré-envoi échouée :', e.message) } }
+  try {
+    const res = await fetch(`${SERVER}/commandes/${id}/done`, { method: 'POST', headers: NGROK })
+    if (!res.ok) throw new Error('HTTP ' + res.status)
+    const push = ((await res.json().catch(() => ({}))) || {}).push
+    try { const m = JSON.parse(localStorage.getItem('adstack_active_production') || 'null'); if (m && m.commandeId === id) localStorage.removeItem('adstack_active_production') } catch (_) {}
+    reload && reload()
+    if (!push) { await alertDlg('Commande marquée livrée, mais le serveur n\'a pas confirmé ce qui est arrivé chez le client. Ouvre « Livrables » puis renvoie si besoin.', { title: 'Livraison' }); return }
+    if (push.pushedCount < push.expectedCount || !push.adCopiesOk || !push.marcheOk) {
+      const pb = []
+      if (push.pushedCount < push.expectedCount) pb.push(`créatives : ${push.pushedCount}/${push.expectedCount} reçues`)
+      if (!push.adCopiesOk) pb.push(`ad copies : ${push.adCopiesCount}/${push.adCopiesAttendu}`)
+      if (!push.marcheOk) pb.push('données marché non écrites')
+      await alertDlg(`Envoi partiel chez ${qui} :\n• ${pb.join('\n• ')}\n\nClique sur « Renvoyer » : ce qui est déjà arrivé ne sera pas dupliqué.`, { title: 'Livraison' }); return
+    }
+    await alertDlg(`Envoyé et confirmé chez ${qui} :\n• ${push.pushedCount}/${push.expectedCount} créatives\n• ${push.adCopiesCount}/${push.adCopiesAttendu} sets d'ad copy\n• Données marché ✓`, { title: 'Livraison' })
+  } catch (e) { await alertDlg("Erreur lors de l'envoi : " + e.message) }
+}
+
 // ── Actions sur les commandes ──
 export async function marquerLivre(id, reload) {
   if (!(await confirmDlg('Marquer cette commande comme livrée ?', { ok: 'Marquer livrée' }))) return
