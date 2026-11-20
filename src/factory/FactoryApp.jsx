@@ -13,6 +13,8 @@ import Apprentissage from './pages/Apprentissage'
 import { GalerieImage, GalerieVideo } from './pages/ManageGalleries'
 import { DialogHost } from './ui'
 import { hydrateMem } from './agentStore'
+import { activerContexteCommande } from './prod/contexte'
+activerContexteCommande()   // finance-v2
 
 export const BASE = location.pathname.startsWith('/factory-next') ? '/factory-next' : '/factory'
 export default function FactoryApp() {

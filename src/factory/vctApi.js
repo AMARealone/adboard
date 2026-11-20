@@ -136,7 +136,17 @@ export async function vctLireAnalyse(id) {
   try { const r = await fetch(urlAnalyse(id) + '?t=' + Date.now()); if (!r.ok) return null; return await r.json() } catch (_) { return null }
 }
 // Range le résultat dans la galerie : texte du CT, métadonnées (nom, méta, niveau, niches, durée produite…), résumé de l'analyse.
+// finance-v2 : le coût de chaque analyse (réussie ou non) remonte dans Finances, rangé dans « Bibliothèque de CT »
+function noterCoutAnalyse(id, A) {
+  try {
+    const usd = Number(A && A.cout_usd); if (!(usd > 0)) return
+    const tok = (JSON.parse(localStorage.getItem('factory_admin_sb_session') || 'null') || {}).access_token || ''
+    fetch(SERVER + '/finance/cout-externe', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok },
+      body: JSON.stringify({ fournisseur: 'analyse_ct', origine: 'factory', unites: 1, cout_usd: usd, detail: 'analyse du CT vidéo ' + id + (A.etat === 'echec' ? ' (échec)' : ''), ref: 'analyse_ct:' + id + ':' + String(A.debut || '').slice(0, 19) }) }).catch(() => {})
+  } catch (_) {}
+}
 export async function vctAppliquerAnalyse(rec, A) {
+  noterCoutAnalyse(rec.id, A)
   const R = A.resultat || {}, texte = String(R.texte || '')
   if (texte.length < 800) throw new Error('document du CT absent ou trop court')
   await vctPutTexte(rec.id, texte)
@@ -156,7 +166,7 @@ export async function vctSuivreAnalyse(rec, onStatus = () => {}, signal) {
     if (signal && signal.aborted) return null
     const A = await vctLireAnalyse(rec.id)
     if (A && A.etat === 'termine' && A.resultat && new Date(A.maj || 0).getTime() >= (rec.analyse_auto && rec.analyse_auto.debut || 0) - 60000) { onStatus('Rangement de l\'analyse…'); return vctAppliquerAnalyse(rec, A) }
-    if (A && A.etat === 'echec' && new Date(A.maj || 0).getTime() >= (rec.analyse_auto && rec.analyse_auto.debut || 0) - 60000) { rec.analyse_auto = { ...(rec.analyse_auto || {}), etat: 'echec', erreur: String(A.erreur || '').slice(0, 300) }; await vctPutMeta(rec); throw new Error(A.erreur || 'analyse en échec') }
+    if (A && A.etat === 'echec' && new Date(A.maj || 0).getTime() >= (rec.analyse_auto && rec.analyse_auto.debut || 0) - 60000) { noterCoutAnalyse(rec.id, A); rec.analyse_auto = { ...(rec.analyse_auto || {}), etat: 'echec', erreur: String(A.erreur || '').slice(0, 300) }; await vctPutMeta(rec); throw new Error(A.erreur || 'analyse en échec') }
     onStatus(A && A.etape ? A.etape + (A.pct ? ' · ' + A.pct + ' %' : '') : 'La machine démarre…')
     await new Promise((ok) => setTimeout(ok, 15000))
   }

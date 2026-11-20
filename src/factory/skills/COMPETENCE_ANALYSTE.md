@@ -359,6 +359,26 @@ D. CODE DE FIDÉLITÉ — CE QUI NE DOIT JAMAIS APPARAÎTRE
 → Les clichés du marché à éviter pour CE produit et CE pays précisément
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LE TEMPS DU MARCHÉ — À LIRE AVANT DE CONSTRUIRE S2 (timing-marche-v2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Un angle juste au mauvais moment est un angle perdu : trop tard, tout le monde le dit déjà (il est « dans le prix ») ; trop tôt, on réinvente la roue et le marché n'en veut pas encore. DONNÉES BRUTES te donne le temps : la date du balayage en tête, l'âge de chaque donnée (« il y a N j »), les pubs classées par âge et la CARTE TEMPORELLE DES ANGLES DES PUBS (comptée par le programme, pas par un modèle).
+
+Trois horloges, à ne jamais confondre :
+· horloge lente — la cible, ses désirs profonds : elle ne bouge pas d'un balayage à l'autre, tu ne réécris jamais la cible à cause d'un nouveau balayage ;
+· horloge moyenne — les mots, les croyances, les alternatives essayées : elles glissent sur des mois ;
+· horloge rapide — les pubs et les signaux récents : elle dit QUEL angle est saturé, prouvé ou en montée cette semaine.
+
+Méthode, angle par angle (T1 à T5) :
+T1 — Lis la carte : à quelle famille d'angle de la carte ton angle appartient-il ? S'il n'en a aucune, c'est un terrain libre.
+T2 — Raisonne le statut : SATURÉ → tu gardes le désir prouvé mais tu changes au moins un élément (ennemi, mécanisme, scène, comparaison, moment) tiré des données ; PROUVÉ ou PROUVÉ ENCORE RELANCÉ → le désir est validé par de l'argent dépensé, tu BIFURQUES (même désir, une porte d'entrée que personne n'utilise) ; EN MONTÉE → fenêtre ouverte, à prendre vite ; ESSAI ISOLÉ → un signal, pas une preuve.
+T3 — Preuve de demande : un terrain libre (aucune famille de la carte) n'entre en S2 que s'il s'appuie sur au moins 2 signaux INDÉPENDANTS et DATÉS de DONNÉES BRUTES (ex. une discussion Reddit des 30 derniers jours + une vidéo TikTok récente qui engage). Sinon il va en fin de réserve S10 avec la mention [TROP TÔT].
+T4 — Stade du marché (Schwartz) : la répartition des types de message de la carte te dit ce que le marché a déjà entendu (promesse → promesse plus forte → mécanisme → nouveau mécanisme → identification). Ton angle part du cran suivant, jamais d'un cran déjà usé.
+T5 — Tenir jusqu'au lancement : l'angle doit encore être juste dans 5 à 7 jours, le temps de produire et de lancer. Un angle qui ne tient que sur une mode de quelques jours est écarté.
+
+Règles : une donnée marquée « date inconnue » ne sert jamais de preuve de timing. Sur un petit pays avec peu de pubs, écris [CARTE DES PUBS MINCE] en S8 et appuie-toi sur les marchés voisins de même langue. La durée d'une pub prouve une dépense continue, pas un retour sur investissement : ne la présente jamais comme une preuve de ventes. Avant de promouvoir un angle de réserve, re-date-le avec la carte du jour.
+En S8, ajoute le stade du marché et la carte des angles du marché (familles, statuts) en 4 à 8 lignes. En S12, chaque insight porte la date de sa source.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 3 — S2 : LES ANGLES DU LOT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -423,8 +443,8 @@ Exemple : "Angle 1 — La Double Action : Beauté & Mobilité"
 → Cette ligne d'en-tête ne contient RIEN d'autre que "Angle N — [Nom]" — tous les autres champs viennent sur des lignes séparées APRÈS cet en-tête.
 → Un angle promu depuis la réserve GARDE son nom exact : c'est ce nom qui permet de savoir qu'il est consommé. Seul son numéro change.
 
-CARTE D'ANGLE — LES 17 CHAMPS OBLIGATOIRES
-Chaque angle de S2 porte les 17 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
+CARTE D'ANGLE — LES 18 CHAMPS OBLIGATOIRES
+Chaque angle de S2 porte les 18 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
 
 1. Nom de l'angle (ligne d'en-tête au format imposé ci-dessus)
 2. Facette rattachée — laquelle des facettes de S1b, et en une phrase pourquoi cet angle la convertit elle plutôt que l'autre
@@ -448,6 +468,8 @@ Chaque angle de S2 porte les 17 champs ci-dessous, dans cet ordre. Ce ne sont pa
 15. Ancrage scepticisme — quelle entrée du pool scepticisme rend cet angle crédible sur CE marché, et comment l'angle y répond.
 16. Non-réplicabilité — pourquoi cet angle n'est pas réplicable par un concurrent direct, en une phrase. (Un angle n'a PAS de niveau de conscience : le niveau est une variable de la créative, voir le principe en tête de S3. Ne rattache aucun niveau à l'angle.)
 17. Raisons d'acheter — exactement 3 lignes, au format « Raison 1 : … », « Raison 2 : … », « Raison 3 : … ». Méthode : pose trois fois la question « pourquoi CETTE facette (champ 2) de CETTE cible veut-elle CET angle ? » et réponds à partir de sa vie réelle : son contexte, les personnages de son entourage (S1c), l'enjeu concret pour elle, formulé comme elle le dirait. Test de spécificité : si une raison pourrait s'écrire telle quelle pour n'importe quelle autre cible du même produit, elle est générique, réécris-la. Les trois raisons sont distinctes entre elles et ne changent JAMAIS l'angle : ce sont trois portes d'entrée vers la même idée. Elles servent uniquement aux agents suivants (une par créative de l'angle) : le client ne les voit jamais, elles ne sont jamais recopiées comme titre ou comme texte de pub.
+
+18. Timing — 4 lignes : « Famille et statut : … » (la famille de la carte temporelle et son statut, ou « terrain libre ») ; « Preuves datées : … » (2 signaux au moins, chacun avec son âge et sa source dans DONNÉES BRUTES) ; « On garde / on change : … » (le désir prouvé gardé, l'élément changé pour bifurquer) ; « Pourquoi maintenant : … » (une phrase simple, reprise telle quelle pour le client). Un angle sans preuve datée porte [TROP TÔT] et ne peut pas être en S2.
 
 PUIS, POUR CHAQUE ANGLE DE S2 UNIQUEMENT, LES CONCEPTS PAR DÉFAUT (angle × raison d'acheter × niveau de conscience ; voir S3). Le niveau appartient au CONCEPT, jamais à l'angle ni à la raison : ces trois concepts montrent comment l'angle sonne à trois niveaux, ils n'enferment ni l'angle ni la raison dans un niveau. Quand la production prendra un autre CT, à un autre niveau, elle reformulera le même cœur d'angle à ce niveau-là :
 Chaque angle du lot se décline en 3 créatives : 1 vidéo et 2 images, quelle que soit l'offre. La vidéo prend le niveau le plus froid autorisé en vidéo (Problem Aware), qui laisse le temps d'installer le problème puis de conclure sur l'argument de vente et l'appel à l'action dans ses derniers 25 à 30 % ; les deux images prennent Solution Aware et Product Aware. Chacune des 3 créatives porte UNE des 3 raisons d'acheter du champ 17 (une raison par créative, jamais deux fois la même dans l'angle). Pour chacune, précise comment son niveau reformule le moteur de l'angle, la raison d'acheter qu'elle porte, et le dosage retenu en pourcentage (voir le tableau de S3).
@@ -912,7 +934,8 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Une facette moins détaillée que la cible : il manque son identité en situation, son déclencheur propre, ses 3 objections propres, sa journée type de 5 moments, sa psychographie, sa façon de parler ou ses liens avec S1c
 ❌ S1d absente, ou ses quatre lignes MATURITE au mauvais format
 ❌ Un champ 17 qui n'a pas exactement 3 raisons distinctes, ou une raison qui conviendrait à n'importe quelle autre cible du produit
-❌ Un des 17 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
+❌ Un angle de S2 dont le champ 18 n'a pas de preuve datée, ou un angle sur une famille SATURÉE repris sans rien changer
+❌ Un des 18 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
 ❌ Un angle qui est un bénéfice déguisé ("gagner de l'énergie", "mieux dormir") au lieu de ce que la cible veut vraiment, formulé comme personne ne le formule sur ce marché
 ❌ Accroche de peur construite sur le produit au lieu du problème
 ❌ Scènes de douleur écrites comme des émotions au lieu de situations montrables (un objet, un moment, une action observable)

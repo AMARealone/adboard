@@ -1,4 +1,4 @@
-// finance-phase1-v1 — page « Finance » du CRM : tout en DOLLARS, calculé en direct par le serveur (GET /finance/resume).
+// finances-v2 (fusion de « Comptabilité » et « Finance ($) ») · finance-phase1-v1 — page « Finance » du CRM : tout en DOLLARS, calculé en direct par le serveur (GET /finance/resume).
 // Revenu net (commission Chariow réelle), coûts variables par origine (Factory, AdBoard, AdStats, Prospecteur), coûts fixes au prorata, profit, marges, tendance, fuites.
 import React, { useCallback, useEffect, useState } from 'react'
 import { Card, Seg, Stat, Chip, Modal, toast, confirmDlg } from '../ui'
@@ -6,11 +6,19 @@ import { Area, HBars } from '../charts'
 import { serveurAdminJson } from '../api'
 import { usePref } from '../prefs'
 
-const usd = (v, forcer) => { const x = Number(v) || 0, a = Math.abs(x), d = forcer !== undefined ? forcer : a > 0 && a < 0.1 ? 4 : 2; return (x < 0 ? '−' : '') + '$' + a.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }) }
+// finances-v2 : affichage en dollars ou en FCFA, au taux réel du jour renvoyé par le serveur (jamais 600 fixe)
+const AFF = { fcfa: false, taux: 0 }
+const usd = (v, forcer) => {
+  const x = Number(v) || 0
+  if (AFF.fcfa && AFF.taux > 0) { const f = Math.round(x * AFF.taux); return (f < 0 ? '−' : '') + Math.abs(f).toLocaleString('fr-FR').replace(/\u202f|\u00a0/g, ' ') + ' FCFA' }
+  const a = Math.abs(x), d = forcer !== undefined ? forcer : a > 0 && a < 0.1 ? 4 : 2
+  return (x < 0 ? '−' : '') + '$' + a.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })
+}
 const pc = (v) => (v === null || v === undefined ? '—' : String(v).replace('.', ',') + ' %')
 const ORIGINES = { factory: 'Factory', adboard: 'AdBoard', adstats: 'AdStats (CRM)', prospecteur: 'Prospecteur', autre: 'À classer' }
 const NATURES = { production: 'Production (livrables clients)', agent_test: "Tests d'agents", demo: 'Démo (acquisition)', prospecteur: 'Prospection', autre: 'Autre' }
 const FOURNISSEURS = { scrapecreators: 'ScrapeCreators', google_vision: 'Google Vision', africastalking_sms: "SMS Africa's Talking", moteur_video: 'Moteur vidéo (Veo, voix, montage)' }
+const POSTES = { analyse: 'Analyse', images: 'Images', copies: 'Ad copies', video: 'Vidéos', autre: 'Autre' }
 const PERIODES = [[7, '7 jours'], [30, '30 jours'], [90, '90 jours'], [0, 'Tout']]
 const NIVEAUX = { critique: ['red', 'Critique'], alerte: ['wa', 'Alerte'], info: ['bl', 'Info'] }
 const PARAMS = [
@@ -88,10 +96,13 @@ export default function Finance() {
   const [de, setDe] = usePref('fin_de', ''), [a, setA] = usePref('fin_a', '')
   const [d, setD] = useState(null), [err, setErr] = useState(''), [charge, setCharge] = useState(true)
   const [modal, setModal] = useState(null)
+  const [devise, setDevise] = usePref('devise', 'usd')
+  const [P, setP] = useState(null)
   const perso = !!(de && a)
   const requete = perso ? '?du=' + de + '&au=' + a : per === 0 ? '?tout=1' : '?jours=' + per
   const charger = useCallback(async () => {
     setCharge(true); setErr('')
+    serveurAdminJson('/finance/productions' + requete, 'GET', undefined, 90000).then(setP).catch(() => setP(null))
     try { setD(await serveurAdminJson('/finance/resume' + requete, 'GET', undefined, 90000)) } catch (e) { setErr(e.name === 'AbortError' ? 'Le serveur met trop de temps à répondre (il se réveille peut-être) : réessaie dans un instant.' : e.message) }
     setCharge(false)
   }, [requete])
@@ -103,29 +114,82 @@ export default function Finance() {
 
   const R = d && d.resultat, V = d && d.variable, C = d && d.comparaison
   const delta = (x) => (x === null || x === undefined ? undefined : Math.round(x))
+  AFF.fcfa = devise === 'fcfa'; AFF.taux = d ? Number(d.taux.xof_par_usd) || 0 : 0
   const paramsPar = d ? Object.fromEntries(d.config.parametres.map((p) => [p.cle, p])) : {}
   return (<>
     <div className="cx-tools"><div className="cx-bar2">
       <Seg value={perso ? 'perso' : per} onChange={(v) => { setDe(''); setA(''); setPer(v) }} options={PERIODES} />
       <span className="cx-range" style={{ marginLeft: 0 }}><input type="date" value={de} onChange={(e) => setDe(e.target.value)} /><i>→</i><input type="date" value={a} onChange={(e) => setA(e.target.value)} /></span>
+      <Seg value={devise} onChange={setDevise} options={[['usd', '$'], ['fcfa', 'FCFA']]} />
       <button className="cx-btn sm" onClick={charger} disabled={charge}>{charge ? 'Calcul…' : '↻ Actualiser'}</button>
     </div></div>
     {err && <div className="cx-banner">⚠ {err}</div>}
     {charge && !d && <p className="cx-sub">Calcul en direct… (le serveur peut mettre jusqu'à une minute à se réveiller)</p>}
     {d && <>
-      <p className="cx-sub" style={{ marginTop: 0 }}>Tout est en dollars · du {d.periode.du} au {d.periode.au} ({d.periode.jours} jour{d.periode.jours > 1 ? 's' : ''}) · 1 $ = {d.taux.xof_par_usd} FCFA ({d.taux.source}) · calculé par le serveur à {new Date(d.genere_a).toLocaleTimeString('fr-FR')}</p>
+      <p className="cx-sub" style={{ marginTop: 0 }}>Du {d.periode.du} au {d.periode.au} · 1 $ = {d.taux.xof_par_usd} FCFA (taux {d.taux.source}) · calculé à {new Date(d.genere_a).toLocaleTimeString('fr-FR')}</p>
+      <div className="cx-stats wrap">
+        <Stat l="Revenu net" v={usd(d.revenu.net_usd)} t="acc" d={delta(C && C.revenu_net_delta_pct)} />
+        <Stat l="Dépenses" v={usd(R.depenses_usd)} />
+        <Stat l="Profit" v={usd(R.profit_usd)} t={R.profit_usd >= 0 ? 'ok' : 'hot'} />
+        <Stat l="Marge nette" v={pc(R.marge_nette_pct)} />
+      </div>
+      <p className="cx-foot-note" style={{ marginTop: -6 }}>Revenu net = encaissé moins la commission Chariow ({usd(d.revenu.commission_usd)} sur {usd(d.revenu.brut_usd)}, {d.revenu.nb_ventes} vente{d.revenu.nb_ventes > 1 ? 's' : ''}). Ta rémunération n'est pas comptée.</p>
       {d.fuites.length > 0 && <Card t="Fuites et alertes" note={d.fuites.length + ' point' + (d.fuites.length > 1 ? 's' : '')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{d.fuites.map((f, i) => <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}><Chip c={NIVEAUX[f.niveau][0]}>{NIVEAUX[f.niveau][1]}</Chip><div><b style={{ fontSize: 13 }}>{f.titre}</b><div className="cx-note" style={{ fontSize: 12.5 }}>{f.detail}</div></div></div>)}</div>
       </Card>}
-      <div className="cx-stats wrap">
-        <Stat l="Revenu net" v={usd(d.revenu.net_usd)} t="acc" d={delta(C && C.revenu_net_delta_pct)} />
-        <Stat l="Dépenses totales" v={usd(R.depenses_usd)} />
-        <Stat l="Profit" v={usd(R.profit_usd)} t={R.profit_usd >= 0 ? 'ok' : 'hot'} />
-        <Stat l="Marge nette" v={pc(R.marge_nette_pct)} />
-        <Stat l="Marge de contribution" v={pc(R.marge_contribution_pct)} />
-        <Stat l="Coût variable par vente" v={V.par_vente_usd === null ? '—' : usd(V.par_vente_usd)} />
+      <div className="cx-g2">
+        <Card t="Où part l'argent" note={usd(R.depenses_usd) + ' sur la période'}>
+          <HBars rows={[...(P ? P.usages.filter((u) => u.usd > 0).map((u) => ({ l: u.libelle, v: u.usd })) : V.par_origine.filter((o) => o.usd > 0).map((o) => ({ l: ORIGINES[o.origine] || o.origine, v: o.usd }))), { l: 'Abonnements', v: d.fixes.total_usd }, { l: 'Dépenses ponctuelles', v: d.ponctuelles.total_usd }].filter((x) => x.v > 0).sort((x, y) => y.v - x.v)} fmtV={(v) => usd(v)} />
+          {!P && <p className="cx-foot-note">Classement par usage indisponible : le serveur n'a pas encore la mise à jour finance-v2.</p>}
+        </Card>
+        <Card t="Profit par jour" note={d.tendance.pas_jours > 1 ? 'par semaine' : 'par jour'}><Area data={d.tendance.points.map((p) => ({ l: p.date.slice(5), v: Math.round((AFF.fcfa ? p.profit_usd * AFF.taux : p.profit_usd) * 100) / 100 }))} unite={AFF.fcfa ? ' FCFA' : ' $'} color="var(--ok)" /></Card>
       </div>
-      <p className="cx-foot-note" style={{ marginTop: -6 }}>Le revenu net est après la commission Chariow réelle ({usd(d.revenu.commission_usd)} sur {usd(d.revenu.brut_usd)} encaissés, {d.revenu.nb_ventes} vente{d.revenu.nb_ventes > 1 ? 's' : ''}). Marge de contribution = revenu net moins coûts variables, sans les abonnements. La rémunération du fondateur n'est pas comptée.</p>
+
+      {P && <Card t="Coût d'une production" note={P.production.commandes + ' commande' + (P.production.commandes > 1 ? 's' : '') + ' suivie' + (P.production.commandes > 1 ? 's' : '')}>
+        <div className="cx-stats wrap" style={{ marginBottom: 10 }}>
+          <Stat l="Coût moyen d'un lot de 6" v={P.production.cout_moyen_par_lot_usd === null ? '—' : usd(P.production.cout_moyen_par_lot_usd)} t="acc" />
+          <Stat l="Dépensé en production" v={usd(P.production.total_usd + P.production.non_rattache_usd)} />
+          <Stat l="Dépensé en tests d'agents" v={usd((P.usages.find((u) => u.usage === 'tests') || {}).usd || 0)} />
+        </div>
+        {P.par_offre.length > 0 && <div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Offre</th><th>Commandes</th><th>Coût par lot</th><th>Coût par créative</th><th>Coût d'un mois plein</th></tr></thead><tbody>
+          {P.par_offre.map((o) => <tr key={o.plan || o.offre}><td style={{ textAlign: 'left' }}><b>{o.offre}</b></td><td>{o.commandes}</td><td>{usd(o.cout_par_lot_usd)}</td><td>{usd(o.cout_par_creative_usd)}</td><td>{o.cout_mensuel_plein_usd === null ? '—' : usd(o.cout_mensuel_plein_usd) + ' (' + o.lots_par_mois + ' lots)'}</td></tr>)}</tbody></table></div>}
+        {P.commandes.length > 0 ? <details style={{ marginTop: 10 }}><summary className="cx-sub" style={{ cursor: 'pointer' }}>Voir chaque commande ({P.commandes.length})</summary>
+          <div className="cx-scroll" style={{ marginTop: 8 }}><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Date</th><th style={{ textAlign: 'left' }}>Produit</th><th style={{ textAlign: 'left' }}>Client</th><th>Offre</th><th>Coût</th><th style={{ textAlign: 'left' }}>Détail</th></tr></thead><tbody>
+            {P.commandes.map((c) => <tr key={c.commande_id}><td style={{ textAlign: 'left' }}>{c.date}</td><td style={{ textAlign: 'left' }}>{c.produit}</td><td style={{ textAlign: 'left' }}>{c.client}</td><td>{c.offre}</td><td><b>{usd(c.total_usd)}</b></td><td style={{ textAlign: 'left', whiteSpace: 'normal' }} className="cx-note">{c.postes.map((x) => POSTES[x.poste] + ' ' + usd(x.usd)).join(' · ')}</td></tr>)}</tbody></table></div></details>
+          : <span className="cx-sub">Aucune commande suivie sur la période. Le coût par commande se remplit à partir de la prochaine production.</span>}
+        {P.production.non_rattache_usd > 0.005 && <p className="cx-foot-note">{usd(P.production.non_rattache_usd)} de production ne sont rattachés à aucune commande (productions d'avant cette mise à jour).</p>}
+        {!P.colonnes_commande && <div className="cx-banner" style={{ marginTop: 10 }}>⚠ Pour ranger chaque dépense sur sa commande, exécute une fois le fichier finance_v2.sql dans Supabase.</div>}
+      </Card>}
+
+      {P && P.par_client.length > 0 && <Card t="Marge par client" note="payé (net de Chariow) moins le coût de ses productions">
+        <div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Client</th><th>Offre</th><th>Commandes</th><th>Payé net</th><th>Coût</th><th>Marge</th></tr></thead><tbody>
+          {P.par_client.slice(0, 30).map((c) => <tr key={c.client}><td style={{ textAlign: 'left' }}>{c.client}</td><td>{c.offre}</td><td>{c.commandes}</td><td>{usd(c.revenu_net_usd)}</td><td>{usd(c.cout_usd)}</td><td><b style={{ color: c.marge_usd >= 0 ? '#22C55E' : '#EF4444' }}>{usd(c.marge_usd)}</b>{c.marge_pct !== null ? ' · ' + pc(c.marge_pct) : ''}</td></tr>)}</tbody></table></div>
+      </Card>}
+
+      <Card t="Coûts fixes (abonnements)" note={usd(d.fixes.mensuel_actif_usd) + ' / mois en cours · ' + usd(d.fixes.total_usd) + ' sur la période'}>
+        <div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Abonnement</th><th>Montant</th><th>≈ $ / mois</th><th>Compté depuis</th><th>État</th><th></th></tr></thead><tbody>
+          {d.config.fixes.map((l) => <tr key={l.id}>
+            <td style={{ textAlign: 'left' }}><b>{l.nom}</b>{l.note && <div className="cx-note" style={{ fontSize: 11.5, whiteSpace: 'normal', maxWidth: 360 }}>{l.note}</div>}</td>
+            <td>{l.devise === 'XOF' ? Math.round(l.montant).toLocaleString('fr-FR') + ' FCFA' : usd(l.montant)}{l.periodicite === 'annuel' ? ' / an' : ' / mois'}</td><td>{usd(l.mensuel_usd)}</td><td>{l.date_debut}{l.date_fin ? ' → ' + l.date_fin : ''}</td>
+            <td>{l.actif ? <Chip c="ok">Payé</Chip> : <Chip c="off">Pas encore payé</Chip>}</td>
+            <td style={{ whiteSpace: 'nowrap' }}><button className="cx-btn sm" onClick={() => bascule(l)}>{l.actif ? 'Arrêter' : "Activer aujourd'hui"}</button> <button className="cx-btn sm" onClick={() => setModal({ t: 'fixe', l })}>Modifier</button> <button className="cx-btn sm red" onClick={() => supprimer('/finance/cout-fixe', l.id, l.nom)}>✕</button></td>
+          </tr>)}
+          {!d.config.fixes.length && <tr><td colSpan="6" style={{ textAlign: 'center' }} className="cx-sub">Aucun abonnement. Si tu viens d'exécuter le SQL, actualise.</td></tr>}
+        </tbody></table></div>
+        <div className="cx-acts" style={{ marginTop: 10 }}><button className="cx-btn primary" onClick={() => setModal({ t: 'fixe' })}>+ Ajouter un abonnement</button></div>
+        <p className="cx-foot-note">Chaque abonnement est compté jour par jour (mensuel × 12 ÷ 365) à partir de sa date de début. Un outil gratuit reste à 0 $ : le jour où il devient payant, modifie son montant.</p>
+      </Card>
+
+      <Card t="Dépenses ponctuelles" note={usd(d.ponctuelles.total_usd) + ' sur la période'}>
+        {d.ponctuelles.lignes.length > 0 && <div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Date</th><th style={{ textAlign: 'left' }}>Dépense</th><th>Montant</th><th>En $</th><th></th></tr></thead><tbody>
+          {d.ponctuelles.lignes.map((l) => <tr key={l.id}><td style={{ textAlign: 'left' }}>{l.date}</td><td style={{ textAlign: 'left' }}>{l.nom}</td><td>{l.devise === 'XOF' ? Math.round(l.montant).toLocaleString('fr-FR') + ' FCFA (1 $ = ' + Math.round(l.taux_xof_par_usd) + ')' : usd(l.montant)}</td><td>{usd(l.usd)}</td><td><button className="cx-btn sm red" onClick={() => supprimer('/finance/depense', l.id, l.nom)}>✕</button></td></tr>)}</tbody></table></div>}
+        {!d.ponctuelles.lignes.length && <span className="cx-sub">Aucune dépense ponctuelle sur la période.</span>}
+        <div className="cx-acts" style={{ marginTop: 10 }}><button className="cx-btn" onClick={() => setModal({ t: 'depense' })}>+ Ajouter une dépense</button></div>
+      </Card>
+
+      {d.revenu.par_plan.length > 0 && <Card t="Revenu net par offre"><div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Offre</th><th>Ventes</th><th>Revenu net</th></tr></thead><tbody>{d.revenu.par_plan.map((p) => <tr key={p.plan}><td style={{ textAlign: 'left' }}>{p.plan}</td><td>{p.ventes}</td><td>{usd(p.net_usd)}</td></tr>)}</tbody></table></div></Card>}
+
+      <details className="cx-plus"><summary>Détail technique des coûts d'IA</summary>
       <div className="cx-g2">
         <Card t="Revenu net par jour" note={d.tendance.pas_jours > 1 ? 'par semaine' : 'par jour'}><Area data={d.tendance.points.map((p) => ({ l: p.date.slice(5), v: Math.round(p.revenu_net_usd * 100) / 100 }))} unite=" $" color="var(--ok)" /></Card>
         <Card t="Dépenses par jour" note="variables + fixes + ponctuelles"><Area data={d.tendance.points.map((p) => ({ l: p.date.slice(5), v: Math.round(p.depenses_usd * 100) / 100 }))} unite=" $" color="var(--wa)" /></Card>
@@ -147,29 +211,8 @@ export default function Finance() {
             : <span className="cx-sub">Rien de relevé sur la période. Les coûts apparaissent dès le prochain balayage, SMS ou vidéo.</span>}
         </Card>
       </div>
-      {d.revenu.par_plan.length > 0 && <Card t="Revenu net par offre"><div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Offre</th><th>Ventes</th><th>Revenu net</th></tr></thead><tbody>{d.revenu.par_plan.map((p) => <tr key={p.plan}><td style={{ textAlign: 'left' }}>{p.plan}</td><td>{p.ventes}</td><td>{usd(p.net_usd)}</td></tr>)}</tbody></table></div></Card>}
-
-      <Card t="Coûts fixes (abonnements)" note={usd(d.fixes.mensuel_actif_usd) + ' / mois en cours · ' + usd(d.fixes.total_usd) + ' sur la période'}>
-        <div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Abonnement</th><th>Montant</th><th>≈ $ / mois</th><th>Compté depuis</th><th>État</th><th></th></tr></thead><tbody>
-          {d.config.fixes.map((l) => <tr key={l.id}>
-            <td style={{ textAlign: 'left' }}><b>{l.nom}</b>{l.note && <div className="cx-note" style={{ fontSize: 11.5, whiteSpace: 'normal', maxWidth: 360 }}>{l.note}</div>}</td>
-            <td>{l.devise === 'XOF' ? Math.round(l.montant).toLocaleString('fr-FR') + ' FCFA' : usd(l.montant)}{l.periodicite === 'annuel' ? ' / an' : ' / mois'}</td><td>{usd(l.mensuel_usd)}</td><td>{l.date_debut}{l.date_fin ? ' → ' + l.date_fin : ''}</td>
-            <td>{l.actif ? <Chip c="ok">Payé</Chip> : <Chip c="off">Pas encore payé</Chip>}</td>
-            <td style={{ whiteSpace: 'nowrap' }}><button className="cx-btn sm" onClick={() => bascule(l)}>{l.actif ? 'Arrêter' : "Activer aujourd'hui"}</button> <button className="cx-btn sm" onClick={() => setModal({ t: 'fixe', l })}>Modifier</button> <button className="cx-btn sm red" onClick={() => supprimer('/finance/cout-fixe', l.id, l.nom)}>✕</button></td>
-          </tr>)}
-          {!d.config.fixes.length && <tr><td colSpan="6" style={{ textAlign: 'center' }} className="cx-sub">Aucun abonnement. Si tu viens d'exécuter le SQL, actualise.</td></tr>}
-        </tbody></table></div>
-        <div className="cx-acts" style={{ marginTop: 10 }}><button className="cx-btn primary" onClick={() => setModal({ t: 'fixe' })}>+ Ajouter un abonnement</button></div>
-        <p className="cx-foot-note">Chaque abonnement est compté jour par jour (mensuel × 12 ÷ 365) à partir de sa date de début. Supabase et Render restent à 0 $ tant que tu ne cliques pas « Activer aujourd'hui » le jour du premier paiement.</p>
-      </Card>
-
-      <Card t="Dépenses ponctuelles" note={usd(d.ponctuelles.total_usd) + ' sur la période'}>
-        {d.ponctuelles.lignes.length > 0 && <div className="cx-scroll"><table className="cx-tbl"><thead><tr><th style={{ textAlign: 'left' }}>Date</th><th style={{ textAlign: 'left' }}>Dépense</th><th>Montant</th><th>En $</th><th></th></tr></thead><tbody>
-          {d.ponctuelles.lignes.map((l) => <tr key={l.id}><td style={{ textAlign: 'left' }}>{l.date}</td><td style={{ textAlign: 'left' }}>{l.nom}</td><td>{l.devise === 'XOF' ? Math.round(l.montant).toLocaleString('fr-FR') + ' FCFA (1 $ = ' + Math.round(l.taux_xof_par_usd) + ')' : usd(l.montant)}</td><td>{usd(l.usd)}</td><td><button className="cx-btn sm red" onClick={() => supprimer('/finance/depense', l.id, l.nom)}>✕</button></td></tr>)}</tbody></table></div>}
-        {!d.ponctuelles.lignes.length && <span className="cx-sub">Aucune dépense ponctuelle sur la période.</span>}
-        <div className="cx-acts" style={{ marginTop: 10 }}><button className="cx-btn" onClick={() => setModal({ t: 'depense' })}>+ Ajouter une dépense</button></div>
-      </Card>
-
+      </details>
+      <details className="cx-plus"><summary>Paramètres et couverture du suivi</summary>
       <Card t="Paramètres" note="valeurs utilisées dans les calculs">{PARAMS.map((p) => <ChampParam key={p.join()} p={p} courant={paramsPar[p[0]] || (p[0] === 'taux_xof_par_usd' ? { valeur: d.taux.xof_par_usd, source: d.taux.source === 'saisi' ? 'saisi' : 'auto' } : undefined)} onSave={param} />)}</Card>
 
       <Card t="Ce qui est suivi" note="et ce qui reste à saisir">
@@ -180,6 +223,7 @@ export default function Finance() {
         <b style={{ fontSize: 12.5 }}>À savoir</b>
         <ul style={{ margin: '6px 0 0 18px', padding: 0, fontSize: 12.5, lineHeight: 1.6 }}>{d.couverture.notes.map((x) => <li key={x}>{x}</li>)}</ul>
       </Card>
+      </details>
     </>}
     {modal && modal.t === 'fixe' && <FormFixe init={modal.l} onClose={() => setModal(null)} onSave={(f) => envoyer('/finance/cout-fixe', { ...(modal.l ? { id: modal.l.id } : {}), ...f, date_fin: f.date_fin || null }, 'Abonnement enregistré.')} />}
     {modal && modal.t === 'depense' && <FormDepense onClose={() => setModal(null)} onSave={(f) => envoyer('/finance/depense', f, 'Dépense enregistrée.')} />}

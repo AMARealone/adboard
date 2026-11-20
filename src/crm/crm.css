@@ -208,3 +208,11 @@ body{font-size:13.5px;line-height:1.45}
 .cx-opt{color:var(--tx)}
 .cx-opt.on{background:rgba(31,182,255,.18);border-color:var(--ac);color:var(--ac);box-shadow:0 0 0 2px rgba(31,182,255,.28)}
 .cx-opt.on::before{content:"✓ ";font-weight:900}
+
+/* finances-v2 : blocs repliés (le détail reste à un clic, hors de la vue) */
+.cx-plus{margin:14px 0;border:1px solid var(--bd,rgba(255,255,255,.08));border-radius:14px;padding:0 14px}
+.cx-plus>summary{cursor:pointer;list-style:none;padding:13px 2px;font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px}
+.cx-plus>summary::-webkit-details-marker{display:none}
+.cx-plus>summary:before{content:"+";display:inline-flex;width:20px;height:20px;border-radius:6px;align-items:center;justify-content:center;background:rgba(255,255,255,.07);font-weight:700}
+.cx-plus[open]>summary:before{content:"−"}
+.cx-plus[open]{padding-bottom:14px}

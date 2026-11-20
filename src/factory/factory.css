@@ -540,3 +540,9 @@ a.fx-lib:hover{background:rgba(160,175,210,.05);border-color:var(--bd)}
  .fx-agc .fx-art{aspect-ratio:16/7.5}
  .fx-agc-b{padding:14px 16px 16px}
 }
+/* candidats-ct-v1 : onglet « À valider » */
+.fx-tab-pt{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ac);margin-left:7px;vertical-align:middle;box-shadow:0 0 0 3px rgba(91,141,239,.18)}
+.fx-cand video{width:100%;aspect-ratio:9/16;max-height:420px;object-fit:contain;background:#000;border-radius:12px 12px 0 0;display:block}
+.fx-cand img{width:100%;max-height:420px;object-fit:contain;background:#0B0E14}
+.fx-cand .fx-ct-a{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.fx-cand .fx-ct-a a.fx-btn{text-decoration:none}

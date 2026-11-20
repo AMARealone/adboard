@@ -5,6 +5,22 @@ import { vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vc
 import { captureFrame } from '../r2'
 import { labFetch, labUrl } from '../lab'
 import { confirmDlg, alertDlg, toast } from '../ui'
+import { useSearchParams } from 'react-router-dom'
+import AValider, { useNbAValider } from './AValider'
+
+// candidats-ct-v1 : onglets « Galerie » / « À valider (N) »
+function useOnglet() {
+  const [sp, setSp] = useSearchParams()
+  return [sp.get('onglet') === 'a_valider' ? 'a_valider' : 'galerie', (o) => setSp(o === 'a_valider' ? { onglet: 'a_valider' } : {})]
+}
+function Onglets({ onglet, setOnglet, total, nb }) {
+  return (
+    <div className="fx-tabs">
+      <button className={'fx-tab' + (onglet === 'galerie' ? ' on' : '')} onClick={() => setOnglet('galerie')}>Galerie · {total}</button>
+      <button className={'fx-tab' + (onglet === 'a_valider' ? ' on' : '')} onClick={() => setOnglet('a_valider')}>À valider{nb ? ` · ${nb}` : ''}{nb ? <span className="fx-tab-pt" /> : null}</button>
+    </div>
+  )
+}
 
 const LEVELS = ['Problem Aware', 'Solution Aware', 'Product Aware', 'Most Aware']
 const csv = (s) => s.split(',').map((x) => x.trim()).filter(Boolean)
@@ -53,6 +69,7 @@ export function GalerieImage() {
   const [q, setQ] = usePersist('galerie.image.q', ''), [aw, setAw] = usePersist('galerie.image.aw', '')
   const [edit, setEdit] = useState(null), [light, setLight] = useState(null), [prog, setProg] = useState(null), [drag, setDrag] = useState(false)
   const fileRef = useRef(null)
+  const [onglet, setOnglet] = useOnglet(), [nbAV, relireNbAV] = useNbAValider('image')
   const load = useCallback(async () => { setLoading(true); try { setList(await ctGetAll()); setErr('') } catch (e) { setErr(e.message) } setLoading(false); loadCTImages() }, [])
   useEffect(() => { load() }, [load])
 
@@ -92,6 +109,8 @@ export function GalerieImage() {
           <button className="fx-btn primary" onClick={() => fileRef.current.click()}>+ Ajouter des CT</button></div></div>
       <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
       {prog && <div className="fx-progress"><div className="fx-progress-t"><b>{prog.label}</b><span>{prog.sub}</span></div><div className="fx-prog"><div style={{ width: prog.pct + '%' }} /></div></div>}
+      <Onglets onglet={onglet} setOnglet={setOnglet} total={list.length} nb={nbAV} />
+      {onglet === 'a_valider' ? <AValider type="image" onChange={() => { relireNbAV(); load() }} /> : <>
       <Toolbar list={list} q={q} setQ={setQ} aw={aw} setAw={setAw} />
       {err && <div className="fx-err">{err}</div>}
       {drag && <div className="fx-dropveil">Dépose tes images pour les ajouter</div>}
@@ -101,6 +120,7 @@ export function GalerieImage() {
             <div className="b"><div className="fx-t wrap">{x.name}</div>{x.meta && <div className="fx-meta">{x.meta}</div>}<Chips r={x} />
               <div className="fx-ct-a"><button className="fx-btn sm" onClick={() => setEdit(x)}>Modifier</button></div></div></div>))}</div>
           : <div className="fx-empty">{list.length ? 'Aucun CT ne correspond.' : 'Galerie vide — ajoute tes premières créatives modèles.'}</div>}
+      </>}
       {light && <div className="fx-light" onClick={() => setLight(null)}><img src={light.url} alt="" /><div>{light.name}</div></div>}
       {edit && <EditImage rec={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load() }} />}
     </div>
@@ -146,6 +166,7 @@ export function GalerieVideo() {
   const [list, setList] = useState([]), [loading, setLoading] = useState(true), [err, setErr] = useState('')
   const [q, setQ] = usePersist('galerie.video.q', ''), [aw, setAw] = usePersist('galerie.video.aw', ''), [status, setStatus] = useState({ t: '', err: false }), [edit, setEdit] = useState(null), [busy, setBusy] = useState(false)
   const fileRef = useRef(null), vidRef = useRef(null), [play, setPlay] = useState(null)
+  const [onglet, setOnglet] = useOnglet(), [nbAV, relireNbAV] = useNbAValider('video')
   const st = (t, e = false) => setStatus({ t, err: e })
   const load = useCallback(async () => { setLoading(true); try { const l = await vctGetAll(); setList(l); setErr(''); return l } catch (e) { setErr(e.message); return [] } finally { setLoading(false) } }, [])
   useEffect(() => { load() }, [load])
@@ -223,6 +244,8 @@ export function GalerieVideo() {
       <input ref={fileRef} type="file" accept=".md,.txt" multiple hidden onChange={(e) => { addFiles(e.target.files); e.target.value = '' }} />
       <input ref={vidRef} type="file" accept="video/*,.mp4,.mov,.webm" multiple hidden onChange={(e) => { addVideos(e.target.files); e.target.value = '' }} />
       {status.t && <div className={'fx-banner ' + (status.err ? 'warn' : 'info')}>{status.t}</div>}
+      <Onglets onglet={onglet} setOnglet={setOnglet} total={list.length} nb={nbAV} />
+      {onglet === 'a_valider' ? <AValider type="video" onChange={() => { relireNbAV(); load() }} /> : <>
       <Toolbar list={list} q={q} setQ={setQ} aw={aw} setAw={setAw} />
       {err && <div className="fx-err">{err}</div>}
       {loading ? <div className="fx-gal">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="fx-skel" style={{ height: 190 }} />)}</div>
@@ -246,6 +269,7 @@ export function GalerieVideo() {
               {x.videoUrl && !(x.analyse_auto && x.analyse_auto.etat === 'en_cours') && <button className="fx-btn sm" title="Lecture complète de la vidéo source : découpage à l'image près, voix mot par mot, intentions, texte du CT, métadonnées et bilan de reproduction" onClick={async () => { if (x.analyse_auto && x.analyse_auto.etat === 'faite' && !(await confirmDlg('Relancer l\'analyse ? Le texte actuel du CT sera remplacé par la nouvelle analyse.'))) return; analyser(x, true) }}>{x.analyse_auto && x.analyse_auto.etat === 'faite' ? 'Réanalyser' : 'Analyser la vidéo'}</button>}</div>
           </div>))}</div>
           : <div className="fx-empty">{list.length ? 'Aucun CT ne correspond.' : 'Aucun CT vidéo — ajoute des fichiers .md ou importe ceux de ton labo.'}</div>}
+      </>}
       {edit && <EditVideo rec={edit} onClose={() => setEdit(null)} onDone={() => { setEdit(null); load() }} />}
       {play && <LecteurCT rec={play} onClose={() => setPlay(null)} onDone={() => load()} />}
     </div>
