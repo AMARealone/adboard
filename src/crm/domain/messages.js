@@ -7,6 +7,7 @@ import * as PV from './defaults_prev'
 import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
 import { PREV3_DEFAULT_ECRIT, PREV3_J3_REPLI } from './defaults_prev3'
 import { PREV4_RELANCES, PREV4_J3_CAS0, PREV4_CLOSING0 } from './defaults_prev4'
+import { PREV5_PITCH, PREV5_RELANCES } from './defaults_prev5'
 // compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
 const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
 const estAncien = (x, ...prevs) => prevs.some((prev) => !!prev && norm(x) === norm(prev))
@@ -133,7 +134,7 @@ export function ecritMessage(p, etape, cfg, lienPerso) {
 }
 
 // ── Relances Leads J+3 (pitch avec les ads, variables) / J+10 (preuve) / J+21 (alerte)
-export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => ((i <= 1 && estAncien(x, PREV4_RELANCES[i])) || (i > 0 && (estAncien(x, PV.PREV_DEFAULT_RELANCES[i]) || (i === 2 && /trou sur la route/i.test(x))))) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }
+export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => (estAncien(x, PREV5_RELANCES[i]) || (i <= 1 && estAncien(x, PREV4_RELANCES[i])) || (i > 0 && (estAncien(x, PV.PREV_DEFAULT_RELANCES[i]) || (i === 2 && /trou sur la route/i.test(x))))) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }
 export function relanceMessage(p, idx, cfg) {
   let tpl = relanceTemplates(cfg)[idx] || ''
   if (idx !== 0 && D.J3_VARS.test(tpl)) tpl = D.DEFAULT_RELANCES[idx] || ''
@@ -163,7 +164,9 @@ export function relanceMessage(p, idx, cfg) {
     const { phrase } = resoudrePays(p.pays)
     msg = msg.replace(/\b(en|au|à)\s+\*\[pays\]\*/gi, '*' + phrase + '*').replace(/\*\[pays\]\*/gi, '*' + phrase + '*').replace(/\b(en|au|à)\s+\[Pays\]/gi, phrase).replace(/\[Pays\]/gi, phrase).replace(/\b(en|au|à)\s+\*?\s*(en|au|à)\b/gi, '$2')
   }
-  return { msg, v, bloque, trace, chemin: ((msg.match(/adstackofficial\.com(\/[\w\-\/]*)?/i) || [])[1] || '') }
+  let chemin = ((msg.match(/adstackofficial\.com(\/[\w\-\/]*)?/i) || [])[1] || '')
+  if (idx === 0 && (!chemin || chemin === '/')) chemin = '/analyse'   // 20 nov. 2026 : le J+3 a sa propre miniature (page /analyse, qui renvoie sur la page de vente)
+  return { msg, v, bloque, trace, chemin }
 }
 export const lienRelance = (idx, id, chemin) => {
   const campagne = ['j3', 'j10', 'j21'][idx] || 'relance'
@@ -203,7 +206,7 @@ export const lienOffreSuivi = (offreKey, campagne, medium, id) => {
 // ── Pitch (envoyé quand le prospect a répondu) : lien suivi, campagne « pitch »
 export const lienPitch = (id) => `https://www.adstackofficial.com/?utm_source=crm&utm_medium=pitch&utm_campaign=pitch&utm_content=${id}`
 export function pitchMessage(p, cfg, lien) {
-  const tpl = (cfg && cfg.tpl_pitch) || D.DEFAULT_PITCH
+  const tpl = (cfg && cfg.tpl_pitch && !estAncien(cfg.tpl_pitch, PREV5_PITCH)) ? cfg.tpl_pitch : D.DEFAULT_PITCH   // 20 nov. 2026 : l'ancien pitch enregistré passe au nouveau
   let msg = tpl.replace(/\[Produit\]/gi, (p.produit || '').trim() || 'votre produit').replace(/\[Marque\]/gi, p.nom_marque || '')
   const avait = /adstackofficial\.com/i.test(msg) || /\[lien\]/i.test(msg)
   msg = unifierLiens(msg, lien)

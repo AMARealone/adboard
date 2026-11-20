@@ -118,6 +118,10 @@
       "dest": "/offre-$1.html"
     },
     {
+      "src": "/analyse",
+      "dest": "/analyse.html"
+    },
+    {
       "src": "/",
       "dest": "/vente.html"
     }
