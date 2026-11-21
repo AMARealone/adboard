@@ -131,22 +131,30 @@ export function commandeToBrief(b) {
   return brief
 }
 
+// photo-v2 — la photo d'une commande peut être stockée en data URL, en base64 nu OU en lien (R2/Supabase) dans
+// photo_nobg / photo_base64 / photo_url. Un lien envoyé tel quel comme « base64 » faisait échouer Gemini
+// (« Invalid value … inline_data.data (TYPE_BYTES) »). On reconnaît chaque forme et on renvoie toujours de vrais octets.
+const B64_NU = /^[A-Za-z0-9+/=\s]+$/
+async function lienEnImage(url) {
+  const r = await V.fetchAvecTimeout(url, {}, 15000)
+  if (!r.ok) throw new Error('HTTP ' + r.status)
+  const blob = await r.blob()
+  const du = await new Promise((ok, ko) => { const f = new FileReader(); f.onload = () => ok(f.result); f.onerror = ko; f.readAsDataURL(blob) })
+  return lireImage(String(du), false)
+}
+async function lireImage(v, suivreLien = true) {
+  const t = String(v || '').trim(); if (!t) return null
+  const m = t.match(/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/is)
+  if (m) return /^image\/(png|jpe?g|webp)$/i.test(m[1]) ? { mime: m[1].toLowerCase().replace('jpg', 'jpeg'), b64: m[2].replace(/\s/g, '') } : { mime: 'image/jpeg', b64: await V.compressImg(m[2].replace(/\s/g, ''), m[1]) }
+  if (/^(https?:)?\/\//i.test(t) || t.startsWith('blob:')) return suivreLien ? lienEnImage(t) : null
+  if (t.length > 200 && B64_NU.test(t.slice(0, 2000))) return { mime: t.startsWith('/9j/') ? 'image/jpeg' : t.startsWith('UklGR') ? 'image/webp' : 'image/png', b64: t.replace(/\s/g, '') }
+  return null
+}
 export async function commandePhoto(b) {
-  const p = b.product || {}
-  const photoData = b.photo_nobg || p.photo_base64 || ''
-  if (photoData) {
-    const m = photoData.match(/^data:(image\/[a-z]+);base64,(.+)$/)
-    return m ? { mime: m[1], b64: m[2] } : { mime: 'image/png', b64: photoData }
-  }
-  if (p.photo_url) {
-    try {
-      const imgResp = await V.fetchAvecTimeout(p.photo_url, {}, 15000)
-      if (!imgResp.ok) throw new Error('HTTP ' + imgResp.status)
-      const blob = await imgResp.blob()
-      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob) })
-      const m = String(dataUrl).match(/^data:(image\/[a-z]+);base64,(.+)$/)
-      if (m) return { mime: m[1], b64: m[2] }
-    } catch (e) { console.warn('[Commande] photo_url échouée :', e.message) }
+  const p = (b && b.product) || {}
+  for (const v of [b && b.photo_nobg, p.photo_base64, p.photo_url]) {
+    if (!v) continue
+    try { const im = await lireImage(v); if (im && im.b64) return im } catch (e) { console.warn('[Commande] photo illisible (' + String(v).slice(0, 60) + ') :', e.message) }
   }
   return null
 }
@@ -158,20 +166,7 @@ export async function loadBriefFromCommande(b) {
   S.verites = null; S.marqueAffichee = undefined   // verite-v1 : jamais la fiche d'une autre commande
   S.reprise = (b.reprise && b.reprise.creative_id) ? b.reprise : null   // reprise-angle-v1 : la créative que le client veut voir refaite
   try { const m = lireMarqueur(); if (!m || m.commandeId !== b.id) localStorage.setItem(CLE_MARQUEUR, JSON.stringify({ commandeId: b.id, ts: Date.now() })) } catch (_) {}   // reprise-production-v1 : ne jamais écraser le marqueur (phase, numéro de lot) d'une production à reprendre
-  const photoData = b.photo_nobg || p.photo_base64 || ''
-  if (photoData) {
-    const m = photoData.match(/^data:(image\/[a-z]+);base64,(.+)$/)
-    if (m) { S.productMime = m[1]; S.productB64 = m[2] } else { S.productMime = 'image/png'; S.productB64 = photoData }
-  } else if (p.photo_url) {
-    try {
-      const imgResp = await V.fetchAvecTimeout(p.photo_url, {}, 15000)
-      if (!imgResp.ok) throw new Error('HTTP ' + imgResp.status)
-      const blob = await imgResp.blob()
-      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob) })
-      const m = String(dataUrl).match(/^data:(image\/[a-z]+);base64,(.+)$/)
-      if (m) { S.productMime = m[1]; S.productB64 = m[2] }
-    } catch (e) { console.warn('[Commande] Récupération photo_url échouée :', e.message); S.productB64 = null; S.productMime = null }
-  } else { S.productB64 = null; S.productMime = null }
+  { const ph = await commandePhoto(b); S.productB64 = ph ? ph.b64 : null; S.productMime = ph ? ph.mime : null; if (!ph) console.warn('[Commande] aucune photo produit lisible pour cette commande') }
   S.logoB64 = null; S.logoMime = null; S.renewalContext = null; U.renewal = null
   // v10 — le logo du client est chargé : il est envoyé tel quel au générateur d'images et au contrôle qualité
   if (brief.logo_url) {
