@@ -246,7 +246,7 @@ function StdTest({ a }) {
         {m.passage.lieu === 'render' ? <>Exécuté sur Render{m.passage.raison ? ' — ' + m.passage.raison : ''}.</> : <>
           <b>Google Cloud</b> · passage {m.passage.id} · {m.passage.etat === 'termine' ? 'terminé' : m.passage.etat === 'echec' ? 'échec' : 'en cours'}{m.passage.secondes ? ' · ' + m.passage.secondes + ' s' : ''}{m.passage.memoire_mo ? ' · ' + m.passage.memoire_mo + ' Mo' : ''}{m.passage.etape ? ' · ' + m.passage.etape : ''}
           {busy && (m.passage.journal || []).map((l, i) => <div key={i} className="fx-s wrap" style={{ fontFamily: 'monospace', fontSize: 11 }}>{String(l).slice(0, 220)}</div>)}
-          {m.passage.journal_url && <div><a className="fx-btn sm" href={m.passage.journal_url} target="_blank" rel="noreferrer">Journal complet de la machine</a></div>}</>}
+          {m.passage.journal_url && <div><a className="fx-btn sm" href={m.passage.id ? SERVER + '/agents-jobs/journal?id=' + m.passage.id : m.passage.journal_url} download>Télécharger le journal complet (.txt)</a></div>}</>}
       </div>}
       {m.err && <div className="fx-err" style={{ marginBottom: 8 }}>ERREUR : {m.err} <button className="fx-btn sm" onClick={() => set({ err: '' })}>Fermer</button></div>}
       {isAn && m.rangee && <div className={m.rangee.startsWith('⚠') ? 'fx-err' : 'fx-hint'} style={{ marginBottom: 8 }}>{m.rangee}</div>}
