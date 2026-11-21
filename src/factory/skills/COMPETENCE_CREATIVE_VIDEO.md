@@ -1043,3 +1043,14 @@ Production de référence : CT14 « La Couche en Trop » pour un complément d'�
 4. LES PLANS DE COUPE FORMENT UNE TRAME. Les plans de coupe de la source ne sont pas des illustrations isolées : vus à la suite, sans le son, ils racontent quelque chose (ce qu'on essayait déjà, le produit, la vie qui tient). Chacun est là pour une raison que tu peux nommer (ce que le spectateur doit croire à cet instant) et se relie au précédent et au suivant. Tu lis d'abord la suite entière, puis tu transposes chaque rôle, au même endroit, pour la même durée. Une scène que la source remontre plus loin est la même scène chez toi, revue au moment où son sens a changé. Un plan qui montre le produit seul part de la photo du client.
 
 5. LA BARRE : DÉPASSER LA SOURCE. À chaque instant de la durée (le même pourcentage dans la source et dans ta vidéo), ta vidéo fait au moins ce que fait la source : même type de plan, même rôle pour le spectateur, et une matière plus juste pour CETTE cible (ses mots, ses lieux, ses objets, son moment). Le moteur écrit cette comparaison à la fin de chaque production (11_comparaison_source.json et ses images côte à côte) : elle est la mesure de ton travail.
+
+---
+
+## ADDENDA v12.4 — QUAND LA SOURCE EST UN DIALOGUE
+
+Certaines sources ne sont pas une personne qui parle à la caméra mais une petite scène où plusieurs personnes se parlent (un appel, des collègues, une amie qui remarque le changement). Le dispositif persuasif tient alors dans l'échange : quelqu'un interpelle, la personne principale répond, un tiers constate ; le produit arrive dans la bouche de celle qui le porte, et la preuve vient souvent d'un autre regard que le sien.
+
+1. Tu rejoues l'échange, pas un monologue : chaque personne de la source a son équivalent dans la vie de la nouvelle cible, avec le même rôle dans l'histoire, et les tours de parole gardent leur ordre et à peu près leur poids.
+2. Chaque phrase est dite par une seule personne, et qui parle se comprend par le sens. Une réplique ne commence jamais dans une bouche pour finir dans une autre ; un clip fait parler deux personnes au plus.
+3. Chaque personne est un personnage du film à part entière : son visage, sa tenue et sa voix restent les siens d'un plan à l'autre. Une personne ne parle jamais avec la voix d'une autre.
+4. Le noyau ne change pas : même quand ce sont les autres qui parlent, ce qu'ils remarquent est le désir central rendu visible.
