@@ -17,7 +17,10 @@ export function planParDefaut(n) {
   })
 }
 // Normalise une proposition ({ parcours, niveau_video } par angle) et garantit la couverture Solution / Product / Most.
-export function reparerPlan(n, propositions) {
+// offre-forte-v1 : la VIDÉO ne porte Most Aware que si l'offre du client est jugée irrésistible (opts.offreForte) ;
+// sinon Most Aware reste sur une image du parcours B et la vidéo prend Product Aware (ou le niveau proposé s'il n'est pas Most).
+export function reparerPlan(n, propositions, opts = {}) {
+  const offreForte = !!opts.offreForte
   const def = planParDefaut(n)
   const plan = Array.from({ length: n }, (_, a) => {
     const pr = (propositions || [])[a] || {}
@@ -27,6 +30,7 @@ export function reparerPlan(n, propositions) {
     return { parcours: p, niveaux, video: niveaux.includes(v) ? v : niveaux[0] }
   })
   if (!plan.some((x) => x.parcours === 'B')) { const k = n - 1; plan[k] = { parcours: 'B', niveaux: PARCOURS.B.slice(), video: PARCOURS.B.includes(plan[k].video) ? plan[k].video : 'solution' } }
+  if (!offreForte) plan.forEach((x) => { if (x.video === 'most') x.video = 'product' })
   return plan
 }
 export function cle(v) {

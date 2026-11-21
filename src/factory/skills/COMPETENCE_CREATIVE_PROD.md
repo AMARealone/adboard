@@ -548,6 +548,7 @@ Contrairement à l'ancienne version, l'awareness n'est plus fixée par angle ent
 → MOST AWARE
    • LEVIER PSY DOMINANT : social proof (témoignages, screenshots avis) + offre/FOMO + risk reversal (garantie) si disponible en S0
    • HOOK : offre directe, témoignage choc, ou preuve sociale (« 5 000 commandes ce mois-ci en CI »)
+   • FORCE DE L'OFFRE (ligne de S0, offre-forte-v1) : IRRÉSISTIBLE → l'offre est le héros de l'image, montrée en objets (les unités offertes, le bonus) et dite en gain vécu. ORDINAIRE (paiement à la livraison, livraison gratuite, satisfait ou remboursé, une réduction seule) → elle n'est jamais le titre ni le héros : le hook est la preuve sociale ou le résultat désiré, et l'offre n'est qu'une ligne de réassurance près de l'appel à l'action.
    • TON : direct, transactionnel, fait pour convertir vite
    • Le persona CONNAÎT le produit et hésite — tu le pousses à passer à l'action
    • FOMO = Fear Of Missing Out (la peur de rater ce que les autres ont déjà) — déclencher via : « Pendant que tu hésites, 47 personnes l'ont déjà commandé ce matin »

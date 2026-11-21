@@ -45,7 +45,7 @@ Avant d'écrire le moindre hook, comprends silencieusement :
 → Nom exact, format, posologie, prix local, devise
 → Mécanisme réel (UMS) — pour pouvoir y faire référence comme à un fait
 → USP au format strict ("[Produit] est le seul qui X grâce à Y")
-→ Si une offre promo est mentionnée dans S0 ou S4 (pricing map), elle devient ton arme principale de conversion
+→ Lis d'abord la ligne « FORCE DE L'OFFRE » de S0 (offre-forte-v1). IRRÉSISTIBLE (une pile que le marché ne donne pas : unités offertes, pack de compléments, bonus de vraie valeur) : l'offre devient ton arme principale de conversion, dite en gains vécus (ce qu'elle reçoit en plus, combien de temps ça la couvre). ORDINAIRE (paiement à la livraison, livraison gratuite, satisfait ou remboursé, une réduction seule : vus et revus sur ce marché) : elle n'est jamais l'arme principale ni un hook ; la raison d'agir est le résultat désiré et le coût de chaque jour d'attente, et l'offre ne sert qu'à retirer le risque, en une demi-phrase. Sans cette ligne, juge toi-même l'offre contre les offres du marché de S4 avec ces deux définitions.
 
 1.2 — LE PERSONA (S1)
 → Prénom, âge, ville, occupation — une seule cible (S1). Si l'angle imposé est rattaché à une facette (S1b : la même personne dans un autre moment de vie), écris depuis le moment précis de cette facette (heure, lieu, ce qu'elle se dit à ce moment), avec les mots de la même personne. La section S10 « STOCK EN RÉSERVE » (« Réserve R1 — … ») concerne des angles d'un futur lot : ne l'utilise jamais.

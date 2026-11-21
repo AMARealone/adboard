@@ -90,11 +90,14 @@ async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
   if (sel.insuffisant) toast('Galerie CT vidéo trop courte : ' + sel.insuffisant + ' CT du dernier lot sont repris faute de choix. Ajoutez des CT vidéo.')
   const parId = new Map(liste.map((c) => [c.id, c]))
   let props = [], choix = []
+  S.forceOffre = null; S.forceOffreRaison = ''   // offre-forte-v1 : jamais le jugement d'une production précédente
   try {
     const r = await fetch(SERVER + '/video/select-cts', { method: 'POST', headers: JH, body: JSON.stringify({ mode: 'plan', cts: liste.map(resume), synthese: S.synthesis || '', brief: briefCourt(), angles: angleIdxs.map((i) => S.angles[i] || 'Angle ' + (i + 1)), n: nbAngles }) })
     const j = await r.json().catch(() => ({}))
     if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status)
     choix = (j.choix || []).filter((c) => parId.has(c.id))
+    S.forceOffre = j.force_offre || null; S.forceOffreRaison = j.force_offre_raison || ''   // offre-forte-v1
+    if (j.force_offre) console.log('[Vidéo] force de l\'offre : ' + j.force_offre + (j.force_offre_raison ? ' — ' + j.force_offre_raison : '') + (j.force_offre === 'irresistible' ? ' → une vidéo peut porter Most Aware' : ' → aucune vidéo Most Aware'))
   } catch (e) { console.warn('[Vidéo] plan par l\'agent impossible, plan par défaut :', e.message) }
   // un CT par angle : d'abord par titre d'angle cité, puis dans l'ordre
   const libres = new Set(angleIdxs), parAngle = new Map()
@@ -106,7 +109,7 @@ async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
     libres.delete(a); parAngle.set(a, c)
   })
   props = angleIdxs.map((a) => { const c = parAngle.get(a) || {}; return { parcours: c.parcours, niveau_video: c.niveau_video } })
-  const plan = PL.reparerPlan(nbAngles, props)
+  const plan = PL.reparerPlan(nbAngles, props, { offreForte: S.forceOffre === 'irresistible' })   // offre-forte-v1
   // angles sans CT valide : secours au niveau de la vidéo, jamais un CT déjà pris
   const manquants = angleIdxs.filter((a) => !parAngle.has(a))
   if (manquants.length) {
@@ -151,6 +154,7 @@ function consignesDiversite(idx, direction) {
   { const m = SEN.blocVideo(); if (m) L.push(m) }   // meta-sensible-v1 : en tête (les consignes sont coupées à 7000 caractères)
   if (direction) L.push('DIRECTION IMPOSÉE POUR CETTE VIDÉO (diversité du lot, règle 17) : ' + txtDir(direction) + '.')
   if (autres.length) L.push('DÉJÀ PRIS PAR LES AUTRES VIDÉOS DU LOT — INTERDIT ICI (casting, tenue, lieu principal et lumière différents) : ' + autres.join(' | ') + '.')
+  if (S.forceOffre) L.push('FORCE DE L\'OFFRE (jugée au choix des CT, offre-forte-v1) : ' + S.forceOffre.toUpperCase() + (S.forceOffreRaison ? ' — ' + S.forceOffreRaison : '') + '.')
   { const q = APP.bloc('video'); if (q) L.push(q) }   // retours qualité de ce client
   L.push(CDC.regleVideo())   // cdc-franchise-v1 : franchise du sujet, toujours
   { const c = CDC.bloc('video').trim(); if (c) L.push(c) }   // cahier des charges de la marque
