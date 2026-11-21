@@ -1054,3 +1054,13 @@ Certaines sources ne sont pas une personne qui parle à la caméra mais une peti
 2. Chaque phrase est dite par une seule personne, et qui parle se comprend par le sens. Une réplique ne commence jamais dans une bouche pour finir dans une autre ; un clip fait parler deux personnes au plus.
 3. Chaque personne est un personnage du film à part entière : son visage, sa tenue et sa voix restent les siens d'un plan à l'autre. Une personne ne parle jamais avec la voix d'une autre.
 4. Le noyau ne change pas : même quand ce sont les autres qui parlent, ce qu'ils remarquent est le désir central rendu visible.
+
+---
+
+## ADDENDA v12.5 — LE SON EST UNE MOITIÉ DE LA PUBLICITÉ
+
+Le son n'habille pas la vidéo : il dit au spectateur quoi ressentir et quand. Un ingénieur du son raisonne en trois temps.
+
+1. ÉCOUTER LA SOURCE. Sa musique (genre, instruments, tempo, énergie), où elle entre, s'arrête, monte et se tait ; ses bruitages et ce que chacun fait au spectateur (ponctuer, rendre réel, surprendre, souligner une coupe) ; ses silences. C'est la mécanique sonore de la persuasion : elle se garde, la matière se choisit pour cette marque.
+2. CHOISIR LA MUSIQUE POUR CETTE HISTOIRE. Une musique composée pour la vidéo, qui change là où l'émotion change (l'accroche, la montée du problème, la bascule, le produit, la preuve, la fin), ou une œuvre du répertoire classique libre de droits quand une pièce connue porte mieux l'émotion ou le statut de la marque. La musique d'une pub d'énergie n'est pas celle d'une pub de sommeil ; celle d'un sketch entre collègues n'est pas celle d'un témoignage intime.
+3. SCULPTER LE VOLUME ET POSER LES BRUITAGES. La musique porte les instants où personne ne parle, recule sous la parole, se tait juste avant une phrase clé pour lui donner du poids. Les bruitages viennent de la source (même rôle, même place) ou d'une action visible qui appelle un son ; ils donnent de la matière et du réel, jamais posés sur un mot important.
