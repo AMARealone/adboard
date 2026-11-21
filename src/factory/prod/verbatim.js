@@ -60,13 +60,58 @@ let _derniereSyntheseId = null
 export function derniereSyntheseId() { return _derniereSyntheseId }   // syntheses-coffre-v1 : le serveur range lui-même l'hypothèse
 export function dernierBalayage() { return _dernierBalayage }
 export function dernierCout() { return _dernierCout }
+// ═══ agents-cloud-v1 (21 nov. 2026) — l'Analyste, le Copywriter et l'agent Image tournent sur Google Cloud (job « agents-adstack »).
+// Render dépose la demande et lance une machine ; Factory suit l'avancement et le journal en direct, puis lit la réponse (la même que la route
+// aurait donnée). Si Render répond « repli » (Google Cloud pas encore installé, agent gardé sur Render, lancement refusé), l'appel part sur Render
+// comme avant. Les écrans s'abonnent avec ecouterAgents(fn) pour afficher l'étape et le lien du journal.
+const _ecoutes = new Set()
+export function ecouterAgents(fn) { _ecoutes.add(fn); return () => _ecoutes.delete(fn) }
+const _signaler = (e) => _ecoutes.forEach((f) => { try { f(e) } catch (_) {} })
+let _dernierPassage = null
+export function dernierPassage() { return _dernierPassage }
+export async function appelAgent(route, corps, { signal, etiquette } = {}) {
+  const H = { 'Content-Type': 'application/json' }
+  const direct = async () => {
+    const r = await fetch(SERVER + route, { method: 'POST', headers: H, signal, body: JSON.stringify(corps) })
+    const t = await r.text(); let d = null; try { d = JSON.parse(t) } catch (_) {}
+    if (!d) throw new Error(r.status === 404 ? 'route ' + route + ' absente (serveur Render pas à jour)' : 'réponse inattendue (HTTP ' + r.status + ')')
+    _dernierPassage = { lieu: 'render', route }
+    return d
+  }
+  let st = null
+  try {
+    const r = await fetch(SERVER + '/agents-jobs/start', { method: 'POST', headers: H, signal, body: JSON.stringify({ route, corps, etiquette }) })
+    st = r.status === 404 ? { repli: true, raison: 'serveur Render sans la route des agents Google Cloud' } : await r.json().catch(() => ({ repli: true, raison: 'réponse illisible' }))
+  } catch (e) { if (signal && signal.aborted) throw e; st = { repli: true, raison: e.message } }
+  if (st && st.error && !st.id) throw new Error(st.error)
+  if (!st || st.repli || !st.id) { _signaler({ lieu: 'render', route, raison: st && st.raison }); console.log('[agents] ' + route + ' sur Render : ' + ((st && st.raison) || '?')); return direct() }
+  const id = st.id
+  _signaler({ lieu: 'cloud', route, id, etat: 'lance', etape: 'Machine Google Cloud demandée' })
+  let annule = false
+  const surAbandon = () => { annule = true; fetch(SERVER + '/agents-jobs/cancel', { method: 'POST', headers: H, body: JSON.stringify({ id }) }).catch(() => {}) }
+  if (signal) { if (signal.aborted) surAbandon(); else signal.addEventListener('abort', surAbandon, { once: true }) }
+  const t0 = Date.now(); let pertes = 0
+  while (true) {
+    await new Promise((ok) => setTimeout(ok, 4000))
+    if (annule) throw new DOMException('Arrêté par vous', 'AbortError')
+    let e = null
+    try { const r = await fetch(SERVER + '/agents-jobs/status?id=' + id); e = await r.json(); pertes = 0 }
+    catch (_) { if (++pertes > 45) throw new Error('le serveur Render ne répond plus depuis 3 minutes (passage ' + id + ' : il continue peut-être sur Google Cloud)'); continue }
+    _signaler(Object.assign({ lieu: 'cloud', route, id }, e))
+    if (e.etat === 'termine' || (e.etat === 'echec' && e.code)) {
+      const r = await fetch(SERVER + '/agents-jobs/resultat?id=' + id)
+      const t = await r.text(); let d = null; try { d = JSON.parse(t) } catch (_) {}
+      if (!d) throw new Error('résultat illisible (passage ' + id + ')')
+      _dernierPassage = { lieu: 'cloud', route, id, journal_url: e.journal_url || null, duree_s: e.duree_s || null }
+      return d
+    }
+    if (e.etat === 'echec') throw new Error((e.erreur || 'échec sur Google Cloud') + (e.journal_url ? ' — journal : ' + e.journal_url : ' (passage ' + id + ')'))
+    if (Date.now() - t0 > 65 * 60000) throw new Error('aucune fin après 65 min (passage ' + id + ')')
+  }
+}
+
 export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal, isTest=false, extra={}) {
-  const res = await fetch(SERVER+'/analyste-synthese', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    signal,
-    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 32000, brief, isTest, ...extra})
-  });
-  const d = await res.json();
+  const d = await appelAgent('/analyste-synthese', {system, parts, maxOutputTokens: maxTokens || 32000, brief, isTest, ...extra}, { signal, etiquette: 'Analyste · ' + String(extra.titre || [brief && brief.produit, brief && brief.marque].filter(Boolean).join(' · ') || '').slice(0, 120) + (isTest ? ' (test)' : '') })
   if(d.error) throw new Error(d.error);
   _dernierBalayage = d.balayage || null;
   _dernierCout = typeof d.cout_estime_usd === 'number' ? d.cout_estime_usd : null;
@@ -75,12 +120,7 @@ export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signa
 }
 
 export async function apiCopywriter(system, parts, maxTokens, signal, isTest=false) {
-  const res = await fetch(SERVER+'/copywriter', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    signal,
-    body: JSON.stringify({system, parts, maxOutputTokens: maxTokens || 8000, isTest})
-  });
-  const d = await res.json();
+  const d = await appelAgent('/copywriter', {system, parts, maxOutputTokens: maxTokens || 8000, isTest}, { signal, etiquette: 'Copywriter' + (isTest ? ' (test)' : '') });
   if(d.error) throw new Error(d.error);
   return d.text;
 }

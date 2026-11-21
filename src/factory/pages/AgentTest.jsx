@@ -170,7 +170,11 @@ function StdTest({ a }) {
     }
     const my = (RUNS[a.slug] = { cancelled: false, ac: new AbortController() }); const S = (x) => { if (!my.cancelled) set(x) }
     const t0 = Date.now(); setLive(a.slug, true)
-    set({ busy: true, t0, dur: 0, err: '', rangee: '', prog: isImg ? 'Préparation…' : 'Génération en cours…' })
+    set({ busy: true, t0, dur: 0, err: '', rangee: '', passage: null, prog: isImg ? 'Préparation…' : 'Génération en cours…' })
+    // agents-cloud-v1 : l'étape en cours et les dernières lignes du journal de la machine, en direct
+    const finEcoute = V.ecouterAgents((e) => { if (my.cancelled) return
+      if (e.lieu === 'render') S({ passage: { lieu: 'render', raison: e.raison || '' } })
+      else S({ passage: { lieu: 'cloud', id: e.id, etat: e.etat, etape: e.etape || '', secondes: e.secondes || 0, memoire_mo: e.memoire_mo || null, journal: (e.journal || []).slice(-6), journal_url: e.journal_url || null, erreur: e.erreur || null } }) })
     try {
       await loadSkills()
       if (isAn) {
@@ -201,9 +205,8 @@ function StdTest({ a }) {
         ctMemoriser(ds.id, niv, cleTest)
         S({ prog: `CT : ${ctRec.name} · ${V.NIVEAU_LIB[niv]}. Gemini 3.1 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
         const ctB64 = await V.compressImg(await ctGetBase64(ds.id), CT_IMAGES[ds.id + '_mime'] || 'image/jpeg')
-        const res = await fetch(SERVER + '/creative-prod', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ systemPrompt: creativeSystem, synthese: m.synthese, brief: m.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', isTest: true }) })
-        const d = await res.json(); if (d.error) throw new Error(d.error)
+        const d = await V.appelAgent('/creative-prod', { systemPrompt: creativeSystem, synthese: m.synthese, brief: m.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', isTest: true }, { signal: my.ac.signal, etiquette: 'Image (test) · ' + ctRec.name })
+        if (d.error) throw new Error(d.error)
         if (d.imageData) S((p) => ({ outErr: false, output: `✓ Générée — angle ${ai + 1} · ${V.NIVEAU_LIB[niv]} (niveau du CT) · CT : ${ctRec.name} · angle déclaré par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: ctRec.name, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
         else S({ err: 'Aucune image reçue.' })
       } else {
@@ -213,7 +216,7 @@ function StdTest({ a }) {
         S({ outErr: false, output: `ANGLE ${ai + 1} — ${angles[ai] || ''}\n\n` + hooks.map((h, i) => `HOOK ${i + 1} : ${h}`).join('\n\n') + '\n\nDESCRIPTION :\n' + description })
       }
     } catch (err) { S({ err: err.message }) }
-    finally { if (!my.cancelled) { setLive(a.slug, false); set({ busy: false, prog: '', dur: Math.round((Date.now() - t0) / 1000) }) } }
+    finally { finEcoute(); if (!my.cancelled) { setLive(a.slug, false); set({ busy: false, prog: '', dur: Math.round((Date.now() - t0) / 1000) }) } }
   }
   const annuler = async () => {
     if (!(await confirmDlg("Annuler la génération ? Le navigateur arrête d'attendre et ignore le résultat. Si le serveur avait déjà commencé un appel payant, il peut aller à son terme et être facturé.", { ok: 'Annuler la génération', danger: true }))) return
@@ -239,6 +242,12 @@ function StdTest({ a }) {
       {isAn && m.bal && m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>Balayage : {m.bal.scrapecreators.requetes} requêtes ScrapeCreators ({m.bal.scrapecreators.credits} crédits) · Reddit {m.bal.scrapecreators.reddit} · TikTok {m.bal.scrapecreators.tiktok_videos} vidéos / {m.bal.scrapecreators.tiktok_commentaires} commentaires · pubs Meta {m.bal.scrapecreators.pubs}{m.bal.scrapecreators.erreurs ? ' · ' + m.bal.scrapecreators.erreurs + ' erreur(s) (voir les logs Render)' : ''}{m.bal.monde ? ' · créatives du monde (3 derniers mois) : ' + m.bal.monde.pubs + ' pubs, ' + m.bal.monde.tiktok + ' TikTok' : ''}{m.bal.usage ? ' · USAGE DANS L’HYPOTHÈSE : ' + ['familles', 'annonceurs', 'douleurs', 'desirs', 'peurs'].filter((k) => m.bal.usage[k]).map((k) => ({ familles: 'familles d’angle', annonceurs: 'annonceurs', douleurs: 'douleurs des pubs', desirs: 'désirs des pubs', peurs: 'peurs des pubs' })[k] + ' ' + m.bal.usage[k].cites + '/' + m.bal.usage[k].total).join(', ') + ', ' + m.bal.usage.etiquettes_source + ' étiquette(s) [SOURCÉ]' : ''}</div>}
       {isAn && m.bal && !m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.bal.reutilise ? 'Hypothèse stockée réutilisée' : 'Balayage lancé'} — {m.bal.raison}. Aucune donnée ScrapeCreators reçue : voir les logs Render.</div>}
       {busy && m.prog && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.prog}</div>}
+      {m.passage && <div className="fx-hint" style={{ marginBottom: 8 }}>
+        {m.passage.lieu === 'render' ? <>Exécuté sur Render{m.passage.raison ? ' — ' + m.passage.raison : ''}.</> : <>
+          <b>Google Cloud</b> · passage {m.passage.id} · {m.passage.etat === 'termine' ? 'terminé' : m.passage.etat === 'echec' ? 'échec' : 'en cours'}{m.passage.secondes ? ' · ' + m.passage.secondes + ' s' : ''}{m.passage.memoire_mo ? ' · ' + m.passage.memoire_mo + ' Mo' : ''}{m.passage.etape ? ' · ' + m.passage.etape : ''}
+          {busy && (m.passage.journal || []).map((l, i) => <div key={i} className="fx-s wrap" style={{ fontFamily: 'monospace', fontSize: 11 }}>{String(l).slice(0, 220)}</div>)}
+          {m.passage.journal_url && <div><a className="fx-btn sm" href={m.passage.journal_url} target="_blank" rel="noreferrer">Journal complet de la machine</a></div>}</>}
+      </div>}
       {m.err && <div className="fx-err" style={{ marginBottom: 8 }}>ERREUR : {m.err} <button className="fx-btn sm" onClick={() => set({ err: '' })}>Fermer</button></div>}
       {isAn && m.rangee && <div className={m.rangee.startsWith('⚠') ? 'fx-err' : 'fx-hint'} style={{ marginBottom: 8 }}>{m.rangee}</div>}
       {m.output && <Output text={m.output} color={m.outErr ? 'var(--er)' : null} />}

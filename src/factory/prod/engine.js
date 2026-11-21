@@ -578,12 +578,10 @@ async function appelCreative(idx, ctName, signal, reprise) {
   const { creativeSystem, angleInstruction: ai0 } = V.buildCreativeInstruction(c.angleIdx, c.niveau || c.ctIdx, c.rang)
   const angleInstruction = ai0 + (VER.bloc(c.angleIdx, 'image') ? '\n\n' + VER.bloc(c.angleIdx, 'image') : '')
   const sig = (typeof AbortSignal.any === 'function') ? AbortSignal.any([signal, AbortSignal.timeout(600000)]) : signal
-  const res = await fetch(SERVER + '/creative-prod-v10', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: sig,
-    body: JSON.stringify({ systemPrompt: creativeSystem, synthese: S.synthesis, brief: VER.briefAgents(), angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, niveau: V.NIVEAU_LIB[c.niveau] || '', reprise: reprise || null }),
-  })
-  const txt = await res.text(); let d = null; try { d = JSON.parse(txt) } catch (_) {}
-  if (!d) throw new Error(res.status === 404 ? 'route /creative-prod-v10 absente (serveur Render pas à jour)' : 'réponse inattendue (HTTP ' + res.status + ')')
+  // agents-cloud-v1 : l'agent Image tourne sur Google Cloud (repli sur Render si besoin) ; 65 min au plus (une machine peut attendre son tour)
+  const sigC = (typeof AbortSignal.any === 'function') ? AbortSignal.any([signal, AbortSignal.timeout(3900000)]) : signal
+  const d = await V.appelAgent('/creative-prod-v10', { systemPrompt: creativeSystem, synthese: S.synthesis, brief: VER.briefAgents(), angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', logoBase64: S.logoB64 || null, logoMime: S.logoMime || null, niveau: V.NIVEAU_LIB[c.niveau] || '', reprise: reprise || null },
+    { signal: sigC, etiquette: 'Image · créative ' + (idx + 1) + ' · ' + String(ctName || '') + (reprise ? ' (correction)' : '') })
   if (d.error) throw new Error(d.error)
   return d
 }
