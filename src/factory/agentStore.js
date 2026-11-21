@@ -1,6 +1,7 @@
 // Mémoire des vues de Factory : tout ce que tu remplis, choisis ou lances reste là quand tu changes de page,
 // quand tu actualises le navigateur ou après une erreur. Les données sont gardées dans IndexedDB (photos et images comprises).
 import { useState, useCallback, useEffect } from 'react'
+import { SERVER } from './api'
 
 const mem = {}          // une entrée par agent / par vue
 const dirty = new Set()
@@ -110,4 +111,34 @@ export function useTick(t0, on) {
   const [, f] = useState(0)
   useEffect(() => { if (!on) return; const i = setInterval(() => f((n) => n + 1), 1000); return () => clearInterval(i) }, [on])
   return t0 ? Math.max(0, Math.round((Date.now() - t0) / 1000)) : 0
+}
+
+// syntheses-coffre-v1 (21 nov. 2026) — Les synthèses du test Analyste sont aussi rangées sur le SERVEUR. La mémoire du navigateur peut être
+// perdue (autre navigateur, autre appareil, autre adresse du site, données effacées) : le serveur, non.
+const JHS = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
+export async function rangerSyntheseServeur(cles, texte, titre, marche) {
+  const r = await fetch(SERVER + '/factory-tests/synthese', { method: 'POST', headers: JHS, body: JSON.stringify({ cles: (cles || []).filter(Boolean), texte, titre: titre || '', marche: marche || '' }) })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok || !j.ok) throw new Error(j.error || 'HTTP ' + r.status)
+  return j.id
+}
+export async function synthesesServeur(cles) {
+  const q = cles && cles.length ? '?cles=' + encodeURIComponent(cles.filter(Boolean).join(',')) : ''
+  const r = await fetch(SERVER + '/factory-tests/syntheses' + q, { headers: JHS })
+  if (!r.ok) throw new Error('HTTP ' + r.status)
+  return (await r.json()).syntheses || []
+}
+export async function syntheseServeur(id) {
+  const r = await fetch(SERVER + '/factory-tests/synthese?id=' + encodeURIComponent(id), { headers: JHS })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok) throw new Error(j.error || 'HTTP ' + r.status)
+  return j
+}
+// La synthèse la plus récente pour cette commande / ce produit : navigateur d'abord, sinon serveur.
+export async function syntheseLocaleOuServeur(cles) {
+  const loc = syntheseMemorisee(cles)
+  let srv = null
+  try { const l = await synthesesServeur(cles); if (l.length && (!loc || l[0].t > loc.t + 1000)) srv = l[0] } catch (_) { }
+  if (srv) { try { const x = await syntheseServeur(srv.id); return { texte: x.texte, t: x.t, info: x.titre, serveur: true } } catch (_) { } }
+  return loc
 }

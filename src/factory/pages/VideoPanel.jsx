@@ -8,7 +8,8 @@
 import { COMP_FILES, loadSkills } from '../prod/state'
 import React, { useEffect, useState } from 'react'
 import { vctGetAll } from '../vctApi'
-import { useAgentMem, useTick, syntheseMemorisee, heureCourte } from '../agentStore'
+import { useAgentMem, useTick, syntheseLocaleOuServeur, heureCourte } from '../agentStore'
+import SynthesesEnregistrees from './SynthesesEnregistrees'
 import { commandeToBrief } from '../prod/engine'
 import { prodv2ExtractAngles, NIVEAU_LIB } from '../prod/verbatim'
 import { niveauCT } from '../ctApi'
@@ -83,7 +84,7 @@ export default function VideoPanel({ competenceOnly }) {
       const brief = commandeToBrief(c)
       const pid = (c.product || {}).id
       let syn = '', src = ''
-      const synTest = syntheseMemorisee([pid && 'p' + pid, c.id != null && 'c' + c.id])
+      const synTest = await syntheseLocaleOuServeur([pid && 'p' + pid, c.id != null && 'c' + c.id])
       if (synTest) { syn = synTest.texte; src = 'synthèse du dernier test Analyste (' + heureCourte(synTest.t) + ')' }
       else if (c.deliverables && c.deliverables.synthesis) { syn = c.deliverables.synthesis; src = 'synthèse de la commande' }
       else if (pid) { try { const rc = await (await fetch(`${SERVER}/products/${pid}/renewal-context`, { headers: JH })).json(); if (rc && rc.syntheseExistante) { syn = rc.syntheseExistante; src = 'dernière synthèse du produit' } } catch (_) {} }
@@ -135,7 +136,8 @@ export default function VideoPanel({ competenceOnly }) {
           {cts === null ? <option>Chargement de la galerie…</option> : !Array.isArray(cts) ? <option>Galerie illisible : {cts.error}</option> : !cts.length ? <option value="">Galerie CT vidéo vide</option> : [<option key="" value="" disabled>Choisissez un CT vidéo…</option>, ...cts.map((r) => <option key={r.id} value={r.id}>{r.name}{r.awareness.length ? '  ·  ' + r.awareness.join(', ') : '  ·  sans niveau'}</option>)]}
         </select>
         {ct && <div className="fx-hint">{nivCT ? 'Niveau de conscience donné par ce CT : ' + NIVEAU_LIB[nivCT] + '. ' : '⚠ Ce CT n\'a pas de balise de niveau : la machine lira celui écrit dans sa fiche. '}{ct.meta || ''}</div>}</div>
-      <div className="fx-fld"><div className="fx-lab up">SYNTHÈSE DE L'ANALYSTE</div><textarea className="fx-ta" rows={6} value={m.syn} onChange={(ev) => set({ syn: ev.target.value, angle: 0 })} placeholder="Reprise automatiquement du dernier test Analyste sur cette commande, ou collez-la ici…" /></div>
+      <div className="fx-fld"><div className="fx-lab up">SYNTHÈSE DE L'ANALYSTE</div><textarea className="fx-ta" rows={6} value={m.syn} onChange={(ev) => set({ syn: ev.target.value, angle: 0 })} placeholder="Reprise automatiquement du dernier test Analyste sur cette commande, ou collez-la ici…" />
+        <SynthesesEnregistrees cles={m.cmdId ? ['c' + m.cmdId] : []} onPick={(x) => set({ syn: x.texte, angle: 0 })} /></div>
       <div className="fx-fld"><div className="fx-lab up">ANGLE À PRODUIRE</div>
         {angles.length ? <select className="fx-in full" value={ai} onChange={(ev) => set({ angle: Number(ev.target.value) })}>{angles.map((t, i) => <option key={i} value={i}>Angle {i + 1} — {t}</option>)}</select> : <div className="fx-s">Les angles de la synthèse apparaîtront ici.</div>}</div>
       <div className="fx-launch">

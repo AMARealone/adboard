@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { AGENTS } from './Agents'
-import { useAgentMem, usePersist, useTick, setLive, isLive, memoriserSynthese, syntheseMemorisee, heureCourte } from '../agentStore'
+import { useAgentMem, usePersist, useTick, setLive, isLive, memoriserSynthese, syntheseLocaleOuServeur, heureCourte, rangerSyntheseServeur } from '../agentStore'
+import SynthesesEnregistrees from './SynthesesEnregistrees'
 import { COMP_FILES, SERVER, CT_IMAGES, loadSkills } from '../prod/state'
 import * as V from '../prod/verbatim'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
@@ -52,7 +53,7 @@ async function briefFromCommande(b) {
   const synCmd = b.deliverables && b.deliverables.synthesis ? b.deliverables.synthesis : ''
   const synProd = rctx && rctx.syntheseExistante ? rctx.syntheseExistante : ''
   const cles = [pid && 'p' + pid, b.id != null && 'c' + b.id].filter(Boolean)
-  const synTest = syntheseMemorisee(cles)   // v5.74 : l'hypothèse que tu viens de générer dans le test Analyste
+  const synTest = await syntheseLocaleOuServeur(cles)   // v5.74 (+ syntheses-coffre-v1 : aussi depuis le serveur) : l'hypothèse que tu viens de générer dans le test Analyste
   const syn = synTest ? synTest.texte : (synCmd || synProd)
   const synSrc = synTest ? ' · synthèse du dernier test Analyste reprise (' + heureCourte(synTest.t) + ')' : synCmd ? ' · synthèse de la commande reprise' : synProd ? ' · dernière synthèse du produit reprise' : ' · ⚠ aucune synthèse pour cette commande'
   return { brief, photo, logo: null, rctx, cles, briefName: `Commande · ${brief.produit || '?'}${brief.marque ? ' · ' + brief.marque : ''}${rctx && rctx.estRenouvellement ? ' (renouvellement)' : ''}${synSrc}`, syn }
@@ -151,7 +152,7 @@ function StdTest({ a }) {
     }
     const my = (RUNS[a.slug] = { cancelled: false, ac: new AbortController() }); const S = (x) => { if (!my.cancelled) set(x) }
     const t0 = Date.now(); setLive(a.slug, true)
-    set({ busy: true, t0, dur: 0, err: '', prog: isImg ? 'Préparation…' : 'Génération en cours…' })
+    set({ busy: true, t0, dur: 0, err: '', rangee: '', prog: isImg ? 'Préparation…' : 'Génération en cours…' })
     try {
       await loadSkills()
       if (isAn) {
@@ -163,6 +164,10 @@ function StdTest({ a }) {
         const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
         S({ output: synthesisText, outErr: false, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText, bal: V.dernierBalayage() })
         memoriserSynthese(m.cles, synthesisText, m.briefName)   // v5.74 : reprise automatique par les tests Image / Copywriter / Vidéo (même commande)
+        // syntheses-coffre-v1 : rangée aussi sur le serveur (jusqu'à 3 essais) — elle a coûté ~1 $, elle ne doit jamais se perdre.
+        let rangee = false
+        for (let i = 0; i < 3 && !rangee; i++) { try { await rangerSyntheseServeur(m.cles, synthesisText, (m.briefName || 'Test Analyste').replace(/^Commande · /, '').slice(0, 180), marche ? JSON.stringify(marche) : ''); rangee = true } catch (_) { await new Promise((ok) => setTimeout(ok, 3000)) } }
+        S({ rangee: rangee ? 'Synthèse enregistrée sur le serveur.' : '⚠ Synthèse NON enregistrée sur le serveur : copiez-la maintenant (bouton Copier).' })
       } else if (isImg) {
         const productB64 = await V.compressImg(m.photo.b64, m.photo.mime || 'image/jpeg')
         const nbA = Math.max(angles.length, 2), ai = Math.min(m.angle, nbA - 1)
@@ -217,7 +222,9 @@ function StdTest({ a }) {
       {isAn && m.bal && !m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.bal.reutilise ? 'Hypothèse stockée réutilisée' : 'Balayage lancé'} — {m.bal.raison}. Aucune donnée ScrapeCreators reçue : voir les logs Render.</div>}
       {busy && m.prog && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.prog}</div>}
       {m.err && <div className="fx-err" style={{ marginBottom: 8 }}>ERREUR : {m.err} <button className="fx-btn sm" onClick={() => set({ err: '' })}>Fermer</button></div>}
+      {isAn && m.rangee && <div className={m.rangee.startsWith('⚠') ? 'fx-err' : 'fx-hint'} style={{ marginBottom: 8 }}>{m.rangee}</div>}
       {m.output && <Output text={m.output} color={m.outErr ? 'var(--er)' : null} />}
+      {(isAn || isImg || isCopy) && <SynthesesEnregistrees cles={m.cles} onPick={(x) => set(isAn ? { output: x.texte, synthese: x.texte, marche: x.marche_json ? (() => { try { return JSON.stringify(JSON.parse(x.marche_json), null, 2) } catch (_) { return x.marche_json } })() : '', outErr: false, rangee: 'Synthèse reprise depuis le serveur (' + heureCourte(x.t) + ').' } : { synthese: x.texte, angle: 0 })} />}
       {isAn && m.marche && <div className="fx-fld"><Lab>DONNÉES MARCHÉ (JSON livré au client)</Lab><Output text={m.marche} /></div>}
       {m.images.length > 0 && <div className="fx-imgs">{m.images.map((img, i) => (
         <div className="fx-imgc" key={img.ts}><img src={img.src} alt="" />
