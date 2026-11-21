@@ -3,6 +3,8 @@
 // Plus de Video Lab local. La commande fournit brief, photo et aspects ; la synthèse du test (souvent celle que
 // l'Analyste vient de produire) est transmise à la machine sans toucher à la commande du client.
 // L'emplacement 9 est réservé aux tests : il n'écrase jamais une vidéo de la production.
+// tests-video-memoire-v1 : la liste des tests vient du SERVEUR (/video-jobs/tests). Revenir, actualiser ou changer de navigateur ne fait plus
+// disparaître la vidéo : les derniers tests, leur vidéo, l'historique et le dossier restent affichés, et un test en cours est repris.
 import { COMP_FILES, loadSkills } from '../prod/state'
 import React, { useEffect, useState } from 'react'
 import { vctGetAll } from '../vctApi'
@@ -20,11 +22,17 @@ let POLL = null
 
 export default function VideoPanel({ competenceOnly }) {
   const [m, set] = useAgentMem('creative-video', { ctId: '', angle: 0, syn: '', cmdId: null, briefInfo: '', run: RUN0, last: null, startErr: '', prep: '' })
+  const mem0 = m
   const run = m.run && 'execution' in m.run ? m.run : RUN0
   const setRun = (f) => set((p) => ({ run: typeof f === 'function' ? f(p.run && 'execution' in p.run ? p.run : RUN0) : f }))
   const secLive = useTick(run.t0, run.busy)
   const [cts, setCts] = useState(null), [comp, setComp] = useState('Chargement…')
   const [listeCmd, setListeCmd] = useState(null), [busyCmd, setBusyCmd] = useState(false)
+  const [tests, setTests] = useState(null), [voir, setVoir] = useState('')
+  const chargerTests = async () => {
+    try { const r = await fetch(SERVER + '/video-jobs/tests', { headers: JH }); if (!r.ok) throw new Error('HTTP ' + r.status); const j = await r.json(); const l = Array.isArray(j.tests) ? j.tests : []; setTests(l); return l }
+    catch (e) { setTests((t) => t || { error: e.message }); return null }
+  }
 
   const poll = async (cmd, ex) => {
     try {
@@ -33,7 +41,7 @@ export default function VideoPanel({ competenceOnly }) {
       if (!r.ok) throw new Error('HTTP ' + r.status)
       const e = await r.json()
       const fini = e.etat === 'termine' || e.etat === 'echec'
-      if (fini) { clearInterval(POLL); POLL = null }
+      if (fini) { clearInterval(POLL); POLL = null; setTimeout(chargerTests, 1500) }
       setRun((x) => (x.execution !== ex ? x : { ...x, etat: e, busy: !fini, error: e.etat === 'echec' ? (e.erreur || 'Échec de la production vidéo.') : '', soft: '' }))
       if (e.etat === 'termine' && e.video_url) set({ last: { video_url: e.video_url, historique_url: e.historique_url || '', dossier_url: e.dossier_url || '', cout: e.cout_usd, ts: Date.now() } })
     } catch (err) { setRun((x) => ({ ...x, soft: 'Le serveur ne répond pas (' + err.message + '). La vidéo continue sur la machine ; nouvel essai dans 10 s.' })) }
@@ -43,6 +51,21 @@ export default function VideoPanel({ competenceOnly }) {
     if (competenceOnly) { loadSkills().then(() => setComp(COMP_FILES['COMPETENCE_CREATIVE_VIDEO.md'] || 'Compétence introuvable.')); return }
     vctGetAll().then(setCts).catch((e) => setCts({ error: e.message }))
     if (run.busy && run.execution && run.cmd && !POLL) { POLL = setInterval(() => poll(run.cmd, run.execution), 10000); poll(run.cmd, run.execution) }
+    chargerTests().then(async (l) => {
+      if (!l || !l.length) return
+      const x = l[0]
+      if (x.etat !== 'termine' && x.etat !== 'echec' && !(run.busy && run.execution)) {   // un test tourne encore : on le reprend
+        setRun({ execution: x.execution, cmd: x.commande_id, busy: true, etat: { etape: x.etape || 'En cours', pct: x.pct, journal: [] }, error: '', t0: x.t, ct: x.ct_nom || x.ct_id, angle: x.angle, niveau: x.niveau })
+        clearInterval(POLL); POLL = setInterval(() => poll(x.commande_id, x.execution), 10000); poll(x.commande_id, x.execution)
+      }
+      if (!mem0.cmdId) {   // le navigateur a tout oublié : on remet les réglages du dernier test
+        set({ cmdId: x.commande_id, ctId: x.ct_id, briefInfo: x.libelle || ('Commande ' + x.commande_id + ' (réglages du dernier test)') })
+        try {
+          const r = await fetch(SERVER + '/video-jobs/test-synthese?execution=' + encodeURIComponent(x.execution), { headers: JH })
+          if (r.ok) { const j = await r.json(); if (j.synthese) { const an = prodv2ExtractAngles(j.synthese, 0); const k = Math.max(0, an.findIndex((t) => t === x.angle)); set({ syn: j.synthese, angle: k }) } }
+        } catch (_) { }
+      }
+    })
   }, [])
 
   if (competenceOnly) return <div className="fx-comp"><textarea className="fx-ta mono comp" readOnly value={comp} /><p className="fx-s wrap">Compétence de l'agent Créative Vidéo (la même que celle de la machine de production).</p></div>
@@ -76,12 +99,12 @@ export default function VideoPanel({ competenceOnly }) {
     if (manque.length) return fail('Il manque : ' + manque.join(', ') + '.')
     set({ startErr: '', prep: 'Lancement de la machine vidéo…' })
     try {
-      const r = await fetch(SERVER + '/video-jobs/start', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: m.cmdId, ct_id: m.ctId, slot: SLOT_TEST, angle: angles[ai], niveau: nivCT ? NIVEAU_LIB[nivCT] : '', synthese: m.syn, test: true, forcer: true }) })
+      const r = await fetch(SERVER + '/video-jobs/start', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: m.cmdId, ct_id: m.ctId, slot: SLOT_TEST, angle: angles[ai], niveau: nivCT ? NIVEAU_LIB[nivCT] : '', synthese: m.syn, test: true, forcer: true, ct_nom: ct ? ct.name : '', libelle: m.briefInfo || '' }) })
       const j = await r.json().catch(() => ({}))
       if (!r.ok || j.error || !j.execution) throw new Error(j.error || (r.status === 404 ? 'le serveur Render n\'a pas la route /video-jobs/start' : 'HTTP ' + r.status))
       const t0 = Date.now()
       set({ prep: '', run: { execution: j.execution, cmd: m.cmdId, busy: true, etat: { etape: 'La machine démarre', pct: 1, journal: [] }, error: '', t0, ct: ct ? ct.name : m.ctId, angle: angles[ai], niveau: nivCT ? NIVEAU_LIB[nivCT] : '' } })
-      clearInterval(POLL); POLL = setInterval(() => poll(m.cmdId, j.execution), 10000); poll(m.cmdId, j.execution)
+      clearInterval(POLL); POLL = setInterval(() => poll(m.cmdId, j.execution), 10000); poll(m.cmdId, j.execution); setTimeout(chargerTests, 2000)
     } catch (e) { fail('Échec au lancement : ' + e.message) }
   }
   const annuler = async () => {
@@ -129,12 +152,31 @@ export default function VideoPanel({ competenceOnly }) {
         {run.soft && <div className="fx-s" style={{ color: 'var(--wa)' }}>{run.soft}</div>}
         {run.error && <div style={{ color: 'var(--er)', marginTop: 6 }}>Erreur : {run.error}</div>}</div>}
       {vUrl && <div className="fx-vres"><video src={vUrl} controls playsInline /><div><a className="fx-btn primary" href={vUrl + '?download=video-test.mp4'} download>Télécharger la vidéo</a></div></div>}
-      {!vUrl && m.last && <div className="fx-vres"><div className="fx-s">Dernière vidéo de test ({new Date(m.last.ts).toLocaleString('fr-FR')}) :</div><video src={m.last.video_url} controls playsInline /></div>}
-      {fini && (e.historique_url || e.dossier_url || (m.last && (m.last.historique_url || m.last.dossier_url))) && <div className="fx-hist"><div className="fx-s wrap">Journal, plans, prompts, images et coûts sont enregistrés. Téléchargez l'historique et envoyez-le moi après chaque test.</div>
-        <div className="fx-acts">
-          {(e.historique_url || (m.last && m.last.historique_url)) && <a className="fx-btn" href={e.historique_url || m.last.historique_url} target="_blank" rel="noreferrer">Historique complet</a>}
-          {(e.dossier_url || (m.last && m.last.dossier_url)) && <a className="fx-btn" href={e.dossier_url || m.last.dossier_url} target="_blank" rel="noreferrer">Dossier de production</a>}
-        </div></div>}
+      <TestsVideo tests={tests} voir={voir} setVoir={setVoir} courant={run.execution && (run.busy || vUrl) ? run.execution : ''} recharger={chargerTests} last={!vUrl ? m.last : null} />
+    </div>
+  )
+}
+
+// Les derniers tests vidéo, lus sur le serveur : ils restent là quel que soit le navigateur.
+const ETATS = { termine: 'Terminée', echec: 'Échec', en_cours: 'En cours' }
+function TestsVideo({ tests, voir, setVoir, courant, recharger, last }) {
+  if (tests === null) return <div className="fx-s" style={{ marginTop: 16 }}>Chargement des derniers tests…</div>
+  if (!Array.isArray(tests)) return <div className="fx-hist"><div className="fx-s wrap">Derniers tests illisibles ({tests.error}). <button className="fx-btn sm" onClick={recharger}>Réessayer</button></div>
+    {last && <video src={last.video_url} controls playsInline />}</div>
+  if (!tests.length) return last ? <div className="fx-vres"><div className="fx-s">Dernière vidéo de test :</div><video src={last.video_url} controls playsInline /></div> : null
+  const montre = tests.find((x) => x.execution === voir) || tests.find((x) => x.etat === 'termine' && x.video_url && x.execution !== courant)
+  return (
+    <div className="fx-hist" style={{ marginTop: 18 }}>
+      <div className="fx-lab up">DERNIERS TESTS VIDÉO <button className="fx-btn sm" onClick={recharger} style={{ marginLeft: 8 }}>Actualiser</button></div>
+      {montre && montre.video_url && <div className="fx-vres"><div className="fx-s">{montre.ct_nom || montre.ct_id} · {new Date(montre.t).toLocaleString('fr-FR')}</div><video key={montre.execution} src={montre.video_url} controls playsInline /></div>}
+      {tests.map((x) => (
+        <div key={x.execution} className="fx-s wrap" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', padding: '8px 0', borderTop: '1px solid var(--bd, #2a2a2a)' }}>
+          <span style={{ minWidth: 0, flex: '1 1 260px' }}><b>{new Date(x.t).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</b> · {x.ct_nom || x.ct_id}{x.angle ? ' · ' + x.angle : ''}<br />
+            {ETATS[x.etat] || x.etat}{x.etat !== 'termine' && x.etat !== 'echec' && x.pct != null ? ' (' + x.pct + ' %)' : ''}{x.cout_usd != null ? ' · ' + Number(x.cout_usd).toFixed(2) + ' $' : ''}{x.qualite && x.qualite.note_juge != null ? ' · juge ' + x.qualite.note_juge + '/10' : ''}{x.erreur ? ' · ' + String(x.erreur).slice(0, 140) : ''}</span>
+          {x.video_url && <button className="fx-btn sm" onClick={() => setVoir(x.execution)}>Voir</button>}
+          {x.historique_url && <a className="fx-btn sm" href={x.historique_url} target="_blank" rel="noreferrer">Historique</a>}
+          {x.dossier_url && <a className="fx-btn sm" href={x.dossier_url} target="_blank" rel="noreferrer">Dossier</a>}
+        </div>))}
     </div>
   )
 }
