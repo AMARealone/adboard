@@ -1,5 +1,7 @@
 import { COMP_FILES, loadSkills } from '../prod/state'
 import React, { useEffect, useRef, useState } from 'react'
+import { prodv2ExtractAngles, NIVEAU_LIB } from '../prod/verbatim'
+import { niveauCT } from '../ctApi'
 import { vctGetAll, vctGetTexte } from '../vctApi'
 import { labFetch, labQuery, labUrl, labKey, saveLabUrl, saveLabKey } from '../lab'
 import { useAgentMem, useTick, syntheseMemorisee, heureCourte } from '../agentStore'
@@ -18,7 +20,7 @@ async function urlToB64(url) {
 let POLL = null
 const RUN0 = { pid: null, busy: false, status: null, error: '', t0: 0, sec: 0 }
 export default function VideoPanel({ competenceOnly }) {
-  const [m, set] = useAgentMem('creative-video', { ctId: '', syn: '', brief: null, briefInfo: '', model: 'auto', ref: 'complet', planOnly: false, photo: null, aspects: [], photoCmd: null, run: RUN0, last: null, prep: '', startErr: '', histMsg: '' })
+  const [m, set] = useAgentMem('creative-video', { ctId: '', angle: 0, syn: '', brief: null, briefInfo: '', model: 'auto', ref: 'complet', planOnly: false, photo: null, aspects: [], photoCmd: null, run: RUN0, last: null, prep: '', startErr: '', histMsg: '' })
   const photo = m.photo, aspects = m.aspects || [], photoCmd = m.photoCmd, run = m.run || RUN0, histMsg = m.histMsg
   const setPhoto = (v) => set({ photo: v }), setAspects = (v) => set({ aspects: v }), setPhotoCmd = (v) => set({ photoCmd: v }), setHistMsg = (v) => set({ histMsg: v })
   const setRun = (f) => set((p) => ({ run: typeof f === 'function' ? f(p.run || RUN0) : f }))
@@ -41,12 +43,16 @@ export default function VideoPanel({ competenceOnly }) {
     doPing()
     if (!competenceOnly && run.pid && run.busy && !POLL) { POLL = setInterval(() => poll(run.pid, run.t0), 4000); poll(run.pid, run.t0) }
     if (competenceOnly) { const secours = async (why) => { await loadSkills(); setComp((COMP_FILES['COMPETENCE_CREATIVE_VIDEO.md'] || '') + '\n\n— ' + why) }; labFetch('/competence').then(async (r) => r.ok ? setComp(await r.text()) : secours('Version du dépôt (service vidéo : HTTP ' + r.status + ').')).catch(() => secours('Version du dépôt (service vidéo non lancé).')) }
-    else vctGetAll().then((l) => { setCts(l); if (!m.ctId && l[0]) set({ ctId: l[0].id }) }).catch((e) => setCts({ error: e.message }))
+    else vctGetAll().then((l) => { setCts(l) }).catch((e) => setCts({ error: e.message }))
   }, [])
 
   if (competenceOnly) return <div className="fx-comp"><textarea className="fx-ta mono comp" readOnly value={comp} /><p className="fx-s wrap">Compétence lue depuis le service vidéo (lecture seule).</p></div>
 
   const ct = Array.isArray(cts) ? cts.find((x) => x.id === m.ctId) : null
+  // Le niveau de conscience vient du CT (sa balise), l'angle se choisit ici ; le service relit aussi le niveau dans la fiche du CT.
+  const nivCT = ct ? ((ct.awareness || []).map(niveauCT).find(Boolean) || '') : ''
+  const angles = m.syn && m.syn.trim() ? prodv2ExtractAngles(m.syn, 0) : []
+  const ai = Math.min(m.angle || 0, Math.max(angles.length - 1, 0))
   const photosBrief = (() => { const b = m.brief || {}; const l = (b.product && b.product.photos_produit) || b.photos_produit || []; return Array.isArray(l) ? l.filter((x) => x && x.url && !x.exclue) : [] })()
   // Comme pour les autres agents : on prend une commande existante (brief + photo produit + synthèse déjà produite).
   const ouvrirCommandes = async () => { setBusyCmd(true); try { setListeCmd(await getCommandes()) } catch (e) { alertDlg('Commandes : ' + e.message) } finally { setBusyCmd(false) } }
@@ -102,7 +108,7 @@ export default function VideoPanel({ competenceOnly }) {
         asp = (await Promise.all(photosBrief.filter((x) => x !== face).slice(0, 5).map((x) => urlToB64(x.url).catch(() => null)))).filter(Boolean)
       }
       const b = m.brief || {}
-      const body = { ct: texte, synthese: m.syn, produit, aspects: asp, brief: b, model: m.model, planOnly: m.planOnly, refMode: m.ref, lien_page_produit: b.lien_page_produit || (b.product && (b.product.lien_page_produit || b.product.url)) || '' }
+      const body = { ct: texte, angle: angles[ai] || undefined, niveau: nivCT ? NIVEAU_LIB[nivCT] : undefined, synthese: m.syn, produit, aspects: asp, brief: b, model: m.model, planOnly: m.planOnly, refMode: m.ref, lien_page_produit: b.lien_page_produit || (b.product && (b.product.lien_page_produit || b.product.url)) || '' }
       const r = await labFetch('/pipeline', { method: 'POST', body: JSON.stringify(body) })
       const j = await r.json()
       if (!j.id) throw new Error(j.error || "le service n'a pas démarré la production")
@@ -146,10 +152,12 @@ export default function VideoPanel({ competenceOnly }) {
       </div>
       <div className="fx-fld"><div className="fx-lab up">CT VIDÉO</div>
         <select className="fx-in full" value={m.ctId} onChange={(e) => set({ ctId: e.target.value })}>
-          {cts === null ? <option>Chargement de la galerie…</option> : !Array.isArray(cts) ? <option>Galerie illisible : {cts.error}</option> : !cts.length ? <option value="">Galerie CT vidéo vide : ajoutes-en dans « Galerie CT vidéo »</option> : cts.map((r) => <option key={r.id} value={r.id}>{r.name}{r.awareness.length ? '  ·  ' + r.awareness.join(', ') : ''}</option>)}
+          {cts === null ? <option>Chargement de la galerie…</option> : !Array.isArray(cts) ? <option>Galerie illisible : {cts.error}</option> : !cts.length ? <option value="">Galerie CT vidéo vide : ajoutes-en dans « Galerie CT vidéo »</option> : [<option key="" value="" disabled>Choisissez un CT vidéo…</option>, ...cts.map((r) => <option key={r.id} value={r.id}>{r.name}{r.awareness.length ? '  ·  ' + r.awareness.join(', ') : '  ·  sans niveau'}</option>)]}
         </select>
-        {ct && <div className="fx-hint">{ct.meta || '(pas de méta-description)'}</div>}</div>
-      <div className="fx-fld"><div className="fx-lab up">SYNTHÈSE DE L'ANALYSTE</div><textarea className="fx-ta" rows={6} value={m.syn} onChange={(e) => set({ syn: e.target.value })} placeholder="Colle ici la synthèse complète produite par l'Analyste de Marché…" /></div>
+        {ct && <div className="fx-hint">{nivCT ? 'Niveau de conscience donné par ce CT : ' + NIVEAU_LIB[nivCT] + '. ' : '⚠ Ce CT n\'a pas de balise de niveau : le service lira celui écrit dans sa fiche. '}{ct.meta || '(pas de méta-description)'}</div>}</div>
+      <div className="fx-fld"><div className="fx-lab up">SYNTHÈSE DE L'ANALYSTE</div><textarea className="fx-ta" rows={6} value={m.syn} onChange={(e) => set({ syn: e.target.value, angle: 0 })} placeholder="Colle ici la synthèse complète produite par l'Analyste de Marché…" /></div>
+      <div className="fx-fld"><div className="fx-lab up">ANGLE À PRODUIRE</div>
+        {angles.length ? <select className="fx-in full" value={ai} onChange={(e) => set({ angle: Number(e.target.value) })}>{angles.map((t, i) => <option key={i} value={i}>Angle {i + 1} — {t}</option>)}</select> : <div className="fx-s">Collez une synthèse : ses angles apparaîtront ici.</div>}</div>
       <div className="fx-two">
         <div className="fx-fld"><div className="fx-lab up">PHOTO PRODUIT</div><input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files[0] || null)} />{photo && <div className="fx-s">Photo gardée : {photo.name}</div>}</div>
         <div className="fx-fld"><div className="fx-lab up">AUTRES ASPECTS (facultatif, 5 max)</div><input type="file" accept="image/*" multiple onChange={(e) => setAspects(Array.from(e.target.files))} />{aspects.length > 0 && <div className="fx-s">{aspects.length} aspect(s) gardé(s) : {aspects.map((x) => x.name).join(', ')}</div>}</div>

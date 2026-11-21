@@ -7,7 +7,7 @@ import * as V from '../prod/verbatim'
 import { commandeToBrief, commandePhoto } from '../prod/engine'
 import { prodv2State } from '../prod/state'
 import { getCommandes } from '../api'
-import { ctGetAll, ctGetBase64, loadCTImages, ctGalerieComplete, NIVEAUX_CLE, ctMemoriser } from '../ctApi'
+import { ctGetAll, ctGetBase64, loadCTImages, niveauCT, ctMemoriser } from '../ctApi'
 import VideoPanel from './VideoPanel'
 import { AgentArt } from '../Art'
 import { alertDlg, confirmDlg, toast } from '../ui'
@@ -64,7 +64,9 @@ async function withProd(patch, fn) {
   Object.assign(prodv2State, patch)
   try { return await fn() } finally { Object.assign(prodv2State, old) }
 }
-const NIVEAUX = [['Solution Aware', 'Solution Aware (1re du lot)'], ['Product Aware', 'Product Aware (2e)'], ['Most Aware', 'Most Aware (3e)']]
+// Le niveau de conscience d'une créative vient de son CT (balise « awareness » posée dans la galerie), jamais d'un bouton.
+const RANG_NIV = { problem: 0, solution: 0, product: 1, most: 2 }
+function niveauDuCT(rec) { const l = (rec && rec.awareness) || []; for (const a of l) { const k = niveauCT(a); if (k) return k } return '' }
 
 function BriefSource({ m, set }) {
   const ref = useRef(null)
@@ -96,14 +98,28 @@ function BriefSource({ m, set }) {
   )
 }
 
-// Le CT n'est plus choisi à la main : l'agent le choisit lui-même parmi toute la galerie (aperçu du choix + son raisonnement).
-function CTAuto({ m }) {
-  const [n, setN] = useState(null), nav = useNavigate()
-  useEffect(() => { ctGetAll().then((l) => setN(l.length)).catch(() => setN(0)) }, [])
+// Le CT est choisi À LA MAIN dans la galerie validée (les CT « À valider » n'y sont pas encore).
+function CTPicker({ m, set }) {
+  const [list, setList] = useState(null), [q, setQ] = useState(''), [f, setF] = useState(''), nav = useNavigate()
+  useEffect(() => { ctGetAll().then(setList).catch((e) => setList({ error: e.message })) }, [])
+  const ok = Array.isArray(list)
+  const choisi = ok ? list.find((r) => r.id === m.ct) : null
+  const vis = ok ? list.filter((r) => (!f || niveauDuCT(r) === f) && (!q || (r.name + ' ' + (r.meta || '') + ' ' + (r.niche || '')).toLowerCase().includes(q.toLowerCase()))) : []
+  const niv = choisi ? niveauDuCT(choisi) : ''
   return (
-    <div className="fx-fld"><div className="fx-lab-row"><Lab>CT : CHOISI AUTOMATIQUEMENT PAR L'AGENT</Lab><button className="fx-link-btn" onClick={() => nav('/galerie')}>Gérer la galerie</button></div>
-      <div className="fx-s">{n === null ? 'Chargement…' : n === 0 ? 'Galerie vide : ajoute des CT avant de tester.' : 'L\'agent reçoit toute la galerie (' + n + ' CT : image, nom, description, balises) avec le brief, la synthèse et la consigne d\'angle, puis choisit un seul CT.'}</div>
-      {m.ct && CT_IMAGES[m.ct] && <div className="fx-ctchoice"><img className="fx-minithumb" src={CT_IMAGES[m.ct]} alt="" /><div><b>{CT_IMAGES[m.ct + '_name'] || m.ct}</b>{m.ctRaison && <div className="fx-s wrap">{m.ctRaison}</div>}</div></div>}
+    <div className="fx-fld"><div className="fx-lab-row"><Lab>CT (CHOISI PAR VOUS)</Lab><button className="fx-link-btn" onClick={() => nav('/galerie')}>Gérer la galerie</button></div>
+      {choisi && <div className="fx-ctchoice"><img className="fx-minithumb" src={choisi.url} alt="" /><div><b>{choisi.name}</b>
+        <div className="fx-s">{niv ? 'Niveau de conscience donné par ce CT : ' + V.NIVEAU_LIB[niv] : '⚠ Ce CT n\'a pas de niveau de conscience : balisez-le dans la galerie avant de tester.'}</div>
+        {choisi.meta && <div className="fx-s wrap">{String(choisi.meta).slice(0, 220)}</div>}</div></div>}
+      {list === null ? <div className="fx-s">Chargement de la galerie…</div> : !ok ? <div className="fx-err">Galerie illisible : {list.error}</div> : !list.length ? <div className="fx-s">Galerie vide : ajoutez des CT avant de tester.</div> : <>
+        <div className="fx-btnrow" style={{ marginTop: 8 }}>
+          <input className="fx-in sm" placeholder="Chercher un CT (nom, description, niche)…" value={q} onChange={(e) => setQ(e.target.value)} style={{ flex: '1 1 220px' }} />
+          <select className="fx-in sm" value={f} onChange={(e) => setF(e.target.value)}><option value="">Tous les niveaux</option>{['problem', 'solution', 'product', 'most'].map((k) => <option key={k} value={k}>{V.NIVEAU_LIB[k]}</option>)}</select>
+          <span className="fx-s">{vis.length} / {list.length} CT</span>
+        </div>
+        <div className="fx-ctgrid">{vis.map((r) => { const k = niveauDuCT(r); return (
+          <button key={r.id} className={'fx-ctcell' + (r.id === m.ct ? ' on' : '')} onClick={() => set({ ct: r.id, ctRaison: '' })} title={r.meta || r.name}>
+            <img src={r.url} alt="" loading="lazy" /><span>{r.name}</span><i>{k ? V.NIVEAU_LIB[k].replace(' Aware', '') : 'sans niveau'}</i></button>) })}</div></>}
     </div>
   )
 }
@@ -150,31 +166,22 @@ function StdTest({ a }) {
       } else if (isImg) {
         const productB64 = await V.compressImg(m.photo.b64, m.photo.mime || 'image/jpeg')
         const nbA = Math.max(angles.length, 2), ai = Math.min(m.angle, nbA - 1)
-        // Consigne IDENTIQUE à la production : angle imposé + niveau de conscience selon la position dans l'angle
-        const { creativeSystem, angleInstruction, briefTexte, assets } = await withProd({ brief: m.brief, angles: angles.length ? angles : ['Angle 1', 'Angle 2'] }, async () => ({ ...V.buildCreativeInstruction(ai, m.pos), briefTexte: V.prodv2BriefTextOnly(), assets: V.prodv2AssetsText() }))
-        // ── Étape 1 : l'agent regarde TOUTE la galerie et choisit lui-même UN CT (aucune sélection manuelle) ──
-        await loadCTImages()
-        // Le niveau de conscience de la créative RESTREINT la galerie : Most Aware → seulement les CT balisés Most Aware, etc.
+        // ── Le CT est celui que vous avez choisi ; son niveau de conscience impose celui de la créative ──
+        const all = await loadCTImages()
+        const ctRec = all.find((r) => r.id === m.ct)
+        if (!ctRec) throw new Error('Choisissez un CT dans la galerie ci-dessus.')
+        const niv = niveauDuCT(ctRec)
+        if (!niv) throw new Error('Le CT « ' + ctRec.name + ' » n\'a pas de niveau de conscience. Balisez-le dans la galerie, puis relancez.')
+        const { creativeSystem, angleInstruction, briefTexte, assets } = await withProd({ brief: m.brief, angles: angles.length ? angles : ['Angle 1', 'Angle 2'] }, async () => ({ ...V.buildCreativeInstruction(ai, niv, RANG_NIV[niv]), briefTexte: V.prodv2BriefTextOnly(), assets: V.prodv2AssetsText() }))
         const cleTest = String(m.cles || m.briefName || (m.brief && (m.brief.produit || m.brief.marque)) || '')
-        const gal = await ctGalerieComplete((n, t) => S({ prog: `Préparation de la galerie pour l'agent : ${n} / ${t} CT…` }), { niveau: NIVEAUX_CLE[m.pos], diversifier: true, cle: cleTest })
-        if (!gal.cts.length) throw new Error('La galerie CT est vide : ajoute des CT (page Galerie).')
-        const libNiv = NIVEAUX[m.pos][0]
-        S({ prog: gal.repli
-          ? `⚠ Aucun CT de la galerie n'est balisé « ${libNiv} » : l'agent examine ${gal.envoyes} CT et prend la structure la plus proche. Ajoutez ou balisez des CT ${libNiv} dans la galerie.`
-          : `Niveau imposé : ${libNiv}. L'agent examine les ${gal.envoyes} CT balisés ${libNiv}${gal.nbBalises > gal.envoyes ? ' (les ' + gal.envoyes + ' tirés au hasard sur ' + gal.nbBalises + ')' : ''} (galerie : ${gal.total} CT${gal.ecartesHist ? ', ' + gal.ecartesHist + ' CT déjà utilisés récemment écartés pour varier' : ''}) et choisit le meilleur pour cette créative…`, ct: null, ctRaison: '' })
-        const rs = await fetch(SERVER + '/select-ct-agent', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ briefTexte, synthese: m.synthese, angleInstruction, assets, productBase64: productB64, productMime: 'image/jpeg', cts: gal.cts, niveau: NIVEAUX_CLE[m.pos], isTest: true }) })
-        const dsTxt = await rs.text(); let ds = null; try { ds = JSON.parse(dsTxt) } catch (_) {}
-        if (!ds) throw new Error(rs.status === 404 ? "Choix du CT : le serveur Render n'a pas encore la nouvelle version (route /select-ct-agent introuvable, HTTP 404). Redéployez serveur.js." : 'Choix du CT : réponse inattendue du serveur (HTTP ' + rs.status + ') ' + dsTxt.slice(0, 120))
-        if (!rs.ok || ds.error) throw new Error('Choix du CT : ' + (ds.error || 'HTTP ' + rs.status))
-        if (!CT_IMAGES[ds.id]) throw new Error('Le CT choisi (' + ds.id + ') est introuvable dans la galerie.')
-        ctMemoriser(ds.id, NIVEAUX_CLE[m.pos], cleTest)
-        S({ ct: ds.id, ctRaison: ds.raison || '', prog: `CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id}. Gemini 3.1 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
+        const ds = { id: ctRec.id, raison: 'CT choisi à la main' }
+        ctMemoriser(ds.id, niv, cleTest)
+        S({ prog: `CT : ${ctRec.name} · ${V.NIVEAU_LIB[niv]}. Gemini 3.1 Pro raisonne et écrit le prompt → Gemini 3 Pro Image rend la créative…` })
         const ctB64 = await V.compressImg(await ctGetBase64(ds.id), CT_IMAGES[ds.id + '_mime'] || 'image/jpeg')
         const res = await fetch(SERVER + '/creative-prod', { signal: my.ac.signal, method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ systemPrompt: creativeSystem, synthese: m.synthese, brief: m.brief, angleInstruction, ctBase64: ctB64, ctMime: 'image/jpeg', productBase64: productB64, productMime: 'image/jpeg', isTest: true }) })
         const d = await res.json(); if (d.error) throw new Error(d.error)
-        if (d.imageData) S((p) => ({ outErr: false, output: `✓ Générée — angle ${ai + 1} · ${NIVEAUX[m.pos][0]} · CT choisi par l'agent : ${CT_IMAGES[ds.id + '_name'] || ds.id} · angle choisi par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: CT_IMAGES[ds.id + '_name'] || ds.id, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
+        if (d.imageData) S((p) => ({ outErr: false, output: `✓ Générée — angle ${ai + 1} · ${V.NIVEAU_LIB[niv]} (niveau du CT) · CT : ${ctRec.name} · angle déclaré par l'agent : ${d.chosenAngle || 'n/a'}`, images: [...p.images, { src: `data:${d.imageMime};base64,${d.imageData}`, ct: ctRec.name, ctRaison: ds.raison, angle: d.chosenAngle, prompt: d.prompt, ts: Date.now() }] }))
         else S({ err: 'Aucune image reçue.' })
       } else {
         // Un angle à la fois, comme la production (même consigne, même lecture 5 hooks + description)
@@ -204,8 +211,7 @@ function StdTest({ a }) {
         <div className="fx-s">{m.rctx && m.rctx.estRenouvellement ? 'Renouvellement détecté : le contexte (angle gagnant, cible actuelle, synthèse existante) est transmis comme en production.' : 'Entrée construite comme en production : date du jour, nombre d’angles, lien page produit, photos et aspects, logo.'}</div></div>}
       {(isImg || isCopy) && <div className="fx-fld"><Lab>SYNTHÈSE (de l'Analyste de Marché)</Lab><textarea className="fx-ta" rows={7} value={m.synthese} onChange={(e) => set({ synthese: e.target.value, angle: 0 })} placeholder="Colle ici la synthèse complète, ou prends une commande déjà livrée, ou teste l'Analyste d'abord…" /></div>}
       {(isImg || isCopy) && <div className="fx-fld"><Lab>ANGLE À PRODUIRE</Lab><AngleSeg />{angles[m.angle] && <div className="fx-s">{angles[m.angle]}</div>}</div>}
-      {isImg && <div className="fx-fld"><Lab>NIVEAU DE CONSCIENCE (position de la créative dans l'angle)</Lab><Seg value={m.pos} onChange={(v) => set({ pos: v })} options={NIVEAUX.map(([, l], i) => [i, l])} /><div className="fx-s">En production, une créative par niveau pour chaque angle ; ici tu en testes une.</div></div>}
-      {isImg && <CTAuto m={m} />}
+      {isImg && <CTPicker m={m} set={set} />}
       <div className="fx-launch">{busy ? <button className="fx-btn danger big" onClick={annuler}>Annuler la génération</button> : <button className="fx-btn primary big" onClick={(m.output || (m.images && m.images.length)) ? relancer : run}>{(m.output || (m.images && m.images.length)) ? 'Régénérer' : 'Tester cet agent'}</button>}<span className="fx-s">{busy || sec ? sec + 's' : ''}{!busy && m.dur ? ' · dernière génération' : ''}</span></div>
       {isAn && m.bal && m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>Balayage : {m.bal.scrapecreators.requetes} requêtes ScrapeCreators ({m.bal.scrapecreators.credits} crédits) · Reddit {m.bal.scrapecreators.reddit} · TikTok {m.bal.scrapecreators.tiktok_videos} vidéos / {m.bal.scrapecreators.tiktok_commentaires} commentaires · pubs Meta {m.bal.scrapecreators.pubs}{m.bal.scrapecreators.erreurs ? ' · ' + m.bal.scrapecreators.erreurs + ' erreur(s) (voir les logs Render)' : ''}</div>}
       {isAn && m.bal && !m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.bal.reutilise ? 'Hypothèse stockée réutilisée' : 'Balayage lancé'} — {m.bal.raison}. Aucune donnée ScrapeCreators reçue : voir les logs Render.</div>}

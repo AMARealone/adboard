@@ -570,3 +570,11 @@ a.fx-lib:hover{background:rgba(160,175,210,.05);border-color:var(--bd)}
 .fx-liv-cp summary{cursor:pointer;display:flex;align-items:center;gap:10px;font-weight:700}
 .fx-liv-cp ol{margin:10px 0 6px 18px;padding:0}.fx-liv-cp p{margin:6px 0 0;white-space:pre-wrap;color:#C9CDD6}
 .fx-liv-dos{margin-top:18px;display:flex;flex-direction:column;gap:4px;font-size:12px}.fx-liv-dos label{color:#8891A0;font-weight:700}
+/* Choix manuel du CT (tests agents) */
+.fx-ctgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;max-height:420px;overflow:auto;margin-top:8px;padding:2px}
+.fx-ctcell{display:flex;flex-direction:column;gap:3px;padding:5px;border:1px solid var(--bd);border-radius:9px;background:transparent;cursor:pointer;text-align:left;color:inherit;font:inherit;min-width:0}
+.fx-ctcell img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:6px;display:block}
+.fx-ctcell span{font-size:11px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fx-ctcell i{font-style:normal;font-size:10px;opacity:.65}
+.fx-ctcell:hover{border-color:var(--ac,#7c5cff)}
+.fx-ctcell.on{border-color:var(--ac,#7c5cff);box-shadow:0 0 0 2px var(--ac,#7c5cff)}
