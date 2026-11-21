@@ -56,6 +56,8 @@ export async function apiSynthesize(system, parts, maxTokens, enrichWithSearch, 
 
 let _dernierBalayage = null
 let _dernierCout = null
+let _derniereSyntheseId = null
+export function derniereSyntheseId() { return _derniereSyntheseId }   // syntheses-coffre-v1 : le serveur range lui-même l'hypothèse
 export function dernierBalayage() { return _dernierBalayage }
 export function dernierCout() { return _dernierCout }
 export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signal, isTest=false, extra={}) {
@@ -68,6 +70,7 @@ export async function apiAnalysteSynthese(system, parts, maxTokens, brief, signa
   if(d.error) throw new Error(d.error);
   _dernierBalayage = d.balayage || null;
   _dernierCout = typeof d.cout_estime_usd === 'number' ? d.cout_estime_usd : null;
+  _derniereSyntheseId = d.synthese_id || null;
   return d.text;
 }
 

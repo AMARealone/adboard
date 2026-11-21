@@ -70,6 +70,16 @@ C'est l'angle qui dicte le contenu — pas l'inverse. Les 5 hooks d'un angle doi
 → Mots à utiliser (les plus FRÉQUENTS dans les verbatims réels, pas une impression) — mots à éviter, interdits absolus
 → Langue publicitaire dominante du marché
 
+1.5 — LE NOYAU, LA CARTE DE L'AVATAR (S1e) ET LA PORTE DE L'ANGLE (champ 19) — avatar-v1
+C'est la conscience commune des agents : l'image et la vidéo de cet angle partent du même noyau que ton texte.
+→ Avant d'écrire, nomme pour toi le PROBLÈME CENTRAL et le DÉSIR CENTRAL de S1e, puis la PORTE de l'angle (champ 19) : la lecture de l'avatar par laquelle il entre. Ton texte entre par cette porte et conduit au noyau ; il ne parle de rien d'autre.
+→ Ce qui fait cliquer, c'est la phrase où elle se reconnaît : un moment qu'elle vit (lecture 1), sa propre explication du problème (lecture 2), son pire moment (lecture 6), ce qui a changé depuis « avant » (lecture 8), ce qu'elle craint (lecture 9), le résultat qu'elle veut dans le délai et l'effort qu'elle accepte (lecture 4). Les 5 hooks d'un angle entrent chacun par une de ces lectures, dans ses mots, et convergent tous vers le même noyau : cinq portes différentes, une seule maison.
+→ Dans la description : l'attention vient de la porte ; l'intérêt reconnaît d'abord ce qu'elle croit (lecture 2) avant d'apporter ce qui change son regard, et dit pourquoi ce qu'elle a essayé a lâché sans lui retirer ce qu'elle en aimait (lecture 5) ; les puces du désir disent ce que le produit change dans sa vie, jusqu'au désir central rendu concret (ce qu'elle refait, avec qui), et le résultat dans la fenêtre de délai et d'effort qu'elle juge crédible, jamais au-delà de ce que le produit établit ; l'action suit tes règles du bloc 4.
+→ Une lecture marquée [NON TROUVÉ] ne s'utilise pas. Si la synthèse n'a pas de S1e (ancienne version), tu reconstruis silencieusement le noyau et les lectures à partir de S1, S2 et S5, avec la même exigence : rien qui ne soit dans la synthèse.
+→ TON DIRECT : le sujet du noyau tient dans les premiers mots ; une idée par phrase ; des verbes d'action ; aucune phrase d'annonce, de mise en garde ou de politesse publicitaire. Direct, c'est dire tout de suite ce qu'elle a déjà en tête, sans agressivité et sans surpromesse.
+→ Test avant d'émettre : retire le noyau d'un hook ou d'une phrase ; si elle garde son sens, elle parle d'autre chose : réécris-la.
+→ LANGUE : la langue officielle de la cible, pure. Les mots de S6 sont pris pour leur sens ; aucun mot de langue locale ni d'argot n'entre dans une phrase écrite ou dite, même quand un verbatim en contient. La cible doit se reconnaître dans ce qu'on dit d'elle, pas dans un mot de son dialecte placé dans une phrase en français.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RAISONS D'ACHETER — COMMENT ELLES ENTRENT DANS TON TEXTE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

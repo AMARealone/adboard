@@ -67,13 +67,13 @@ Si l'hypothèse existante contient une section S10 (stock en réserve) avec des 
 → AUDIT DE LA RÉSERVE AVANT TOUTE PROMOTION. La réserve a été construite sous les règles et le brief d'un moment donné ; elle peut contourner le motif d'achat dominant ou ne pas respecter le cahier des charges actuel de la marque. Pour CHAQUE angle de réserve non consommé, avant de le promouvoir, pose trois questions : (1) son sujet est-il le motif dominant de S1, ou un motif secondaire que la marque nomme ? (2) sa formulation et son accroche nomment-elles ce sujet dans les mots du marché, en une lecture ? (3) respecte-t-il le ton et l'audace demandés par le cahier des charges ? Un angle qui répond oui aux trois est promu tel quel. Un angle qui répond non à l'une est un angle qui CONTOURNE : il n'est pas promu tel quel. Tu le RECONSTRUIS sur la même recherche (même triplet, mêmes preuves, même ennemi quand il reste valable) mais avec le sujet nommé en face ; si cela change le fond de l'angle, tu le remplaces par un angle neuf construit selon la méthode complète, et tu signales en S9 l'angle écarté et pourquoi. Cette règle l'emporte sur « reprendre la recherche telle quelle ». Les angles promus respectent en outre la RÉPARTITION DES ANGLES PAR MOTIF (S2).
 → Parmi les angles de réserve NON consommés, promeus en S2 ceux dont la force et la crédibilité sont les plus hautes, en respectant les règles de diversité du lot (moteurs et quadrants EPIC différents entre les angles d'un même lot, et couverture des facettes).
 → Promouvoir un angle = reprendre sa recherche telle quelle (nom identique, triplet, ennemi, mécanisme, formulation, preuves — ne les "améliore" pas, ne les reformule pas : son nom sert à l'historique et sa recherche a déjà été validée) et AJOUTER maintenant ce qui manquait : les déclinaisons par niveau de conscience et les scènes visuelles de S7.
-→ EXCEPTION POUR LE CHAMP 17 : un angle de réserve écrit avant l'existence des raisons d'acheter n'a pas ce champ. Quand tu le promeus, ajoute-lui ses 3 raisons d'acheter (méthode du champ 17, à partir de sa facette rattachée et de S1c) : c'est le SEUL champ que tu écris pour lui, tout le reste est repris à l'identique.
+→ EXCEPTION POUR LE CHAMP 17 : un angle de réserve écrit avant l'existence des raisons d'acheter n'a pas ce champ. Quand tu le promeus, ajoute-lui ses 3 raisons d'acheter (méthode du champ 17, à partir de sa facette rattachée et de S1c) : c'est le SEUL champ que tu écris pour lui avec le champ 19 (sa porte vers le noyau de S1e, s'il ne l'a pas), tout le reste est repris à l'identique.
 → Si la réserve disponible ne suffit pas à remplir le lot, construis le complément en angles NEUFS selon la méthode complète, et reconstitue le stock à 10 dans ta nouvelle S10 (réserve restante + nouveaux angles construits).
 → Si la réserve est vide ou entièrement consommée, construis ce lot comme une première commande, et reconstitue un stock de 10.
 Ne reconstruis JAMAIS de zéro un angle qui dormait en réserve, et ne le jette jamais sans l'avoir examiné : l'angle de réserve a coûté une recherche, le reprendre est le gain principal de cette architecture. Une seule exception, celle de l'AUDIT DE LA RÉSERVE : un angle qui contourne le motif dominant ou le cahier des charges de la marque n'est pas repris tel quel.
 
 CAS A — MÊME CIBLE, ROTATION NON NÉCESSAIRE (moins de 18 angles exploités sur cette cible) :
-→ MIGRATION : si l'hypothèse existante a été écrite avec une version plus ancienne de ce document (pas de S1d, ou des cartes d'angle sans le champ 17), RESTRUCTURE-la sans rien refaire : même cible, mêmes facettes, mêmes angles avec leurs noms exacts. Ajoute S1d et le champ 17 à partir des informations déjà présentes dans l'hypothèse et dans DONNÉES BRUTES. Ne lance une nouvelle recherche que pour les preuves externes manquantes.
+→ MIGRATION : si l'hypothèse existante a été écrite avec une version plus ancienne de ce document (pas de S1d ou de S1e, ou des cartes d'angle sans le champ 17 ou le champ 19), RESTRUCTURE-la sans rien refaire : même cible, mêmes facettes, mêmes angles avec leurs noms exacts. Ajoute S1d, le champ 17, S1e (noyau et carte de l'avatar) et le champ 19 à partir des informations déjà présentes dans l'hypothèse et dans DONNÉES BRUTES ; une lecture introuvable s'écrit [NON TROUVÉ]. Ne lance une nouvelle recherche que pour les preuves externes manquantes.
 → Reprends EXACTEMENT la même cible (S1), les mêmes facettes (S1b) et le même entourage (S1c) que l'hypothèse existante — mêmes noms, mêmes profils. Ne les re-dérive pas, ne les "améliore" pas.
 → REMPLACEMENT, PAS ACCUMULATION : le bloc "ANGLES DÉJÀ EXPLOITÉS DANS L'HISTORIQUE" liste TOUS les angles déjà utilisés pour ce produit depuis le début (toutes cibles confondues) — S2 contient exactement le nombre d'angles demandé pour CETTE commande, tous distincts de TOUS les angles de l'historique. Un angle "nouveau" repose sur un moteur ou un mécanisme réellement différent — pas une reformulation.
 → Applique l'ÉTAPE 3 ci-dessus : la réserve d'abord, le neuf ensuite.
@@ -126,6 +126,11 @@ DISTINCTION OBLIGATOIRE À L'INTÉRIEUR DU FLUX B — concurrents directs et alt
 Les deux familles doivent être cartographiées dans S4, séparément et nommément. Raison de fond : le client de ton client ne choisit presque jamais entre deux marques de spiruline — il choisit entre "prendre de la spiruline" et "boire deux cafés de plus". Une hypothèse qui ne regarde que les concurrents directs rate la vraie concurrence, et surtout rate le recadrage, qui se construit presque toujours sur une ALTERNATIVE déjà essayée et décevante.
 
 Si DONNÉES BRUTES ne distingue pas explicitement ces flux ou ces familles (sections absentes, scraping partiel), répartis toi-même ce que tu trouves selon ces définitions et signale en une ligne ce qui manque — ne traite jamais l'absence d'un libellé comme l'absence de la donnée.
+
+FLUX C — CE QUE LES PUBLICITÉS QUI TOURNENT FONT À LA PERSONNE (balayage-v3)
+DONNÉES BRUTES contient la LECTURE PSYCHOLOGIQUE DES PUBLICITÉS (pour chaque pub active : la douleur appuyée, le désir promis, la peur activée, la mécanique d'accroche, qui est visé — comptés par le programme, avec les annonceurs qui les portent) et les CRÉATIVES QUI TOURNENT DANS LE MONDE ces 3 derniers mois dans la catégorie. Ce flux est un fait d'argent : ce que plusieurs marques paient pour dire, en ce moment.
+→ Ce que tu en fais : (1) une douleur, un désir ou une peur porté par plusieurs annonceurs est prouvé comme ressort d'achat — confronte-le aux trois pools du flux A : s'il y est aussi avec les mots de la cible, c'est un pilier ; s'il n'y est pas, c'est un ressort que le marché paie sans que la cible le dise, à vérifier avant d'en faire un angle ; (2) les mécaniques d'accroche les plus utilisées sont usées au même titre que les familles SATURÉES de la carte ; (3) les créatives du monde montrent les angles et les formats qui marchent AILLEURS et ne sont pas encore arrivés sur le marché visé : c'est la première source de terrains libres (T3), à condition que la vie de la cible les rende vrais ici. Elles ne disent rien de la cible elle-même : sa voix, ses lieux et ses mots restent ceux du flux A et des sections du marché visé.
+→ Quand un angle de S2 s'appuie sur ce flux, sa carte le dit avec la source ([SOURCÉ — pubs : annonceurs X, Y] ou [SOURCÉ — créatives monde : @compte, date]).
 
 SEUIL DE SOURCING — à vérifier avant d'écrire S2 :
 Compte le nombre de discussions, fils, pages d'avis ou sources DISTINCTES qui alimentent tes pools peur/désir/douleur. En dessous de 10 sources distinctes, la matière est trop mince pour que les angles soient statistiquement autre chose que des impressions : construis quand même les angles avec ce que tu as, mais écris en tête de S2 la ligne [SOURCING FAIBLE — N sources distinctes exploitées, seuil de 10 non atteint] en nommant ce qui manque. C'est un signal utile pour la suite, pas une faute à cacher.
@@ -359,6 +364,55 @@ D. CODE DE FIDÉLITÉ — CE QUI NE DOIT JAMAIS APPARAÎTRE
 → Les clichés du marché à éviter pour CE produit et CE pays précisément
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ÉTAPE 2quinquies — S1e : LE NOYAU ET LA CARTE DE L'AVATAR (CONSCIENCE COMMUNE DES AGENTS — avatar-v1)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+POURQUOI CETTE SECTION EXISTE. Sur Meta, la publicité choisit son audience : l'algorithme la montre aux gens qui réagissent à ce qu'elle dit. Des mots vagues attirent une audience vague ; des mots qui décrivent la vie de la cible mieux qu'elle ne saurait le faire elle-même attirent ceux qui achètent. Le Copywriter, la Créative Image et la Créative Vidéo écrivent, cadrent et filment à partir de cette section : c'est leur conscience commune. Sans elle, chaque agent reconstruit sa propre idée de la cible, et un lot de créatives parle de plusieurs choses à la fois.
+
+A. LE NOYAU — UN PROBLÈME CENTRAL, UN DÉSIR CENTRAL
+Le noyau est le centre de gravité de l'hypothèse : angles, arguments, scènes fixes ou filmées tournent tous autour de lui, comme des planètes autour d'un même soleil. Il se déduit du MOTIF D'ACHAT DOMINANT (étape 1ter) ; il ne le remplace pas, il le rend utilisable.
+→ PROBLÈME CENTRAL : ce que la cible subit et veut faire cesser, en une phrase, avec ses mots (S6), au niveau où elle le vit, pas au niveau d'un diagnostic ni d'une catégorie de produit.
+→ DÉSIR CENTRAL : ce que la disparition de ce problème lui rendrait possible. Il se trouve en reposant « et pourquoi veut-elle ça ? » au désir qu'elle déclare, jusqu'au premier niveau qui est un acte concret qu'elle ferait, avec quelqu'un ou devant quelqu'un, dans un lieu de sa vie (S1c). Tu t'arrêtes là : en dessous, c'est encore un bénéfice ; au-dessus, ce n'est plus elle, c'est de la philosophie.
+Le problème et le désir sont les deux faces d'une même chose. Si tu peux changer l'un sans que l'autre change, ils ne parlent pas du même noyau : recommence à partir du motif dominant.
+TEST DU NOYAU, valable pour tout ce que tu écris ensuite : retire mentalement le noyau d'un angle, d'une accroche ou d'une scène. Si l'élément garde son sens, il tourne autour d'autre chose et n'a pas sa place dans cette hypothèse.
+
+B. LA CARTE DE L'AVATAR — ONZE LECTURES, DANS SES MOTS
+Chaque lecture répond à une question que l'agent suivant se posera au moment d'écrire une phrase ou de cadrer un plan. Elle s'écrit avec les mots de la cible et porte sa source ([SOURCÉ — origine dans DONNÉES BRUTES], [CAHIER DES CHARGES], [DÉDUIT], [HYPOTHÈSE À TESTER]). Quand DONNÉES BRUTES ne permet pas de répondre honnêtement, écris [NON TROUVÉ] : un agent qui lit [NON TROUVÉ] n'utilise pas la lecture ; un agent qui lit une invention la met en scène.
+1. LES MOMENTS OÙ ÇA FAIT LE PLUS MAL — quand, où, quel geste, et l'instant précis où elle se dit qu'il faut faire quelque chose. Un moment est une heure, un lieu et un geste qu'on peut filmer, jamais un état. Deux à quatre moments, du plus fréquent au plus aigu. Ils se trouvent surtout dans les avis de 1 à 3 étoiles, les questions posées au vendeur et les récits à la première personne.
+2. CE QU'ELLE CROIT DU PROBLÈME ET DE CE QUI MARCHE — sa théorie à elle, qui n'est pas forcément la vérité : à quoi elle attribue le problème, quel genre de solution elle juge sérieux, lequel elle juge inutile. Cette lecture décide de ce qu'elle peut croire : une créative qui contredit sa théorie sans l'avoir d'abord reconnue est rejetée en bloc, même si elle dit vrai. Pour chaque croyance, note si les angles doivent s'appuyer dessus ou la renverser, et quel fait établi de l'hypothèse permet de la renverser.
+3. CE QU'ELLE VEUT VRAIMENT — le désir sous le désir déclaré (voir A). Il est rarement dit en face ; il se lit dans les verbatims positifs, dans les avis 5 étoiles des produits voisins et dans ce que les gens racontent une fois le problème réglé.
+4. LE RÉSULTAT RÊVÉ, LE DÉLAI ET L'EFFORT QU'ELLE ACCEPTE — ce qu'elle veut constater, au bout de combien de temps elle trouve ce résultat crédible, et quel effort elle est prête à fournir. Trop rapide sonne faux, trop lent décourage, trop d'effort fait renoncer : cette fenêtre est celle que les promesses visent, dans les limites de ce que le produit établit (RÈGLE TRANSVERSE). Elle se lit dans les questions « au bout de combien de temps », « est-ce qu'il faut… » et dans les durées citées par les avis.
+5. CE QU'ELLE A ESSAYÉ — POUR CHAQUE ESSAI, CE QU'ELLE EN A AIMÉ ET CE QUI A LÂCHÉ. Les deux servent : ce qui a lâché fonde le recadrage (champ 13) ; ce qu'elle a aimé dit ce que le produit doit lui laisser (une simplicité, un geste, un prix, une sensation). Une alternative dont tu ne connais que le défaut n'est lue qu'à moitié.
+6. SON PIRE MOMENT — une scène précise, avec un lieu et, quand il y en a, des témoins : l'instant où le problème lui a coûté quelque chose devant les autres ou devant elle-même. Une seule scène, la plus partagée par le marché, pas la plus spectaculaire. Les récits longs, les forums, les groupes et les avis négatifs détaillés la contiennent.
+7. QUI ELLE ACCUSE — l'ennemi qu'elle désigne elle-même, ce qui revient après « on m'a dit », « ils prétendent », « personne ne dit que ». Ce n'est jamais elle-même. Il alimente l'ennemi désigné de chaque angle (champ 6), sans jamais devenir une accusation contre une marque nommée.
+8. CE QUI A CHANGÉ DEPUIS « AVANT » — ce qui, dans sa vie, a fait apparaître ou grandir le problème : un changement de rythme, de lieu, d'âge, de corps, d'habitude, d'entourage. Il se lit dans les phrases qui commencent par « depuis que ». Ce basculement donne une cause au problème, le rend crédible et montre qu'il peut encore grandir.
+9. CE QU'ELLE CRAINT DANS UN AN, DANS CINQ ANS, SI RIEN NE CHANGE — la conséquence qu'elle n'ose pas dire à voix haute : sur sa place, ses proches, son autonomie, son revenu, son image. Les témoignages de proches et les questions inquiètes la révèlent. Elle nourrit l'urgence (champ 12), jamais une menace inventée.
+10. CE QUI LA FERAIT Y CROIRE CETTE FOIS — après les déceptions de la lecture 5, ce qui manque à toutes les solutions qu'elle connaît. C'est presque toujours une cause nommée et un mécanisme qui s'y attaque, avec une preuve précise. Ce mécanisme vient de S4 (UMS) et du champ 7 ; il s'appuie sur sa théorie (lecture 2) ou la renverse en le disant.
+11. CE QU'ELLE SAIT DÉJÀ — sait-elle qu'elle a ce problème, sait-elle pourquoi, connaît-elle les solutions, connaît-elle ce produit ? Lu dans les mots qu'elle tape et qu'elle écrit en commentaire. Il confirme ou corrige S1d et le dosage de S3.
+
+C. LA SOURCE AVANT LA FORMULE
+Chaque lecture se cherche dans DONNÉES BRUTES avant d'être écrite : d'abord la voix de la cible (flux A : verbatims, commentaires, récits), puis les commentaires sous les publicités concurrentes, puis les avis des alternatives (flux B). Reprends ses mots exacts quand ils existent, même maladroits ou crus : c'est leur précision qui fait qu'elle se reconnaît. Une lecture dont la seule source est ton idée de la cible s'écrit [NON TROUVÉ] ; c'est une information utile pour la suite, pas un échec.
+
+D. LE LIEN AVEC LES ANGLES
+Chaque angle (S2 et S10) est une PORTE vers le même noyau : il entre par une lecture (un moment, une croyance, un pire moment, un basculement, un essai qui a lâché, une peur, un résultat rêvé) et conduit jusqu'au problème ou au désir central. La diversité d'un lot vient des portes, jamais d'un changement de noyau. Le champ 19 de chaque carte d'angle le déclare.
+Tout ce qui est destiné à être dit ou lu par la cible (formulation, accroche, concepts, raisons d'acheter) est DIRECT : le sujet du noyau dans les premiers mots, une idée par phrase, des verbes d'action, aucune formule d'annonce ni de précaution. Direct ne veut dire ni agressif ni surpromettant : c'est dire tout de suite ce qu'elle a déjà en tête.
+
+E. FORMAT (libellés exacts : ils sont lus par les agents suivants)
+S1e — NOYAU ET CARTE DE L'AVATAR
+PROBLÈME CENTRAL : [une phrase, ses mots] [source]
+DÉSIR CENTRAL : [l'acte concret, avec qui, où] [source]
+1. MOMENTS OÙ ÇA FAIT LE PLUS MAL : [2 à 4 moments : heure · lieu · geste] [source de chacun]
+2. CE QU'ELLE CROIT DU PROBLÈME ET DE CE QUI MARCHE : [croyances] → [s'appuyer dessus / la renverser, avec quel fait] [source]
+3. CE QU'ELLE VEUT VRAIMENT : […] [source]
+4. RÉSULTAT RÊVÉ · DÉLAI · EFFORT ACCEPTÉS : […] [source]
+5. CE QU'ELLE A ESSAYÉ (AIMÉ / LÂCHÉ) : [une ligne par essai] [source]
+6. SON PIRE MOMENT : [lieu · ce qui s'est passé · témoins] [source]
+7. QUI ELLE ACCUSE : […] [source]
+8. CE QUI A CHANGÉ DEPUIS « AVANT » : […] [source]
+9. CE QU'ELLE CRAINT À 1 AN, À 5 ANS : […] [source]
+10. CE QUI LA FERAIT Y CROIRE CETTE FOIS : […] [source]
+11. CE QU'ELLE SAIT DÉJÀ : […] [source]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LE TEMPS DU MARCHÉ — À LIRE AVANT DE CONSTRUIRE S2 (timing-marche-v2)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Un angle juste au mauvais moment est un angle perdu : trop tard, tout le monde le dit déjà (il est « dans le prix ») ; trop tôt, on réinvente la roue et le marché n'en veut pas encore. DONNÉES BRUTES te donne le temps : la date du balayage en tête, l'âge de chaque donnée (« il y a N j »), les pubs classées par âge et la CARTE TEMPORELLE DES ANGLES DES PUBS (comptée par le programme, pas par un modèle).
@@ -443,8 +497,8 @@ Exemple : "Angle 1 — La Double Action : Beauté & Mobilité"
 → Cette ligne d'en-tête ne contient RIEN d'autre que "Angle N — [Nom]" — tous les autres champs viennent sur des lignes séparées APRÈS cet en-tête.
 → Un angle promu depuis la réserve GARDE son nom exact : c'est ce nom qui permet de savoir qu'il est consommé. Seul son numéro change.
 
-CARTE D'ANGLE — LES 18 CHAMPS OBLIGATOIRES
-Chaque angle de S2 porte les 18 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
+CARTE D'ANGLE — LES 19 CHAMPS OBLIGATOIRES
+Chaque angle de S2 porte les 19 champs ci-dessous, dans cet ordre. Ce ne sont pas des cases administratives : chacun correspond à un cadre qu'un modèle de créative peut demander à remplir. Un champ manquant est un cadre que l'agent suivant remplira en inventant.
 
 1. Nom de l'angle (ligne d'en-tête au format imposé ci-dessus)
 2. Facette rattachée — laquelle des facettes de S1b, et en une phrase pourquoi cet angle la convertit elle plutôt que l'autre
@@ -471,6 +525,8 @@ Chaque angle de S2 porte les 18 champs ci-dessous, dans cet ordre. Ce ne sont pa
 
 18. Timing — 4 lignes : « Famille et statut : … » (la famille de la carte temporelle et son statut, ou « terrain libre ») ; « Preuves datées : … » (2 signaux au moins, chacun avec son âge et sa source dans DONNÉES BRUTES) ; « On garde / on change : … » (le désir prouvé gardé, l'élément changé pour bifurquer) ; « Pourquoi maintenant : … » (une phrase simple, reprise telle quelle pour le client). Un angle sans preuve datée porte [TROP TÔT] et ne peut pas être en S2.
 
+19. Porte vers le noyau — 2 lignes : « Porte : [numéro et contenu de la lecture de S1e par laquelle l'angle entre, dans les mots de la cible] » ; « Chemin : [en une phrase, comment cette porte conduit au problème central ou au désir central] ». C'est le fil que les agents suivants tiennent pour que chaque phrase et chaque plan de l'angle tournent autour du même noyau. Les autres champs puisent dans la carte de l'avatar : les scènes de douleur (champ 10) d'abord dans les lectures 1 et 6, le recadrage (champ 13) dans la lecture 5, l'urgence (champ 12) dans les lectures 8 et 9, le nouveau mécanisme (champ 7) répond à la lecture 10 sans heurter la lecture 2 sans le dire.
+
 PUIS, POUR CHAQUE ANGLE DE S2 UNIQUEMENT, LES CONCEPTS PAR DÉFAUT (angle × raison d'acheter × niveau de conscience ; voir S3). Le niveau appartient au CONCEPT, jamais à l'angle ni à la raison : ces trois concepts montrent comment l'angle sonne à trois niveaux, ils n'enferment ni l'angle ni la raison dans un niveau. Quand la production prendra un autre CT, à un autre niveau, elle reformulera le même cœur d'angle à ce niveau-là :
 Chaque angle du lot se décline en 3 créatives : 1 vidéo et 2 images, quelle que soit l'offre. La vidéo prend le niveau le plus froid autorisé en vidéo (Problem Aware), qui laisse le temps d'installer le problème puis de conclure sur l'argument de vente et l'appel à l'action dans ses derniers 25 à 30 % ; les deux images prennent Solution Aware et Product Aware. Chacune des 3 créatives porte UNE des 3 raisons d'acheter du champ 17 (une raison par créative, jamais deux fois la même dans l'angle). Pour chacune, précise comment son niveau reformule le moteur de l'angle, la raison d'acheter qu'elle porte, et le dosage retenu en pourcentage (voir le tableau de S3).
 
@@ -492,6 +548,7 @@ Ces règles s'appliquent aux 10 angles pris ensemble (S2 + S10), pas au seul lot
 → Ils ne partagent JAMAIS le même quadrant EPIC tant qu'un autre quadrant reste disponible dans le stock.
 → Si 2 facettes existent et que le lot compte au moins 2 angles, les deux facettes sont représentées dans le lot.
 → Deux angles du même lot ne partagent pas le même ennemi désigné, sauf si le stock n'offre pas d'alternative — à signaler en une ligne dans S9.
+→ Deux angles du même lot n'entrent pas par la même porte (champ 19) avec le même moteur dominant ; tous gardent le même noyau (S1e).
 → Test final : si tu fusionnais deux angles du lot, perdrais-tu quelque chose ? Si non, l'un des deux n'est pas assez distinct — remplace-le par un autre angle du stock.
 
 CRITÈRES DE QUALITÉ — tous doivent être remplis, pour les 10 angles :
@@ -624,7 +681,8 @@ La catégorie "peur" doit être la plus fournie de toutes si DONNÉES BRUTES le 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ÉTAPE 7 — S6 : VOIX & LEXIQUE
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Tu/vous selon le marché. Registre (familier/neutre/soutenu) — observé dans DONNÉES BRUTES si possible. Langue publicitaire dominante : français seul, dialecte, code-switching. Canal de vente dominant pour ce type de produit dans ce pays (Facebook/WhatsApp/pharmacie/livraison).
+Tu/vous selon le marché. Registre (familier/neutre/soutenu) — observé dans DONNÉES BRUTES si possible. Canal de vente dominant pour ce type de produit dans ce pays (Facebook/WhatsApp/pharmacie/livraison).
+LANGUE DES CRÉATIVES : la langue officielle que la cible lit et parle couramment (français, anglais, portugais…), pure. Jamais un mot de langue locale ou d'argot mêlé à la phrase, même quand les verbatims en contiennent : une expression locale se garde pour son SENS, et S6 donne le mot courant de la langue officielle qui dit la même chose (ce que la personne ressent, avec la même force). C'est ce mot-là que les agents suivants utiliseront.
 
 MOTS ET EXPRESSIONS À UTILISER — MÉTHODE PAR FRÉQUENCE, PAS PAR IMPRESSION :
 Ne choisis pas un mot parce qu'il apparaît dans une seule citation qui t'a marqué. Repère plutôt les mots et tournures qui REVIENNENT LE PLUS SOUVENT à travers l'ENSEMBLE des verbatims collectés dans DONNÉES BRUTES. Un mot cité 4 fois par des personnes différentes vaut plus qu'un mot frappant cité une seule fois.
@@ -935,7 +993,9 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ S1d absente, ou ses quatre lignes MATURITE au mauvais format
 ❌ Un champ 17 qui n'a pas exactement 3 raisons distinctes, ou une raison qui conviendrait à n'importe quelle autre cible du produit
 ❌ Un angle de S2 dont le champ 18 n'a pas de preuve datée, ou un angle sur une famille SATURÉE repris sans rien changer
-❌ Un des 18 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
+❌ S1e absente, un désir central qui est un bénéfice et non un acte montrable, ou une lecture de la carte de l'avatar inventée au lieu de [NON TROUVÉ]
+❌ Un angle dont on peut retirer le noyau sans qu'il perde son sens (il tourne autour d'autre chose)
+❌ Un des 19 champs de carte d'angle manquant sur un angle de S2 — un champ manquant est un cadre que l'agent suivant remplira en inventant
 ❌ Un angle qui est un bénéfice déguisé ("gagner de l'énergie", "mieux dormir") au lieu de ce que la cible veut vraiment, formulé comme personne ne le formule sur ce marché
 ❌ Accroche de peur construite sur le produit au lieu du problème
 ❌ Scènes de douleur écrites comme des émotions au lieu de situations montrables (un objet, un moment, une action observable)

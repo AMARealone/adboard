@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { AGENTS } from './Agents'
-import { useAgentMem, usePersist, useTick, setLive, isLive, memoriserSynthese, syntheseLocaleOuServeur, heureCourte, rangerSyntheseServeur } from '../agentStore'
+import { useAgentMem, usePersist, useTick, setLive, isLive, memoriserSynthese, syntheseLocaleOuServeur, heureCourte, rangerSyntheseServeur, synthesesServeur, syntheseServeur } from '../agentStore'
 import SynthesesEnregistrees from './SynthesesEnregistrees'
 import { COMP_FILES, SERVER, CT_IMAGES, loadSkills } from '../prod/state'
 import * as V from '../prod/verbatim'
@@ -137,7 +137,25 @@ function StdTest({ a }) {
   const isImg = a.kind === 'image', isAn = a.kind === 'analyst', isCopy = a.kind === 'copy'
   useEffect(() => { loadSkills(); loadCTImages() }, [])
   // Page rechargée pendant une génération : elle n'existe plus, on le dit sans rien effacer de ce qui est rempli.
-  useEffect(() => { if (m.busy && !isLive(a.slug)) set({ busy: false, prog: '', err: 'La page a été rechargée pendant la génération : elle a été interrompue. Tout ce que tu avais rempli est conservé, relance simplement.' }) }, [])
+  // syntheses-coffre-v1 : pour l'Analyste, l'analyse continue sur le serveur et y est rangée ; Factory la récupère dès qu'elle sort (20 min au plus).
+  useEffect(() => {
+    if (!(m.busy && !isLive(a.slug))) return
+    if (!isAn) { set({ busy: false, prog: '', err: 'La page a été rechargée pendant la génération : elle a été interrompue. Tout ce que tu avais rempli est conservé, relance simplement.' }); return }
+    let fini = false
+    const t0 = m.t0 || Date.now()
+    set({ prog: 'La page a été rechargée : l’analyse continue sur le serveur. Je la récupère dès qu’elle est prête (vérification toutes les 20 s)…', err: '' })
+    const essai = async () => {
+      if (fini) return
+      try {
+        const l = await synthesesServeur([])
+        const x = l.find((e) => e.agent === 'analyst' && e.t >= t0 - 5000 && (!(m.cles || []).length || (e.cles || []).some((c) => (m.cles || []).includes(c)) || !(e.cles || []).length))
+        if (x) { const d = await syntheseServeur(x.id); fini = true; set({ busy: false, prog: '', dur: Math.round((x.t - t0) / 1000), output: d.texte, synthese: d.texte, outErr: false, rangee: 'Analyse récupérée sur le serveur (' + heureCourte(x.t) + ') : la page avait été rechargée pendant la génération.' }); memoriserSynthese(m.cles, d.texte, m.briefName); return }
+      } catch (_) { }
+      if (Date.now() - t0 > 20 * 60000) { fini = true; set({ busy: false, prog: '', err: 'Aucune analyse rangée sur le serveur 20 minutes après le lancement : elle a été interrompue (redémarrage du serveur ?). Relance-la.' }) }
+    }
+    essai(); const iv = setInterval(essai, 20000)
+    return () => { fini = true; clearInterval(iv) }
+  }, [])
   const angles = useMemo(() => (m.synthese.trim() ? V.prodv2ExtractAngles(m.synthese, 0) : []), [m.synthese])
   const nbProd = m.brief ? Math.max(2, Math.min(12, Math.round((Number(m.brief.quantite) || 6) / 3))) : 2
   const nbAngles = m.nb || nbProd
@@ -159,13 +177,13 @@ function StdTest({ a }) {
         // Entrée IDENTIQUE à celle de la production (date, nombre d'angles, URL, renouvellement, photos, logo, aspects…)
         const raw = await withProd({ brief: m.brief, productB64: m.photo.b64, productMime: m.photo.mime || 'image/png', logoB64: m.logo ? m.logo.b64 : null, logoMime: m.logo ? m.logo.mime : null, renewalContext: m.rctx }, async () => {
           const { analysteSystem, analysteParts } = await V.buildAnalysteInputs(nbAngles, nbAngles * 3)
-          return V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, m.brief, undefined, true)
+          return V.apiAnalysteSynthese(analysteSystem, analysteParts, 64000, m.brief, undefined, true, { cles: m.cles || [], titre: (m.briefName || 'Test Analyste').replace(/^Commande · /, '').slice(0, 180) })
         })
         const { synthesisText, marche } = V.prodv2SplitSynthesisAndMarche(raw)
         S({ output: synthesisText, outErr: false, marche: marche ? JSON.stringify(marche, null, 2) : '', synthese: synthesisText, bal: V.dernierBalayage() })
         memoriserSynthese(m.cles, synthesisText, m.briefName)   // v5.74 : reprise automatique par les tests Image / Copywriter / Vidéo (même commande)
-        // syntheses-coffre-v1 : rangée aussi sur le serveur (jusqu'à 3 essais) — elle a coûté ~1 $, elle ne doit jamais se perdre.
-        let rangee = false
+        // syntheses-coffre-v1 : le serveur range lui-même l'hypothèse dès qu'elle sort ; sinon Factory la range (jusqu'à 3 essais) — elle a coûté ~1 $.
+        let rangee = !!V.derniereSyntheseId()
         for (let i = 0; i < 3 && !rangee; i++) { try { await rangerSyntheseServeur(m.cles, synthesisText, (m.briefName || 'Test Analyste').replace(/^Commande · /, '').slice(0, 180), marche ? JSON.stringify(marche) : ''); rangee = true } catch (_) { await new Promise((ok) => setTimeout(ok, 3000)) } }
         S({ rangee: rangee ? 'Synthèse enregistrée sur le serveur.' : '⚠ Synthèse NON enregistrée sur le serveur : copiez-la maintenant (bouton Copier).' })
       } else if (isImg) {
@@ -218,7 +236,7 @@ function StdTest({ a }) {
       {(isImg || isCopy) && <div className="fx-fld"><Lab>ANGLE À PRODUIRE</Lab><AngleSeg />{angles[m.angle] && <div className="fx-s">{angles[m.angle]}</div>}</div>}
       {isImg && <CTPicker m={m} set={set} />}
       <div className="fx-launch">{busy ? <button className="fx-btn danger big" onClick={annuler}>Annuler la génération</button> : <button className="fx-btn primary big" onClick={(m.output || (m.images && m.images.length)) ? relancer : run}>{(m.output || (m.images && m.images.length)) ? 'Régénérer' : 'Tester cet agent'}</button>}<span className="fx-s">{busy || sec ? sec + 's' : ''}{!busy && m.dur ? ' · dernière génération' : ''}</span></div>
-      {isAn && m.bal && m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>Balayage : {m.bal.scrapecreators.requetes} requêtes ScrapeCreators ({m.bal.scrapecreators.credits} crédits) · Reddit {m.bal.scrapecreators.reddit} · TikTok {m.bal.scrapecreators.tiktok_videos} vidéos / {m.bal.scrapecreators.tiktok_commentaires} commentaires · pubs Meta {m.bal.scrapecreators.pubs}{m.bal.scrapecreators.erreurs ? ' · ' + m.bal.scrapecreators.erreurs + ' erreur(s) (voir les logs Render)' : ''}</div>}
+      {isAn && m.bal && m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>Balayage : {m.bal.scrapecreators.requetes} requêtes ScrapeCreators ({m.bal.scrapecreators.credits} crédits) · Reddit {m.bal.scrapecreators.reddit} · TikTok {m.bal.scrapecreators.tiktok_videos} vidéos / {m.bal.scrapecreators.tiktok_commentaires} commentaires · pubs Meta {m.bal.scrapecreators.pubs}{m.bal.scrapecreators.erreurs ? ' · ' + m.bal.scrapecreators.erreurs + ' erreur(s) (voir les logs Render)' : ''}{m.bal.monde ? ' · créatives du monde (3 derniers mois) : ' + m.bal.monde.pubs + ' pubs, ' + m.bal.monde.tiktok + ' TikTok' : ''}{m.bal.usage ? ' · USAGE DANS L’HYPOTHÈSE : ' + ['familles', 'annonceurs', 'douleurs', 'desirs', 'peurs'].filter((k) => m.bal.usage[k]).map((k) => ({ familles: 'familles d’angle', annonceurs: 'annonceurs', douleurs: 'douleurs des pubs', desirs: 'désirs des pubs', peurs: 'peurs des pubs' })[k] + ' ' + m.bal.usage[k].cites + '/' + m.bal.usage[k].total).join(', ') + ', ' + m.bal.usage.etiquettes_source + ' étiquette(s) [SOURCÉ]' : ''}</div>}
       {isAn && m.bal && !m.bal.scrapecreators && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.bal.reutilise ? 'Hypothèse stockée réutilisée' : 'Balayage lancé'} — {m.bal.raison}. Aucune donnée ScrapeCreators reçue : voir les logs Render.</div>}
       {busy && m.prog && <div className="fx-hint" style={{ marginBottom: 8 }}>{m.prog}</div>}
       {m.err && <div className="fx-err" style={{ marginBottom: 8 }}>ERREUR : {m.err} <button className="fx-btn sm" onClick={() => set({ err: '' })}>Fermer</button></div>}
