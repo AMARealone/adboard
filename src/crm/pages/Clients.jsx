@@ -10,8 +10,7 @@ import { norm } from '../filtre'
 // Les chiffres du haut ne comptent que les vrais clients ; les comptes de l'équipe (tests, démo, admin) sont à part.
 const ADBOARD = 'https://www.adstackofficial.com/adboard'
 const JOUR = 86400000
-// Comptes de l'équipe connus. Chaque carte a un bouton pour corriger (mémorisé dans ce navigateur).
-const INTERNES_CONNUS = ['amarbirane.diaw@unchk.edu.sn', 'amarbiranediaw@gmail.com', 'thefirstquality01@gmail.com']
+// Les comptes de l'équipe sont désignés par le serveur (champ « interne », module comptes_equipe.js) : la même liste retire leurs achats de la Finance et des Transactions.
 const OFFRE_DU_PLAN = { starter: 'perf', pro: 'growth', scale: 'scale' }
 const SANTE = { vert: ['ok', 'Relation saine'], orange: ['wa', 'À surveiller'], rouge: ['red', 'À risque'] }
 const wa = (t) => String(t || '').replace(/\D/g, '')
@@ -26,7 +25,7 @@ function lire(x, now) {
   const p = prenom(x), bonjour = 'Bonjour' + (p ? ' ' + p : '') + ', '
   let a
   if (!x.active) a = { rang: 1, ton: 'red', titre: 'Réactiver le client', detail: 'Son forfait est terminé' + (x.expires_at ? ' depuis le ' + new Date(x.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '') + '.', msg: bonjour + 'votre forfait AdStack est arrivé à son terme. Vous voulez qu\'on relance une production sur votre prochain produit ?' }
-  else if (total > 0 && used > total) a = { rang: 2, ton: 'bl', titre: 'Proposer l\'offre supérieure', detail: used + ' crédits utilisés pour ' + total + ' prévus à ce jour : il consomme plus que son forfait. À vérifier dans son compte avant d\'appeler.', msg: bonjour + 'vous avez déjà utilisé tout votre volume de créatives prévu. Je peux vous montrer l\'offre au-dessus, qui vous donne plus de créatives et un délai plus court ?' }
+  else if (total > 0 && used >= total) a = { rang: 2, ton: 'bl', titre: 'Forfait épuisé : proposer le renouvellement', detail: used + ' / ' + total + ' crédits utilisés' + (jours != null && jours > 0 ? ', ' + jours + ' j avant la fin de la période' : '') + '. Il ne peut plus lancer de production sans renouveler ; l\'offre au-dessus est l\'autre option.', msg: bonjour + 'vous avez utilisé toutes les créatives de votre forfait. Pour lancer les prochaines, on peut renouveler dès maintenant, ou passer à l\'offre au-dessus pour avoir plus de créatives chaque mois. Laquelle vous convient ?' }
   else if (r.some((t) => /Fin de forfait proche/.test(t))) a = { rang: 3, ton: 'red', titre: 'Relancer avant la fin du forfait', detail: 'Le forfait se termine dans ' + Math.max(0, jours) + ' j et aucune demande récente.', msg: bonjour + 'il vous reste quelques jours sur votre forfait AdStack. Envoyez-moi votre prochain produit, on lance les créatives avant l\'échéance.' }
   else if (jours != null && jours <= 7) a = { rang: 4, ton: 'wa', titre: 'Préparer le renouvellement', detail: 'Le forfait se termine dans ' + Math.max(0, jours) + ' j.', msg: bonjour + 'votre forfait AdStack se renouvelle bientôt. Quels résultats avez-vous eus avec les dernières créatives ? On ajuste la suite selon ça.' }
   else if (r.some((t) => /offre supérieure/.test(t))) a = { rang: 5, ton: 'bl', titre: 'Proposer l\'offre supérieure', detail: 'Il a utilisé ' + Math.round(pct * 100) + ' % de ses crédits.', msg: bonjour + 'vous utilisez bien votre forfait. L\'offre au-dessus vous donnerait plus de créatives et un délai plus court : je vous explique ?' }
@@ -51,16 +50,14 @@ const Avatar = ({ x }) => {
 
 export default function Clients() {
   const [c, setC] = useState(null), [err, setErr] = useState(''), [q, setQ] = usePref('cl_q', ''), [taux, setTaux] = useState(1 / 600), [det, setDet] = useState(null)
-  const [vue, setVue] = usePref('cl_vue', 'action'), [tri, setTri] = usePref('cl_tri', 'priorite'), [marques, setMarques] = usePref('cl_internes', {})
+  const [vue, setVue] = usePref('cl_vue', 'action'), [tri, setTri] = usePref('cl_tri', 'priorite')
   useEffect(() => { serveurAdmin('/crm/clients').then((d) => setC(Array.isArray(d) ? d : d.clients || [])).catch((e) => { setErr(e.message); setC([]) }); tauxUsd().then(setTaux) }, [])
   const usd = (f) => '$' + ((f || 0) * taux).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const usd0 = (f) => '$' + Math.round((f || 0) * taux).toLocaleString('en-US')
   const date = (d) => (d ? new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—')
-  const interne = (x) => { const e = String(x.email || '').toLowerCase(); return e in marques ? !!marques[e] : INTERNES_CONNUS.includes(e) }
-  const basculer = (x) => { const e = String(x.email || '').toLowerCase(); const v = !interne(x); setMarques((m) => ({ ...m, [e]: v })); toast(v ? 'Marqué comme compte de l\'équipe : retiré des chiffres' : 'Compté comme vrai client') }
 
   const now = Date.now()
-  const tous = useMemo(() => (c || []).map((x) => ({ ...x, _i: interne(x), _l: lire(x, now) })), [c, marques])   // eslint-disable-line react-hooks/exhaustive-deps
+  const tous = useMemo(() => (c || []).map((x) => ({ ...x, _i: !!x.interne, _l: lire(x, now) })), [c])   // eslint-disable-line react-hooks/exhaustive-deps
   const reels = tous.filter((x) => !x._i), actifs = reels.filter((x) => x.active)
   const mrr = actifs.reduce((s, x) => { const o = OFFRES[OFFRE_DU_PLAN[x.plan]]; return s + (x.type !== 'pack' && o ? o.prix : 0) }, 0)
   const encaisse = reels.reduce((s, x) => s + (x.total_depense_fcfa || 0), 0), achats = reels.reduce((s, x) => s + (x.nb_achats || 0), 0)
@@ -98,7 +95,7 @@ export default function Clients() {
       <input className="cx-search" type="search" placeholder="Rechercher un nom, un email, un plan, un numéro…" value={q} onChange={(e) => setQ(e.target.value)} />
     </div>
     {!liste.length ? <div className="cx-empty"><b>{!c.length ? 'Aucun client pour l\'instant' : vue === 'action' && !q ? 'Personne à contacter aujourd\'hui' : 'Aucun résultat'}</b><div>{!c.length ? 'Ils apparaissent ici dès qu\'un abonnement est activé.' : vue === 'action' && !q ? 'Tous les clients utilisent leur forfait normalement.' : 'Changez de filtre ou de recherche.'}</div></div>
-      : <div className="cl-list">{liste.map((x) => { const L = x._l, a = L.a, depasse = x.credits_total > 0 && x.credits_used > x.credits_total, w = Math.min(100, Math.round(L.pct * 100)); return (
+      : <div className="cl-list">{liste.map((x) => { const L = x._l, a = L.a, depasse = x.credits_total > 0 && x.credits_used >= x.credits_total, w = Math.min(100, Math.round(L.pct * 100)); return (
       <article key={x.user_id || x.email} className={'cl-card' + (x._i ? ' int' : '') + (!x.active ? ' off' : '')}>
         <div className="cl-top">
           <Avatar x={x} />
@@ -125,7 +122,6 @@ export default function Clients() {
           {x.email && <a className="cx-btn ghost sm" href={ADBOARD + '/?impersonate=' + encodeURIComponent(x.email)} target="_blank" rel="noreferrer">👁 Son compte</a>}
           <button className="cx-btn ghost sm" onClick={() => copier(x)}>📋 Copier</button>
           <button className="cx-btn ghost sm" onClick={() => setDet(x)}>Détail</button>
-          <button className="cx-btn ghost sm cl-int" onClick={() => basculer(x)} title="Les comptes de l'équipe ne comptent pas dans les chiffres du haut">{x._i ? 'Compter comme client' : 'Compte équipe ?'}</button>
         </div>
       </article>) })}</div>}
     {det && <Modal title={det.nom || det.email} onClose={() => setDet(null)}><div style={{ fontSize: 13, lineHeight: 1.9 }}>

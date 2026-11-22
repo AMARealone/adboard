@@ -115,8 +115,16 @@ async function lirePages(chemin) {
 const depuis = (iso) => (iso ? '&created_at=gte.' + encodeURIComponent(iso) : '')
 export const fetchLiensCourts = (iso) => lirePages('/short_links?campagne=not.is.null&select=campagne,clicks,created_at' + depuis(iso) + '&order=created_at.asc')
 export const fetchFunnel = (iso) => lirePages('/funnel_events?select=type,campagne,source,prospect_id,created_at' + depuis(iso) + '&order=created_at.asc')
-export const fetchTransactions = () => lirePages('/transactions?select=user_id,plan,created_at&order=created_at.asc')
-export const fetchTransactionsCompletes = () => lirePages('/transactions?select=*&order=created_at.desc')
+// comptes-equipe-v1 — les achats faits par les comptes de l'équipe (tests, démo, admin) ne sont jamais comptés comme des ventes.
+// La liste vient du serveur (GET /crm/comptes-equipe) : la même que celle de la Finance et des Clients.
+let _equipe = null
+function equipe() {
+  if (!_equipe) _equipe = serveurAdmin('/crm/comptes-equipe').then((d) => ({ ids: new Set(d.ids || []), emails: new Set((d.emails || []).map((e) => String(e).toLowerCase())) })).catch(() => { _equipe = null; return { ids: new Set(), emails: new Set() } })
+  return _equipe
+}
+const sansEquipe = async (rows) => { const E = await equipe(); return rows.filter((t) => !E.ids.has(t.user_id) && !E.emails.has(String(t.email || '').toLowerCase())) }
+export const fetchTransactions = async () => sansEquipe(await lirePages('/transactions?select=user_id,email,plan,created_at&order=created_at.asc'))
+export const fetchTransactionsCompletes = async () => sansEquipe(await lirePages('/transactions?select=*&order=created_at.desc'))
 // Taux XOF → USD (repli 1 $ ≈ 600 FCFA si la source ne répond pas).
 export async function tauxUsd() {
   try { const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json'); const d = await r.json(); return (d && d.xof && d.xof.usd) || 1 / 600 } catch (_) { return 1 / 600 }
