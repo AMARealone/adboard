@@ -216,3 +216,37 @@ body{font-size:13.5px;line-height:1.45}
 .cx-plus>summary:before{content:"+";display:inline-flex;width:20px;height:20px;border-radius:6px;align-items:center;justify-content:center;background:rgba(255,255,255,.07);font-weight:700}
 .cx-plus[open]>summary:before{content:"−"}
 .cx-plus[open]{padding-bottom:14px}
+
+/* clients-v2 : Clients abonnés — qui contacter aujourd'hui, et pour lui dire quoi */
+.cl-bar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.cl-list{display:grid;align-items:start;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:12px}
+.cl-card{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--bd);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:var(--sh);min-width:0;transition:border-color .15s,transform .15s}
+.cl-card:hover{border-color:var(--bd2)}
+.cl-card.off{opacity:.82}.cl-card.int{border-style:dashed;background:var(--card)}
+.cl-top{display:flex;gap:12px;align-items:center}
+.cl-av{width:44px;height:44px;border-radius:13px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#fff;object-fit:cover;letter-spacing:.02em}
+.cl-id{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cl-id b{font-size:15.5px;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-id>span{font-size:12px;color:var(--sec);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.cl-ring{position:relative;width:50px;flex-shrink:0;display:flex;flex-direction:column;align-items:center}
+.cl-ring b{position:absolute;top:0;left:0;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+.cl-ring span{font-size:9.5px;color:var(--sec);white-space:nowrap;margin-top:2px;font-weight:600}
+.cl-kpi{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.cl-kpi>div{background:rgba(255,255,255,.025);border:1px solid var(--bd);border-radius:11px;padding:9px 11px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cl-kpi span{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--mu);font-weight:700}
+.cl-kpi b{font-size:17px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cl-kpi b small{font-size:12px;color:var(--sec);font-weight:600}
+.cl-kpi b.wa{color:var(--wa)}.cl-kpi>div>small{font-size:11px;color:var(--sec);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cl-gauge{height:5px;background:rgba(255,255,255,.07);border-radius:9px;overflow:hidden;margin-top:5px}.cl-gauge i{display:block;height:100%;border-radius:9px;background:var(--ac)}
+.cl-gauge.hi i{background:var(--ok)}.cl-gauge.over i{background:linear-gradient(90deg,var(--wa),var(--er))}
+.cl-do{display:flex;gap:12px;align-items:center;border-radius:12px;padding:11px 13px;border:1px solid;flex-wrap:wrap}
+.cl-do-t{flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px}.cl-do-t b{font-size:13.5px}.cl-do-t>span{font-size:12.5px;color:var(--sec);line-height:1.45}
+.cl-do.red{background:rgba(229,80,80,.07);border-color:rgba(229,80,80,.3)}.cl-do.red b{color:var(--er)}
+.cl-do.wa{background:rgba(245,165,36,.07);border-color:rgba(245,165,36,.3)}.cl-do.wa b{color:var(--wa)}
+.cl-do.bl{background:rgba(31,182,255,.07);border-color:rgba(31,182,255,.3)}.cl-do.bl b{color:var(--ac)}
+.cl-do.ok{background:rgba(52,199,123,.06);border-color:rgba(52,199,123,.25)}.cl-do.ok b{color:var(--ok)}
+.cl-why{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}.cl-why em{font-style:normal;font-size:11px;color:var(--sec);background:rgba(255,255,255,.05);border-radius:6px;padding:2px 7px}
+.cl-go{background:#25d366;border-color:#25d366;color:#04140a;font-weight:700;white-space:nowrap}.cl-go:hover{border-color:#fff}
+.cl-acts{display:flex;gap:4px;flex-wrap:wrap;border-top:1px solid var(--bd);padding-top:10px}
+.cl-acts .cl-int{margin-left:auto;color:var(--mu);font-weight:500}
+@media(max-width:560px){.cl-kpi{grid-template-columns:1fr 1fr}.cl-kpi>div:last-child{grid-column:1/-1}.cl-go{width:100%}.cl-acts .cl-int{margin-left:0}}
