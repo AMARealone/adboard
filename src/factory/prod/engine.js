@@ -185,8 +185,8 @@ export async function loadBriefFromCommande(b) {
   const rctx = S.renewalContext
   if (rctx) {
     if (rctx.commandeActiveAilleurs) U.renewal = { kind: 'warn', text: "Une autre commande est déjà en production pour ce produit — attends qu'elle se termine avant de lancer celle-ci, pour que l'historique d'angles reste cohérent." }
-    else if (rctx.estRenouvellement) U.renewal = { kind: 'info', text: rctx.rotationNecessaire
-      ? `Renouvellement pour ce produit — dernière cible utilisée : "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante} angles déjà exploités, seuil atteint). Si tu gardes la même cible, une rotation vers une cible élargie sera proposée. Si tu as changé la cible dans la fiche produit, elle sera prise en compte à la place.`
+    else if (rctx.estRenouvellement) U.renewal = { kind: 'info', text: (rctx.seuilAtteint || rctx.rotationNecessaire)
+      ? `Renouvellement pour ce produit — cible : "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante} angles exploités : seuil de 18 atteint). La cible est GARDÉE et tu as été alerté par e-mail : pour l'élargir, décide-la et écris-la dans le champ « cible » de la fiche produit ; elle sera appliquée à la commande suivante.`
       : `Renouvellement pour ce produit — dernière cible utilisée : "${rctx.cibleActuelle || '?'}" (${rctx.nbAnglesCibleCourante}/18 angles déjà exploités sur elle). Si tu as changé la cible dans la fiche produit, la nouvelle sera utilisée à la place — ceci n'est qu'un rappel du dernier lot, pas une décision déjà prise.` }
   }
   { const ap = rctx && rctx.apprentissage; if (ap && ap.resume && !rctx.commandeActiveAilleurs) U.renewal = { kind: (U.renewal && U.renewal.kind) || 'info', text: (U.renewal ? U.renewal.text + ' ' : '') + 'Apprentissage de ce client : ' + ap.resume + '.' } }
