@@ -284,16 +284,16 @@ export function reprendreVideos() {
 }
 
 // Lance les vidéos du plan (les CT sont déjà choisis par planifier). Retourne quand toutes sont finies.
-export async function produireVideos(choix, garde = () => true) {
+export async function produireVideos(choix, garde = () => true, { arret = '' } = {}) {
   choixLot = choix || []
   const slots = videoSlots().filter((x) => !x.c.videoUrl && !jobEnCours(x.c))
   if (!slots.length) { await Promise.all(videoSlots().map((x) => pollers.get(x.i)).filter(Boolean)); return }
-  U.agents[4] = { state: 'active', text: 'Tournage de ' + slots.length + ' vidéo(s) en parallèle sur le cloud', pct: 8 }; emit()
+  U.agents[4] = { state: 'active', text: (arret === 'plan' ? 'Texte d\'abord : écriture du texte de ' + slots.length + ' vidéo(s), rien ne sera tourné avant votre validation' : 'Tournage de ' + slots.length + ' vidéo(s) en parallèle sur le cloud'), pct: 8 }; emit()
   const jobs = slots.map(({ c, i }) => {
     const ct = (choix || []).find((x) => x.angleIdx === c.angleIdx)
     if (!ct) { finEchec(i, 'Aucun CT vidéo choisi pour cet angle.'); return Promise.resolve() }
     if (!garde()) return Promise.resolve()
-    return lancerVideo(i, ct).catch((e) => finEchec(i, e.message))
+    return lancerVideo(i, ct, arret === 'plan' ? { arret: 'plan' } : {}).catch((e) => finEchec(i, e.message))
   })
   await Promise.all(jobs)
   majAgentVideo(true)

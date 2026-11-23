@@ -228,6 +228,7 @@ function CahierMarque({ S, U }) {
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <b>Cahier des charges de la marque</b>
         <span className={'fx-pillstat ' + (actif ? 'ok' : 'warn')}>{actif ? 'Transmis à tous les agents' : 'Vide'}</span>
+        <span className={'fx-pillstat ' + (man ? 'ok' : 'warn')} title="Réglage de ce navigateur, produit par produit">{man ? '📝 Vidéos : texte d\'abord' : 'Vidéos : tournées directement'}</span>
         <button className="fx-link-btn" onClick={() => setOuvert(!ouvert)}>{ouvert ? 'Masquer' : actif ? 'Voir / modifier' : 'Ajouter ce que le propriétaire demande'}</button>
       </div>
       {ouvert && <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
@@ -236,7 +237,7 @@ function CahierMarque({ S, U }) {
         <textarea className="fx-ta" style={{ color: 'var(--tx)' }} rows={5} maxLength={2500} placeholder="Ex. : ce que le propriétaire a écrit dans son dernier message…" value={txt} onChange={(e) => { setTxt(e.target.value); CDC.ecrire(e.target.value) }} />
         <label className="fx-s" style={{ display: 'flex', gap: 8, alignItems: 'flex-start', whiteSpace: 'normal', cursor: 'pointer' }}>
           <input type="checkbox" checked={man} onChange={(e) => { setMan(e.target.checked); CDC.poserVideosManuelles(e.target.checked) }} />
-          <span>Ne pas lancer les vidéos toute seule : je les lance depuis leur carte, une fois les ad copies validées par le propriétaire (évite de payer des vidéos sur un texte qu'il refuserait).</span>
+          <span><b>Texte d'abord pour toutes les vidéos</b> : l'agent choisit les CT et écrit le texte de chaque vidéo (environ 3 $ chacune), puis s'arrête. Rien n'est tourné tant que je n'ai pas cliqué « ▶ Tourner » sur la carte. Valable pour les productions lancées depuis ce navigateur.</span>
         </label>
       </div>}
     </section>
@@ -262,7 +263,7 @@ function ChoixCTVideo({ S, U }) {
   const liste = useListeCT()
   const [ouvert, setOuvert] = useState(false)
   const n = (E.angleCount && E.angleCount()) || U.nbAngles || 0
-  if (S.briefSource !== 'commande' || !n || CDC.videosManuelles()) return null
+  if (S.briefSource !== 'commande' || !n) return null
   const nb = MAN.nbChoisis()
   return (
     <section className="fx2-card slim">
@@ -447,7 +448,7 @@ function VideoTile({ S, U, idx, onOther }) {
         {job && job.corrections && job.corrections.length > 0 && <div className="fx2-why">Corrigée {job.corrections.length} fois · dernière : {(job.corrections[job.corrections.length - 1].plans || []).map((x) => 'plan ' + x.bloc).join(', ')}{job.corrections[job.corrections.length - 1].cout_neuf_usd != null ? ' · ' + Number(job.corrections[job.corrections.length - 1].cout_neuf_usd).toFixed(2) + ' $' : ''}</div>}
         {corr && pret && <Correcteur idx={idx} job={job} onFin={() => setCorr(false)} />}
         {job && job.etat === 'plan_pret' && !pret && ui.state !== 'running' && <div className="fx2-corr">
-          <div className="fx2-corr-t"><b>Texte prêt à valider</b> — rien n'est encore tourné{job.cout_usd != null ? ' (' + Number(job.cout_usd).toFixed(2) + ' $ dépensés pour le texte et le plan)' : ''}. Lisez-le : respecte-t-il le CT ?</div>
+          <div className="fx2-corr-t"><b>Texte prêt à valider</b> — rien n'est encore tourné{job.cout_usd != null ? ' (' + Number(job.cout_usd).toFixed(2) + ' $ dépensés pour le texte et le plan)' : ''}. Lisez-le : respecte-t-il le CT ?{job.dossierUrl ? <> <a href={job.dossierUrl} target="_blank" rel="noopener noreferrer">📦 Dossier du texte (CT d'origine + comparaison plan par plan)</a></> : null}</div>
           {(job.planFaits || []).map((l, k) => <div key={'f' + k} className="fx2-corr-v">{String(l).replace(/^\[[^\]]+\]\s*/, '')}</div>)}
           {(job.planTexte || []).map((x) => <div key={x.bloc} className="fx2-corr-p on"><span className="fx2-corr-d"><b>Prise {x.bloc}{x.produit ? ' · produit en main' : ''}</b><span style={{ WebkitLineClamp: 'unset', display: 'block' }}>« {x.dit} »</span></span></div>)}
           {(job.planInserts || []).length > 0 && <div className="fx2-corr-v">{job.planInserts.length} insert(s) prévus : {job.planInserts.map((o) => String(o.quoi).slice(0, 60)).join(' · ')}</div>}

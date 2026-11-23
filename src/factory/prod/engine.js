@@ -364,7 +364,9 @@ async function lancerProduction(reprise = false) {
     }
     const nbAngles = V.prodv2GetAngleCount()
     const nbTot = nbAngles * 3
-    const videoCloud = VID.peutVideoCloud() && !CDC.videosManuelles()   // cdc-franchise-v1
+    // texte-dabord-lot-v1 (23 nov. 2026) : la case « texte d'abord » ne coupe plus le choix des CT par l'agent. Les CT sont choisis pour tout le lot
+    // (diversité comprise), chaque vidéo écrit son texte et son plan puis s'arrête : le fondateur valide avant de payer images et clips.
+    const videoCloud = VID.peutVideoCloud()
     const garde = !!reprise   // reprise : on garde l'hypothèse, le plan, les images, les ad copies et les vidéos déjà là
     if (!garde) { S.synthesis = null; S.angles = []; S.creatives = []; S.copies = []; S.marche = null; S.planNiveaux = null; S.planApprentissage = null; S.verites = null; S.marqueAffichee = undefined }
     { const cp0 = S.couts || {}; S.budget = { total: budgetHorsVideo(nbTot), depense: garde ? Number(cp0.hors_video || 0) : 0, postes: garde ? { ...(cp0.postes || {}) } : {} } }
@@ -443,7 +445,7 @@ async function lancerProduction(reprise = false) {
     // ── 3. vidéos (cloud, en parallèle de tout le reste) ──
     let videosPromise = Promise.resolve()
     if (planDeja) { VID.reprendreVideos(); VID.majAgentVideo() }   // reprise : on reprend le suivi des vidéos déjà lancées ; les vidéos manquantes se lancent depuis leur carte (jamais toutes seules)
-    else if (videoCloud && sauveOk && choixVideo.length) videosPromise = VID.produireVideos(choixVideo, actif).catch((err) => { console.error('Erreur vidéos :', err); setAgent(4, 'error', 'Erreur : ' + err.message, 0) })
+    else if (videoCloud && sauveOk && choixVideo.length) videosPromise = VID.produireVideos(choixVideo, actif, { arret: CDC.videosManuelles() ? 'plan' : '' }).catch((err) => { console.error('Erreur vidéos :', err); setAgent(4, 'error', 'Erreur : ' + err.message, 0) })
     else if (videoCloud) { setAgent(4, 'error', sauveOk ? 'Aucun CT vidéo choisi : lance les vidéos depuis leur carte.' : 'Sauvegarde de la commande impossible : les vidéos n\'ont pas été lancées (relance-les depuis leur carte).', 0); S.creatives.forEach((c, i) => { if (estSlotVideo(c)) U.crea[i] = { state: 'video', text: 'Vidéo à lancer' } }); emit() }
     else setAgent(4, 'pending', CDC.videosManuelles() ? 'Vidéos : à lancer à la main depuis leur carte, après validation des ad copies par le propriétaire' : 'Vidéos : import manuel (production non liée à une commande)', 0)
 
