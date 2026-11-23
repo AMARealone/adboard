@@ -98,6 +98,7 @@ async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
     choix = (j.choix || []).filter((c) => parId.has(c.id))
     S.forceOffre = j.force_offre || null; S.forceOffreRaison = j.force_offre_raison || ''   // offre-forte-v1
     if (j.diversite && j.diversite.doublon) { console.warn('[Vidéo] dispositifs en double dans le lot :', j.diversite); toast('Diversité : les vidéos choisies ont le même dispositif (' + (j.diversite.familles || []).join(', ') + ').' + (j.diversite.autres_dispositifs_mesures ? ' Cliquez sur « Autre CT » pour l\'une d\'elles.' : ' La galerie CT vidéo manque de CT d\'un autre dispositif (voix off, dialogue, animation) : ajoutez-en.')) }   // zero-redondance-v2
+    if (j.diversite && j.diversite.remplaces && j.diversite.remplaces.length) { console.log('[Vidéo] zéro redondance : doublon(s) de dispositif remplacé(s) par le serveur', j.diversite.remplaces); toast('Diversité : ' + j.diversite.remplaces.length + ' CT vidéo au même dispositif qu\'une autre vidéo du lot remplacé(s) automatiquement.') }   // zero-redondance-v3
     if (j.force_offre) console.log('[Vidéo] force de l\'offre : ' + j.force_offre + (j.force_offre_raison ? ' — ' + j.force_offre_raison : '') + (j.force_offre === 'irresistible' ? ' → une vidéo peut porter Most Aware' : ' → aucune vidéo Most Aware'))
   } catch (e) { console.warn('[Vidéo] plan par l\'agent impossible, plan par défaut :', e.message) }
   // un CT par angle : d'abord par titre d'angle cité, puis dans l'ordre
@@ -240,16 +241,25 @@ function finOk(idx, e) {
   const duree = e.duree_video_s || c.duree || 0
   S.creatives[idx] = { ...c, type: 'video', videoUrl: e.video_url, thumbUrl: e.affiche_url || c.thumbUrl || null, url: null, imgB64: null, status: 'done', duree,
     desc: 'Vidéo · ' + (c.job.ctNom || c.ct) + (duree ? ' · ' + duree + ' s' : '') + (e.qualite && (e.qualite.plans_fixes > 0 || e.qualite.livrable === false) ? ' · ⚠ à revoir' + (e.qualite.plans_fixes ? ' (' + e.qualite.plans_fixes + ' plan(s) fixe(s))' : '') : '') + (e.qualite && e.qualite.note_juge != null ? ' · juge ' + e.qualite.note_juge + '/10' : ''),
-    aRevoir: !!(e.qualite && (e.qualite.plans_fixes > 0 || e.qualite.livrable === false)),
-    job: { ...c.job, etat: 'termine', pct: 100, etape: 'Vidéo prête', qualite: e.qualite || null, cout_usd: e.cout_usd, monteur: e.monteur, historiqueUrl: e.historique_url, dossierUrl: e.dossier_url, journal: ((U.vjournal || {})[idx] || []).slice(-400), fin: Date.now() } }
+    aRevoir: !!(e.qualite && (e.qualite.plans_fixes > 0 || e.qualite.livrable === false)), videoAvant: undefined,
+    job: { ...c.job, etat: 'termine', pct: 100, etape: 'Vidéo prête', qualite: e.qualite || null, plans: Array.isArray(e.plans) ? e.plans : (c.job.plans || null),   // correcteur-cible-v1
+      corrections: e.correction ? (c.job.corrections || []).concat([{ plans: e.correction.plans || [], faite: e.correction.faite || [], cout_neuf_usd: e.correction.cout_neuf_usd, t: Date.now() }]).slice(-10) : (c.job.corrections || null), correction: null, cout_usd: e.cout_usd, monteur: e.monteur, historiqueUrl: e.historique_url, dossierUrl: e.dossier_url, journal: ((U.vjournal || {})[idx] || []).slice(-400), fin: Date.now() } }
   U.crea[idx] = { state: 'done', text: 'Vidéo prête', pct: 100 }; emit(); _save(true)
   majAgentVideo()
   const q = e.qualite
   if (q && (q.plans_fixes > 0 || q.livrable === false)) toast('⚠ Vidéo de l\'angle ' + (c.angleIdx + 1) + ' à revoir avant envoi' + (q.plans_fixes ? ' : ' + q.plans_fixes + ' plan(s) non animé(s)' : '') + (q.note_juge != null ? ' · juge ' + q.note_juge + '/10' : '') + '.', 12000)
   else toast('Vidéo de l\'angle ' + (c.angleIdx + 1) + ' prête.' + (q && q.note_juge != null ? ' Juge ' + q.note_juge + '/10.' : ''))
+  if (e.correction) toast('Correction de la vidéo de l\'angle ' + (c.angleIdx + 1) + ' terminée' + (e.correction.cout_neuf_usd != null ? ' : ' + Number(e.correction.cout_neuf_usd).toFixed(2) + ' $ dépensés pour les plans corrigés.' : '.'), 12000)
 }
 function finEchec(idx, msg, etat = 'echec') {
   const c = S.creatives[idx]
+  if (c && c.videoAvant && c.videoAvant.videoUrl) {   // correcteur-cible-v1 : une correction qui échoue ou qu'on arrête rend la vidéo d'avant, intacte
+    const a = c.videoAvant
+    S.creatives[idx] = { ...c, videoUrl: a.videoUrl, thumbUrl: a.thumbUrl || null, desc: a.desc || c.desc, aRevoir: !!a.aRevoir, status: 'done', videoAvant: undefined, job: { ...(a.job || {}), etat: 'termine', correction: null, correction_echec: String(msg).slice(0, 400) } }
+    U.crea[idx] = { state: 'done', text: 'Vidéo prête', pct: 100 }; emit(); _save(true); majAgentVideo()
+    toast((etat === 'annule' ? 'Correction arrêtée' : 'Correction non faite') + ' : ' + String(msg).slice(0, 220) + ' La vidéo d\'avant est gardée.', 14000)
+    return
+  }
   S.creatives[idx] = { ...c, job: { ...(c.job || {}), etat, erreur: String(msg).slice(0, 500) } }
   U.crea[idx] = { state: 'err', text: etat === 'annule' ? 'Vidéo arrêtée' : 'Échec de la vidéo', err: String(msg).slice(0, 300) }; emit(); _save(true)
   majAgentVideo()
@@ -362,4 +372,23 @@ export async function relancerVideo(idx, opts = {}) {
     await lancerVideo(idx, ct, { forcer: true })
   } catch (e) { finEchec(idx, e.message) }
   majAgentVideo()
+}
+
+// ───────── correcteur-cible-v1 (23 nov. 2026) : corriger des plans d'une vidéo livrée ─────────
+// Demande du fondateur : « corriger là où on veut » pour quelques dollars au lieu de 15 $. La machine rejoue la vidéo depuis son dossier de reprise
+// (rien n'est repayé) et ne refait que les plans choisis, avec la consigne écrite pour chacun. La vidéo d'avant reste visible et revient si la correction échoue.
+export async function corrigerVideo(idx, plans) {
+  const c = S.creatives[idx]; if (!estSlotVideo(c) || !c.videoUrl || !c.job) return false
+  if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return false }
+  const liste = (plans || []).map((x) => ({ bloc: Number(x.bloc), consigne: String(x.consigne || '').trim() })).filter((x) => x.bloc > 0 && x.consigne.length >= 4)
+  if (!liste.length) { toast('Choisissez au moins un plan et écrivez ce qu\'il doit montrer.'); return false }
+  const r = await fetch(SERVER + '/video-jobs/corriger', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, slot: c.job.slot || (c.angleIdx + 1), plans: liste }) })
+  const j = await r.json().catch(() => ({}))
+  if (!r.ok || j.error) { toast(j.error || 'Correction impossible (HTTP ' + r.status + ').', 12000); return false }
+  S.creatives[idx] = { ...c, videoAvant: { videoUrl: c.videoUrl, thumbUrl: c.thumbUrl || null, desc: c.desc, aRevoir: !!c.aRevoir, job: c.job }, videoUrl: null, status: 'pending',
+    job: { ...c.job, execution: j.execution, correction: j.plans || liste, correction_echec: null, debut: Date.now(), etat: 'demarrage', pct: 1, etape: 'Correction : la machine démarre' } }
+  U.vjournal = U.vjournal || {}; U.vjournal[idx] = []
+  U.crea[idx] = { state: 'running', text: 'Correction de ' + (j.plans || liste).length + ' plan(s)', pct: 1 }; emit(); _save(true)
+  suivre(idx)
+  return true
 }

@@ -383,11 +383,42 @@ function Qa({ qa }) {
     {qa.score != null && <em> · {qa.score}/10</em>}{qa.corrections ? <em> · {qa.corrections} correction{qa.corrections > 1 ? 's' : ''}</em> : null}{qa.budget_atteint ? <em> · budget atteint</em> : null}
   </div>
 }
+// correcteur-cible-v1 (23 nov. 2026) — corriger des plans d'une vidéo livrée : on coche le plan, on écrit ce qu'il doit montrer ; seuls ces plans sont repayés.
+function Correcteur({ idx, job, onFin }) {
+  const plans = (job && job.plans) || []
+  const [sel, setSel] = useState(() => Object.fromEntries(((job && job.corrections && job.corrections.length ? job.corrections[job.corrections.length - 1].plans : []) || []).map((x) => [x.bloc, x.consigne])))
+  const [envoi, setEnvoi] = useState(false)
+  const choisis = Object.entries(sel).filter(([, t]) => t != null).map(([b, t]) => ({ bloc: Number(b), consigne: String(t || '') }))
+  const prets = choisis.filter((x) => x.consigne.trim().length >= 4)
+  const t = (v) => (v == null ? '' : Number(v).toFixed(1).replace('.', ',') + ' s')
+  if (!plans.length) return <div className="fx2-corr"><div className="fx2-corr-v">Cette vidéo a été produite avant le correcteur : ses plans ne sont pas connus. Utilisez « Refaire ».</div></div>
+  return (
+    <div className="fx2-corr">
+      <div className="fx2-corr-t">Cochez le plan fautif et écrivez ce qu'il doit montrer. Seuls ces plans sont refaits ; le reste de la vidéo est relu sans être repayé (environ 1,5 à 3 $ par plan, plafond 6 $).</div>
+      {plans.map((p) => {
+        const on = sel[p.bloc] != null
+        return <div key={p.bloc} className={'fx2-corr-p' + (on ? ' on' : '')}>
+          <label className="fx2-corr-h">
+            <input type="checkbox" checked={on} onChange={() => setSel((o) => { const n = { ...o }; if (on) delete n[p.bloc]; else n[p.bloc] = ''; return n })} />
+            {p.vignette ? <img src={p.vignette} alt="" /> : <span className="fx2-corr-n">{p.bloc}</span>}
+            <span className="fx2-corr-d"><b>Plan {p.bloc}{p.t0 != null ? ' · ' + t(p.t0) + ' → ' + t(p.t1) : ''}</b>{p.corrige ? <em> · déjà corrigé</em> : null}<span>{p.dit ? '« ' + p.dit + ' »' : 'Sans parole'}</span></span>
+          </label>
+          {on && <textarea className="fx-in" rows={2} placeholder="Ex. : elle tient le filet dans la main droite, étiquette vers la caméra, pendant qu'elle parle." value={sel[p.bloc]} onChange={(e) => { const v = e.target.value; setSel((o) => ({ ...o, [p.bloc]: v })) }} />}
+        </div>
+      })}
+      <div className="fx2-corr-a">
+        <button className="fx-btn sm primary" disabled={envoi || !prets.length || prets.length !== choisis.length} onClick={async () => { setEnvoi(true); try { if (await E.corrigerVideo(idx, prets)) onFin() } finally { setEnvoi(false) } }}>{envoi ? 'Lancement…' : 'Corriger ' + (prets.length || '') + ' plan' + (prets.length > 1 ? 's' : '')}</button>
+        <button className="fx-btn sm" onClick={onFin}>Fermer</button>
+      </div>
+    </div>
+  )
+}
 function VideoTile({ S, U, idx, onOther }) {
   const c = S.creatives[idx], ui = U.crea[idx] || { state: 'pending', text: 'En attente de la synthèse' }
   const ref = useRef(null)
   const [log, setLog] = useState(false)
   const [lien, setLien] = useState(null)
+  const [corr, setCorr] = useState(false)   // correcteur-cible-v1
   const job = (c && c.job) || null
   const pret = !!c?.videoUrl && ui.state !== 'running'
   const lignes = (U.vjournal && U.vjournal[idx]) || []
@@ -412,11 +443,15 @@ function VideoTile({ S, U, idx, onOther }) {
           {lignes.length > 0 && <button className="fx-link-btn" onClick={() => setLog(!log)}>{log ? 'Masquer le journal' : 'Journal'}</button>}
         </div>
         {log && <pre className="fx2-log">{lignes.join('\n')}</pre>}
+        {job && job.correction_echec && <div className="fx2-why">Dernière correction non faite : {job.correction_echec}</div>}
+        {job && job.corrections && job.corrections.length > 0 && <div className="fx2-why">Corrigée {job.corrections.length} fois · dernière : {(job.corrections[job.corrections.length - 1].plans || []).map((x) => 'plan ' + x.bloc).join(', ')}{job.corrections[job.corrections.length - 1].cout_neuf_usd != null ? ' · ' + Number(job.corrections[job.corrections.length - 1].cout_neuf_usd).toFixed(2) + ' $' : ''}</div>}
+        {corr && pret && <Correcteur idx={idx} job={job} onFin={() => setCorr(false)} />}
         {lien !== null && <div className="fx2-lien"><input className="fx-in" placeholder="https://…/video.mp4" value={lien} onChange={(e) => setLien(e.target.value)} /><button className="fx-btn sm primary" onClick={() => { if (E.attacherLienVideo(idx, lien)) setLien(null); else toast('Lien invalide : il doit commencer par https:// et finir par .mp4, .mov ou .webm') }}>Rattacher</button></div>}
         <CtCarte S={S} idx={idx} />
         <div className="fx-crea-a">
           {(pret || ui.state === 'err' || ui.state === 'video' || ui.state === 'pending') && <button className="fx-btn sm" disabled={!peut} onClick={() => E.relancerVideo(idx)}>{pret ? '↻ Refaire' : ui.state === 'err' ? '↻ Relancer' : '▶ Lancer'}</button>}
           {(pret || ui.state === 'err') && <button className="fx-btn sm" disabled={!peut} title="Un autre concept vidéo (CT jamais utilisé dans cette commande)" onClick={() => E.relancerVideo(idx, { autreCT: true })}>⇄ Autre CT</button>}
+          {pret && job && <button className="fx-btn sm" disabled={!peut} title="Refaire seulement les plans fautifs, avec votre consigne, sans repayer la vidéo" onClick={() => setCorr(!corr)}>🩹 Corriger des plans</button>}
           {ui.state !== 'running' && <button className="fx-btn sm" disabled={!c} onClick={() => ref.current.click()}>{pret ? 'Remplacer' : 'Importer'}</button>}
           {ui.state !== 'running' && !pret && <button className="fx-btn sm" disabled={!c} title="Rattacher une vidéo déjà produite (lien .mp4)" onClick={() => setLien(lien === null ? '' : null)}>Lien</button>}
           {ui.state === 'running' && <button className="fx-btn sm danger" title="Arrête cette vidéo seule (la machine cloud est stoppée)" onClick={() => E.annulerCrea(idx)}>✕ Annuler cette vidéo</button>}

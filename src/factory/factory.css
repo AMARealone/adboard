@@ -578,3 +578,18 @@ a.fx-lib:hover{background:rgba(160,175,210,.05);border-color:var(--bd)}
 .fx-ctcell i{font-style:normal;font-size:10px;opacity:.65}
 .fx-ctcell:hover{border-color:var(--ac,#7c5cff)}
 .fx-ctcell.on{border-color:var(--ac,#7c5cff);box-shadow:0 0 0 2px var(--ac,#7c5cff)}
+
+/* correcteur-cible-v1 */
+.fx2-corr{display:flex;flex-direction:column;gap:8px;border:1px solid var(--bd);border-radius:10px;padding:10px;background:rgba(255,255,255,.02)}
+.fx2-corr-t,.fx2-corr-v{font-size:12px;line-height:1.45;color:var(--sec)}
+.fx2-corr-p{display:flex;flex-direction:column;gap:6px;border-radius:8px;padding:6px;border:1px solid transparent}
+.fx2-corr-p.on{border-color:var(--bd);background:rgba(255,255,255,.03)}
+.fx2-corr-h{display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0}
+.fx2-corr-h input{flex:none}
+.fx2-corr-h img{width:34px;height:60px;object-fit:cover;border-radius:5px;flex:none}
+.fx2-corr-n{width:34px;height:60px;border-radius:5px;display:grid;place-items:center;background:#0b0d12;color:var(--sec);font-weight:700;flex:none}
+.fx2-corr-d{display:flex;flex-direction:column;gap:2px;min-width:0;font-size:12px}
+.fx2-corr-d b{font-size:12px}.fx2-corr-d em{color:var(--sec);font-style:normal}
+.fx2-corr-d span{color:var(--sec);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fx2-corr-p textarea{width:100%;max-width:none;font-size:12px;resize:vertical}
+.fx2-corr-a{display:flex;gap:6px;flex-wrap:wrap}
