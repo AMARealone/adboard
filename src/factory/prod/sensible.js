@@ -37,20 +37,36 @@ export function analyser() {
   const b = S.brief || {}
   const cle = (S.commandeId || '') + '|' + (b.produit || '') + '|' + String(S.synthesis || '').length
   if (cache.cle === cle) return cache.val
-  const txt = norm([b.produit, b.nom, b.utilite, b.description, b.promesse, b.benefices, b.cible, b.categorie, b.notes, b.probleme, String(S.synthesis || '').slice(0, 5000)].filter(Boolean).join(' '))
-  const cats = Object.keys(CATEGORIES).filter((k) => CATEGORIES[k].re.test(txt))
-  const niveau = cats.reduce((m, k) => Math.max(m, CATEGORIES[k].niveau), 0)
+  // meta-sensible-v2 (23 nov. 2026) — Production c47b3ef6 (filet de bain exfoliant) : le mot « acné » dans l'étude a suffi à classer le produit « sensible »,
+  // et les 4 images comme les 2 vidéos ont reçu une mention légale. Un mot du contexte ne dit pas ce que le produit EST ni ce que la publicité doit PROMETTRE.
+  // 1) Le verdict vient du raisonnement de l'Analyste (ligne « SENSIBILITÉ META » de la synthèse) dès qu'il existe : il prime dans les deux sens.
+  // 2) Sans verdict (avant l'analyse, ou synthèse ancienne), seuls les champs du BRIEF sont lus — jamais le texte de l'étude, qui cite tous les sujets voisins.
+  // 3) La mention légale n'est posée que sur un produit TRÈS surveillé (niveau 2) ; un produit seulement surveillé garde les règles de formulation, sans mention.
+  const txt = norm([b.produit, b.nom, b.utilite, b.description, b.promesse, b.benefices, b.cible, b.categorie, b.notes, b.probleme].filter(Boolean).join(' '))
+  let cats = Object.keys(CATEGORIES).filter((k) => CATEGORIES[k].re.test(txt))
+  let niveau = cats.reduce((m, k) => Math.max(m, CATEGORIES[k].niveau), 0)
+  const mv = String(S.synthesis || '').match(/SENSIBILIT[ÉE] META\s*\**\s*[:：]\s*\**\s*(aucune|surveill[ée]e|tr[èe]s surveill[ée]e)/i)
+  if (mv) {
+    const v = norm(mv[1])
+    if (v.startsWith('aucune')) { niveau = 0; cats = [] }
+    else {
+      niveau = v.startsWith('tres') ? 2 : 1
+      if (!cats.length) cats = Object.keys(CATEGORIES).filter((k) => CATEGORIES[k].re.test(norm(String(S.synthesis || '').slice(0, 5000)))).slice(0, 2)
+    }
+  }
   cache = { cle, val: { niveau, categories: cats, libelle: cats.map((k) => CATEGORIES[k].lib).join(', ') } }
   return cache.val
 }
 export const estSensible = () => analyser().niveau > 0
+// La mention légale : seulement quand le produit est très surveillé par Meta (santé, sexualité, poids, promesse de transformation du corps).
+export const mentionRequise = () => analyser().niveau >= 2
 
 const ANGLAIS = /nigeria|ghana|kenya|tanzan|ougand|uganda|zamb|afrique du sud|south africa|liberia|sierra leone|gambi/i
-const marque = () => String((typeof S.marqueAffichee === 'string' && S.marqueAffichee) || (S.brief && (S.brief.marque || S.brief.produit)) || 'La marque').trim().slice(0, 40)
+const marque = () => String((typeof S.marqueAffichee === 'string' && S.marqueAffichee) || (S.brief && S.brief.marque) || 'La marque').trim().slice(0, 40)
 
 // La mention : personnalisée au nom de la marque, adaptée aux catégories touchées. Courte (≈ 200 caractères), factuelle.
 export function claim() {
-  const a = analyser(); if (!a.niveau) return ''
+  const a = analyser(); if (a.niveau < 2) return ''
   const m = marque(), en = ANGLAIS.test(String((S.brief && S.brief.pays) || ''))
   const c = new Set(a.categories)
   if (en) {
@@ -91,20 +107,22 @@ export function blocCopy() {
 }
 export function blocImage(mention) {
   if (!estSensible()) return ''
+  if (!mentionRequise()) return regles() + 'POUR TOI (créative image) : le hook principal garde le ton direct (règles 2 à 4). Aucune mention légale n\'est demandée pour ce produit : n\'en écris aucune, même si le CT en porte une.\n\n'
   return regles() + 'POUR TOI (créative image) : le hook principal garde le ton direct (règles 2 à 4). MENTION LÉGALE : si le CT porte une toute petite mention en bas (texte légal, astérisque), garde sa place et son style et écris-y exactement, en très petit : « ' + mention + ' ». '
     + 'S\'il n\'en porte pas, n\'en invente pas : laisse simplement libre la toute petite bande du bas de l\'image (aucun texte important dans les 3 % du bas), la mention y sera posée après.\n\n'
 }
 export function blocCT() {
-  if (!estSensible()) return ''
+  if (!mentionRequise()) return ''
   return '⚠️ PRODUIT SENSIBLE SUR META (' + analyser().libelle + ') : la mention légale est AJOUTÉE automatiquement si le CT n\'en porte pas : ne choisis donc JAMAIS un CT pour sa mention (c\'est ce qui faisait revenir toujours les mêmes). Choisis d\'abord pour l\'intention psychologique et la variété de mise en page du lot. Évite les CT construits sur un avant/après côte à côte ou un gros plan sur une partie du corps.\n\n'
 }
 export function blocVideo() {
   if (!estSensible()) return ''
-  return regles() + 'POUR TOI (vidéo) : la première phrase de la voix off nomme le désir ou la douleur selon les règles 2 à 4, sans perdre la dynamique des créateurs actuels. Ne mets AUCUNE mention légale toi-même : elle est incrustée en bas de toute la vidéo après le montage.\n'
-    + 'MENTION_META: ' + claim() + '\n'
+  return regles() + 'POUR TOI (vidéo) : la première phrase de la voix off nomme le désir ou la douleur selon les règles 2 à 4, sans perdre la dynamique des créateurs actuels.' + (mentionRequise() ? ' Ne mets AUCUNE mention légale toi-même : elle est incrustée en bas de toute la vidéo après le montage.' : ' Aucune mention légale n\'est demandée pour ce produit.') + '\n'
+    + (mentionRequise() ? 'MENTION_META: ' + claim() + '\n' : '')
 }
 export function blocControle() {
   if (!estSensible()) return ''
+  if (!mentionRequise()) return regles()
   return regles() + 'MENTION LÉGALE ATTENDUE (ou équivalente) : « ' + claim() + ' »'
 }
 

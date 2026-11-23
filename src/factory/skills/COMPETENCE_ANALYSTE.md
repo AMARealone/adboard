@@ -241,6 +241,14 @@ POIDS DES MOTIFS : [motif dominant ≈ X % · motif secondaire ≈ Y % · … ; 
 DOULEURS VOISINES (SCÈNES ET PORTES D'ENTRÉE SEULEMENT) : [liste courte]
 SOURCE DU MOTIF : [CAHIER DES CHARGES / PAGE PRODUIT / DONNÉES BRUTES / ESTIMATION]
 
+PUIS JUGE LA SENSIBILITÉ DE LA PUBLICITÉ POUR META — par ce que le produit EST, jamais par un mot du contexte.
+Une publicité est surveillée par Meta quand, pour vendre, elle doit PROMETTRE un changement du corps, de la santé, de la sexualité, du poids ou de l'argent de la personne, ou désigner un état intime de celui qui regarde. Ce n'est pas le sujet voisin qui décide (qu'un mot comme un problème de peau, une fatigue ou une gêne apparaisse dans l'étude ne change rien) : c'est la nature du produit et la promesse qu'il oblige à faire. Pose-toi la question : « pour vendre ce produit, dois-je affirmer qu'il transforme le corps ou la santé de l'acheteur ? »
+- NON — le produit est un objet, un accessoire, un outil ou un service dont l'effet est mécanique et se constate (il lave, frotte, range, porte, protège, cuit, mesure) : il se vend par ce qu'il fait et par ce qu'il remplace. → aucune.
+- OUI, par un effet d'usage externe et modéré (un soin qu'on applique, un cosmétique qui promet un aspect) → surveillée : les formulations restent celles du désir et du résultat de vie, sans attribuer un état au spectateur.
+- OUI, par ce qu'on avale ou par une promesse sur la santé, la sexualité, le poids, la fertilité, une maladie nommée, ou un gain d'argent → très surveillée : formulations ci-dessus ET mention légale.
+Écris le verdict sur une ligne au libellé inchangé (le code la lit : elle décide des règles de formulation et de la mention légale ; une mention posée sur un produit qui n'en a pas besoin affaiblit la créative et la marque) :
+SENSIBILITÉ META : [aucune | surveillée | très surveillée] — [la raison, en une phrase : ce que le produit est et ce que sa promesse affirme]
+
 LIEN AVEC LA RÈGLE « RAISON D'ACHAT » DE L'ÉTAPE 1bis : le motif que la marque désigne comme celui de ses acheteurs, ou celui pour lequel sa page vend le produit, EST l'usage pour lequel ce produit s'achète : il n'est jamais écarté comme « usage détourné ». Seul un usage que ni la marque ni la page ne portent, et que seules des discussions de marché mentionnent, reste une piste de réserve.
 
 
@@ -282,6 +290,10 @@ TECHNIQUE DE REVERSE-ENGINEERING (à appliquer sur le verbatim le plus riche tro
 
 Une fois la cible validée (5/5), construis :
 → Identité : prénom LOCAL réel, âge, ville réelle du pays cible, occupation précise (pas générique), teint (pour S7), niveau de pouvoir d'achat
+   UN AVATAR EST UNE SEULE PERSONNE. Un prénom, un genre, un âge : jamais « Marie ou Cédric », « femme ou homme », « il/elle ». Une publicité écrite pour deux personnes à la fois ne parle à aucune : le casting, la voix, les accords du texte et les situations ne peuvent en suivre qu'une. Quand les deux genres achètent, tu TRANCHES par la preuve, dans cet ordre : qui la marque montre et à qui elle parle (page, visuels, logo, ton) ; qui écrit les avis et les commentaires relevés ; qui pose la question dans le balayage ; qui paie. Tu écris le poids de chacun, tu retiens celui qui pèse le plus comme avatar, et l'autre devient une cible SECONDAIRE nommée en une ligne (elle pourra recevoir un angle à part dans un lot suivant, jamais un demi-rôle dans celui-ci). Sans preuve nette, tu le dis et tu retiens le genre que la marque elle-même met en avant.
+   Écris ensuite, sur deux lignes aux libellés inchangés (le code les lit pour fixer le casting des vidéos et vérifier les textes) :
+AVATAR : [prénom, genre écrit en toutes lettres (femme ou homme), âge, ville, occupation — une seule personne]
+GENRE DE L'AVATAR : [femme | homme] — [la preuve qui tranche, en une phrase ; poids de l'autre genre]
 → Déclencheur d'achat principal : l'événement précis qui la fait passer à l'acte. Sourcé si possible, sinon [ESTIMATION — logique comportementale]
 → Objections principales : les 3 vraies raisons qui bloquent l'achat. Sourcées si possible, sinon [ESTIMATION]
 → Journée type — 5 moments clés, format strict "HH:MM — [action concrète observable]". INTERDIT : toute formulation émotionnelle ("elle se sent", "elle espère", "son complexe resurgit"). Correct : "13h00 — repas debout sur place, pas de chaise". Si données réelles introuvables → construire à partir de faits comportementaux culturels connus et signaler [CONSTRUIT — contexte culturel]. Reste des ACTIONS, jamais des états émotionnels.
@@ -955,6 +967,7 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Cible retenue qui n'a pas validé les 5 critères (TAM + douleur quotidienne + pouvoir d'achat + croyances/éducation + évidence ET spécificité)
 ❌ Cible hors du TERRITOIRE DE CIBLE de l'ÉTAPE 1bis (population qui souffre du problème mais n'achèterait pas ce produit pour cet usage)
 ❌ Bloc UNIVERS DU VENDEUR présent dans DONNÉES BRUTES et rayon, territoire ou poids des motifs écrits sans lui ; cible existante gardée sans la ligne REVALIDATION DE LA CIBLE EXISTANTE
+❌ Avatar à deux têtes (« Marie ou Cédric », « femme ou homme ») ; lignes AVATAR, GENRE DE L'AVATAR ou SENSIBILITÉ META absentes ; sensibilité jugée sur un mot du contexte au lieu de la nature du produit et de sa promesse
 ❌ Bloc PRODUIT LU / RAYON / TERRITOIRE DE CIBLE / SIGNAUX absent en tête de S1
 ❌ Bloc MOTIF D'ACHAT DOMINANT (5 lignes) absent de S1, ou motif dominant posé sans poids ni source
 ❌ Cahier des charges ou notes du propriétaire présents mais ignorés : sujet, ton ou audace demandés absents des angles, ou rubrique S11-G absente

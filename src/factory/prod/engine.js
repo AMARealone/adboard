@@ -628,12 +628,12 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
   let imgB64 = g.imageData, imageMime = g.imageMime || 'image/png'
   // meta-sensible-v1 : produit sensible et mention absente ou illisible (ou contrôle indisponible) → mention propre apposée par le code
   let mentionAjoutee = false
-  if (SEN.estSensible() && q.mention !== 'ok') {
+  if (SEN.mentionRequise() && q.mention !== 'ok') {
     try { const r = await SEN.apposerMention(imgB64, imageMime, SEN.claim()); if (r) { imgB64 = r.b64; imageMime = r.mime; mentionAjoutee = true } }
     catch (e) { console.warn('[Meta] mention non apposée :', e.message) }
   }
   const desc = (g.meta && g.meta.length > 5) ? g.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${S.creatives[idx].angleIdx + 1}`
-  const qaRes = { mention: SEN.estSensible() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', ecart_ct: q.ecart_ct || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
+  const qaRes = { mention: SEN.mentionRequise() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', ecart_ct: q.ecart_ct || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
   S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime, qa: qaRes, prompt: g.prompt || '', meta: g.meta || '', qaHist: qaHist.map((h) => ({ ...h, prompt: String(h.prompt || '').slice(0, 6000), meta: String(h.meta || '').slice(0, 3000) })), ctUrl: CT_IMAGES[ctName] || '' }
   U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
   if (S.briefSource === 'commande' && S.commandeId) {

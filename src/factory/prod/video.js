@@ -97,6 +97,7 @@ async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
     if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status)
     choix = (j.choix || []).filter((c) => parId.has(c.id))
     S.forceOffre = j.force_offre || null; S.forceOffreRaison = j.force_offre_raison || ''   // offre-forte-v1
+    if (j.diversite && j.diversite.doublon) { console.warn('[Vidéo] dispositifs en double dans le lot :', j.diversite); toast('Diversité : les vidéos choisies ont le même dispositif (' + (j.diversite.familles || []).join(', ') + ').' + (j.diversite.autres_dispositifs_mesures ? ' Cliquez sur « Autre CT » pour l\'une d\'elles.' : ' La galerie CT vidéo manque de CT d\'un autre dispositif (voix off, dialogue, animation) : ajoutez-en.')) }   // zero-redondance-v2
     if (j.force_offre) console.log('[Vidéo] force de l\'offre : ' + j.force_offre + (j.force_offre_raison ? ' — ' + j.force_offre_raison : '') + (j.force_offre === 'irresistible' ? ' → une vidéo peut porter Most Aware' : ' → aucune vidéo Most Aware'))
   } catch (e) { console.warn('[Vidéo] plan par l\'agent impossible, plan par défaut :', e.message) }
   // un CT par angle : d'abord par titre d'angle cité, puis dans l'ordre
@@ -143,17 +144,39 @@ async function unCT(angleIdx, niveau, exclure) {
 // ── lancement d'une vidéo sur le moteur Cloud Run ──
 // Consignes de diversité : la direction de CETTE vidéo + ce que les autres vidéos du lot ont déjà pris (interdit ici).
 let choixLot = []
+// cible-fait-v1 (23 nov. 2026) — Production c47b3ef6 : cible = une femme ; pour « diversifier » le lot, l'agent a fixé « Homme, 30 ans, torse nu » à la vidéo 2.
+// La diversité d'un lot ne change jamais à qui l'on parle. L'avatar est un fait de l'étude : la personne qui porte une vidéo a son genre.
+const genreDe = (t) => { const x = ' ' + norm(t) + ' '; const f = /[^a-z](femme|woman|female|fille|madame)[^a-z]/.test(x), m = /[^a-z](homme|man|male|garcon|monsieur)[^a-z]/.test(x); return f && !m ? 'f' : m && !f ? 'm' : '' }
+export function avatarLu() {
+  const s = String(S.synthesis || ''), g = (re) => { const m = s.match(re); return m ? String(m[1]).replace(/\*+/g, '').replace(/\s+/g, ' ').trim().slice(0, 240) : '' }
+  // L'avatar montré au client (données marché : prénom, sexe, âge, ville, rôle) et la cible écrite par le client dans le brief font foi ; puis les lignes de la synthèse.
+  const pe = (S.marche && S.marche.persona) || null, bc = String((S.brief && S.brief.cible) || '').trim()
+  const fiche = pe && pe.nom ? [pe.nom, pe.sexe, pe.age, pe.ville, pe.role].filter(Boolean).join(', ') : ''
+  const identite = fiche || g(/AVATAR\s*\**\s*[:：]\s*\**\s*([^\n]{6,})/) || g(/→\s*Identit[ée]\s*[:：]\s*([^\n]{6,})/i)
+  return { identite, genre: genreDe(bc) || genreDe(pe && pe.sexe) || genreDe(g(/GENRE DE L['’]AVATAR\s*\**\s*[:：]\s*\**\s*([^\n]{3,})/i)) || genreDe(identite) }
+}
+function directionJuste(d) {
+  if (!d) return d
+  const av = avatarLu(), gd = genreDe(d.casting)
+  if (av.genre && gd && gd !== av.genre) {
+    console.warn('[Vidéo] casting corrigé : « ' + d.casting + ' » ne correspond pas à l\'avatar de l\'étude (' + av.identite + ')')
+    return { ...d, casting: (av.identite || (av.genre === 'f' ? 'Femme' : 'Homme')) + ' — la cible de l\'étude ; une allure, une coiffure et un style différents des autres vidéos du lot.', tenue: /torse nu|shirtless|bare/i.test(String(d.tenue || '')) ? 'La tenue que cette personne porte vraiment dans ce lieu à ce moment, pudique.' : d.tenue, _casting_corrige: true }
+  }
+  return d
+}
 const txtDir = (d) => d ? ['casting : ' + (d.casting || '?'), 'lieux : ' + (d.lieux || '?'), 'tenue : ' + (d.tenue || '?'), 'lumière : ' + (d.lumiere || '?'), 'cadrage dominant : ' + (d.cadrage || '?')].join(' ; ') : ''
 function consignesDiversite(idx, direction) {
   const ang = S.creatives[idx] ? S.creatives[idx].angleIdx : -1
   const vus = new Map()
   choixLot.forEach((c) => { if (c.angleIdx !== ang && c.direction) vus.set(c.angleIdx, c.direction) })
   videoSlots().forEach((x) => { if (x.i !== idx && x.c.job && x.c.job.direction) vus.set(x.c.angleIdx, x.c.job.direction) })
-  const autres = [...vus.entries()].map(([a, d]) => 'angle ' + (a + 1) + ' — ' + txtDir(d))
+  const autres = [...vus.entries()].map(([a, d]) => 'angle ' + (a + 1) + ' — ' + txtDir(directionJuste(d)))
   const L = []
   { const m = SEN.blocVideo(); if (m) L.push(m) }   // meta-sensible-v1 : en tête (les consignes sont coupées à 7000 caractères)
+  direction = directionJuste(direction)
+  { const av = avatarLu(); if (av.identite) L.push('AVATAR : ' + av.identite + (av.genre ? ' (' + (av.genre === 'f' ? 'femme' : 'homme') + ')' : '') + ' — c\'est à cette personne que la vidéo parle.') }   // cible-fait-v1 : lu par le moteur
   if (direction) L.push('DIRECTION IMPOSÉE POUR CETTE VIDÉO (diversité du lot, règle 17) : ' + txtDir(direction) + '.')
-  if (autres.length) L.push('DÉJÀ PRIS PAR LES AUTRES VIDÉOS DU LOT — INTERDIT ICI (casting, tenue, lieu principal et lumière différents) : ' + autres.join(' | ') + '.')
+  if (autres.length) L.push('DÉJÀ PRIS PAR LES AUTRES VIDÉOS DU LOT — INTERDIT ICI (allure, tenue, lieu principal et lumière différents ; le genre et l\'âge restent ceux de la cible) : ' + autres.join(' | ') + '.')
   if (S.forceOffre) L.push('FORCE DE L\'OFFRE (jugée au choix des CT, offre-forte-v1) : ' + S.forceOffre.toUpperCase() + (S.forceOffreRaison ? ' — ' + S.forceOffreRaison : '') + '.')
   { const q = APP.bloc('video'); if (q) L.push(q) }   // retours qualité de ce client
   L.push(CDC.regleVideo())   // cdc-franchise-v1 : franchise du sujet, toujours
