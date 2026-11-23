@@ -21,7 +21,7 @@ const pollers = new Map()                               // index de la créative
 
 export const estSlotVideo = (c) => !!c && c.kind === 'video'
 export const videoSlots = () => S.creatives.map((c, i) => ({ c, i })).filter((x) => estSlotVideo(x.c))
-const FINIS = ['echec', 'annule', 'termine']
+const FINIS = ['echec', 'annule', 'termine', 'plan_pret']   // plan_pret (texte-dabord-v1) : le texte attend la validation du fondateur
 export const jobEnCours = (c) => !!(c && c.job && c.job.execution && !c.videoUrl && !FINIS.includes(c.job.etat))
 export const peutVideoCloud = () => S.briefSource === 'commande' && !!S.commandeId
 
@@ -185,14 +185,14 @@ function consignesDiversite(idx, direction) {
   { const v = ang >= 0 ? VER.bloc(ang, 'video').trim() : ''; if (v) L.push(v) }   // verite-v1 : les mêmes faits que l'image et l'ad copy de cet angle
   return L.join('\n')
 }
-export async function lancerVideo(idx, ct, { forcer = false } = {}) {
+export async function lancerVideo(idx, ct, { forcer = false, arret = '', neuf = false } = {}) {
   const c = S.creatives[idx]
   if (!estSlotVideo(c)) return
   if (!peutVideoCloud()) throw new Error('La vidéo automatique demande une commande AdBoard (pas un brief importé à la main).')
   const slot = c.angleIdx + 1
   let ctVideoUrl = ''
   try { const g = await (galerie || prechargerCTVideo()); const f = g.find((x) => x.id === ct.id); ctVideoUrl = (f && f.videoUrl) || '' } catch (_) { }
-  const r = await fetch(SERVER + '/video-jobs/start', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, ct_id: ct.id, angle: String(slot), slot, niveau: PL.LIB[c.niveau] || '', consignes: consignesDiversite(idx, ct.direction), forcer }) })
+  const r = await fetch(SERVER + '/video-jobs/start', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, ct_id: ct.id, angle: String(slot), slot, niveau: PL.LIB[c.niveau] || '', consignes: consignesDiversite(idx, ct.direction), forcer, arret: arret || undefined, neuf: neuf || undefined }) })
   const j = await r.json().catch(() => ({}))
   if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status)
   S.creatives[idx] = { ...c, ct: ct.id, ctRaison: ct.raison || '', videoUrl: null, status: 'pending',
@@ -224,6 +224,7 @@ export function suivre(idx) {
         if (e) {
           Object.assign(c.job, { etat: e.etat, etape: e.etape, pct: e.pct, run: e.run || c.job.run, cout_usd: e.cout_usd, secondes: e.secondes, monteur: e.monteur, historiqueUrl: e.historique_url || c.job.historiqueUrl, dossierUrl: e.dossier_url || c.job.dossierUrl, machine: e.machine || null })
           U.vjournal = U.vjournal || {}; U.vjournal[idx] = e.journal || []
+          if (e.etat === 'termine' && e.plan_seul) { finPlan(idx, e); return }   // texte-dabord-v1
           if (e.etat === 'termine' && e.video_url) { finOk(idx, e); return }
           if (e.etat === 'echec') { finEchec(idx, e.erreur || 'Échec de la production vidéo.'); return }
           U.crea[idx] = { state: 'running', text: (e.etape || 'En cours') + ' · ' + (e.pct || 0) + ' %', pct: e.pct || 0 }
@@ -251,6 +252,13 @@ function finOk(idx, e) {
   else toast('Vidéo de l\'angle ' + (c.angleIdx + 1) + ' prête.' + (q && q.note_juge != null ? ' Juge ' + q.note_juge + '/10.' : ''))
   if (e.correction) toast('Correction de la vidéo de l\'angle ' + (c.angleIdx + 1) + ' terminée' + (e.correction.cout_neuf_usd != null ? ' : ' + Number(e.correction.cout_neuf_usd).toFixed(2) + ' $ dépensés pour les plans corrigés.' : '.'), 12000)
 }
+// texte-dabord-v1 (23 nov. 2026) — la machine s'est arrêtée après le texte et le plan : rien n'est tourné. Le fondateur lit, puis « Tourner » (reprend sans repayer) ou « Réécrire ».
+function finPlan(idx, e) {
+  const c = S.creatives[idx]
+  S.creatives[idx] = { ...c, status: 'pending', job: { ...c.job, etat: 'plan_pret', pct: 100, etape: 'Texte prêt à valider', planTexte: Array.isArray(e.texte) ? e.texte : [], planInserts: Array.isArray(e.inserts_prevus) ? e.inserts_prevus : [], planFaits: Array.isArray(e.faits) ? e.faits : [], planRecit: e.recit || null, cout_usd: e.cout_usd, fin: Date.now() } }
+  U.crea[idx] = { state: 'pending', text: 'Texte prêt à valider' }; emit(); _save(true); majAgentVideo()
+  toast('Vidéo de l\'angle ' + (c.angleIdx + 1) + ' : le texte est prêt à valider. Rien n\'est encore tourné.', 12000)
+}
 function finEchec(idx, msg, etat = 'echec') {
   const c = S.creatives[idx]
   if (c && c.videoAvant && c.videoAvant.videoUrl) {   // correcteur-cible-v1 : une correction qui échoue ou qu'on arrête rend la vidéo d'avant, intacte
@@ -270,6 +278,7 @@ export function reprendreVideos() {
   videoSlots().forEach(({ c, i }) => {
     if (c.videoUrl) return
     if (jobEnCours(c)) { U.crea[i] = { state: 'running', text: (c.job.etape || 'Reprise du suivi') + ' · ' + (c.job.pct || 0) + ' %', pct: c.job.pct || 0 }; suivre(i) }
+    else if (c.job && c.job.etat === 'plan_pret') U.crea[i] = { state: 'pending', text: 'Texte prêt à valider' }
     else if (c.job && FINIS.includes(c.job.etat)) U.crea[i] = { state: 'err', text: c.job.etat === 'annule' ? 'Vidéo arrêtée' : 'Échec de la vidéo', err: c.job.erreur || '' }
   })
 }
@@ -294,7 +303,7 @@ export const attendreVideos = () => Promise.all(videoSlots().map((x) => pollers.
 
 export function majAgentVideo(fin = false) {
   const v = videoSlots(); if (!v.length) return
-  const pret = v.filter((x) => x.c.videoUrl).length, ko = v.filter((x) => !x.c.videoUrl && x.c.job && FINIS.includes(x.c.job.etat)).length
+  const pret = v.filter((x) => x.c.videoUrl).length, ko = v.filter((x) => !x.c.videoUrl && x.c.job && FINIS.includes(x.c.job.etat) && x.c.job.etat !== 'plan_pret').length
   const pct = Math.round(v.reduce((s, x) => s + (x.c.videoUrl ? 100 : ((x.c.job && x.c.job.pct) || 0)), 0) / v.length)
   if (fin || pret + ko === v.length) U.agents[4] = { state: pret === 0 && ko === v.length ? 'error' : (pret === v.length ? 'done' : 'active'), text: pret + ' / ' + v.length + ' vidéos prêtes' + (ko ? ' · ' + ko + ' en échec ou arrêtée(s) (relançable)' : ''), pct: Math.round(pret / v.length * 100) }
   else U.agents[4] = { state: 'active', text: pret + ' / ' + v.length + ' vidéos prêtes · en cours : ' + pct + ' %', pct }
@@ -391,4 +400,22 @@ export async function corrigerVideo(idx, plans) {
   U.crea[idx] = { state: 'running', text: 'Correction de ' + (j.plans || liste).length + ' plan(s)', pct: 1 }; emit(); _save(true)
   suivre(idx)
   return true
+}
+
+// ───────── texte-dabord-v1 (23 nov. 2026) : valider le texte avant de payer les images et les clips ─────────
+// Décision du fondateur après la production c247887c (CT non respecté, 14,54 $ dépensés) : « pas le droit à l'erreur ». La machine écrit le texte et le plan
+// (environ 3 $, ceux que la vidéo aurait dépensés de toute façon) et s'arrête. « Tourner » relance la même vidéo : cette passe est relue, rien n'est repayé.
+export async function texteDabord(idx, { neuf = false } = {}) {
+  const c = S.creatives[idx]; if (!estSlotVideo(c)) return
+  if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return }
+  U.crea[idx] = { state: 'running', text: neuf ? 'Réécriture du texte…' : 'Écriture du texte…', pct: 0 }; emit()
+  try {
+    let ct = { id: (c.job && c.job.ct) || c.ct, nom: c.job && c.job.ctNom, raison: c.ctRaison, poster: c.job && c.job.poster, direction: c.job && c.job.direction }
+    const pose = MAN.consommerCarte(idx)
+    if (pose) { const g = (await MAN.chargerListe()).find((x) => x.id === pose); ct = { id: pose, nom: g ? g.nom : pose, raison: 'CT choisi à la main.', poster: g ? g.poster : '', direction: ct.direction || null } }
+    if (!ct.id) { const pris = new Set(S.creatives.map((x) => x.job && x.job.ct).filter(Boolean)); ct = { ...(await unCT(c.angleIdx, c.niveau || 'solution', pris)), direction: ct.direction } }
+    S.creatives[idx] = { ...c, videoUrl: null, thumbUrl: null, job: null }
+    await lancerVideo(idx, ct, { forcer: true, arret: 'plan', neuf })
+  } catch (e) { finEchec(idx, e.message) }
+  majAgentVideo()
 }

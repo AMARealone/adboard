@@ -446,11 +446,22 @@ function VideoTile({ S, U, idx, onOther }) {
         {job && job.correction_echec && <div className="fx2-why">Dernière correction non faite : {job.correction_echec}</div>}
         {job && job.corrections && job.corrections.length > 0 && <div className="fx2-why">Corrigée {job.corrections.length} fois · dernière : {(job.corrections[job.corrections.length - 1].plans || []).map((x) => 'plan ' + x.bloc).join(', ')}{job.corrections[job.corrections.length - 1].cout_neuf_usd != null ? ' · ' + Number(job.corrections[job.corrections.length - 1].cout_neuf_usd).toFixed(2) + ' $' : ''}</div>}
         {corr && pret && <Correcteur idx={idx} job={job} onFin={() => setCorr(false)} />}
+        {job && job.etat === 'plan_pret' && !pret && ui.state !== 'running' && <div className="fx2-corr">
+          <div className="fx2-corr-t"><b>Texte prêt à valider</b> — rien n'est encore tourné{job.cout_usd != null ? ' (' + Number(job.cout_usd).toFixed(2) + ' $ dépensés pour le texte et le plan)' : ''}. Lisez-le : respecte-t-il le CT ?</div>
+          {(job.planFaits || []).map((l, k) => <div key={'f' + k} className="fx2-corr-v">{String(l).replace(/^\[[^\]]+\]\s*/, '')}</div>)}
+          {(job.planTexte || []).map((x) => <div key={x.bloc} className="fx2-corr-p on"><span className="fx2-corr-d"><b>Prise {x.bloc}{x.produit ? ' · produit en main' : ''}</b><span style={{ WebkitLineClamp: 'unset', display: 'block' }}>« {x.dit} »</span></span></div>)}
+          {(job.planInserts || []).length > 0 && <div className="fx2-corr-v">{job.planInserts.length} insert(s) prévus : {job.planInserts.map((o) => String(o.quoi).slice(0, 60)).join(' · ')}</div>}
+          <div className="fx2-corr-a">
+            <button className="fx-btn sm primary" disabled={!peut} title="Tourne la vidéo avec ce texte : le texte et le plan ne sont pas repayés" onClick={() => E.relancerVideo(idx)}>▶ Tourner la vidéo (texte validé)</button>
+            <button className="fx-btn sm" disabled={!peut} title="Repart de zéro : un nouveau texte est écrit (environ 3 $)" onClick={() => E.texteDabord(idx, { neuf: true })}>✎ Réécrire le texte</button>
+          </div>
+        </div>}
         {lien !== null && <div className="fx2-lien"><input className="fx-in" placeholder="https://…/video.mp4" value={lien} onChange={(e) => setLien(e.target.value)} /><button className="fx-btn sm primary" onClick={() => { if (E.attacherLienVideo(idx, lien)) setLien(null); else toast('Lien invalide : il doit commencer par https:// et finir par .mp4, .mov ou .webm') }}>Rattacher</button></div>}
         <CtCarte S={S} idx={idx} />
         <div className="fx-crea-a">
           {(pret || ui.state === 'err' || ui.state === 'video' || ui.state === 'pending') && <button className="fx-btn sm" disabled={!peut} onClick={() => E.relancerVideo(idx)}>{pret ? '↻ Refaire' : ui.state === 'err' ? '↻ Relancer' : '▶ Lancer'}</button>}
           {(pret || ui.state === 'err') && <button className="fx-btn sm" disabled={!peut} title="Un autre concept vidéo (CT jamais utilisé dans cette commande)" onClick={() => E.relancerVideo(idx, { autreCT: true })}>⇄ Autre CT</button>}
+          {ui.state !== 'running' && !(job && job.etat === 'plan_pret') && <button className="fx-btn sm" disabled={!peut} title="La machine écrit le texte et le plan, puis s'arrête : vous validez avant de payer les images et les clips" onClick={() => E.texteDabord(idx)}>📝 Texte d'abord</button>}
           {pret && job && <button className="fx-btn sm" disabled={!peut} title="Refaire seulement les plans fautifs, avec votre consigne, sans repayer la vidéo" onClick={() => setCorr(!corr)}>🩹 Corriger des plans</button>}
           {ui.state !== 'running' && <button className="fx-btn sm" disabled={!c} onClick={() => ref.current.click()}>{pret ? 'Remplacer' : 'Importer'}</button>}
           {ui.state !== 'running' && !pret && <button className="fx-btn sm" disabled={!c} title="Rattacher une vidéo déjà produite (lien .mp4)" onClick={() => setLien(lien === null ? '' : null)}>Lien</button>}

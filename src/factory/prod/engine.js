@@ -796,6 +796,7 @@ export async function regenerateCopy(angleIdx) {
 }
 export const relancerVideo = VID.relancerVideo
 export const corrigerVideo = (idx, plans) => VID.corrigerVideo(idx, plans)   // correcteur-cible-v1
+export const texteDabord = (idx, o) => VID.texteDabord(idx, o)   // texte-dabord-v1
 export const lancerVideosManquantes = async () => { for (const x of VID.videoSlots()) { if (!x.c.videoUrl && !VID.jobEnCours(x.c)) await VID.relancerVideo(x.i) } }
 export const attacherLienVideo = (idx, url) => VID.attacherLien(idx, url)
 export const copyIsFallback = (c) => !!c && c.description === "(description vide — Gemini n'a pas suivi le format)"
