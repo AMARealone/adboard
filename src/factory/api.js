@@ -101,6 +101,7 @@ export function etatAuto(b) {
   if (a.prete_le) return a.complet ? { k: 'ok', t: 'Prête à vérifier' } : { k: 'wa', t: 'Lot incomplet' }
   if (a.lancee_le) return { k: 'ac', t: 'Agents au travail' + (a.etape ? ' · ' + a.etape : '') }
   if (a.alerte_attente) return { k: 'wa', t: 'À lancer à la main' }
+  if (a.en_file && b.status === 'pending') return { k: 'mu', t: 'En file d\'attente · n° ' + a.en_file }   // file-attente-v1 : une autre production tourne, celle-ci part juste après
   if (b.status === 'pending') return { k: 'mu', t: 'Démarrage automatique' }
   return null
 }
