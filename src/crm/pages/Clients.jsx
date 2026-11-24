@@ -12,7 +12,7 @@ const ADBOARD = 'https://www.adstackofficial.com/adboard'
 const JOUR = 86400000
 // Les comptes de l'équipe sont désignés par le serveur (champ « interne », module comptes_equipe.js) : la même liste retire leurs achats de la Finance et des Transactions.
 const OFFRE_DU_PLAN = { starter: 'perf', pro: 'growth', scale: 'scale' }
-const SANTE = { vert: ['ok', 'Relation saine'], orange: ['wa', 'À surveiller'], rouge: ['red', 'À risque'] }
+const SANTE = { vert: ['ok', 'Relation saine'], orange: ['wa', 'À surveiller'], rouge: ['red', 'À risque'], bleu: ['bl', 'Nouveau client'] }   // sante-nouveau-v1 : un client de moins de 7 jours n'est pas jugé
 const wa = (t) => String(t || '').replace(/\D/g, '')
 const prenom = (x) => String(x.nom || '').trim().split(/\s+/)[0] || ''
 
@@ -26,6 +26,7 @@ function lire(x, now) {
   let a
   if (!x.active) a = { rang: 1, ton: 'red', titre: 'Réactiver le client', detail: 'Son forfait est terminé' + (x.expires_at ? ' depuis le ' + new Date(x.expires_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '') + '.', msg: bonjour + 'votre forfait AdStack est arrivé à son terme. Vous voulez qu\'on relance une production sur votre prochain produit ?' }
   else if (total > 0 && used >= total) a = { rang: 2, ton: 'bl', titre: 'Forfait épuisé : proposer le renouvellement', detail: used + ' / ' + total + ' crédits utilisés' + (jours != null && jours > 0 ? ', ' + jours + ' j avant la fin de la période' : '') + '. Il ne peut plus lancer de production sans renouveler ; l\'offre au-dessus est l\'autre option.', msg: bonjour + 'vous avez utilisé toutes les créatives de votre forfait. Pour lancer les prochaines, on peut renouveler dès maintenant, ou passer à l\'offre au-dessus pour avoir plus de créatives chaque mois. Laquelle vous convient ?' }
+  else if (r.some((t) => /Nouveau client/.test(t))) a = { rang: 2, ton: 'bl', titre: 'Accueillir et lancer sa première production', detail: 'Client depuis ' + (x.started_at ? new Date(x.started_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : 'peu') + ' : aucune demande encore.', msg: bonjour + 'bienvenue chez AdStack ! Pour lancer vos premières créatives, ajoutez votre produit dans votre espace AdBoard. Sur quel produit voulez-vous qu\'on commence ?' }
   else if (r.some((t) => /Fin de forfait proche/.test(t))) a = { rang: 3, ton: 'red', titre: 'Relancer avant la fin du forfait', detail: 'Le forfait se termine dans ' + Math.max(0, jours) + ' j et aucune demande récente.', msg: bonjour + 'il vous reste quelques jours sur votre forfait AdStack. Envoyez-moi votre prochain produit, on lance les créatives avant l\'échéance.' }
   else if (jours != null && jours <= 7) a = { rang: 4, ton: 'wa', titre: 'Préparer le renouvellement', detail: 'Le forfait se termine dans ' + Math.max(0, jours) + ' j.', msg: bonjour + 'votre forfait AdStack se renouvelle bientôt. Quels résultats avez-vous eus avec les dernières créatives ? On ajuste la suite selon ça.' }
   else if (r.some((t) => /offre supérieure/.test(t))) a = { rang: 5, ton: 'bl', titre: 'Proposer l\'offre supérieure', detail: 'Il a utilisé ' + Math.round(pct * 100) + ' % de ses crédits.', msg: bonjour + 'vous utilisez bien votre forfait. L\'offre au-dessus vous donnerait plus de créatives et un délai plus court : je vous explique ?' }
@@ -36,7 +37,7 @@ function lire(x, now) {
 
 const Anneau = ({ s }) => {
   if (!s || !SANTE[s.couleur]) return null
-  const c = s.couleur === 'vert' ? 'var(--ok)' : s.couleur === 'orange' ? 'var(--wa)' : 'var(--er)', R = 19, L = 2 * Math.PI * R
+  const c = s.couleur === 'vert' ? 'var(--ok)' : s.couleur === 'orange' ? 'var(--wa)' : s.couleur === 'bleu' ? '#5B8DEF' : 'var(--er)', R = 19, L = 2 * Math.PI * R
   return <div className="cl-ring" title={SANTE[s.couleur][1] + ' · ' + (s.raisons || []).join(' · ')}>
     <svg width="50" height="50" viewBox="0 0 50 50"><circle cx="25" cy="25" r={R} fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="5" /><circle cx="25" cy="25" r={R} fill="none" stroke={c} strokeWidth="5" strokeLinecap="round" strokeDasharray={L} strokeDashoffset={L * (1 - Math.min(100, s.score) / 100)} transform="rotate(-90 25 25)" /></svg>
     <b style={{ color: c }}>{s.score}</b><span>{SANTE[s.couleur][1]}</span>
