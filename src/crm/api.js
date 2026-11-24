@@ -125,9 +125,14 @@ function equipe() {
 const sansEquipe = async (rows) => { const E = await equipe(); return rows.filter((t) => !E.ids.has(t.user_id) && !E.emails.has(String(t.email || '').toLowerCase())) }
 export const fetchTransactions = async () => sansEquipe(await lirePages('/transactions?select=user_id,email,plan,created_at&order=created_at.asc'))
 export const fetchTransactionsCompletes = async () => sansEquipe(await lirePages('/transactions?select=*&order=created_at.desc'))
-// Taux XOF → USD (repli 1 $ ≈ 600 FCFA si la source ne répond pas).
-export async function tauxUsd() {
-  try { const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json'); const d = await r.json(); return (d && d.xof && d.xof.usd) || 1 / 600 } catch (_) { return 1 / 600 }
+// Taux XOF → USD. taux-wave-v1 (24 nov. 2026) : le même taux partout dans le CRM, donné par le serveur = taux du marché en direct
+// (même source que la page de vente) × coefficient Wave fixe (ce que Wave ajoute quand on paie en dollars, 1,088 par défaut).
+// Repli si le serveur ne répond pas : le marché en direct × 1,088.
+let _taux = null
+export function tauxUsd() {
+  if (!_taux) _taux = serveurAdmin('/finance/taux').then((d) => { const v = Number(d && d.xof_par_usd); if (!(v > 300)) throw new Error('taux'); return 1 / v })
+    .catch(async () => { _taux = null; try { const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json'); const d = await r.json(); const v = d && d.usd && d.usd.xof; return v > 300 ? 1 / (v * 1.088) : 1 / 651 } catch (_) { return 1 / 651 } })
+  return _taux
 }
 export const fetchCoutsApi = () => lirePages('/api_usage_log?select=source,cout_usd,type_appel,created_at&order=created_at.desc')
 export const fetchEmailsEnvoyes = () => lirePages('/email_sequence_log?select=user_id,email_key,sent_at&order=sent_at.desc')

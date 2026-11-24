@@ -2466,13 +2466,15 @@ const CORE_PLANS = ['discovery', 'test', 'starter', 'pro', 'scale'];
 // quotidiennement. Récupéré une fois au chargement, avec un repli fixe (1 USD ≈ 600 FCFA) tant
 // que la vraie valeur n'est pas encore arrivée ou si la requête échoue — jamais d'affichage
 // cassé, juste une précision qui s'améliore dès que possible après le premier rendu.
-let tauxXofVersUsd = 1 / 600; // repli — écrasé dès que le vrai taux répond
+// taux-wave-v1 (24 nov. 2026) : taux du marché en direct × coefficient Wave fixe (651 ÷ 598,34 = 1,088), comme le CRM React et le serveur
+const COEFF_WAVE = 1.088;
+let tauxXofVersUsd = 1 / 651; // repli — écrasé dès que le vrai taux répond
 (async function chargerTauxChangeReel() {
   try {
     const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/xof.json');
     const data = await r.json();
     if (data?.xof?.usd) {
-      tauxXofVersUsd = data.xof.usd;
+      tauxXofVersUsd = data.xof.usd / COEFF_WAVE;
       console.log('[Taux de change] XOF→USD réel chargé :', tauxXofVersUsd);
       // Redessine tout affichage monétaire déjà rendu avec l'ancien repli, pour ne pas laisser
       // les tout premiers chiffres visibles légèrement imprécis jusqu'au prochain rafraîchissement.

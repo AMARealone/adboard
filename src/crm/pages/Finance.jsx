@@ -22,7 +22,8 @@ const POSTES = { analyse: 'Analyse', images: 'Images', copies: 'Ad copies', vide
 const PERIODES = [[7, '7 jours'], [30, '30 jours'], [90, '90 jours'], [0, 'Tout']]
 const NIVEAUX = { critique: ['red', 'Critique'], alerte: ['wa', 'Alerte'], info: ['bl', 'Info'] }
 const PARAMS = [
-  ['taux_xof_par_usd', 'Taux FCFA pour 1 $', 'Laisse vide : taux du marché, mis à jour automatiquement.'],
+  ['taux_xof_par_usd', 'Taux FCFA pour 1 $ (forcé)', 'Laisse vide : taux du marché en direct × coefficient Wave.'],
+  ['coeff_wave', 'Coefficient Wave', 'Taux Wave ÷ taux du marché (651 ÷ 598,34 = 1,088 le 24 nov.). Multiplie le taux du marché en direct.'],
   ['commission_chariow_pct', 'Commission Chariow (%)', 'Utilisée seulement si une vente n\'a pas sa commission réelle.'],
   ['prix_credit_scrapecreators_usd', 'Prix d\'un crédit ScrapeCreators ($)', 'Pack 25 000 crédits = 47 $ → 0,00188. À confirmer sur ta facture.'],
   ['prix_vision_web_usd', 'Prix d\'une recherche Google Vision ($)', 'Tarif public : 3,50 $ pour 1 000.'],
@@ -126,7 +127,7 @@ export default function Finance() {
     {err && <div className="cx-banner">⚠ {err}</div>}
     {charge && !d && <p className="cx-sub">Calcul en direct… (le serveur peut mettre jusqu'à une minute à se réveiller)</p>}
     {d && <>
-      <p className="cx-sub" style={{ marginTop: 0 }}>Du {d.periode.du} au {d.periode.au} · 1 $ = {d.taux.xof_par_usd} FCFA (taux {d.taux.source}) · calculé à {new Date(d.genere_a).toLocaleTimeString('fr-FR')}</p>
+      <p className="cx-sub" style={{ marginTop: 0 }}>Du {d.periode.du} au {d.periode.au} · 1 $ = {d.taux.xof_par_usd} FCFA ({d.taux.marche ? 'marché ' + d.taux.marche + ' × Wave ' + d.taux.coeff_wave : 'taux ' + d.taux.source}) · calculé à {new Date(d.genere_a).toLocaleTimeString('fr-FR')}</p>
       <div className="cx-stats wrap">
         <Stat l="Revenu net" v={usd(d.revenu.net_usd)} t="acc" d={delta(C && C.revenu_net_delta_pct)} />
         <Stat l="Dépenses" v={usd(R.depenses_usd)} />
