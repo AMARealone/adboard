@@ -79,6 +79,7 @@ C'est la conscience commune des agents : l'image et la vidéo de cet angle parte
 → TON DIRECT : le sujet du noyau tient dans les premiers mots ; une idée par phrase ; des verbes d'action ; aucune phrase d'annonce, de mise en garde ou de politesse publicitaire. Direct, c'est dire tout de suite ce qu'elle a déjà en tête, sans agressivité et sans surpromesse.
 → Test avant d'émettre : retire le noyau d'un hook ou d'une phrase ; si elle garde son sens, elle parle d'autre chose : réécris-la.
 → LANGUE : la langue officielle de la cible, pure. Les mots de S6 sont pris pour leur sens ; aucun mot de langue locale ni d'argot n'entre dans une phrase écrite ou dite, même quand un verbatim en contient. La cible doit se reconnaître dans ce qu'on dit d'elle, pas dans un mot de son dialecte placé dans une phrase en français.
+→ MULTI-MARCHÉ (S0 commence par « MODE MULTI-MARCHÉ : [pays] ») : le même texte est lu dans tous ces pays à la fois. Une ville, un quartier, une région, un marché ou un pays nommé SEUL dit à tous les autres « ce n'est pas pour toi » : aucun lieu nommé, ou bien tous les pays de la liste nommés ensemble. Prénoms, habitudes, livraison et paiement : seulement ce qui est vrai et courant dans tous ces pays. Si S0 dit « PRIX NON AFFICHABLE », aucun prix, prix barré ni remise chiffrée.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 RAISONS D'ACHETER — COMMENT ELLES ENTRENT DANS TON TEXTE

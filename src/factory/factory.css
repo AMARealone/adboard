@@ -593,3 +593,17 @@ a.fx-lib:hover{background:rgba(160,175,210,.05);border-color:var(--bd)}
 .fx2-corr-d span{color:var(--sec);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .fx2-corr-p textarea{width:100%;max-width:none;font-size:12px;resize:vertical}
 .fx2-corr-a{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ct-suspendu-v1 — interrupteur actif / suspendu des CT vidéo */
+.fx-sw{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;user-select:none;min-width:0}
+.fx-sw input{position:absolute;opacity:0;width:1px;height:1px}
+.fx-sw-t{flex:none;width:34px;height:20px;border-radius:999px;background:rgba(229,80,80,.35);position:relative;transition:background .15s}
+.fx-sw-t::after{content:"";position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform .15s}
+.fx-sw input:checked+.fx-sw-t{background:var(--ac)}
+.fx-sw input:checked+.fx-sw-t::after{transform:translateX(14px)}
+.fx-sw input:focus-visible+.fx-sw-t{outline:2px solid var(--ac);outline-offset:2px}
+.fx-sw input:disabled+.fx-sw-t{opacity:.5}
+.fx-sw-l{color:var(--mu,#9aa3b5);overflow:hidden;text-overflow:ellipsis}
+.fx-susp .fx-sw-l{color:#ff8b8b;font-weight:600}
+.fx-susp .fx-poster{filter:grayscale(1) brightness(.6)}
+.fx-susp{border-color:rgba(229,80,80,.35)}

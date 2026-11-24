@@ -20,7 +20,7 @@ export function chargerListe(force = false) {
   if (!_liste || force) {
     _liste = vctGetAll()
       .then((l) => (l || []).filter((c) => c && c.id && c.videoUrl)
-        .map((c) => ({ id: c.id, nom: String(c.name || c.id), duree_s: Number(c.duree_s) || 0, poster: c.posterUrl || '' }))
+        .map((c) => ({ id: c.id, nom: String(c.name || c.id) + (c.suspendu ? ' (suspendu)' : ''), duree_s: Number(c.duree_s) || 0, poster: c.posterUrl || '' }))
         .sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { numeric: true, sensitivity: 'base' })))
       .catch((e) => { console.warn('[CT manuel] galerie illisible :', e && e.message); _liste = null; return [] })
   }

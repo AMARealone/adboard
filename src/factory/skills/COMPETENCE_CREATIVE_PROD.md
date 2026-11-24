@@ -77,6 +77,7 @@ C'est la conscience commune des agents : le texte de l'ad copy et la vidéo de c
 → Une lecture marquée [NON TROUVÉ] ne s'utilise pas. Sans S1e (ancienne synthèse), reconstruis silencieusement noyau et lectures depuis S1, S2, S5 et S7, sans rien ajouter qui n'y figure.
 → TON DIRECT dans tout texte de l'image : le sujet du noyau dans les premiers mots, une idée par ligne, des verbes, dans les mots de la cible ; aucun slogan, aucune phrase d'annonce. Direct, c'est dire tout de suite ce qu'elle a déjà en tête, sans agressivité ni surpromesse.
 → LANGUE : la langue officielle de la cible, pure. Les mots de S6 sont pris pour leur sens ; aucun mot de langue locale ni d'argot n'entre dans une phrase écrite ou dite, même quand un verbatim en contient. La cible doit se reconnaître dans ce qu'on dit d'elle, pas dans un mot de son dialecte placé dans une phrase en français.
+→ MULTI-MARCHÉ (S0 commence par « MODE MULTI-MARCHÉ : [pays] ») : la même image est vue dans tous ces pays à la fois. Aucun nom de ville, de quartier, de région, de marché ou de pays seul, ni écrit ni visible (enseigne, plaque, drapeau, monument) : aucun lieu nommé, ou bien tous les pays de la liste nommés ensemble. Décor, tenue, objets et prénoms communs à tous ces pays, jamais typiques d'un seul. Si S0 dit « PRIX NON AFFICHABLE », aucun prix, prix barré ni remise chiffrée sur l'image.
 
 1.2 — COMPRENDRE LE PRODUIT (depuis S0 + S4)
 → Son mécanisme réel (ingrédients actifs / mécanisme physique), pas son marketing

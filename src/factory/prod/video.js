@@ -31,6 +31,7 @@ export function prechargerCTVideo() {
   galerie = vctGetAll().then((l) => l.filter((c) => c.videoUrl)).catch((e) => { console.warn('[Vidéo] galerie CT vidéo illisible :', e.message); return [] })
   return galerie
 }
+const horsSuspendus = (l) => (l || []).filter((c) => !c.suspendu)   // ct-suspendu-v1 : choix automatique seulement ; le choix à la main voit tout
 const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim()
 const titreCourt = (a) => String(a || '').split('*')[0].replace(/^\s*angle\s*\d+\s*[:—–-]?\s*/i, '').trim()
 const balises = (c) => (Array.isArray(c.awareness) ? c.awareness : String(c.awareness || '').split(',')).map(PL.cle).filter(Boolean)
@@ -82,8 +83,8 @@ const briefCourt = () => { const b = S.brief || {}; return ['Marque : ' + (b.mar
 async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
   const angleIdxs = Array.from({ length: nbAngles }, (_, a) => a)
   if (!avecVideo) return { plan: PL.planParDefaut(nbAngles), choix: [] }
-  const toute = await (galerie || prechargerCTVideo())
-  if (!toute.length) throw new Error('Aucun CT vidéo avec sa vidéo source dans la galerie (Galerie CT vidéo)')
+  const toute = horsSuspendus(await (galerie || prechargerCTVideo()))   // ct-suspendu-v1 : la sélection automatique ne voit pas les CT suspendus
+  if (!toute.length) throw new Error('Aucun CT vidéo actif avec sa vidéo source dans la galerie (Galerie CT vidéo : vérifiez les CT suspendus)')
   const sel = ctVideoDispo(toute, nbAngles, S.renewalContext, APP.ctSatures())   // zero-redondance-video-v1
   const liste = sel.liste
   if (sel.ecartes) console.log('[Vidéo] zéro redondance : ' + sel.ecartes + ' CT vidéo écartés (déjà utilisés au dernier lot ou mal reçus), ' + liste.length + ' proposés')
@@ -127,7 +128,7 @@ async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
 
 // Un seul CT vidéo pour un angle (relance « Autre CT »), au niveau imposé par le plan.
 async function unCT(angleIdx, niveau, exclure) {
-  const liste = await (galerie || prechargerCTVideo())
+  const liste = horsSuspendus(await (galerie || prechargerCTVideo()))   // ct-suspendu-v1
   const libres = liste.filter((c) => !exclure.has(c.id))
   const dispo = libres.length ? ctVideoDispo(libres, 1, S.renewalContext, APP.ctSatures()).liste : libres   // zero-redondance-video-v1
   if (!dispo.length) throw new Error('Plus aucun CT vidéo disponible dans la galerie')

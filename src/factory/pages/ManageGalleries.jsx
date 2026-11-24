@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePersist } from '../agentStore'
 import { ctGetAll, ctPut, ctDel, ctGetBase64, ctCompress, ctNameAI, loadCTImages } from '../ctApi'
-import { vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll, vctMettreVideo, vctNouveauVideo, vctChangerMiniature, vctSupprimerVideo, vctAnalyser, vctSuivreAnalyse } from '../vctApi'
+import { vctSuspendre, vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll, vctMettreVideo, vctNouveauVideo, vctChangerMiniature, vctSupprimerVideo, vctAnalyser, vctSuivreAnalyse } from '../vctApi'
 import { captureFrame } from '../r2'
 import { labFetch, labUrl } from '../lab'
 import { confirmDlg, alertDlg, toast } from '../ui'
@@ -235,9 +235,18 @@ export function GalerieVideo() {
   }
   const sansMeta = list.filter((r) => !r.meta).length
   const l = list.filter((x) => (!q || hay(x).includes(q.toLowerCase())) && (!aw || (x.awareness || []).includes(aw)))
+  // ct-suspendu-v1 : l'interrupteur enregistre tout de suite ; un CT suspendu n'est plus choisi automatiquement, il reste choisissable à la main
+  const [bascule, setBascule] = useState({})
+  const suspendre = async (x, on) => {
+    setBascule((b) => ({ ...b, [x.id]: true }))
+    try { await vctSuspendre(x, on); setList((ls) => ls.map((y) => (y.id === x.id ? { ...x } : y))); toast(on ? '« ' + x.name + ' » suspendu : plus choisi automatiquement (choix à la main toujours possible).' : '« ' + x.name + ' » réactivé : de nouveau proposé à la sélection automatique.') }
+    catch (e) { await alertDlg('Enregistrement impossible : ' + e.message) }
+    finally { setBascule((b) => ({ ...b, [x.id]: false })) }
+  }
+  const nbSusp = list.filter((x) => x.suspendu).length
   return (
     <div className="fx-wrap">
-      <div className="fx-h"><div><h1>Galerie CT vidéo</h1><p>{list.length} CT vidéo{sansMeta ? ` · ${sansMeta} sans méta-description` : ''}</p></div>
+      <div className="fx-h"><div><h1>Galerie CT vidéo</h1><p>{list.length} CT vidéo{nbSusp ? ` · ${nbSusp} suspendu${nbSusp > 1 ? 's' : ''}` : ''}{sansMeta ? ` · ${sansMeta} sans méta-description` : ''}</p></div>
         <div className="fx-acts"><button className="fx-btn" disabled={busy} onClick={importLab}>Importer depuis le labo</button><button className="fx-btn" disabled={busy} onClick={enrich}>Enrichir les CT sans méta</button>
           <button className="fx-btn" disabled={busy} onClick={() => fileRef.current.click()}>+ Ajouter un texte de CT</button>
           <button className="fx-btn primary" disabled={busy} onClick={() => vidRef.current.click()}>+ Ajouter des vidéos de CT</button></div></div>
@@ -250,10 +259,15 @@ export function GalerieVideo() {
       {err && <div className="fx-err">{err}</div>}
       {loading ? <div className="fx-gal">{Array.from({ length: 6 }).map((_, i) => <div key={i} className="fx-skel" style={{ height: 190 }} />)}</div>
         : l.length ? <div className="fx-gal wide">{l.map((x) => (
-          <div key={x.id} className="fx-ct fx-vid">
+          <div key={x.id} className={'fx-ct fx-vid' + (x.suspendu ? ' fx-susp' : '')}>
             {x.videoUrl ? <button className="fx-poster" onClick={() => setPlay(x)} title="Voir la vidéo">{x.posterUrl ? <img src={x.posterUrl} alt="" loading="lazy" /> : <span className="fx-poster-vide">▶</span>}<i>▶</i></button>
               : <button className="fx-poster vide" onClick={() => setEdit(x)}>Pas de vidéo source<br /><small>cliquer pour l'ajouter</small></button>}
             <div className="fx-t wrap">{x.name}</div>
+            <label className="fx-sw" title={x.suspendu ? 'Suspendu : jamais choisi automatiquement en production. Vous pouvez toujours le choisir à la main.' : 'Actif : la sélection automatique peut le choisir.'}>
+              <input type="checkbox" role="switch" checked={!x.suspendu} disabled={!!bascule[x.id]} onChange={(e) => suspendre(x, !e.target.checked)} />
+              <span className="fx-sw-t" aria-hidden="true" />
+              <span className="fx-sw-l">{bascule[x.id] ? 'Enregistrement…' : x.suspendu ? 'Suspendu · choix manuel seulement' + (x.suspendu_le ? ' · depuis le ' + new Date(x.suspendu_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '') : 'Actif en production automatique'}</span>
+            </label>
             <div className={'fx-meta' + (x.meta ? '' : ' warn')}>{x.meta ? x.meta : 'Pas de méta-description : le sélecteur ne pourra pas bien choisir ce CT.'}</div>
             <div className="fx-chips">
               {x.duree_s ? <span className="fx-chip d">{x.duree_s} s</span> : <span className="fx-chip bad">durée ?</span>}

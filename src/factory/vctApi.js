@@ -27,6 +27,9 @@ async function upload(name, obj) {
   const r = await fetch(base() + name, { method: 'POST', headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'x-upsert': 'true' }, body: JSON.stringify(obj) })
   if (!r.ok) throw new Error('Enregistrement CT vidéo échoué : HTTP ' + r.status)
 }
+// ct-suspendu-v1 (24 nov. 2026) — fondateur : un interrupteur par CT vidéo. Suspendu = jamais choisi par la sélection automatique
+// (production, « Autre CT », CT gagnant rejoué) ; il reste choisissable à la main (test, CT manuel, reprise d'un angle choisie par le fondateur).
+export async function vctSuspendre(rec, on) { rec.suspendu = !!on; rec.suspendu_le = on ? Date.now() : ''; await vctPutMeta(rec); return rec }
 export const vctPutMeta = (rec) => upload(rec.id + '.json', Object.assign({ name: rec.name, addedAt: rec.addedAt || Date.now(), meta: rec.meta || '', awareness: rec.awareness || [], styleTags: rec.styleTags || [], niche: rec.niche || '', source: rec.source || '', taille: rec.taille || 0, ...(rec.lot ? { lot: rec.lot } : {}) }, _vctExtra(rec)))
 export const vctPutTexte = (id, texte) => upload(id + '.texte.json', { texte })
 export async function vctGetTexte(id) {
