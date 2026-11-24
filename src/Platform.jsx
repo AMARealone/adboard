@@ -4,6 +4,7 @@ import { WS, wsOwner, can, isMember, resolveWorkspace, captureInviteFromUrl, swi
 import TeamPage from "./TeamPage.jsx";
 import { TP_CHAMPS, nettoyerStats, aDesChiffres, scoresTopPerformer, classerTopPerformer, multiplicateurTP } from "./topPerformer.js";
 import { useAvis, VotreRegard, AvisCreativeModal, BoutonAvis, PastilleAvis } from "./AvisClient.jsx"; // avis-client-v1
+import { BoutonRectif } from "./Rectification.jsx"; // rectifications-v1
 captureInviteFromUrl();
 // ADBOARD_VERSION v8.3-oneshot (offre ONE SHOT : achat unique, 6 créatives pour 1 produit, 48h, non vendue dans AdBoard) | v8.2-4offres (4 offres TEST / PERF+ / GROWTH / SCALE, créatives accordées au mois sans logique hebdomadaire, fin du One Shot) | v8.1-offres (nouvelles offres : garantie 60 jours, PERF+ livré en 48h, Ad Copies et Données Marché pour GROWTH et SCALE, texte des offres par palier, bonus pack) | v8.0-equipe (comptes équipe : page Équipe, invitations, droits par membre, changement d espace) | v7.9-mobile (page produit : champs multi-lignes qui grandissent avec le texte, blocs facultatifs repliés sur téléphone, marges et aides compactes) | v7.8.2-kit (aspect « Kit / cadeau offert avec le produit ») | v7.8.1-multi-marche (pop-up de demande refondu, marchés compatibles, prix par pays, offre du moment) | v7.7-avis-15
 
@@ -4994,6 +4995,7 @@ const Galerie = ({products, setProducts, isDemo, setSection, isMobile, notify, s
                 <Icon name="chart" size={19} color={aChiffres?'#FFC107':'#fff'}/>{aChiffres ? 'Mes résultats' : 'Ajouter résultats'}
               </button>
               {avisStore && !isDemo && <BoutonAvis compact existing={avisStore.parCreative[selected.id]} onClick={() => setAvisOuvert(selected)}/>}
+              {video && !isDemo && <BoutonRectif creative={selected} tuile={tuile} notify={(m) => notify && notify(m, 'success')} getToken={async () => { const ss = await sbAuth.refreshSession(); return ss?.access_token || null; }}/>}
               {accesGrowth() && (
                 <button onClick={() => { window.__copiesFocus = { productId: selected.productId, angle: selected.angle, week: selected.week, ticket: ticketDeCreative(selected) }; setSelected(null); setSection && setSection('copies'); }} style={tuile(false)} aria-label="Voir le texte de cet angle">
                   <Icon name="document" size={19} color="#9DBBFF"/>Texte de l'angle

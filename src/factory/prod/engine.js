@@ -375,7 +375,7 @@ async function lancerProduction(reprise = false) {
     if (!garde || U.copy.length !== nbAngles) U.copy = Array.from({ length: nbAngles }, () => ({ state: 'wait' }))
     resetAgents(); U.launched = true; U.launchLabel = reprise ? 'Reprise en cours…' : 'Production en cours…'; U.etapeDebut = Date.now(); U.finiLe = null; emit()
     if (videoCloud) VID.prechargerCTVideo()
-    U.banner = reprise ? { kind: 'info', text: 'Reprise de la production : seul ce qui manque est produit — hypothèse, images, ad copies et vidéos déjà faites ne sont pas refaites, donc pas repayées.' } : { kind: 'info', text: `Lot de ${nbTot} créatives : ${nbAngles} angles × (1 vidéo + 2 images). Budget : ${S.budget.total.toFixed(2)} $ pour l'hypothèse, les ad copies, les images et leurs corrections, + jusqu'à ${BUDGET_VIDEO_MAX} $ par vidéo (tous les plans en Veo Fast).` }; emit()
+    U.banner = reprise ? { kind: 'info', text: 'Reprise de la production : seul ce qui manque est produit — hypothèse, images, ad copies et vidéos déjà faites ne sont pas refaites, donc pas repayées.' } : { kind: 'info', text: `Lot de ${nbTot} créatives : ${nbAngles} angles × (1 vidéo + 2 images). Budget : ${S.budget.total.toFixed(2)} $ pour l'hypothèse, les ad copies, les images et leurs corrections, + jusqu'à ${BUDGET_VIDEO_MAX} $ par vidéo tout compris (ajusté au budget du mois du client).` }; emit()
 
     // ── 1. hypothèse de marché ──
     const hypoDejaLa = garde && !!S.synthesis
@@ -531,7 +531,7 @@ async function lancerProduction(reprise = false) {
     autosave(true)
   }
 }
-export const BUDGET_VIDEO_MAX = 15
+export const BUDGET_VIDEO_MAX = 8   // budget-client-v1 (24 nov. 2026) : 8 $ tout compris par vidéo visés, fixés par le serveur depuis le budget du mois du client (117 $ PERF+)
 
 // Annuler : arrête TOUT de suite les images, les ad copies et l'analyse (rien de nouveau n'est lancé, les réponses
 // en vol sont ignorées). Les vidéos du cloud : arrêtées aussi si le fondateur le confirme.
@@ -798,7 +798,7 @@ export async function regenerateCopy(angleIdx) {
   catch (err) { if (err.name !== 'AbortError') markCopyError(angleIdx, err.message) }
 }
 export const relancerVideo = VID.relancerVideo
-export const corrigerVideo = (idx, plans) => VID.corrigerVideo(idx, plans)   // correcteur-cible-v1
+export const corrigerVideo = (idx, plans, opt) => VID.corrigerVideo(idx, plans, opt)   // correcteur-cible-v1 ; rectifications-v1 : plafond de dépense neuve (opt.maxUsd)
 export const texteDabord = (idx, o) => VID.texteDabord(idx, o)   // texte-dabord-v1
 export const lancerVideosManquantes = async () => { for (const x of VID.videoSlots()) { if (!x.c.videoUrl && !VID.jobEnCours(x.c)) await VID.relancerVideo(x.i) } }
 export const attacherLienVideo = (idx, url) => VID.attacherLien(idx, url)

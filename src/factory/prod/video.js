@@ -386,12 +386,12 @@ export async function relancerVideo(idx, opts = {}) {
 // ───────── correcteur-cible-v1 (23 nov. 2026) : corriger des plans d'une vidéo livrée ─────────
 // Demande du fondateur : « corriger là où on veut » pour quelques dollars au lieu de 15 $. La machine rejoue la vidéo depuis son dossier de reprise
 // (rien n'est repayé) et ne refait que les plans choisis, avec la consigne écrite pour chacun. La vidéo d'avant reste visible et revient si la correction échoue.
-export async function corrigerVideo(idx, plans) {
+export async function corrigerVideo(idx, plans, { maxUsd } = {}) {   // rectifications-v1 : maxUsd = plafond de dépense neuve (rectification client : 3 $)
   const c = S.creatives[idx]; if (!estSlotVideo(c) || !c.videoUrl || !c.job) return false
   if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return false }
   const liste = (plans || []).map((x) => ({ bloc: Number(x.bloc), consigne: String(x.consigne || '').trim() })).filter((x) => x.bloc > 0 && x.consigne.length >= 4)
   if (!liste.length) { toast('Choisissez au moins un plan et écrivez ce qu\'il doit montrer.'); return false }
-  const r = await fetch(SERVER + '/video-jobs/corriger', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, slot: c.job.slot || (c.angleIdx + 1), plans: liste }) })
+  const r = await fetch(SERVER + '/video-jobs/corriger', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId, slot: c.job.slot || (c.angleIdx + 1), plans: liste, max_usd: maxUsd || undefined }) })
   const j = await r.json().catch(() => ({}))
   if (!r.ok || j.error) { toast(j.error || 'Correction impossible (HTTP ' + r.status + ').', 12000); return false }
   S.creatives[idx] = { ...c, videoAvant: { videoUrl: c.videoUrl, thumbUrl: c.thumbUrl || null, desc: c.desc, aRevoir: !!c.aRevoir, job: c.job }, videoUrl: null, status: 'pending',
@@ -399,7 +399,7 @@ export async function corrigerVideo(idx, plans) {
   U.vjournal = U.vjournal || {}; U.vjournal[idx] = []
   U.crea[idx] = { state: 'running', text: 'Correction de ' + (j.plans || liste).length + ' plan(s)', pct: 1 }; emit(); _save(true)
   suivre(idx)
-  return true
+  return j.execution || true
 }
 
 // ───────── texte-dabord-v1 (23 nov. 2026) : valider le texte avant de payer les images et les clips ─────────

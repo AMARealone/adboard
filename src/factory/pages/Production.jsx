@@ -9,6 +9,7 @@ import { toast, confirmDlg } from '../ui'
 import * as PL from '../prod/plan'
 import * as CDC from '../prod/cdc'   // cdc-franchise-v1
 import * as MAN from '../prod/ctmanuel'   // ct-fidelite-v1
+import { BudgetClient, Rectifications } from './BudgetRectifs'   // budget-client-v1 + rectifications-v1
 
 const esc = (s) => (s == null ? '' : String(s))
 const nivLib = (c) => (c && (PL.LIB[c.niveau] || ['Solution Aware', 'Product Aware', 'Most Aware'][c.ctIdx])) || ''
@@ -204,7 +205,7 @@ function Launch({ S, U }) {
         <b>Niveaux de conscience</b>
         <span>Chaque angle suit un parcours : <em>Problème → Solution → Produit</em> ou <em>Solution → Produit → Most Aware</em>. Le lot contient toujours au moins une créative Solution, une Produit et une Most Aware. L'agent choisit selon le marché, le code vérifie.</span>
         <b>Budget</b>
-        <span>{E.budgetHorsVideo(n * 3).toFixed(2)} $ pour l'hypothèse, les ad copies, les {n * 2} images et leurs corrections automatiques · jusqu'à {E.BUDGET_VIDEO_MAX} $ par vidéo, tous les plans animés en Veo Fast.</span>
+        <span>{E.budgetHorsVideo(n * 3).toFixed(2)} $ pour l'hypothèse, les ad copies, les {n * 2} images et leurs corrections automatiques · jusqu'à {E.BUDGET_VIDEO_MAX} $ par vidéo tout compris, ajusté au budget du mois du client.</span>
       </div>
       <ul className="fx2-checks">{checks.map((c, i) => <li key={i} className={c.ok ? 'ok' : c.load ? 'load' : 'ko'}><i>{c.ok ? '✓' : c.load ? '…' : '!'}</i><span>{c.t}{!c.ok && !c.load && c.warn ? <em> — {c.warn}</em> : null}</span></li>)}</ul>
       {diag.s === 'ko' && diag.cmd && <div className="fx2-cmd"><span>À coller une seule fois dans Cloud Shell pour autoriser Render à lancer les vidéos :</span><code>{diag.cmd}</code><button className="fx-btn sm" onClick={() => navigator.clipboard.writeText(diag.cmd).then(() => toast('Commande copiée'))}>Copier</button></div>}
@@ -655,6 +656,8 @@ export default function Production() {
       {U.cdcNote && U.cdcNote.commandeId === S.commandeId && <div className={'fx-banner ' + U.cdcNote.kind}>{U.cdcNote.text}</div>}
       {!charge && <Picker S={S} U={U} />}
       {charge && <BriefCard S={S} />}
+      {charge && S.briefSource === 'commande' && <BudgetClient S={S} />}
+      {charge && S.briefSource === 'commande' && <Rectifications S={S} />}
       {charge && <CahierMarque key={S.commandeId || 'x'} S={S} U={U} />}
       {charge && !U.launched && <ChoixCTVideo S={S} U={U} />}
       {charge && <LectureHost S={S} U={U} />}
