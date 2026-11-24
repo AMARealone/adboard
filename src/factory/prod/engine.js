@@ -636,7 +636,8 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
   }
   const desc = (g.meta && g.meta.length > 5) ? g.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${S.creatives[idx].angleIdx + 1}`
   const qaRes = { mention: SEN.mentionRequise() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', ecart_ct: q.ecart_ct || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
-  S.creatives[idx] = { ...S.creatives[idx], imgB64, desc, status: 'done', imageMime, qa: qaRes, prompt: g.prompt || '', meta: g.meta || '', qaHist: qaHist.map((h) => ({ ...h, prompt: String(h.prompt || '').slice(0, 6000), meta: String(h.meta || '').slice(0, 3000) })), ctUrl: CT_IMAGES[ctName] || '' }
+  // regen-image-v1 : l'adresse de l'ANCIENNE image (url, miniature) est retirée dès que la nouvelle existe — l'écran affichait c.url en priorité et restait figé dessus
+  S.creatives[idx] = { ...S.creatives[idx], url: null, thumbUrl: null, imgB64, desc, status: 'done', imageMime, qa: qaRes, prompt: g.prompt || '', meta: g.meta || '', qaHist: qaHist.map((h) => ({ ...h, prompt: String(h.prompt || '').slice(0, 6000), meta: String(h.meta || '').slice(0, 3000) })), ctUrl: CT_IMAGES[ctName] || '' }
   U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
   if (S.briefSource === 'commande' && S.commandeId) {
     try {
