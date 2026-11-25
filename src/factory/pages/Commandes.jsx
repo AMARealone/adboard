@@ -8,6 +8,8 @@ import { openCommande, supprimerTicket, commandeToBrief } from '../prod/engine'
 import * as E from '../prod/engine'
 import { ManualSend } from './Production'
 import { alertDlg } from '../ui'
+import { useProd } from '../prod/state'
+import { Rectifications } from './BudgetRectifs'   // rectifications-v4 : la section complète vit aussi dans « Livrables »
 
 function useNow(ms = 1000) { const [n, setN] = useState(Date.now()); useEffect(() => { const t = setInterval(() => setN(Date.now()), ms); return () => clearInterval(t) }, [ms]); return n }
 const pad = (n) => String(n).padStart(2, '0')
@@ -126,6 +128,11 @@ export function LivrablesPanel({ id, onClose }) {
   const crea = (d.creatives || []).map((c, i) => ({ c, i })).filter((x) => x.c)
   const nbA = r ? r.copiesAttendues : 0
   const revs = (b && Array.isArray(b.revisions) ? b.revisions : []).filter((x) => x && !['livree', 'refusee'].includes(x.etat))   // rectifications-v3
+  // rectifications-v4 (25 nov. 2026, décision du fondateur) : tout se traite depuis « Livrables ». Quand la commande a une rectification ouverte,
+  // sa production est chargée en arrière-plan (sans la repasser « en cours ») pour que la section complète marche ici : plans, Préparer, Lancer, Refaire, Livrer.
+  const SP = useProd()
+  const [prodPrete, setProdPrete] = useState(false)
+  useEffect(() => { let vivant = true; if (b && revs.length && !prodPrete) { E.chargerCommande(id).then((ok) => { if (vivant) setProdPrete(!!ok) }).catch(() => { }) } return () => { vivant = false } }, [b && b.id, revs.length])
   const dossiers = (b && Array.isArray(b.dossiers) ? b.dossiers : []).slice().reverse()
   const tache = async (cle, fn) => { setBusy(cle); try { await fn() } finally { setBusy(''); charger() } }
   // Ouvre la commande dans la production (sans la repasser « en cours ») puis lance l'action : on la suit en direct là-bas.
@@ -150,6 +157,7 @@ export function LivrablesPanel({ id, onClose }) {
             <button className="fx-btn" disabled={!!busy || r.rien} onClick={() => tache('dossier', async () => { if (await E.chargerCommande(id)) await E.genererDossier() })}>{busy === 'dossier' ? 'Dossier en cours…' : dossiers[0] ? 'Refaire le dossier' : 'Faire le dossier complet'}</button>
             <button className="fx-btn" disabled={!!busy} onClick={() => dansProd(null)}>Ouvrir dans la production</button>
           </div>
+          {revs.length > 0 && (prodPrete && SP.commandeId === id ? <Rectifications S={SP} /> : <div className="fx2-card slim" style={{ color: '#F59E0B', fontSize: 12.5 }}>🩹 {revs.length} rectification(s) demandée(s) — chargement des outils de correction…</div>)}
           <div className="fx-note">Tout est rangé dans la carte de cette commande (stockage AdStack) : rien n'expire. Régénérer ou changer de CT ouvre la production pour suivre la génération en direct.</div>
           {r.rien && <div className="fx-empty">Aucun livrable rangé pour l'instant.</div>}
           {Array.from({ length: nbA }, (_, a) => {
@@ -168,7 +176,7 @@ export function LivrablesPanel({ id, onClose }) {
                           {pret ? (v ? <video src={c.videoUrl} poster={c.thumbUrl || undefined} controls playsInline preload="none" /> : <img src={src} alt="" loading="lazy" />) : <div className="fx-liv-vide">{v ? 'Vidéo pas prête' : 'Image pas prête'}</div>}
                         </div>
                         <div className="fx-liv-c"><b>{v ? 'Vidéo' : 'Image'}</b><span>{c.ct ? 'CT ' + c.ct : ''}{c.aRevoir ? ' · à revoir' : ''}</span></div>
-                        {revs.filter((x) => x.index === i).map((x) => <div key={x.id} style={{ fontSize: 12, color: '#F59E0B', margin: '4px 0', whiteSpace: 'pre-wrap' }}><b>🩹 Rectification demandée</b> : « {String(x.texte || '').slice(0, 220)} »<br /><button className="fx-btn sm primary" style={{ marginTop: 6 }} disabled={!!busy} onClick={() => dansProd()}>Traiter la rectification</button></div>)}
+                        {revs.filter((x) => x.index === i).map((x) => <div key={x.id} style={{ fontSize: 12, color: '#F59E0B', margin: '4px 0', whiteSpace: 'pre-wrap' }}><b>🩹 Rectification demandée</b> : « {String(x.texte || '').slice(0, 220)} »<br /><span style={{ color: 'var(--sec)' }}> — à traiter dans la section « Rectifications » en haut de ce panneau</span></div>)}
                         <div className="fx-liv-b">
                           {v ? <button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.relancerVideo(i))}>↻ Refaire la vidéo</button>
                              : <><button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.regenerateCrea(i))}>↻ Régénérer</button><button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.regenerateCreaAutreCT(i))}>Autre CT</button></>}
