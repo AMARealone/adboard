@@ -327,6 +327,9 @@ const CLIENT = { name:'', brand:'', plan:'', avatar:'', total:0 };
 const PLAN_CTX = { plan: null, active: false };
 // 48h par défaut (TEST, PERF+, sans abonnement, plan inconnu) ; 24h seulement pour GROWTH et SCALE.
 const delaiH = () => ((PLAN_CTX.plan === 'pro' || PLAN_CTX.plan === 'scale') ? 24 : 48);
+// Fenêtre d'annulation = attente avant le lancement automatique de la production (calendrier auto-prod) :
+// 6 h pour GROWTH et SCALE (livraison 24 h), 12 h pour TEST / ONE SHOT et PERF+ (livraison 48 h). Au-delà, les ressources sont engagées.
+const annulH = () => ((PLAN_CTX.plan === 'pro' || PLAN_CTX.plan === 'scale') ? 6 : 12);
 const accesGrowth = () => !PLAN_CTX.active || PLAN_CTX.plan === 'starter' || PLAN_CTX.plan === 'pro' || PLAN_CTX.plan === 'scale'; // Ad Copies et Données Marché : PERF+ et au-dessus (pas TEST) ; sans abonnement : on laisse l'écran habituel
 
 const PLAN_QUANTITY = { 'TEST':6, 'PERF+':6, 'GROWTH':12, 'SCALE':24 };
@@ -1514,6 +1517,30 @@ const QTE_PALIER = 6;
 const QTE_MAX_DEMANDE = 24;
 const MS_24H = 24 * 60 * 60 * 1000;
 
+// Consommation inhabituelle — on demande confirmation (jamais de blocage) quand :
+//  · c'est la toute première demande de la période et elle prend à elle seule la moitié du mois ou plus ;
+//  · ou c'est la 4e demande (ou plus) en 24 h.
+// Une montée progressive (6, puis 6, puis 12…) ne déclenche rien.
+function consommationSuspecte(sub, allBriefs, qty) {
+  if (!sub || !sub.active || sub.type === 'pack') return null;
+  const cr = computeCredits(sub, allBriefs);
+  if (!cr.total) return null;
+  const debut = sub.started_at ? new Date(sub.started_at).getTime() : 0;
+  const periode = allBriefs.filter(b => briefCompteCredits(b) && (!debut || new Date(b.created_at).getTime() >= debut - 60000));
+  const seuil24 = Date.now() - MS_24H;
+  const recents = periode.filter(b => new Date(b.created_at).getTime() >= seuil24);
+  const premiere = periode.length === 0 && qty >= cr.total / 2;
+  const rafale = recents.length + 1 >= 4;
+  if (!premiere && !rafale) return null;
+  const en24h = recents.reduce((s, b) => s + (b.credits_used || b.quantity || 0), 0) + qty;
+  return {
+    raison: premiere ? 'premiere' : 'rafale',
+    qty, total: cr.total, en24h, nbDemandes24h: recents.length + 1,
+    restant: Math.max(0, cr.available - qty),
+    finPeriode: cr.nextCreditDate,
+  };
+}
+
 function briefsActifsDans24h(allBriefs) {
   const seuil = Date.now() - MS_24H;
   return allBriefs
@@ -2468,7 +2495,7 @@ const SuiviDemande = ({allBriefs, products, briefs, cancelCreatives, C, onRefres
     return () => clearInterval(p);
   }, []); // tableau vide intentionnel — l'intervalle est créé UNE FOIS, lit toujours l'état le plus récent via les refs
 
-  const CANCEL_WIN = 12*60*60*1000;
+  const CANCEL_WIN = annulH()*60*60*1000;
   const DELIVERY_WIN = delaiH()*60*60*1000; // délai de livraison client : 24h, ou 48h pour PERF+
 
   const formatCountdown = (ms) => {
@@ -7153,6 +7180,7 @@ export default function Platform() {
     setAllBriefs(prev => [...prev, brief]);
     setBriefs(prev => ({...prev, [product.id]: brief}));
     notify(`Demande de ${qty} créatives envoyée — livraison sous ${delaiH()}h`, 'brief');
+    { const h = annulH(); setAnnulInfo({ qty, nom: product.nom || 'votre produit', heures: h, limite: new Date(new Date(brief.created_at || Date.now()).getTime() + h * 3600000) }); }
 
     const pastBriefs = allBriefs.filter(b => b.product_id === product.id && briefCompteCredits(b));
     const webhookPayload = {
@@ -7235,6 +7263,9 @@ export default function Platform() {
   const [repriseCible, setRepriseCible] = useState(null);   // reprise-angle-v1
   const [reAskConfirm, setReAskConfirm] = useState(null); // {product, canCancel} — confirmation stylée "déjà une demande en cours"
   const [plafondModal, setPlafondModal] = useState(null); // {product, qty, totalActuel, actifs, prochaineDateLibre} — plafond 36 images/24h dépassé
+  const [consoModal, setConsoModal] = useState(null);     // consommation inhabituelle : {product, qty, marches, offre, reprise, ...consommationSuspecte}
+  const [annulInfo, setAnnulInfo] = useState(null);       // demande confirmée : {qty, nom, heures, limite}
+  const [consoEnvoi, setConsoEnvoi] = useState(false);
   // Garde synchrone (ref, pas state) contre le double-clic sur "Annuler" dans le popup de
   // plafond — la séquence annulation+recréation enchaîne plusieurs appels réseau avec retries,
   // largement assez long pour qu'un clic impatient déclenche une 2e exécution. Cette 2e exécution
@@ -7725,7 +7756,7 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
             // notion cohérente d'"actif" dans tout le fichier (voir sa définition : ni terminé,
             // ni annulé sous aucune forme, y compris probleme_agence, précédemment oublié ici).
             const existing = briefs[p.id];
-            const CANCEL_WIN = 12*60*60*1000;
+            const CANCEL_WIN = annulH()*60*60*1000;
             if(briefEstActif(existing)){
               const canCancel = existing.status==='pending' && (Date.now()-new Date(existing.created_at).getTime()) < CANCEL_WIN;
               setReAskConfirm({ product: p, canCancel });
@@ -8011,10 +8042,71 @@ PLAN_CTX.plan = subscription?.plan || null; PLAN_CTX.active = !!subscription?.ac
             setCreativesTarget(null); setRepriseCible(null);
             return;
           }
+          // Consommation inhabituelle : on demande confirmation, le pop-up de commande reste ouvert derrière pour pouvoir diminuer.
+          const conso = consommationSuspecte(subscription, allBriefs, qty);
+          if (conso) { setConsoModal({ product: creativesTarget, qty, marches, offre, reprise, ...conso }); return; }
           await creerDemandeEtNotifierFactory(creativesTarget, qty, marches, offre, reprise);
           setCreativesTarget(null); setRepriseCible(null);
         }}
       />
+    )}
+
+    {consoModal && (() => {
+      const m = consoModal;
+      const fin = m.finPeriode ? m.finPeriode.toLocaleDateString('fr-FR', {day:'numeric', month:'long'}) : null;
+      return (
+      <div onClick={()=>{ if (!consoEnvoi) setConsoModal(null); }} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:650,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:420,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
+          <div style={{width:40,height:40,borderRadius:11,background:'rgba(234,179,8,0.12)',border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
+            <Icon name="clock" size={18} color="#EAB308"/>
+          </div>
+          <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Êtes-vous sûr de demander {m.qty} créatives ?</h2>
+          <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:'0 0 14px'}}>
+            {m.raison === 'premiere'
+              ? <>C'est votre première demande du mois et elle utilise d'un coup <b style={{color:C.text}}>{m.qty} créatives sur {m.total}</b>.</>
+              : <>Ce serait votre <b style={{color:C.text}}>{m.nbDemandes24h}e demande en 24 h</b> ({m.en24h} créatives au total sur cette journée).</>}
+          </p>
+          <div style={{background:C.accentS,border:`1px solid ${C.borderM}`,borderRadius:10,padding:'12px 14px',marginBottom:16}}>
+            <div style={{fontSize:10.5,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:0.4,marginBottom:4}}>Après cette demande, il vous restera</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.accent}}>{m.restant} créative{m.restant>1?'s':''}{fin ? ` jusqu'au ${fin}` : ' pour le mois'}</div>
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button disabled={consoEnvoi} onClick={()=>setConsoModal(null)} style={{flex:1,padding:'10px',borderRadius:8,border:`1px solid ${C.border}`,background:'transparent',color:C.text,fontWeight:600,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Non, revenir et diminuer</button>
+            <button disabled={consoEnvoi} onClick={async ()=>{
+              if (consoEnvoi) return;
+              setConsoEnvoi(true);
+              try {
+                await creerDemandeEtNotifierFactory(m.product, m.qty, m.marches, m.offre, m.reprise);
+                setConsoModal(null); setCreativesTarget(null); setRepriseCible(null);
+              } finally { setConsoEnvoi(false); }
+            }} style={{flex:1,padding:'10px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12.5,cursor:consoEnvoi?'default':'pointer',fontFamily:'inherit',opacity:consoEnvoi?0.6:1}}>{consoEnvoi ? 'Envoi…' : 'Oui, je confirme'}</button>
+          </div>
+        </div>
+      </div>);
+    })()}
+
+    {annulInfo && (
+      <div onClick={()=>setAnnulInfo(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.75)',zIndex:660,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:420,borderRadius:14,background:C.card,border:`1px solid ${C.borderM}`,padding:'22px'}}>
+          <div style={{width:40,height:40,borderRadius:11,background:'rgba(34,197,94,0.12)',border:`1px solid ${C.borderM}`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:14}}>
+            <Icon name="check" size={18} color="#22C55E"/>
+          </div>
+          <h2 style={{fontSize:15,fontWeight:700,color:C.text,margin:'0 0 8px'}}>Demande bien confirmée</h2>
+          <p style={{fontSize:12.5,color:C.sec,lineHeight:1.6,margin:'0 0 14px'}}>
+            Vos {annulInfo.qty} créatives pour <b style={{color:C.text}}>{annulInfo.nom}</b> sont enregistrées. Vous pouvez encore annuler cette demande pendant <b style={{color:C.text}}>{annulInfo.heures} heures</b>.
+          </p>
+          <div style={{background:C.accentS,border:`1px solid ${C.borderM}`,borderRadius:10,padding:'12px 14px',marginBottom:14}}>
+            <div style={{fontSize:10.5,color:C.muted,fontWeight:700,textTransform:'uppercase',letterSpacing:0.4,marginBottom:4}}>Annulation possible jusqu'au</div>
+            <div style={{fontSize:14,fontWeight:700,color:C.accent}}>
+              {annulInfo.limite.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'})} à {annulInfo.limite.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'})}
+            </div>
+          </div>
+          <p style={{fontSize:12,color:C.muted,lineHeight:1.6,margin:'0 0 16px'}}>
+            Passé ce délai, la production démarre et les ressources sont déjà engagées : la demande ne pourra plus être annulée.
+          </p>
+          <button onClick={()=>setAnnulInfo(null)} style={{width:'100%',padding:'10px',borderRadius:8,border:'none',background:C.accent,color:'#fff',fontWeight:700,fontSize:12.5,cursor:'pointer',fontFamily:'inherit'}}>Compris</button>
+        </div>
+      </div>
     )}
     <Toast toasts={toasts}/>
     </>

@@ -130,7 +130,7 @@ function Rectif({ S, r, plafond, recharger }) {
       <div className="fx2-corr-v" style={{ whiteSpace: 'pre-wrap', color: 'var(--fg, #fff)' }}>« {r.texte} »</div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '8px 0' }}>
         {vUrl ? <div style={{ flex: '0 1 240px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: '#F59E0B', marginBottom: 4, fontWeight: 700 }}>Vidéo que le client veut faire rectifier</div><video src={vUrl} controls playsInline preload="metadata" poster={r.poster || undefined} style={{ width: '100%', borderRadius: 8, background: '#000', outline: '2px solid #F59E0B' }} /><a href={vUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11.5 }}>Ouvrir la vidéo seule</a></div>
-          : <div className="fx2-corr-v" style={{ color: '#F59E0B' }}>Vidéo introuvable dans la commande (créative n°{r.index + 1}).</div>}
+          : <div className="fx2-corr-v" style={{ color: '#F59E0B' }}>{r.etat === 'en_cours' ? <>Nouvelle vidéo en fabrication (créative n°{r.index + 1}) — elle s'affichera ici dès qu'elle est prête.</> : <>Vidéo introuvable dans la commande (créative n°{r.index + 1}).</>}</div>}
         {ctUrl && <div style={{ flex: '0 1 240px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: 'var(--sec)', marginBottom: 4 }}>CT d'origine · {ctNom}</div><video src={ctUrl} controls playsInline preload="metadata" style={{ width: '100%', borderRadius: 8, background: '#000' }} /></div>}
       </div>
       {r.preparation && <div className="fx2-corr-v"><b>Faisable : {r.preparation.faisable}</b> — {r.preparation.explication}{(r.preparation.hors_correcteur || []).length > 0 && <> · Hors correcteur : {r.preparation.hors_correcteur.join(' ; ')}</>}{(r.preparation.retouches_montage || []).length > 0 && <> · Montage seul : {r.preparation.retouches_montage.join(' ; ')}</>}{r.preparation.conseil === 'refaire' && <b style={{ color: '#F59E0B' }}> · Conseil : refaire de zéro</b>}{r.preparation.images_vues ? <span style={{ color: 'var(--sec)' }}> · {r.preparation.images_vues} images regardées</span> : <span style={{ color: '#F59E0B' }}> · préparé sur le texte seul</span>}</div>}
@@ -153,7 +153,7 @@ function Rectif({ S, r, plafond, recharger }) {
 export function Rectifications({ S }) {
   const [d, setD] = useState(null)
   const cmd = S.commandeId
-  const charger = () => { if (!cmd) return; fetch(SERVER + '/revisions/liste?commande_id=' + encodeURIComponent(cmd), { headers: H() }).then((r) => r.json()).then(setD).catch(() => setD(null)) }
+  const charger = () => { if (!cmd) return; fetch(SERVER + '/revisions/liste?commande_id=' + encodeURIComponent(cmd), { headers: H() }).then((r) => r.json()).then((j) => { if (j && Array.isArray(j.revisions)) setD(j) }).catch(() => { }) }   // un rafraîchissement raté (serveur occupé ou redémarrage) garde la dernière liste au lieu d'effacer la section
   useEffect(() => { charger(); const t = setInterval(charger, 60000); return () => clearInterval(t) }, [cmd])
   const liste = (d && d.revisions) || []
   // rectifications-v4 : les vidéos visées sont marquées sur leur carte de la production, et l'écran descend sur cette section à l'ouverture
