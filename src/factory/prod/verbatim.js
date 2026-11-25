@@ -331,8 +331,14 @@ export function prodv2ExtractAngles(synthesis, nbAngles=3) {
       // la capture dès qu'on rencontre ce marqueur — le nom d'angle reste juste le titre court.
       if(current) { angles.push(current); current = null; }
     } else if(current && line.trim() && !line.match(/^S\d\s*[—–-]/)) {
-      // Append continuation lines (max ~3 lignes, cas rare où le titre déborde sur 2 lignes)
-      if(current.text.length < 120) current.text += ' ' + line.trim();
+      // titre-angle-v2 (25 nov. 2026, audit Afrimall) : le format de l'Analyste a changé — sous le titre viennent des lignes numérotées
+      // (« 19. Porte vers le noyau : … », « 2. Facette rattachée : … »). Elles étaient collées au titre (« Le repos nocturne retrouvé 19. Porte vers le noyau : Porte : [Lecture 1… »)
+      // et ce texte partait dans les ad copies, le choix des CT et le moteur vidéo. Le titre est la ligne « Angle N — … » seule ; une ligne de suite ne s'ajoute
+      // que si le titre était vide, et jamais une ligne numérotée, une puce, un crochet ou une ligne « Clé : valeur ».
+      const l9 = line.trim()
+      const structure9 = /^(\d{1,2}\s*[.)]|[-•·*→\[]|[A-ZÉÈÀ][^:]{0,40}\s:\s)/.test(l9)
+      if(structure9 || current.text) { angles.push(current); current = null }
+      else current.text = l9.slice(0, 120)
     } else if(line.match(/^S[3-9]\s*[—–-]/)) {
       if(current) { angles.push(current); current = null; break; }
     }

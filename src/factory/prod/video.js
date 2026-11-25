@@ -93,7 +93,7 @@ async function planifierBrut(nbAngles, { avecVideo = true } = {}) {
   let props = [], choix = []
   S.forceOffre = null; S.forceOffreRaison = ''   // offre-forte-v1 : jamais le jugement d'une production précédente
   try {
-    const r = await fetch(SERVER + '/video/select-cts', { method: 'POST', headers: JH, body: JSON.stringify({ mode: 'plan', cts: liste.map(resume), synthese: S.synthesis || '', brief: briefCourt(), angles: angleIdxs.map((i) => S.angles[i] || 'Angle ' + (i + 1)), n: nbAngles }) })
+    const r = await fetch(SERVER + '/video/select-cts', { method: 'POST', headers: JH, body: JSON.stringify({ mode: 'plan', commande_id: S.commandeId || '', cts: liste.map(resume), synthese: S.synthesis || '', brief: briefCourt(), angles: angleIdxs.map((i) => S.angles[i] || 'Angle ' + (i + 1)), n: nbAngles }) })
     const j = await r.json().catch(() => ({}))
     if (!r.ok || j.error) throw new Error(j.error || 'HTTP ' + r.status)
     choix = (j.choix || []).filter((c) => parId.has(c.id))
@@ -134,7 +134,7 @@ async function unCT(angleIdx, niveau, exclure) {
   if (!dispo.length) throw new Error('Plus aucun CT vidéo disponible dans la galerie')
   const parId = new Map(dispo.map((c) => [c.id, c]))
   try {
-    const r = await fetch(SERVER + '/video/select-cts', { method: 'POST', headers: JH, body: JSON.stringify({ cts: dispo.map(resume), synthese: S.synthesis || '', brief: briefCourt(), angles: [S.angles[angleIdx] || 'Angle ' + (angleIdx + 1)], niveaux: 'Angle 1 : la vidéo DOIT porter le niveau ' + PL.LIB[niveau], n: 1 }) })
+    const r = await fetch(SERVER + '/video/select-cts', { method: 'POST', headers: JH, body: JSON.stringify({ commande_id: S.commandeId || '', cts: dispo.map(resume), synthese: S.synthesis || '', brief: briefCourt(), angles: [S.angles[angleIdx] || 'Angle ' + (angleIdx + 1)], niveaux: 'Angle 1 : la vidéo DOIT porter le niveau ' + PL.LIB[niveau], n: 1 }) })
     const j = await r.json().catch(() => ({}))
     const c = (j.choix || []).find((x) => parId.has(x.id))
     if (c) { const g = parId.get(c.id); return { id: c.id, nom: g.name || c.id, poster: g.posterUrl || '', raison: c.raison || '' } }
