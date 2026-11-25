@@ -4,7 +4,7 @@
 // 2. Rectifications demandées par le client depuis AdBoard (vidéos seulement, une par vidéo, livrées en 24 h) :
 //    Préparer (traduction en plans à refaire + avis de faisabilité) → Copier pour Claude (vérification) → Lancer la correction (plafond 3 $) → Livrer au client.
 import React, { useEffect, useState } from 'react'
-import { SERVER } from '../prod/state'
+import { SERVER, emit } from '../prod/state'
 import * as E from '../prod/engine'
 import { toast } from '../ui'
 
@@ -156,10 +156,14 @@ export function Rectifications({ S }) {
   const charger = () => { if (!cmd) return; fetch(SERVER + '/revisions/liste?commande_id=' + encodeURIComponent(cmd), { headers: H() }).then((r) => r.json()).then(setD).catch(() => setD(null)) }
   useEffect(() => { charger(); const t = setInterval(charger, 60000); return () => clearInterval(t) }, [cmd])
   const liste = (d && d.revisions) || []
+  // rectifications-v4 : les vidéos visées sont marquées sur leur carte de la production, et l'écran descend sur cette section à l'ouverture
+  useEffect(() => { try { const ix = liste.filter((r) => !['livree', 'refusee'].includes(r.etat)).map((r) => r.index); S.ui.rectifIdx = ix; emit() } catch (_) { } }, [d])
+  const ref = React.useRef(null), vu = React.useRef(false)
+  useEffect(() => { if (liste.length && ref.current && !vu.current) { vu.current = true; setTimeout(() => { try { ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' }) } catch (_) { } }, 300) } }, [liste.length])
   if (!cmd || !liste.length) return null
   const ouvertes = liste.filter((r) => !['livree', 'refusee'].includes(r.etat)).length
   return (
-    <section className="fx2-card" data-testid="rectifications">
+    <section ref={ref} className="fx2-card" data-testid="rectifications" style={{ outline: '2px solid #F59E0B' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
         <b style={{ fontSize: 14 }}>🩹 Rectifications demandées par le client</b>
         <span style={{ fontSize: 12, color: 'var(--sec)' }}>{ouvertes} à traiter · une par vidéo · 24 h pour livrer · plafond {d.plafond_usd} $ par correction</span>

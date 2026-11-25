@@ -426,7 +426,8 @@ function VideoTile({ S, U, idx, onOther }) {
   const lignes = (U.vjournal && U.vjournal[idx]) || []
   const peut = !!S.synthesis && !!c && S.briefSource === 'commande'
   return (
-    <div className={'fx2-tile vid ' + (pret ? 'done' : ui.state)}>
+    <div className={'fx2-tile vid ' + (pret ? 'done' : ui.state)} style={(U.rectifIdx || []).includes(idx) ? { outline: '2px solid #F59E0B' } : undefined}>
+      {(U.rectifIdx || []).includes(idx) && <div style={{ fontSize: 12, fontWeight: 700, color: '#F59E0B', padding: '6px 8px' }}>🩹 Vidéo à rectifier — outils en haut de la page</div>}
       <input ref={ref} type="file" accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.webm" hidden onChange={(e) => { E.importerVideo(idx, e.target.files[0]); e.target.value = '' }} />
       <div className="fx2-media v">
         {pret ? <video src={c.videoUrl} poster={c.thumbUrl || undefined} controls playsInline preload="metadata" />
