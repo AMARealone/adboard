@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { usePersist } from '../agentStore'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useData } from '../data'
-import { etat, SERVER, prio, estPrioritaire, nomOffre, calendrierCommande, etatAuto } from '../api'
+import { etat, SERVER, prio, estPrioritaire, nomOffre, calendrierCommande, etatAuto, rectifOuvertes } from '../api'
 import Icon from '../Icon'
 import { openCommande, supprimerTicket, commandeToBrief } from '../prod/engine'
 import * as E from '../prod/engine'
@@ -190,7 +190,7 @@ export function LivrablesPanel({ id, onClose }) {
   )
 }
 
-const F = [['all', 'Toutes'], ['ready', 'Prêtes'], ['prod', 'En cours'], ['wait', 'En attente'], ['done', 'Livrées']]
+const F = [['all', 'Toutes'], ['rectif', '🩹 Rectifications'], ['ready', 'Prêtes'], ['prod', 'En cours'], ['wait', 'En attente'], ['done', 'Livrées']]
 export default function Commandes() {
   const { cmd, reload } = useData()
   const [sp, setSp] = useSearchParams()
@@ -200,15 +200,15 @@ export default function Commandes() {
   const [liv, setLiv] = useState(null)
   const now = useNow()
   const list = useMemo(() => cmd.list
-    .filter((b) => f === 'all' || etat(b).key === f)
+    .filter((b) => f === 'all' || (f === 'rectif' ? rectifOuvertes(b).length > 0 : etat(b).key === f))
     .filter((b) => !q || JSON.stringify([b.product?.nom, b.client?.email]).toLowerCase().includes(q.toLowerCase()))
-    .sort((a, b) => etat(a).rang - etat(b).rang || prio(a) - prio(b) || new Date(b.created_at) - new Date(a.created_at)), [cmd.list, f, q])
+    .sort((a, b) => (rectifOuvertes(b).length > 0) - (rectifOuvertes(a).length > 0) || etat(a).rang - etat(b).rang || prio(a) - prio(b) || new Date(b.created_at) - new Date(a.created_at)), [cmd.list, f, q])
   return (
     <div className="fx-wrap">
       <div className="fx-h"><div><h1>Commandes</h1><p>{cmd.list.length} au total · les plus urgentes en premier</p></div><button className="fx-btn" onClick={reload}>Actualiser</button></div>
       <div className="fx-tools">
         <input className="fx-in" placeholder="Rechercher un produit ou un client" value={q} onChange={(e) => setQ(e.target.value)} />
-        <div className="fx-pills">{F.map(([k, l]) => <button key={k} className={'fx-pill' + (f === k ? ' on' : '')} onClick={() => setSp(k === 'all' ? {} : { f: k })}>{l}</button>)}</div>
+        <div className="fx-pills">{F.map(([k, l]) => <button key={k} className={'fx-pill' + (f === k ? ' on' : '')} onClick={() => setSp(k === 'all' ? {} : { f: k })}>{l}{k === 'rectif' ? ' (' + cmd.list.filter((b) => rectifOuvertes(b).length).length + ')' : ''}</button>)}</div>
       </div>
       {cmd.error && <div className="fx-err" style={{ marginBottom: 12 }}>{cmd.error}</div>}
       {cmd.loading ? <><div className="fx-skel" /><div className="fx-skel" /><div className="fx-skel" /></> : list.length ? list.map((b) => <OrderRow key={b.id} b={b} now={now} onBrief={setBrief} onLivrables={setLiv} />) : <div className="fx-empty">Aucune commande dans cette vue.</div>}

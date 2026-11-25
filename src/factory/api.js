@@ -94,8 +94,11 @@ export function calendrierCommande(b) {
   return { delai: d, finAttente: t0 + (a.attente_h || d / 4) * 3600e3, envoi: t0 + (a.envoi_h || d * 3 / 4) * 3600e3, echeance: t0 + d * 3600e3 }
 }
 // État de la production automatique d'une commande, en une étiquette
+// rectifications-v3 (25 nov. 2026) : une rectification ouverte se voit dans la liste des commandes, même sur une commande livrée
+export function rectifOuvertes(b) { return (Array.isArray(b && b.revisions) ? b.revisions : []).filter((r) => r && !['livree', 'refusee'].includes(r.etat)) }
 export function etatAuto(b) {
   const a = b.auto || {}
+  { const ro = rectifOuvertes(b); if (ro.length) { const e = Math.min(...ro.map((r) => Number(r.echeance) || Infinity)); const m = Math.round((e - Date.now()) / 60000); return { k: m <= 0 ? 'er' : 'wa', t: '🩹 ' + ro.length + ' rectification' + (ro.length > 1 ? 's' : '') + ' à traiter · ' + (isFinite(m) ? (m <= 0 ? 'en retard' : Math.floor(m / 60) + ' h ' + String(m % 60).padStart(2, '0') + ' restantes') : '') } } }
   if (b.status === 'done') return a.envoyee_auto_le ? { k: 'ok', t: 'Envoyée automatiquement' } : null
   if (a.etat === 'echec') return { k: 'er', t: 'Production auto en échec' }
   if (a.prete_le) return a.complet ? { k: 'ok', t: 'Prête à vérifier' } : { k: 'wa', t: 'Lot incomplet' }
