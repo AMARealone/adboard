@@ -77,7 +77,10 @@ function Rectif({ S, r, plafond, recharger }) {
   const [busy, setBusy] = useState('')
   const [plans, setPlans] = useState(() => ((r.preparation && r.preparation.plans) || []).map((x) => ({ ...x })))
   useEffect(() => { setPlans(((r.preparation && r.preparation.plans) || []).map((x) => ({ ...x }))) }, [r.preparation && r.preparation.t])
-  const c = S.creatives[r.index], job = (c && c.job) || {}
+  const c0 = S.creatives[r.index], job = (c0 && c0.job) || {}
+  // rectifications-v3 : la vidéo visée vient du serveur (celle que le client a vue) quand la production n'est pas chargée dans Factory
+  const c = c0 || (r.video_url ? { videoUrl: r.video_url, ct: r.ct_nom } : null)
+  const vUrl = (c0 && c0.videoUrl) || r.video_url || null, ctUrl = job.ctVideoUrl || r.ct_video_url || null, ctNom = job.ctNom || (c0 && c0.ct) || r.ct_nom || ''
   const plansVideo = (job.plans || []).map((p) => ({ bloc: p.bloc, t0: p.t0, t1: p.t1, dit: p.dit || '' }))
   const enCours = !!(job.execution && !c.videoUrl && !['echec', 'annule', 'termine', 'plan_pret'].includes(job.etat))
   const fini = ['livree', 'refusee'].includes(r.etat)
@@ -86,8 +89,8 @@ function Rectif({ S, r, plafond, recharger }) {
     let images = [], imagesCT = []
     try {
       const inst = plansVideo.filter((p) => p.t0 != null).map((p) => (Number(p.t0) + Number(p.t1)) / 2)
-      images = await imagesDe(c && c.videoUrl, inst.slice(0, 14))
-      if (job.ctVideoUrl) { const v = document.createElement('video'); v.src = job.ctVideoUrl; v.preload = 'metadata'; const d = await new Promise((ok) => { v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(0); setTimeout(() => ok(0), 10000) }); if (d) imagesCT = await imagesDe(job.ctVideoUrl, Array.from({ length: 8 }, (_, i) => d * (i + 0.5) / 8), 240) }
+      images = await imagesDe(vUrl, inst.slice(0, 14))
+      if (ctUrl) { const v = document.createElement('video'); v.src = ctUrl; v.preload = 'metadata'; const d = await new Promise((ok) => { v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(0); setTimeout(() => ok(0), 10000) }); if (d) imagesCT = await imagesDe(ctUrl, Array.from({ length: 8 }, (_, i) => d * (i + 0.5) / 8), 240) }
     } catch (e) { toast('Images de la vidéo non lues (' + e.message + ') : préparation sur le texte seul.', 7000) }
     setBusy('')
     return post('/revisions/preparer', { plans: plansVideo, images, images_ct: imagesCT }, 'Préparation')
@@ -120,14 +123,15 @@ function Rectif({ S, r, plafond, recharger }) {
   return (
     <div className="fx2-corr" style={{ marginTop: 10 }}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <b style={{ fontSize: 13 }}>Vidéo · créative n°{r.index + 1}</b>
+        <b style={{ fontSize: 13 }}>🎬 Vidéo à rectifier : créative n°{r.index + 1}{r.angle ? ' · angle ' + r.angle + (r.angle_titre ? ' « ' + r.angle_titre + ' »' : '') : ''}{ctNom ? ' · CT « ' + ctNom + ' »' : ''}</b>
         <span style={{ fontSize: 11.5, fontWeight: 700, color: coul }}>{{ nouvelle: 'Nouvelle', preparee: 'Préparée', en_cours: 'Correction en cours', livree: 'Livrée', refusee: 'Refusée' }[r.etat] || r.etat}</span>
         <span style={{ fontSize: 11.5, color: 'var(--sec)' }}>demandée le {quand(r.t)}{fini ? (r.livree_t ? ' · livrée le ' + quand(r.livree_t) : '') : ' · ' + restant(r.echeance)}</span>
       </div>
       <div className="fx2-corr-v" style={{ whiteSpace: 'pre-wrap', color: 'var(--fg, #fff)' }}>« {r.texte} »</div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '8px 0' }}>
-        {c && c.videoUrl && <div style={{ flex: '0 1 220px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: 'var(--sec)', marginBottom: 4 }}>Vidéo livrée au client</div><video src={c.videoUrl} controls playsInline preload="metadata" style={{ width: '100%', borderRadius: 8, background: '#000' }} /></div>}
-        {job.ctVideoUrl && <div style={{ flex: '0 1 220px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: 'var(--sec)', marginBottom: 4 }}>CT d'origine · {job.ctNom || c.ct || ''}</div><video src={job.ctVideoUrl} controls playsInline preload="metadata" style={{ width: '100%', borderRadius: 8, background: '#000' }} /></div>}
+        {vUrl ? <div style={{ flex: '0 1 240px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: '#F59E0B', marginBottom: 4, fontWeight: 700 }}>Vidéo que le client veut faire rectifier</div><video src={vUrl} controls playsInline preload="metadata" poster={r.poster || undefined} style={{ width: '100%', borderRadius: 8, background: '#000', outline: '2px solid #F59E0B' }} /><a href={vUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11.5 }}>Ouvrir la vidéo seule</a></div>
+          : <div className="fx2-corr-v" style={{ color: '#F59E0B' }}>Vidéo introuvable dans la commande (créative n°{r.index + 1}).</div>}
+        {ctUrl && <div style={{ flex: '0 1 240px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: 'var(--sec)', marginBottom: 4 }}>CT d'origine · {ctNom}</div><video src={ctUrl} controls playsInline preload="metadata" style={{ width: '100%', borderRadius: 8, background: '#000' }} /></div>}
       </div>
       {r.preparation && <div className="fx2-corr-v"><b>Faisable : {r.preparation.faisable}</b> — {r.preparation.explication}{(r.preparation.hors_correcteur || []).length > 0 && <> · Hors correcteur : {r.preparation.hors_correcteur.join(' ; ')}</>}{(r.preparation.retouches_montage || []).length > 0 && <> · Montage seul : {r.preparation.retouches_montage.join(' ; ')}</>}{r.preparation.conseil === 'refaire' && <b style={{ color: '#F59E0B' }}> · Conseil : refaire de zéro</b>}{r.preparation.images_vues ? <span style={{ color: 'var(--sec)' }}> · {r.preparation.images_vues} images regardées</span> : <span style={{ color: '#F59E0B' }}> · préparé sur le texte seul</span>}</div>}
       {!fini && plans.map((p, k) => <div key={k} className="fx2-corr-p on">
