@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react'
 import { SERVER, emit } from '../prod/state'
 import * as E from '../prod/engine'
 import { toast } from '../ui'
+import { r2Put, videoInfos } from '../r2'
 
 const tok = () => { try { return (JSON.parse(localStorage.getItem('factory_admin_sb_session') || 'null') || {}).access_token || '' } catch (_) { return '' } }
 const H = () => ({ 'Content-Type': 'application/json', Authorization: 'Bearer ' + tok(), 'ngrok-skip-browser-warning': '1' })
@@ -121,6 +122,25 @@ function Rectif({ S, r, plafond, recharger }) {
       if (ex) await post('/revisions/maj', { etat: 'en_cours', execution: typeof ex === 'string' ? ex : undefined, plans: ok }, 'Mise à jour')
     } finally { setBusy('') }
   }
+  // remplacement-fichier-v1 (25 nov.) : livrer un fichier vidéo corrigé à la main (envoyé sur Cloudflare) à la place de la production
+  const fichierRef = React.useRef(null)
+  const remplacer = async (f) => {
+    if (!f) return
+    if (!/^video\/(mp4|quicktime|webm)$/.test(f.type)) return toast('Choisissez un fichier vidéo MP4.', 7000)
+    setBusy('Envoi')
+    try {
+      const base = 'ct-video/rectifications/' + String(S.commandeId).slice(0, 8) + '_' + r.index + '_' + Date.now().toString(36)
+      const url = await r2Put(f, base + '.' + (f.type === 'video/webm' ? 'webm' : f.type === 'video/quicktime' ? 'mov' : 'mp4'), (x) => setBusy('Envoi ' + Math.round(x * 100) + ' %'))
+      let poster = null
+      try { const inf = await videoInfos(f, 0.15); if (inf.poster) poster = await r2Put(inf.poster, base + '_affiche.jpg') } catch (_) { }
+      setBusy('')
+      const j = await post('/revisions/livrer', { video_url: url, poster_url: poster }, 'Livraison')
+      if (j) {
+        if (S.creatives[r.index]) { S.creatives[r.index] = { ...S.creatives[r.index], videoUrl: url, thumbUrl: poster || S.creatives[r.index].thumbUrl, aRevoir: false }; emit(); try { E.autosave(true) } catch (_) { } }
+        toast('Fichier envoyé et livré au client : il remplace sa vidéo dans AdBoard.', 7000)
+      }
+    } catch (e) { toast('Envoi impossible : ' + e.message, 9000) } finally { setBusy((b) => (String(b).startsWith('Envoi') ? '' : b)); if (fichierRef.current) fichierRef.current.value = '' }
+  }
   const coul = r.etat === 'livree' ? '#22C55E' : r.etat === 'refusee' ? '#9AA0AB' : r.echeance < Date.now() ? '#EF4444' : '#F59E0B'
   return (
     <div className="fx2-corr" style={{ marginTop: 10 }}>
@@ -147,6 +167,8 @@ function Rectif({ S, r, plafond, recharger }) {
         <button className="fx-btn sm primary" disabled={!!busy || enCours || !c || !c.videoUrl || !plans.length} title={'Refait seulement ces plans ; plafond ' + plafond + ' $ de dépense neuve'} onClick={lancer}>{busy === 'Lancement' ? 'Lancement…' : enCours ? 'Correction en cours…' : '③ Lancer la correction'}</button>
         <button className="fx-btn sm primary" disabled={!!busy && busy !== 'livrer?' || enCours || !c || !c.videoUrl || r.etat !== 'en_cours'} title="Remplace la vidéo du client dans AdBoard par la version corrigée et le prévient" style={aRevoir ? { background: '#B45309' } : undefined} onClick={() => { if (aRevoir && busy !== 'livrer?') { setBusy('livrer?'); setTimeout(() => setBusy((b) => (b === 'livrer?' ? '' : b)), 8000); return } post('/revisions/livrer', {}, 'Livraison') }}>{busy === 'Livraison' ? 'Livraison…' : busy === 'livrer?' ? 'Non livrable selon le juge : cliquez encore pour livrer quand même' : '④ Livrer au client'}</button>
         <button className="fx-btn sm" disabled={(!!busy && busy !== 'confirmer') || enCours || !c} title="Refait toute la vidéo avec le même CT (≈ 8 $ tout compris) quand l'erreur est trop grosse pour une correction de plans" onClick={refaire}>{busy === 'confirmer' ? 'Cliquez encore pour confirmer (≈ 8 $)' : busy === 'Refaire' ? 'Relance…' : '↻ Refaire de zéro (≈ 8 $)'}</button>
+        <button className="fx-btn sm" disabled={!!busy} title="Envoie un fichier vidéo corrigé à la main (MP4) et le livre au client à la place de la vidéo actuelle" onClick={() => fichierRef.current && fichierRef.current.click()}>{String(busy).startsWith('Envoi') ? busy + '…' : '⤴ Remplacer par un fichier et livrer'}</button>
+        <input ref={fichierRef} type="file" accept="video/mp4,video/quicktime,video/webm" style={{ display: 'none' }} onChange={(e) => remplacer(e.target.files && e.target.files[0])} />
         <button className="fx-btn sm" disabled={!!busy} onClick={() => post('/revisions/maj', { etat: 'refusee' }, 'Refus')}>Refuser</button>
       </div>}
     </div>
