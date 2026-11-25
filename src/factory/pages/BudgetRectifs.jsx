@@ -54,6 +54,25 @@ function texteClaude(S, r, plans, prep) {
   ].join('\n')
 }
 
+// rectifications-v2 (25 nov. 2026) — décision du fondateur : l'agent qui prépare la rectification doit COMPRENDRE la vidéo entière avant de toucher
+// un plan (corriger « en sniper », sans casser la trame ni la dynamique). Factory lui envoie donc des images de la vidéo livrée (une au milieu de
+// chaque plan) et de la vidéo du CT, en plus du texte du client et des répliques. Le fondateur choisit ensuite : correction des plans (≤ 3 $) ou vidéo refaite de zéro (≈ 8 $).
+async function imagesDe(url, instants, larg = 320) {
+  if (!url || !instants.length) return []
+  const v = document.createElement('video'); v.crossOrigin = 'anonymous'; v.muted = true; v.preload = 'auto'; v.src = url
+  await new Promise((ok, ko) => { v.onloadeddata = ok; v.onerror = () => ko(new Error('vidéo illisible')); setTimeout(() => ko(new Error('délai')), 20000) })
+  const c = document.createElement('canvas'), out = []
+  for (const t of instants) {
+    try {
+      await new Promise((ok, ko) => { v.onseeked = ok; v.onerror = ko; v.currentTime = Math.max(0, Math.min((v.duration || t) - 0.05, t)); setTimeout(ok, 4000) })
+      c.width = larg; c.height = Math.round(larg * (v.videoHeight || 16) / (v.videoWidth || 9))
+      c.getContext('2d').drawImage(v, 0, 0, c.width, c.height)
+      out.push({ t: +t.toFixed(1), data: c.toDataURL('image/jpeg', 0.72).split(',')[1] })
+    } catch (_) { }
+  }
+  return out
+}
+
 function Rectif({ S, r, plafond, recharger }) {
   const [busy, setBusy] = useState('')
   const [plans, setPlans] = useState(() => ((r.preparation && r.preparation.plans) || []).map((x) => ({ ...x })))
@@ -62,6 +81,23 @@ function Rectif({ S, r, plafond, recharger }) {
   const plansVideo = (job.plans || []).map((p) => ({ bloc: p.bloc, t0: p.t0, t1: p.t1, dit: p.dit || '' }))
   const enCours = !!(job.execution && !c.videoUrl && !['echec', 'annule', 'termine', 'plan_pret'].includes(job.etat))
   const fini = ['livree', 'refusee'].includes(r.etat)
+  const preparer = async () => {
+    setBusy('Préparation')
+    let images = [], imagesCT = []
+    try {
+      const inst = plansVideo.filter((p) => p.t0 != null).map((p) => (Number(p.t0) + Number(p.t1)) / 2)
+      images = await imagesDe(c && c.videoUrl, inst.slice(0, 14))
+      if (job.ctVideoUrl) { const v = document.createElement('video'); v.src = job.ctVideoUrl; v.preload = 'metadata'; const d = await new Promise((ok) => { v.onloadedmetadata = () => ok(v.duration || 0); v.onerror = () => ok(0); setTimeout(() => ok(0), 10000) }); if (d) imagesCT = await imagesDe(job.ctVideoUrl, Array.from({ length: 8 }, (_, i) => d * (i + 0.5) / 8), 240) }
+    } catch (e) { toast('Images de la vidéo non lues (' + e.message + ') : préparation sur le texte seul.', 7000) }
+    setBusy('')
+    return post('/revisions/preparer', { plans: plansVideo, images, images_ct: imagesCT }, 'Préparation')
+  }
+  const refaire = async () => {
+    if (busy !== 'confirmer') { setBusy('confirmer'); setTimeout(() => setBusy((b) => (b === 'confirmer' ? '' : b)), 6000); return }
+    setBusy('Refaire')
+    try { await E.relancerVideo(r.index); await post('/revisions/maj', { etat: 'en_cours', plans: [{ bloc: 0, consigne: 'vidéo refaite de zéro (même CT)' }] }, 'Mise à jour'); toast('Vidéo relancée de zéro avec son CT (≈ 8 $). Livrez au client quand elle est prête.') }
+    catch (e) { toast('Relance impossible : ' + e.message, 9000) } finally { setBusy('') }
+  }
   const post = async (route, corps, etape) => {
     setBusy(etape)
     try {
@@ -89,16 +125,21 @@ function Rectif({ S, r, plafond, recharger }) {
         <span style={{ fontSize: 11.5, color: 'var(--sec)' }}>demandée le {quand(r.t)}{fini ? (r.livree_t ? ' · livrée le ' + quand(r.livree_t) : '') : ' · ' + restant(r.echeance)}</span>
       </div>
       <div className="fx2-corr-v" style={{ whiteSpace: 'pre-wrap', color: 'var(--fg, #fff)' }}>« {r.texte} »</div>
-      {r.preparation && <div className="fx2-corr-v"><b>Faisable : {r.preparation.faisable}</b> — {r.preparation.explication}{(r.preparation.hors_correcteur || []).length > 0 && <> · Hors correcteur : {r.preparation.hors_correcteur.join(' ; ')}</>}</div>}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '8px 0' }}>
+        {c && c.videoUrl && <div style={{ flex: '0 1 220px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: 'var(--sec)', marginBottom: 4 }}>Vidéo livrée au client</div><video src={c.videoUrl} controls playsInline preload="metadata" style={{ width: '100%', borderRadius: 8, background: '#000' }} /></div>}
+        {job.ctVideoUrl && <div style={{ flex: '0 1 220px', minWidth: 0 }}><div style={{ fontSize: 11.5, color: 'var(--sec)', marginBottom: 4 }}>CT d'origine · {job.ctNom || c.ct || ''}</div><video src={job.ctVideoUrl} controls playsInline preload="metadata" style={{ width: '100%', borderRadius: 8, background: '#000' }} /></div>}
+      </div>
+      {r.preparation && <div className="fx2-corr-v"><b>Faisable : {r.preparation.faisable}</b> — {r.preparation.explication}{(r.preparation.hors_correcteur || []).length > 0 && <> · Hors correcteur : {r.preparation.hors_correcteur.join(' ; ')}</>}{(r.preparation.retouches_montage || []).length > 0 && <> · Montage seul : {r.preparation.retouches_montage.join(' ; ')}</>}{r.preparation.conseil === 'refaire' && <b style={{ color: '#F59E0B' }}> · Conseil : refaire de zéro</b>}{r.preparation.images_vues ? <span style={{ color: 'var(--sec)' }}> · {r.preparation.images_vues} images regardées</span> : <span style={{ color: '#F59E0B' }}> · préparé sur le texte seul</span>}</div>}
       {!fini && plans.map((p, k) => <div key={k} className="fx2-corr-p on">
         <span className="fx2-corr-d"><b>Plan {p.bloc}</b>{(plansVideo.find((v) => v.bloc === p.bloc) || {}).dit ? <span>« {(plansVideo.find((v) => v.bloc === p.bloc) || {}).dit} »</span> : null}</span>
         <textarea className="fx-in" rows={2} value={p.consigne} onChange={(e) => { const v = e.target.value; setPlans((o) => o.map((x, i) => (i === k ? { ...x, consigne: v } : x))) }} />
       </div>)}
       {!fini && <div className="fx2-corr-a" style={{ flexWrap: 'wrap' }}>
-        <button className="fx-btn sm" disabled={!!busy || !plansVideo.length} title={plansVideo.length ? 'Traduit la demande en plans à refaire et dit ce qui est faisable' : 'Plans de la vidéo inconnus'} onClick={() => post('/revisions/preparer', { plans: plansVideo }, 'Préparation')}>{busy === 'Préparation' ? 'Préparation…' : r.preparation ? '↻ Préparer à nouveau' : '① Préparer'}</button>
+        <button className="fx-btn sm" disabled={!!busy || !plansVideo.length} title={plansVideo.length ? 'Traduit la demande en plans à refaire et dit ce qui est faisable' : 'Plans de la vidéo inconnus'} onClick={preparer}>{busy === 'Préparation' ? 'Préparation…' : r.preparation ? '↻ Préparer à nouveau' : '① Préparer'}</button>
         <button className="fx-btn sm" onClick={() => navigator.clipboard.writeText(texteClaude(S, r, plansVideo, r.preparation ? { ...r.preparation, plans } : null)).then(() => toast('Copié : collez-le à Claude pour vérification'), () => toast('Copie refusée par le navigateur'))}>② Copier pour Claude</button>
         <button className="fx-btn sm primary" disabled={!!busy || enCours || !c || !c.videoUrl || !plans.length} title={'Refait seulement ces plans ; plafond ' + plafond + ' $ de dépense neuve'} onClick={lancer}>{busy === 'Lancement' ? 'Lancement…' : enCours ? 'Correction en cours…' : '③ Lancer la correction'}</button>
         <button className="fx-btn sm primary" disabled={!!busy || enCours || !c || !c.videoUrl || r.etat !== 'en_cours'} title="Remplace la vidéo du client dans AdBoard par la version corrigée et le prévient" onClick={() => post('/revisions/livrer', {}, 'Livraison')}>{busy === 'Livraison' ? 'Livraison…' : '④ Livrer au client'}</button>
+        <button className="fx-btn sm" disabled={(!!busy && busy !== 'confirmer') || enCours || !c} title="Refait toute la vidéo avec le même CT (≈ 8 $ tout compris) quand l'erreur est trop grosse pour une correction de plans" onClick={refaire}>{busy === 'confirmer' ? 'Cliquez encore pour confirmer (≈ 8 $)' : busy === 'Refaire' ? 'Relance…' : '↻ Refaire de zéro (≈ 8 $)'}</button>
         <button className="fx-btn sm" disabled={!!busy} onClick={() => post('/revisions/maj', { etat: 'refusee' }, 'Refus')}>Refuser</button>
       </div>}
     </div>
