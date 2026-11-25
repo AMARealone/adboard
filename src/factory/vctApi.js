@@ -9,6 +9,7 @@ const H = { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'Content-Type': '
 const base = () => `${SB}/storage/v1/object/${BUCKET}/${PREFIX}/`
 const pub = (n) => `${SB}/storage/v1/object/public/${BUCKET}/${PREFIX}/${n}`
 
+export const vctMetaUrl = (id) => pub(id + '.json')   // lecture-moteur-v1 : fiche de la galerie, lue par la machine comme en production
 export async function vctGetAll() {
   const resp = await fetch(`${SB}/storage/v1/object/list/${BUCKET}`, { method: 'POST', headers: H, body: JSON.stringify({ prefix: PREFIX, limit: 2000, sortBy: { column: 'name', order: 'desc' } }) })
   if (!resp.ok) throw new Error('Liste CT vidéo échouée : HTTP ' + resp.status)

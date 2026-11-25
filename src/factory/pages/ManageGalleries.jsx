@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { usePersist } from '../agentStore'
 import { ctGetAll, ctPut, ctDel, ctGetBase64, ctCompress, ctNameAI, loadCTImages } from '../ctApi'
+import { CtLectureMoteur } from './CtLectureMoteur'
 import { vctSuspendre, vctGetAll, vctPutMeta, vctPutTexte, vctGetTexte, vctDel, vctAjouter, vctEnrichAll, vctMettreVideo, vctNouveauVideo, vctChangerMiniature, vctSupprimerVideo, vctAnalyser, vctSuivreAnalyse } from '../vctApi'
 import { captureFrame } from '../r2'
 import { labFetch, labUrl } from '../lab'
@@ -279,6 +280,7 @@ export function GalerieVideo() {
               if (a.etat === 'echec') return <div className="fx-s" style={{ color: '#E55050' }}>Analyse en échec{a.erreur ? ' : ' + a.erreur.slice(0, 120) : ''}</div>
               return <div className="fx-s">Analysé · {a.coupes ?? '?'} coupes{a.duree_source_s ? ' en ' + a.duree_source_s + ' s' : ''}{a.langue ? ' · ' + a.langue : ''}{a.repro_usd ? ' · reproduction ≈ ' + Number(a.repro_usd).toFixed(1) + ' $' : ''}{/dépasse/i.test(a.verdict || '') ? ' ⚠ dépasse 15 $' : ''}</div> })()}
             <div className="fx-s">{x.source}{x.taille ? ' · ' + Math.round(x.taille / 1000) + ' Ko' : ''}</div>
+            <CtLectureMoteur rec={x} />
             <div className="fx-ct-a"><button className="fx-btn sm" onClick={() => setEdit(x)}>Modifier</button>
               {x.videoUrl && !(x.analyse_auto && x.analyse_auto.etat === 'en_cours') && <button className="fx-btn sm" title="Lecture complète de la vidéo source : découpage à l'image près, voix mot par mot, intentions, texte du CT, métadonnées et bilan de reproduction" onClick={async () => { if (x.analyse_auto && x.analyse_auto.etat === 'faite' && !(await confirmDlg('Relancer l\'analyse ? Le texte actuel du CT sera remplacé par la nouvelle analyse.'))) return; analyser(x, true) }}>{x.analyse_auto && x.analyse_auto.etat === 'faite' ? 'Réanalyser' : 'Analyser la vidéo'}</button>}</div>
           </div>))}</div>
