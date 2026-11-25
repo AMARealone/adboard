@@ -113,7 +113,8 @@ export function BriefPanel({ id, onClose }) {
 }
 
 // livrables-v1 — tout ce qui a été produit pour cette commande, rangé dans sa carte (stockage AdStack, rien n'expire)
-const nomAngle = (a, i) => { if (!a) return 'Angle ' + (i + 1); if (typeof a === 'string') return a.split('\n')[0].slice(0, 90); return String(a.nom || a.titre || a.title || a.angle || a.name || ('Angle ' + (i + 1))).slice(0, 90) }
+const coupeTitre = (t) => String(t || '').split(/\s+\d{1,2}\s*[.)]\s+(?:Porte|Facette|Triplet|Moment|Preuve)\b/)[0].trim()   // titre-angle-v2 : les anciennes commandes ont la « porte vers le noyau » collée au titre
+const nomAngle = (a, i) => { if (!a) return 'Angle ' + (i + 1); if (typeof a === 'string') return coupeTitre(a.split('\n')[0]).slice(0, 90); return String(a.nom || a.titre || a.title || a.angle || a.name || ('Angle ' + (i + 1))).slice(0, 90) }
 const estVid = (c) => !!c && (c.type === 'video' || c.kind === 'video' || c.ctIdx === 'video' || !!c.videoUrl)
 export function LivrablesPanel({ id, onClose }) {
   const nav = useNavigate()
@@ -124,6 +125,7 @@ export function LivrablesPanel({ id, onClose }) {
   const d = (b && b.deliverables) || {}, r = b ? E.resumeLivrables(b) : null
   const crea = (d.creatives || []).map((c, i) => ({ c, i })).filter((x) => x.c)
   const nbA = r ? r.copiesAttendues : 0
+  const revs = (b && Array.isArray(b.revisions) ? b.revisions : []).filter((x) => x && !['livree', 'refusee'].includes(x.etat))   // rectifications-v3
   const dossiers = (b && Array.isArray(b.dossiers) ? b.dossiers : []).slice().reverse()
   const tache = async (cle, fn) => { setBusy(cle); try { await fn() } finally { setBusy(''); charger() } }
   // Ouvre la commande dans la production (sans la repasser « en cours ») puis lance l'action : on la suit en direct là-bas.
@@ -161,11 +163,12 @@ export function LivrablesPanel({ id, onClose }) {
                     const v = estVid(c), pret = c.status === 'done' && (c.url || c.videoUrl || c.imgB64)
                     const src = c.url || (c.imgB64 ? 'data:image/png;base64,' + c.imgB64 : '')
                     return (
-                      <div key={i} className="fx-liv-t">
+                      <div key={i} className="fx-liv-t" style={revs.some((x) => x.index === i) ? { outline: '2px solid #F59E0B', borderRadius: 10 } : undefined}>
                         <div className={'fx-liv-m' + (v ? ' v' : '')}>
                           {pret ? (v ? <video src={c.videoUrl} poster={c.thumbUrl || undefined} controls playsInline preload="none" /> : <img src={src} alt="" loading="lazy" />) : <div className="fx-liv-vide">{v ? 'Vidéo pas prête' : 'Image pas prête'}</div>}
                         </div>
                         <div className="fx-liv-c"><b>{v ? 'Vidéo' : 'Image'}</b><span>{c.ct ? 'CT ' + c.ct : ''}{c.aRevoir ? ' · à revoir' : ''}</span></div>
+                        {revs.filter((x) => x.index === i).map((x) => <div key={x.id} style={{ fontSize: 12, color: '#F59E0B', margin: '4px 0', whiteSpace: 'pre-wrap' }}><b>🩹 Rectification demandée</b> : « {String(x.texte || '').slice(0, 220)} »<br /><button className="fx-btn sm primary" style={{ marginTop: 6 }} disabled={!!busy} onClick={() => dansProd()}>Traiter la rectification</button></div>)}
                         <div className="fx-liv-b">
                           {v ? <button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.relancerVideo(i))}>↻ Refaire la vidéo</button>
                              : <><button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.regenerateCrea(i))}>↻ Régénérer</button><button className="fx-btn sm" disabled={!!busy} onClick={() => dansProd(() => E.regenerateCreaAutreCT(i))}>Autre CT</button></>}
