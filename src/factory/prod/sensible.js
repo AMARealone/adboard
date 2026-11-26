@@ -108,8 +108,12 @@ export function blocCopy() {
 export function blocImage(mention) {
   if (!estSensible()) return ''
   if (!mentionRequise()) return regles() + 'POUR TOI (créative image) : le hook principal garde le ton direct (règles 2 à 4). Aucune mention légale n\'est demandée pour ce produit : n\'en écris aucune, même si le CT en porte une.\n\n'
-  return regles() + 'POUR TOI (créative image) : le hook principal garde le ton direct (règles 2 à 4). MENTION LÉGALE : si le CT porte une toute petite mention en bas (texte légal, astérisque), garde sa place et son style et écris-y exactement, en très petit : « ' + mention + ' ». '
-    + 'S\'il n\'en porte pas, n\'en invente pas : laisse simplement libre la toute petite bande du bas de l\'image (aucun texte important dans les 3 % du bas), la mention y sera posée après.\n\n'
+  // mention-par-le-code-v1 (26 nov. 2026, BioTonik 2c038beb) — une image est partie avec « Mention légale complète selon la législation locale, ceci est un exemple. »
+  // écrit par le modèle d'image à la place de la mention (le contrôle l'a jugée « lisible », donc le code ne l'a pas remplacée), et une autre avec la mention posée
+  // par-dessus « Paiement à la livraison à Ouaga ». Un modèle d'image n'écrit pas 200 caractères en tout petit : la mention est TOUJOURS posée par le code, mot pour mot,
+  // et le modèle laisse la bande du bas libre. `mention` reste en paramètre pour les appelants ; elle n'est plus donnée au modèle.
+  return regles() + 'POUR TOI (créative image) : le hook principal garde le ton direct (règles 2 à 4). MENTION LÉGALE : tu n\'en écris AUCUNE, même si le CT en porte une en bas (texte légal, astérisque, petite ligne grise) : elle est posée après, mot pour mot, par le système. '
+    + 'Laisse donc libre la bande du bas de l\'image : aucun texte, prix, logo, badge ni élément important dans les 5 % du bas ; ce que le CT plaçait tout en bas remonte au-dessus de cette bande.\n\n'
 }
 export function blocCT() {
   if (!mentionRequise()) return ''
@@ -123,7 +127,7 @@ export function blocVideo() {
 export function blocControle() {
   if (!estSensible()) return ''
   if (!mentionRequise()) return regles()
-  return regles() + 'MENTION LÉGALE ATTENDUE (ou équivalente) : « ' + claim() + ' »'
+  return regles() + 'MENTION LÉGALE : elle n\'est PAS encore sur IMAGE A et c\'est normal — le système la pose après le contrôle, mot pour mot, dans les 5 % du bas de l\'image. Vérifie que cette bande du bas est LIBRE : un texte quel qu\'il soit (une mention légale écrite par le modèle, un texte de remplissage, un prix, une ligne de livraison), un logo ou un badge dans les 5 % du bas est un défaut bloquant de type « texte », à corriger en le remontant ou en le retirant. Réponds mention = « absente » quand la bande est libre.'
 }
 
 // ── Apposer la mention sur une image (navigateur) : bande du bas, très petite, couleur tirée du fond, jamais sur le sujet ──

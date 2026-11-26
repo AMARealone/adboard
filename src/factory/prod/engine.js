@@ -1,6 +1,7 @@
 // Moteur de production — même logique que l'ancien Factory (prodv2*), sans aucun affichage :
 // il met à jour l'état (state.js) et l'interface React se redessine toute seule.
 import { prodv2State as S, SERVER, COMP_FILES, CT_IMAGES, emit, loadSkills } from './state'
+import * as COH from './coherence'   // produit-vrai-v1
 import * as V from './verbatim'
 import { ctGetBase64, loadCTImages } from '../ctApi'
 import { r2Put, videoInfos } from '../r2'
@@ -401,6 +402,9 @@ async function lancerProduction(reprise = false) {
       setAgent(1, 'done', `Synthèse · ${Math.round(synthesisText.length / 1000)}K · ${nbAngles} angles retenus${bal ? (bal.reutilise ? ' · hypothèse stockée réutilisée' : ' · nouveau balayage du marché') : ''}${marche ? '' : ' · ⚠ Données Marché non extraites'}`, 100)
     } else setAgent(1, 'done', `Synthèse déjà faite · ${Math.round(S.synthesis.length / 1000)}K · ${S.angles.length || nbAngles} angles · rien à repayer`, 100)
     phaseMarqueur('plan'); autosave(true)   // point de sauvegarde : l'hypothèse payée est dans la commande dès maintenant
+    // produit-vrai-v1 : l'emballage et le brief se contredisent → rien d'autre n'est payé tant que le propriétaire n'a pas confirmé avec son client
+    if (!(await COH.garde())) { U.banner = { kind: 'warn', text: COH.messageRetenue(COH.lire(S.synthesis).constat) + ' L\'étude est gardée : « Reprendre » continuera sans la repayer.' }; emit(); throw annule() }
+    verifier()
     if (!Object.keys(CT_IMAGES).some((k) => !/_(mime|name|addedAt|meta|awareness|styleTags|niche)$/.test(k))) throw new Error('Galerie CT image vide — ajoute des CT dans la Galerie CT image.')
 
     // ── 2. plan des niveaux de conscience + CT des vidéos ──
@@ -606,7 +610,7 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
   U.crea[idx] = { state: 'running', text: 'Prompt et image en cours' }; emit()
   let gen = await avecReessai(() => appelCreative(idx, ctName, signal, null), signal, idx, 'la génération')
   verifierLocal(); depenser(COUT.prompt + COUT.image, 'images')
-  let meilleur = { gen, qa: null, corr: 0 }, nbCorr = 0
+  let meilleur = { gen, qa: null, corr: 0 }, nbCorr = 0, qaPrec = null
   const qaHist = []   // v10c — chaque tentative : prompt, verdict, défauts (pour le dossier complet)
   for (let k = 0; k <= corrections; k++) {
     U.crea[idx] = { state: 'running', text: k ? `Contrôle qualité de la correction ${k}` : 'Contrôle qualité' }; emit()
@@ -620,6 +624,11 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
     const bloquants = (qa.defauts || []).filter((x) => x.gravite === 'bloquant')
     if (!bloquants.length) break
     if (k === corrections) break
+    // correction-utile-v1 (26 nov. 2026, BioTonik 2c038beb) : les 4 images ont reçu 2 corrections chacune pour le même défaut (« étiquette réinventée »), sans progrès.
+    // Une correction qui n'a ni monté la note ni fait disparaître un type de défaut bloquant redonnerait la même image : elle n'est pas payée une seconde fois.
+    { const types = (q0) => [...new Set(((q0 && q0.defauts) || []).filter((x) => x.gravite === 'bloquant').map((x) => x.type))].sort().join('|')
+      if (k >= 1 && qaPrec && (qa.score || 0) <= (qaPrec.score || 0) && types(qa) === types(qaPrec)) { meilleur.qa = { ...meilleur.qa, correction_sans_effet: true }; break }
+      qaPrec = qa }
     if (!budgetLibre && resteBudget() < COUT.image + COUT.qa + 0.05) { meilleur.qa = { ...meilleur.qa, budget_atteint: true }; break }
     U.crea[idx] = { state: 'running', text: `Correction ${k + 1} : ${String(bloquants[0].detail || bloquants[0].type).slice(0, 70)}` }; emit()
     gen = await avecReessai(() => appelCreative(idx, ctName, signal, { prompt: meilleur.gen.prompt, meta: meilleur.gen.meta, corrections: qa.consignes_correction || bloquants.map((x) => x.detail).join(' ; ') }), signal, idx, 'la correction')
@@ -630,12 +639,12 @@ async function genererAvecReprises(idx, ctName, signal, actif = () => true, { co
   let imgB64 = g.imageData, imageMime = g.imageMime || 'image/png'
   // meta-sensible-v1 : produit sensible et mention absente ou illisible (ou contrôle indisponible) → mention propre apposée par le code
   let mentionAjoutee = false
-  if (SEN.mentionRequise() && q.mention !== 'ok') {
+  if (SEN.mentionRequise()) {   // mention-par-le-code-v1 : toujours posée par le code (le modèle d'image n'en écrit plus, la bande du bas est contrôlée libre)
     try { const r = await SEN.apposerMention(imgB64, imageMime, SEN.claim()); if (r) { imgB64 = r.b64; imageMime = r.mime; mentionAjoutee = true } }
     catch (e) { console.warn('[Meta] mention non apposée :', e.message) }
   }
   const desc = (g.meta && g.meta.length > 5) ? g.meta.slice(0, 200) : `Créative · ${ctName} · Angle ${S.creatives[idx].angleIdx + 1}`
-  const qaRes = { mention: SEN.mentionRequise() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', ecart_ct: q.ecart_ct || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint }
+  const qaRes = { mention: SEN.mentionRequise() ? (mentionAjoutee ? 'ajoutée' : (q.mention || 'inconnue')) : null, verdict: q.verdict || 'inconnu', score: q.score ?? null, defauts: (q.defauts || []).slice(0, 6), resume: q.resume || '', ecart_ct: q.ecart_ct || '', corrections: nbCorr, version_gardee: meilleur.corr, budget_atteint: !!q.budget_atteint, correction_sans_effet: !!q.correction_sans_effet }
   // regen-image-v1 : l'adresse de l'ANCIENNE image (url, miniature) est retirée dès que la nouvelle existe — l'écran affichait c.url en priorité et restait figé dessus
   S.creatives[idx] = { ...S.creatives[idx], url: null, thumbUrl: null, imgB64, desc, status: 'done', imageMime, qa: qaRes, prompt: g.prompt || '', meta: g.meta || '', qaHist: qaHist.map((h) => ({ ...h, prompt: String(h.prompt || '').slice(0, 6000), meta: String(h.meta || '').slice(0, 3000) })), ctUrl: CT_IMAGES[ctName] || '' }
   U.crea[idx] = { state: 'done', text: 'Prêt' }; emit()
@@ -807,6 +816,7 @@ export const copyIsFallback = (c) => !!c && c.description === "(description vide
 // ── Envois ──
 const needCmd = async () => { if (!S.commandeId) { await alertDlg("Cette production n'est pas liée à une commande AdBoard — rien à envoyer automatiquement."); return false } return true }
 const saveNow = () => fetch(`${SERVER}/commandes/${S.commandeId}/save-deliverables`, { method: 'POST', headers: JH, body: livrablesPayload() })
+COH.brancher({ sauver: () => (S.briefSource === 'commande' && S.commandeId ? saveNow() : Promise.resolve()) })   // produit-vrai-v1
 async function withBusy(key, label, fn) {
   U.sending[key] = 'busy'; emit()
   try { await fn(); U.sending[key] = 'ok'; emit(); setTimeout(() => { delete U.sending[key]; emit() }, 1500) }

@@ -10,6 +10,7 @@ import * as CDC from './cdc' // cdc-franchise-v1
 import * as VER from './verite' // verite-v1
 import * as MAN from './ctmanuel' // ct-fidelite-v1
 import * as SEN from './sensible' // meta-sensible-v1
+import * as COH from './coherence' // produit-vrai-v1
 
 const JH = { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': '1' }
 const U = S.ui
@@ -190,6 +191,7 @@ export async function lancerVideo(idx, ct, { forcer = false, arret = '', neuf = 
   const c = S.creatives[idx]
   if (!estSlotVideo(c)) return
   if (!peutVideoCloud()) throw new Error('La vidéo automatique demande une commande AdBoard (pas un brief importé à la main).')
+  if (!(await COH.garde())) throw new Error(COH.messageRetenue(COH.lire(S.synthesis).constat))   // produit-vrai-v1 : aucune machine ne démarre tant que le propriétaire n'a pas confirmé
   const slot = c.angleIdx + 1
   let ctVideoUrl = ''
   try { const g = await (galerie || prechargerCTVideo()); const f = g.find((x) => x.id === ct.id); ctVideoUrl = (f && f.videoUrl) || '' } catch (_) { }
@@ -261,6 +263,7 @@ function finPlan(idx, e) {
   toast('Vidéo de l\'angle ' + (c.angleIdx + 1) + ' : le texte est prêt à valider. Rien n\'est encore tourné.', 12000)
 }
 function finEchec(idx, msg, etat = 'echec') {
+  try { if (COH.noterDepuisMoteur(msg)) _save(true) } catch (_) { }   // produit-vrai-v1 : le moteur a relevé le désaccord emballage / brief → il entre dans l'étude, la prochaine relance posera la question
   const c = S.creatives[idx]
   if (c && c.videoAvant && c.videoAvant.videoUrl) {   // correcteur-cible-v1 : une correction qui échoue ou qu'on arrête rend la vidéo d'avant, intacte
     const a = c.videoAvant
@@ -315,6 +318,7 @@ export function majAgentVideo(fin = false) {
 async function relancerVideoBrut(idx, { autreCT = false } = {}) {
   const c = S.creatives[idx]; if (!estSlotVideo(c)) return
   if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return }
+  if (!(await COH.garde())) { toast(COH.messageRetenue(COH.lire(S.synthesis).constat), 12000); return }   // produit-vrai-v1 : avant de toucher à la carte
   U.crea[idx] = { state: 'running', text: autreCT ? 'Choix d\'un autre CT vidéo…' : 'Relance de la vidéo…', pct: 0 }; emit()
   try {
     let ct = { id: (c.job && c.job.ct) || c.ct, nom: c.job && c.job.ctNom, raison: c.ctRaison, poster: c.job && c.job.poster, direction: c.job && c.job.direction }
@@ -374,6 +378,7 @@ export async function relancerVideo(idx, opts = {}) {
   if (!o.ctId) return relancerVideoBrut(idx, o)
   const c = S.creatives[idx]; if (!estSlotVideo(c)) return
   if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return }
+  if (!(await COH.garde())) { toast(COH.messageRetenue(COH.lire(S.synthesis).constat), 12000); return }   // produit-vrai-v1 : avant de toucher à la carte
   U.crea[idx] = { state: 'running', text: 'Relance de la vidéo avec le CT choisi…', pct: 0 }; emit()
   try {
     const g = (await MAN.chargerListe()).find((x) => x.id === o.ctId)
@@ -409,6 +414,7 @@ export async function corrigerVideo(idx, plans, { maxUsd } = {}) {   // rectific
 export async function texteDabord(idx, { neuf = false } = {}) {
   const c = S.creatives[idx]; if (!estSlotVideo(c)) return
   if (jobEnCours(c)) { toast('Cette vidéo est déjà en cours.'); return }
+  if (!(await COH.garde())) { toast(COH.messageRetenue(COH.lire(S.synthesis).constat), 12000); return }   // produit-vrai-v1 : avant de toucher à la carte
   U.crea[idx] = { state: 'running', text: neuf ? 'Réécriture du texte…' : 'Écriture du texte…', pct: 0 }; emit()
   try {
     let ct = { id: (c.job && c.job.ct) || c.ct, nom: c.job && c.job.ctNom, raison: c.ctRaison, poster: c.job && c.job.poster, direction: c.job && c.job.direction }

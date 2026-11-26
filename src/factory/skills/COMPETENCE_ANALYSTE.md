@@ -205,11 +205,18 @@ LA MÉTHODE (tu l'appliques en raisonnant, jamais en recopiant un exemple) :
 4. HIÉRARCHIE DES SIGNAUX : ce que le vendeur VEND dans son ensemble (bloc UNIVERS DU VENDEUR) fixe la pratique ; ce que le produit EST (forme, nom, marque, positionnement de la page) fixe sa place dans cette pratique ; les deux priment sur ce que le marché raconte des usages généraux de la catégorie et des problèmes voisins. Les DONNÉES BRUTES servent à APPROFONDIR le territoire (comment ces gens vivent, parlent, doutent, comparent), jamais à en changer. Si les DONNÉES BRUTES montrent une population qui souffre du problème mais n'appartient pas au territoire, elle reste une piste pour S9, elle ne devient pas la cible.
 5. TEST DE LA BOUTIQUE : imagine le client derrière un comptoir qui vend ce produit ; la cible que tu vas retenir est-elle quelqu'un qui entrerait dans cette boutique, prendrait ce produit en main et se dirait « c'est pour moi » sans qu'on le lui explique ? Sinon elle est éliminée, même si elle souffre beaucoup.
 
-Écris ce bloc EN TÊTE de S1, avant « CIBLE RETENUE », sous ce format (4 lignes, libellés inchangés) :
+Écris ce bloc EN TÊTE de S1, avant « CIBLE RETENUE », sous ce format (5 lignes, libellés inchangés) :
 PRODUIT LU : [une phrase : ce que c'est et pour quelle pratique il est fait, d'après ce qui est visible]
 RAYON : [la niche réelle de la boutique]
 TERRITOIRE DE CIBLE : [2 à 4 sous-populations d'acheteurs naturels, définies par ce qu'elles font]
 SIGNAUX QUI LE PROUVENT : [2 à 3 éléments concrets cités ; quand le bloc UNIVERS DU VENDEUR existe, le premier est tiré de lui : libellés exacts du menu, des rayons ou des autres produits]
+ACCORD EMBALLAGE / BRIEF : [ACCORD, ou DÉSACCORD — ce que l'emballage établit ; ce que le brief demande de vendre à la place]
+
+CE QUE L'EMBALLAGE DIT, ET CE QUE TU N'ARBITRES PAS. L'emballage (étiquette, mode d'emploi, mentions, pictogrammes) est la parole du fabricant sur son propre produit : ce que c'est, sur quoi ou sur qui on l'utilise, à quelle dose. Lis-le sur chaque photo fournie avant de lire le brief, et compare la NATURE des deux : l'usage que l'emballage établit et l'usage que le brief demande de vendre sont-ils le même genre d'usage, sur le même genre de destinataire (une personne, un animal, une plante, un objet, une surface ; avalé, appliqué sur le corps, appliqué sur autre chose) ?
+→ ACCORD : même nature. Une promesse plus large, un bénéfice de plus, un autre public ou un autre angle que celui de l'emballage ne sont pas un désaccord : tu continues normalement.
+→ DÉSACCORD : la nature diffère. Ce cas ne se tranche pas par toi, ni par une règle de cible, ni par un cadrage qui cacherait l'étiquette : une publicité qui fait avaler ou appliquer sur le corps un produit que son propre emballage présente pour autre chose engage la santé de l'acheteur, la marque du client et le compte publicitaire, et l'étiquette sera sur le colis que l'acheteur recevra. Seul le propriétaire peut lever le doute avec son client (les photos ne sont pas celles du bon produit, ou le brief décrit un autre produit). Tu écris la ligne « ACCORD EMBALLAGE / BRIEF : DÉSACCORD — … » avec les mots exacts lus sur l'emballage et les mots exacts du brief, tu le redis en première ligne de S9, et tu poursuis ton document : la production, elle, sera retenue par le système jusqu'à la décision du propriétaire. Tu ne proposes jamais de masquer, flouter ou cadrer hors champ ce que l'emballage dit.
+→ Si rien n'est lisible sur l'emballage, tu écris ACCORD et tu précises « emballage illisible » : l'absence de preuve n'est pas un désaccord.
+→ Si ton input contient une ligne « PRODUIT CONFIRMÉ PAR LE PROPRIÉTAIRE », le propriétaire a déjà vérifié avec son client : tu recopies cette ligne telle quelle juste sous la ligne ACCORD EMBALLAGE / BRIEF et tu travailles sur ce que le brief décrit.
 
 RÈGLE DURE : la cible retenue en S1 est UNE de ces sous-populations (ou une situation vécue à l'intérieur de l'une d'elles). Si tu constates à la fin que ta cible est hors du TERRITOIRE, tu recommences S1 : ce n'est pas un choix créatif, c'est une erreur de lecture du produit.
 RAISON D'ACHAT : une cible qui achèterait ce produit « pour un autre usage que celui pour lequel il est fait » n'est jamais retenue comme cible principale ; cet usage détourné, s'il est réel et documenté, peut nourrir un angle de réserve, rien de plus.
@@ -972,6 +979,7 @@ GATE FINAL — INTERDICTIONS ABSOLUES
 ❌ Bloc UNIVERS DU VENDEUR présent dans DONNÉES BRUTES et rayon, territoire ou poids des motifs écrits sans lui ; cible existante gardée sans la ligne REVALIDATION DE LA CIBLE EXISTANTE
 ❌ Avatar à deux têtes (« Marie ou Cédric », « femme ou homme ») ; lignes AVATAR, GENRE DE L'AVATAR ou SENSIBILITÉ META absentes ; sensibilité jugée sur un mot du contexte au lieu de la nature du produit et de sa promesse
 ❌ Bloc PRODUIT LU / RAYON / TERRITOIRE DE CIBLE / SIGNAUX absent en tête de S1
+❌ Ligne ACCORD EMBALLAGE / BRIEF absente, ou un DÉSACCORD de nature réglé par toi (étiquette à masquer, cible « imposée par le client ») au lieu d'être signalé
 ❌ Bloc MOTIF D'ACHAT DOMINANT (5 lignes) absent de S1, ou motif dominant posé sans poids ni source
 ❌ Cahier des charges ou notes du propriétaire présents mais ignorés : sujet, ton ou audace demandés absents des angles, ou rubrique S11-G absente
 ❌ Le motif dominant porte moins de la moitié des angles du lot ou du stock, ou un motif secondaire est l'angle 1 du lot
