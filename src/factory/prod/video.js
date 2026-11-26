@@ -396,7 +396,7 @@ export async function corrigerVideo(idx, plans, { maxUsd } = {}) {   // rectific
   const j = await r.json().catch(() => ({}))
   if (!r.ok || j.error) { toast(j.error || 'Correction impossible (HTTP ' + r.status + ').', 12000); return false }
   S.creatives[idx] = { ...c, videoAvant: { videoUrl: c.videoUrl, thumbUrl: c.thumbUrl || null, desc: c.desc, aRevoir: !!c.aRevoir, job: c.job }, videoUrl: null, status: 'pending',
-    job: { ...c.job, execution: j.execution, correction: j.plans || liste, correction_echec: null, debut: Date.now(), etat: 'demarrage', pct: 1, etape: 'Correction : la machine démarre' } }
+    job: { ...c.job, execution: j.execution, cout_usd: 0, correction: j.plans || liste, correction_echec: null, debut: Date.now(), etat: 'demarrage', pct: 1, etape: 'Correction : la machine démarre' } }   // budget-client-v3 : la correction est une nouvelle exécution, elle ne reprend pas le coût de la vidéo d'avant (qui reste compté sur sa propre ligne)
   U.vjournal = U.vjournal || {}; U.vjournal[idx] = []
   U.crea[idx] = { state: 'running', text: 'Correction de ' + (j.plans || liste).length + ' plan(s)', pct: 1 }; emit(); _save(true)
   suivre(idx)

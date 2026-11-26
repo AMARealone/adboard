@@ -37,7 +37,7 @@ export function BudgetClient({ S }) {
         <span>Reste : <b style={{ color: 'var(--fg, #fff)' }}>{usd(d.reste_usd)}</b></span>
         <span>Vidéos : {d.videos_faites} faites sur {d.videos_prevues}</span>
         <span>Prochaine vidéo : <b style={{ color: 'var(--fg, #fff)' }}>{usd(d.budget_video.total_usd)}</b> tout compris</span>
-        <span>Cette commande : {usd(d.commande.total)} (vidéos {usd(d.commande.videos)}{d.commande.videos_refaites_usd > 0 ? ' dont ' + usd(d.commande.videos_refaites_usd) + ' de ' + d.commande.tentatives_abandonnees + ' tentative(s) refaite(s)' : ''} · reste {usd(d.commande.hors_video)})</span>
+        <span>Cette commande : {usd(d.commande.total)} (vidéos {usd(d.commande.videos)}{d.commande.videos_refaites_usd > 0 ? ' dont ' + usd(d.commande.videos_refaites_usd) + ' sur ' + d.commande.tentatives_abandonnees + ' autre(s) exécution(s) : vidéos refaites, arrêtées ou corrigées' : ''} · reste {usd(d.commande.hors_video)}{d.commande.source_hors_video === 'registre' ? ' réel' : ' estimé'}{d.commande.postes ? ' : ' + Object.entries(d.commande.postes).filter(([, v]) => v > 0).map(([k, v]) => k + ' ' + usd(v)).join(', ') : ''})</span>
         {d.rectifications_en_attente > 0 && <span>{d.rectifications_en_attente} rectification(s) en attente</span>}
       </div>
       {d.alerte && <div className="fx-banner" style={{ marginTop: 10, borderColor: coul, color: coul }}>{d.alerte === 'depasse' ? 'Budget du mois dépassé : chaque vidéo restante garde ses 8 $ (la qualité passe avant). Regardez ce qui a coûté le plus : vidéos refaites, reprises, textes réécrits.' : 'Budget du mois à ' + d.pct + ' % : évitez les vidéos refaites en entier, préférez le texte d\'abord et les corrections de plans.'}</div>}
@@ -107,7 +107,9 @@ function Rectif({ S, r, plafond, recharger }) {
   const post = async (route, corps, etape) => {
     setBusy(etape)
     try {
-      const x = await fetch(SERVER + route, { method: 'POST', headers: H(), body: JSON.stringify({ commande_id: S.commandeId, id: r.id, ...corps }) })
+      // budget-client-v3 : l'en-tête X-Commande range sur cette commande ce que le serveur dépense pour la rectification (préparation comprise)
+      const h9 = H(); if (/^[A-Za-z0-9_-]{4,80}$/.test(String(S.commandeId || ''))) h9['X-Commande'] = String(S.commandeId)
+      const x = await fetch(SERVER + route, { method: 'POST', headers: h9, body: JSON.stringify({ commande_id: S.commandeId, id: r.id, ...corps }) })
       const j = await x.json().catch(() => ({}))
       if (!x.ok || j.error) throw new Error(j.error || 'HTTP ' + x.status)
       recharger(); return j
