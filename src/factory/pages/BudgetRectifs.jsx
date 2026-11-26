@@ -37,7 +37,7 @@ export function BudgetClient({ S }) {
         <span>Reste : <b style={{ color: 'var(--fg, #fff)' }}>{usd(d.reste_usd)}</b></span>
         <span>Vidéos : {d.videos_faites} faites sur {d.videos_prevues}</span>
         <span>Prochaine vidéo : <b style={{ color: 'var(--fg, #fff)' }}>{usd(d.budget_video.total_usd)}</b> tout compris</span>
-        <span>Cette commande : {usd(d.commande.total)} (vidéos {usd(d.commande.videos)} · reste {usd(d.commande.hors_video)})</span>
+        <span>Cette commande : {usd(d.commande.total)} (vidéos {usd(d.commande.videos)}{d.commande.videos_refaites_usd > 0 ? ' dont ' + usd(d.commande.videos_refaites_usd) + ' de ' + d.commande.tentatives_abandonnees + ' tentative(s) refaite(s)' : ''} · reste {usd(d.commande.hors_video)})</span>
         {d.rectifications_en_attente > 0 && <span>{d.rectifications_en_attente} rectification(s) en attente</span>}
       </div>
       {d.alerte && <div className="fx-banner" style={{ marginTop: 10, borderColor: coul, color: coul }}>{d.alerte === 'depasse' ? 'Budget du mois dépassé : chaque vidéo restante garde ses 8 $ (la qualité passe avant). Regardez ce qui a coûté le plus : vidéos refaites, reprises, textes réécrits.' : 'Budget du mois à ' + d.pct + ' % : évitez les vidéos refaites en entier, préférez le texte d\'abord et les corrections de plans.'}</div>}
