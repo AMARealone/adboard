@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Lancer Khalil</title>
+<!-- khalil-v1 — page d'Amar : envoyer Khalil dans un Meet, ou le tester dans son navigateur. Connexion : la même que le CRM AdStats. -->
+<style>
+  :root { --fond:#f6f7fb; --carte:#fff; --texte:#151826; --doux:#636b80; --bord:#e3e6ef; --accent:#5b4bff; --ok:#11a37f; --ko:#d64545; }
+  @media (prefers-color-scheme: dark) { :root { --fond:#0d0f15; --carte:#161a24; --texte:#eef0f6; --doux:#9aa2b4; --bord:#262b38; --accent:#7f72ff; --ok:#2fd3a5; --ko:#ff7676; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--fond); color:var(--texte); font: 15px/1.5 "Inter", "Segoe UI", system-ui, sans-serif; }
+  main { max-width:720px; margin:0 auto; padding: 28px max(16px, env(safe-area-inset-right, 0px)) 60px max(16px, env(safe-area-inset-left, 0px)); }
+  h1 { font-size:26px; margin:0 0 4px; }
+  .sous { color:var(--doux); margin:0 0 22px; }
+  .carte { background:var(--carte); border:1px solid var(--bord); border-radius:14px; padding:20px; margin-bottom:16px; }
+  label { display:block; font-weight:600; margin:12px 0 5px; font-size:14px; }
+  label small { font-weight:400; color:var(--doux); }
+  input, select, textarea { width:100%; padding:10px 12px; border:1px solid var(--bord); border-radius:10px; background:var(--fond); color:var(--texte); font:inherit; }
+  textarea { min-height:90px; resize:vertical; }
+  .ligne { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:560px) { .ligne { grid-template-columns:1fr; } }
+  .boutons { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+  button { border:0; border-radius:10px; padding:12px 18px; font:inherit; font-weight:600; cursor:pointer; background:var(--accent); color:#fff; }
+  button.second { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  button:disabled { opacity:.5; cursor:wait; }
+  #msg { margin-top:14px; white-space:pre-wrap; }
+  .ok { color:var(--ok); } .ko { color:var(--ko); }
+  #journal { font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace; white-space:pre-wrap; max-height:420px; overflow:auto; background:var(--fond); border-radius:10px; padding:12px; margin-top:10px; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Khalil</h1>
+  <p class="sous">Envoyez Khalil mener un appel de vente dans Google Meet, ou testez-le d'abord dans votre navigateur.</p>
+
+  <div class="carte">
+    <label>Lien Google Meet <small>(vide = test dans votre navigateur)</small></label>
+    <input id="meet" placeholder="https://meet.google.com/abc-defg-hij">
+    <div class="ligne">
+      <div><label>Prénom du prospect</label><input id="prenom"></div>
+      <div><label>Marque</label><input id="marque"></div>
+    </div>
+    <div class="ligne">
+      <div><label>Produit</label><input id="produit"></div>
+      <div><label>Pays</label><input id="pays" placeholder="Sénégal"></div>
+    </div>
+    <label>Lien de sa page produit</label>
+    <input id="page_produit" placeholder="https://…">
+    <label>Présentation</label>
+    <select id="offre"><option value="perf">PERF+ (si le budget ne suit pas : ONE SHOT)</option><option value="growth">GROWTH (si le budget ne suit pas : PERF+)</option></select>
+    <label>Ce que vous savez déjà <small>(nombre d'ads, ce qu'il a dit sur WhatsApp…)</small></label>
+    <textarea id="contexte"></textarea>
+    <label>Clé admin <small>(seulement si vous n'êtes pas connecté au CRM sur ce navigateur)</small></label>
+    <input id="cle" type="password" autocomplete="off">
+    <div class="boutons">
+      <button id="go">Envoyer Khalil dans le Meet</button>
+      <button id="test" class="second">Tester dans mon navigateur</button>
+      <button id="installer" class="second">Mettre à jour Khalil</button>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div class="carte" id="suivi" hidden>
+    <b>Suivi de l'appel</b> <small id="maj" style="color:var(--doux)"></small>
+    <div id="journal"></div>
+  </div>
+</main>
+<script>
+(function () {
+  "use strict";
+  var API = "https://adstack-server.onrender.com";
+  var $ = function (id) { return document.getElementById(id); };
+  var champs = ["meet", "prenom", "marque", "produit", "pays", "page_produit", "offre", "contexte"];
+  try { var c = localStorage.getItem("khalil_cle"); if (c) $("cle").value = c; } catch (e) {}
+  function entetes() {
+    var h = { "Content-Type": "application/json" };
+    var cle = $("cle").value.trim();
+    if (cle) { h["X-Api-Key"] = cle; try { localStorage.setItem("khalil_cle", cle); } catch (e) {} return h; }
+    try {   // la session admin du CRM AdStats / Factory (même site) suffit : le serveur vérifie que c'est le compte admin
+      var v = JSON.parse(localStorage.getItem("factory_admin_sb_session") || "null");
+      if (v && v.access_token) h.Authorization = "Bearer " + v.access_token;
+    } catch (e) {}
+    return h;
+  }
+  function msg(t, ko) { $("msg").className = ko ? "ko" : "ok"; $("msg").textContent = t; }
+  function corps(test) { var b = {}; champs.forEach(function (k) { b[k] = $(k).value.trim(); }); if (test) b.meet = ""; return b; }
+  var suiviT = null;
+  function suivre(session) {
+    $("suivi").hidden = false; clearInterval(suiviT);
+    var tour = function () {
+      fetch(API + "/khalil/suivi?session=" + encodeURIComponent(session), { headers: entetes() }).then(function (r) { return r.json(); }).then(function (j) {
+        $("maj").textContent = "· mis à jour " + new Date().toLocaleTimeString() + (j.statut_bot ? " · bot : " + [].concat(j.statut_bot).join(" → ") : "");
+        $("journal").textContent = (j.journal || [j.error]).join("\n");
+        $("journal").scrollTop = 1e9;
+      }).catch(function () {});
+    };
+    tour(); suiviT = setInterval(tour, 5000);
+  }
+  function lancer(test) {
+    var b = corps(test);
+    if (!test && !b.meet) { msg("Collez le lien Google Meet, ou cliquez sur « Tester dans mon navigateur ».", true); return; }
+    $("go").disabled = $("test").disabled = true; msg("Préparation de l'appel…");
+    fetch(API + "/khalil/lancer", { method: "POST", headers: entetes(), body: JSON.stringify(b) })
+      .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+      .then(function (x) {
+        if (!x.ok) { msg(x.j.error === "admin requis" ? "Connexion admin expirée : ouvrez le CRM AdStats sur ce navigateur (il vous reconnecte), puis revenez ici." : "Erreur : " + (x.j.error || "inconnue"), true); return; }
+        if (x.j.test) { msg("Test prêt : une nouvelle fenêtre s'ouvre. Cliquez sur le bouton, autorisez le micro, et parlez à Khalil comme un prospect."); window.open(x.j.page, "_blank"); }
+        else msg("Khalil arrive dans le Meet (bot " + x.j.bot_id + "). Admettez-le quand il frappe à la porte.");
+        suivre(x.j.session);
+      })
+      .catch(function (e) { msg("Erreur réseau : " + e.message, true); })
+      .finally(function () { $("go").disabled = $("test").disabled = false; });
+  }
+  $("go").onclick = function () { lancer(false); };
+  $("test").onclick = function () { lancer(true); };
+  $("installer").onclick = function () {
+    msg("Mise à jour de Khalil chez ElevenLabs…");
+    fetch(API + "/khalil/agent", { method: "POST", headers: entetes() }).then(function (r) { return r.json(); })
+      .then(function (j) { j.ok ? msg("Khalil est à jour (agent " + j.agent_id + ").") : msg("Erreur : " + j.error, true); })
+      .catch(function (e) { msg("Erreur réseau : " + e.message, true); });
+  };
+})();
+</script>
+</body>
+</html>

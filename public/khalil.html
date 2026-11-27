@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1280, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Khalil · AdStack</title>
+<!-- khalil-v1 (27 nov. 2026) — écran partagé par le bot Recall.ai dans le Meet. Cette page entend le Meet (micro du bot),
+     parle dans le Meet (sa sortie audio), et affiche ce que Khalil montre : accueil, page produit du prospect, slides. -->
+<style>
+  :root { --fond:#0b0d12; --carte:#141823; --texte:#f2f4f8; --doux:#9aa3b5; --accent:#6c5cff; --accent2:#23d5ab; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { width:1280px; height:720px; overflow:hidden; background:var(--fond); color:var(--texte);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif; }
+  .vue { position:absolute; inset:0; opacity:0; pointer-events:none; transition:opacity .45s ease; }
+  .vue.on { opacity:1; pointer-events:auto; }
+  /* Accueil */
+  #vue-accueil { display:flex; flex-direction:column; justify-content:center; padding:0 120px;
+    background: radial-gradient(900px 500px at 80% 10%, rgba(108,92,255,.25), transparent 60%), radial-gradient(700px 400px at 10% 90%, rgba(35,213,171,.14), transparent 60%), var(--fond); }
+  .marque { font-size:15px; letter-spacing:.22em; text-transform:uppercase; color:var(--doux); margin-bottom:28px; }
+  .marque b { color:var(--texte); }
+  #titre-appel { font-size:54px; line-height:1.08; font-weight:700; max-width:900px; text-wrap:balance; }
+  #titre-appel span { background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .etapes { display:flex; gap:18px; margin-top:48px; }
+  .etape { background:var(--carte); border:1px solid rgba(255,255,255,.07); border-radius:16px; padding:20px 22px; width:300px; }
+  .etape i { font-style:normal; display:inline-flex; width:30px; height:30px; border-radius:50%; align-items:center; justify-content:center;
+    background:rgba(108,92,255,.18); color:#b9b0ff; font-weight:700; margin-bottom:12px; }
+  .etape p { font-size:18px; line-height:1.35; }
+  /* Page produit */
+  #vue-page { background:#fff; overflow:hidden; }
+  #pp-img { width:1280px; display:block; transition:transform 2.2s cubic-bezier(.4,.1,.2,1); }
+  #pp-attente { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:var(--fond); color:var(--doux); font-size:22px; }
+  #pp-cadre { width:1280px; height:720px; border:0; display:none; }
+  /* Slides */
+  #slides { width:1280px; height:720px; border:0; display:block; background:var(--fond); }
+  /* Badge de Khalil */
+  #badge { position:absolute; right:22px; bottom:22px; display:flex; align-items:center; gap:12px; padding:10px 16px 10px 10px;
+    background:rgba(12,14,20,.86); border:1px solid rgba(255,255,255,.1); border-radius:999px; backdrop-filter: blur(8px); z-index:10; }
+  .av { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:19px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); position:relative; }
+  .av::after { content:""; position:absolute; inset:-5px; border-radius:50%; border:2px solid var(--accent2); opacity:0; transform:scale(.9); transition:.25s; }
+  #badge.parle .av::after { opacity:1; transform:scale(1); animation:onde 1.1s ease-in-out infinite; }
+  @keyframes onde { 50% { transform:scale(1.12); opacity:.45; } }
+  #badge b { display:block; font-size:15px; }
+  #badge span { display:block; font-size:12px; color:var(--doux); }
+  #etat { position:absolute; left:16px; bottom:10px; font-size:11px; color:rgba(255,255,255,.35); z-index:10; }
+</style>
+</head>
+<body>
+  <section class="vue on" id="vue-accueil">
+    <div class="marque"><b>AdStack</b> · Agence de performance créative</div>
+    <h1 id="titre-appel">Bienvenue</h1>
+    <div class="etapes">
+      <div class="etape"><i>1</i><p>Comprendre votre situation</p></div>
+      <div class="etape"><i>2</i><p>Vous montrer comment on travaille</p></div>
+      <div class="etape"><i>3</i><p>Voir ensemble si on peut vous aider</p></div>
+    </div>
+  </section>
+  <section class="vue" id="vue-page">
+    <img id="pp-img" alt="">
+    <iframe id="pp-cadre" title="Page produit"></iframe>
+    <div id="pp-attente">Chargement de votre page…</div>
+  </section>
+  <section class="vue" id="vue-slides"><iframe id="slides" title="Présentation"></iframe></section>
+  <div id="badge"><div class="av">K</div><div><b>Khalil</b><span>Responsable collaborateur · AdStack</span></div></div>
+  <div id="etat">Connexion…</div>
+
+<script src="/khalil-elevenlabs.js"></script>
+<script>
+(function () {
+  "use strict";
+  var q = new URLSearchParams(location.search);
+  var S = q.get("s"), T = q.get("t"), API = q.get("api") || "https://adstack-server.onrender.com";
+  var GROWTH = /growth/i.test(q.get("offre") || "");
+  var conv = null, fini = false, ctx = {}, principal = [], annexes = {};
+  var $ = function (id) { return document.getElementById(id); };
+  function etat(t) { $("etat").textContent = t; }
+  function journal(ev) {
+    try { fetch(API + "/khalil/journal", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ s: S, t: T, evenement: ev }) }).catch(function () {}); } catch (e) {}
+  }
+  function poster(chemin, corps) {
+    return fetch(API + chemin, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ s: S, t: T }, corps || {})) })
+      .then(function (r) { return r.json(); });
+  }
+  function vue(nom) { ["accueil", "page", "slides"].forEach(function (v) { $("vue-" + v).classList.toggle("on", v === nom); }); }
+  var nettoie = function (t) { return String(t || "").replace(/\s+/g, " ").replace(/^AdStack\s*/, "").replace(/\d{2} \/ \d{2}/g, "").trim(); };
+
+  // ── Slides : la présentation du site, pilotée comme au clavier ──
+  var fen = null, doc = null;
+  function chargerSlides() {
+    return new Promise(function (ok) {
+      var f = $("slides");
+      f.onload = function () {
+        try {
+          fen = f.contentWindow; doc = f.contentDocument;
+          var secs = [].slice.call(doc.querySelectorAll("#stage > section"));
+          principal = secs.filter(function (s) { return s.querySelector(".num") || s.classList.contains("cover"); });
+          var ann = secs.filter(function (s) { return principal.indexOf(s) < 0; });
+          // les deux annexes : la comparaison des offres, puis l'autre façon de démarrer
+          annexes = { comparer: ann[0] || null, reduite: ann[1] || null };
+        } catch (e) { journal("slides illisibles : " + e.message); }
+        ok();
+      };
+      f.src = GROWTH ? "/presentation.html?offre=growth" : "/presentation.html";
+    });
+  }
+  function texteSlide(sec) {   // le texte lisible d'une slide, morceau par morceau, sans logo, sommaire ni numéro
+    var w = doc.createTreeWalker(sec, NodeFilter.SHOW_TEXT), out = [], n;
+    while ((n = w.nextNode())) {
+      if (n.parentElement && n.parentElement.closest(".logo, .trk, .num, style, script")) continue;
+      var t = n.nodeValue.replace(/\s+/g, " ").trim(); if (t) out.push(t);
+    }
+    return out.join(" · ").replace(/ · ([.,:;!?])/g, "$1").slice(0, 520);
+  }
+  function carteSlides() {
+    var l = principal.map(function (s, i) { return "Slide " + (i + 1) + " : " + texteSlide(s); });
+    if (annexes.comparer) l.push("Annexe « comparer » : " + texteSlide(annexes.comparer));
+    if (annexes.reduite) l.push("Annexe « reduite » : " + texteSlide(annexes.reduite));
+    return l.join("\n");
+  }
+  function touche(k) { fen.dispatchEvent(new KeyboardEvent("keydown", { key: k, bubbles: true })); }
+  function allerSlide(n) {
+    n = Math.max(1, Math.min(principal.length, parseInt(n, 10) || 1));
+    touche("Home"); for (var i = 1; i < n; i++) touche("ArrowRight");
+    vue("slides"); return n;
+  }
+  function allerAnnexe(cle) {
+    var lien = doc.querySelector(cle === "reduite" ? '[data-annex="down"]' : '[data-annex="cmp"]');
+    if (!lien) return false;
+    lien.click(); vue("slides"); return true;
+  }
+
+  // ── Page produit : aperçu pleine page (le service d'aperçu se prépare au lancement de l'appel) ──
+  var ppPrete = false;
+  function chargerPage() {
+    var u = ctx.page_produit; if (!u) return;
+    var img = $("pp-img"), essais = 0;
+    var src = "https://s.wordpress.com/mshots/v1/" + encodeURIComponent(u) + "?w=1280&h=2400";
+    img.onload = function () {
+      if (img.naturalHeight < 700 && essais < 12) { essais++; setTimeout(function () { img.src = src + "&r=" + essais; }, 4000); return; }   // image d'attente du service
+      ppPrete = true; $("pp-attente").style.display = "none";
+    };
+    img.onerror = function () {   // aperçu impossible : la page elle-même, si le site accepte d'être affiché
+      var c = $("pp-cadre"); c.src = u; c.style.display = "block"; img.style.display = "none"; $("pp-attente").style.display = "none"; ppPrete = true;
+      journal("aperçu de la page produit indisponible, affichage direct");
+    };
+    img.src = src;
+  }
+  function montrerPage(endroit) {
+    vue("page");
+    var img = $("pp-img"), h = img.naturalHeight ? img.naturalHeight * (1280 / img.naturalWidth) : 0;
+    var y = 0; if (h > 720) y = endroit === "bas" ? h - 720 : endroit === "milieu" ? (h - 720) / 2 : 0;
+    img.style.transform = "translateY(" + (-y) + "px)";
+  }
+
+  // ── Outils que Khalil appelle ──
+  var outils = {
+    montrer_accueil: function () { vue("accueil"); journal("outil : accueil"); return "L'accueil est à l'écran."; },
+    montrer_page_produit: function (p) {
+      if (!ctx.page_produit) return "Aucune page produit n'a été donnée pour ce prospect : demande-lui de la décrire.";
+      montrerPage((p && p.endroit) || "haut"); journal("outil : page produit " + ((p && p.endroit) || "haut"));
+      return ppPrete ? "La page produit est à l'écran." : "La page produit est en train de s'afficher, parle d'abord avec le prospect.";
+    },
+    montrer_slide: function (p) {
+      if (!principal.length) return "La présentation n'a pas pu s'afficher : continue à l'oral.";
+      var n = allerSlide(p && p.numero); journal("outil : slide " + n);
+      return "La slide " + n + " est à l'écran.";
+    },
+    montrer_annexe: function (p) {
+      var ok = allerAnnexe(p && p.annexe); journal("outil : annexe " + (p && p.annexe));
+      return ok ? "L'annexe est à l'écran." : "Cette annexe n'existe pas dans la présentation.";
+    },
+    envoyer_lien_paiement: function (p) {
+      var offre = (p && p.offre) === "reduite" ? "reduite" : "principale";
+      return poster("/khalil/chat", { offre: offre }).then(function (r) {
+        journal("outil : lien de paiement " + offre + (r && r.ok ? " envoyé" : " ÉCHEC " + JSON.stringify(r)));
+        if (r && r.ok && r.test) return "Mode test : le lien n'est pas envoyé dans un chat. Fais comme s'il l'était.";
+        return r && r.ok ? "Le lien de paiement est dans le chat du Meet." : "L'envoi du lien a échoué : dis au prospect que l'équipe le lui envoie sur WhatsApp juste après l'appel.";
+      }).catch(function () { return "L'envoi du lien a échoué : dis au prospect que l'équipe le lui envoie sur WhatsApp juste après l'appel."; });
+    }
+  };
+
+  function terminer(raison) {
+    if (fini) return; fini = true; etat("Appel terminé");
+    vue("accueil"); $("titre-appel").innerHTML = "Merci" + (ctx.prenom ? ", " + esc(ctx.prenom) : "") + ".<br><span>À très vite chez AdStack.</span>";
+    setTimeout(function () { poster("/khalil/fin", { raison: raison }).catch(function () {}); }, 2500);
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+
+  async function demarrer() {
+    if (!S || !T) { etat("Lien incomplet"); return; }
+    var r = await fetch(API + "/khalil/session?s=" + encodeURIComponent(S) + "&t=" + encodeURIComponent(T)).then(function (x) { return x.json(); });
+    if (!r || !r.signed_url) { etat("Appel introuvable : " + ((r && r.error) || "")); return; }
+    ctx = r.ctx || {};
+    $("titre-appel").innerHTML = (ctx.marque ? esc(ctx.marque) + " × AdStack" : "Votre appel avec AdStack") + "<br><span>" + (ctx.prenom ? "Avec " + esc(ctx.prenom) : "On commence") + "</span>";
+    chargerPage();
+    await chargerSlides();
+    var vide = function (v) { return v ? String(v) : "non précisé"; };
+    var variables = {
+      salut_nom: ctx.prenom ? " " + ctx.prenom : "",
+      prenom: vide(ctx.prenom), marque: vide(ctx.marque), produit: vide(ctx.produit), pays: vide(ctx.pays),
+      page_produit: vide(ctx.page_produit), contexte: vide(ctx.contexte),
+      offre_nom: ctx.offre_nom, offre_prix: ctx.offre_prix,
+      offre_reduite_nom: ctx.offre_reduite_nom, offre_reduite_prix: ctx.offre_reduite_prix, offre_reduite_rythme: ctx.offre_reduite_rythme,
+      carte_slides: carteSlides() || "La présentation n'a pas pu être lue.", nb_slides: String(principal.length || 0)
+    };
+    etat("Connexion à la voix…");
+    conv = await ElevenLabsClient.Conversation.startSession({
+      signedUrl: r.signed_url,
+      connectionType: "websocket",
+      dynamicVariables: variables,
+      clientTools: outils,
+      onConnect: function (c) { etat(""); journal("conversation ElevenLabs " + (c && c.conversationId)); },
+      onDisconnect: function (d) { journal("conversation fermée : " + JSON.stringify(d || {}).slice(0, 200)); terminer("conversation fermée"); },
+      onError: function (m) { journal("erreur : " + m); },
+      onModeChange: function (m) { $("badge").classList.toggle("parle", m && m.mode === "speaking"); },
+      onMessage: function (m) { if (m && m.message) journal((m.source === "ai" ? "Khalil" : "Prospect") + " : " + m.message); }
+    });
+  }
+  function lancer() { demarrer().catch(function (e) { etat("Erreur : " + e.message); journal("démarrage impossible : " + e.message); }); }
+  if (q.get("test") === "1") {
+    // test dans le navigateur d'Amar : le navigateur exige un clic avant d'ouvrir le micro et le son
+    var b = document.createElement("button");
+    b.textContent = "Démarrer le test avec Khalil (micro)";
+    b.style.cssText = "position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:20;padding:22px 34px;font-size:22px;border:0;border-radius:14px;background:#6c5cff;color:#fff;cursor:pointer";
+    b.onclick = function () { b.remove(); lancer(); };
+    document.body.appendChild(b); etat("Mode test");
+  } else { lancer(); }
+})();
+</script>
+</body>
+</html>
