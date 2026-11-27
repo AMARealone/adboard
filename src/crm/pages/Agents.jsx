@@ -105,6 +105,30 @@ function Suivi({ session, test, onFermer }) {
   )
 }
 
+// khalil-v2 — les appels et tests passés, avec leur transcription : Amar relit, copie, et l'envoie pour corriger Khalil.
+function Transcriptions() {
+  const [liste, setListe] = useState(null), [err, setErr] = useState('')
+  const [vue, setVue] = useState(null)   // { id, texte, resume }
+  const charger = () => khalil('/khalil/conversations').then((j) => { setListe(j.conversations || []); setErr('') }).catch((e) => setErr(e.message))
+  useEffect(() => { charger() }, [])
+  const ouvrir = async (c) => { try { setVue({ id: c.id, texte: 'Chargement…' }); setVue(await khalil('/khalil/conversation?id=' + encodeURIComponent(c.id))) } catch (e) { setVue(null); toast(e.message, 7000) } }
+  const duree = (s) => Math.floor(s / 60) + ' min ' + String(s % 60).padStart(2, '0')
+  return (<>
+    <h3 className="kh-h3">Appels et tests passés {liste && <span>{liste.length}</span>}<button className="cx-btn ghost sm" style={{ marginLeft: 'auto' }} onClick={charger}>Actualiser</button></h3>
+    {err ? <Empty t="Transcriptions indisponibles" s={err} /> : !liste ? <Empty t="Chargement…" /> : !liste.length ? <Empty t="Aucun appel pour l'instant" s="Chaque test et chaque appel apparaît ici avec sa transcription." />
+      : liste.map((c) => (
+        <div key={c.id} className="cx-row">
+          <div className="cx-main"><div className="cx-line"><b>{c.debut ? quand(new Date(c.debut).toISOString()) : 'Appel'}</b><Chip>{duree(c.duree_s)}</Chip><Chip>{c.messages} messages</Chip></div>{c.resume && <div className="cx-meta"><span>{c.resume}</span></div>}</div>
+          <div className="cx-acts"><button className="cx-btn sm" onClick={() => ouvrir(c)}>Voir la transcription</button></div>
+        </div>))}
+    {vue && <Modal title="Transcription" onClose={() => setVue(null)} wide>
+      {vue.resume && <p className="kh-resume">{vue.resume}</p>}
+      <div className="kh-journal kh-transcrit">{String(vue.texte || '').split('\n').map((l, i) => <div key={i} className={/ Khalil :/.test(l) ? 'k' : 'p'}>{l}</div>)}</div>
+      <div className="cx-act"><button className="cx-btn primary" onClick={async () => { try { await navigator.clipboard.writeText(vue.texte || ''); toast('Transcription copiée : collez-la à Claude avec vos remarques.') } catch (_) { toast('Copie impossible : sélectionnez le texte à la main.') } }}>Copier la transcription</button></div>
+    </Modal>}
+  </>)
+}
+
 export function AgentKhalil() {
   const { prospects, cfg } = useCrm()
   const [etat, setEtat] = useState(null), [maj, setMaj] = useState(false)
@@ -131,7 +155,8 @@ export function AgentKhalil() {
             <Chip c={etat.elevenlabs ? 'ok' : 'red'}>{etat.elevenlabs ? 'VOIX ELEVENLABS ✓' : 'CLÉ ELEVENLABS MANQUANTE'}</Chip>
             <Chip c={etat.voix_choisie ? 'ok' : 'wa'}>{etat.voix_choisie ? 'VOIX KHALIL ✓' : 'VOIX PAR DÉFAUT'}</Chip>
             <Chip c={etat.recall ? 'ok' : 'red'}>{etat.recall ? 'MEET (RECALL) ✓' : 'CLÉ RECALL MANQUANTE'}</Chip>
-            <Chip c={etat.agent ? 'bl' : 'mu'}>{etat.agent ? 'AGENT INSTALLÉ' : 'AGENT À INSTALLER'}</Chip></>}
+            <Chip c={etat.agent ? 'bl' : 'mu'}>{etat.agent ? 'AGENT INSTALLÉ' : 'AGENT À INSTALLER'}</Chip>
+            {etat.cerveau && <Chip title="Modèle qui raisonne">CERVEAU · {etat.cerveau}</Chip>}{etat.voix_modele && <Chip title="Modèle de voix">VOIX · {etat.voix_modele}</Chip>}</>}
         </div>
         <div className="kh-boutons">
           <button className="cx-btn primary" disabled={!pret} onClick={() => setOuvert({ titre: 'Test libre avec Khalil', initial: { meet: '', prenom: '', marque: '', produit: '', page_produit: '', pays: '', offre: 'perf', contexte: '' } })}>Test libre</button>
@@ -158,6 +183,8 @@ export function AgentKhalil() {
           </div>
         </div>)
     }) : <Empty t="Aucun appel réservé" s="Les réservations du site et du CRM arrivent ici : Khalil connaît déjà leur fiche." />}
+
+    {etat && etat.elevenlabs && <Transcriptions />}
 
     {ouvert && <Lancer titre={ouvert.titre} initial={ouvert.initial} onClose={() => setOuvert(null)} onLance={(session, test) => setSuivi({ session, test })} />}
   </>)

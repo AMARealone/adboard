@@ -278,3 +278,4 @@ body{font-size:13.5px;line-height:1.45}
 .kh-suivi header{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.kh-suivi header .cx-btn{margin-left:auto}
 .kh-journal{font:12.5px/1.5 ui-monospace,Menlo,Consolas,monospace;max-height:360px;overflow:auto;padding:12px 16px;white-space:pre-wrap}
 .kh-journal .k{color:#9fdcff}.kh-journal .p{color:#f2f4f8}.kh-journal .s{color:var(--mu)}
+.kh-resume{color:var(--sec);margin:0 0 10px;line-height:1.5}.kh-transcrit{max-height:52vh;background:var(--bg);border-radius:10px;font-size:13px}.kh-transcrit div{margin-bottom:4px}
