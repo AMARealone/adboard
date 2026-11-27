@@ -59,23 +59,19 @@ export function CrmProvider({ children }) {
       const ok = await mutate(id, { notes: { appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined, no_show_count: (n.no_show_count || 0) + 1, no_show_at: now() }, body: lead ? {} : { statut: 'lead', date_lead: now() } })
       if (ok) toast((p.nom_marque || 'Prospect') + ' : no-show → ' + (lead ? 'de retour dans Leads' : 'passé en Lead')); return ok
     },
-    // — Décision après appel / closing / écrit
+    // — Décision après appel : a payé ou pas intéressé (plus de relances après appel depuis le 27/11/2026)
     decision: async (id, choix) => {
       const p = ref.current.find((x) => x.id === id); if (!p) return false
       const nom = p.nom_marque || 'ce prospect'
       if (choix === 'paye' && !(await confirmDlg('Confirmer : ' + nom + ' a payé ?\nIl passe en « Acheteur ».', 'Oui, a payé'))) return false
       if (choix === 'perdu' && !(await confirmDlg('Marquer ' + nom + ' « pas intéressé » ?\nIl retourne dans Suivi (réversible).', 'Pas intéressé'))) return false
-      const t = now(), n = N(p), efface = {}
-      const clesClosing = ['closing_sent_j1', 'closing_sent_j3', 'closing_sent_j4', 'closing_sent_j7', 'closing_sent_j11', 'closing_sent_j10', 'closing_sent_j21']
-      clesClosing.forEach((k) => { efface[k] = undefined; efface[k + '_at'] = undefined })
+      const t = now()
       let notes = {}, body = {}
-      if (choix === 'relance') notes = { ...efface, closing_etat: 'relance', closing_at: n.appel_fait_at || t }
-      else if (choix === 'paye') { notes = n.ecrit_etat === 'actif' ? { ecrit_etat: 'paye', ecrit_paye_at: t } : { closing_etat: 'paye', closing_paye_at: t }; body = { statut: 'acheteur', date_achat: t } }
+      if (choix === 'paye') { notes = { closing_etat: 'paye', closing_paye_at: t }; body = { statut: 'acheteur', date_achat: t } }
       else if (choix === 'perdu') {
-        notes = { ...efface, appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined, closing_etat: undefined, closing_at: undefined, closing_paye_at: undefined, pas_interesse: true, pas_interesse_at: t }
-        if (n.ecrit_etat === 'actif') notes.ecrit_etat = 'perdu'
+        notes = { appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined, closing_etat: undefined, closing_at: undefined, closing_paye_at: undefined, pas_interesse: true, pas_interesse_at: t }
         if (p.statut === 'lead') body = { statut: 'en_suivi', date_lead: null }
-      } else if (choix === 'relances') notes = { ecrit_etat: undefined, ecrit_at: undefined }
+      } else return false
       let ok = await mutate(id, { notes, body })
       if (!ok && choix === 'paye') {
         // La base a refusé le statut « acheteur » (ou la date) : on enregistre au moins le paiement dans les notes, la section Acheteurs s'appuie dessus.
@@ -83,7 +79,7 @@ export function CrmProvider({ children }) {
         ok = await mutate(id, { notes })
         if (ok) { toast('Paiement enregistré ✓ dans les notes, mais la base a refusé le statut « acheteur » : ' + cause); return ok }
       }
-      if (ok) toast(choix === 'relance' ? 'Dans Closing : première relance à J+1' : choix === 'paye' ? 'Marqué payé ✓ : il est maintenant dans Acheteurs' : choix === 'perdu' ? 'Pas intéressé : retourné dans Suivi' : 'Remis dans les relances'); return ok
+      if (ok) toast(choix === 'paye' ? 'Marqué payé ✓ : il est maintenant dans Acheteurs' : 'Pas intéressé : retourné dans Suivi'); return ok
     },
     // — Acheteurs
     acheteurOffre: (id, cle) => mutate(id, { notes: { acheteur_offre: cle || undefined } }),
@@ -91,22 +87,15 @@ export function CrmProvider({ children }) {
       const p = ref.current.find((x) => x.id === id); if (!p) return false
       if (!(await confirmDlg((p.nom_marque || 'Ce client') + ' n\'a finalement pas acheté ?\nIl retourne dans Leads (son historique reste).', 'Retirer des acheteurs'))) return false
       const n = N(p)
-      const ok = await mutate(id, { notes: { closing_etat: n.closing_etat === 'paye' ? undefined : n.closing_etat, closing_paye_at: undefined, ecrit_etat: n.ecrit_etat === 'paye' ? 'actif' : n.ecrit_etat, ecrit_paye_at: undefined }, body: { statut: 'lead', date_achat: null } })
+      const ok = await mutate(id, { notes: { closing_etat: n.closing_etat === 'paye' ? undefined : n.closing_etat, closing_paye_at: undefined, ecrit_etat: n.ecrit_etat === 'paye' ? undefined : n.ecrit_etat, ecrit_paye_at: undefined }, body: { statut: 'lead', date_achat: null } })
       if (ok) toast((p.nom_marque || 'Le client') + ' : retiré des acheteurs, retour dans Leads'); return ok
     },
-    // — Closing
-    // Infos de l'appel : prénom, offre recommandée et les variables libres des textes de relance (closing_vars : { clé: valeur }).
+    // — Infos de l'appel : prénom et offre recommandée (servent aussi à Khalil). closing_vars : anciennes variables, conservées si déjà remplies.
     infosAppel: (id, v) => {
-      const vars = {}; Object.entries(v.vars || {}).forEach(([k, x]) => { const t = String(x || '').trim(); if (t) vars[k] = t })
-      return mutate(id, { notes: { closing_prenom: (v.prenom || '').trim() || undefined, closing_vars: Object.keys(vars).length ? vars : undefined, closing_offre: v.offre || undefined } })
+      return mutate(id, { notes: { closing_prenom: (v.prenom || '').trim() || undefined, closing_offre: v.offre || undefined } })
     },
-    closingVersion: (id, jour, v) => mutate(id, { notes: { ['closing_ab' + jour]: v === 'B' ? 'B' : undefined } }),
     // Cocher garde la date du PREMIER envoi (jamais écrasée) ; décocher l'efface (les écrans demandent d'abord une confirmation).
     marquer: (id, cle, val) => { const p = ref.current.find((x) => x.id === id), n = N(p); return mutate(id, { notes: { [cle]: val ? true : undefined, [cle + '_at']: val ? (n[cle + '_at'] || now()) : undefined } }) },
-    // — Écrit
-    passerEcrit: (id) => mutate(id, { notes: { ecrit_etat: 'actif', ecrit_at: now() } }),
-    ecritCas: (id, cas) => mutate(id, { notes: { ecrit_cas: cas } }),
-    ecritInfos: (id, v) => mutate(id, { notes: { ecrit_faille: undefined, ecrit_offre: v.offre || undefined, ecrit_remarque: v.remarque.trim() || undefined } }),
     // — Suivi
     setCheck: (id, champ, val) => mutate(id, { body: { [champ]: val }, notes: champ === 'interesse' && val ? { pas_interesse: undefined, pas_interesse_at: undefined } : {} }),
     pitchEnvoye: (id, val) => { const p = ref.current.find((x) => x.id === id), n = N(p); return mutate(id, { notes: val ? { pitch_envoye: true, pitch_envoye_at: n.pitch_envoye_at || now() } : { pitch_envoye: false } }) },
@@ -114,7 +103,8 @@ export function CrmProvider({ children }) {
       const ok = await mutate(id, { notes: val ? { pas_interesse: true, pas_interesse_at: now(), appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined } : { pas_interesse: undefined, pas_interesse_at: undefined } })
       if (ok) toast(val ? 'Pas intéressé : reste dans le Suivi' : 'Marqueur « pas intéressé » retiré'); return ok
     },
-    versLead: async (id) => { const ok = await mutate(id, { body: { statut: 'lead', date_lead: now() } }); if (ok) toast('Passé en Lead'); return ok },
+    // Passer en Lead ne coche rien : « Intéressé » reste ce que vous avez coché (les KPI d'intérêt ne sont pas faussés).
+    versLead: async (id) => { const p = ref.current.find((x) => x.id === id); const ok = await mutate(id, { body: { statut: 'lead', date_lead: now() } }); if (ok) toast(p && p.interesse ? 'Passé en Lead' : 'Passé en Lead (sans « intéressé »)'); return ok },
     remettreAContacter: async (id) => {
       if (!(await confirmDlg('Remettre ce prospect dans « À contacter » ?\nLe suivi (réponse, intérêt) est effacé.', 'Remettre à contacter'))) return false
       const ok = await mutate(id, { body: { statut: 'a_contacter', date_contact: null, a_repondu: false, interesse: false, lead_qualifie: false }, notes: { appel_reserve: undefined, appel_reserve_at: undefined, appel_fait: undefined, appel_fait_at: undefined, appel_via: undefined, appel_programme_at: undefined } })
@@ -145,7 +135,7 @@ export function CrmProvider({ children }) {
     note: (id, texte) => mutate(id, { notes: { note_texte: texte } }),
     reprogrammer: async (id) => {
       const p = ref.current.find((x) => x.id === id); if (!p) return false
-      if (!(await confirmDlg('Reprogrammer un nouvel appel avec ' + (p.nom_marque || 'ce prospect') + ' ?\nIl retourne dans Appels et sort du Closing.', 'Nouvel appel'))) return false
+      if (!(await confirmDlg('Reprogrammer un nouvel appel avec ' + (p.nom_marque || 'ce prospect') + ' ?\nIl retourne dans Appels.', 'Nouvel appel'))) return false
       return mutate(id, { notes: { appel_fait: undefined, appel_fait_at: undefined, appel_programme_at: undefined, closing_etat: undefined, closing_at: undefined, appel_reserve: true, appel_reserve_at: now() } })
     },
     // — Ouverture du canal : WhatsApp (nouvel onglet) ou Instagram (texte copié)

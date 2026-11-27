@@ -2,8 +2,8 @@ import React, { useState } from 'react'
 import { Modal, toast } from '../ui'
 import { useCrm } from '../store'
 import { OFFRES, OFFRE_KEYS } from '../domain/offres'
-import { N, valeurVar } from '../domain/notes'
-import { pitchVariante, closingVariables } from '../domain/messages'
+import { N } from '../domain/notes'
+import { pitchVariante } from '../domain/messages'
 import { appelProgrammeTs } from '../domain/rules'
 
 export function Marque({ p }) { const { ouvrirFiche } = useCrm(); return <button className="cx-name" onClick={() => ouvrirFiche(p.id)}>{p.nom_marque || '—'}</button> }
@@ -15,34 +15,19 @@ export function OffrePick({ value, onChange, sans = [] }) {
   return <div className="cx-offres">{OFFRE_KEYS.filter((k) => !sans.includes(k)).map((k) => <button type="button" key={k} className={'cx-opt' + (value === k ? ' on' : '')} style={value === k ? { borderColor: OFFRES[k].couleur, color: OFFRES[k].couleur } : null} onClick={() => onChange(value === k ? '' : k)}>{OFFRES[k].label}</button>)}</div>
 }
 export function InfosAppel({ p, onClose }) {
-  const { A, cfg } = useCrm(); const n = N(p), vars = closingVariables(cfg)
-  const [v, setV] = useState(() => ({ prenom: n.closing_prenom || (n.form_nom || '').split(/\s+/)[0] || '', offre: n.closing_offre || '', vars: Object.fromEntries(vars.map((x) => [x.k, valeurVar(n, x.k)])) }))
-  const setVar = (k) => (e) => { const val = e.target.value; setV((s) => ({ ...s, vars: { ...s.vars, [k]: val } })) }
+  const { A } = useCrm(); const n = N(p)
+  const [v, setV] = useState(() => ({ prenom: n.closing_prenom || (n.form_nom || '').split(/\s+/)[0] || '', offre: n.closing_offre || '' }))
   return (
     <Modal title={'Infos de l\'appel · ' + (p.nom_marque || '')} onClose={onClose}>
       <div className="cx-form">
         <label>Prénom<input value={v.prenom} onChange={(e) => setV({ ...v, prenom: e.target.value })} /></label>
         <div className="cx-grp">Offre que je lui recommande<OffrePick value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></div>
-        {vars.map((x) => <label key={x.k}>{x.label} <span className="cx-dim">· {x.jours.map((j) => 'J+' + j).join(', ')}</span><textarea rows={2} value={v.vars[x.k] || ''} onChange={setVar(x.k)} placeholder={'…' + x.indice + '…'} /></label>)}
       </div>
       <div className="cx-act"><button className="cx-btn" onClick={onClose}>Annuler</button><button className="cx-btn primary" onClick={async () => { if (await A.infosAppel(p.id, v)) { toast('Infos enregistrées'); onClose() } }}>Enregistrer</button></div>
     </Modal>
   )
 }
-export function EcritInfos({ p, onClose }) {
-  const { A } = useCrm(); const n = N(p)
-  const [v, setV] = useState({ offre: n.ecrit_offre || '', remarque: n.ecrit_remarque || '' })
-  return (
-    <Modal title={'Écrit · ' + (p.nom_marque || '')} onClose={onClose}>
-      <div className="cx-form">
-        <div className="cx-grp">Offre à lui proposer<OffrePick sans={['oneshot']} value={v.offre} onChange={(o) => setV({ ...v, offre: o })} /></div>
-        <label>Remarque personnelle (facultatif, apparaît en haut du bloc 2)<textarea value={v.remarque} onChange={(e) => setV({ ...v, remarque: e.target.value })} /></label>
-      </div>
-      <div className="cx-act"><button className="cx-btn" onClick={onClose}>Annuler</button><button className="cx-btn primary" onClick={async () => { if (await A.ecritInfos(p.id, v)) { toast('Enregistré'); onClose() } }}>Enregistrer</button></div>
-    </Modal>
-  )
-}
-export function Decision({ p, onClose, ecrit }) {
+export function Decision({ p, onClose }) {
   const { A } = useCrm()
   const go = async (c) => { if (await A.decision(p.id, c)) onClose() }
   return (
@@ -50,8 +35,8 @@ export function Decision({ p, onClose, ecrit }) {
       <p className="cx-p">Que s'est-il passé ?</p>
       <div className="cx-stack">
         <button className="cx-btn primary" onClick={() => go('paye')}>✅ Il/elle a payé</button>
-        <button className="cx-btn" onClick={() => go('relance')}>🔁 À relancer (Closing J+1 / J+3 / J+7)</button>
         <button className="cx-btn danger" onClick={() => go('perdu')}>✖ Pas intéressé</button>
+        <button className="cx-btn ghost" onClick={onClose}>Il réfléchit encore (reste dans Appels)</button>
       </div>
     </Modal>
   )
@@ -88,7 +73,7 @@ export function infosProspect(p, cfg) {
     add('Ads actives', a.nb); add('Durée moyenne des ads (jours)', a.moy); add('Durée médiane des ads (jours)', a.med); add('Cas ads', v.cas != null ? 'cas ' + v.cas : ''); add('Relevé ads du', fd(a.maj_at))
   }
   L.push('')
-  add('Objectif', n.form_objectif || n.closing_objectif); add('Budget', n.form_budget); closingVariables(cfg).forEach((x) => add(x.label, valeurVar(n, x.k))); add('Offre recommandée', n.closing_offre || n.ecrit_offre)
+  add('Objectif', n.form_objectif || n.closing_objectif); add('Budget', n.form_budget); Object.entries(n.closing_vars || {}).forEach(([k, x]) => add(k, x)); add('Offre recommandée', n.closing_offre || n.ecrit_offre)
   add('Statut', p.statut); add('Premier contact', fd(p.date_contact)); add('Lead depuis', fd(p.date_lead))
   add('A répondu', p.a_repondu ? 'oui' : ''); add('Intéressé', p.interesse ? 'oui' : ''); add('Pitch envoyé', fd(n.pitch_envoye_at))
   const pr = appelProgrammeTs(n)

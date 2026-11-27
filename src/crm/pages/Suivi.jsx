@@ -3,9 +3,9 @@ import { usePref } from '../prefs'
 import { correspond } from '../filtre'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
-import { appelProgrammeTs, estInstagram, numeroWa, ecritActif } from '../domain/rules'
+import { appelProgrammeTs, estInstagram, numeroWa } from '../domain/rules'
 import { lienPitch, pitchMessage } from '../domain/messages'
-import { Chip, Empty, Pills, Stat, confirmDlg, toast } from '../ui'
+import { Chip, Empty, Pills, Stat } from '../ui'
 import { BtnNotes, BtnSupprimer, BtnCopierInfos, ModalDateAppel } from './common'
 
 const CHECKS = [{ k: 'a_repondu', l: 'A répondu' }, { k: 'interesse', l: 'Intéressé' }, { k: 'lead_qualifie', l: 'Lead qualifié' }]
@@ -13,7 +13,7 @@ const jour = (iso) => (iso ? new Date(iso).toLocaleDateString('fr-FR') : '—')
 
 function SuiviCard({ p }) {
   const { A, cfg, ouvrirFiche } = useCrm(), n = N(p), [busy, setBusy] = useState(false), [dateAppel, setDateAppel] = useState(false)
-  const tout = p.a_repondu && p.interesse && p.lead_qualifie, insta = estInstagram(p)
+  const insta = estInstagram(p)
   const pitch = async () => {
     setBusy(true)
     const tab = !insta && numeroWa(p) ? window.open('', '_blank') : null
@@ -43,8 +43,8 @@ function SuiviCard({ p }) {
         </div>}
       </div>
       <div className="cx-acts">
-        {tout && <button className="cx-btn ok sm" onClick={() => A.versLead(p.id)}>Passer en Lead</button>}
-        <button className="cx-btn sm" onClick={async () => { if (await A.passerEcrit(p.id)) toast('Passé en Closing par écrit') }}>💬 Closing par écrit</button>
+        {/* Lead possible à tout moment : cochez « Intéressé » seulement s'il l'est vraiment (ex. pas de réponse au pitch → Lead pour le relancer) */}
+        <button className={'cx-btn sm' + (p.interesse ? ' ok' : '')} title={p.interesse ? 'Passer en Lead' : 'Passer en Lead sans le marquer intéressé (ex. pas de réponse au pitch)'} onClick={() => A.versLead(p.id)}>Passer en Lead</button>
         <BtnNotes p={p} /><BtnCopierInfos p={p} />
         {dateAppel && <ModalDateAppel p={p} onClose={() => setDateAppel(false)} />}
         <button className="cx-btn ghost sm" onClick={() => A.remettreAContacter(p.id)}>Annuler le suivi</button><BtnSupprimer p={p} />
@@ -68,7 +68,7 @@ const TRIS = { ancien: 'Contactés en premier', recent: 'Plus récents', az: 'No
 export default function Suivi() {
   const { prospects } = useCrm()
   const [q, setQ] = usePref('suivi_q', ''), [f, setF] = usePref('suivi_f', 'tous'), [tri, setTri] = usePref('suivi_tri', 'ancien'), [pays, setPays] = usePref('suivi_pays', ''), [date, setDate] = usePref('suivi_date', ''), [max, setMax] = useState(50)
-  const base = useMemo(() => prospects.filter((p) => p.statut === 'en_suivi' && !ecritActif(p)), [prospects])
+  const base = useMemo(() => prospects.filter((p) => p.statut === 'en_suivi'), [prospects])
   const cnt = useMemo(() => Object.fromEntries(Object.keys(FILTRES).map((k) => [k, base.filter(FILTRES[k]).length])), [base])
   const listePays = useMemo(() => { const m = new Map(); base.forEach((p) => { if (p.pays) m.set(p.pays, (m.get(p.pays) || 0) + 1) }); return [...m].sort((a, b) => b[1] - a[1]) }, [base])
   const liste = useMemo(() => {

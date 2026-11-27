@@ -47,7 +47,6 @@ export function LeadCard({ p }) {
       </div>
       <div className="cx-acts">
         <BtnReserverAppel p={p} />
-        <button className="cx-btn sm" onClick={async () => { if (await A.passerEcrit(p.id)) toast('Passé en Écrit') }}>💬 Reste sur WhatsApp</button>
         <button className="cx-btn ghost sm" onClick={async () => { if (await confirmDlg('Remettre ce lead en suivi ?')) mutate(p.id, { body: { statut: 'en_suivi', date_lead: null } }) }}>Remettre en suivi</button>
         <BtnLienDemo p={p} /><BtnNotes p={p} /><BtnCopierInfos p={p} /><BtnSupprimer p={p} />
       </div>

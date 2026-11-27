@@ -1,17 +1,15 @@
-// Règles métier (reprises de l'ancien CRM) : qui est dans Appels, Closing, Écrit, Leads, et ce qui est dû.
-import { N, jours, valeurVar } from './notes'
-import { CLOSING_JOURS, CLOSING_DELAIS, APPEL_DELAI_MS } from './defaults'
+// Règles métier : qui est dans Appels, Leads, Acheteurs, et ce qui est dû.
+// 27/11/2026 : les relances après appel (Closing J+1/J+4/J+11) et le closing par écrit sont retirés.
+// Un prospect qui était en Closing revient dans Appels (« Appel fait » → Décider) ; un prospect qui était en Écrit revient dans Suivi ou Leads selon son statut.
+import { N } from './notes'
+import { APPEL_DELAI_MS } from './defaults'
 import { estAcheteur, etapeDue } from './acheteurs'
 
-export const closingEtat = (p) => (N(p).closing_etat || '')
-export const ecritEtat = (p) => (N(p).ecrit_etat || '')
-// Un acheteur est un état final : il n'apparaît plus dans Appels, Closing, Écrit ni Leads (il est dans Acheteurs).
-export const ecritActif = (p) => ecritEtat(p) === 'actif' && !estAcheteur(p)
+// Un acheteur est un état final : il n'apparaît plus dans Appels ni Leads (il est dans Acheteurs).
 export const actif = (p) => p && p.statut !== 'a_contacter' && p.statut !== 'archive'
 export const appelDansListe = (p) => actif(p) && !!N(p).appel_reserve
-export const appelAffiche = (p) => appelDansListe(p) && !closingEtat(p) && !estAcheteur(p)
-export const closingDansListe = (p) => actif(p) && closingEtat(p) === 'relance' && !N(p).pas_interesse && !estAcheteur(p)
-export const horsLeads = (p) => appelDansListe(p) || ecritActif(p)
+export const appelAffiche = (p) => appelDansListe(p) && !estAcheteur(p)
+export const horsLeads = (p) => appelDansListe(p)
 export const estInstagram = (p) => (p.canal_contact ? p.canal_contact === 'instagram' : !!p.lien_instagram)
 export const numeroWa = (p) => (p.lien_wa || '').replace('https://wa.me/', '').split('?')[0].replace(/\D/g, '')
 
@@ -19,27 +17,6 @@ const ts = (v) => { const t = Date.parse(v || ''); return isNaN(t) ? null : t }
 export const appelProgrammeTs = (n) => ts(n.appel_programme_at)
 export const appelEcheance = (n) => { const pr = appelProgrammeTs(n); if (pr !== null) return pr; const t = ts(n.appel_reserve_at); return t === null ? null : t + APPEL_DELAI_MS }
 export const appelEnRetard = (n, now = Date.now()) => { if (!n || n.appel_fait) return false; const e = appelEcheance(n); return e !== null && now >= e }
-
-export const closingJours = (n, now = Date.now()) => { const t = ts(n.closing_at || n.appel_fait_at); return t === null ? 0 : Math.max(0, Math.floor((now - t) / 86400000)) }
-// Anciens rythmes J+3 / J+7 : une relance déjà envoyée sous l'ancien nom compte pour la nouvelle (J+3 → J+4, J+7 → J+11).
-const CLOSING_ANCIEN = { 4: 3, 11: 7 }
-export const closingEnvoye = (n, j) => !!(n['closing_sent_j' + j] || (CLOSING_ANCIEN[j] && n['closing_sent_j' + CLOSING_ANCIEN[j]]))
-const closingEnvoiAt = (n, j) => ts(n['closing_sent_j' + j + '_at']) ?? (CLOSING_ANCIEN[j] ? ts(n['closing_sent_j' + CLOSING_ANCIEN[j] + '_at']) : null)
-export const closingProchainJ = (n) => { for (const j of CLOSING_JOURS) if (!closingEnvoye(n, j)) return j; return null }
-// Échéancier : J+1 se compte depuis l'appel ; J+4 se compte 3 jours après l'ENVOI de J+1 ; J+11 se compte 7 jours après l'ENVOI de J+4.
-// Si la date d'envoi précédente est inconnue (anciennes données), on retombe sur J+X depuis l'appel.
-export function closingEcheance(n, now = Date.now()) {
-  const pj = closingProchainJ(n); if (pj === null) return null
-  const i = CLOSING_JOURS.indexOf(pj), appel = ts(n.closing_at || n.appel_fait_at)
-  let ref = appel, delai = pj
-  if (i > 0) { const t = closingEnvoiAt(n, CLOSING_JOURS[i - 1]); if (t !== null) { ref = t; delai = CLOSING_DELAIS[i] } }
-  else delai = CLOSING_DELAIS[0]
-  const ecoule = ref === null ? 0 : Math.floor((now - ref) / 86400000)
-  return { pj, ecoule, delai, reste: delai - ecoule }
-}
-export const closingEnRetard = (n, now) => { const e = closingEcheance(n, now); return !!e && e.reste <= 0 }
-// vars = closingVariables(cfg) : toutes les variables des textes doivent être remplies, avec le prénom et l'offre recommandée.
-export const closingInfosIncompletes = (n, vars = []) => !n.closing_prenom || !n.closing_offre || vars.some((x) => !valeurVar(n, x.k))
 
 // Relances Leads J+3 / J+10 / J+21 : « envoyée » = case cochée à la main OU envoi depuis le CRM
 export const RELANCES = [3, 10, 21]
@@ -61,21 +38,9 @@ export function etatRelances(p, now = Date.now()) {
 }
 export function leadsARelancer(prospects) { return prospects.filter((p) => p.statut === 'lead' && !horsLeads(p) && !N(p).pas_interesse && !estAcheteur(p)) }
 
-// Écrit : étape suivante à envoyer
-export const ECRIT_ORDRE = ['b1', 'b2', 'b3', 'b4', 'suite']
-// Avant la refonte en 4 blocs, « b3 » était le message d'offre : un prospect qui l'a déjà reçu est considéré comme ayant eu l'étude de cas et l'offre.
-export const b3Ancien = (n) => !!n.ecrit_sent_b3 && !n.ecrit_sent_b4 && (ts(n.ecrit_sent_b3_at) || 0) < Date.parse('2026-11-08T00:00:00Z')
-export const ecritEnvoye = (n, e) => !!n['ecrit_sent_' + e] || (e === 'b4' && b3Ancien(n))
-export const ecritB1Saute = (n) => !!(n.sent_j3 || n.sent_j10 || n.sent_j21 || n.j3_envoye)
-export function ecritProchaine(n) {
-  for (const e of ECRIT_ORDRE) { if (e === 'b1' && ecritB1Saute(n)) continue; if (!ecritEnvoye(n, e)) return e }
-  return null
-}
-export function ecritDerniereAt(n) { let best = null; ECRIT_ORDRE.forEach((e) => { const t = ts(n['ecrit_sent_' + e + '_at']); if (t !== null && (best === null || t > best)) best = t }); return best || ts(n.ecrit_at) }
-
 // « À faire aujourd'hui » : tout ce qui est dû, trié par urgence
 export function aFaire(prospects, cfg, now = Date.now()) {
-  const out = { appels: [], noshow: [], closing: [], ecrit: [], relances: [], acheteurs: [], ads: 0 }
+  const out = { appels: [], noshow: [], relances: [], acheteurs: [], ads: 0 }
   const noshowDelaiH = typeof cfg.noshow_delai_h === 'number' ? cfg.noshow_delai_h : 2
   const finJour = new Date(now); finJour.setHours(23, 59, 59, 999)
   for (const p of prospects) {
@@ -86,18 +51,12 @@ export function aFaire(prospects, cfg, now = Date.now()) {
       const pr = appelProgrammeTs(n)
       if (!n.appel_fait && pr !== null && now >= pr + noshowDelaiH * 3600000 && (p.statut === 'lead' || p.statut === 'en_suivi')) out.noshow.push({ p, depuis: now - pr })
       else if (e !== null && e <= finJour.getTime()) out.appels.push({ p, retard: now >= e, at: e })
-    } else if (closingDansListe(p) && closingEnRetard(n, now)) {
-      out.closing.push({ p, j: closingProchainJ(n), age: closingJours(n, now) })
-    } else if (ecritActif(p)) {
-      const e = ecritProchaine(n)
-      if (e) out.ecrit.push({ p, etape: e, depuis: ecritDerniereAt(n) })
     } else if (p.statut === 'lead' && !horsLeads(p) && !n.pas_interesse) {
       const e = etatRelances(p, now)
       if (e.pj !== null && e.reste <= 0) out.relances.push({ p, j: e.pj, retard: e.retard })
     }
   }
   out.appels.sort((a, b) => a.at - b.at)
-  out.closing.sort((a, b) => b.age - a.age)
   out.relances.sort((a, b) => b.retard - a.retard)
   return out
 }

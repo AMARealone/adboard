@@ -1,12 +1,11 @@
 // Construction des messages (reprise de l'ancien CRM). Toutes les fonctions reçoivent la config (templates enregistrés).
-import { N, cleVar, valeurVar } from './notes'
+import { N } from './notes'
 import { OFFRES } from './offres'
 import { PARCOURS, offreAchetee, offreSuivante } from './acheteurs'
 import * as D from './defaults'
 import * as PV from './defaults_prev'
-import { PREV2_DEFAULT_ECRIT } from './defaults_prev2'
-import { PREV3_DEFAULT_ECRIT, PREV3_J3_REPLI } from './defaults_prev3'
-import { PREV4_RELANCES, PREV4_J3_CAS0, PREV4_CLOSING0 } from './defaults_prev4'
+import { PREV3_J3_REPLI } from './defaults_prev3'
+import { PREV4_RELANCES, PREV4_J3_CAS0 } from './defaults_prev4'
 import { PREV5_PITCH, PREV5_RELANCES } from './defaults_prev5'
 // compare deux textes sans tenir compte des apostrophes typographiques, espaces et astérisques
 const norm = (s) => String(s || '').replace(/[’‘]/g, "'").replace(/\*/g, '').replace(/\s+/g, ' ').trim()
@@ -58,80 +57,7 @@ export function resoudrePays(paysRaw) {
   return { code, adj, phrase: D.PAYS_PHRASE[code] || adj || brut }
 }
 
-// ── Closing après appel (J+1 / J+4 / J+11) : trois textes, les mêmes pour tous les prospects.
-const PREV5_CLOSING = ["Bonjour [Prénom] 😊\n\nMerci encore pour l'échange d'hier. En tout cas, ce que vous m'avez confirmé sur *[Marque]* était vraiment pertinent : pour [Objectif], l'enjeu, c'est [Problème].\n\nEt c'est pour ce genre de défi que l'équipe d'*AdStack* est construite.\n\n[Raison] Au moment où vous voudrez passer à l'action, voici la page pour démarrer : [Lien]", "Bonjour [Prénom] 🙂\n\nJe pensais à *[Marque]*. Imaginez dans deux semaines : vos premières créatives sont en ligne, vous savez enfin lesquelles marchent, et [Objectif] n'est plus une idée, c'est un chiffre qui bouge.\n\nChaque jour compte : plus tôt vous démarrez, plus tôt vous savez ce qui marche pour vendre.\n\nLe premier pas pour [Objectif], c'est ici : [Lien]", "Bonjour [Prénom],\n\nC'est mon *dernier message*, je ne veux pas vous déranger 🙂\n\nSi vous décidez de démarrer pour [Objectif], voici la suite : vous payez, vous nous donnez les infos de votre produit, et on produit votre premier lot.\n\nLe lien : [Lien]\n\nJe ne vous relance plus. Écrivez-moi *« go »* quand vous êtes prêt(e), et on démarre ensemble."]
-export function closingTemplates(cfg) {
-  let t = cfg && cfg.tpl_closing
-  // Ancien format (12 ou 5 textes, avec raisons/versions) : on repart des nouveaux textes par défaut.
-  if (!Array.isArray(t) || t.length !== D.CLOSING_SLOTS.length) t = D.DEFAULT_CLOSING
-  // un modèle jamais modifié (= un ancien défaut) prend le nouveau défaut
-  return D.CLOSING_SLOTS.map((x, i) => (!t[i] || estAncien(t[i], PV.PREV_DEFAULT_CLOSING[i], PREV5_CLOSING[i]) || (i === 0 && estAncien(t[i], PREV4_CLOSING0))) ? D.DEFAULT_CLOSING[i] : t[i])
-}
-// Variables : [Prénom] [Marque] [Lien] [Facture] sont intégrées ; toute autre variable entre crochets devient un champ de « Infos de l'appel ».
-const TOKEN = /\[([^\[\]\n]{2,80})\]/g
-const INTEGREES = ['prenom', 'marque', 'lien', 'facture']
-export function closingVariables(cfg) {
-  const vus = new Map()
-  closingTemplates(cfg).forEach((t, i) => {
-    for (const m of String(t).matchAll(TOKEN)) {
-      const label = m[1].trim().replace(/\s+/g, ' '), k = cleVar(label)
-      if (!k || INTEGREES.includes(k)) continue
-      if (!vus.has(k)) vus.set(k, { k, label, jours: [], indice: (t.slice(Math.max(0, m.index - 45), m.index) + '[…]' + t.slice(m.index + m[0].length, m.index + m[0].length + 45)).replace(/\s+/g, ' ').trim() })
-      const j = D.CLOSING_JOURS[i]; if (!vus.get(k).jours.includes(j)) vus.get(k).jours.push(j)
-    }
-  })
-  return [...vus.values()]
-}
-export function closingMessage(p, i, cfg, lienPerso) {
-  const n = N(p), tpl = (closingTemplates(cfg)[i] || '').trim(), offre = OFFRES[n.closing_offre]
-  const manque = []
-  const msg = tpl.replace(TOKEN, (m, brut) => {
-    const label = brut.trim().replace(/\s+/g, ' '), k = cleVar(label)
-    const v = k === 'prenom' ? (n.closing_prenom || '').trim() : k === 'marque' ? (p.nom_marque || '') : k === 'lien' ? (offre ? (lienPerso || offre.url) : '') : k === 'facture' ? (offre ? offre.facture : '') : valeurVar(n, k)
-    if (!v) { const nom = k === 'lien' || k === 'facture' ? 'offre recommandée' : label; if (!manque.includes(nom)) manque.push(nom); return m }
-    return v
-  })
-  return { msg: lienPerso ? unifierLiens(msg, lienPerso) : msg, manque }
-}
-
-// ── Closing par écrit (blocs 1 à 3 + suite)
-export function ecritTemplates(cfg) {
-  const saved = (cfg && cfg.tpl_ecrit3) || {}, out = {}
-  Object.keys(D.DEFAULT_ECRIT).forEach((k) => { out[k] = typeof saved[k] === 'string' && saved[k].trim() ? saved[k] : D.DEFAULT_ECRIT[k] })
-  return out
-}
-export function ecritMessage(p, etape, cfg, lienPerso) {
-  const n = N(p), T = ecritTemplates(cfg), offre = n.ecrit_offre || ''
-  let cle = etape
-  const v = pitchVariante(p, cfg)
-  let casEcrit = null
-  if (etape === 'b1') {
-    if (v.cas != null) { cle = 'b1_cas' + v.cas; casEcrit = v.cas }
-    else if (v.maj) return { msg: '', manque: ['durée des ads illisible (relance « Mettre à jour les ads »)'], cle: 'b1' }
-    else return { msg: '', manque: ['ads à jour (clique sur « Mettre à jour les ads » : l\'audit a besoin de ses vrais chiffres)'], cle: 'b1' }
-  }
-  if (etape === 'b2' || etape === 'b3') {
-    // le cas vient de ses ads (relevé à l'envoi du bloc 1, sinon relevé actuel)
-    const cas = n.ecrit_cas != null ? n.ecrit_cas : v.cas
-    if (cas == null) return { msg: '', manque: ['ads à jour (clique sur « Mettre à jour les ads » : le cas se définit d\'après ses ads)'], cle: etape }
-    cle = etape + '_cas' + cas
-  }
-  if (etape === 'b4') cle = 'b4_' + offre
-  let tpl = T[cle]
-  const manque = []
-  if (!tpl) { manque.push('offre'); return { msg: '', manque, cle } }
-  const o = OFFRES[offre] || {}
-  const vals = { marque: p.nom_marque || '', produit: (p.produit || '').trim() || 'votre produit', pays: p.pays || '', remarque: (n.ecrit_remarque || '').trim(), lien: o.url ? (lienPerso || o.url) : '', facture: o.facture || '', delai: D.ECRIT_DELAI[offre] || '48 h', n: D.ECRIT_N[offre] || '' }
-  tpl = tpl.split('\n').filter((l) => !(/\[remarque\]/i.test(l) && !vals.remarque)).join('\n').replace(/\n{3,}/g, '\n\n')
-  let msg = tpl.replace(/\[(marque|produit|pays|remarque|lien|facture|delai|n)\]/gi, (m, k) => {
-    const x = vals[k.toLowerCase()]
-    if (!x) { const nom = ['lien', 'facture', 'n', 'delai'].includes(k.toLowerCase()) ? 'offre' : k; if (!manque.includes(nom)) manque.push(nom) }
-    return x
-  })
-  if (/^b1_cas/.test(cle)) msg = remplirPitchDonnees(msg, v)
-  if (lienPerso) msg = unifierLiens(msg, lienPerso)
-  return { msg, manque, cle, cas: casEcrit }
-}
+// Closing après appel (J+1 / J+4 / J+11) et closing par écrit : retirés le 27/11/2026.
 
 // ── Relances Leads J+3 (pitch avec les ads, variables) / J+10 (preuve) / J+21 (alerte)
 export function relanceTemplates(cfg) { const t = cfg && cfg.tpl_relances; return Array.isArray(t) && t.length ? t.map((x, i) => (estAncien(x, PREV5_RELANCES[i]) || (i <= 1 && estAncien(x, PREV4_RELANCES[i])) || (i > 0 && (estAncien(x, PV.PREV_DEFAULT_RELANCES[i]) || (i === 2 && /trou sur la route/i.test(x))))) ? D.DEFAULT_RELANCES[i] : x) : D.DEFAULT_RELANCES }

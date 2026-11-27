@@ -4,11 +4,9 @@ import './crm.css'
 import { useAdmin, Login, signOut } from './auth'
 import { CrmProvider, useCrm } from './store'
 import { Host, Icon } from './ui'
-import { aFaire, appelAffiche, closingDansListe, ecritActif, leadsARelancer } from './domain/rules'
+import { aFaire, appelAffiche, leadsARelancer } from './domain/rules'
 import Aujourdhui from './pages/Aujourdhui'
 import Appels from './pages/Appels'
-import Closing from './pages/Closing'
-import Ecrit from './pages/Ecrit'
 import Acheteurs from './pages/Acheteurs'
 import { estAcheteur } from './domain/acheteurs'
 import Leads from './pages/Leads'
@@ -39,14 +37,12 @@ function Shell({ user, onLogout }) {
   useEffect(() => setMenu(false), [loc.pathname])
   const nContacter = prospects.filter((p) => p.statut === 'a_contacter').length
   const NAV = [
-    { to: '/', label: 'Aujourd\'hui', ic: 'today', n: t.appels.length + t.noshow.length + t.closing.length + t.ecrit.length + t.relances.length + t.acheteurs.length, end: true },
+    { to: '/', label: 'Aujourd\'hui', ic: 'today', n: t.appels.length + t.noshow.length + t.relances.length + t.acheteurs.length, end: true },
     { g: 'Vendre' },
     { to: '/a-contacter', label: 'Contacter', ic: 'send', n: nContacter },
     { to: '/suivi', label: 'Suivi', ic: 'eye', n: prospects.filter((p) => p.statut === 'en_suivi').length },
     { to: '/leads', label: 'Leads', ic: 'flame', n: leadsARelancer(prospects).length },
     { to: '/appels', label: 'Appels', ic: 'phone', n: prospects.filter(appelAffiche).length },
-    { to: '/closing', label: 'Closing', ic: 'check', n: prospects.filter(closingDansListe).length },
-    { to: '/ecrit', label: 'Closing écrit', ic: 'pen', n: prospects.filter(ecritActif).length },
     { to: '/acheteurs', label: 'Acheteurs', ic: 'star', n: prospects.filter(estAcheteur).length },
     { g: 'Équipe' },
     { to: '/agents', label: 'Agents', ic: 'users' },
@@ -114,8 +110,8 @@ export default function CrmApp() {
             <Route path="suivi" element={<Titre t="Suivi"><Suivi /></Titre>} />
             <Route path="leads" element={<Titre t="Leads"><Leads /></Titre>} />
             <Route path="appels" element={<Titre t="Appels"><Appels /></Titre>} />
-            <Route path="closing" element={<Titre t="Closing"><Closing /></Titre>} />
-            <Route path="ecrit" element={<Titre t="Closing écrit"><Ecrit /></Titre>} />
+            <Route path="closing" element={<Navigate to="/appels" replace />} />{/* relances après appel et closing écrit retirés le 27/11/2026 */}
+            <Route path="ecrit" element={<Navigate to="/leads" replace />} />
             <Route path="acheteurs" element={<Titre t="Acheteurs"><Acheteurs /></Titre>} />
             <Route path="dashboard" element={<Titre t="Dashboard"><Dashboard /></Titre>} />
             <Route path="transactions" element={<Titre t="Ventes & clients"><Transactions /></Titre>} />

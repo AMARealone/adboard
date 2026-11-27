@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useCrm } from '../store'
 import { N, quand, duree } from '../domain/notes'
-import { appelAffiche, appelEcheance, appelEnRetard, appelProgrammeTs, closingInfosIncompletes } from '../domain/rules'
+import { appelAffiche, appelEcheance, appelEnRetard, appelProgrammeTs } from '../domain/rules'
 import { Chip, Empty, Pills, Stat, toast } from '../ui'
 import { usePref } from '../prefs'
 import { useFiltre } from '../filtre'

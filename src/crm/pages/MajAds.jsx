@@ -3,13 +3,12 @@ import { Modal } from '../ui'
 import { useCrm } from '../store'
 import { N } from '../domain/notes'
 import { pitchVariante } from '../domain/messages'
-import { appelDansListe, jDepuisLead, ecritB1Saute } from '../domain/rules'
+import { appelDansListe, jDepuisLead } from '../domain/rules'
 
-// Leads concernés : en Lead, pas dans Appels, J+3 pas encore envoyé, au moins 3 jours depuis le passage en Lead (ou déjà en Écrit actif)
+// Leads concernés : en Lead, pas dans Appels, J+3 pas encore envoyé, au moins 3 jours depuis le passage en Lead
 export function leadsAds(prospects) {
   return prospects.filter((p) => {
     const n = N(p)
-    if (n.ecrit_etat === 'actif') return !ecritB1Saute(n) && !n.ecrit_sent_b1 // closing par écrit (Leads ou Suivi) : l'audit du bloc 1 a besoin de ses ads
     if (p.statut !== 'lead' || appelDansListe(p)) return false
     if (n.sent_j3 || n.j3_envoye) return false
     return jDepuisLead(p) >= 3

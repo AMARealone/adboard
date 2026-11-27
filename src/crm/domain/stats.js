@@ -1,6 +1,6 @@
 // Calculs du Dashboard (fonctions pures : mêmes entrées → mêmes chiffres, testables sans écran).
 import { N } from './notes'
-import { appelDansListe, b3Ancien } from './rules'
+import { appelDansListe } from './rules'
 
 export const CORE_PLANS = ['discovery', 'test', 'starter', 'pro', 'scale']
 // Campagnes suivies. « lien: false » = message sans lien (rien à mesurer côté clics).
@@ -10,13 +10,14 @@ export const CAMPAGNES = [
   { cle: 'j3', label: 'Relance J+3', groupe: 'Relances' },
   { cle: 'j10', label: 'Relance J+10', groupe: 'Relances' },
   { cle: 'j21', label: 'Relance J+21', groupe: 'Relances' },
-  { cle: 'closing_j1', label: 'Closing J+1', groupe: 'Closing' },
-  { cle: 'closing_j4', label: 'Closing J+4', groupe: 'Closing' },
-  { cle: 'closing_j11', label: 'Closing J+11', groupe: 'Closing' },
+  // Relances après appel et closing par écrit : retirés le 27/11/2026, affichés seulement s'il reste des envois ou des clics sur la période
+  { cle: 'closing_j1', label: 'Closing J+1 (ancien)', groupe: 'Closing', historique: true },
+  { cle: 'closing_j4', label: 'Closing J+4 (ancien)', groupe: 'Closing', historique: true },
+  { cle: 'closing_j11', label: 'Closing J+11 (ancien)', groupe: 'Closing', historique: true },
   { cle: 'closing_j3', label: 'Closing J+3 (ancien)', groupe: 'Closing', historique: true },
   { cle: 'closing_j7', label: 'Closing J+7 (ancien)', groupe: 'Closing', historique: true },
-  { cle: 'ecrit_b4', label: 'Écrit · offre', groupe: 'Écrit' },
-  { cle: 'ecrit_suite', label: 'Écrit · suite', groupe: 'Écrit' },
+  { cle: 'ecrit_b4', label: 'Écrit · offre (ancien)', groupe: 'Écrit', historique: true },
+  { cle: 'ecrit_suite', label: 'Écrit · suite (ancien)', groupe: 'Écrit', historique: true },
   { cle: 'acheteur_bienvenue', label: 'Acheteur · bienvenue', groupe: 'Acheteurs', lien: false },
   { cle: 'acheteur_demarrage', label: 'Acheteur · démarrage', groupe: 'Acheteurs', lien: false },
   { cle: 'acheteur_resultats', label: 'Acheteur · résultats', groupe: 'Acheteurs', lien: false },
@@ -98,23 +99,15 @@ export function calculer({ prospects, liens, funnel, tx, w }) {
   tot.ctr = pct(tot.clics, tot.envoyes)
   const attribues = lignes.reduce((s, x) => s + x.achats, 0)
   const achatsTx = txCore.length
-  // — Closing et Écrit
-  const closingEntres = P.filter(({ n }) => n.closing_etat && dans(n.closing_at, w))
-  // Par relance : combien ont été envoyées, et combien de ceux qui l'ont reçue ont fini par payer (J+3 / J+7 = anciens rythmes)
-  const parJour = (jour) => { const g = P.filter(({ n }) => n['closing_sent_j' + jour]); return { j: jour, envoyes: g.length, payes: g.filter(({ p, n }) => p.statut === 'acheteur' || n.closing_etat === 'paye').length } }
-  const closing = {
-    entres: closingEntres.length, payes: P.filter(({ n }) => dans(n.closing_paye_at, w)).length,
+  // — Après l'appel : appels faits sur la période, payés (marqués « A payé »), pas intéressés
+  const apresAppel = {
+    faits: appels.faits,
+    payes: P.filter(({ n }) => dans(n.closing_paye_at, w)).length,
     perdus: P.filter(({ n }) => n.pas_interesse && dans(n.pas_interesse_at, w)).length,
-    relances: [1, 4, 11].map(parJour),
-  }
-  const ecritEnv = (e) => P.filter(({ n }) => n['ecrit_sent_' + e] && dans(n['ecrit_sent_' + e + '_at'], w)).length
-  const ecrit = {
-    entres: P.filter(({ n }) => n.ecrit_etat && dans(n.ecrit_at, w)).length, payes: P.filter(({ n }) => dans(n.ecrit_paye_at, w)).length,
-    perdus: P.filter(({ n }) => n.ecrit_etat === 'perdu').length, b1: ecritEnv('b1'), b2: ecritEnv('b2'), b3: ecritEnv('b3'), b4: ecritEnv('b4') + P.filter(({ n }) => b3Ancien(n)).length, suite: ecritEnv('suite'),
   }
   // — Acheteurs par jour (30 derniers jours, transactions)
   const jours = []
   for (let k = 29; k >= 0; k--) { const d = new Date(Date.now() - k * JOUR); jours.push({ j: d.toISOString().slice(0, 10), v: 0 }) }
   tx.filter((t) => CORE_PLANS.includes(t.plan)).forEach((t) => { const j = (t.created_at || '').slice(0, 10), x = jours.find((y) => y.j === j); if (x) x.v++ })
-  return { hero, appels, lignes, tot, attribues, achatsTx, nonAttribues: Math.max(0, achatsTx - attribues), closing, ecrit, jours }
+  return { hero, appels, lignes, tot, attribues, achatsTx, nonAttribues: Math.max(0, achatsTx - attribues), apresAppel, jours }
 }
