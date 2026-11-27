@@ -27,6 +27,7 @@ import Donnees from './pages/Donnees'
 import Utilisateurs from './pages/Utilisateurs'
 import Clients from './pages/Clients'
 import ProspectionAuto from './pages/ProspectionAuto'
+import Agents, { AgentKhalil } from './pages/Agents'   // khalil-crm-v1
 
 const BASE = /^\/crm-next(\/|$)/.test(location.pathname) ? '/crm-next' : '/adstats'
 
@@ -47,6 +48,8 @@ function Shell({ user, onLogout }) {
     { to: '/closing', label: 'Closing', ic: 'check', n: prospects.filter(closingDansListe).length },
     { to: '/ecrit', label: 'Closing écrit', ic: 'pen', n: prospects.filter(ecritActif).length },
     { to: '/acheteurs', label: 'Acheteurs', ic: 'star', n: prospects.filter(estAcheteur).length },
+    { g: 'Équipe' },
+    { to: '/agents', label: 'Agents', ic: 'users' },
     { g: 'Piloter' },
     { to: '/dashboard', label: 'Dashboard', ic: 'chart' },
     { to: '/transactions', label: 'Ventes & clients', ic: 'receipt' },
@@ -125,6 +128,8 @@ export default function CrmApp() {
             <Route path="clients" element={<Titre t="Clients abonnés"><Clients /></Titre>} />
             <Route path="utilisateurs" element={<Titre t="Inscrits"><Utilisateurs /></Titre>} />
             <Route path="prospection-auto" element={<Titre t="Prospection auto"><ProspectionAuto /></Titre>} />
+            <Route path="agents" element={<Titre t="Agents"><Agents /></Titre>} />
+            <Route path="agents/khalil" element={<AgentKhalil />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
