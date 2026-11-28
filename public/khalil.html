@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=1280, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Khalil · AdStack</title>
-<!-- khalil-v1 (27 nov. 2026) — écran partagé par le bot Recall.ai dans le Meet. Cette page entend le Meet (micro du bot),
+<!-- khalil-v3 (27 nov. 2026) : l'écran change APRÈS la phrase de Khalil (attente de la fin de sa voix), une slide à la fois, jamais deux sans parler entre.
+     khalil-v1 (27 nov. 2026) — écran partagé par le bot Recall.ai dans le Meet. Cette page entend le Meet (micro du bot),
      parle dans le Meet (sa sortie audio), et affiche ce que Khalil montre : accueil, page produit du prospect, slides. -->
 <style>
   :root { --fond:#0b0d12; --carte:#141823; --texte:#f2f4f8; --doux:#9aa3b5; --accent:#6c5cff; --accent2:#23d5ab; }
@@ -153,22 +154,54 @@
     img.style.transform = "translateY(" + (-y) + "px)";
   }
 
+  // ── Synchronisation voix / écran ──
+  // Le texte de Khalil part en voix avec un temps de retard : sans attente, la slide changeait pendant qu'il parlait encore de la précédente.
+  // Chaque changement d'écran attend donc la fin de sa phrase. Et la présentation avance d'une slide à la fois, avec une prise de parole entre deux.
+  var parle = false, finParole = 0, aParleDepuis = true, courante = 0, plusLoin = 0;
+  function attendreFinDeParole() {
+    return new Promise(function (ok) {
+      var debut = Date.now();
+      (function tour() {
+        var ecoule = Date.now() - debut, calme = !parle && Date.now() - finParole > 400;
+        // 900 ms : la voix de la phrase qui précède l'outil peut ne pas avoir encore commencé
+        if ((ecoule > 900 && calme) || ecoule > 45000) return ok();
+        setTimeout(tour, 120);
+      })();
+    });
+  }
+  function changerEcran(faire) { return attendreFinDeParole().then(function () { faire(); aParleDepuis = false; }); }
+
   // ── Outils que Khalil appelle ──
   var outils = {
-    montrer_accueil: function () { vue("accueil"); journal("outil : accueil"); return "L'accueil est à l'écran."; },
+    montrer_accueil: function () { return changerEcran(function () { vue("accueil"); courante = 0; }).then(function () { journal("outil : accueil"); return "L'accueil est à l'écran."; }); },
     montrer_page_produit: function (p) {
       if (!ctx.page_produit) return "Aucune page produit n'a été donnée pour ce prospect : demande-lui de la décrire.";
-      montrerPage((p && p.endroit) || "haut"); journal("outil : page produit " + ((p && p.endroit) || "haut"));
-      return ppPrete ? "La page produit est à l'écran." : "La page produit est en train de s'afficher, parle d'abord avec le prospect.";
+      return changerEcran(function () { montrerPage((p && p.endroit) || "haut"); courante = 0; }).then(function () {
+        journal("outil : page produit " + ((p && p.endroit) || "haut"));
+        return ppPrete ? "La page produit est à l'écran." : "La page produit est en train de s'afficher, parle d'abord avec le prospect.";
+      });
     },
     montrer_slide: function (p) {
       if (!principal.length) return "La présentation n'a pas pu s'afficher : continue à l'oral.";
-      var n = allerSlide(p && p.numero); journal("outil : slide " + n);
-      return "La slide " + n + " est à l'écran.";
+      var n = Math.max(1, Math.min(principal.length, parseInt(p && p.numero, 10) || 1)), note = "";
+      // deux slides d'affilée sans un mot entre : refusé (c'est ce qui faisait défiler la présentation toute seule)
+      if (courante && n > courante && !aParleDepuis) {
+        journal("outil : slide " + n + " refusée (rien dit sur la slide " + courante + ")");
+        return "Refusé : la slide " + courante + " est à l'écran et tu n'en as encore rien dit. Présente-la d'abord ; tu passeras à la suivante ensuite.";
+      }
+      // jamais sauter une slide qui n'a pas encore été présentée (revenir en arrière, ou retourner à une slide déjà vue, reste libre)
+      if (n > plusLoin + 1) { note = " Tu avais demandé la slide " + n + ", mais la slide " + (plusLoin + 1) + " n'avait pas encore été présentée : c'est elle qui est à l'écran. Présente-la."; n = plusLoin + 1; }
+      return changerEcran(function () { allerSlide(n); courante = n; plusLoin = Math.max(plusLoin, n); }).then(function () {
+        journal("outil : slide " + n);
+        return "La slide " + n + " est maintenant à l'écran du prospect. Elle s'affiche toute seule : ne lui demande pas s'il la voit. Parle maintenant de cette slide." + note;
+      });
     },
     montrer_annexe: function (p) {
-      var ok = allerAnnexe(p && p.annexe); journal("outil : annexe " + (p && p.annexe));
-      return ok ? "L'annexe est à l'écran." : "Cette annexe n'existe pas dans la présentation.";
+      var ok = false;
+      return changerEcran(function () { ok = allerAnnexe(p && p.annexe); }).then(function () {
+        journal("outil : annexe " + (p && p.annexe));
+        return ok ? "L'annexe est à l'écran." : "Cette annexe n'existe pas dans la présentation.";
+      });
     },
     envoyer_lien_paiement: function (p) {
       var offre = (p && p.offre) === "reduite" ? "reduite" : "principale";
@@ -213,7 +246,10 @@
       onConnect: function (c) { etat(""); journal("conversation ElevenLabs " + (c && c.conversationId)); },
       onDisconnect: function (d) { journal("conversation fermée : " + JSON.stringify(d || {}).slice(0, 200)); terminer("conversation fermée"); },
       onError: function (m) { journal("erreur : " + m); },
-      onModeChange: function (m) { $("badge").classList.toggle("parle", m && m.mode === "speaking"); },
+      onModeChange: function (m) {
+        parle = !!(m && m.mode === "speaking"); $("badge").classList.toggle("parle", parle);
+        if (parle) aParleDepuis = true; else finParole = Date.now();
+      },
       onMessage: function (m) { if (m && m.message) journal((m.source === "ai" ? "Khalil" : "Prospect") + " : " + m.message); }
     });
   }
